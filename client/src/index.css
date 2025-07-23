@@ -99,9 +99,9 @@
   --negative-light: #ff2200;
   --negative-dark: #a71d08;
 
-  --primary: var(--primary-blue);
+  --primary: var(--color-primary-blue);
   --primary-foreground: var(--color-white);
-  --secondary: var(--primary-purple);
+  --secondary: var(--color-primary-purple);
   --secondary-foreground: var(--color-white);
 
   --muted: oklch(0.97 0 0);
