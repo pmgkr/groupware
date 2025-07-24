@@ -1,14 +1,14 @@
-// textbox.stories.tsx
+// textarea.stories.tsx
 import type { Meta, StoryObj } from '@storybook/react';
 import { ChartNoAxesColumnIncreasing, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Textbox } from '@components/ui/textbox';
+import { Textarea } from '@components/ui/textarea';
 
-const meta: Meta<typeof Textbox> = {
-  title: 'Components/UI/Textbox',
-  component: Textbox,
+const meta: Meta<typeof Textarea> = {
+  title: 'Components/UI/Textarea',
+  component: Textarea,
   tags: ['autodocs'], // 자동 문서화를 위해 추가
   args: {
-    placeholder: 'Textbox',
+    placeholder: 'Textarea',
   },
   argTypes: {
     variant: {
@@ -23,7 +23,7 @@ const meta: Meta<typeof Textbox> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof Textbox>;
+type Story = StoryObj<typeof Textarea>;
 
 export const Default: Story = {
   args: {
@@ -77,18 +77,11 @@ export const Error: Story = {
 export const Examples: Story = {
   render: () => (
     <>
-      <div className="flex flex-wrap gap-4">
-        <Textbox size="sm" placeholder="Small Textbox" />
-        <Textbox size="default" placeholder="Default Textbox" />
-        <Textbox size="lg" placeholder="Large Textbox" />
-      </div>
-      <div className="mt-4 mb-4 flex flex-wrap gap-4">
-        <Textbox variant="filled" size="sm" placeholder="Small Textbox" />
-        <Textbox variant="filled" size="default" placeholder="Default Textbox" />
-        <Textbox variant="filled" size="lg" placeholder="Large Textbox" />
-      </div>
       <div className="flex flex-col flex-wrap gap-4">
-        <Textbox size="full" placeholder="Full Textbox" />
+        <Textarea size="sm" placeholder="Small Textarea" />
+        <Textarea size="default" placeholder="Default Textarea" />
+        <Textarea size="lg" placeholder="Large Textarea" />
+        <Textarea size="board" placeholder="Board Textarea" />
       </div>
     </>
   ),

@@ -15,7 +15,6 @@ export default function Login() {
       <h1 className="mb-4 text-2xl">로그인 페이지</h1>
       {/* 로그인 폼 추가 예정 */}
       <Button onClick={handleLogin}>로그인</Button>
-      <Textbox></Textbox>
     </div>
   );
 }
