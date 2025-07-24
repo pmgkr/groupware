@@ -44,8 +44,8 @@ export function UserMultiSelect({ users, selected, onChange, placeholder = '검�
       {/* 검색창 */}
       <Input placeholder={placeholder} value={query} onChange={(e) => setQuery(e.target.value)} className="h-9" />
 
-      {/* 필터링된 옵션 리스트 */}
-      <ul className="absolute top-10 max-h-40 w-full overflow-y-auto rounded-md border bg-white p-1 shadow-sm">
+      {/* 필터링된 옵션 리스트 absolute top-10 */}
+      <ul className="max-h-40 w-full overflow-y-auto rounded-md border bg-white p-1 shadow-sm">
         {filtered.map((user) => (
           <li
             key={user.id}

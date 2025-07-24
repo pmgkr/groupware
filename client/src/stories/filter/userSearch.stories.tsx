@@ -33,7 +33,7 @@ export const Default: Story = {
         <div className="w-[200px]">
           <UserMultiSelect users={dummyUsers} selected={selectedUsers} onChange={setSelectedUsers} />
 
-          <div>
+          {/*<div>
             <h4 className="mb-1 text-sm font-semibold">Selected Users</h4>
             <ul className="space-y-1 text-sm">
               {selectedUsers.map((user) => (
@@ -43,6 +43,7 @@ export const Default: Story = {
               ))}
             </ul>
           </div>
+          */}
         </div>
       </>
     );
