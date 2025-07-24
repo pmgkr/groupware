@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Alert, AlertTitle, AlertDescription } from '@components/ui/alert';
 
 const meta: Meta<typeof Alert> = {
-  title: 'Components/Alert',
+  title: 'Components/UI/Alert',
   component: Alert,
   tags: ['autodocs'],
   args: {
@@ -13,6 +13,9 @@ const meta: Meta<typeof Alert> = {
       control: 'select',
       options: ['default', 'destructive'],
     },
+  },
+  parameters: {
+    layout: 'centered',
   },
 };
 
