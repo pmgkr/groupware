@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Calendar } from '@components/calendar/calendar';
 
 const meta: Meta<typeof Calendar> = {
-  title: 'Components/UI/Calendar',
+  title: 'Components/Calendar/Calendar',
   component: Calendar,
   tags: ['autodocs'],
   args: {
