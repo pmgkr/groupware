@@ -1,145 +1,160 @@
-// calendar.stories.tsx
 import type { Meta, StoryObj } from '@storybook/react';
-import { useState } from 'react';
 import { Calendar } from '@components/calendar/calendar';
 
 const meta: Meta<typeof Calendar> = {
-  title: 'Components/UI/Calendar',
+  title: 'Components/Calendar/Calendar',
   component: Calendar,
   tags: ['autodocs'],
-  args: {
-    mode: 'single',
-  },
-  argTypes: {
-    variant: {
-      control: 'select',
-      options: ['default', 'filled', 'minimal'],
-    },
-    size: {
-      control: 'select',
-      options: ['default', 'sm', 'lg', 'full'],
-    },
-    mode: {
-      control: 'select',
-      options: ['single', 'multiple', 'range'],
-    },
-    captionLayout: {
-      control: 'select',
-      options: ['label', 'dropdown'],
-    },
-    buttonVariant: {
-      control: 'select',
-      options: ['ghost', 'outline', 'default'],
-    },
+  parameters: {
+    layout: 'padded',
   },
 };
 
 export default meta;
 type Story = StoryObj<typeof Calendar>;
 
-// 상태를 관리하는 래퍼 컴포넌트
-const CalendarWithState = ({ mode, ...props }: any) => {
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [dates, setDates] = useState<Date[] | undefined>(undefined);
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
-
-  if (mode === 'multiple') {
-    return <Calendar mode="multiple" selected={dates} onSelect={setDates} {...props} />;
-  }
-  
-  if (mode === 'range') {
-    return <Calendar mode="range" selected={dateRange} onSelect={setDateRange} {...props} />;
-  }
-  
-  return <Calendar mode="single" selected={date} onSelect={setDate} {...props} />;
-};
+// 샘플 이벤트 데이터
+const sampleEvents = [
+  {
+    id: '1',
+    title: '팀 미팅',
+    start: new Date('2025-07-25T09:00:00'),
+    end: new Date('2025-07-25T10:00:00'),
+    color: 'blue',
+  },
+  {
+    id: '2',
+    title: '프로젝트 리뷰',
+    start: new Date('2025-07-25T14:00:00'),
+    end: new Date('2025-07-25T15:30:00'),
+    color: 'green',
+  },
+  {
+    id: '3',
+    title: '고객 미팅',
+    start: new Date('2025-07-25T11:00:00'),
+    end: new Date('2025-07-25T12:00:00'),
+    color: 'purple',
+  },
+  {
+    id: '4',
+    title: '점심 약속',
+    start: new Date('2025-07-25T12:00:00'),
+    end: new Date('2025-07-25T13:00:00'),
+    color: 'orange',
+  },
+  {
+    id: '5',
+    title: '코딩 세션',
+    start: new Date('2025-07-25T15:00:00'),
+    end: new Date('2025-07-25T17:00:00'),
+    color: 'pink',
+  },
+];
 
 export const Default: Story = {
-  render: (args) => <CalendarWithState {...args} />,
   args: {
-    variant: 'default',
-    size: 'default',
-    mode: 'single',
-    captionLayout: 'label',
+    events: sampleEvents,
+    onEventClick: (event) => console.log('Event clicked:', event),
+    onDateClick: (date) => console.log('Date clicked:', date),
   },
 };
 
-export const Filled: Story = {
-  render: (args) => <CalendarWithState {...args} />,
+export const Empty: Story = {
   args: {
-    variant: 'filled',
-    size: 'default',
-    mode: 'single',
-    captionLayout: 'label',
+    events: [],
+    onEventClick: (event) => console.log('Event clicked:', event),
+    onDateClick: (date) => console.log('Date clicked:', date),
   },
 };
 
-export const Minimal: Story = {
-  render: (args) => <CalendarWithState {...args} />,
+export const WithManyEvents: Story = {
   args: {
-    variant: 'minimal',
-    size: 'default',
-    mode: 'single',
-    captionLayout: 'label',
+    events: [
+      ...sampleEvents,
+      {
+        id: '6',
+        title: '아침 운동',
+        start: new Date('2025-07-25T07:00:00'),
+        end: new Date('2025-07-25T08:00:00'),
+        color: 'red',
+      },
+      {
+        id: '7',
+        title: '저녁 식사',
+        start: new Date('2025-07-25T18:00:00'),
+        end: new Date('2025-07-25T19:00:00'),
+        color: 'yellow',
+      },
+      {
+        id: '8',
+        title: '영화 보기',
+        start: new Date('2025-07-25T20:00:00'),
+        end: new Date('2025-07-25T22:00:00'),
+        color: 'gray',
+      },
+    ],
+    onEventClick: (event) => console.log('Event clicked:', event),
+    onDateClick: (date) => console.log('Date clicked:', date),
   },
 };
 
-export const WithDropdown: Story = {
-  render: (args) => <CalendarWithState {...args} />,
+export const DayView: Story = {
   args: {
-    variant: 'default',
-    size: 'default',
-    mode: 'single',
-    captionLayout: 'dropdown',
+    events: sampleEvents,
+    onEventClick: (event) => console.log('Event clicked:', event),
+    onDateClick: (date) => console.log('Date clicked:', date),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: '일별 뷰로 캘린더를 표시합니다. 시간별로 이벤트를 확인할 수 있습니다.',
+      },
+    },
   },
 };
 
-export const Small: Story = {
-  render: (args) => <CalendarWithState {...args} />,
+export const WeekView: Story = {
   args: {
-    variant: 'default',
-    size: 'sm',
-    mode: 'single',
-    captionLayout: 'label',
+    events: sampleEvents,
+    onEventClick: (event) => console.log('Event clicked:', event),
+    onDateClick: (date) => console.log('Date clicked:', date),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: '주별 뷰로 캘린더를 표시합니다. 한 주의 스케줄을 시간별로 확인할 수 있습니다.',
+      },
+    },
   },
 };
 
-export const Large: Story = {
-  render: (args) => <CalendarWithState {...args} />,
+export const MonthView: Story = {
   args: {
-    variant: 'default',
-    size: 'lg',
-    mode: 'single',
-    captionLayout: 'label',
+    events: sampleEvents,
+    onEventClick: (event) => console.log('Event clicked:', event),
+    onDateClick: (date) => console.log('Date clicked:', date),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: '월별 뷰로 캘린더를 표시합니다. 한 달의 전체 스케줄을 확인할 수 있습니다.',
+      },
+    },
   },
 };
 
-export const MultipleSelection: Story = {
-  render: (args) => <CalendarWithState {...args} />,
+export const YearView: Story = {
   args: {
-    variant: 'default',
-    size: 'default',
-    mode: 'multiple',
-    captionLayout: 'label',
+    events: sampleEvents,
+    onEventClick: (event) => console.log('Event clicked:', event),
+    onDateClick: (date) => console.log('Date clicked:', date),
   },
-};
-
-export const RangeSelection: Story = {
-  render: (args) => <CalendarWithState {...args} />,
-  args: {
-    variant: 'default',
-    size: 'default',
-    mode: 'range',
-    captionLayout: 'label',
+  parameters: {
+    docs: {
+      description: {
+        story: '년별 뷰로 캘린더를 표시합니다. 한 해의 전체 월을 확인할 수 있습니다.',
+      },
+    },
   },
-};
-
-export const Examples: Story = {
-  render: () => (
-    <div className="flex flex-wrap gap-4">
-      <CalendarWithState variant="default" size="sm" mode="single" captionLayout="label" />
-      <CalendarWithState variant="filled" size="default" mode="single" captionLayout="dropdown" />
-      <CalendarWithState variant="minimal" size="lg" mode="single" captionLayout="label" />
-    </div>
-  ),
 }; 

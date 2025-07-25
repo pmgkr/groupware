@@ -4,23 +4,54 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "lucide-react"
-import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
+import { DayButton, DayPicker as RDPDayPicker, getDefaultClassNames } from "react-day-picker"
+import { cva, type VariantProps } from "class-variance-authority"
+import { ChevronLeft, ChevronRight, X } from "lucide-react"
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfDay, endOfDay, eachHourOfInterval, addDays, subDays, addWeeks, subWeeks } from "date-fns"
+import { ko } from "date-fns/locale"
+import { useHotkeys } from "react-hotkeys-hook"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
 
-function Calendar({
+const dayPickerVariants = cva(
+  "bg-background group/calendar p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
+  {
+    variants: {
+      variant: {
+        default: "",
+        filled: "bg-gray-50 border border-gray-200 rounded-lg",
+        minimal: "bg-transparent p-1",
+      },
+      size: {
+        default: "[--cell-size:--spacing(8)]",
+        sm: "[--cell-size:--spacing(6)] p-2",
+        lg: "[--cell-size:--spacing(10)] p-4",
+        full: "[--cell-size:--spacing(12)] p-6",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+function DayPicker({
   className,
   classNames,
   showOutsideDays = true,
   captionLayout = "label",
   buttonVariant = "ghost",
+  variant,
+  size,
   formatters,
   components,
   ...props
-}: React.ComponentProps<typeof DayPicker> & {
-  buttonVariant?: React.ComponentProps<typeof Button>["variant"]
-}) {
+}: React.ComponentProps<typeof RDPDayPicker> & 
+  VariantProps<typeof dayPickerVariants> & {
+    buttonVariant?: React.ComponentProps<typeof Button>["variant"]
+  }) {
   const defaultClassNames = getDefaultClassNames()
   
   // props에서 mode를 추출하여 numberOfMonths 결정
@@ -28,12 +59,12 @@ function Calendar({
   const numberOfMonths = mode === "range" ? 2 : 1
 
   return (
-    <DayPicker
+    <RDPDayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
-        "bg-background group/calendar p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
-        String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
-        String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
+        dayPickerVariants({ variant, size }),
+        String.raw`rtl:**:[.rdp-button_next>svg]:rotate-180`,
+        String.raw`rtl:**:[.rdp-button_previous>svg]:rotate-180`,
         className
       )}
       captionLayout={captionLayout}
@@ -158,7 +189,7 @@ function Calendar({
             <ChevronDownIcon className={cn("size-4", className)} {...props} />
           )
         },
-        DayButton: CalendarDayButton,
+        DayButton: DayPickerDayButton,
         WeekNumber: ({ children, ...props }) => {
           return (
             <td {...props}>
@@ -175,7 +206,7 @@ function Calendar({
   )
 }
 
-function CalendarDayButton({
+function DayPickerDayButton({
   className,
   day,
   modifiers,
@@ -213,4 +244,410 @@ function CalendarDayButton({
   )
 }
 
-export { Calendar, CalendarDayButton }
+// 새로운 Calendar 컴포넌트 (큰 버전)
+interface Event {
+  id: string
+  title: string
+  start: Date
+  end: Date
+  color?: string
+}
+
+interface CalendarProps {
+  events?: Event[]
+  onEventClick?: (event: Event) => void
+  onDateClick?: (date: Date) => void
+  className?: string
+}
+
+type ViewMode = "day" | "week" | "month" | "year"
+
+const colorMap = {
+  blue: "bg-blue-500 text-white",
+  red: "bg-red-500 text-white",
+  green: "bg-green-500 text-white",
+  yellow: "bg-yellow-500 text-black",
+  purple: "bg-purple-500 text-white",
+  pink: "bg-pink-500 text-white",
+  gray: "bg-gray-500 text-white",
+  orange: "bg-orange-500 text-white",
+}
+
+function Calendar({ events = [], onEventClick, onDateClick, className }: CalendarProps) {
+  const [currentDate, setCurrentDate] = React.useState(new Date())
+  const [viewMode, setViewMode] = React.useState<ViewMode>("month")
+  const [selectedDate, setSelectedDate] = React.useState<Date | null>(null)
+  const [isMoreEventsOpen, setIsMoreEventsOpen] = React.useState(false)
+
+  // 키보드 단축키
+  useHotkeys("left", () => navigateDate(-1), { preventDefault: true })
+  useHotkeys("right", () => navigateDate(1), { preventDefault: true })
+  useHotkeys("up", () => navigateDate(-7), { preventDefault: true })
+  useHotkeys("down", () => navigateDate(7), { preventDefault: true })
+  useHotkeys("home", () => setCurrentDate(new Date()), { preventDefault: true })
+
+  const navigateDate = (direction: number) => {
+    switch (viewMode) {
+      case "day":
+        setCurrentDate(addDays(currentDate, direction))
+        break
+      case "week":
+        setCurrentDate(addWeeks(currentDate, direction))
+        break
+      case "month":
+        setCurrentDate(addMonths(currentDate, direction))
+        break
+      case "year":
+        setCurrentDate(addMonths(currentDate, direction * 12))
+        break
+    }
+  }
+
+  const getViewTitle = () => {
+    switch (viewMode) {
+      case "day":
+        return format(currentDate, "yyyy년 M월 d일", { locale: ko })
+      case "week":
+        const weekStart = startOfWeek(currentDate)
+        const weekEnd = endOfWeek(currentDate)
+        return `${format(weekStart, "yyyy년 M월 d일", { locale: ko })} - ${format(weekEnd, "M월 d일", { locale: ko })}`
+      case "month":
+        return format(currentDate, "yyyy년 M월", { locale: ko })
+      case "year":
+        return format(currentDate, "yyyy년", { locale: ko })
+    }
+  }
+
+  const getEventsForDate = (date: Date) => {
+    return events.filter(event => {
+      const eventStart = startOfDay(event.start)
+      const eventEnd = endOfDay(event.end)
+      const checkDate = startOfDay(date)
+      return checkDate >= eventStart && checkDate <= eventEnd
+    })
+  }
+
+  const getEventsForHour = (hour: Date) => {
+    return events.filter(event => {
+      const eventStart = event.start
+      const eventEnd = event.end
+      const checkHour = hour
+      return checkHour >= eventStart && checkHour < eventEnd
+    })
+  }
+
+  const handleMoreEventsClick = (date: Date, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedDate(date)
+    setIsMoreEventsOpen(true)
+  }
+
+  const renderDayView = () => {
+    const dayStart = startOfDay(currentDate)
+    const dayEnd = endOfDay(currentDate)
+    const hours = eachHourOfInterval({ start: dayStart, end: dayEnd })
+
+    return (
+      <div className="h-[600px] overflow-y-auto">
+        {hours.map((hour, index) => {
+          const hourEvents = getEventsForHour(hour)
+          return (
+            <div key={index} className="flex border-b border-gray-200 min-h-[60px]">
+              <div className="w-20 p-2 text-sm text-gray-500 border-r border-gray-200">
+                {format(hour, "HH:mm")}
+              </div>
+              <div className="flex-1 p-2 relative">
+                {hourEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className={cn(
+                      "p-1 text-xs rounded cursor-pointer mb-1",
+                      colorMap[event.color as keyof typeof colorMap] || colorMap.blue
+                    )}
+                    onClick={() => onEventClick?.(event)}
+                  >
+                    {event.title}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const renderWeekView = () => {
+    const weekStart = startOfWeek(currentDate)
+    const weekEnd = endOfWeek(currentDate)
+    const days = eachDayOfInterval({ start: weekStart, end: weekEnd })
+
+    return (
+      <div className="h-[600px] overflow-y-auto">
+        <div className="grid grid-cols-8 border-b border-gray-200">
+          <div className="p-2 text-sm font-medium text-gray-500"></div>
+          {days.map((day) => (
+            <div key={day.toISOString()} className="p-2 text-sm font-medium text-center border-l border-gray-200">
+              <div>{format(day, "EEE", { locale: ko })}</div>
+              <div className={cn("text-lg", isSameDay(day, new Date()) && "text-blue-600 font-bold")}>
+                {format(day, "d")}
+              </div>
+            </div>
+          ))}
+        </div>
+        {Array.from({ length: 24 }, (_, hour) => (
+          <div key={hour} className="grid grid-cols-8 border-b border-gray-200 min-h-[60px]">
+            <div className="p-2 text-sm text-gray-500 border-r border-gray-200">
+              {format(new Date().setHours(hour), "HH:mm")}
+            </div>
+            {days.map((day) => {
+              const hourDate = new Date(day)
+              hourDate.setHours(hour)
+              const hourEvents = getEventsForHour(hourDate)
+              return (
+                <div key={day.toISOString()} className="p-1 border-l border-gray-200 relative">
+                  {hourEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className={cn(
+                        "p-1 text-xs rounded cursor-pointer mb-1",
+                        colorMap[event.color as keyof typeof colorMap] || colorMap.blue
+                      )}
+                      onClick={() => onEventClick?.(event)}
+                    >
+                      {event.title}
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  const renderMonthView = () => {
+    const monthStart = startOfMonth(currentDate)
+    const monthEnd = endOfMonth(currentDate)
+    const startDate = startOfWeek(monthStart)
+    const endDate = endOfWeek(monthEnd)
+    const days = eachDayOfInterval({ start: startDate, end: endDate })
+
+    return (
+      <div className="grid grid-cols-7 gap-1">
+        {["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"].map((day) => (
+          <div key={day} className="p-2 text-sm font-medium text-center text-gray-500">
+            {day}
+          </div>
+        ))}
+        {days.map((day) => {
+          const dayEvents = getEventsForDate(day)
+          return (
+            <div
+              key={day.toISOString()}
+              className={cn(
+                "p-2 min-h-[100px] border border-gray-200 cursor-pointer hover:bg-gray-50",
+                !isSameMonth(day, currentDate) && "bg-gray-50 text-gray-400",
+                isSameDay(day, new Date()) && "bg-blue-50 border-blue-200"
+              )}
+              onClick={() => onDateClick?.(day)}
+            >
+              <div className="text-sm font-medium mb-1">{format(day, "d")}</div>
+              <div className="space-y-1">
+                {dayEvents.slice(0, 3).map((event) => (
+                  <div
+                    key={event.id}
+                    className={cn(
+                      "p-1 text-xs rounded cursor-pointer truncate",
+                      colorMap[event.color as keyof typeof colorMap] || colorMap.blue
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEventClick?.(event)
+                    }}
+                  >
+                    {event.title}
+                  </div>
+                ))}
+                {dayEvents.length > 3 && (
+                  <button
+                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                    onClick={(e) => handleMoreEventsClick(day, e)}
+                  >
+                    +{dayEvents.length - 3} more
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const renderYearView = () => {
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const month = new Date(currentDate.getFullYear(), i, 1)
+      return month
+    })
+
+    return (
+      <div className="grid grid-cols-3 gap-4">
+        {months.map((month) => (
+          <div key={month.toISOString()} className="border border-gray-200 rounded-lg p-4">
+            <div className="text-lg font-medium text-center mb-2">
+              {format(month, "M월", { locale: ko })}
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-xs">
+              {["일", "월", "화", "수", "목", "금", "토"].map((day) => (
+                <div key={day} className="text-center text-gray-400">
+                  {day}
+                </div>
+              ))}
+              {eachDayOfInterval({
+                start: startOfWeek(startOfMonth(month)),
+                end: endOfWeek(endOfMonth(month))
+              }).map((day) => (
+                <div
+                  key={day.toISOString()}
+                  className={cn(
+                    "text-center p-1",
+                    !isSameMonth(day, month) && "text-gray-300",
+                    isSameDay(day, new Date()) && "bg-blue-500 text-white rounded"
+                  )}
+                >
+                  {format(day, "d")}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className={cn("space-y-4", className)}>
+        {/* 헤더 */}
+        <div className="flex items-center justify-between relative">
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentDate(new Date())}
+            >
+              오늘
+            </Button>
+          </div>
+          
+          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-2">
+            <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigateDate(-1)}
+                >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <h2 className="text-xl font-semibold">{getViewTitle()}</h2>
+            <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigateDate(1)}
+                >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          
+          <div className="flex items-center space-x-1">
+            <Button
+              variant={viewMode === "day" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("day")}
+            >
+              일간
+            </Button>
+            <Button
+              variant={viewMode === "week" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("week")}
+            >
+              주간
+            </Button>
+            <Button
+              variant={viewMode === "month" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("month")}
+            >
+              월간
+            </Button>
+            <Button
+              variant={viewMode === "year" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("year")}
+            >
+              연간
+            </Button>
+          </div>
+        </div>
+
+        {/* 캘린더 뷰 */}
+        <div className="border border-gray-200 rounded-lg">
+          {viewMode === "day" && renderDayView()}
+          {viewMode === "week" && renderWeekView()}
+          {viewMode === "month" && renderMonthView()}
+          {viewMode === "year" && renderYearView()}
+        </div>
+      </div>
+
+      {/* More Events Modal */}
+      {isMoreEventsOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-96 overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">
+                {selectedDate && format(selectedDate, "yyyy년 M월 d일", { locale: ko })}의 일정
+              </h3>
+              <button
+                onClick={() => setIsMoreEventsOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
+              {selectedDate && getEventsForDate(selectedDate).map((event) => (
+                <div
+                  key={event.id}
+                  className={cn(
+                    "p-3 rounded-lg cursor-pointer hover:opacity-80 transition-opacity",
+                    colorMap[event.color as keyof typeof colorMap] || colorMap.blue
+                  )}
+                  onClick={() => {
+                    onEventClick?.(event)
+                    setIsMoreEventsOpen(false)
+                  }}
+                >
+                  <div className="font-medium">{event.title}</div>
+                  <div className="text-sm opacity-90">
+                    {format(event.start, "HH:mm", { locale: ko })} - {format(event.end, "HH:mm", { locale: ko })}
+                  </div>
+                </div>
+              ))}
+              {selectedDate && getEventsForDate(selectedDate).length === 0 && (
+                <div className="text-center text-gray-500 py-8">
+                  이 날에는 일정이 없습니다.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+export { DayPicker, DayPickerDayButton, dayPickerVariants, Calendar }
+
