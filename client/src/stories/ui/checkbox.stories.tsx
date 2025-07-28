@@ -19,35 +19,25 @@ type Story = StoryObj<typeof Checkbox>;
 export const Default: Story = {
   render: (args) => (
     <div>
-      <Checkbox {...args} checked />
-      <div className="flex items-center space-x-2">
-        <Checkbox {...args} />
-        <span>with text</span>
-      </div>
+      <Checkbox id="chb01" {...args} />
     </div>
   ),
 };
 
 export const Disabled: Story = {
-  render: (args) => (
+  render: () => (
     <div className="space-y-4">
       <div className="flex items-center space-x-2">
-        <Checkbox {...args} />
-        <span>기본</span>
+        <Checkbox id="chb02" label="기본" />
       </div>
 
       <div className="flex items-center space-x-2">
-        <Checkbox disabled {...args} />
-        <span>비활성화 (unchecked)</span>
+        <Checkbox disabled id="chb03" label="비활성화" />
       </div>
 
       <div className="flex items-center space-x-2">
-        <Checkbox checked disabled {...args} />
-        <span>체크됨 + 비활성화</span>
+        <Checkbox checked disabled id="chb04" label="체크됨 + 비활성화" />
       </div>
     </div>
   ),
-  args: {
-    // 기본 상태로 넘길 args 설정
-  },
 };

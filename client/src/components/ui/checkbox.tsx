@@ -4,8 +4,22 @@ import { CheckIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
-function Checkbox({ className, ...props }: React.ComponentProps<typeof CheckboxPrimitive.Root>) {
-  return (
+interface CheckboxProps extends React.ComponentProps<typeof CheckboxPrimitive.Root> {
+  label?: string;
+  labelProps?: React.ComponentPropsWithoutRef<'label'>;
+}
+
+interface CheckboxWrapperProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+function CheckboxWrapper({ children, className }: CheckboxWrapperProps) {
+  return <div className={cn('flex items-center space-x-2', className)}>{children}</div>;
+}
+
+function Checkbox({ className, label, labelProps, ...props }: CheckboxProps) {
+  const checkboxElement = (
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
@@ -21,6 +35,27 @@ function Checkbox({ className, ...props }: React.ComponentProps<typeof CheckboxP
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   );
+
+  // label이 제공되면 래퍼와 함께 반환
+  if (label) {
+    return (
+      <CheckboxWrapper>
+        {checkboxElement}
+        <label
+          className={cn(
+            'text-base transition-colors select-none',
+            props.disabled ? 'cursor-not-allowed text-gray-400' : 'cursor-pointer text-gray-700',
+            labelProps?.className
+          )}
+          htmlFor={props.id}
+          {...(labelProps || {})}>
+          {label}
+        </label>
+      </CheckboxWrapper>
+    );
+  }
+  // label이 없으면 체크박스만 반환
+  return checkboxElement;
 }
 
-export { Checkbox };
+export { Checkbox, CheckboxWrapper };
