@@ -19,9 +19,6 @@ const radioGroupItemVariants = cva(
           'data-[state=checked]:border-[color:var(--color-primary-blue-500)] data-[state=checked]:text-[color:var(--color-primary-blue-500)]',
         disabled:
           'cursor-not-allowed border-gray-400 text-gray-400 fill-gray-400 data-[state=checked]:border-gray-400 data-[state=checked]:text-gray-400',
-        success: 'data-[state=checked]:border-green-500 data-[state=checked]:text-green-500',
-        warning: 'data-[state=checked]:border-yellow-500 data-[state=checked]:text-yellow-500',
-        danger: 'data-[state=checked]:border-red-500 data-[state=checked]:text-red-500',
       },
     },
     defaultVariants: {
@@ -37,9 +34,6 @@ const radioGroupItemWrapperVariants = cva('flex items-center space-x-2', {
     variant: {
       default: 'has-[button[data-state="checked"]]:text-[color:var(--color-primary-blue-500)]',
       disabled: 'has-[button[data-state="checked"]]:text-gray-400',
-      success: 'has-[button[data-state="checked"]]:text-green-500',
-      warning: 'has-[button[data-state="checked"]]:text-yellow-500',
-      danger: 'has-[button[data-state="checked"]]:text-red-500',
     },
   },
   defaultVariants: {
