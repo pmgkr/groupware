@@ -8,6 +8,12 @@ const meta: Meta<typeof Calendar> = {
   parameters: {
     layout: 'padded',
   },
+  argTypes: {
+    showHolidays: {
+      control: 'boolean',
+      description: '공휴일 표시 여부',
+    },
+  },
 };
 
 export default meta;
@@ -17,39 +23,28 @@ type Story = StoryObj<typeof Calendar>;
 const sampleEvents = [
   {
     id: '1',
-    title: '팀 미팅',
-    start: new Date('2025-07-25T09:00:00'),
-    end: new Date('2025-07-25T10:00:00'),
-    color: 'blue',
+    title: '연차',
+    start: new Date('2025-08-13T09:10:00'),
+    end: new Date('2025-08-14T10:00:00'),
+    category: '연차',
+    assignee: '이연상',
   },
   {
     id: '2',
-    title: '프로젝트 리뷰',
-    start: new Date('2025-07-25T14:00:00'),
-    end: new Date('2025-07-25T15:30:00'),
-    color: 'green',
+    title: '오전반차',
+    start: new Date('2025-08-14T14:00:00'),
+    end: new Date('2025-08-14T15:30:00'),
+    category: '반차',
+    assignee: '이연상',
   },
   {
     id: '3',
-    title: '고객 미팅',
-    start: new Date('2025-07-25T11:00:00'),
-    end: new Date('2025-07-25T12:00:00'),
-    color: 'purple',
-  },
-  {
-    id: '4',
-    title: '점심 약속',
-    start: new Date('2025-07-25T12:00:00'),
-    end: new Date('2025-07-25T13:00:00'),
-    color: 'orange',
-  },
-  {
-    id: '5',
-    title: '코딩 세션',
-    start: new Date('2025-07-25T15:00:00'),
-    end: new Date('2025-07-25T17:00:00'),
-    color: 'pink',
-  },
+    title: '오후반반차',
+    start: new Date('2025-08-14T11:00:00'),
+    end: new Date('2025-08-14T12:00:00'),
+    category: '반반차',
+    assignee: '김예솔',
+  }
 ];
 
 export const Default: Story = {
@@ -57,6 +52,23 @@ export const Default: Story = {
     events: sampleEvents,
     onEventClick: (event) => console.log('Event clicked:', event),
     onDateClick: (date) => console.log('Date clicked:', date),
+    showHolidays: true,
+  },
+};
+
+export const WithoutHolidays: Story = {
+  args: {
+    events: sampleEvents,
+    onEventClick: (event) => console.log('Event clicked:', event),
+    onDateClick: (date) => console.log('Date clicked:', date),
+    showHolidays: false,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: '공휴일 표시를 비활성화한 캘린더입니다.',
+      },
+    },
   },
 };
 
@@ -65,6 +77,7 @@ export const Empty: Story = {
     events: [],
     onEventClick: (event) => console.log('Event clicked:', event),
     onDateClick: (date) => console.log('Date clicked:', date),
+    showHolidays: true,
   },
 };
 
@@ -75,27 +88,31 @@ export const WithManyEvents: Story = {
       {
         id: '6',
         title: '아침 운동',
-        start: new Date('2025-07-25T07:00:00'),
-        end: new Date('2025-07-25T08:00:00'),
-        color: 'red',
+        start: new Date('2025-08-14T07:00:00'),
+        end: new Date('2025-08-14T08:00:00'),
+        category: '운동',
+        assignee: '정수진',
       },
       {
         id: '7',
         title: '저녁 식사',
-        start: new Date('2025-07-25T18:00:00'),
-        end: new Date('2025-07-25T19:00:00'),
-        color: 'yellow',
+        start: new Date('2025-08-14T18:00:00'),
+        end: new Date('2025-08-14T19:00:00'),
+        category: '식사',
+        assignee: '한지민',
       },
       {
         id: '8',
         title: '영화 보기',
-        start: new Date('2025-07-25T20:00:00'),
-        end: new Date('2025-07-25T22:00:00'),
-        color: 'gray',
+        start: new Date('2025-08-14T20:00:00'),
+        end: new Date('2025-08-14T22:00:00'),
+        category: '기타',
+        assignee: '송혜교',
       },
     ],
     onEventClick: (event) => console.log('Event clicked:', event),
     onDateClick: (date) => console.log('Date clicked:', date),
+    showHolidays: true,
   },
 };
 
@@ -104,6 +121,8 @@ export const DayView: Story = {
     events: sampleEvents,
     onEventClick: (event) => console.log('Event clicked:', event),
     onDateClick: (date) => console.log('Date clicked:', date),
+    showHolidays: true,
+    initialViewMode: 'day',
   },
   parameters: {
     docs: {
@@ -119,6 +138,8 @@ export const WeekView: Story = {
     events: sampleEvents,
     onEventClick: (event) => console.log('Event clicked:', event),
     onDateClick: (date) => console.log('Date clicked:', date),
+    showHolidays: true,
+    initialViewMode: 'week',
   },
   parameters: {
     docs: {
@@ -134,11 +155,13 @@ export const MonthView: Story = {
     events: sampleEvents,
     onEventClick: (event) => console.log('Event clicked:', event),
     onDateClick: (date) => console.log('Date clicked:', date),
+    showHolidays: true,
+    initialViewMode: 'month',
   },
   parameters: {
     docs: {
       description: {
-        story: '월별 뷰로 캘린더를 표시합니다. 한 달의 전체 스케줄을 확인할 수 있습니다.',
+        story: '월별 뷰로 캘린더를 표시합니다. 한 달의 전체 스케줄과 공휴일을 확인할 수 있습니다.',
       },
     },
   },
@@ -149,11 +172,13 @@ export const YearView: Story = {
     events: sampleEvents,
     onEventClick: (event) => console.log('Event clicked:', event),
     onDateClick: (date) => console.log('Date clicked:', date),
+    showHolidays: true,
+    initialViewMode: 'year',
   },
   parameters: {
     docs: {
       description: {
-        story: '년별 뷰로 캘린더를 표시합니다. 한 해의 전체 월을 확인할 수 있습니다.',
+        story: '년별 뷰로 캘린더를 표시합니다. 한 해의 전체 월과 공휴일을 확인할 수 있습니다.',
       },
     },
   },

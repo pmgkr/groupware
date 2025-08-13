@@ -13,6 +13,8 @@ import { useHotkeys } from "react-hotkeys-hook"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { getCachedHolidays, isHolidayCached, getHolidayNameCached } from "@/services/holidayApi"
+import type { Holiday } from "@/types/holiday"
 
 const dayPickerVariants = cva(
   "bg-background group/calendar p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
@@ -251,6 +253,8 @@ interface Event {
   start: Date
   end: Date
   color?: string
+  category?: string // 카테고리 추가
+  assignee?: string // 담당자 추가
 }
 
 interface CalendarProps {
@@ -258,10 +262,37 @@ interface CalendarProps {
   onEventClick?: (event: Event) => void
   onDateClick?: (date: Date) => void
   className?: string
+  showHolidays?: boolean // 공휴일 표시 여부
+  initialViewMode?: ViewMode // 초기 뷰 모드
 }
 
 type ViewMode = "day" | "week" | "month" | "year"
 
+// 카테고리별 색상 매핑
+const categoryColorMap = {
+  '연차': {
+    bg: 'bg-blue-100',
+    text: 'text-blue-500'
+  },
+  '반차': {
+    bg: 'bg-purple-100',
+    text: 'text-pink-500'
+  },
+  '반반차': {
+    bg: 'bg-purple-100',
+    text: 'text-purple-500'
+  },
+  '외부일정': {
+    bg: 'bg-yellow-100',
+    text: 'text-orange-500'
+  },
+  '기타': {
+    bg: 'bg-gray-100',
+    text: 'text-gray-800'
+  }
+}
+
+// 기존 colorMap은 유지 (하위 호환성)
 const colorMap = {
   blue: "bg-blue-500 text-white",
   red: "bg-red-500 text-white",
@@ -273,11 +304,85 @@ const colorMap = {
   orange: "bg-orange-500 text-white",
 }
 
-function Calendar({ events = [], onEventClick, onDateClick, className }: CalendarProps) {
+// 이벤트의 스타일 클래스를 가져오는 함수
+const getEventStyle = (event: Event) => {
+  if (event.category && categoryColorMap[event.category as keyof typeof categoryColorMap]) {
+    const style = categoryColorMap[event.category as keyof typeof categoryColorMap]
+    return `${style.bg} ${style.text}`
+  }
+  
+  // 기존 color 속성이 있으면 사용
+  if (event.color && colorMap[event.color as keyof typeof colorMap]) {
+    return colorMap[event.color as keyof typeof colorMap]
+  }
+  
+  // 기본값
+  return 'bg-gray-100 text-gray-800'
+}
+
+function Calendar({ events = [], onEventClick, onDateClick, className, showHolidays = true, initialViewMode = "month" }: CalendarProps) {
   const [currentDate, setCurrentDate] = React.useState(new Date())
-  const [viewMode, setViewMode] = React.useState<ViewMode>("month")
+  const [viewMode, setViewMode] = React.useState<ViewMode>(initialViewMode)
   const [selectedDate, setSelectedDate] = React.useState<Date | null>(null)
   const [isMoreEventsOpen, setIsMoreEventsOpen] = React.useState(false)
+  const [holidays, setHolidays] = React.useState<Holiday[]>([])
+  const [holidayCache, setHolidayCache] = React.useState<Map<string, boolean>>(new Map())
+  const [holidayNameCache, setHolidayNameCache] = React.useState<Map<string, string>>(new Map())
+
+  // 이벤트 데이터 디버깅
+  React.useEffect(() => {
+    console.log('Calendar 컴포넌트 렌더링, 이벤트 개수:', events.length)
+    console.log('이벤트 데이터:', events)
+  }, [events])
+
+  // 공휴일 정보 로드
+  React.useEffect(() => {
+    if (showHolidays) {
+      console.log('공휴일 로딩 시작, 연도:', currentDate.getFullYear())
+      loadHolidays(currentDate.getFullYear())
+    }
+  }, [currentDate.getFullYear(), showHolidays])
+
+  const loadHolidays = async (year: number) => {
+    try {
+      console.log('공휴일 API 호출 시작, 연도:', year)
+      const yearHolidays = await getCachedHolidays(year)
+      console.log('받아온 공휴일 데이터:', yearHolidays)
+      setHolidays(yearHolidays)
+      
+      // 캐시 초기화
+      const newHolidayCache = new Map<string, boolean>()
+      const newHolidayNameCache = new Map<string, string>()
+      
+      yearHolidays.forEach(holiday => {
+        // locdate를 사용하여 캐시 키 생성
+        const dateKey = holiday.locdate.toString()
+        newHolidayCache.set(dateKey, true)
+        newHolidayNameCache.set(dateKey, holiday.dateName)
+        console.log('캐시에 추가:', dateKey, holiday.dateName)
+      })
+      
+      console.log('공휴일 캐시 설정 완료:', newHolidayCache.size, '개')
+      setHolidayCache(newHolidayCache)
+      setHolidayNameCache(newHolidayNameCache)
+    } catch (error) {
+      console.error('공휴일 정보를 로드하는 중 오류가 발생했습니다:', error)
+    }
+  }
+
+  // 특정 날짜가 공휴일인지 확인
+  const isHoliday = (date: Date): boolean => {
+    const dateString = format(date, 'yyyyMMdd')
+    const result = holidayCache.get(dateString) || false
+    console.log('공휴일 확인:', format(date, 'yyyy-MM-dd'), '결과:', result, '캐시 크기:', holidayCache.size)
+    return result
+  }
+
+  // 공휴일 이름 가져오기
+  const getHolidayName = (date: Date): string | null => {
+    const dateString = format(date, 'yyyyMMdd')
+    return holidayNameCache.get(dateString) || null
+  }
 
   // 키보드 단축키
   useHotkeys("left", () => navigateDate(-1), { preventDefault: true })
@@ -345,30 +450,123 @@ function Calendar({ events = [], onEventClick, onDateClick, className }: Calenda
   const renderDayView = () => {
     const dayStart = startOfDay(currentDate)
     const dayEnd = endOfDay(currentDate)
-    const hours = eachHourOfInterval({ start: dayStart, end: dayEnd })
+    // 9:00부터 다음 날 8:00까지의 30분 간격 시간 슬롯 생성 (48개)
+    const timeSlots = Array.from({ length: 48 }, (_, index) => {
+      const slot = new Date(dayStart)
+      const totalMinutes = (9 * 60) + (index * 30) // 9시부터 30분씩 증가
+      const hours = Math.floor(totalMinutes / 60)
+      const minutes = totalMinutes % 60
+      
+      if (hours >= 24) {
+        // 24시 이후는 다음 날로 설정
+        slot.setDate(slot.getDate() + 1)
+        slot.setHours(hours - 24, minutes, 0, 0)
+      } else {
+        slot.setHours(hours, minutes, 0, 0)
+      }
+      return slot
+    })
+
+    // 이벤트를 시간 슬롯에 배치
+    const eventsWithPosition = events.map(event => {
+      const startMinutes = (event.start.getHours() * 60 + event.start.getMinutes()) - (9 * 60)
+      const endMinutes = (event.end.getHours() * 60 + event.end.getMinutes()) - (9 * 60)
+      
+      // 9시 이전이면 0부터 시작
+      const startSlot = Math.max(0, startMinutes / 30) // 소수점 포함하여 정확한 위치 계산
+      const endSlot = Math.min(47, endMinutes / 30)
+      
+      // top 위치를 슬롯 인덱스가 아닌 실제 시간 기반으로 계산
+      const top = startMinutes // 9시를 0으로 하는 분 단위 위치
+      const height = (endMinutes - startMinutes) // 실제 지속 시간 (분 단위)
+      
+      console.log(`이벤트: ${event.title}, 시작: ${format(event.start, 'HH:mm')}, startMinutes: ${startMinutes}, startSlot: ${startSlot}, top: ${top}`)
+      
+      return {
+        ...event,
+        startSlot,
+        endSlot,
+        top,
+        height: Math.max(height, 20) // 최소 높이 20px로 줄임
+      }
+    }).filter(event => event.startSlot < 48) // 9시 이전 이벤트는 제외
 
     return (
-      <div className="h-[600px] overflow-y-auto">
-        {hours.map((hour, index) => {
-          const hourEvents = getEventsForHour(hour)
+      <div className="h-[600px] overflow-y-auto relative">
+        {/* 시간 슬롯 배경 */}
+        {timeSlots.map((slot, index) => {
+          const totalMinutes = (9 * 60) + (index * 30)
+          const displayHours = Math.floor(totalMinutes / 60)
+          const displayMinutes = totalMinutes % 60
+          
+          let displayText = ""
+          if (displayHours >= 24) {
+            const nextDayHour = displayHours - 24
+            displayText = `${String(nextDayHour).padStart(2, '0')}:${String(displayMinutes).padStart(2, '0')} (다음날)`
+          } else {
+            displayText = `${String(displayHours).padStart(2, '0')}:${String(displayMinutes).padStart(2, '0')}`
+          }
+          
+          // 이 슬롯에 표시할 이벤트들 찾기
+          const eventsInThisSlot = eventsWithPosition.filter(event => {
+            const slotStartMinutes = index * 30
+            const slotEndMinutes = (index + 1) * 30
+            const eventStartMinutes = (event.start.getHours() * 60 + event.start.getMinutes()) - (9 * 60)
+            
+            // 이벤트가 이 슬롯에서 시작하는지 확인
+            return eventStartMinutes >= slotStartMinutes && eventStartMinutes < slotEndMinutes
+          })
+          
           return (
-            <div key={index} className="flex border-b border-gray-200 min-h-[60px]">
-              <div className="w-20 p-2 text-sm text-gray-500 border-r border-gray-200">
-                {format(hour, "HH:mm")}
+            <div key={index} className="flex border-b border-gray-200 min-h-[30px]">
+              <div className="w-20 p-1 text-xs text-gray-500 border-r border-gray-200">
+                {displayText}
               </div>
-              <div className="flex-1 p-2 relative">
-                {hourEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className={cn(
-                      "p-1 text-xs rounded cursor-pointer mb-1",
-                      colorMap[event.color as keyof typeof colorMap] || colorMap.blue
-                    )}
-                    onClick={() => onEventClick?.(event)}
-                  >
-                    {event.title}
-                  </div>
-                ))}
+              <div className="flex-1 p-1 relative">
+                {/* 이벤트가 시작하는 슬롯에만 표시 */}
+                {eventsInThisSlot.map((event) => {
+                  const eventStartMinutes = (event.start.getHours() * 60 + event.start.getMinutes()) - (9 * 60)
+                  const eventEndMinutes = (event.end.getHours() * 60 + event.end.getMinutes()) - (9 * 60)
+                  
+                  // 이 슬롯 내에서의 상대적 위치 계산
+                  const relativeTop = (eventStartMinutes - (index * 30)) * 2 // 1분 = 2px로 변환
+                  
+                  // 이벤트가 이 슬롯에서 끝나는지 확인
+                  const slotEndMinutes = (index + 1) * 30
+                  let height
+                  
+                  if (eventEndMinutes <= slotEndMinutes) {
+                    // 이벤트가 이 슬롯에서 끝나는 경우
+                    height = (eventEndMinutes - eventStartMinutes) * 2
+                  } else {
+                    // 이벤트가 다음 슬롯까지 이어지는 경우, 이 슬롯에서의 높이만 계산
+                    height = (slotEndMinutes - eventStartMinutes) * 2
+                  }
+                  
+                  return (
+                    <div
+                      key={event.id}
+                      className={cn(
+                        "absolute left-0 right-0 p-1 text-xs rounded cursor-pointer",
+                        getEventStyle(event)
+                      )}
+                      style={{
+                        top: `${relativeTop}px`,
+                        height: `${Math.max(height, 20)}px`,
+                        zIndex: 10
+                      }}
+                      onClick={() => onEventClick?.(event)}
+                    >
+                      <div className="truncate font-medium">{event.title}</div>
+                      {event.assignee && (
+                        <div className="text-xs opacity-75 font-medium">{event.assignee}</div>
+                      )}
+                      <div className="text-xs opacity-75">
+                        {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )
@@ -382,8 +580,39 @@ function Calendar({ events = [], onEventClick, onDateClick, className }: Calenda
     const weekEnd = endOfWeek(currentDate)
     const days = eachDayOfInterval({ start: weekStart, end: weekEnd })
 
+    // 각 날짜별로 이벤트 위치 계산
+    const eventsByDay = days.map(day => {
+      const dayEvents = events.filter(event => {
+        const eventStart = startOfDay(event.start)
+        const eventEnd = endOfDay(event.end)
+        const checkDay = startOfDay(day)
+        return checkDay >= eventStart && checkDay <= eventEnd
+      })
+
+      return dayEvents.map(event => {
+        const startMinutes = (event.start.getHours() * 60 + event.start.getMinutes()) - (9 * 60)
+        const endMinutes = (event.end.getHours() * 60 + event.end.getMinutes()) - (9 * 60)
+        
+        // 9시 이전이면 0부터 시작
+        const startSlot = Math.max(0, startMinutes / 30) // 소수점 포함하여 정확한 위치 계산
+        const endSlot = Math.min(47, endMinutes / 30)
+        
+        // top 위치를 슬롯 인덱스가 아닌 실제 시간 기반으로 계산
+        const top = startMinutes // 9시를 0으로 하는 분 단위 위치
+        const height = (endMinutes - startMinutes) // 실제 지속 시간 (분 단위)
+        
+        return {
+          ...event,
+          startSlot,
+          endSlot,
+          top,
+          height: Math.max(height, 20) // 최소 높이 20px로 줄임
+        }
+      }).filter(event => event.startSlot < 48) // 9시 이전 이벤트는 제외
+    })
+
     return (
-      <div className="h-[600px] overflow-y-auto">
+      <div className="h-[600px] overflow-y-auto relative">
         <div className="grid grid-cols-8 border-b border-gray-200">
           <div className="p-2 text-sm font-medium text-gray-500"></div>
           {days.map((day) => (
@@ -395,34 +624,87 @@ function Calendar({ events = [], onEventClick, onDateClick, className }: Calenda
             </div>
           ))}
         </div>
-        {Array.from({ length: 24 }, (_, hour) => (
-          <div key={hour} className="grid grid-cols-8 border-b border-gray-200 min-h-[60px]">
-            <div className="p-2 text-sm text-gray-500 border-r border-gray-200">
-              {format(new Date().setHours(hour), "HH:mm")}
+        {Array.from({ length: 48 }, (_, slotIndex) => {
+          const totalMinutes = (9 * 60) + (slotIndex * 30)
+          const hours = Math.floor(totalMinutes / 60)
+          const minutes = totalMinutes % 60
+          
+          let displayText = ""
+          if (hours >= 24) {
+            const nextDayHour = hours - 24
+            displayText = `${String(nextDayHour).padStart(2, '0')}:${String(minutes).padStart(2, '0')} (다음날)`
+          } else {
+            displayText = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+          }
+          
+          return (
+            <div key={slotIndex} className="grid grid-cols-8 border-b border-gray-200 min-h-[30px]">
+              <div className="p-1 text-xs text-gray-500 border-r border-gray-200">
+                {displayText}
+              </div>
+              {days.map((day, dayIndex) => {
+                const dayEvents = eventsByDay[dayIndex]
+                return (
+                  <div key={day.toISOString()} className="p-1 border-l border-gray-200 relative">
+                    {/* 이벤트가 시작하는 슬롯에만 표시 */}
+                    {dayEvents
+                      .filter(event => {
+                        const slotStartMinutes = slotIndex * 30
+                        const slotEndMinutes = (slotIndex + 1) * 30
+                        const eventStartMinutes = (event.start.getHours() * 60 + event.start.getMinutes()) - (9 * 60)
+                        
+                        // 이벤트가 이 슬롯에서 시작하는지 확인
+                        return eventStartMinutes >= slotStartMinutes && eventStartMinutes < slotEndMinutes
+                      })
+                      .map((event) => {
+                        const eventStartMinutes = (event.start.getHours() * 60 + event.start.getMinutes()) - (9 * 60)
+                        const eventEndMinutes = (event.end.getHours() * 60 + event.end.getMinutes()) - (9 * 60)
+                        
+                        // 이 슬롯 내에서의 상대적 위치 계산
+                        const relativeTop = (eventStartMinutes - (slotIndex * 30)) * 2 // 1분 = 2px로 변환
+                        
+                        // 이벤트가 이 슬롯에서 끝나는지 확인
+                        const slotEndMinutes = (slotIndex + 1) * 30
+                        let height
+                        
+                        if (eventEndMinutes <= slotEndMinutes) {
+                          // 이벤트가 이 슬롯에서 끝나는 경우
+                          height = (eventEndMinutes - eventStartMinutes) * 2
+                        } else {
+                          // 이벤트가 다음 슬롯까지 이어지는 경우, 이 슬롯에서의 높이만 계산
+                          height = (slotEndMinutes - eventStartMinutes) * 2
+                        }
+                        
+                        return (
+                          <div
+                            key={event.id}
+                            className={cn(
+                              "absolute left-0 right-0 p-1 text-xs rounded cursor-pointer",
+                              getEventStyle(event)
+                            )}
+                            style={{
+                              top: `${relativeTop}px`,
+                              height: `${Math.max(height, 20)}px`,
+                              zIndex: 10
+                            }}
+                            onClick={() => onEventClick?.(event)}
+                          >
+                            <div className="truncate font-medium">{event.title}</div>
+                            {event.assignee && (
+                              <div className="text-xs opacity-75 font-medium">{event.assignee}</div>
+                            )}
+                            <div className="text-xs opacity-75">
+                              {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
+                            </div>
+                          </div>
+                        )
+                      })}
+                  </div>
+                )
+              })}
             </div>
-            {days.map((day) => {
-              const hourDate = new Date(day)
-              hourDate.setHours(hour)
-              const hourEvents = getEventsForHour(hourDate)
-              return (
-                <div key={day.toISOString()} className="p-1 border-l border-gray-200 relative">
-                  {hourEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className={cn(
-                        "p-1 text-xs rounded cursor-pointer mb-1",
-                        colorMap[event.color as keyof typeof colorMap] || colorMap.blue
-                      )}
-                      onClick={() => onEventClick?.(event)}
-                    >
-                      {event.title}
-                    </div>
-                  ))}
-                </div>
-              )
-            })}
-          </div>
-        ))}
+          )
+        })}
       </div>
     )
   }
@@ -435,7 +717,7 @@ function Calendar({ events = [], onEventClick, onDateClick, className }: Calenda
     const days = eachDayOfInterval({ start: startDate, end: endDate })
 
     return (
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7">
         {["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"].map((day) => (
           <div key={day} className="p-2 text-sm font-medium text-center text-gray-500">
             {day}
@@ -443,31 +725,61 @@ function Calendar({ events = [], onEventClick, onDateClick, className }: Calenda
         ))}
         {days.map((day) => {
           const dayEvents = getEventsForDate(day)
+          const isHolidayDay = isHoliday(day)
+          const holidayName = getHolidayName(day)
+          const isSunday = day.getDay() === 0
+          const isSaturday = day.getDay() === 6
+          
+          // 디버깅 로그 추가
+          if (isHolidayDay) {
+            console.log('공휴일 발견:', format(day, 'yyyy-MM-dd'), '이름:', holidayName)
+          }
+          
           return (
             <div
               key={day.toISOString()}
               className={cn(
-                "p-2 min-h-[100px] border border-gray-200 cursor-pointer hover:bg-gray-50",
+                "p-2 min-h-[200px] border border-gray-200 cursor-pointer",
                 !isSameMonth(day, currentDate) && "bg-gray-50 text-gray-400",
-                isSameDay(day, new Date()) && "bg-blue-50 border-blue-200"
+                isSameDay(day, new Date()) && "bg-blue-50 border-blue-200",
+                isHolidayDay && "bg-gray-200",
+                isSunday && !isHolidayDay && "bg-gray-200",
+                isSaturday && !isHolidayDay && "bg-gray-200"
               )}
               onClick={() => onDateClick?.(day)}
             >
-              <div className="text-sm font-medium mb-1">{format(day, "d")}</div>
+              <div className="flex items-center justify-between mb-1">
+                <div className={cn(
+                  "text-sm font-medium",
+                  isHolidayDay && "text-red-600 font-bold",
+                  isSunday && !isHolidayDay && "text-red-500",
+                  isSaturday && !isHolidayDay && "text-blue-500"
+                )}>
+                  {format(day, "d")}
+                </div>
+                {isHolidayDay && holidayName && (
+                  <div className="text-xs text-red-600 font-medium bg-red-100 px-1 py-0.5 rounded">
+                    {holidayName}
+                  </div>
+                )}
+              </div>
               <div className="space-y-1">
                 {dayEvents.slice(0, 3).map((event) => (
                   <div
                     key={event.id}
                     className={cn(
-                      "p-1 text-xs rounded cursor-pointer truncate",
-                      colorMap[event.color as keyof typeof colorMap] || colorMap.blue
+                      "p-1 text-sm cursor-pointer truncate",
+                      getEventStyle(event)
                     )}
                     onClick={(e) => {
                       e.stopPropagation()
                       onEventClick?.(event)
                     }}
                   >
-                    {event.title}
+                    <span className="font-black mr-1">{event.title}</span>
+                    {event.assignee && (
+                      <span className="text-gray-950">{event.assignee}</span>
+                    )}
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
@@ -508,18 +820,27 @@ function Calendar({ events = [], onEventClick, onDateClick, className }: Calenda
               {eachDayOfInterval({
                 start: startOfWeek(startOfMonth(month)),
                 end: endOfWeek(endOfMonth(month))
-              }).map((day) => (
-                <div
-                  key={day.toISOString()}
-                  className={cn(
-                    "text-center p-1",
-                    !isSameMonth(day, month) && "text-gray-300",
-                    isSameDay(day, new Date()) && "bg-blue-500 text-white rounded"
-                  )}
-                >
-                  {format(day, "d")}
-                </div>
-              ))}
+              }).map((day) => {
+                const isHolidayDay = isHoliday(day)
+                const isSunday = day.getDay() === 0
+                const isSaturday = day.getDay() === 6
+                
+                return (
+                  <div
+                    key={day.toISOString()}
+                    className={cn(
+                      "text-center p-1",
+                      !isSameMonth(day, month) && "text-gray-300",
+                      isSameDay(day, new Date()) && "bg-blue-500 text-white rounded",
+                      isHolidayDay && "bg-red-500 text-white rounded",
+                      isSunday && !isHolidayDay && "text-red-400",
+                      isSaturday && !isHolidayDay && "text-blue-400"
+                    )}
+                  >
+                    {format(day, "d")}
+                  </div>
+                )
+              })}
             </div>
           </div>
         ))}
@@ -593,6 +914,34 @@ function Calendar({ events = [], onEventClick, onDateClick, className }: Calenda
           </div>
         </div>
 
+        {/* 공휴일 정보 표시 */}
+        {showHolidays && holidays.length > 0 && (
+          <div className="flex items-center space-x-4 text-sm text-gray-600">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span>공휴일</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+              <span>일요일</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+              <span>토요일</span>
+            </div>
+          </div>
+        )}
+
+        {/* 카테고리별 색상 범례 */}
+        <div className="flex items-center space-x-4 text-sm text-gray-600">
+          {Object.entries(categoryColorMap).map(([category, style]) => (
+            <div key={category} className="flex items-center space-x-2">
+              <div className={cn("w-3 h-3 rounded-full", style.bg)}></div>
+              <span>{category}</span>
+            </div>
+          ))}
+        </div>
+
         {/* 캘린더 뷰 */}
         <div className="border border-gray-200 rounded-lg">
           {viewMode === "day" && renderDayView()}
@@ -623,7 +972,7 @@ function Calendar({ events = [], onEventClick, onDateClick, className }: Calenda
                   key={event.id}
                   className={cn(
                     "p-3 rounded-lg cursor-pointer hover:opacity-80 transition-opacity",
-                    colorMap[event.color as keyof typeof colorMap] || colorMap.blue
+                    getEventStyle(event)
                   )}
                   onClick={() => {
                     onEventClick?.(event)
@@ -631,6 +980,9 @@ function Calendar({ events = [], onEventClick, onDateClick, className }: Calenda
                   }}
                 >
                   <div className="font-medium">{event.title}</div>
+                  {event.assignee && (
+                    <div className="text-sm opacity-90 font-medium">{event.assignee}</div>
+                  )}
                   <div className="text-sm opacity-90">
                     {format(event.start, "HH:mm", { locale: ko })} - {format(event.end, "HH:mm", { locale: ko })}
                   </div>
