@@ -44,6 +44,22 @@ const sampleEvents = [
     end: new Date('2025-08-14T12:00:00'),
     category: '반반차',
     assignee: '김예솔',
+  },
+  {
+    id: '4',
+    title: '장기 프로젝트',
+    start: new Date('2025-08-15T09:00:00'),
+    end: new Date('2025-08-20T18:00:00'),
+    category: '외부일정',
+    assignee: '팀 전체',
+  },
+  {
+    id: '5',
+    title: '주간 회의',
+    start: new Date('2025-08-16T10:00:00'),
+    end: new Date('2025-08-16T11:00:00'),
+    category: '기타',
+    assignee: '매니저',
   }
 ];
 

@@ -716,14 +716,22 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
     const endDate = endOfWeek(monthEnd)
     const days = eachDayOfInterval({ start: startDate, end: endDate })
 
+    // 주별로 그룹화
+    const weeks = []
+    for (let i = 0; i < days.length; i += 7) {
+      weeks.push(days.slice(i, i + 7))
+    }
+
     return (
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-7" style={{ gridTemplateRows: 'auto repeat(' + (weeks.length * 2) + ', auto)' }}>
         {["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"].map((day) => (
           <div key={day} className="p-2 text-sm font-medium text-center text-gray-500">
             {day}
           </div>
         ))}
-        {days.map((day) => {
+        
+        {/* 날짜 그리드 - 각 날짜별로 grid-area 배치 */}
+        {days.map((day, dayIndex) => {
           const dayEvents = getEventsForDate(day)
           const isHolidayDay = isHoliday(day)
           const holidayName = getHolidayName(day)
@@ -734,6 +742,11 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
           if (isHolidayDay) {
             console.log('공휴일 발견:', format(day, 'yyyy-MM-dd'), '이름:', holidayName)
           }
+          
+          // 주별로 행 번호 계산 (첫째주: 2행, 둘째주: 3행, 셋째주: 4행...)
+          const weekIndex = Math.floor(dayIndex / 7)
+          const rowNumber = weekIndex + 2
+          const colNumber = (dayIndex % 7) + 1
           
           return (
             <div
@@ -746,12 +759,15 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
                 isSunday && !isHolidayDay && "bg-gray-200",
                 isSaturday && !isHolidayDay && "bg-gray-200"
               )}
+              style={{
+                gridArea: `${rowNumber} / ${colNumber} / ${rowNumber + 1} / ${colNumber + 1}`
+              }}
               onClick={() => onDateClick?.(day)}
             >
               <div className="flex items-center justify-between mb-1">
                 <div className={cn(
                   "text-sm font-medium",
-                  isHolidayDay && "text-red-600 font-bold",
+                  isHolidayDay && "text-red-500",
                   isSunday && !isHolidayDay && "text-red-500",
                   isSaturday && !isHolidayDay && "text-blue-500"
                 )}>
@@ -763,37 +779,76 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
                   </div>
                 )}
               </div>
-              <div className="space-y-1">
-                {dayEvents.slice(0, 3).map((event) => (
-                  <div
-                    key={event.id}
-                    className={cn(
-                      "p-1 text-sm cursor-pointer truncate",
-                      getEventStyle(event)
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onEventClick?.(event)
-                    }}
-                  >
-                    <span className="font-black mr-1">{event.title}</span>
-                    {event.assignee && (
-                      <span className="text-gray-950">{event.assignee}</span>
-                    )}
-                  </div>
-                ))}
-                {dayEvents.length > 3 && (
-                  <button
-                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                    onClick={(e) => handleMoreEventsClick(day, e)}
-                  >
-                    +{dayEvents.length - 3} more
-                  </button>
-                )}
-              </div>
             </div>
           )
         })}
+
+        {/* 주별 이벤트 그리드 - grid-area로 배치 */}
+        {weeks.map((weekDays, weekIndex) => (
+          <div
+            key={`week-${weekIndex}`}
+            className="min-h-[80px]"
+            style={{
+              overflow: 'hidden',
+              gridArea: `${weekIndex + 2} / 1 / ${weekIndex + 3} / 8`,
+              marginTop: '42px'
+            }}
+          >
+            <div 
+              className="grid grid-cols-7 grid-auto-rows-20 gap-y-1 gap-x-0"
+            >
+              {weekDays.map((day, dayIndex) => {
+                const dayEvents = getEventsForDate(day)
+                
+                return dayEvents.map((event) => {
+                  // 이벤트가 여러 날짜에 걸쳐 있는지 확인
+                  const eventStart = startOfDay(event.start)
+                  const eventEnd = endOfDay(event.end)
+                  const dayStart = startOfDay(day)
+                  const isEventStart = isSameDay(eventStart, dayStart)
+                  const isEventEnd = isSameDay(eventEnd, dayStart)
+                  const isEventMiddle = !isEventStart && !isEventEnd && dayStart > eventStart && dayStart < eventEnd
+                  
+                  // 이벤트가 이 날짜에서 차지하는 그리드 열 수 계산
+                  let colSpan = 1
+                  if (isEventStart) {
+                    const daysDiff = Math.ceil((eventEnd.getTime() - dayStart.getTime()) / (1000 * 60 * 60 * 24))
+                    colSpan = Math.min(daysDiff, 7 - dayIndex)
+                  }
+
+                  return (
+                    <div
+                      key={event.id}
+                      className={cn(
+                        "flex items-center gap-2 text-sm cursor-pointer truncate pl-1 pr-1 ml-1 mr-1",
+                        getEventStyle(event),
+                        isEventStart && "ml-1",
+                        isEventEnd && "mr-1",
+                        isEventMiddle && ""
+                      )}
+                      style={{
+                        ...(colSpan > 1 && {
+                          gridColumn: `span ${colSpan}`,
+                          position: 'relative',
+                          zIndex: 10
+                        })
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEventClick?.(event)
+                      }}
+                    >
+                      <div className="text-sm truncate font-black">{event.title}</div>
+                      {event.assignee && (
+                        <div className="text-sm text-gray-900">{event.assignee}</div>
+                      )}
+                    </div>
+                  )
+                })
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     )
   }
