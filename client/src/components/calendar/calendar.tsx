@@ -428,6 +428,19 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
       const eventStart = startOfDay(event.start)
       const eventEnd = endOfDay(event.end)
       const checkDate = startOfDay(date)
+      
+      if (event.title === '연차') {
+        console.log('연차 이벤트 체크:', {
+          eventTitle: event.title,
+          eventStart: format(event.start, 'yyyy-MM-dd HH:mm'),
+          eventEnd: format(event.end, 'yyyy-MM-dd HH:mm'),
+          checkDate: format(date, 'yyyy-MM-dd'),
+          eventStartDay: format(eventStart, 'yyyy-MM-dd'),
+          eventEndDay: format(eventEnd, 'yyyy-MM-dd'),
+          isIncluded: checkDate >= eventStart && checkDate <= eventEnd
+        })
+      }
+      
       return checkDate >= eventStart && checkDate <= eventEnd
     })
   }
