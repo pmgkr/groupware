@@ -796,72 +796,223 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
           )
         })}
 
-        {/* 주별 이벤트 그리드 - grid-area로 배치 */}
-        {weeks.map((weekDays, weekIndex) => (
-          <div
-            key={`week-${weekIndex}`}
-            className="min-h-[80px]"
-            style={{
-              overflow: 'hidden',
-              gridArea: `${weekIndex + 2} / 1 / ${weekIndex + 3} / 8`,
-              marginTop: '42px'
-            }}
-          >
-            <div 
-              className="grid grid-cols-7 grid-auto-rows-20 gap-y-1 gap-x-0"
-            >
-              {weekDays.map((day, dayIndex) => {
-                const dayEvents = getEventsForDate(day)
+        {/* 주별 이벤트 그리드 - 새로운 행 점유 로직 */}
+        {weeks.map((weekDays, weekIndex) => {
+          // 이 주에 있는 모든 이벤트를 날짜별로 그룹화하고 행 할당
+          const eventsByDate = new Map<string, Array<{
+            event: Event,
+            startDate: Date,
+            endDate: Date,
+            assignedRow: number
+          }>>()
+          
+          // 모든 이벤트를 날짜별로 그룹화
+          events.forEach(event => {
+            const eventStart = startOfDay(event.start)
+            const eventEnd = startOfDay(event.end)
+            
+            // 이벤트가 표시되는 모든 날짜를 순회
+            let currentDate = eventStart
+            while (currentDate <= eventEnd) {
+              const dateKey = format(currentDate, 'yyyy-MM-dd')
+              if (!eventsByDate.has(dateKey)) {
+                eventsByDate.set(dateKey, [])
+              }
+              
+              // 이미 같은 이벤트가 있는지 확인
+              const existingEvent = eventsByDate.get(dateKey)!.find(e => e.event.id === event.id)
+              if (!existingEvent) {
+                eventsByDate.get(dateKey)!.push({
+                  event,
+                  startDate: eventStart,
+                  endDate: eventEnd,
+                  assignedRow: -1 // 아직 할당되지 않음
+                })
+              }
+              
+              currentDate = addDays(currentDate, 1)
+            }
+          })
+          
+          // 각 날짜별로 이벤트들을 우선순위에 따라 정렬하고 행 할당
+          eventsByDate.forEach((dateEvents, dateKey) => {
+            // 우선순위에 따라 정렬
+            dateEvents.sort((a, b) => {
+              // 1순위: 카테고리 우선순위 (연차 > 반차 > 반반차 > 기타)
+              const categoryPriority = {
+                '연차': 1,
+                '반차': 2,
+                '반반차': 3,
+                '외부일정': 4,
+                '기타': 5
+              }
+              
+              const aPriority = categoryPriority[a.event.category as keyof typeof categoryPriority] || 5
+              const bPriority = categoryPriority[b.event.category as keyof typeof categoryPriority] || 5
+              
+              if (aPriority !== bPriority) {
+                return aPriority - bPriority
+              }
+              
+              // 2순위: 같은 카테고리 내에서는 시작일 순으로 정렬
+              if (a.startDate.getTime() !== b.startDate.getTime()) {
+                return a.startDate.getTime() - b.startDate.getTime()
+              }
+              
+              // 3순위: 시작일이 같으면 ID로 정렬
+              return a.event.id.localeCompare(b.event.id)
+            })
+            
+            // 각 이벤트에 행 할당 (빈 행 찾기)
+            dateEvents.forEach((eventData, index) => {
+              // 이미 할당된 행이 있는지 확인
+              if (eventData.assignedRow === -1) {
+                // 이 이벤트가 점유해야 할 모든 날짜에서 사용 가능한 가장 낮은 행 번호 찾기
+                let availableRow = 0
+                let found = false
                 
-                return dayEvents.map((event) => {
-                  // 이벤트가 여러 날짜에 걸쳐 있는지 확인
-                  const eventStart = startOfDay(event.start)
-                  const eventEnd = endOfDay(event.end)
-                  const dayStart = startOfDay(day)
-                  const isEventStart = isSameDay(eventStart, dayStart)
-                  const isEventEnd = isSameDay(eventEnd, dayStart)
-                  const isEventMiddle = !isEventStart && !isEventEnd && dayStart > eventStart && dayStart < eventEnd
+                while (!found) {
+                  // 이 행이 이 이벤트 기간 동안 사용 가능한지 확인
+                  let isRowAvailable = true
+                  let checkDate = eventData.startDate
                   
-                  // 이벤트가 이 날짜에서 차지하는 그리드 열 수 계산
-                  let colSpan = 1
-                  if (isEventStart) {
-                    const daysDiff = Math.ceil((eventEnd.getTime() - dayStart.getTime()) / (1000 * 60 * 60 * 24))
-                    colSpan = Math.min(daysDiff, 7 - dayIndex)
+                  while (checkDate <= eventData.endDate) {
+                    const checkDateKey = format(checkDate, 'yyyy-MM-dd')
+                    const checkDateEvents = eventsByDate.get(checkDateKey) || []
+                    
+                    // 이 행에 이미 다른 이벤트가 할당되어 있는지 확인
+                    const conflictingEvent = checkDateEvents.find(e => 
+                      e.assignedRow === availableRow && e.event.id !== eventData.event.id
+                    )
+                    
+                    if (conflictingEvent) {
+                      isRowAvailable = false
+                      break
+                    }
+                    
+                    checkDate = addDays(checkDate, 1)
                   }
-
-                  return (
-                    <div
-                      key={event.id}
-                      className={cn(
-                        "flex items-center gap-2 text-sm cursor-pointer truncate pl-1 pr-1 ml-1 mr-1",
-                        getEventStyle(event),
-                        isEventStart && "ml-1",
-                        isEventEnd && "mr-1",
-                        isEventMiddle && ""
-                      )}
-                      style={{
-                        ...(colSpan > 1 && {
-                          gridColumn: `span ${colSpan}`,
+                  
+                  if (isRowAvailable) {
+                    found = true
+                  } else {
+                    availableRow++
+                  }
+                }
+                
+                // 행 할당
+                eventData.assignedRow = availableRow
+                
+                // 이 이벤트가 점유하는 모든 날짜에 행 정보 업데이트
+                let updateDate = eventData.startDate
+                while (updateDate <= eventData.endDate) {
+                  const updateDateKey = format(updateDate, 'yyyy-MM-dd')
+                  const updateDateEvents = eventsByDate.get(updateDateKey) || []
+                  const updateEvent = updateDateEvents.find(e => e.event.id === eventData.event.id)
+                  if (updateEvent) {
+                    updateEvent.assignedRow = availableRow
+                  }
+                  updateDate = addDays(updateDate, 1)
+                }
+              }
+            })
+            
+            // 디버깅 로그
+            console.log(`날짜 ${dateKey} 행 할당 결과:`, dateEvents.map(e => ({
+              id: e.event.id,
+              title: e.event.title,
+              category: e.event.category,
+              assignedRow: e.assignedRow
+            })))
+          })
+          
+          return (
+            <div
+              key={`week-${weekIndex}`}
+              className="min-h-[80px]"
+              style={{
+                overflow: 'hidden',
+                gridArea: `${weekIndex + 2} / 1 / ${weekIndex + 3} / 8`,
+                marginTop: '42px'
+              }}
+            >
+              <div className="grid grid-cols-7 grid-auto-rows-20 gap-y-1 gap-x-0">
+                {weekDays.map((day, dayIndex) => {
+                  const dayEvents = getEventsForDate(day)
+                  
+                  return dayEvents.map((event) => {
+                    // 이벤트가 여러 날짜에 걸쳐 있는지 확인
+                    const eventStart = startOfDay(event.start)
+                    const eventEnd = startOfDay(event.end)
+                    const dayStart = startOfDay(day)
+                    const isEventStart = isSameDay(eventStart, dayStart)
+                    
+                    // 연속된 이벤트는 시작일에만 렌더링
+                    if (!isEventStart) {
+                      return null
+                    }
+                    
+                    // grid-area 계산
+                    const weekIndex = Math.floor((startOfWeek(startOfMonth(currentDate)).getTime() - startOfWeek(eventStart).getTime()) / (7 * 24 * 60 * 60 * 1000))
+                    const rowStart = Math.max(1, weekIndex + 1)
+                    const colStart = eventStart.getDay() + 1
+                    
+                    const endWeekIndex = Math.floor((startOfWeek(startOfMonth(currentDate)).getTime() - startOfWeek(eventEnd).getTime()) / (7 * 24 * 60 * 60 * 1000))
+                    const rowEnd = Math.max(2, endWeekIndex + 2)
+                    const colEnd = eventEnd.getDay() + 2
+                    
+                    // 할당된 행 번호 가져오기
+                    const dateKey = format(day, 'yyyy-MM-dd')
+                    const dateEvents = eventsByDate.get(dateKey) || []
+                    const eventData = dateEvents.find(e => e.event.id === event.id)
+                    const assignedRow = eventData?.assignedRow || 0
+                    
+                    // 행 번호 조정 (할당된 행 사용)
+                    const adjustedRowStart = rowStart + assignedRow
+                    const adjustedRowEnd = rowEnd + assignedRow
+                    
+                    const gridArea = isSameDay(eventStart, eventEnd)
+                      ? `${adjustedRowStart} / ${colStart} / ${adjustedRowStart + 1} / ${colEnd}`
+                      : `${adjustedRowStart} / ${colStart} / ${adjustedRowEnd} / ${colEnd}`
+                    
+                    // 디버깅 로그
+                    console.log(`이벤트 ${event.id} (${event.title}) 렌더링:`, {
+                      date: dateKey,
+                      assignedRow,
+                      adjustedRowStart,
+                      adjustedRowEnd,
+                      gridArea
+                    })
+                    
+                    return (
+                      <div
+                        key={event.id}
+                        className={cn(
+                          "flex items-center gap-2 text-sm cursor-pointer truncate pl-1 pr-1 ml-1 mr-1",
+                          getEventStyle(event)
+                        )}
+                        style={{
+                          gridArea: gridArea,
                           position: 'relative',
                           zIndex: 10
-                        })
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onEventClick?.(event)
-                      }}
-                    >
-                      <div className="text-sm truncate font-black">{event.title}</div>
-                      {event.assignee && (
-                        <div className="text-sm text-gray-900">{event.assignee}</div>
-                      )}
-                    </div>
-                  )
-                })
-              })}
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onEventClick?.(event)
+                        }}
+                      >
+                        <div className="text-sm truncate font-black">{event.title}</div>
+                        {event.assignee && (
+                          <div className="text-sm text-gray-900">{event.assignee}</div>
+                        )}
+                      </div>
+                    )
+                  })
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     )
   }

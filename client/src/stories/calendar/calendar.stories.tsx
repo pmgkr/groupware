@@ -47,20 +47,29 @@ const sampleEvents = [
   },
   {
     id: '4',
-    title: '장기 프로젝트',
+    title: '연차',
     start: new Date('2025-08-15T09:00:00'),
-    end: new Date('2025-08-20T18:00:00'),
-    category: '외부일정',
-    assignee: '팀 전체',
+    end: new Date('2025-08-16T18:00:00'),
+    category: '연차',
+    assignee: '김노루',
   },
   {
     id: '5',
-    title: '주간 회의',
-    start: new Date('2025-08-16T10:00:00'),
-    end: new Date('2025-08-16T11:00:00'),
-    category: '기타',
-    assignee: '매니저',
-  }
+    title: '연차',
+    start: new Date('2025-08-14T09:10:00'),
+    end: new Date('2025-08-15T10:00:00'),
+    category: '연차',
+    assignee: '홍길동',
+  },
+  // {
+  //   id: '6',
+  //   title: '연차',
+  //   start: new Date('2025-08-14T09:10:00'),
+  //   end: new Date('2025-08-25T10:00:00'),
+  //   category: '연차',
+  //   assignee: '홍길동2',
+  // },
+
 ];
 
 export const Default: Story = {
