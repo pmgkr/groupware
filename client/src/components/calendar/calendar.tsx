@@ -7,7 +7,7 @@ import {
 import { DayButton, DayPicker as RDPDayPicker, getDefaultClassNames } from "react-day-picker"
 import { cva, type VariantProps } from "class-variance-authority"
 import { ChevronLeft, ChevronRight, X } from "lucide-react"
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfDay, endOfDay, eachHourOfInterval, addDays, subDays, addWeeks, subWeeks } from "date-fns"
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfDay, endOfDay, eachHourOfInterval, addDays, subDays, addWeeks, subWeeks, differenceInDays } from "date-fns"
 import { ko } from "date-fns/locale"
 import { useHotkeys } from "react-hotkeys-hook"
 
@@ -938,28 +938,48 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
             >
               <div className="grid grid-cols-7 grid-auto-rows-20 gap-y-1 gap-x-0">
                 {weekDays.map((day, dayIndex) => {
-                  const dayEvents = getEventsForDate(day)
+                  // 이 날짜에 표시되어야 하는 이벤트들을 직접 계산
+                  const dayEvents = events.filter(event => {
+                    const eventStart = startOfDay(event.start)
+                    const eventEnd = startOfDay(event.end) // endOfDay 대신 startOfDay 사용
+                    const checkDate = startOfDay(day)
+                    
+                    // 이벤트가 이 날짜에 표시되어야 하는지 확인
+                    return checkDate >= eventStart && checkDate <= eventEnd
+                  })
                   
                   return dayEvents.map((event) => {
                     // 이벤트가 여러 날짜에 걸쳐 있는지 확인
                     const eventStart = startOfDay(event.start)
-                    const eventEnd = startOfDay(event.end)
+                    const eventEnd = startOfDay(event.end) // startOfDay 사용
                     const dayStart = startOfDay(day)
-                    const isEventStart = isSameDay(eventStart, dayStart)
                     
-                    // 연속된 이벤트는 시작일에만 렌더링
-                    if (!isEventStart) {
+                    // 이벤트가 이 날짜와 겹치는지 확인
+                    const isEventStart = isSameDay(eventStart, dayStart)
+                    const isEventEnd = isSameDay(eventEnd, dayStart)
+                    const isEventMiddle = !isEventStart && !isEventEnd && 
+                      dayStart > eventStart && dayStart < eventEnd
+                    
+                    // 연속된 이벤트는 각 주의 시작일에 렌더링
+                    const isWeekStart = isEventStart || 
+                      (dayStart > eventStart && dayStart <= eventEnd && day.getDay() === 0) // 일요일인 경우
+                    
+                    if (!isWeekStart) {
                       return null
                     }
+                    
+                    // 모든 연차에 대해 동일한 로직 적용 (홍길동2 연차만 특별 처리하지 않음)
+                    
+
                     
                     // grid-area 계산
                     const weekIndex = Math.floor((startOfWeek(startOfMonth(currentDate)).getTime() - startOfWeek(eventStart).getTime()) / (7 * 24 * 60 * 60 * 1000))
                     const rowStart = Math.max(1, weekIndex + 1)
-                    const colStart = eventStart.getDay() + 1
                     
-                    const endWeekIndex = Math.floor((startOfWeek(startOfMonth(currentDate)).getTime() - startOfWeek(eventEnd).getTime()) / (7 * 24 * 60 * 60 * 1000))
+                    // eventEnd를 startOfDay로 변환하여 주 계산
+                    const eventEndDate = startOfDay(event.end)
+                    const endWeekIndex = Math.floor((startOfWeek(startOfMonth(currentDate)).getTime() - startOfWeek(eventEndDate).getTime()) / (7 * 24 * 60 * 60 * 1000))
                     const rowEnd = Math.max(2, endWeekIndex + 2)
-                    const colEnd = eventEnd.getDay() + 2
                     
                     // 할당된 행 번호 가져오기
                     const dateKey = format(day, 'yyyy-MM-dd')
@@ -971,9 +991,52 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
                     const adjustedRowStart = rowStart + assignedRow
                     const adjustedRowEnd = rowEnd + assignedRow
                     
-                    const gridArea = isSameDay(eventStart, eventEnd)
-                      ? `${adjustedRowStart} / ${colStart} / ${adjustedRowStart + 1} / ${colEnd}`
-                      : `${adjustedRowStart} / ${colStart} / ${adjustedRowEnd} / ${colEnd}`
+                    // grid-area 계산 수정 - 각 주별로 적절한 범위 설정
+                    let gridArea = ""
+                    if (isSameDay(eventStart, eventEnd)) {
+                      // 하루 이벤트
+                      const currentCol = day.getDay() + 1
+                      gridArea = `${adjustedRowStart} / ${currentCol} / ${adjustedRowStart + 1} / ${currentCol + 1}`
+                    } else if (isEventStart) {
+                      // 시작일: 시작 열부터 해당 주의 끝까지 (동적 계산)
+                      const colStart = eventStart.getDay() + 1
+                      
+                      // 이 주가 이벤트의 마지막 주인지 확인
+                      const currentWeekStart = startOfWeek(day)
+                      const nextWeekStart = addWeeks(currentWeekStart, 1)
+                      const continuesToNextWeek = eventEnd >= nextWeekStart
+                      
+                      // colEnd 계산 (동적으로)
+                      let colEnd = 8
+                      if (!continuesToNextWeek) {
+                        // 다음 주로 이어지지 않는 경우, 실제 종료일까지만 표시
+                        const daysInCurrentWeek = differenceInDays(eventEnd, currentWeekStart) + 1
+                        colEnd = Math.min(daysInCurrentWeek + 1, 8)
+                      }
+                      
+                      gridArea = `${adjustedRowStart} / ${colStart} / ${adjustedRowStart + 1} / ${colEnd}`
+                    } else {
+                                          // 주 시작일 (일요일): 해당 주의 시작부터 끝까지
+                    const colStart = 1 // 일요일
+                    
+                    // 이 주가 이벤트의 마지막 주인지 확인 (동적 계산)
+                    const currentWeekStart = startOfWeek(day)
+                    const currentWeekEnd = endOfWeek(day)
+                    const nextWeekStart = addWeeks(currentWeekStart, 1)
+                    
+                    // 이벤트가 다음 주에 이어지는지 확인
+                    const continuesToNextWeek = eventEnd >= nextWeekStart
+                    
+                    // colEnd 계산 (동적으로)
+                    let colEnd = 8
+                    if (!continuesToNextWeek) {
+                      // 다음 주로 이어지지 않는 경우, 실제 종료일까지만 표시
+                      const daysInCurrentWeek = differenceInDays(eventEnd, currentWeekStart) + 1
+                      colEnd = Math.min(daysInCurrentWeek + 1, 8) // 해당 주의 실제 끝까지만
+                    }
+                    
+                    gridArea = `${adjustedRowStart} / ${colStart} / ${adjustedRowStart + 1} / ${colEnd}`
+                    }
                     
                     // 디버깅 로그
                     console.log(`이벤트 ${event.id} (${event.title}) 렌더링:`, {
@@ -981,15 +1044,23 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
                       assignedRow,
                       adjustedRowStart,
                       adjustedRowEnd,
-                      gridArea
+                      currentCol: day.getDay() + 1,
+                      gridArea,
+                      isEventStart,
+                      isEventEnd,
+                      isEventMiddle,
+                      isWeekStart
                     })
                     
                     return (
                       <div
-                        key={event.id}
+                        key={`${event.id}-${format(day, 'yyyy-MM-dd')}`}
                         className={cn(
                           "flex items-center gap-2 text-sm cursor-pointer truncate pl-1 pr-1 ml-1 mr-1",
-                          getEventStyle(event)
+                          getEventStyle(event),
+                          isEventStart && "ml-1",
+                          isEventEnd && "mr-1",
+                          isEventMiddle && ""
                         )}
                         style={{
                           gridArea: gridArea,
@@ -1005,6 +1076,12 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
                         {event.assignee && (
                           <div className="text-sm text-gray-900">{event.assignee}</div>
                         )}
+                        {/* 연속 이벤트 표시 */}
+                        {/* {isEventStart && !isSameDay(eventStart, eventEnd) && (
+                          <div className="text-xs opacity-75">
+                            {format(eventStart, 'M/d')} - {format(eventEnd, 'M/d')}
+                          </div>
+                        )} */}
                       </div>
                     )
                   })

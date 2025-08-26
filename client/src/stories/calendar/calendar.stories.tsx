@@ -48,7 +48,7 @@ const sampleEvents = [
   {
     id: '4',
     title: '연차',
-    start: new Date('2025-08-15T09:00:00'),
+    start: new Date('2025-08-14T09:00:00'),
     end: new Date('2025-08-16T18:00:00'),
     category: '연차',
     assignee: '김노루',
@@ -56,19 +56,19 @@ const sampleEvents = [
   {
     id: '5',
     title: '연차',
-    start: new Date('2025-08-14T09:10:00'),
-    end: new Date('2025-08-15T10:00:00'),
+    start: new Date('2025-08-11T09:10:00'),
+    end: new Date('2025-08-14T10:00:00'),
     category: '연차',
     assignee: '홍길동',
   },
-  // {
-  //   id: '6',
-  //   title: '연차',
-  //   start: new Date('2025-08-14T09:10:00'),
-  //   end: new Date('2025-08-25T10:00:00'),
-  //   category: '연차',
-  //   assignee: '홍길동2',
-  // },
+  {
+    id: '6',
+    title: '연차',
+    start: new Date('2025-08-14T09:10:00'),
+    end: new Date('2025-08-25T10:00:00'),
+    category: '연차',
+    assignee: '홍길동2',
+  },
 
 ];
 
