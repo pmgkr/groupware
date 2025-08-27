@@ -931,7 +931,7 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
                     return checkDate >= eventStart && checkDate <= eventEnd
                   })
                   
-                                     return dayEvents.slice(0, 5).map((event, eventIndex) => {
+                                     return dayEvents.map((event, eventIndex) => {
                      // 이벤트가 여러 날짜에 걸쳐 있는지 확인
                      const eventStart = startOfDay(event.start)
                      const eventEnd = startOfDay(event.end) // startOfDay 사용
