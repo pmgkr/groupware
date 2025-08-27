@@ -1,26 +1,68 @@
-// components/common/AppPagination.tsx
+import React from 'react';
 import {
   Pagination,
   PaginationContent,
+  PaginationFirst,
   PaginationItem,
-  PaginationPrevious,
-  PaginationNext,
+  PaginationLast,
   PaginationLink,
-} from '@/components/ui/pagination';
+  PaginationNext,
+  PaginationPrevious,
+} from '@components/ui/pagination';
 
 type AppPaginationProps = {
-  page: number;
   totalPages: number;
-  onPageChange: (p: number) => void;
+  initialPage?: number;
+  visibleCount?: number; // 한 번에 몇 개 보일지
 };
 
-export function AppPagination({ page, totalPages, onPageChange }: AppPaginationProps) {
+export function AppPagination({ totalPages, initialPage = 1, visibleCount = 5 }: AppPaginationProps) {
+  const [page, setPage] = React.useState(initialPage);
+
+  React.useEffect(() => {
+    setPage(initialPage);
+  }, [initialPage]);
+
   const isFirst = page <= 1;
   const isLast = page >= totalPages;
+
+  const go = (p: number) => {
+    setPage(Math.min(Math.max(1, p), totalPages));
+  };
+
+  // 항상 visibleCount 개수 유지
+  const pages: number[] = React.useMemo(() => {
+    const half = Math.floor(visibleCount / 2);
+    let start = page - half;
+    let end = page + half;
+
+    // 범위 보정
+    if (start < 1) {
+      start = 1;
+      end = Math.min(totalPages, visibleCount);
+    }
+    if (end > totalPages) {
+      end = totalPages;
+      start = Math.max(1, totalPages - visibleCount + 1);
+    }
+
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }, [page, totalPages, visibleCount]);
 
   return (
     <Pagination>
       <PaginationContent>
+        {/* 첫 페이지 */}
+        <PaginationItem>
+          <PaginationFirst
+            href="#"
+            aria-disabled={isFirst}
+            onClick={(e) => {
+              e.preventDefault();
+              if (!isFirst) go(1);
+            }}
+          />
+        </PaginationItem>
         {/* 이전 */}
         <PaginationItem>
           <PaginationPrevious
@@ -28,23 +70,25 @@ export function AppPagination({ page, totalPages, onPageChange }: AppPaginationP
             aria-disabled={isFirst}
             onClick={(e) => {
               e.preventDefault();
-              if (!isFirst) onPageChange(page - 1);
+              if (!isFirst) go(page - 1);
             }}
           />
         </PaginationItem>
 
-        {/* 숫자 버튼 예시 (1만 표시, 실제로는 map 돌려도 됨) */}
-        <PaginationItem>
-          <PaginationLink
-            href="#"
-            isActive={page === 1}
-            onClick={(e) => {
-              e.preventDefault();
-              onPageChange(1);
-            }}>
-            1
-          </PaginationLink>
-        </PaginationItem>
+        {/* 페이지 번호 */}
+        {pages.map((p) => (
+          <PaginationItem key={p}>
+            <PaginationLink
+              href="#"
+              isActive={p === page}
+              onClick={(e) => {
+                e.preventDefault();
+                go(p);
+              }}>
+              {p}
+            </PaginationLink>
+          </PaginationItem>
+        ))}
 
         {/* 다음 */}
         <PaginationItem>
@@ -53,7 +97,19 @@ export function AppPagination({ page, totalPages, onPageChange }: AppPaginationP
             aria-disabled={isLast}
             onClick={(e) => {
               e.preventDefault();
-              if (!isLast) onPageChange(page + 1);
+              if (!isLast) go(page + 1);
+            }}
+          />
+        </PaginationItem>
+
+        {/* 마지막 페이지 */}
+        <PaginationItem>
+          <PaginationLast
+            href="#"
+            aria-disabled={isLast}
+            onClick={(e) => {
+              e.preventDefault();
+              if (!isLast) go(totalPages);
             }}
           />
         </PaginationItem>

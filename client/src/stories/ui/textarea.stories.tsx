@@ -4,7 +4,7 @@ import { ChartNoAxesColumnIncreasing, ChevronLeft, ChevronRight } from 'lucide-r
 import { Textarea } from '@components/ui/textarea';
 
 const meta: Meta<typeof Textarea> = {
-  title: 'Components/UI/Textarea',
+  title: 'Components/ui/Textarea',
   component: Textarea,
   tags: ['autodocs'], // 자동 문서화를 위해 추가
   args: {
@@ -30,7 +30,7 @@ export const Default: Story = {
     variant: 'default',
     size: 'default',
     placeholder: 'Placeholder',
-    description: '내용을 입력해주세요.'
+    description: '내용을 입력해주세요.',
   },
 };
 
@@ -40,7 +40,7 @@ export const Filled: Story = {
     size: 'default',
     placeholder: 'Placeholder',
     defaultValue: 'Typed text',
-    description: ''
+    description: '',
   },
 };
 
@@ -49,7 +49,7 @@ export const Focus: Story = {
     variant: 'focus',
     size: 'default',
     placeholder: 'Placeholder',
-    description: ''    
+    description: '',
   },
 };
 
@@ -58,7 +58,7 @@ export const Disabled: Story = {
     variant: 'disabled',
     size: 'default',
     placeholder: 'Placeholder',
-    description: ''
+    description: '',
   },
 };
 
@@ -69,10 +69,9 @@ export const Error: Story = {
     placeholder: 'Placeholder',
     defaultValue: 'Error Message',
     readOnly: true,
-    errorMessage: '내용을 올바르게 입력해주세요.'
+    errorMessage: '내용을 올바르게 입력해주세요.',
   },
 };
-
 
 export const Examples: Story = {
   render: () => (

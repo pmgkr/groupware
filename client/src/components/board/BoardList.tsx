@@ -1,21 +1,14 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@components/ui/badge';
+import { AppPagination } from '@/components/ui/AppPagination';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
-const meta: Meta<typeof Table> = {
-  title: 'Components/Table',
-  component: Table,
-  tags: ['autodocs'],
-  args: {},
-};
-
-export default meta;
-type Story = StoryObj<typeof Table>;
-
-export const Default: Story = {
-  args: {
-    children: (
-      <>
+export default function BoardList() {
+  return (
+    <>
+      <div>
+        <Input></Input>
         <Table>
           <TableHeader>
             <TableRow>
@@ -59,9 +52,12 @@ export const Default: Story = {
             </TableRow>
           </TableBody>
         </Table>
-      </>
-    ),
-  },
-};
+        <div className="mt-0.5 text-right">
+          <Button>글쓰기</Button>
+        </div>
 
-export const Destructive: Story = {};
+        <AppPagination totalPages={10} initialPage={1} visibleCount={5} />
+      </div>
+    </>
+  );
+}
