@@ -1,4 +1,3 @@
-// button.stories.tsx
 import type { Meta, StoryObj } from '@storybook/react';
 import { ChartNoAxesColumnIncreasing, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@components/ui/button';
@@ -19,6 +18,9 @@ const meta: Meta<typeof Button> = {
       control: 'select',
       options: ['default', 'sm', 'lg', 'full', 'icon'],
     },
+  },
+  parameters: {
+    layout: 'centered',
   },
 };
 

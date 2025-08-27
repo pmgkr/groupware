@@ -14,6 +14,9 @@ const meta: Meta<typeof Alert> = {
       options: ['default', 'destructive'],
     },
   },
+  parameters: {
+    layout: 'centered',
+  },
 };
 
 export default meta;
