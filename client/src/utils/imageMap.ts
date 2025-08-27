@@ -1,5 +1,5 @@
 // 이미지 맵핑 유틸 함수
-const modules = import.meta.glob('../assets/**/*.{png,jpg,gif,svg,mp4}', {
+const modules = import.meta.glob('../assets/images/**/*.{png,jpg,gif,webp,svg,mp4}', {
   eager: true,
   import: 'default',
 });
