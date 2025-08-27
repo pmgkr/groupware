@@ -1,10 +1,10 @@
-// calendar.stories.tsx
+// daypicker.stories.tsx
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { DayPicker } from '@components/calendar/daypicker';
+import { DayPicker } from '@components/daypicker';
 
 const meta: Meta<typeof DayPicker> = {
-  title: 'Components/Calendar/DayPicker',
+  title: 'Components/DayPicker/DayPicker',
   component: DayPicker,
   tags: ['autodocs'],
   args: {
