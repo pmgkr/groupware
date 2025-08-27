@@ -324,10 +324,12 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
   const [currentDate, setCurrentDate] = React.useState(new Date())
   const [viewMode, setViewMode] = React.useState<ViewMode>(initialViewMode)
   const [selectedDate, setSelectedDate] = React.useState<Date | null>(null)
-  const [isMoreEventsOpen, setIsMoreEventsOpen] = React.useState(false)
   const [holidays, setHolidays] = React.useState<Holiday[]>([])
   const [holidayCache, setHolidayCache] = React.useState<Map<string, boolean>>(new Map())
   const [holidayNameCache, setHolidayNameCache] = React.useState<Map<string, string>>(new Map())
+  const [showEventPopup, setShowEventPopup] = React.useState(false)
+  const [popupEvents, setPopupEvents] = React.useState<Event[]>([])
+  const [popupDate, setPopupDate] = React.useState<Date | null>(null)
 
   // 이벤트 데이터 디버깅
   React.useEffect(() => {
@@ -382,6 +384,13 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
   const getHolidayName = (date: Date): string | null => {
     const dateString = format(date, 'yyyyMMdd')
     return holidayNameCache.get(dateString) || null
+  }
+
+  // 더보기 버튼 클릭 시 팝업 표시
+  const handleShowMoreEvents = (date: Date, dayEvents: Event[]) => {
+    setPopupDate(date)
+    setPopupEvents(dayEvents)
+    setShowEventPopup(true)
   }
 
   // 키보드 단축키
@@ -452,12 +461,6 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
       const checkHour = hour
       return checkHour >= eventStart && checkHour < eventEnd
     })
-  }
-
-  const handleMoreEventsClick = (date: Date, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setSelectedDate(date)
-    setIsMoreEventsOpen(true)
   }
 
   const renderDayView = () => {
@@ -765,7 +768,7 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
             <div
               key={day.toISOString()}
               className={cn(
-                "p-2 min-h-[200px] border border-gray-200 cursor-pointer",
+                "p-2 min-h-[200px] border border-gray-200 cursor-pointer flex flex-col justify-between",
                 !isSameMonth(day, currentDate) && "bg-gray-50 text-gray-400",
                 isSameDay(day, new Date()) && "bg-blue-50 border-blue-200",
                 isHolidayDay && "bg-gray-200",
@@ -792,6 +795,19 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
                   </div>
                 )}
               </div>
+              
+              {/* 더보기 버튼 - 6개 이상의 이벤트가 있을 때만 표시 */}
+              {dayEvents.length > 5 && (
+                <button
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium mt-1 w-full text-left cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleShowMoreEvents(day, dayEvents)
+                  }}
+                >
+                  +{dayEvents.length - 5}개 더보기
+                </button>
+              )}
             </div>
           )
         })}
@@ -834,106 +850,73 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
             }
           })
           
-          // 각 날짜별로 이벤트들을 우선순위에 따라 정렬하고 행 할당
-          eventsByDate.forEach((dateEvents, dateKey) => {
-            // 우선순위에 따라 정렬
-            dateEvents.sort((a, b) => {
-              // 1순위: 카테고리 우선순위 (연차 > 반차 > 반반차 > 기타)
-              const categoryPriority = {
-                '연차': 1,
-                '반차': 2,
-                '반반차': 3,
-                '외부일정': 4,
-                '기타': 5
-              }
-              
-              const aPriority = categoryPriority[a.event.category as keyof typeof categoryPriority] || 5
-              const bPriority = categoryPriority[b.event.category as keyof typeof categoryPriority] || 5
-              
-              if (aPriority !== bPriority) {
-                return aPriority - bPriority
-              }
-              
-              // 2순위: 같은 카테고리 내에서는 시작일 순으로 정렬
-              if (a.startDate.getTime() !== b.startDate.getTime()) {
-                return a.startDate.getTime() - b.startDate.getTime()
-              }
-              
-              // 3순위: 시작일이 같으면 ID로 정렬
-              return a.event.id.localeCompare(b.event.id)
+          // 전체 주간에 걸친 이벤트들을 우선순위에 따라 정렬하고 행 할당
+          const allWeekEvents = new Set<Event>()
+          eventsByDate.forEach((dateEvents) => {
+            dateEvents.forEach(eventData => {
+              allWeekEvents.add(eventData.event)
             })
-            
-            // 각 이벤트에 행 할당 (빈 행 찾기)
-            dateEvents.forEach((eventData, index) => {
-              // 이미 할당된 행이 있는지 확인
-              if (eventData.assignedRow === -1) {
-                // 이 이벤트가 점유해야 할 모든 날짜에서 사용 가능한 가장 낮은 행 번호 찾기
-                let availableRow = 0
-                let found = false
-                
-                while (!found) {
-                  // 이 행이 이 이벤트 기간 동안 사용 가능한지 확인
-                  let isRowAvailable = true
-                  let checkDate = eventData.startDate
-                  
-                  while (checkDate <= eventData.endDate) {
-                    const checkDateKey = format(checkDate, 'yyyy-MM-dd')
-                    const checkDateEvents = eventsByDate.get(checkDateKey) || []
-                    
-                    // 이 행에 이미 다른 이벤트가 할당되어 있는지 확인
-                    const conflictingEvent = checkDateEvents.find(e => 
-                      e.assignedRow === availableRow && e.event.id !== eventData.event.id
-                    )
-                    
-                    if (conflictingEvent) {
-                      isRowAvailable = false
-                      break
-                    }
-                    
-                    checkDate = addDays(checkDate, 1)
-                  }
-                  
-                  if (isRowAvailable) {
-                    found = true
-                  } else {
-                    availableRow++
-                  }
-                }
-                
-                // 행 할당
-                eventData.assignedRow = availableRow
-                
-                // 이 이벤트가 점유하는 모든 날짜에 행 정보 업데이트
-                let updateDate = eventData.startDate
-                while (updateDate <= eventData.endDate) {
-                  const updateDateKey = format(updateDate, 'yyyy-MM-dd')
-                  const updateDateEvents = eventsByDate.get(updateDateKey) || []
-                  const updateEvent = updateDateEvents.find(e => e.event.id === eventData.event.id)
-                  if (updateEvent) {
-                    updateEvent.assignedRow = availableRow
-                  }
-                  updateDate = addDays(updateDate, 1)
-                }
-              }
-            })
-            
-            // 디버깅 로그
-            console.log(`날짜 ${dateKey} 행 할당 결과:`, dateEvents.map(e => ({
-              id: e.event.id,
-              title: e.event.title,
-              category: e.event.category,
-              assignedRow: e.assignedRow
-            })))
           })
+          
+          // 이벤트들을 우선순위에 따라 정렬
+          const sortedEvents = Array.from(allWeekEvents).sort((a, b) => {
+            // 1순위: 카테고리 우선순위 (연차 > 반차 > 반반차 > 기타)
+            const categoryPriority = {
+              '연차': 1,
+              '반차': 2,
+              '반반차': 3,
+              '외부일정': 4,
+              '기타': 5
+            }
+            
+            const aPriority = categoryPriority[a.category as keyof typeof categoryPriority] || 5
+            const bPriority = categoryPriority[b.category as keyof typeof categoryPriority] || 5
+            
+            if (aPriority !== bPriority) {
+              return aPriority - bPriority
+            }
+            
+            // 2순위: 같은 카테고리 내에서는 시작일 순으로 정렬
+            if (a.start.getTime() !== b.start.getTime()) {
+              return a.start.getTime() - b.start.getTime()
+            }
+            
+            // 3순위: 시작일이 같으면 ID로 정렬
+            return a.id.localeCompare(b.id)
+          })
+          
+          // 각 이벤트에 행 할당 (빈 행부터 순서대로)
+          sortedEvents.forEach((event, index) => {
+            const assignedRow = index
+            
+            // 이 이벤트가 점유하는 모든 날짜에 행 정보 업데이트
+            let updateDate = startOfDay(event.start)
+            while (updateDate <= startOfDay(event.end)) {
+              const updateDateKey = format(updateDate, 'yyyy-MM-dd')
+              const updateDateEvents = eventsByDate.get(updateDateKey) || []
+              const updateEvent = updateDateEvents.find(e => e.event.id === event.id)
+              if (updateEvent) {
+                updateEvent.assignedRow = assignedRow
+              }
+              updateDate = addDays(updateDate, 1)
+            }
+          })
+          
+          // 디버깅 로그
+          console.log(`주간 행 할당 결과:`, sortedEvents.map((event, index) => ({
+            id: event.id,
+            title: event.title,
+            category: event.category,
+            assignedRow: index
+          })))
           
           return (
             <div
               key={`week-${weekIndex}`}
-              className="min-h-[80px]"
+              className="min-h-[80px] h-[120px] mt-10"
               style={{
                 overflow: 'hidden',
                 gridArea: `${weekIndex + 2} / 1 / ${weekIndex + 3} / 8`,
-                marginTop: '42px'
               }}
             >
               <div className="grid grid-cols-7 grid-auto-rows-20 gap-y-1 gap-x-0">
@@ -948,25 +931,25 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
                     return checkDate >= eventStart && checkDate <= eventEnd
                   })
                   
-                  return dayEvents.map((event) => {
-                    // 이벤트가 여러 날짜에 걸쳐 있는지 확인
-                    const eventStart = startOfDay(event.start)
-                    const eventEnd = startOfDay(event.end) // startOfDay 사용
-                    const dayStart = startOfDay(day)
-                    
-                    // 이벤트가 이 날짜와 겹치는지 확인
-                    const isEventStart = isSameDay(eventStart, dayStart)
-                    const isEventEnd = isSameDay(eventEnd, dayStart)
-                    const isEventMiddle = !isEventStart && !isEventEnd && 
-                      dayStart > eventStart && dayStart < eventEnd
-                    
-                    // 연속된 이벤트는 각 주의 시작일에 렌더링
-                    const isWeekStart = isEventStart || 
-                      (dayStart > eventStart && dayStart <= eventEnd && day.getDay() === 0) // 일요일인 경우
-                    
-                    if (!isWeekStart) {
-                      return null
-                    }
+                                     return dayEvents.slice(0, 5).map((event, eventIndex) => {
+                     // 이벤트가 여러 날짜에 걸쳐 있는지 확인
+                     const eventStart = startOfDay(event.start)
+                     const eventEnd = startOfDay(event.end) // startOfDay 사용
+                     const dayStart = startOfDay(day)
+                     
+                     // 이벤트가 이 날짜와 겹치는지 확인
+                     const isEventStart = isSameDay(eventStart, dayStart)
+                     const isEventEnd = isSameDay(eventEnd, dayStart)
+                     const isEventMiddle = !isEventStart && !isEventEnd && 
+                       dayStart > eventStart && dayStart < eventEnd
+                     
+                     // 연속된 이벤트는 각 주의 시작일에 렌더링
+                     const isWeekStart = isEventStart || 
+                       (dayStart > eventStart && dayStart <= eventEnd && day.getDay() === 0) // 일요일인 경우
+                     
+                     if (!isWeekStart) {
+                       return null
+                     }
                     
                     // 모든 연차에 대해 동일한 로직 적용 (홍길동2 연차만 특별 처리하지 않음)
                     
@@ -1016,26 +999,26 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
                       
                       gridArea = `${adjustedRowStart} / ${colStart} / ${adjustedRowStart + 1} / ${colEnd}`
                     } else {
-                                          // 주 시작일 (일요일): 해당 주의 시작부터 끝까지
-                    const colStart = 1 // 일요일
-                    
-                    // 이 주가 이벤트의 마지막 주인지 확인 (동적 계산)
-                    const currentWeekStart = startOfWeek(day)
-                    const currentWeekEnd = endOfWeek(day)
-                    const nextWeekStart = addWeeks(currentWeekStart, 1)
-                    
-                    // 이벤트가 다음 주에 이어지는지 확인
-                    const continuesToNextWeek = eventEnd >= nextWeekStart
-                    
-                    // colEnd 계산 (동적으로)
-                    let colEnd = 8
-                    if (!continuesToNextWeek) {
-                      // 다음 주로 이어지지 않는 경우, 실제 종료일까지만 표시
-                      const daysInCurrentWeek = differenceInDays(eventEnd, currentWeekStart) + 1
-                      colEnd = Math.min(daysInCurrentWeek + 1, 8) // 해당 주의 실제 끝까지만
-                    }
-                    
-                    gridArea = `${adjustedRowStart} / ${colStart} / ${adjustedRowStart + 1} / ${colEnd}`
+                      // 주 시작일 (일요일): 해당 주의 시작부터 끝까지
+                      const colStart = 1 // 일요일
+                      
+                      // 이 주가 이벤트의 마지막 주인지 확인 (동적 계산)
+                      const currentWeekStart = startOfWeek(day)
+                      const currentWeekEnd = endOfWeek(day)
+                      const nextWeekStart = addWeeks(currentWeekStart, 1)
+                      
+                      // 이벤트가 다음 주에 이어지는지 확인
+                      const continuesToNextWeek = eventEnd >= nextWeekStart
+                      
+                      // colEnd 계산 (동적으로)
+                      let colEnd = 8
+                      if (!continuesToNextWeek) {
+                        // 다음 주로 이어지지 않는 경우, 실제 종료일까지만 표시
+                        const daysInCurrentWeek = differenceInDays(eventEnd, currentWeekStart) + 1
+                        colEnd = Math.min(daysInCurrentWeek + 1, 8) // 해당 주의 실제 끝까지만
+                      }
+                      
+                      gridArea = `${adjustedRowStart} / ${colStart} / ${adjustedRowStart + 1} / ${colEnd}`
                     }
                     
                     // 디버깅 로그
@@ -1052,40 +1035,72 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
                       isWeekStart
                     })
                     
-                    return (
-                      <div
-                        key={`${event.id}-${format(day, 'yyyy-MM-dd')}`}
-                        className={cn(
-                          "flex items-center gap-2 text-sm cursor-pointer truncate pl-1 pr-1 ml-1 mr-1",
-                          getEventStyle(event),
-                          isEventStart && "ml-1",
-                          isEventEnd && "mr-1",
-                          isEventMiddle && ""
-                        )}
-                        style={{
-                          gridArea: gridArea,
-                          position: 'relative',
-                          zIndex: 10
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onEventClick?.(event)
-                        }}
-                      >
-                        <div className="text-sm truncate font-black">{event.title}</div>
-                        {event.assignee && (
-                          <div className="text-sm text-gray-900">{event.assignee}</div>
-                        )}
-                        {/* 연속 이벤트 표시 */}
-                        {/* {isEventStart && !isSameDay(eventStart, eventEnd) && (
-                          <div className="text-xs opacity-75">
-                            {format(eventStart, 'M/d')} - {format(eventEnd, 'M/d')}
-                          </div>
-                        )} */}
-                      </div>
-                    )
-                  })
-                })}
+                                         return (
+                       <div
+                         key={`${event.id}-${format(day, 'yyyy-MM-dd')}`}
+                         className={cn(
+                           "flex items-center gap-2 text-sm cursor-pointer truncate pl-1 pr-1 ml-1 mr-1",
+                           getEventStyle(event),
+                           isEventStart && "ml-1",
+                           isEventEnd && "mr-1",
+                           isEventMiddle && ""
+                         )}
+                         style={{
+                           gridArea: gridArea,
+                           position: 'relative',
+                           zIndex: 10
+                         }}
+                         onClick={(e) => {
+                           e.stopPropagation()
+                           onEventClick?.(event)
+                         }}
+                       >
+                         <div className="text-sm truncate font-black">{event.title}</div>
+                         {event.assignee && (
+                           <div className="text-sm text-gray-900">{event.assignee}</div>
+                         )}
+                         {/* 연속 이벤트 표시 */}
+                         {/* {isEventStart && !isSameDay(eventStart, eventEnd) && (
+                           <div className="text-xs opacity-75">
+                             {format(eventStart, 'M/d') - {format(eventEnd, 'M/d')}
+                           </div>
+                         )} */}
+                       </div>
+                     )
+                   })
+                 })}
+                 
+                                   {/* 더보기 버튼 - 각 주의 마지막에 표시 */}
+                  {/* {weekDays.map((day, dayIndex) => {
+                    const dayEvents = events.filter(event => {
+                      const eventStart = startOfDay(event.start)
+                      const eventEnd = startOfDay(event.end)
+                      const checkDate = startOfDay(day)
+                      return checkDate >= eventStart && checkDate <= eventEnd
+                    })
+                    
+                    if (dayEvents.length > 5) {
+                      // 이벤트가 표시되는 행의 다음 행에 더보기 버튼 배치
+                      const maxRow = Math.max(...Array.from({ length: dayEvents.length }, (_, i) => i + 1))
+                      return (
+                        <div
+                          key={`more-${day.toISOString()}`}
+                          className="flex items-center justify-center p-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100 cursor-pointer"
+                          style={{
+                            gridArea: `${maxRow + 1} / ${day.getDay() + 1} / ${maxRow + 2} / ${day.getDay() + 2}`,
+                            zIndex: 20
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleShowMoreEvents(day, dayEvents)
+                          }}
+                        >
+                          +{dayEvents.length - 5}개 더보기
+                        </div>
+                      )
+                    }
+                    return null
+                  })} */}
               </div>
             </div>
           )
@@ -1247,48 +1262,44 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
         </div>
       </div>
 
-      {/* More Events Modal */}
-      {isMoreEventsOpen && (
+      {/* 이벤트 상세 팝업 */}
+      {showEventPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-96 overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
-                {selectedDate && format(selectedDate, "yyyy년 M월 d일", { locale: ko })}의 일정
+                {popupDate && format(popupDate, 'M월 d일', { locale: ko })} 이벤트
               </h3>
               <button
-                onClick={() => setIsMoreEventsOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setShowEventPopup(false)}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
-              {selectedDate && getEventsForDate(selectedDate).map((event) => (
+            
+            <div className="space-y-2">
+              {popupEvents.map((event) => (
                 <div
                   key={event.id}
                   className={cn(
-                    "p-3 rounded-lg cursor-pointer hover:opacity-80 transition-opacity",
+                    "p-3 rounded-lg cursor-pointer",
                     getEventStyle(event)
                   )}
                   onClick={() => {
                     onEventClick?.(event)
-                    setIsMoreEventsOpen(false)
+                    setShowEventPopup(false)
                   }}
                 >
                   <div className="font-medium">{event.title}</div>
                   {event.assignee && (
-                    <div className="text-sm opacity-90 font-medium">{event.assignee}</div>
+                    <div className="text-sm opacity-75 mt-1">{event.assignee}</div>
                   )}
-                  <div className="text-sm opacity-90">
-                    {format(event.start, "HH:mm", { locale: ko })} - {format(event.end, "HH:mm", { locale: ko })}
+                  <div className="text-sm opacity-75 mt-1">
+                    {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
                   </div>
                 </div>
               ))}
-              {selectedDate && getEventsForDate(selectedDate).length === 0 && (
-                <div className="text-center text-gray-500 py-8">
-                  이 날에는 일정이 없습니다.
-                </div>
-              )}
             </div>
           </div>
         </div>

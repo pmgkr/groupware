@@ -51,7 +51,7 @@ const sampleEvents = [
     start: new Date('2025-08-14T09:00:00'),
     end: new Date('2025-08-16T18:00:00'),
     category: '연차',
-    assignee: '김노루',
+    assignee: '김노루1',
   },
   {
     id: '5',
@@ -68,6 +68,46 @@ const sampleEvents = [
     end: new Date('2025-08-25T10:00:00'),
     category: '연차',
     assignee: '홍길동2',
+  },
+  {
+    id: '7',
+    title: '연차',
+    start: new Date('2025-08-14T09:00:00'),
+    end: new Date('2025-08-16T18:00:00'),
+    category: '연차',
+    assignee: '김노루2',
+  },
+  {
+    id: '8',
+    title: '연차',
+    start: new Date('2025-08-14T09:00:00'),
+    end: new Date('2025-08-16T18:00:00'),
+    category: '연차',
+    assignee: '김노루3',
+  },
+  {
+    id: '9',
+    title: '연차',
+    start: new Date('2025-08-14T09:00:00'),
+    end: new Date('2025-08-16T18:00:00'),
+    category: '연차',
+    assignee: '김노루4',
+  },
+  {
+    id: '10',
+    title: '연차',
+    start: new Date('2025-08-14T09:00:00'),
+    end: new Date('2025-08-16T18:00:00'),
+    category: '연차',
+    assignee: '김노루5',
+  },
+  {
+    id: '11',
+    title: '연차',
+    start: new Date('2025-08-14T09:00:00'),
+    end: new Date('2025-08-16T18:00:00'),
+    category: '연차',
+    assignee: '김노루6',
   },
 
 ];
@@ -111,7 +151,7 @@ export const WithManyEvents: Story = {
     events: [
       ...sampleEvents,
       {
-        id: '6',
+        id: '7',
         title: '아침 운동',
         start: new Date('2025-08-14T07:00:00'),
         end: new Date('2025-08-14T08:00:00'),
@@ -119,7 +159,7 @@ export const WithManyEvents: Story = {
         assignee: '정수진',
       },
       {
-        id: '7',
+        id: '8',
         title: '저녁 식사',
         start: new Date('2025-08-14T18:00:00'),
         end: new Date('2025-08-14T19:00:00'),
@@ -127,17 +167,48 @@ export const WithManyEvents: Story = {
         assignee: '한지민',
       },
       {
-        id: '8',
+        id: '9',
         title: '영화 보기',
         start: new Date('2025-08-14T20:00:00'),
         end: new Date('2025-08-14T22:00:00'),
         category: '기타',
         assignee: '송혜교',
       },
+      {
+        id: '10',
+        title: '회의',
+        start: new Date('2025-08-14T10:00:00'),
+        end: new Date('2025-08-14T11:00:00'),
+        category: '기타',
+        assignee: '김철수',
+      },
+      {
+        id: '11',
+        title: '점심 약속',
+        start: new Date('2025-08-14T12:00:00'),
+        end: new Date('2025-08-14T13:00:00'),
+        category: '기타',
+        assignee: '박영희',
+      },
+      {
+        id: '12',
+        title: '오후 미팅',
+        start: new Date('2025-08-14T15:00:00'),
+        end: new Date('2025-08-14T16:00:00'),
+        category: '기타',
+        assignee: '이민수',
+      },
     ],
     onEventClick: (event) => console.log('Event clicked:', event),
     onDateClick: (date) => console.log('Date clicked:', date),
     showHolidays: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: '한 날짜에 6개 이상의 이벤트가 있을 때 "더보기" 버튼이 표시됩니다.',
+      },
+    },
   },
 };
 
