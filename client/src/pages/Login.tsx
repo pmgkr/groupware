@@ -1,7 +1,5 @@
 import { useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
-//import { AppPagination } from '@/components/ui/AppPagination';
-//import { useState } from 'react';
 
 export default function Login() {
   const navigate = useNavigate();
