@@ -18,13 +18,14 @@ const buttonVariants = cva(
         transparent: 'bg-transparent text-white border border-white',
         ghost: 'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
         link: 'text-primary underline-offset-4 hover:underline',
+        svgIcon: 'bg-transparent',
       },
       size: {
         default: 'h-10 px-6 py-2 has-[>svg]:px-3',
         sm: 'h-8 rounded-md text-sm gap-1.5 px-3.5 has-[>svg]:px-2.5',
         lg: 'w-full max-w-[280px] h-12 text-lg rounded-md px-6 has-[>svg]:px-4',
         full: 'w-full h-12 text-lg rounded-md',
-        icon: 'size-6',
+        icon: 'size-8',
       },
     },
     defaultVariants: {
