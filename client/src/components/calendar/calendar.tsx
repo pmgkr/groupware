@@ -1069,38 +1069,7 @@ function Calendar({ events = [], onEventClick, onDateClick, className, showHolid
                      )
                    })
                  })}
-                 
-                                   {/* 더보기 버튼 - 각 주의 마지막에 표시 */}
-                  {/* {weekDays.map((day, dayIndex) => {
-                    const dayEvents = events.filter(event => {
-                      const eventStart = startOfDay(event.start)
-                      const eventEnd = startOfDay(event.end)
-                      const checkDate = startOfDay(day)
-                      return checkDate >= eventStart && checkDate <= eventEnd
-                    })
-                    
-                    if (dayEvents.length > 5) {
-                      // 이벤트가 표시되는 행의 다음 행에 더보기 버튼 배치
-                      const maxRow = Math.max(...Array.from({ length: dayEvents.length }, (_, i) => i + 1))
-                      return (
-                        <div
-                          key={`more-${day.toISOString()}`}
-                          className="flex items-center justify-center p-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-600 hover:bg-blue-100 cursor-pointer"
-                          style={{
-                            gridArea: `${maxRow + 1} / ${day.getDay() + 1} / ${maxRow + 2} / ${day.getDay() + 2}`,
-                            zIndex: 20
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleShowMoreEvents(day, dayEvents)
-                          }}
-                        >
-                          +{dayEvents.length - 5}개 더보기
-                        </div>
-                      )
-                    }
-                    return null
-                  })} */}
+        
               </div>
             </div>
           )
