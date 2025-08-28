@@ -17,13 +17,16 @@ export const router = createBrowserRouter([
     element: <Login />,
   },
   {
+    path: '/dashboard',
+    element: <Dashboard />,
+  },
+  {
     // 레이아웃이 필요한 영역
     path: '/',
     element: <Layout />,
     errorElement: <ErrorPage />,
     children: [
-      { index: true, element: <Navigate to="dashboard" replace /> }, // '/'로 접근 시 /dashboard로 보냄
-      { path: '/dashboard', element: <Dashboard /> },
+      // { index: true, element: <Navigate to="dashboard" replace /> }, // 로그인 후 '/'로 접근 시 /dashboard로 보내야함
       {
         handle: {
           title: '오피스',

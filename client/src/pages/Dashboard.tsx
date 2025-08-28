@@ -4,12 +4,7 @@ export default function Dashboard() {
   return (
     <>
       <Header />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      대시보드 페이지234
+      <div className="mt-18 ml-60 min-h-200 bg-white px-25 py-8">대시보드</div>
     </>
   );
 }
