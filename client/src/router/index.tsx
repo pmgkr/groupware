@@ -2,6 +2,10 @@ import { createBrowserRouter, Navigate } from 'react-router';
 import Layout from '@/layouts/Layout';
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
+
+import Notice from '@/pages/Office/Notice';
+import Meetingroom from '@/pages/Office/Meetingroom';
+
 import Mypage from '@/pages/Mypage';
 import MyExpense from '@/pages/Mypage/Expense';
 import ErrorPage from '@/pages/ErrorPage';
@@ -20,6 +24,32 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> }, // '/'로 접근 시 /dashboard로 보냄
       { path: '/dashboard', element: <Dashboard /> },
+      {
+        handle: {
+          title: '오피스',
+          nav: [
+            {
+              to: '/notice',
+              label: '공지사항',
+              end: true, // end=true → 정확히 /mypage와 일치할 때에만 활성
+            },
+            {
+              to: '/meetingroom',
+              label: '미팅룸',
+            },
+          ],
+        },
+        children: [
+          {
+            path: 'notice',
+            element: <Notice />,
+          },
+          {
+            path: 'meetingroom',
+            element: <Meetingroom />,
+          },
+        ],
+      },
       {
         path: '/mypage',
         handle: {
