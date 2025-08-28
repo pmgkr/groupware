@@ -9,10 +9,10 @@ const switchVariants = cva(
     variants: {
       variant: {
         default: [
-          'data-[state=checked]:bg-[color:var(--color-primary-blue-500)]',
-          'data-[state=unchecked]:bg-[color:var(--color-gray-400)]',
-          'data-[state=checked]:disabled:bg-[color:var(--color-gray-400)]',
-          'data-[state=unchecked]:disabled:bg-[color:var(--color-disable)]',
+          'data-[state=checked]:bg-primary-blue-500',
+          'data-[state=unchecked]:bg-gray-400',
+          'data-[state=checked]:disabled:bg-gray-400',
+          'data-[state=unchecked]:disabled:bg-disable',
         ],
       },
     },
@@ -25,7 +25,7 @@ const switchVariants = cva(
 const switchWrapperVariants = cva('flex items-center space-x-2', {
   variants: {
     variant: {
-      default: 'has-[button[data-state="checked"]]:text-[color:var(--color-primary-blue-500)]',
+      default: 'has-[button[data-state="checked"]]:text-primary-blue-500',
     },
   },
   defaultVariants: {
@@ -55,17 +55,13 @@ function Switch({ className, variant, label, labelProps, ...props }: SwitchProps
         data-slot="switch-thumb"
         className={cn(
           'pointer-events-none block size-5 rounded-full ring-0 transition-transform',
-          'data-[state=checked]:translate-x-[calc(100%+0px)] data-[state=unchecked]:translate-x-0.5',
+          'data-[state=checked]:translate-x-[calc(100%+0px data-[state=unchecked]:translate-x-0.5',
           // props.disabled 값에 따라 조건부 적용
           props.disabled
             ? [
-                'bg-[color:var(--color-gray-600)]', // disabled일 때는 상태와 관계없이 같은 색
+                'bg-gray-600', // disabled일 때는 상태와 관계없이 같은 색
               ]
-            : [
-                'data-[state=checked]:bg-[color:var(--color-gray-50)]',
-                'data-[state=unchecked]:bg-[color:var(--color-gray-50)]',
-                'peer-data-[state=checked]:text-[color:var(--color-primary-blue-500)]',
-              ]
+            : ['data-[state=checked]:bg-gray-50', 'data-[state=unchecked]:bg-gray-50', 'peer-data-[state=checked]:text-primary-blue-500']
         )}
       />
     </SwitchPrimitive.Root>
@@ -79,7 +75,7 @@ function Switch({ className, variant, label, labelProps, ...props }: SwitchProps
         <label
           className={cn(
             'text-base text-gray-500 transition-colors select-none',
-            props.disabled ? 'cursor-not-allowed text-gray-400' : 'peer-data-[state=checked]:text-[color:var(--color-primary-blue-500)]',
+            props.disabled ? 'cursor-not-allowed text-gray-400' : 'peer-data-[state=checked]:text-primary-blue-500',
             labelProps?.className
           )}
           htmlFor={props.id}

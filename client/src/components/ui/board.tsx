@@ -5,25 +5,19 @@ import { cn } from '@/lib/utils';
 function Table({ className, ...props }: React.ComponentProps<'table'>) {
   return (
     <div data-slot="table-container" className="relative w-full overflow-x-auto">
-      <table data-slot="table" className={cn('w-full caption-bottom text-sm', className)} {...props} />
+      <table data-slot="table" className={cn('w-full caption-bottom text-base font-light', className)} {...props} />
     </div>
   );
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
   return (
-    <thead
-      data-slot="table-header"
-      className={cn('text-gray-500 [&_tr]:border-b [&_tr]:border-[color:var(--color-primary-blue-500)]', className)}
-      {...props}
-    />
+    <thead data-slot="table-header" className={cn('[&_tr]:border-primary-blue-500 text-gray-500 [&_tr]:border-b', className)} {...props} />
   );
 }
 
 function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {
-  return (
-    <tbody data-slot="table-body" className={cn('[&_tr:last-child]:border-[color:var(--color-primary-blue-500)]', className)} {...props} />
-  );
+  return <tbody data-slot="table-body" className={cn('[&_tr:last-child]:border-primary-blue-500', className)} {...props} />;
 }
 
 function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>) {
@@ -36,7 +30,7 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
       data-slot="table-row"
       className={cn(
         'hover:bg-muted/50 data-[state=selected]:bg-muted border-b border-gray-300 transition-colors [&_td:nth-child(2)]:text-left',
-        '[&.anchor]:bg-[color:var(--color-primary-blue-100)]',
+        '[&.anchor]:bg-primary-blue-100',
         className
       )}
       {...props}
@@ -62,7 +56,7 @@ function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
     <td
       data-slot="table-cell"
       className={cn(
-        'p-2 text-center align-middle font-normal whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+        'p-3 text-center align-middle font-normal whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
         className
       )}
       {...props}
