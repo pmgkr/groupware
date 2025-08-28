@@ -1,4 +1,3 @@
-// button.stories.tsx
 import type { Meta, StoryObj } from '@storybook/react';
 import { ChartNoAxesColumnIncreasing, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@components/ui/button';
@@ -13,12 +12,15 @@ const meta: Meta<typeof Button> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['default', 'secondary', 'transparent', 'destructive', 'outline', 'ghost', 'link'],
+      options: ['default', 'secondary', 'transparent', 'destructive', 'outline', 'ghost', 'link', 'svgIcon'],
     },
     size: {
       control: 'select',
       options: ['default', 'sm', 'lg', 'full', 'icon'],
     },
+  },
+  parameters: {
+    layout: 'centered',
   },
 };
 
@@ -79,6 +81,12 @@ export const Examples: Story = {
           Large Button
         </Button>
         <Button size="full">Full Button</Button>
+        <Button variant="svgIcon">
+          <ChevronLeft />
+        </Button>
+        <Button variant="svgIcon">
+          <ChevronRight />
+        </Button>
       </div>
     </>
   ),

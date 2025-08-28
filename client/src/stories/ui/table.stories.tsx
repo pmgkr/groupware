@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@components/ui/badge';
 
 const meta: Meta<typeof Table> = {
-  title: 'Components/Table',
+  title: 'Components/UI/Table',
   component: Table,
   tags: ['autodocs'],
   args: {},

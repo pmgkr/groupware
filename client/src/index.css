@@ -99,9 +99,9 @@
   --negative-light: #ff2200;
   --negative-dark: #a71d08;
 
-  --primary: var(--primary-blue);
+  --primary: var(--color-primary-blue);
   --primary-foreground: var(--color-white);
-  --secondary: var(--primary-purple);
+  --secondary: var(--color-gray-500);
   --secondary-foreground: var(--color-white);
 
   --muted: oklch(0.97 0 0);
@@ -109,6 +109,7 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: var(--negative-base);
+  --popover: var(--color-white);
   --border: var(--color-gray-400);
   --input: var(--color-gray-400);
   --ring: oklch(0.708 0 0);
@@ -295,7 +296,6 @@
   }
 
   @keyframes ping {
-
     75%,
     100% {
       transform: scale(2);
@@ -310,7 +310,6 @@
   }
 
   @keyframes bounce {
-
     0%,
     100% {
       transform: translateY(-25%);
