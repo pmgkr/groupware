@@ -14,6 +14,7 @@ function withSuspense<T extends React.ComponentType<any>>(LazyComp: T) {
   );
   return Wrapped;
 }
+const Lazy_Add = React.lazy(() => import("./add.svg?react"));
 const Lazy_Admin = React.lazy(() => import("./admin.svg?react"));
 const Lazy_Alarm = React.lazy(() => import("./alarm.svg?react"));
 const Lazy_Calendar = React.lazy(() => import("./calendar.svg?react"));
@@ -27,9 +28,12 @@ const Lazy_FilterOff = React.lazy(() => import("./filter_off.svg?react"));
 const Lazy_FilterOn = React.lazy(() => import("./filter_on.svg?react"));
 const Lazy_LeftArr = React.lazy(() => import("./left_arr.svg?react"));
 const Lazy_Logout = React.lazy(() => import("./logout.svg?react"));
+const Lazy_MailMin = React.lazy(() => import("./mail_min.svg?react"));
 const Lazy_Manager = React.lazy(() => import("./manager.svg?react"));
 const Lazy_More = React.lazy(() => import("./more.svg?react"));
 const Lazy_Office = React.lazy(() => import("./office.svg?react"));
+const Lazy_PhoneMin = React.lazy(() => import("./phone_min.svg?react"));
+const Lazy_PlaceMin = React.lazy(() => import("./place_min.svg?react"));
 const Lazy_Profile = React.lazy(() => import("./profile.svg?react"));
 const Lazy_Project = React.lazy(() => import("./project.svg?react"));
 const Lazy_Pto = React.lazy(() => import("./pto.svg?react"));
@@ -37,6 +41,7 @@ const Lazy_RightArr = React.lazy(() => import("./right_arr.svg?react"));
 const Lazy_TooltipNoti = React.lazy(() => import("./tooltip_noti.svg?react"));
 const Lazy_UpArr = React.lazy(() => import("./up_arr.svg?react"));
 
+export const Add: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Add), { displayName: "Add" });
 export const Admin: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Admin), { displayName: "Admin" });
 export const Alarm: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Alarm), { displayName: "Alarm" });
 export const Calendar: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Calendar), { displayName: "Calendar" });
@@ -50,9 +55,12 @@ export const FilterOff: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Fi
 export const FilterOn: React.FC<IconProps> = Object.assign(withSuspense(Lazy_FilterOn), { displayName: "FilterOn" });
 export const LeftArr: React.FC<IconProps> = Object.assign(withSuspense(Lazy_LeftArr), { displayName: "LeftArr" });
 export const Logout: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Logout), { displayName: "Logout" });
+export const MailMin: React.FC<IconProps> = Object.assign(withSuspense(Lazy_MailMin), { displayName: "MailMin" });
 export const Manager: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Manager), { displayName: "Manager" });
 export const More: React.FC<IconProps> = Object.assign(withSuspense(Lazy_More), { displayName: "More" });
 export const Office: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Office), { displayName: "Office" });
+export const PhoneMin: React.FC<IconProps> = Object.assign(withSuspense(Lazy_PhoneMin), { displayName: "PhoneMin" });
+export const PlaceMin: React.FC<IconProps> = Object.assign(withSuspense(Lazy_PlaceMin), { displayName: "PlaceMin" });
 export const Profile: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Profile), { displayName: "Profile" });
 export const Project: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Project), { displayName: "Project" });
 export const Pto: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Pto), { displayName: "Pto" });
