@@ -1,4 +1,4 @@
-import { Link, NavLink } from 'react-router';
+import { Link, NavLink, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
 import { getImageUrl } from '@/utils';
 
@@ -8,6 +8,12 @@ import { Dashboard, Project, Calendar, Alarm, Profile, Logout, Pto, Office, Mana
 import { Button } from '@components/ui/button';
 
 export default function Header() {
+  const location = useLocation();
+
+  // 오피스 하위 경로들 (오피스는 /office 라우트가 없음)
+  const officePaths = ['/notice', '/meetingroom', '/seating'];
+  const isOfficeActive = officePaths.some((path) => location.pathname.startsWith(path));
+
   return (
     <>
       <header className="fixed top-0 left-0 flex h-18 w-full items-center justify-between border-b-1 border-b-gray-300 bg-white px-7">
@@ -105,13 +111,11 @@ export default function Header() {
           </li>
           <li>
             <NavLink
-              to="/office"
-              className={({ isActive }) =>
-                cn(
-                  'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
-                )
-              }>
+              to="/notice"
+              className={cn(
+                'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
+                isOfficeActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+              )}>
               <Office />
               <span>오피스</span>
             </NavLink>
