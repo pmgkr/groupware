@@ -29,7 +29,7 @@ export function SectionHeader({
   className,
 }: SectionHeaderProps) {
   return (
-    <div className={cn('flex items-center justify-between border-b border-b-gray-300 pb-1.5', className)}>
+    <div className={cn('mb-6 flex items-center justify-between border-b border-b-gray-300 pb-1.5', className)}>
       <h2 className="text-xl font-bold text-gray-950">{title}</h2>
 
       {buttonText ? (

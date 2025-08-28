@@ -37,6 +37,12 @@ export default function Mypage() {
             buttonIcon={<Edit className="size-4" />}
             onButtonClick={() => console.log('프로필 수정')}
           />
+          <div className="grid grid-cols-4 tracking-tight">
+            <div className="text-base leading-[1.5] text-gray-700">
+              <strong className="block text-[1.14em] font-bold text-gray-950">팀 이름</strong>
+              <span>Developer Team</span>
+            </div>
+          </div>
         </div>
       </section>
     </>
