@@ -3,6 +3,8 @@ import Layout from '@/layouts/Layout';
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 
+import Calendar from '@/pages/Calendar';
+
 import Notice from '@/pages/Office/Notice';
 import BoardWrite from '@/components/board/BoardWrite';
 import BoardDetail from '@/components/board/BoardDetail';
@@ -12,7 +14,6 @@ import Meetingroom from '@/pages/Office/Meetingroom';
 
 import Mypage from '@/pages/Mypage';
 import MyExpense from '@/pages/Mypage/Expense';
-import Calendar from '@/pages/Calendar';
 import ErrorPage from '@/pages/ErrorPage';
 
 export const router = createBrowserRouter([
@@ -32,6 +33,24 @@ export const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       // { index: true, element: <Navigate to="dashboard" replace /> }, // 로그인 후 '/'로 접근 시 /dashboard로 보내야함
+      {
+        handle: {
+          title: '캘린더',
+          nav: [
+            {
+              to: '/calendar',
+              label: '전체',
+              end: true, // end=true → 정확히 /mypage와 일치할 때에만 활성
+            },
+          ],
+        },
+        children: [
+          {
+            path: 'calendar',
+            element: <Calendar />,
+          },
+        ],
+      },
       {
         handle: {
           title: '오피스',
@@ -95,10 +114,6 @@ export const router = createBrowserRouter([
         ],
       },
     ],
-  },
-  {
-    path: '/calendar',
-    element: <Calendar />,
   },
   {
     path: '*',

@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { getImageUrl } from '@/utils';
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Badge } from '@components/ui/badge';
-import { Calendar } from '@components/calendar/calendar';
+import CustomCalendar from '@components/calendar/calendar';
 import { Avatar, AvatarImage, AvatarFallback } from '@components/ui/avatar';
 
 import WorkHoursBar from '@components/features/WorkHoursBar';

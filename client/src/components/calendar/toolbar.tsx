@@ -19,7 +19,7 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
   };
 
   return (
-    <div className="flex items-center justify-between bg-white mb-5">
+    <div className="flex items-center justify-between mb-5 relative">
       {/* 왼쪽: 네비게이션 버튼들 */}
       <div className="flex items-center gap-2">
         <Button
