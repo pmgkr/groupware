@@ -112,7 +112,8 @@
   --popover: var(--color-white);
   --border: var(--color-gray-400);
   --input: var(--color-gray-400);
-  --ring: oklch(0.708 0 0);
+  --ring: var(--color-white);
+  --background: var(--color-white);
 
   /* 사이즈 변수 */
   --radius: 0.625rem;
@@ -326,6 +327,12 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+}
+
+@layer components {
+  .short-v-divider {
+    @apply relative before:absolute before:top-1/2 before:left-0 before:h-11 before:w-px before:-translate-y-1/2 before:bg-gray-300 before:content-[''] first:before:hidden;
   }
 }
 

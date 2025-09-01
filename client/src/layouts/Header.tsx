@@ -16,7 +16,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 flex h-18 w-full items-center justify-between border-b-1 border-b-gray-300 bg-white px-7">
+      <header className="fixed top-0 left-0 z-99 flex h-18 w-full items-center justify-between border-b-1 border-b-gray-300 bg-white px-7">
         <h1 className="w-42">
           <Link to="/">
             <Logo className="w-full" />
