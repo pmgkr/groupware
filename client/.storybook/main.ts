@@ -1,9 +1,11 @@
 // .storybook/main.ts
 import type { StorybookConfig } from '@storybook/react-vite';
-import * as path from 'path'; // default → namespace import 로 변경
+import * as path from 'node:path'; // ESM 안전
 import tsconfigPaths from 'vite-tsconfig-paths';
-import { fileURLToPath } from 'url'; // ESM에서 __dirname 대체용
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { fileURLToPath } from 'node:url'; // __dirname 대체
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -14,12 +16,10 @@ const config: StorybookConfig = {
     '@storybook/addon-a11y',
     '@storybook/addon-vitest',
   ],
-  framework: {
-    name: '@storybook/react-vite',
-    options: {},
-  },
+  framework: { name: '@storybook/react-vite', options: {} },
+
   async viteFinal(baseConfig) {
-    const { mergeConfig } = await import('vite');
+    const { mergeConfig } = await import('vite'); // 동적 ESM import
     return mergeConfig(baseConfig, {
       plugins: [tsconfigPaths()],
       resolve: {
@@ -28,9 +28,8 @@ const config: StorybookConfig = {
           '@components': path.resolve(__dirname, '../src/components'),
         },
       },
-      define: {
-        'process.env': {},
-      },
+      // 필요할 때만:
+      // define: { 'process.env': {} },
     });
   },
 };

@@ -1,12 +1,8 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    // ESM로 설정 (import.meta 허용)
     "module": "esnext",
-    // Vite 권장
     "moduleResolution": "bundler",
-
-    // 일반 권장 옵션
     "target": "ES2022",
     "jsx": "react-jsx",
     "types": ["vite/client", "node"],
