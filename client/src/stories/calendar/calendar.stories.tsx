@@ -46,11 +46,11 @@ const CalendarWithState = ({ mode, ...props }: any) => {
   if (mode === 'multiple') {
     return <Calendar mode="multiple" selected={dates} onSelect={setDates} {...props} />;
   }
-  
+
   if (mode === 'range') {
     return <Calendar mode="range" selected={dateRange} onSelect={setDateRange} {...props} />;
   }
-  
+
   return <Calendar mode="single" selected={date} onSelect={setDate} {...props} />;
 };
 
@@ -142,4 +142,4 @@ export const Examples: Story = {
       <CalendarWithState variant="minimal" size="lg" mode="single" captionLayout="label" />
     </div>
   ),
-}; 
+};

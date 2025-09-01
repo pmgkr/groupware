@@ -39,6 +39,10 @@ const Lazy_Pto = React.lazy(() => import('./pto.svg?react'));
 const Lazy_RightArr = React.lazy(() => import('./right_arr.svg?react'));
 const Lazy_TooltipNoti = React.lazy(() => import('./tooltip_noti.svg?react'));
 const Lazy_UpArr = React.lazy(() => import('./up_arr.svg?react'));
+const Lazy_Search = React.lazy(() => import('./search_gray.svg?react'));
+const Lazy_File = React.lazy(() => import('./file.svg?react'));
+const Lazy_CircleX = React.lazy(() => import('./circle_x.svg?react'));
+const Lazy_Download = React.lazy(() => import('./download.svg?react'));
 
 export const Add: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Add), { displayName: 'Add' });
 export const Admin: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Admin), { displayName: 'Admin' });
@@ -66,3 +70,7 @@ export const Pto: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Pto), { 
 export const RightArr: React.FC<IconProps> = Object.assign(withSuspense(Lazy_RightArr), { displayName: 'RightArr' });
 export const TooltipNoti: React.FC<IconProps> = Object.assign(withSuspense(Lazy_TooltipNoti), { displayName: 'TooltipNoti' });
 export const UpArr: React.FC<IconProps> = Object.assign(withSuspense(Lazy_UpArr), { displayName: 'UpArr' });
+export const Search: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Search), { displayName: 'Search' });
+export const File: React.FC<IconProps> = Object.assign(withSuspense(Lazy_File), { displayName: 'File' });
+export const CircleX: React.FC<IconProps> = Object.assign(withSuspense(Lazy_CircleX), { displayName: 'CircleX' });
+export const Download: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Download), { displayName: 'Download' });

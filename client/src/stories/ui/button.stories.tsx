@@ -3,7 +3,7 @@ import { ChartNoAxesColumnIncreasing, ChevronLeft, ChevronRight } from 'lucide-r
 import { Button } from '@components/ui/button';
 
 const meta: Meta<typeof Button> = {
-  title: 'Components/UI/Button',
+  title: 'Components/ui/Button',
   component: Button,
   tags: ['autodocs'], // 자동 문서화를 위해 추가
   args: {
