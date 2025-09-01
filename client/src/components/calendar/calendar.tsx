@@ -1,54 +1,117 @@
 // client/src/components/calendar/calendar.tsx
 import { useState } from "react";
-import { Calendar, dateFnsLocalizer } from "react-big-calendar";
-import { format } from "date-fns/format";
-import { parse } from "date-fns/parse";
-import { startOfWeek } from "date-fns/startOfWeek";
-import { getDay } from "date-fns/getDay";
-import "react-big-calendar/lib/css/react-big-calendar.css"; 
-import "../../assets/scss/calendar.scss"; // 커스텀 SCSS 적용
-
-// locales 설정 (date-fns)
-import { ko } from "date-fns/locale/ko";
-
-
-const locales = {
-  "ko": ko,
-};
-
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek,
-  getDay,
-  locales,
-});
+import type { View } from "react-big-calendar";
+import CustomToolbar from "./toolbar";
+import CalendarView from "./view";
 
 const events = [
   {
-    title: "회의",
-    start: new Date(2025, 7, 28, 10, 0),
-    end: new Date(2025, 7, 28, 11, 0),
+    title: "연차",
+    start: new Date(2025, 8, 28, 10, 0),
+    end: new Date(2025, 9, 28, 11, 0),
+    author: "김철수",
+    description: "연차입니다.",
   },
   {
-    title: "프로젝트 마감",
-    start: new Date(2025, 7, 30, 9, 0),
-    end: new Date(2025, 7, 30, 10, 0),
+    title: "오전 반차",
+    start: new Date(2025, 8, 30, 9, 0),
+    end: new Date(2025, 9, 30, 10, 0),
+    author: "이연상",
+    description: "오전 반차입니다.",
+  },
+  {
+    title: "오후 반차",
+    start: new Date(2025, 8, 30, 9, 0),
+    end: new Date(2025, 9, 30, 10, 0),
+    author: "이연상",
+    description: "오후 반차입니다.",
+  },
+  {
+    title: "오전 반반차",
+    start: new Date(2025, 8, 30, 9, 0),
+    end: new Date(2025, 9, 30, 10, 0),
+    author: "이연상",
+    description: "오전 반반차입니다.",
+  },
+  {
+    title: "오후 반반차",
+    start: new Date(2025, 8, 30, 9, 0),
+    end: new Date(2025, 9, 30, 10, 0),
+    author: "이연상",
+    description: "오후 반반차입니다.",
+  },
+  {
+    title: "외부 일정",
+    start: new Date(2025, 8, 30, 9, 0),
+    end: new Date(2025, 9, 30, 10, 0),
+    author: "이연상",
+    description: "외부 일정입니다.",
+  },
+  {
+    title: "외부 일정",
+    start: new Date(2025, 8, 30, 9, 0),
+    end: new Date(2025, 9, 30, 10, 0),
+    author: "이연상",
+    description: "외부 일정입니다.",
   },
 ];
 
 export default function CustomCalendar() {
   const [myEvents] = useState(events);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentView, setCurrentView] = useState<View>('month');
+
+  const handleNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
+    let newDate = new Date(currentDate);
+    
+    switch (action) {
+      case 'PREV':
+        if (currentView === 'month') {
+          newDate.setMonth(newDate.getMonth() - 1);
+        } else if (currentView === 'week') {
+          newDate.setDate(newDate.getDate() - 7);
+        } else {
+          newDate.setDate(newDate.getDate() - 1);
+        }
+        break;
+      case 'NEXT':
+        if (currentView === 'month') {
+          newDate.setMonth(newDate.getMonth() + 1);
+        } else if (currentView === 'week') {
+          newDate.setDate(newDate.getDate() + 7);
+        } else {
+          newDate.setDate(newDate.getDate() + 1);
+        }
+        break;
+      case 'TODAY':
+        newDate = new Date();
+        break;
+    }
+    
+    setCurrentDate(newDate);
+  };
+
+  const handleViewChange = (view: View) => {
+    setCurrentView(view);
+  };
 
   return (
-    <div className="p-4">
-      <Calendar
-        localizer={localizer}
+    <div className="calendar-container w-full bg-white">
+      <CustomToolbar
+        onNavigate={handleNavigate}
+        onView={handleViewChange}
+        currentView={currentView}
+        currentDate={currentDate}
+      />
+      <CalendarView
         events={myEvents}
-        startAccessor="start"
-        endAccessor="end"
-        style={{ height: 600 }}
-        className="bg-gray-50 border border-gray-200 rounded-lg"
+        currentDate={currentDate}
+        currentView={currentView}
+        onNavigate={(newDate, view, action) => {
+          setCurrentDate(newDate);
+          setCurrentView(view as View);
+        }}
+        onViewChange={handleViewChange}
       />
     </div>
   );

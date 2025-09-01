@@ -7,11 +7,16 @@ import path from 'path';
 import svgr from 'vite-plugin-svgr';
 import { fileURLToPath } from 'node:url';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
-  plugins: [react(), tailwindcss(), svgr()],
+  plugins: [
+    react(), 
+    tailwindcss(),
+    svgr()
+  ],
   build: {
     outDir: '../dist',
   },
