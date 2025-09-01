@@ -35,7 +35,11 @@
     }
 
     .rbc-today{
-      @apply bg-blue-100;
+      @apply bg-blue-50;
+    }
+    
+    .rbc-now {
+      @apply bg-blue-50;
     }
 
     // 주말 날짜 셀 스타일

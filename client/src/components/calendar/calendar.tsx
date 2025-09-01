@@ -1,56 +1,57 @@
 // client/src/components/calendar/calendar.tsx
 import { useState } from "react";
 import type { View } from "react-big-calendar";
+import { parse } from "date-fns/parse";
 import CustomToolbar from "./toolbar";
 import CalendarView from "./view";
 
 const events = [
   {
     title: "연차",
-    start: new Date(2025, 8, 28, 10, 0),
-    end: new Date(2025, 9, 28, 11, 0),
-    author: "김철수",
+    start: parse("2025-08-10 10:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-28 11:00", "yyyy-MM-dd HH:mm", new Date()),
+    author: "이연상",
     description: "연차입니다.",
   },
   {
     title: "오전 반차",
-    start: new Date(2025, 8, 30, 9, 0),
-    end: new Date(2025, 9, 30, 10, 0),
+    start: parse("2025-09-02-09:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-02 10:00", "yyyy-MM-dd HH:mm", new Date()),
     author: "이연상",
     description: "오전 반차입니다.",
   },
   {
     title: "오후 반차",
-    start: new Date(2025, 8, 30, 9, 0),
-    end: new Date(2025, 9, 30, 10, 0),
+    start: parse("2025-09-03 09:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-03 10:00", "yyyy-MM-dd HH:mm", new Date()),
     author: "이연상",
     description: "오후 반차입니다.",
   },
   {
     title: "오전 반반차",
-    start: new Date(2025, 8, 30, 9, 0),
-    end: new Date(2025, 9, 30, 10, 0),
+    start: parse("2025-09-02 09:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-02 10:00", "yyyy-MM-dd HH:mm", new Date()),
     author: "이연상",
     description: "오전 반반차입니다.",
   },
   {
-    title: "오후 반반차",
-    start: new Date(2025, 8, 30, 9, 0),
-    end: new Date(2025, 9, 30, 10, 0),
+    title: "오전 반반차",
+    start: parse("2025-09-02 09:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-02 10:00", "yyyy-MM-dd HH:mm", new Date()),
     author: "이연상",
-    description: "오후 반반차입니다.",
+    description: "오전 반반차입니다.",
   },
   {
     title: "외부 일정",
-    start: new Date(2025, 8, 30, 9, 0),
-    end: new Date(2025, 9, 30, 10, 0),
+    start: parse("2025-08-30 09:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-01 10:00", "yyyy-MM-dd HH:mm", new Date()),
     author: "이연상",
     description: "외부 일정입니다.",
   },
   {
     title: "외부 일정",
-    start: new Date(2025, 8, 30, 9, 0),
-    end: new Date(2025, 9, 30, 10, 0),
+    start: parse("2025-09-20 09:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-21 10:00", "yyyy-MM-dd HH:mm", new Date()),
     author: "이연상",
     description: "외부 일정입니다.",
   },
