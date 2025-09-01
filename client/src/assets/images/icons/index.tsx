@@ -8,7 +8,6 @@ export type IconProps = React.SVGProps<SVGSVGElement>;
 function withSuspense<T extends React.ComponentType<any>>(LazyComp: T) {
   const Wrapped = (props: React.ComponentProps<T>) => (
     <React.Suspense fallback={null}>
-      {/* @ts-expect-error: lazy component typing */}
       <LazyComp {...props} />
     </React.Suspense>
   );

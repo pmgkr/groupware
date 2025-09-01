@@ -1,6 +1,7 @@
 // src/stories/ui/SectionHeader.stories.tsx
 import type { Meta, StoryObj } from '@storybook/react';
-import { action } from 'storybook/actions'; // ✅ SB9 경로
+import { action } from 'storybook/actions';
+import { MemoryRouter } from 'react-router';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Edit, Add } from '@/assets/images/icons';
 
@@ -17,6 +18,13 @@ const meta: Meta<typeof SectionHeader> = {
     buttonSize: { control: 'text' },
     onButtonClick: { table: { category: 'events' } },
   },
+  decorators: [
+    (Story) => (
+      <MemoryRouter>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
 };
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -57,6 +65,21 @@ export const CustomStyle: Story = {
   render: (args) => (
     <div className="w-[900px]">
       <SectionHeader {...args} buttonIcon={<Add className="size-4" />} />
+    </div>
+  ),
+};
+
+export const HrefStyle: Story = {
+  args: {
+    title: '마이페이지',
+    buttonText: '전체보기',
+    buttonVariant: 'outline',
+    buttonSize: 'sm',
+    buttonHref: '/mypage', // Link로 이동
+  },
+  render: (args) => (
+    <div className="w-[900px]">
+      <SectionHeader {...args} />
     </div>
   ),
 };

@@ -1,8 +1,9 @@
-// .storybook/main.ts
-import type { StorybookConfig } from '@storybook/react-vite';
-import path from 'path';
+// .storybook/main.cjs
+/** @type {import('@storybook/react-vite').StorybookConfig} */
+const path = require('node:path');
+const tsconfigPaths = require('vite-tsconfig-paths').default;
 
-const config: StorybookConfig = {
+module.exports = {
   stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
   addons: [
     '@chromatic-com/storybook',
@@ -11,16 +12,12 @@ const config: StorybookConfig = {
     '@storybook/addon-a11y',
     '@storybook/addon-vitest',
   ],
-  framework: {
-    name: '@storybook/react-vite',
-    options: {},
-  },
+  framework: { name: '@storybook/react-vite', options: {} },
 
-  // ✅ 최신 방식: async + mergeConfig
-  async viteFinal(config, { configType }) {
-    const { mergeConfig } = await import('vite');
-
-    return mergeConfig(config, {
+  async viteFinal(baseConfig) {
+    const { mergeConfig } = require('vite'); // CJS require 사용
+    return mergeConfig(baseConfig, {
+      plugins: [tsconfigPaths()],
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '../src'),
@@ -30,5 +27,3 @@ const config: StorybookConfig = {
     });
   },
 };
-
-export default config;
