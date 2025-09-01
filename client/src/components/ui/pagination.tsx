@@ -42,7 +42,7 @@ function PaginationLink({ className, isActive, size = 'icon', ...props }: Pagina
         }),
         // 커스텀 스타일 추가
         isActive
-          ? ':bg-white text-white [&]:border-[color:var(--color-primary-blue-500)] [&]:bg-[color:var(--color-primary-blue-500)] [&:hover]:border-[color:var(--color-primary-blue-500)] [&:hover]:bg-[color:var(--color-primary-blue-500)]'
+          ? ':bg-white text-primary-blue-500 [&]:border-primary-blue-500 [&:hover]:border-primary-blue-500 [&:hover]:bg-primary-blue-500 [&]:bg-white'
           : 'text-gray-400 hover:text-gray-900',
         'h-[28px] w-[28px] aria-disabled:pointer-events-none aria-disabled:opacity-50',
         className

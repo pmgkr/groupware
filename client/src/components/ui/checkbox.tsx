@@ -47,7 +47,7 @@ function Checkbox({ className, label, labelProps, ...props }: CheckboxProps) {
             'text-base transition-colors select-none',
             props.disabled
               ? 'cursor-not-allowed text-gray-400'
-              : 'cursor-pointer text-gray-700 peer-data-[state=checked]:text-[color:var(--color-primary-blue-500)]',
+              : 'peer-data-[state=checked]:text-primary-blue-500 cursor-pointer text-gray-700',
             labelProps?.className
           )}
           htmlFor={props.id}

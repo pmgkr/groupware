@@ -10,20 +10,17 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default: ' min-w-6 bg-[color:var(--color-primary-blue-500)] text-primary-foreground [a&]:hover:bg-primary/90',
-
         secondary: 'min-w-6 bg-[color:var(--color-primary-blue-100)] text-[color:var(--color-primary-blue)] [a&]:hover:bg-secondary/90',
-
         outline:
           'min-w-6 text-[color:var(--color-primary-blue-500)] border-[color:var(--color-primary-blue-500)]  [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
-
         lightpink: 'min-w-6 bg-[color:var(--color-primary-pink-300)] text-[color:var(--color-primary-pink)] [a&]:hover:bg-primary/90',
-
         pink: 'min-w-6 bg-[color:var(--color-primary-pink)] text-primary-foreground [a&]:hover:bg-primary/90',
+        dot: 'block max-w-full before:inline-block before:h-1.5 before:w-1.5 before:rounded-[50%] before:bg-[color:var(--color-primary-blue-500)] before:mr-1  before:align-center text-gray-500 p-0 text-ellipsis overflow-hidden whitespace-nowrap',
 
         // 🔵 dot variants (6px 사이즈, 원형, 색상별)
-        'dot-default': 'w-1.5 h-1.5 rounded-full bg-[color:var(--color-primary-blue-500)] border-none p-0',
-        'dot-secondary': 'w-1.5 h-1.5 rounded-full bg-[color:var(--color-primary-blue)] border-none p-0',
-        'dot-pink': 'w-1.5 h-1.5 rounded-full bg-[color:var(--color-primary-pink)] border-none p-0',
+        'dot-default': 'w-1.5 h-1.5 rounded-full bg-primary-blue-500  border-none p-0',
+        'dot-secondary': 'w-1.5 h-1.5 rounded-full bg-primary-blue  border-none p-0',
+        'dot-pink': 'w-1.5 h-1.5 rounded-full bg-primary-pink  border-none p-0',
       },
     },
     defaultVariants: {

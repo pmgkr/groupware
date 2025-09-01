@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 const radioGroupItemVariants = cva(
-  'border-[color:var(--color-gray-600)] text-[color:var(--color-gray-600)] focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive aspect-square shrink-0 rounded-full border-2 shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 ',
+  'border-gray-600 text-gray-600 focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive aspect-square shrink-0 rounded-full border-2 shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 ',
   {
     variants: {
       size: {
@@ -14,8 +14,7 @@ const radioGroupItemVariants = cva(
         lg: 'size-5',
       },
       variant: {
-        default:
-          'data-[state=checked]:border-[color:var(--color-primary-blue-500)] data-[state=checked]:text-[color:var(--color-primary-blue-500)] hover:shadow-blue',
+        default: 'data-[state=checked]:border-primary-blue-500 data-[state=checked]:text-primary-blue-500 hover:shadow-blue',
         disabled:
           'cursor-not-allowed border-gray-400 text-gray-400 fill-gray-400 data-[state=checked]:border-gray-400 data-[state=checked]:text-gray-400 ',
       },
@@ -31,7 +30,7 @@ const radioGroupItemVariants = cva(
 const radioGroupItemWrapperVariants = cva('flex items-center space-x-2', {
   variants: {
     variant: {
-      default: 'has-[button[data-state="checked"]]:text-[color:var(--color-primary-blue-500)]',
+      default: 'has-[button[data-state="checked"]]:text-primary-blue-500',
       disabled: 'text-gray-400',
     },
   },
@@ -75,7 +74,7 @@ function RadioGroupItem({ className, size, variant, label, labelProps, ...props 
   // variant에 따른 아이콘 색상 결정
   const getIconFillClass = () => {
     if (variant === 'disabled') return 'fill-gray-400';
-    return 'fill-[color:var(--color-primary-blue-500)]';
+    return 'fill-primary-blue-500';
   };
 
   const radioButton = (

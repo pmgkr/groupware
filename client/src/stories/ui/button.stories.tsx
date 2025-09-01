@@ -3,7 +3,7 @@ import { ChartNoAxesColumnIncreasing, ChevronLeft, ChevronRight } from 'lucide-r
 import { Button } from '@components/ui/button';
 
 const meta: Meta<typeof Button> = {
-  title: 'Components/UI/Button',
+  title: 'Components/ui/Button',
   component: Button,
   tags: ['autodocs'], // 자동 문서화를 위해 추가
   args: {
@@ -12,7 +12,7 @@ const meta: Meta<typeof Button> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['default', 'secondary', 'transparent', 'destructive', 'outline', 'ghost', 'link'],
+      options: ['default', 'secondary', 'transparent', 'destructive', 'outline', 'ghost', 'link', 'svgIcon'],
     },
     size: {
       control: 'select',
@@ -81,6 +81,12 @@ export const Examples: Story = {
           Large Button
         </Button>
         <Button size="full">Full Button</Button>
+        <Button variant="svgIcon">
+          <ChevronLeft />
+        </Button>
+        <Button variant="svgIcon">
+          <ChevronRight />
+        </Button>
       </div>
     </>
   ),
