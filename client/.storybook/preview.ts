@@ -1,4 +1,5 @@
 import type { Preview } from '@storybook/react-vite';
+import { MemoryRouter } from 'react-router';
 import '../src/index.css'; // Tailwind 포함된 전역 CSS
 
 const preview: Preview = {

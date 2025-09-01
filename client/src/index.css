@@ -112,7 +112,8 @@
   --popover: var(--color-white);
   --border: var(--color-gray-400);
   --input: var(--color-gray-400);
-  --ring: oklch(0.708 0 0);
+  --ring: var(--color-white);
+  --background: var(--color-white);
 
   /* 사이즈 변수 */
   --radius: 0.625rem;

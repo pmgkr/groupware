@@ -43,6 +43,12 @@ export const Pink: Story = {
   },
 };
 
+export const Dot: Story = {
+  args: {
+    variant: 'dot',
+  },
+};
+
 export const Examples: Story = {
   render: () => (
     <>
@@ -95,6 +101,27 @@ export const Examples: Story = {
         <Badge variant="pink">N</Badge>
         <Badge variant="pink">!</Badge>
         <Badge variant="dot-pink" />
+      </div>
+      <div className="my-5 flex gap-1">
+        <h3 className="mr-2">Dot</h3>
+        <Badge variant="dot" className="before:bg-[#FF6B6B]">
+          연차휴가
+        </Badge>
+        <Badge variant="dot" className="before:bg-[#6BADFF]">
+          반차휴가
+        </Badge>
+        <Badge variant="dot" className="before:bg-[#FFA46B]">
+          반반차휴가
+        </Badge>
+        <Badge variant="dot" className="before:bg-[#2FC05D]">
+          외부일정
+        </Badge>
+        <Badge variant="dot" className="before:bg-[#5E6BFF]">
+          휴일근무
+        </Badge>
+        <Badge variant="dot" className="before:bg-[#DA6BFF]">
+          기타
+        </Badge>
       </div>
     </>
   ),
