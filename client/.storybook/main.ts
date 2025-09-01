@@ -1,6 +1,9 @@
 // .storybook/main.ts
 import type { StorybookConfig } from '@storybook/react-vite';
-import path from 'path';
+import * as path from 'path'; // default → namespace import 로 변경
+import tsconfigPaths from 'vite-tsconfig-paths';
+import { fileURLToPath } from 'url'; // ESM에서 __dirname 대체용
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -15,17 +18,18 @@ const config: StorybookConfig = {
     name: '@storybook/react-vite',
     options: {},
   },
-
-  // ✅ 최신 방식: async + mergeConfig
-  async viteFinal(config, { configType }) {
+  async viteFinal(baseConfig) {
     const { mergeConfig } = await import('vite');
-
-    return mergeConfig(config, {
+    return mergeConfig(baseConfig, {
+      plugins: [tsconfigPaths()],
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '../src'),
           '@components': path.resolve(__dirname, '../src/components'),
         },
+      },
+      define: {
+        'process.env': {},
       },
     });
   },
