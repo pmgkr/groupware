@@ -6,7 +6,6 @@ const preview: Preview = {
   parameters: {
     controls: {
       expanded: true, // 컨트롤 패널을 기본적으로 확장된 상태로 표시
-      actions: { argTypesRegex: '^on[A-Z].*' }, // 'on'으로 시작하는 모든 이벤트 핸들러를 자동으로 액션으로 매핑
       matchers: {
         color: /(background|color)$/i,
         date: /Date$/i,

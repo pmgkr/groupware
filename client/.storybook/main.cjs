@@ -1,13 +1,9 @@
-// .storybook/main.ts
-import type { StorybookConfig } from '@storybook/react-vite';
-import * as path from 'node:path'; // ESM 안전
-import tsconfigPaths from 'vite-tsconfig-paths';
-import { fileURLToPath } from 'node:url'; // __dirname 대체
+// .storybook/main.cjs
+/** @type {import('@storybook/react-vite').StorybookConfig} */
+const path = require('node:path');
+const tsconfigPaths = require('vite-tsconfig-paths').default;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const config: StorybookConfig = {
+module.exports = {
   stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
   addons: [
     '@chromatic-com/storybook',
@@ -19,7 +15,7 @@ const config: StorybookConfig = {
   framework: { name: '@storybook/react-vite', options: {} },
 
   async viteFinal(baseConfig) {
-    const { mergeConfig } = await import('vite'); // 동적 ESM import
+    const { mergeConfig } = require('vite'); // CJS require 사용
     return mergeConfig(baseConfig, {
       plugins: [tsconfigPaths()],
       resolve: {
@@ -28,10 +24,6 @@ const config: StorybookConfig = {
           '@components': path.resolve(__dirname, '../src/components'),
         },
       },
-      // 필요할 때만:
-      // define: { 'process.env': {} },
     });
   },
 };
-
-export default config;
