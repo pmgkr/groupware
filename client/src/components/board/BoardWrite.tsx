@@ -18,7 +18,7 @@ export default function BoardWrite() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     // 여러 파일 선택 가능하게
-    setFiles((prev) => [...prev, ...Array.from(e.target.files)]);
+    setFiles((prev) => [...prev, ...(e.target.files ? Array.from(e.target.files) : [])]);
     e.target.value = ''; // 같은 파일 선택 시에도 onChange 트리거 되도록 초기화
   };
 
