@@ -4,6 +4,10 @@ import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 
 import Notice from '@/pages/Office/Notice';
+import BoardWrite from '@/components/board/BoardWrite';
+import BoardDetail from '@/components/board/BoardDetail';
+import BoardList from '@/components/board/BoardList';
+
 import Meetingroom from '@/pages/Office/Meetingroom';
 
 import Mypage from '@/pages/Mypage';
@@ -43,6 +47,11 @@ export const router = createBrowserRouter([
           {
             path: 'notice',
             element: <Notice />,
+            children: [
+              { index: true, element: <BoardList /> }, // /notice
+              { path: 'write', element: <BoardWrite /> }, // /notice/write
+              { path: ':id', element: <BoardDetail /> }, // /notice/:id
+            ],
           },
           {
             path: 'meetingroom',

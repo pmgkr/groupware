@@ -11,7 +11,7 @@ import {
 } from '@components/ui/pagination';
 
 type AppPaginationProps = {
-  totalPages: number;
+  totalPages: number; // 총 페이지 수
   initialPage?: number;
   visibleCount?: number; // 한 번에 몇 개 보일지
 };
