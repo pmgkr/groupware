@@ -12,6 +12,12 @@
   @apply border-gray-300;
 }
 
+
+.rbc-event, .rbc-day-slot .rbc-background-event {
+  @apply text-sm bg-transparent pl-1 pr-1 pt-0 pb-0; 
+}
+
+
 .rbc-month-view {
   // @apply bg-gray-50 border border-gray-200 rounded-lg;
 
@@ -47,10 +53,6 @@
       @apply bg-gray-100 text-gray-500;
     }
 
-  }
-
-  .rbc-event, .rbc-day-slot .rbc-background-event {
-    @apply text-sm bg-transparent pl-1 pr-1 pt-0 pb-0; 
   }
 
   .rbc-show-more {
@@ -110,3 +112,11 @@
 //   background: #000;
 // }
 
+// 자체 모달
+
+.rbc-overlay {
+  @apply bg-white border border-gray-300 rounded-lg shadow-lg p-4 min-w-80;
+}
+.rbc-overlay-header {
+  @apply m-0 p-0 pb-3 mb-3;
+}

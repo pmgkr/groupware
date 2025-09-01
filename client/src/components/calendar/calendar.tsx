@@ -14,6 +14,13 @@ const events = [
     description: "연차입니다.",
   },
   {
+    title: "연차",
+    start: parse("2025-09-01 10:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-05 11:00", "yyyy-MM-dd HH:mm", new Date()),
+    author: "이연상",
+    description: "연차입니다.",
+  },
+  {
     title: "오전 반차",
     start: parse("2025-09-02-09:00", "yyyy-MM-dd HH:mm", new Date()),
     end: parse("2025-09-02 10:00", "yyyy-MM-dd HH:mm", new Date()),
@@ -22,8 +29,22 @@ const events = [
   },
   {
     title: "오후 반차",
-    start: parse("2025-09-03 09:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-03 10:00", "yyyy-MM-dd HH:mm", new Date()),
+    start: parse("2025-09-02 13:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-02 14:00", "yyyy-MM-dd HH:mm", new Date()),
+    author: "이연상",
+    description: "오후 반차입니다.",
+  },
+  {
+    title: "오후 반차",
+    start: parse("2025-09-02 13:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-02 14:00", "yyyy-MM-dd HH:mm", new Date()),
+    author: "이연상",
+    description: "오후 반차입니다.",
+  },
+  {
+    title: "오후 반차",
+    start: parse("2025-09-02 09:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-02 10:00", "yyyy-MM-dd HH:mm", new Date()),
     author: "이연상",
     description: "오후 반차입니다.",
   },
