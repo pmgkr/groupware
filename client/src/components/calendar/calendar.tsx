@@ -8,8 +8,8 @@ import CalendarView from "./view";
 const events = [
   {
     title: "연차",
-    start: parse("2025-08-10 10:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-28 11:00", "yyyy-MM-dd HH:mm", new Date()),
+    start: parse("2025-08-20 10:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-05 11:00", "yyyy-MM-dd HH:mm", new Date()),
     author: "이연상",
     description: "연차입니다.",
   },

@@ -6,27 +6,41 @@ import { format, parse, startOfWeek, getDay } from "date-fns";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../../assets/scss/calendar.scss";
 import { ko } from "date-fns/locale/ko";
-import { getCachedHolidays, isHolidayCached, getHolidayNameCached } from "@/services/holidayApi"
-import type { Holiday } from "@/types/holiday"
+import { getCachedHolidays } from "@/services/holidayApi";
+import type { Holiday } from "@/types/holiday";
 
 const locales = { ko };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 
-// 날짜 헤더 영역 커스텀
-const DateHeader = ({ label, date, holidays }: { label: string; date: Date; holidays: Holiday[] }) => {
-  // 날짜를 yyyyMMdd 형식으로 변환하여 공휴일 확인
+
+// 날짜 헤더 커스텀 (주말/공휴일 클래스 추가)
+const DateHeader = ({
+  label,
+  date,
+  holidays,
+}: {
+  label: string;
+  date: Date;
+  holidays: Holiday[];
+}) => {
   const dateString = format(date, "yyyyMMdd");
   const holiday = holidays.find((h) => h.locdate.toString() === dateString);
-  
+
+  const dayOfWeek = date.getDay();
+  const classes: string[] = ["day-number"];
+  if (dayOfWeek === 6) classes.push("day-weekend");
+  if (holiday || dayOfWeek === 0) classes.push("day-holiday");
+
   return (
     <>
-      <span className="day-number">{label}</span>
+      <span className={classes.join(" ")}>{label}</span>
       {holiday && <div className="holiday-title">{holiday.dateName}</div>}
     </>
   );
 };
 
-// 이벤트 영역 커스텀
+
+// 이벤트 렌더링링
 const EventComponent = ({ event }: { event: any }) => (
   <div className={`event-item ${getEventStyleClass(event.title)}`}>
     <div className="event-title">{event.title}</div>
@@ -34,19 +48,31 @@ const EventComponent = ({ event }: { event: any }) => (
   </div>
 );
 
-// 휴가 종류에 따라 클래스 부여
+// 이벤트 스타일 클래스
 const getEventStyleClass = (title: string) => {
   if (title.includes("연차")) return "event-vacation";
   if (title.includes("오전 반차") || title.includes("오후 반차")) return "event-half-day";
-  if (title.includes("오전 반반차") || title.includes("오후 반반차")) return "event-half-half-day";
+  if (title.includes("오전 반반차") || title.includes("오후 반반차"))
+    return "event-half-half-day";
   if (title.includes("외부 일정")) return "event-external";
   return "event-default";
 };
 
-// 주말 클래스 부여
-const dayPropGetter = (date: Date) => {
+// rbc-day-bg 에 붙는 클래스 (배경색상 커스텀용용)
+const dayPropGetter = (date: Date, holidayCache: Map<string, boolean>) => {
   const dayOfWeek = date.getDay();
-  return dayOfWeek === 0 || dayOfWeek === 6 ? { className: "rbc-weekend" } : {};
+  const dateString = format(date, "yyyyMMdd");
+  const isHoliday = holidayCache.get(dateString) || false;
+
+  let className = "";
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    className += " rbc-weekend";
+  }
+  if (isHoliday) {
+    className += " rbc-holiday";
+  }
+
+  return { className: className.trim() };
 };
 
 interface CalendarViewProps {
@@ -57,7 +83,13 @@ interface CalendarViewProps {
   onViewChange?: (newView: View) => void;
 }
 
-export default function CalendarView({ events, currentDate, currentView, onNavigate, onViewChange }: CalendarViewProps) {
+export default function CalendarView({
+  events,
+  currentDate,
+  currentView,
+  onNavigate,
+  onViewChange,
+}: CalendarViewProps) {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [holidayCache, setHolidayCache] = useState<Map<string, boolean>>(new Map());
   const [holidayNameCache, setHolidayNameCache] = useState<Map<string, string>>(new Map());
@@ -66,50 +98,29 @@ export default function CalendarView({ events, currentDate, currentView, onNavig
   useEffect(() => {
     if (currentDate) {
       const year = currentDate.getFullYear();
-      console.log('공휴일 로딩 시작, 연도:', year);
       loadHolidays(year);
     }
   }, [currentDate]);
 
   const loadHolidays = async (year: number) => {
     try {
-      console.log('공휴일 API 호출 시작, 연도:', year);
       const yearHolidays = await getCachedHolidays(year);
-      console.log('받아온 공휴일 데이터:', yearHolidays);
       setHolidays(yearHolidays);
-      
-      // 캐시 초기화
+
       const newHolidayCache = new Map<string, boolean>();
       const newHolidayNameCache = new Map<string, string>();
-      
-      yearHolidays.forEach(holiday => {
-        // locdate를 사용하여 캐시 키 생성
+
+      yearHolidays.forEach((holiday) => {
         const dateKey = holiday.locdate.toString();
         newHolidayCache.set(dateKey, true);
         newHolidayNameCache.set(dateKey, holiday.dateName);
-        console.log('캐시에 추가:', dateKey, holiday.dateName);
       });
-      
-      console.log('공휴일 캐시 설정 완료:', newHolidayCache.size, '개');
+
       setHolidayCache(newHolidayCache);
       setHolidayNameCache(newHolidayNameCache);
     } catch (error) {
-      console.error('공휴일 정보를 로드하는 중 오류가 발생했습니다:', error);
+      console.error("공휴일 불러오기 실패:", error);
     }
-  };
-
-  // 특정 날짜가 공휴일인지 확인
-  const isHoliday = (date: Date): boolean => {
-    const dateString = format(date, 'yyyyMMdd');
-    const result = holidayCache.get(dateString) || false;
-    console.log('공휴일 확인:', format(date, 'yyyy-MM-dd'), '결과:', result, '캐시 크기:', holidayCache.size);
-    return result;
-  };
-
-  // 공휴일 이름 가져오기
-  const getHolidayName = (date: Date): string | null => {
-    const dateString = format(date, 'yyyyMMdd');
-    return holidayNameCache.get(dateString) || null;
   };
 
   return (
@@ -126,7 +137,7 @@ export default function CalendarView({ events, currentDate, currentView, onNavig
           month: { dateHeader: (props) => <DateHeader {...props} holidays={holidays} /> },
           event: EventComponent,
         }}
-        dayPropGetter={dayPropGetter}
+        dayPropGetter={(date) => dayPropGetter(date, holidayCache)}
         onNavigate={onNavigate}
         onView={onViewChange}
         defaultView="month"
