@@ -10,8 +10,8 @@ import { Avatar, AvatarImage, AvatarFallback } from '@components/ui/avatar';
 import WorkHoursBar from '@components/features/WorkHoursBar';
 
 export default function Dashboard() {
-  const [selected, setSelected] = useState<Date>();
-  console.log(selected);
+  // Daypicker 선택된 날짜 관리 (Default : Today)
+  const [selected, setSelected] = useState<Date | undefined>(new Date());
 
   return (
     <>

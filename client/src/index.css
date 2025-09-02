@@ -106,7 +106,7 @@
 
   --muted: var(--color-gray-300);
   --muted-foreground: var(--color-gray-500);
-  --accent: var(--color-primary-blue-300);
+  --accent: var(--color-primary-blue-100);
   --accent-foreground: var(--color-gray-900);
   --destructive: var(--negative-base);
   --popover: var(--color-white);
