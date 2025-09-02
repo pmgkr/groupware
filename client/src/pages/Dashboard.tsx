@@ -1,14 +1,18 @@
 import Header from '@/layouts/Header';
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { getImageUrl } from '@/utils';
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Badge } from '@components/ui/badge';
-import CustomCalendar from '@components/calendar/calendar';
+import { DayPicker } from '@components/daypicker';
 import { Avatar, AvatarImage, AvatarFallback } from '@components/ui/avatar';
 
 import WorkHoursBar from '@components/features/WorkHoursBar';
 
 export default function Dashboard() {
+  const [selected, setSelected] = useState<Date>();
+  console.log(selected);
+
   return (
     <>
       <Header />
@@ -89,52 +93,55 @@ export default function Dashboard() {
               </ul>
             </div> */}
           </div>
-          <div className="row-span-4 rounded-md border border-gray-300 px-6 py-5">
+          <div className="row-span-4 flex flex-col rounded-md border border-gray-300 px-6 py-5">
             <SectionHeader
               title="캘린더"
               buttonText="전체보기"
               buttonVariant="outline"
               buttonSize="sm"
               buttonHref="/calendar"
-              className="mb-4"
+              className="mb-4 shrink-0"
             />
-            <div className="rounded-xl p-4">
-              <ul className="flex items-center justify-end gap-x-1.5">
-                <li>
-                  <Badge variant="dot" className="before:bg-[#FF6B6B]">
-                    연차휴가
-                  </Badge>
-                </li>
-                <li>
-                  <Badge variant="dot" className="before:bg-[#6BADFF]">
-                    반차휴가
-                  </Badge>
-                </li>
-                <li>
-                  <Badge variant="dot" className="before:bg-[#FFA46B]">
-                    반반차휴가
-                  </Badge>
-                </li>
-                <li>
-                  <Badge variant="dot" className="before:bg-[#2FC05D]">
-                    외부일정
-                  </Badge>
-                </li>
-                <li>
-                  <Badge variant="dot" className="before:bg-[#5E6BFF]">
-                    휴일근무
-                  </Badge>
-                </li>
-                <li>
-                  <Badge variant="dot" className="before:bg-[#DA6BFF]">
-                    기타
-                  </Badge>
-                </li>
-              </ul>
-              <ul className="grid grid-cols-3 gap-2 gap-y-4 pt-4">
+            <div className="shrink-0">
+              <DayPicker mode="single" variant="dashboard" selected={selected} onSelect={setSelected} />
+            </div>
+            <ul className="flex items-center justify-end gap-x-1.5 px-4 py-2">
+              <li>
+                <Badge variant="dot" className="before:bg-[#FF6B6B]">
+                  연차휴가
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="dot" className="before:bg-[#6BADFF]">
+                  반차휴가
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="dot" className="before:bg-[#FFA46B]">
+                  반반차휴가
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="dot" className="before:bg-[#2FC05D]">
+                  외부일정
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="dot" className="before:bg-[#5E6BFF]">
+                  휴일근무
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="dot" className="before:bg-[#DA6BFF]">
+                  기타
+                </Badge>
+              </li>
+            </ul>
+            <div className="overflow-y-auto rounded-xl p-4">
+              <ul className="grid grid-cols-3 gap-2 gap-y-4">
                 <li className="flex items-center gap-x-2">
                   <Avatar>
-                    <AvatarImage src="/src/assets/images/dummy/profile.png" alt="@shadcn" />
+                    <AvatarImage src={getImageUrl('dummy/profile')} alt="@shadcn" />
                     <AvatarFallback>CN</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col text-base">
@@ -146,7 +153,7 @@ export default function Dashboard() {
                 </li>
                 <li className="flex items-center gap-x-2">
                   <Avatar>
-                    <AvatarImage src="/src/assets/images/dummy/profile.png" alt="@shadcn" />
+                    <AvatarImage src={getImageUrl('dummy/profile')} alt="@shadcn" />
                     <AvatarFallback>CN</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col text-base">
