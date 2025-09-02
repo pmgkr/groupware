@@ -58,7 +58,6 @@ export const router = createBrowserRouter([
             {
               to: '/notice',
               label: '공지사항',
-              end: true, // end=true → 정확히 /mypage와 일치할 때에만 활성
             },
             {
               to: '/meetingroom',
