@@ -3,7 +3,7 @@ import { Badge } from '@components/ui/badge';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search } from '@/assets/images/icons';
+import { SearchGray } from '@/assets/images/icons';
 import { useNavigate } from 'react-router';
 
 export default function BookList() {
@@ -48,7 +48,7 @@ export default function BookList() {
       <div className="flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
           <Input className="h-[40px] px-4 [&]:bg-white" placeholder="검색어 입력" />
-          <Search className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <SearchGray className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         </div>
         <Button>도서 등록</Button>
       </div>
