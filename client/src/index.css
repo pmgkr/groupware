@@ -104,10 +104,10 @@
   --secondary: var(--color-gray-500);
   --secondary-foreground: var(--color-white);
 
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --muted: var(--color-gray-300);
+  --muted-foreground: var(--color-gray-500);
+  --accent: var(--color-primary-blue-100);
+  --accent-foreground: var(--color-gray-900);
   --destructive: var(--negative-base);
   --popover: var(--color-white);
   --border: var(--color-gray-400);

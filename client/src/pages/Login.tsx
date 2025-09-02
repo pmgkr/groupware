@@ -1,25 +1,32 @@
 import { useNavigate } from 'react-router';
-import { Button } from '@/components/ui/button';
+
+import Logo from '@/assets/images/common/pmg_logo.svg?react';
+import { Place } from '@/assets/images/icons';
+import { LoginForm } from '@components/auth/LoginForm';
 
 export default function Login() {
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    // ✅ 로그인 로직 성공 처리 후
-    navigate('/dashboard'); // 대시보드로 이동
-  };
-  //const [page, setPage] = useState(1);
-
   return (
-    <div className="flex h-screen flex-col items-center justify-center">
-      <h1 className="mb-4 text-2xl">로그인 페이지</h1>
-      {/* 로그인 폼 추가 예정 */}
-      <Button onClick={handleLogin}>로그인</Button>
-
-      {/* 
-      페이지네이션 예시
-      <AppPagination page={page} totalPages={10} onPageChange={setPage} /> 
-      */}
+    <div className="flex h-screen w-screen items-center justify-center bg-gray-200 p-25">
+      <div className="flex w-full max-w-250 rounded-2xl bg-white p-3">
+        <div className="bg-primary-blue-100 flex w-[46%] shrink-0 flex-col gap-y-8 rounded-2xl p-10">
+          <Logo />
+          <h1 className="text-3xl font-bold tracking-tight text-gray-950">
+            PMG Korea의 그룹웨어에
+            <br />
+            오신걸 환영합니다
+          </h1>
+          <div className="text-primary-blue mt-auto flex items-center gap-x-2.5 text-3xl font-bold tracking-tight">
+            <Place className="size-7.5" />
+            Seoul, Korea
+          </div>
+        </div>
+        <div className="flex flex-1 flex-col gap-y-8 px-10 py-14 pr-7">
+          <h2 className="text-primary-blue text-3xl font-bold">그룹웨어 지금 시작하기</h2>
+          <LoginForm />
+        </div>
+      </div>
     </div>
   );
 }

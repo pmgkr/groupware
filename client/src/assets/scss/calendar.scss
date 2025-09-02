@@ -1,0 +1,122 @@
+@use "tailwindcss" as *;
+
+.calendar-container {
+  font-family: "Pretendard", "Noto Sans KR", sans-serif;
+  @apply bg-white;
+}
+
+.rbc-month-view,
+.rbc-header + .rbc-header,
+.rbc-month-row + .rbc-month-row,
+.rbc-day-bg + .rbc-day-bg {
+  @apply border-gray-300;
+}
+
+
+.rbc-event, .rbc-day-slot .rbc-background-event {
+  @apply text-sm bg-transparent pl-1 pr-1 pt-0 pb-0; 
+}
+
+
+.rbc-month-view {
+  // @apply bg-gray-50 border border-gray-200 rounded-lg;
+
+  .rbc-header {
+    @apply p-2 text-sm font-medium text-center border-b border-gray-300;
+  }
+
+  .rbc-date-cell {
+    @apply text-left pl-2 pr-2 pt-1 pb-1 text-sm h-6;
+  }
+
+  .rbc-row-segment {
+    @apply p-0 pb-1;
+  }
+
+  .rbc-row-bg {
+    right: 0;
+
+    .rbc-off-range-bg{
+      @apply bg-gray-100
+    }
+
+    .rbc-today{
+      @apply bg-blue-50;
+    }
+    
+    .rbc-now {
+      @apply bg-blue-50;
+    }
+
+    // 주말 날짜 셀 스타일
+    .rbc-weekend {
+      @apply bg-gray-100 text-gray-500;
+    }
+
+  }
+
+  .rbc-show-more {
+    @apply text-right font-medium text-xs text-gray-500 float-right mr-2;
+  }
+}
+
+// 이벤트 타입별 배경색
+.event-item {
+  @apply flex items-center gap-1 rounded pl-1 pr-1 pt-0 pb-0 text-gray-900 h-5;
+  
+  .event-title {
+    @apply font-bold;
+  }
+
+  .event-author {
+    @apply font-medium text-gray-900;
+  }
+
+  
+  &.event-vacation {
+    @apply bg-blue-100;
+    
+    .event-title {
+      @apply text-blue-500;
+    }
+
+  }
+  
+  &.event-half-day {
+    @apply bg-purple-100;
+    
+    .event-title {
+      @apply text-pink-500;
+    }
+
+  }
+  
+  &.event-half-half-day {
+    @apply bg-purple-100;
+    
+    .event-title {
+      @apply text-purple-500;
+    }
+
+  }
+  
+  &.event-external {
+    @apply bg-yellow-100;
+    
+    .event-title {
+      @apply text-orange-500;
+    }
+  }
+}
+// .rbc-month-view {
+//   background: #000;
+// }
+
+// 자체 모달
+
+.rbc-overlay {
+  @apply bg-white border border-gray-300 rounded-lg shadow-lg p-4 min-w-80;
+}
+.rbc-overlay-header {
+  @apply m-0 p-0 pb-3 mb-3;
+}

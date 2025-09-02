@@ -1,24 +1,28 @@
 import Header from '@/layouts/Header';
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { getImageUrl } from '@/utils';
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Badge } from '@components/ui/badge';
-import { Calendar } from '@components/calendar/calendar';
+import { DayPicker } from '@components/daypicker';
 import { Avatar, AvatarImage, AvatarFallback } from '@components/ui/avatar';
 
 import WorkHoursBar from '@components/features/WorkHoursBar';
 
 export default function Dashboard() {
+  // Daypicker 선택된 날짜 관리 (Default : Today)
+  const [selected, setSelected] = useState<Date | undefined>(new Date());
+
   return (
     <>
       <Header />
-      <section className="mt-18 ml-60 flex min-h-200 flex-col gap-y-2 bg-white px-16 py-8">
+      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8">
         <div className="flex items-center justify-between text-base text-gray-800">
           <p>예지님, 안녕하세요! 좋은 하루 보내시길 바랍니다 😊</p>
           <div className="flex">서울 날씨 ☀️ 25°C, 맑음</div>
         </div>
         <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6">
-          <div className="row-span-2 flex flex-col justify-center gap-y-6 rounded-md border border-gray-300 p-6">
+          <div className="row-span-2 flex flex-col justify-center gap-y-6 rounded-md border border-gray-300 bg-white p-6">
             <div className="px-8">
               <Link to="/mypage">
                 <div className="relative mx-auto mb-2.5 aspect-square w-32 overflow-hidden rounded-[50%]">
@@ -57,7 +61,7 @@ export default function Dashboard() {
               </ul>
             </div>
           </div>
-          <div className="rounded-md border border-gray-300 px-6 py-5">
+          <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader title="근무 시간" buttonText="전체보기" buttonVariant="outline" buttonSize="sm" buttonHref="/working" />
             <div>
               <div className="flex gap-x-4">
@@ -89,52 +93,55 @@ export default function Dashboard() {
               </ul>
             </div> */}
           </div>
-          <div className="row-span-4 rounded-md border border-gray-300 px-6 py-5">
+          <div className="row-span-4 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
               title="캘린더"
               buttonText="전체보기"
               buttonVariant="outline"
               buttonSize="sm"
               buttonHref="/calendar"
-              className="mb-4"
+              className="mb-4 shrink-0"
             />
-            <div className="rounded-xl p-4">
-              <ul className="flex items-center justify-end gap-x-1.5">
-                <li>
-                  <Badge variant="dot" className="before:bg-[#FF6B6B]">
-                    연차휴가
-                  </Badge>
-                </li>
-                <li>
-                  <Badge variant="dot" className="before:bg-[#6BADFF]">
-                    반차휴가
-                  </Badge>
-                </li>
-                <li>
-                  <Badge variant="dot" className="before:bg-[#FFA46B]">
-                    반반차휴가
-                  </Badge>
-                </li>
-                <li>
-                  <Badge variant="dot" className="before:bg-[#2FC05D]">
-                    외부일정
-                  </Badge>
-                </li>
-                <li>
-                  <Badge variant="dot" className="before:bg-[#5E6BFF]">
-                    휴일근무
-                  </Badge>
-                </li>
-                <li>
-                  <Badge variant="dot" className="before:bg-[#DA6BFF]">
-                    기타
-                  </Badge>
-                </li>
-              </ul>
-              <ul className="grid grid-cols-3 gap-2 gap-y-4 pt-4">
+            <div className="shrink-0">
+              <DayPicker mode="single" variant="dashboard" selected={selected} onSelect={setSelected} />
+            </div>
+            <ul className="flex items-center justify-end gap-x-1.5 px-4 py-2">
+              <li>
+                <Badge variant="dot" className="before:bg-[#FF6B6B]">
+                  연차휴가
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="dot" className="before:bg-[#6BADFF]">
+                  반차휴가
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="dot" className="before:bg-[#FFA46B]">
+                  반반차휴가
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="dot" className="before:bg-[#2FC05D]">
+                  외부일정
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="dot" className="before:bg-[#5E6BFF]">
+                  휴일근무
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="dot" className="before:bg-[#DA6BFF]">
+                  기타
+                </Badge>
+              </li>
+            </ul>
+            <div className="overflow-y-auto rounded-xl p-4">
+              <ul className="grid grid-cols-3 gap-2 gap-y-4">
                 <li className="flex items-center gap-x-2">
                   <Avatar>
-                    <AvatarImage src="/src/assets/images/dummy/profile.png" alt="@shadcn" />
+                    <AvatarImage src={getImageUrl('dummy/profile')} alt="@shadcn" />
                     <AvatarFallback>CN</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col text-base">
@@ -146,7 +153,7 @@ export default function Dashboard() {
                 </li>
                 <li className="flex items-center gap-x-2">
                   <Avatar>
-                    <AvatarImage src="/src/assets/images/dummy/profile.png" alt="@shadcn" />
+                    <AvatarImage src={getImageUrl('dummy/profile')} alt="@shadcn" />
                     <AvatarFallback>CN</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col text-base">
@@ -225,7 +232,7 @@ export default function Dashboard() {
               </ul>
             </div>
           </div>
-          <div className="rounded-md border border-gray-300 px-6 py-5">
+          <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
               title="알림"
               buttonText="전체보기"
@@ -254,7 +261,7 @@ export default function Dashboard() {
               </ul>
             </div>
           </div>
-          <div className="row-span-2 flex flex-col rounded-md border border-gray-300 px-6 py-5">
+          <div className="row-span-2 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
               title="미팅룸"
               buttonText="전체보기"
@@ -305,7 +312,7 @@ export default function Dashboard() {
               </ul>
             </div>
           </div>
-          <div className="row-span-2 flex flex-col rounded-md border border-gray-300 px-6 py-5">
+          <div className="row-span-2 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
               title="비용 관리"
               buttonText="전체보기"
