@@ -107,7 +107,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
 
       <div className="border-b border-gray-900 p-4 pb-10 leading-relaxed whitespace-pre-line">{post.content}</div>
 
-      <div className="mt-1 text-right">
+      <div className="mt-3 text-right">
         <Button onClick={() => navigate('..')}>목록</Button>
       </div>
     </article>
