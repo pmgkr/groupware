@@ -26,7 +26,7 @@
   }
 
   .rbc-date-cell {
-    @apply text-left pl-2 pr-2 pt-1 pb-1 text-sm h-6;
+    @apply text-left pl-2 pr-2 pt-1 pb-1 text-sm h-6 flex justify-between;
   }
 
   .rbc-row-segment {
@@ -108,9 +108,12 @@
     }
   }
 }
-// .rbc-month-view {
-//   background: #000;
-// }
+
+
+// 공휴일 
+.holiday-title {
+  @apply text-red-500;
+}
 
 // 자체 모달
 

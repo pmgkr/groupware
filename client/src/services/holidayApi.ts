@@ -8,15 +8,15 @@ class HolidayApiService {
   private apiKey: string
 
   constructor() {
+
     // Vite 환경에서는 VITE_ 접두사 사용
-    if (typeof window !== 'undefined' && (window as any).__NEXT_PUBLIC_HOLIDAY_API_KEY) {
-      this.apiKey = (window as any).__NEXT_PUBLIC_HOLIDAY_API_KEY
-    } else if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_HOLIDAY_API_KEY) {
-      this.apiKey = import.meta.env.VITE_HOLIDAY_API_KEY
-    } else if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_HOLIDAY_API_KEY) {
-      this.apiKey = process.env.NEXT_PUBLIC_HOLIDAY_API_KEY
+    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_HOLIDAY_API_KEY) {
+      // API 키를 URL 디코딩
+      const encodedKey = import.meta.env.VITE_HOLIDAY_API_KEY
+      this.apiKey = decodeURIComponent(encodedKey)
     } else {
       this.apiKey = ''
+      console.warn('공휴일 API 키가 설정되지 않았습니다. .env.local 파일에 VITE_HOLIDAY_API_KEY를 설정하세요.')
     }
   }
 
@@ -25,7 +25,7 @@ class HolidayApiService {
    */
   async getHolidays(year: number): Promise<Holiday[]> {
     if (!this.apiKey) {
-      console.warn('공휴일 API 키가 설정되지 않았습니다.')
+      console.warn('공휴일 API 키가 설정되지 않았습니다. .env.local 파일에 VITE_HOLIDAY_API_KEY를 설정하세요.')
       return []
     }
 
@@ -39,13 +39,22 @@ class HolidayApiService {
         _type: 'json'
       })
 
-      const response = await fetch(`${url}?${params}`)
-      
+      const fullUrl = `${url}?${params}`      
+      const response = await fetch(fullUrl)
+            
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data: HolidayResponse = await response.json()
+      const responseText = await response.text()
+
+      // 응답이 JSON인지 확인
+      if (!responseText.trim().startsWith('{')) {
+        console.error('API 응답이 JSON이 아닙니다. 응답 내용:', responseText)
+        return []
+      }
+
+      const data: HolidayResponse = JSON.parse(responseText)
       
       if (data.response?.body?.items?.item) {
         // 단일 아이템인 경우 배열로 변환
@@ -53,7 +62,18 @@ class HolidayApiService {
           ? data.response.body.items.item 
           : [data.response.body.items.item]
         
-        return items.filter(item => item.isHoliday === 'Y')
+        // console.log('API 응답 아이템:', items)
+        
+        // 공휴일만 필터링하고 locdate 필드를 date 필드로 매핑
+        const holidays = items
+          .filter(item => item.isHoliday === 'Y')
+          .map(item => ({
+            ...item,
+            date: item.locdate.toString() // locdate를 date로 매핑
+          }))
+        
+        // console.log('필터링된 공휴일:', holidays)
+        return holidays
       }
 
       return []
@@ -151,7 +171,8 @@ export async function getHolidayNameCached(date: Date): Promise<string | null> {
   const holidays = await getCachedHolidays(year)
   const dateString = `${year}${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`
   
-  return holidays.find(h => h.date === dateString)?.dateName || null
+  const holiday = holidays.find(h => h.date === dateString)
+  return holiday ? holiday.dateName : null
 }
 
 // 타입 재export
