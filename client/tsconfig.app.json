@@ -27,8 +27,8 @@
     /* shadcn UI */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@components/*": ["./src/components/*"]
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "vite-env.d.ts"],

@@ -13,7 +13,7 @@ const meta: Meta<typeof DayPicker> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['default', 'filled', 'minimal'],
+      options: ['default', 'filled', 'minimal', 'dashboard'],
     },
     size: {
       control: 'select',
@@ -46,16 +46,16 @@ const DayPickerWithState = ({ mode, ...props }: any) => {
   if (mode === 'multiple') {
     return <DayPicker mode="multiple" selected={dates} onSelect={setDates} {...props} />;
   }
-  
+
   if (mode === 'range') {
     return <DayPicker mode="range" selected={dateRange} onSelect={setDateRange} {...props} />;
   }
-  
+
   return <DayPicker mode="single" selected={date} onSelect={setDate} {...props} />;
 };
 
 export const Default: Story = {
-  render: (args) => <DayPickerWithState {...args} />, 
+  render: (args) => <DayPickerWithState {...args} />,
   args: {
     variant: 'default',
     size: 'default',
@@ -65,7 +65,7 @@ export const Default: Story = {
 };
 
 export const Filled: Story = {
-  render: (args) => <DayPickerWithState {...args} />, 
+  render: (args) => <DayPickerWithState {...args} />,
   args: {
     variant: 'filled',
     size: 'default',
@@ -75,7 +75,7 @@ export const Filled: Story = {
 };
 
 export const Minimal: Story = {
-  render: (args) => <DayPickerWithState {...args} />, 
+  render: (args) => <DayPickerWithState {...args} />,
   args: {
     variant: 'minimal',
     size: 'default',
@@ -85,7 +85,7 @@ export const Minimal: Story = {
 };
 
 export const WithDropdown: Story = {
-  render: (args) => <DayPickerWithState {...args} />, 
+  render: (args) => <DayPickerWithState {...args} />,
   args: {
     variant: 'default',
     size: 'default',
@@ -95,7 +95,7 @@ export const WithDropdown: Story = {
 };
 
 export const Small: Story = {
-  render: (args) => <DayPickerWithState {...args} />, 
+  render: (args) => <DayPickerWithState {...args} />,
   args: {
     variant: 'default',
     size: 'sm',
@@ -105,7 +105,7 @@ export const Small: Story = {
 };
 
 export const Large: Story = {
-  render: (args) => <DayPickerWithState {...args} />, 
+  render: (args) => <DayPickerWithState {...args} />,
   args: {
     variant: 'default',
     size: 'lg',
@@ -115,7 +115,7 @@ export const Large: Story = {
 };
 
 export const MultipleSelection: Story = {
-  render: (args) => <DayPickerWithState {...args} />, 
+  render: (args) => <DayPickerWithState {...args} />,
   args: {
     variant: 'default',
     size: 'default',
@@ -125,7 +125,7 @@ export const MultipleSelection: Story = {
 };
 
 export const RangeSelection: Story = {
-  render: (args) => <DayPickerWithState {...args} />, 
+  render: (args) => <DayPickerWithState {...args} />,
   args: {
     variant: 'default',
     size: 'default',
@@ -142,4 +142,4 @@ export const Examples: Story = {
       <DayPickerWithState variant="minimal" size="lg" mode="single" captionLayout="label" />
     </div>
   ),
-}; 
+};
