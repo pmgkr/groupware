@@ -16,13 +16,13 @@ export default function Dashboard() {
   return (
     <>
       <Header />
-      <section className="mt-18 ml-60 flex min-h-200 flex-col gap-y-2 bg-white px-16 py-8">
+      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8">
         <div className="flex items-center justify-between text-base text-gray-800">
           <p>예지님, 안녕하세요! 좋은 하루 보내시길 바랍니다 😊</p>
           <div className="flex">서울 날씨 ☀️ 25°C, 맑음</div>
         </div>
         <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6">
-          <div className="row-span-2 flex flex-col justify-center gap-y-6 rounded-md border border-gray-300 p-6">
+          <div className="row-span-2 flex flex-col justify-center gap-y-6 rounded-md border border-gray-300 bg-white p-6">
             <div className="px-8">
               <Link to="/mypage">
                 <div className="relative mx-auto mb-2.5 aspect-square w-32 overflow-hidden rounded-[50%]">
@@ -61,7 +61,7 @@ export default function Dashboard() {
               </ul>
             </div>
           </div>
-          <div className="rounded-md border border-gray-300 px-6 py-5">
+          <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader title="근무 시간" buttonText="전체보기" buttonVariant="outline" buttonSize="sm" buttonHref="/working" />
             <div>
               <div className="flex gap-x-4">
@@ -93,7 +93,7 @@ export default function Dashboard() {
               </ul>
             </div> */}
           </div>
-          <div className="row-span-4 flex flex-col rounded-md border border-gray-300 px-6 py-5">
+          <div className="row-span-4 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
               title="캘린더"
               buttonText="전체보기"
@@ -232,7 +232,7 @@ export default function Dashboard() {
               </ul>
             </div>
           </div>
-          <div className="rounded-md border border-gray-300 px-6 py-5">
+          <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
               title="알림"
               buttonText="전체보기"
@@ -261,7 +261,7 @@ export default function Dashboard() {
               </ul>
             </div>
           </div>
-          <div className="row-span-2 flex flex-col rounded-md border border-gray-300 px-6 py-5">
+          <div className="row-span-2 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
               title="미팅룸"
               buttonText="전체보기"
@@ -312,7 +312,7 @@ export default function Dashboard() {
               </ul>
             </div>
           </div>
-          <div className="row-span-2 flex flex-col rounded-md border border-gray-300 px-6 py-5">
+          <div className="row-span-2 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
               title="비용 관리"
               buttonText="전체보기"
