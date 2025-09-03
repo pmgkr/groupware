@@ -2,6 +2,9 @@
 import React from 'react';
 import type { View } from "react-big-calendar";
 import { Button } from "../ui/button";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem ,SelectGroup, SelectLabel, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator,} from "../ui/select";
+import { ChevronDownIcon } from 'lucide-react';
+
 
 interface ToolbarProps {
   onNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
@@ -29,6 +32,14 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
         >
           오늘
         </Button>
+        <Select>
+          <SelectTrigger>
+            <SelectValue placeholder="팀 선택" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="team_dev">개발팀</SelectItem>
+          </SelectContent>
+        </Select>
 
         {/* 중앙: 현재 날짜 표시 */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5">
