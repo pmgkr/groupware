@@ -5,6 +5,19 @@ import { parse } from "date-fns/parse";
 import CustomToolbar from "./toolbar";
 import CalendarView from "./view";
 
+// 셀렉트 옵션 타입 정의
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectConfig {
+  id: string;
+  placeholder: string;
+  options: SelectOption[];
+  value?: string;
+}
+
 const events = [
   {
     title: "연차",
@@ -132,6 +145,43 @@ export default function CustomCalendar() {
   const [myEvents] = useState(events);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<View>('month');
+  
+  // 셀렉트 옵션 설정 => 툴바에 반영됨
+  const [selectConfigs, setSelectConfigs] = useState<SelectConfig[]>([
+    {
+      id: 'team',
+      placeholder: '팀 선택',
+      options: [
+        { value: 'team_dev', label: '개발팀' },
+        { value: 'team_design', label: '디자인팀' },
+        { value: 'team_marketing', label: '마케팅팀' },
+        { value: 'team_sales', label: '영업팀' },
+      ],
+      value: ''
+    },
+    {
+      id: 'employee',
+      placeholder: '직원 선택',
+      options: [
+        { value: 'emp_001', label: '이연상' },
+        { value: 'emp_002', label: '이연상' },
+        { value: 'emp_003', label: '이연상' },
+        { value: 'emp_004', label: '이연상' },
+      ],
+      value: ''
+    },
+    {
+      id: 'type',
+      placeholder: '타입 선택',
+      options: [
+        { value: 'type_vacation', label: '연차' },
+        { value: 'type_halfday', label: '반차' },
+        { value: 'type_halfhalfday', label: '반반차' },
+        { value: 'type_external', label: '외부일정' },
+      ],
+      value: ''
+    }
+  ]);
 
   const handleNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
     let newDate = new Date(currentDate);
@@ -167,6 +217,17 @@ export default function CustomCalendar() {
     setCurrentView(view);
   };
 
+  // 셀렉트 값 변경 핸들러
+  const handleSelectChange = (selectId: string, value: string) => {
+    setSelectConfigs(prev => 
+      prev.map(config => 
+        config.id === selectId 
+          ? { ...config, value }
+          : config
+      )
+    );
+  };
+
   return (
     <div className="calendar-container w-full bg-white">
       <CustomToolbar
@@ -174,6 +235,8 @@ export default function CustomCalendar() {
         onView={handleViewChange}
         currentView={currentView}
         currentDate={currentDate}
+        selectConfigs={selectConfigs}
+        onSelectChange={handleSelectChange}
       />
       <CalendarView
         events={myEvents}

@@ -2,15 +2,32 @@
 import React from 'react';
 import type { View } from "react-big-calendar";
 import { Button } from "../ui/button";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem ,SelectGroup, SelectLabel, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator,} from "../ui/select";
+import { ChevronDownIcon } from 'lucide-react';
+
+// 셀렉트 옵션 타입 정의
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectConfig {
+  id: string;
+  placeholder: string;
+  options: SelectOption[];
+  value?: string;
+}
 
 interface ToolbarProps {
   onNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
   onView: (view: View) => void;
   currentView: View;
   currentDate: Date;
+  selectConfigs: SelectConfig[];
+  onSelectChange: (selectId: string, value: string) => void;
 }
 
-export default function CustomToolbar({ onNavigate, onView, currentView, currentDate }: ToolbarProps) {
+export default function CustomToolbar({ onNavigate, onView, currentView, currentDate, selectConfigs, onSelectChange }: ToolbarProps) {
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('ko-KR', {
       year: 'numeric',
@@ -20,8 +37,10 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
 
   return (
     <div className="flex items-center justify-between mb-5 relative">
+
       {/* 왼쪽: 네비게이션 버튼들 */}
       <div className="flex items-center gap-2">
+
         <Button
           onClick={() => onNavigate('TODAY')}
           variant="outline"
@@ -29,6 +48,26 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
         >
           오늘
         </Button>
+
+        {/* 동적 셀렉트 렌더링 */}
+        {selectConfigs.map((config) => (
+          <Select
+            key={config.id}
+            value={config.value}
+            onValueChange={(value) => onSelectChange(config.id, value)}
+          >
+            <SelectTrigger size="sm">
+              <SelectValue placeholder={config.placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {config.options.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ))}
 
         {/* 중앙: 현재 날짜 표시 */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5">
