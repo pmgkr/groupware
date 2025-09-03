@@ -3,7 +3,7 @@ import { Badge } from '@components/ui/badge';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search } from '@/assets/images/icons';
+import { SearchGray } from '@/assets/images/icons';
 import { useNavigate } from 'react-router';
 
 export default function BoardList() {
@@ -63,7 +63,7 @@ export default function BoardList() {
       <div className="flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
           <Input className="h-[40px] px-4 [&]:bg-white" placeholder="검색어 입력" />
-          <Search className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <SearchGray className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         </div>
         <Button onClick={() => navigate('write')}>글쓰기</Button>
       </div>
@@ -88,7 +88,7 @@ export default function BoardList() {
               className={`cursor-pointer hover:bg-gray-100 ${post.isNotice ? 'bg-primary-blue-100 hover:bg-primary-blue-100' : ''}`}>
               <TableCell className="font-medium">{post.isNotice ? <Badge>공지</Badge> : post.id}</TableCell>
               <TableCell>{post.category}</TableCell>
-              <TableCell>{post.title}</TableCell>
+              <TableCell className="text-left">{post.title}</TableCell>
               <TableCell>{post.writer}</TableCell>
               <TableCell>{post.createdAt}</TableCell>
               <TableCell>{post.views}</TableCell>

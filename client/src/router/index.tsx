@@ -15,6 +15,12 @@ import Meetingroom from '@/pages/Office/Meetingroom';
 import Mypage from '@/pages/Mypage';
 import MyExpense from '@/pages/Mypage/Expense';
 import ErrorPage from '@/pages/ErrorPage';
+import ItDevice from '@/pages/Office/ItDevice';
+
+import Book from '@/pages/Office/Book';
+import BookDetail from '@/components/book/BookDetail';
+import BookList from '@/components/book/BookList';
+import BookWish from '@/components/book/BookWish';
 
 export const router = createBrowserRouter([
   {
@@ -58,11 +64,18 @@ export const router = createBrowserRouter([
             {
               to: '/notice',
               label: '공지사항',
-              end: true, // end=true → 정확히 /mypage와 일치할 때에만 활성
             },
             {
               to: '/meetingroom',
               label: '미팅룸',
+            },
+            {
+              to: '/itdevice',
+              label: 'IT디바이스',
+            },
+            {
+              to: '/book',
+              label: '도서',
             },
           ],
         },
@@ -79,6 +92,19 @@ export const router = createBrowserRouter([
           {
             path: 'meetingroom',
             element: <Meetingroom />,
+          },
+          {
+            path: 'itdevice',
+            element: <ItDevice />,
+          },
+          {
+            path: 'book',
+            element: <Book />,
+            children: [
+              { index: true, element: <BookList /> }, // /book/list
+              { path: 'wish', element: <BookWish /> }, // /book/wish
+              //{ path: ':id', element: <BookDetail /> }, // /book/wish
+            ],
           },
         ],
       },
