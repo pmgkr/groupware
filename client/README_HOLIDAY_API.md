@@ -15,7 +15,8 @@
 
 ```bash
 # 한국천문연구원 특일정보 API 키
-NEXT_PUBLIC_HOLIDAY_API_KEY=your_api_key_here
+VITE_HOLIDAY_API_KEY=your_api_key_here
+# NEXT_PUBLIC_HOLIDAY_API_KEY=your_api_key_here
 ```
 
 **주의**: `NEXT_PUBLIC_` 접두사는 클라이언트 사이드에서 API 키에 접근하기 위해 필요합니다.

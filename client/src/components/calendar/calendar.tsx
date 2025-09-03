@@ -8,73 +8,123 @@ import CalendarView from "./view";
 const events = [
   {
     title: "연차",
-    start: parse("2025-08-10 10:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-28 11:00", "yyyy-MM-dd HH:mm", new Date()),
+    start: parse("2025-08-20 10:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-05 11:00", "yyyy-MM-dd HH:mm", new Date()),
+    allDay: true,
     author: "이연상",
     description: "연차입니다.",
+    resource: {
+      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      eventType:"eventVacation" 
+    }
   },
   {
     title: "연차",
     start: parse("2025-09-01 10:00", "yyyy-MM-dd HH:mm", new Date()),
     end: parse("2025-09-05 11:00", "yyyy-MM-dd HH:mm", new Date()),
+    allDay: true,
     author: "이연상",
     description: "연차입니다.",
+    resource: {
+      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      eventType:"eventVacation" 
+    }
   },
   {
     title: "오전 반차",
     start: parse("2025-09-02-09:00", "yyyy-MM-dd HH:mm", new Date()),
     end: parse("2025-09-02 10:00", "yyyy-MM-dd HH:mm", new Date()),
+    allDay: true,
     author: "이연상",
     description: "오전 반차입니다.",
+    resource: {
+      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      eventType:"eventHalfDay" 
+    }
   },
   {
     title: "오후 반차",
     start: parse("2025-09-02 13:00", "yyyy-MM-dd HH:mm", new Date()),
     end: parse("2025-09-02 14:00", "yyyy-MM-dd HH:mm", new Date()),
+    allDay: true,
     author: "이연상",
     description: "오후 반차입니다.",
+    resource: {
+      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      eventType:"eventHalfDay" 
+    }
   },
   {
     title: "오후 반차",
     start: parse("2025-09-02 13:00", "yyyy-MM-dd HH:mm", new Date()),
     end: parse("2025-09-02 14:00", "yyyy-MM-dd HH:mm", new Date()),
+    allDay: true,
     author: "이연상",
     description: "오후 반차입니다.",
+    resource: {
+      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      eventType:"eventHalfDay" 
+    }
   },
   {
     title: "오후 반차",
     start: parse("2025-09-02 09:00", "yyyy-MM-dd HH:mm", new Date()),
     end: parse("2025-09-02 10:00", "yyyy-MM-dd HH:mm", new Date()),
+    allDay: true,
     author: "이연상",
     description: "오후 반차입니다.",
+    resource: {
+      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      eventType:"eventHalfDay" 
+    }
   },
   {
     title: "오전 반반차",
     start: parse("2025-09-02 09:00", "yyyy-MM-dd HH:mm", new Date()),
     end: parse("2025-09-02 10:00", "yyyy-MM-dd HH:mm", new Date()),
+    allDay: true,
     author: "이연상",
     description: "오전 반반차입니다.",
+    resource: {
+      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      eventType:"eventHalfHalfDay" 
+    }
   },
   {
     title: "오전 반반차",
     start: parse("2025-09-02 09:00", "yyyy-MM-dd HH:mm", new Date()),
     end: parse("2025-09-02 10:00", "yyyy-MM-dd HH:mm", new Date()),
+    allDay: true,
     author: "이연상",
     description: "오전 반반차입니다.",
+    resource: {
+      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      eventType:"eventHalfHalfDay" 
+    }
   },
   {
     title: "외부 일정",
     start: parse("2025-08-30 09:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-01 10:00", "yyyy-MM-dd HH:mm", new Date()),
+    end: parse("2025-09-01 10:00", "yyyy-MM-dd HH:mm", new Date()), 
+    allDay: true,
     author: "이연상",
     description: "외부 일정입니다.",
+    resource: {
+      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      eventType:"eventExternal" 
+    }
   },
   {
     title: "외부 일정",
     start: parse("2025-09-20 09:00", "yyyy-MM-dd HH:mm", new Date()),
     end: parse("2025-09-21 10:00", "yyyy-MM-dd HH:mm", new Date()),
+    allDay: true,
     author: "이연상",
     description: "외부 일정입니다.",
+    resource: {
+      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      eventType:"eventExternal" 
+    }
   },
 ];
 

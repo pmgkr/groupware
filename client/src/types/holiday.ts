@@ -46,4 +46,4 @@ export interface HolidayCache {
   holidayNameCache: Map<string, string>
   /** 연도별 공휴일 목록 캐시 */
   yearHolidays: Map<number, Holiday[]>
-} 
+}
