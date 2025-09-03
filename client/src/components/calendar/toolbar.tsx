@@ -108,9 +108,16 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
           variant={currentView === 'month' ? 'default' : 'outline'}
           size="sm"
         >
-          월간
+          달력
         </Button>
         <Button
+          onClick={() => onView('agenda')}
+          variant={currentView === 'agenda' ? 'default' : 'outline'}
+          size="sm"
+        >
+          전체
+        </Button>
+        {/* <Button
           onClick={() => onView('week')}
           variant={currentView === 'week' ? 'default' : 'outline'}
           size="sm"
@@ -123,7 +130,7 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
           size="sm"
         >
           일간
-        </Button>
+        </Button> */}
       </div>
     </div>
   );
