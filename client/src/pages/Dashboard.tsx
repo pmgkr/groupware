@@ -8,7 +8,6 @@ import { DayPicker } from '@components/daypicker';
 import { Avatar, AvatarImage, AvatarFallback } from '@components/ui/avatar';
 
 import getWelcomeMessage from '@/components/features/Dashboard/welcome';
-// import Weather from '@components/features/Dashboard/weather';
 import WorkHoursBar from '@/components/common/WorkHoursBar';
 
 type User = {
