@@ -4,7 +4,7 @@
 import type { Holiday, HolidayResponse, HolidayApiConfig, HolidayCache } from '@/types/holiday'
 
 class HolidayApiService {
-  private baseUrl = 'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService'
+  private baseUrl = 'https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService'
   private apiKey: string
 
   constructor() {
