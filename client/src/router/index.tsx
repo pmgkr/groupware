@@ -3,24 +3,31 @@ import Layout from '@/layouts/Layout';
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 
-import Calendar from '@/pages/Calendar';
+// 캘린더 페이지
+import Calendar from '@/pages/Calendar/';
 
+// 출퇴근관리 페이지
+import Working from '@/pages/Working/';
+
+// 오피스 페이지
 import Notice from '@/pages/Office/Notice';
 import BoardWrite from '@/components/board/BoardWrite';
 import BoardDetail from '@/components/board/BoardDetail';
 import BoardList from '@/components/board/BoardList';
-
 import Meetingroom from '@/pages/Office/Meetingroom';
-
-import Mypage from '@/pages/Mypage';
-import MyExpense from '@/pages/Mypage/Expense';
-import ErrorPage from '@/pages/ErrorPage';
 import ItDevice from '@/pages/Office/ItDevice';
-
 import Book from '@/pages/Office/Book';
-import BookDetail from '@/components/book/BookDetail';
 import BookList from '@/components/book/BookList';
 import BookWish from '@/components/book/BookWish';
+
+// 마이페이지
+import Mypage from '@/pages/Mypage';
+import MyExpense from '@/pages/Mypage/Expense';
+
+// 관리자 페이지
+import Manager from '@/pages/Manager';
+
+import ErrorPage from '@/pages/ErrorPage';
 
 export const router = createBrowserRouter([
   {
@@ -54,6 +61,24 @@ export const router = createBrowserRouter([
           {
             path: 'calendar',
             element: <Calendar />,
+          },
+        ],
+      },
+      {
+        handle: {
+          title: '출퇴근관리',
+
+          nav: [
+            {
+              to: '/working',
+              label: '전체',
+            },
+          ],
+        },
+        children: [
+          {
+            path: 'working',
+            element: <Working />,
           },
         ],
       },
@@ -136,6 +161,40 @@ export const router = createBrowserRouter([
           {
             path: 'expense',
             element: <MyExpense />,
+          },
+        ],
+      },
+      {
+        path: '/manager',
+        handle: {
+          title: '관리자',
+          nav: [
+            {
+              to: '/manager',
+              label: '대시보드',
+            },
+            {
+              to: '/manager/working',
+              label: '근태 관리',
+            },
+            {
+              to: '/manager/expense',
+              label: '비용 관리',
+            },
+            {
+              to: '/manager/vacation',
+              label: '휴가 관리',
+            },
+            {
+              to: '/manager/member',
+              label: '구성원 관리',
+            },
+          ],
+        },
+        children: [
+          {
+            index: true,
+            element: <Manager />,
           },
         ],
       },
