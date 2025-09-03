@@ -31,9 +31,6 @@ export default defineConfig(async ({}) => {
     }),
   ];
 
-
-
-
   // Vitest에서만 Storybook 테스트 플러그인 동적 로드
   let testConfig: any = undefined;
   if (isVitest) {
@@ -78,6 +75,13 @@ export default defineConfig(async ({}) => {
       //     rewrite: (pathStr: string) => pathStr.replace(/^\/api\/holidays/, ''), // path → pathStr 타입 명시
       //   },
       // },
+      // 기상청 API 프록시 사용
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
+      },
     },
     resolve: {
       alias: {
