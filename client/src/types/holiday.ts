@@ -46,18 +46,4 @@ export interface HolidayCache {
   holidayNameCache: Map<string, string>
   /** 연도별 공휴일 목록 캐시 */
   yearHolidays: Map<number, Holiday[]>
-} 
-
-constructor() {
-  console.log('환경변수 확인:', {
-    VITE_HOLIDAY_API_KEY: import.meta.env?.VITE_HOLIDAY_API_KEY,
-    NEXT_PUBLIC_HOLIDAY_API_KEY: process.env?.NEXT_PUBLIC_HOLIDAY_API_KEY
-  })
-  
-  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_HOLIDAY_API_KEY) {
-    this.apiKey = import.meta.env.VITE_HOLIDAY_API_KEY
-    console.log('Vite 환경변수에서 API 키를 가져왔습니다:', this.apiKey ? '설정됨' : '설정되지 않음')
-  } else {
-    // ... 기존 코드
-  }
 }
