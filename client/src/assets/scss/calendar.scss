@@ -1,15 +1,16 @@
 @use "tailwindcss" as *;
+@import "../../index.css";
 
 .calendar-container {
   font-family: "Pretendard", "Noto Sans KR", sans-serif;
-  @apply bg-white;
+  @apply bg-[var(--color-white)];
 }
 
 .rbc-month-view,
 .rbc-header + .rbc-header,
 .rbc-month-row + .rbc-month-row,
 .rbc-day-bg + .rbc-day-bg {
-  @apply border-gray-300;
+  @apply border-[var(--color-gray-300)];
 }
 
 
@@ -22,7 +23,7 @@
   // @apply bg-gray-50 border border-gray-200 rounded-lg;
 
   .rbc-header {
-    @apply p-2 text-sm font-medium text-center border-b border-gray-300;
+    @apply p-2 text-sm font-medium text-center border-b border-[var(--color-gray-300)];
   }
 
   .rbc-date-cell {
@@ -37,78 +38,80 @@
     right: 0;
 
     .rbc-off-range-bg{
-      @apply bg-gray-100
+      @apply bg-[var(--color-gray-100)]
     }
 
     .rbc-today{
-      @apply bg-blue-50;
+      // @apply bg-[var(--color-primary-blue-50)];
+      @apply border border-[var(--color-primary-blue-300)];
+      background-color: #f7f9fc;
     }
     
     .rbc-now {
-      @apply bg-blue-50;
+      @apply bg-[var(--color-primary-blue-100)];
     }
 
     // 주말 날짜 셀 스타일
     .rbc-weekend {
-      @apply bg-gray-100 text-blue-500;
+      @apply bg-[var(--color-gray-100)] text-[var(--color-primary-blue-500)];
     }
     // 휴일 날짜 셀 스타일
     .rbc-holiday {
-      @apply bg-gray-100 text-red-500;
+      @apply bg-[var(--color-gray-100)] text-[var(--color-primary-red-500)];
     }
 
   }
 
   .rbc-show-more {
-    @apply text-right font-medium text-xs text-gray-500 float-right mr-2;
+    @apply text-right font-medium text-xs text-[var(--color-gray-500)] float-right mr-2;
   }
 }
 
 // 이벤트 타입별 배경색
 .event-item {
-  @apply flex items-center gap-1 rounded pl-1 pr-1 pt-0 pb-0 text-gray-900 h-5;
+  @apply flex items-center gap-1 rounded rounded-xs pl-1 pr-1 pt-0 pb-0 text-[var(--color-gray-900)] h-5;
   
   .event-title {
     @apply font-bold;
   }
 
   .event-author {
-    @apply font-medium text-gray-900;
+    @apply font-medium text-[var(--color-gray-900)];
   }
 
   
   &.event-vacation {
-    @apply bg-blue-100;
+    @apply bg-[var(--color-primary-blue-150)];
     
     .event-title {
-      @apply text-blue-500;
+      @apply text-[var(--color-primary-blue-500)];
     }
 
   }
   
   &.event-half-day {
-    @apply bg-purple-100;
+    @apply bg-[var(--color-primary-purple-150)];
     
     .event-title {
-      @apply text-pink-500;
+      @apply text-[var(--color-primary-pink-500)];
     }
 
   }
   
   &.event-half-half-day {
-    @apply bg-purple-100;
+    @apply bg-[var(--color-primary-purple-150)];
     
     .event-title {
-      @apply text-purple-500;
+      @apply text-[var(--color-primary-purple-500)];
     }
 
   }
   
   &.event-external {
-    @apply bg-yellow-100;
+    @apply bg-[var(--color-primary-yellow-150)];
     
     .event-title {
-      @apply text-orange-500;
+      @apply text-[var(--color-primary-orange-600)];
     }
   }
 }
@@ -116,24 +119,24 @@
 
 // 공휴일 표시 관련
 .day-weekend {
-  @apply text-blue-500;
+  @apply text-[var(--color-primary-blue-500)];
 }
 .day-holiday {
-  @apply text-red-500;
+  @apply text-[var(--negative-base)];
 }
 .holiday-title {
-  @apply text-red-500;
+  @apply text-[var(--negative-base)];
 }
 .rbc-off-range {
   .day-number, .holiday-title {
-    @apply text-gray-500;
+    @apply text-[var(--color-gray-500)];
   }
 }
 
 // 자체 모달
 
 .rbc-overlay {
-  @apply bg-white border border-gray-300 rounded-lg shadow-lg p-4 min-w-80;
+  @apply bg-[var(--color-white)] border border-[var(--color-gray-300)] rounded-lg shadow-lg p-4 min-w-80;
 }
 .rbc-overlay-header {
   @apply m-0 p-0 pb-3 mb-3;
