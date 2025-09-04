@@ -585,29 +585,57 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 			[getAllOptions]
 		);
 
-		const filteredOptions = React.useMemo(() => {
-			if (!searchable || !searchValue) return options;
-			if (options.length === 0) return [];
-			if (isGroupedOptions(options)) {
-				return options
-					.map((group) => ({
-						...group,
-						options: group.options.filter(
-							(option) =>
-								option.label
-									.toLowerCase()
-									.includes(searchValue.toLowerCase()) ||
-								option.value.toLowerCase().includes(searchValue.toLowerCase())
-						),
-					}))
-					.filter((group) => group.options.length > 0);
+			// 한글 검색을 위한 정규화 함수
+	const normalizeText = (text: string): string => {
+		return text
+			.toLowerCase()
+			.normalize('NFC') // 한글 조합형 정규화
+			.replace(/\s+/g, '') // 공백 제거
+			.replace(/[^\w가-힣]/g, ''); // 특수문자 제거 (한글, 영문, 숫자만 유지)
+	};
+
+	const filteredOptions = React.useMemo(() => {
+		if (!searchable || !searchValue) return options;
+		if (options.length === 0) return [];
+		
+		const normalizedSearchValue = normalizeText(searchValue);
+		
+		if (isGroupedOptions(options)) {
+			return options
+				.map((group) => ({
+					...group,
+					options: group.options.filter(
+						(option) => {
+							const normalizedLabel = normalizeText(option.label);
+							const normalizedValue = normalizeText(option.value);
+							return (
+								normalizedLabel.includes(normalizedSearchValue) ||
+								normalizedValue.includes(normalizedSearchValue) ||
+								// 초성 검색 지원 (한글인 경우)
+								(/[가-힣]/.test(searchValue) && 
+									normalizedLabel.includes(searchValue.toLowerCase()) ||
+									normalizedValue.includes(searchValue.toLowerCase()))
+							);
+						}
+					),
+				}))
+				.filter((group) => group.options.length > 0);
+		}
+		return options.filter(
+			(option) => {
+				const normalizedLabel = normalizeText(option.label);
+				const normalizedValue = normalizeText(option.value);
+				return (
+					normalizedLabel.includes(normalizedSearchValue) ||
+					normalizedValue.includes(normalizedSearchValue) ||
+					// 초성 검색 지원 (한글인 경우)
+					(/[가-힣]/.test(searchValue) && 
+						normalizedLabel.includes(searchValue.toLowerCase()) ||
+						normalizedValue.includes(searchValue.toLowerCase()))
+				);
 			}
-			return options.filter(
-				(option) =>
-					option.label.toLowerCase().includes(searchValue.toLowerCase()) ||
-					option.value.toLowerCase().includes(searchValue.toLowerCase())
-			);
-		}, [options, searchValue, searchable, isGroupedOptions]);
+		);
+	}, [options, searchValue, searchable, isGroupedOptions]);
 
 		const handleInputKeyDown = (
 			event: React.KeyboardEvent<HTMLInputElement>
@@ -772,10 +800,19 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 				searchValue !== undefined
 			) {
 				if (searchValue && isPopoverOpen) {
+					const normalizedSearchValue = normalizeText(searchValue);
 					const filteredCount = allOptions.filter(
-						(opt) =>
-							opt.label.toLowerCase().includes(searchValue.toLowerCase()) ||
-							opt.value.toLowerCase().includes(searchValue.toLowerCase())
+						(opt) => {
+							const normalizedLabel = normalizeText(opt.label);
+							const normalizedValue = normalizeText(opt.value);
+							return (
+								normalizedLabel.includes(normalizedSearchValue) ||
+								normalizedValue.includes(normalizedSearchValue) ||
+								(/[가-힣]/.test(searchValue) && 
+									normalizedLabel.includes(searchValue.toLowerCase()) ||
+									normalizedValue.includes(searchValue.toLowerCase()))
+							);
+						}
 					).length;
 
 					announce(
@@ -1051,7 +1088,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 						}}
 						align="start"
 						onEscapeKeyDown={() => setIsPopoverOpen(false)}>
-						<Command>
+						<Command shouldFilter={false}>
 							{searchable && (
 								<CommandInput
 									placeholder="검색어를 입력해주세요."
@@ -1103,7 +1140,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 												<CheckIcon className="h-4 w-4" />
 											</div>
 											<span>
-												(Select All
+												(전체선택
 												{getAllOptions().length > 20
 													? ` - ${getAllOptions().length} options`
 													: ""}

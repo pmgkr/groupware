@@ -17,6 +17,9 @@ interface SelectConfig {
   options: SelectOption[];
   value?: string[];
   autoSize?: boolean;
+  maxCount?: number;
+  searchable?: boolean;
+  hideSelectAll?: boolean;
 }
 
 const events = [
@@ -196,6 +199,9 @@ export default function CustomCalendar() {
       ],
       value: [],
       autoSize: true,
+      searchable: true,
+      hideSelectAll: false,
+      maxCount: 0
     },
     {
       id: 'type',
@@ -208,6 +214,9 @@ export default function CustomCalendar() {
       ],
       value: [],
       autoSize: true,
+      searchable: true,
+      hideSelectAll: false,
+      maxCount: 0,
     }
   ]);
 

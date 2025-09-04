@@ -16,6 +16,9 @@ interface SelectConfig {
   options: SelectOption[];
   value?: string[];
   autoSize?: boolean;
+  maxCount?: number;
+  searchable?: boolean;
+  hideSelectAll?: boolean;
 }
 
 interface ToolbarProps {
@@ -50,9 +53,9 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
             defaultValue={config.value || []}
             placeholder={config.placeholder}
             size="sm"
-            maxCount={2}
-            searchable={false}
-            hideSelectAll={true}
+            maxCount={config.maxCount}
+            searchable={config.searchable}
+            hideSelectAll={config.hideSelectAll}
             autoSize={config.autoSize}
             className="min-w-[120px] max-w-[150px] multi-select"
           />

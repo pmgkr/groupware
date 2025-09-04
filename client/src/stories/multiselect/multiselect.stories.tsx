@@ -47,6 +47,7 @@ type Story = StoryObj<typeof MultiSelect>;
 
 // 샘플 옵션 데이터
 const sampleOptions = [
+  { label: '한글테스트', value: '한글테스트' },
   { label: 'React', value: 'react' },
   { label: 'Vue', value: 'vue' },
   { label: 'Angular', value: 'angular' },
