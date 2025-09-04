@@ -170,7 +170,7 @@ export function CodeSheet({
 								}}
 								wrapLines={false}
 								wrapLongLines={false}
-								PreTag={({ children, ...props }) => (
+								PreTag={({ children, ...props }: { children: React.ReactNode; [key: string]: any }) => (
 									<pre
 										{...props}
 										style={{ margin: 0, background: "transparent" }}>

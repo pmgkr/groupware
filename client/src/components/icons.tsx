@@ -1,7 +1,6 @@
 import {
 	MoonIcon,
 	SunMedium,
-	LucideProps,
 	Cat,
 	Dog,
 	Fish,
@@ -41,6 +40,7 @@ import {
 	ChevronUp,
 	ChevronDown,
 } from "lucide-react";
+import type { LucideProps } from "lucide-react";
 
 export const Icons = {
 	moonIcon: MoonIcon,

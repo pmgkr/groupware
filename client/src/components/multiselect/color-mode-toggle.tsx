@@ -2,10 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
-import { useColorMode } from "@/contexts/color-mode-context";
+import { useState } from "react";
 
 export function ColorModeToggle() {
-	const { isGrayMode, toggleGrayMode } = useColorMode();
+	const [isGrayMode, setIsGrayMode] = useState(false);
+
+	const toggleGrayMode = () => {
+		setIsGrayMode(!isGrayMode);
+	};
 
 	return (
 		<Button

@@ -1,5 +1,5 @@
 // import Link from "next/link";
-import { Link } from "react-router-dom";
+// import { Link } from "react-router-dom";
 
 import ModeToggle from "@/components/multiselect/mode-toggle";
 import { ColorModeToggle } from "@/components/multiselect/color-mode-toggle";
@@ -12,7 +12,7 @@ export async function SiteHeader() {
 			<div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
 				<div className="flex flex-1 items-center justify-end space-x-4">
 					<nav className="flex items-center space-x-1">
-						<Link
+						<a
 							href="https://github.com/sersavan/shadcn-multi-select-component"
 							target="_blank"
 							rel="noreferrer">
@@ -24,7 +24,7 @@ export async function SiteHeader() {
 								<Icons.gitHub className="h-5 w-5" />
 								<span className="sr-only">GitHub</span>
 							</div>
-						</Link>
+						</a>
 						<ModeToggle />
 						<ColorModeToggle />
 					</nav>
