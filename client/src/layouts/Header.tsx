@@ -11,7 +11,7 @@ export default function Header() {
   const location = useLocation();
 
   // 오피스 하위 경로들 (오피스는 /office 라우트가 없음)
-  const officePaths = ['/notice', '/meetingroom', '/seating'];
+  const officePaths = ['/notice', '/meetingroom', '/seating', '/itdevice', '/book'];
   const isOfficeActive = officePaths.some((path) => location.pathname.startsWith(path));
 
   return (
