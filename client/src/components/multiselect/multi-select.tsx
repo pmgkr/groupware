@@ -50,15 +50,15 @@ export interface AnimationConfig {
 const multiSelectVariants = cva("m-1 transition-all duration-300 ease-in-out", {
 	variants: {
 		variant: {
-			default: "border-foreground/10 text-foreground bg-card hover:bg-card/80",
+			default: "border-foreground/10 text-[var(--color-primary-blue-500)] bg-card hover:bg-card/80",
 			secondary:
-				"border-foreground/10 bg-secondary text-secondary-foreground hover:bg-secondary/80",
+				"border-foreground/10 bg-[var(--color-gray-50)] text-[var(--color-primary-purple-500)]",
 			destructive:
-				"border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+				"border-transparent bg-destructive text-[var(--color-negative-base)] hover:bg-destructive/80",
 			inverted: "inverted",
 		},
 		badgeAnimation: {
-			bounce: "hover:-translate-y-1 hover:scale-110",
+			bounce: "hover:scale-105",
 			pulse: "hover:animate-pulse",
 			wiggle: "hover:animate-wiggle",
 			fade: "hover:opacity-80",
@@ -68,7 +68,7 @@ const multiSelectVariants = cva("m-1 transition-all duration-300 ease-in-out", {
 	},
 	defaultVariants: {
 		variant: "default",
-		badgeAnimation: "bounce",
+		// badgeAnimation: "bounce",
 	},
 });
 
@@ -114,6 +114,10 @@ interface MultiSelectProps
 			"animationConfig"
 		>,
 		VariantProps<typeof multiSelectVariants> {
+	/**
+	 * Size variant for the multi-select component
+	 */
+	size?: "default" | "sm" | "lg";
 	/**
 	 * An array of option objects or groups to be displayed in the multi-select component.
 	 */
@@ -185,7 +189,7 @@ interface MultiSelectProps
 
 	/**
 	 * Custom empty state message when no options match search.
-	 * Optional, defaults to "No results found."
+	 * Optional, defaults to "일치하는 결과가 없습니다."
 	 */
 	emptyIndicator?: React.ReactNode;
 
@@ -310,6 +314,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 			options,
 			onValueChange,
 			variant,
+			size = "default",
 			defaultValue = [],
 			placeholder = "Select options",
 			animation = 0,
@@ -692,6 +697,28 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 
 		const widthConstraints = getWidthConstraints();
 
+		const getSizeClasses = () => {
+			switch (size) {
+				case "sm":
+					return "h-8 rounded-md text-sm gap-1.25 pl-3.5 pr-1 py-0";
+				case "lg":
+					return "w-full max-w-[280px] h-12 text-lg rounded-md pl-6 pr-3 py-0";
+				default:
+					return "h-10 pl-6 pr-3 py-0";
+			}
+		};
+
+		const getBadgeSizeClasses = () => {
+			switch (size) {
+				case "sm":
+					return "text-xs px-1.5 py-0.5";
+				case "lg":
+					return "text-sm px-3 py-1";
+				default:
+					return "text-sm px-2 py-0.5";
+			}
+		};
+
 		React.useEffect(() => {
 			if (!isPopoverOpen) {
 				setSearchValue("");
@@ -795,6 +822,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 						<Button
 							ref={buttonRef}
 							{...props}
+							variant="outline"
 							onClick={handleTogglePopover}
 							disabled={disabled}
 							role="combobox"
@@ -806,7 +834,8 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 								getAllOptions().length
 							} options selected. ${placeholder}`}
 							className={cn(
-								"flex p-1 rounded-md border min-h-10 h-auto items-center justify-between bg-inherit hover:bg-inherit [&_svg]:pointer-events-auto",
+								"flex rounded-md border items-center justify-between bg-inherit hover:bg-inherit [&_svg]:pointer-events-auto",
+								getSizeClasses(),
 								autoSize ? "w-auto" : "w-full",
 								responsiveSettings.compactMode && "min-h-8 text-sm",
 								screenSize === "mobile" && "min-h-12 text-base",
@@ -816,12 +845,13 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 							style={{
 								...widthConstraints,
 								maxWidth: `min(${widthConstraints.maxWidth}, 100%)`,
-							}}>
+							}}
+							>
 							{selectedValues.length > 0 ? (
 								<div className="flex justify-between items-center w-full">
 									<div
 										className={cn(
-											"flex items-center gap-1",
+											"flex items-center gap-0.5",
 											singleLine
 												? "overflow-x-auto multiselect-singleline-scroll"
 												: "flex-wrap",
@@ -861,6 +891,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 															multiSelectVariants({ variant }),
 															customStyle?.gradient &&
 																"text-white border-transparent",
+															getBadgeSizeClasses(),
 															responsiveSettings.compactMode &&
 																"text-xs px-1.5 py-0.5",
 															screenSize === "mobile" &&
@@ -912,7 +943,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 																}
 															}}
 															aria-label={`Remove ${option.label} from selection`}
-															className="ml-2 h-4 w-4 cursor-pointer hover:bg-white/20 rounded-sm p-0.5 -m-0.5 focus:outline-none focus:ring-1 focus:ring-white/50">
+															className="ml-2 h-4.5 w-4 cursor-pointer flex align-center justify-center hover:bg-[var(--color-primary-white)/20 rounded-sm p-0.5 -m-0.5 focus:outline-none focus:ring-1 focus:ring-white/50">
 															<XCircle
 																className={cn(
 																	"h-3 w-3",
@@ -931,6 +962,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 													"bg-transparent text-foreground border-foreground/1 hover:bg-transparent",
 													getBadgeAnimationClass(),
 													multiSelectVariants({ variant }),
+													getBadgeSizeClasses(),
 													responsiveSettings.compactMode &&
 														"text-xs px-1.5 py-0.5",
 													singleLine && "flex-shrink-0 whitespace-nowrap",
@@ -989,7 +1021,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 								</div>
 							) : (
 								<div className="flex items-center justify-between w-full mx-auto">
-									<span className="text-sm text-muted-foreground mx-3">
+									<span className="text-sm text-muted-foreground">
 										{placeholder}
 									</span>
 									<ChevronDown className="h-4 cursor-pointer text-muted-foreground mx-2" />
@@ -1022,7 +1054,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 						<Command>
 							{searchable && (
 								<CommandInput
-									placeholder="Search options..."
+									placeholder="검색어를 입력해주세요."
 									onKeyDown={handleInputKeyDown}
 									value={searchValue}
 									onValueChange={setSearchValue}
@@ -1042,7 +1074,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 									"overscroll-behavior-y-contain"
 								)}>
 								<CommandEmpty>
-									{emptyIndicator || "No results found."}
+									{emptyIndicator || "일치하는 결과가 없습니다."}
 								</CommandEmpty>{" "}
 								{!hideSelectAll && !searchValue && (
 									<CommandGroup>
@@ -1060,7 +1092,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 											className="cursor-pointer">
 											<div
 												className={cn(
-													"mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+													"mr-2 flex h-4 w-4 items-center justify-center rounded-xs border border-primary",
 													selectedValues.length ===
 														getAllOptions().filter((opt) => !opt.disabled)
 															.length
@@ -1104,7 +1136,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 														disabled={option.disabled}>
 														<div
 															className={cn(
-																"mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+																"mr-2 flex h-4 w-4 items-center justify-center rounded-xs border border-primary",
 																isSelected
 																	? "bg-primary text-primary-foreground"
 																	: "opacity-50 [&_svg]:invisible"
@@ -1145,7 +1177,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 													disabled={option.disabled}>
 													<div
 														className={cn(
-															"mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+															"mr-2 flex h-4 w-4 items-center justify-center rounded-xs border border-primary",
 															isSelected
 																? "bg-primary text-primary-foreground"
 																: "opacity-50 [&_svg]:invisible"
@@ -1173,7 +1205,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 												<CommandItem
 													onSelect={handleClear}
 													className="flex-1 justify-center cursor-pointer">
-													Clear
+													초기화
 												</CommandItem>
 												<Separator
 													orientation="vertical"
@@ -1184,7 +1216,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 										<CommandItem
 											onSelect={() => setIsPopoverOpen(false)}
 											className="flex-1 justify-center cursor-pointer max-w-full">
-											Close
+											닫기
 										</CommandItem>
 									</div>
 								</CommandGroup>
