@@ -141,3 +141,9 @@
 .rbc-overlay-header {
   @apply m-0 p-0 pb-3 mb-3;
 }
+
+
+// 멀티 셀렉트
+.multi-select {
+  @apply min-w-[120px] max-w-[150px];
+}

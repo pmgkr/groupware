@@ -2,8 +2,7 @@
 import React from 'react';
 import type { View } from "react-big-calendar";
 import { Button } from "../ui/button";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem ,SelectGroup, SelectLabel, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator,} from "../ui/select";
-import { ChevronDownIcon } from 'lucide-react';
+import { MultiSelect } from "../multiselect/multi-select";
 
 // 셀렉트 옵션 타입 정의
 interface SelectOption {
@@ -15,7 +14,8 @@ interface SelectConfig {
   id: string;
   placeholder: string;
   options: SelectOption[];
-  value?: string;
+  value?: string[];
+  autoSize?: boolean;
 }
 
 interface ToolbarProps {
@@ -24,7 +24,7 @@ interface ToolbarProps {
   currentView: View;
   currentDate: Date;
   selectConfigs: SelectConfig[];
-  onSelectChange: (selectId: string, value: string) => void;
+  onSelectChange: (selectId: string, value: string[]) => void;
 }
 
 export default function CustomToolbar({ onNavigate, onView, currentView, currentDate, selectConfigs, onSelectChange }: ToolbarProps) {
@@ -41,32 +41,21 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
       {/* 왼쪽: 네비게이션 버튼들 */}
       <div className="flex items-center gap-2">
 
-        <Button
-          onClick={() => onNavigate('TODAY')}
-          variant="outline"
-          size="sm"
-        >
-          오늘
-        </Button>
-
         {/* 동적 셀렉트 렌더링 */}
         {selectConfigs.map((config) => (
-          <Select
+          <MultiSelect
             key={config.id}
-            value={config.value}
+            options={config.options}
             onValueChange={(value) => onSelectChange(config.id, value)}
-          >
-            <SelectTrigger size="sm">
-              <SelectValue placeholder={config.placeholder} />
-            </SelectTrigger>
-            <SelectContent>
-              {config.options.map((option) => (
-                <SelectItem key={option.value} value={option.value} size="sm">
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            defaultValue={config.value || []}
+            placeholder={config.placeholder}
+            size="sm"
+            maxCount={2}
+            searchable={false}
+            hideSelectAll={true}
+            autoSize={config.autoSize}
+            className="min-w-[120px] max-w-[150px] multi-select"
+          />
         ))}
 
         {/* 중앙: 현재 날짜 표시 */}
@@ -103,6 +92,13 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
 
       {/* 오른쪽: 뷰 변경 버튼들 */}
       <div className="flex items-center gap-1">
+        <Button
+          onClick={() => onNavigate('TODAY')}
+          variant="outline"
+          size="sm"
+        >
+          오늘
+        </Button>
         <Button
           onClick={() => onView('month')}
           variant={currentView === 'month' ? 'default' : 'outline'}

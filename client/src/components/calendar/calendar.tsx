@@ -15,7 +15,8 @@ interface SelectConfig {
   id: string;
   placeholder: string;
   options: SelectOption[];
-  value?: string;
+  value?: string[];
+  autoSize?: boolean;
 }
 
 const events = [
@@ -193,18 +194,8 @@ export default function CustomCalendar() {
         { value: 'team_marketing', label: '마케팅팀' },
         { value: 'team_sales', label: '영업팀' },
       ],
-      value: ''
-    },
-    {
-      id: 'employee',
-      placeholder: '직원 선택',
-      options: [
-        { value: 'emp_001', label: '이연상' },
-        { value: 'emp_002', label: '이연상' },
-        { value: 'emp_003', label: '이연상' },
-        { value: 'emp_004', label: '이연상' },
-      ],
-      value: ''
+      value: [],
+      autoSize: true,
     },
     {
       id: 'type',
@@ -215,7 +206,8 @@ export default function CustomCalendar() {
         { value: 'type_halfhalfday', label: '반반차' },
         { value: 'type_external', label: '외부일정' },
       ],
-      value: ''
+      value: [],
+      autoSize: true,
     }
   ]);
 
@@ -254,7 +246,7 @@ export default function CustomCalendar() {
   };
 
   // 셀렉트 값 변경 핸들러
-  const handleSelectChange = (selectId: string, value: string) => {
+  const handleSelectChange = (selectId: string, value: string[]) => {
     setSelectConfigs(prev => 
       prev.map(config => 
         config.id === selectId 
