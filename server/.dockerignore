@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+dist
+.storybook
+.vscode
+.git
+.gitignore
+.DS_Store
+coverage
+.env.local
+.env.*
+!/.env.example

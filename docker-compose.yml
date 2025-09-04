@@ -1,0 +1,48 @@
+# groupware/docker-compose.yml
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 'xtentia1015!@'
+      MYSQL_DATABASE: groupware_db
+      MYSQL_USER: app
+      MYSQL_PASSWORD: 'app_pw'
+    volumes:
+      - db_data:/var/lib/mysql
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: server
+    ports:
+      - '3001:3001'
+    volumes:
+      - ./server:/app
+    depends_on:
+      - db
+    env_file:
+      - ./server/.env
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: client
+    working_dir: /app
+    ports:
+      - '5173:5173'
+    environment:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: 'false'
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    command: 'npm run dev'
+    depends_on:
+      - server
+
+volumes:
+  db_data:
