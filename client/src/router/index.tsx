@@ -29,6 +29,9 @@ import Manager from '@/pages/Manager';
 
 import ErrorPage from '@/pages/ErrorPage';
 
+// 테스트 페이지
+import Test from '@/pages/Test';
+
 export const router = createBrowserRouter([
   {
     // 로그인은 레이아웃 없이 단독 라우트
@@ -199,6 +202,10 @@ export const router = createBrowserRouter([
         ],
       },
     ],
+  },
+  {
+    path: '/test',
+    element: <Test />,
   },
   {
     path: '*',
