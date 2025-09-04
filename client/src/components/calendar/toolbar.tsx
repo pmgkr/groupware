@@ -61,7 +61,7 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
             </SelectTrigger>
             <SelectContent>
               {config.options.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
+                <SelectItem key={option.value} value={option.value} size="sm">
                   {option.label}
                 </SelectItem>
               ))}
