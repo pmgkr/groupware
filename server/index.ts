@@ -1,9 +1,8 @@
 // server/index.ts
 import 'dotenv/config'; // 환경 변수 로드
 import express, { Express } from 'express';
-// ▼▼ npx prisma generate 실행하면 위 경로로 업데이트가 되기때문에 패키지 경로가 아닌 로컬 시스템 경로에 직접 입포트해야함 ▼▼
-// import { PrismaClient } from '@prisma/client';
-import { PrismaClient } from './generated/prisma';
+// Prisma Client import
+import { PrismaClient } from '@prisma/client';
 import cors from 'cors'; // cors 미들웨어 임포트
 
 import createRouter from './routes/user'; // 라우터 함수를 임포트
