@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 export default function createRouter(prisma: PrismaClient) {
   const router = Router();
@@ -19,10 +19,10 @@ export default function createRouter(prisma: PrismaClient) {
   // 특정 사용자 정보를 가져오는 API
   // GET /api/users/:id
   router.get('/:id', async (req: Request, res: Response) => {
-    const userId = parseInt(req.params.id);
+    const userId = parseInt(req.params.user_id);
     try {
       const user = await prisma.user.findUnique({
-        where: { id: userId },
+        where: { user_id: userId.toString() },
       });
       if (user) {
         res.json(user);
@@ -38,12 +38,15 @@ export default function createRouter(prisma: PrismaClient) {
   // 새로운 사용자를 생성하는 API
   // POST /api/users
   router.post('/', async (req: Request, res: Response) => {
-    const { name, email } = req.body;
+    const { user_id, user_name } = req.body;
     try {
       const newUser = await prisma.user.create({
         data: {
-          name,
-          email,
+          user_id,
+          user_name,
+          team_id: req.body.team_id, // Ensure this field is provided in the request body
+          user_pw: req.body.user_pw, // Ensure this field is provided in the request body
+          user_name_en: req.body.user_name_en, // Ensure this field is provided in the request body
         },
       });
       res.status(201).json(newUser);

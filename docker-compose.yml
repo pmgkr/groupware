@@ -8,9 +8,9 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: groupware
-      MYSQL_USER: groupware
-      MYSQL_PASSWORD: groupware123
+      MYSQL_DATABASE: portal
+      MYSQL_USER: portal
+      MYSQL_PASSWORD: xtentia0905!
     ports:
       - '3307:3306'
     volumes:

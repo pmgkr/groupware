@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { loginApi } from '@/api';
+import { useAuth } from '@/contexts/AuthContext'; // setUser 제공
+
 import { useNavigate, Link } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -11,8 +13,8 @@ import { Checkbox } from '@components/ui/checkbox';
 
 // 로그인 입력값 스키마
 const LoginSchema = z.object({
-  user_id: z.string().email('올바른 이메일을 입력해주세요.'),
-  user_pw: z.string().min(8, '비밀번호는 8자 이상이어야 해요.'),
+  user_id: z.string().email('이메일을 입력해 주세요.'),
+  user_pw: z.string().min(8, '비밀번호를 입력해 주세요.'),
   remember: z.boolean().optional(),
 });
 
@@ -29,11 +31,9 @@ type LoginFormProps = {
   enableByPass?: boolean; // 디버그용 기본 true
 };
 
-export function LoginForm({ onLogin, defaultEmail, enableByPass = true }: LoginFormProps) {
+export function LoginForm({ onLogin, defaultEmail }: LoginFormProps) {
   const navigate = useNavigate();
-
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // const { setUser } = useAuth();
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(LoginSchema),
@@ -45,33 +45,34 @@ export function LoginForm({ onLogin, defaultEmail, enableByPass = true }: LoginF
   });
 
   async function handleSubmit(values: LoginValues) {
-    setIsSubmitting(true);
-
-    form.clearErrors('root'); // 폼 전체 에러 초기화
+    form.clearErrors('root');
 
     try {
-      // 로그인 테스트 계정
-      const isPass = enableByPass && values.user_id === 'test@test.com' && values.user_pw === 'qqqq1234';
-
-      if (!isPass) {
-        form.setError('root', {
-          type: 'manual',
-          message: '이메일 또는 비밀번호가 올바르지 않습니다.',
-        });
-
-        form.setFocus('user_pw'); // 로그인 실패 시 비밀번호 포커스
-        form.setValue('user_pw', ''); // 로그인 실패 시 비밀번호 초기화
-        return;
+      // 1) 백엔드 호출
+      if (onLogin) {
+        await onLogin(values); // 외부 주입 방식이면 이걸 사용
+      } else {
+        const res = await loginApi({ user_id: values.user_id, user_pw: values.user_pw });
+        setUser(res.user); // 컨텍스트에 users row 저장
       }
 
-      // 로그인 성공 후 처리
-      navigate('/dashboard');
+      // 2) remember 옵션 처리 (이메일 저장 등)
+      // if (values.remember) {
+      //   localStorage.setItem('remember_email', values.user_id);
+      // } else {
+      //   localStorage.removeItem('remember_email');
+      // }
+
+      // 3) 성공 이동
+      navigate('/dashboard', { replace: true });
       return;
     } catch (err) {
-      const message = err instanceof Error ? err.message : '로그인 중 오류가 발생했습니다.';
-      setServerError(message);
-    } finally {
-      setIsSubmitting(false);
+      form.setError('root', {
+        type: 'manual',
+        message: err instanceof Error ? err.message : '이메일 또는 비밀번호가 올바르지 않습니다.',
+      });
+      form.setFocus('user_pw');
+      form.setValue('user_pw', '');
     }
   }
 

@@ -14,8 +14,54 @@ datasource db {
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
+model Login {
+  login_seq       Int     @id @default(autoincrement())
+  user_id         String  @db.VarChar(100) @unique
+  user_pw         String   @db.VarChar(50)
+}
+
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  user_id           String   @id @db.VarChar(100)
+  team_id           Int
+  user_pw           String   @db.VarChar(50)
+  user_name         String   @db.VarChar(100)
+  user_name_en      String   @db.VarChar(100)
+  phone             String?  @db.VarChar(20)
+  address           String?  @db.VarChar(255)
+  birth_date        DateTime? @db.Date
+  hire_date         DateTime? @db.Date
+  job_role          String?  @db.VarChar(100)
+  user_level        user_level @default(staff)
+  user_status       user_status @default(active)
+  emergency_phone   String?  @db.VarChar(255)
+  profile_image     String?  @db.VarChar(255)
+  branch            String?  @db.VarChar(100) @default("Seoul,Korea")
+  created_at        DateTime @default(now())
+  updated_at        DateTime @default(now())
+
+  @@map("users") 
+}
+
+enum user_level {
+  staff
+  manager
+  admin
+}
+
+enum user_status {
+  active
+  inactive
+  suspended
+}
+
+model Teams {
+team_id       Int     @id @default(autoincrement())
+parent_id     Int?
+team_name     String  @db.VarChar(100)
+level         Int     @default(1)
+order         Int?    @default(0)
+manager_id    String? @db.VarChar(100)
+manager_name  String? @db.VarChar(100)
+
+@@map("teams")
 }
