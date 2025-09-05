@@ -53,6 +53,10 @@ services:
     build:
       context: ../client
       dockerfile: Dockerfile
+      args:
+        - VITE_HOLIDAY_API_KEY=${VITE_HOLIDAY_API_KEY}
+        - NODE_ENV=${NODE_ENV}
+        # - VITE_WEATHER_API_KEY=${VITE_WEATHER_API_KEY}
     container_name: groupware-client
     restart: unless-stopped
     ports:
@@ -61,6 +65,9 @@ services:
       - server
     networks:
       - groupware-network
+    # volumes:
+    #   - ../client/.env.local:/app/.env.local
+    #   - ../client/.env:/app/.env
 
 volumes:
   mysql_data:

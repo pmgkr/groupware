@@ -25,6 +25,14 @@ COPY --from=0 /app/dist /usr/share/nginx/html
 # nginx 설정 파일 복사
 COPY nginx.conf /etc/nginx/nginx.conf
 
+
+## 서버로 환경변수 전달용
+# 빌드 인수 받기
+ARG VITE_HOLIDAY_API_KEY
+# 환경변수로 설정
+ENV VITE_HOLIDAY_API_KEY=$VITE_HOLIDAY_API_KEY
+
+
 # 포트 노출
 EXPOSE 80
 
