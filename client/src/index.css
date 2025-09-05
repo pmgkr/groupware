@@ -64,15 +64,19 @@
   --color-primary-yellow: #ffaa00;
 
   --color-primary-blue-100: #f2f4fe;
+  --color-primary-blue-150: #e0e5ff;
   --color-primary-blue-300: #a5b4fc;
   --color-primary-blue-500: #6366f1;
   --color-primary-orange-100: #f1e5d9;
   --color-primary-orange-300: #f1c49d;
   --color-primary-orange-500: #f1994b;
+  --color-primary-orange-600: #ed7922;
   --color-primary-purple-100: #f8f2ff;
+  --color-primary-purple-150: #f3e8ff;
   --color-primary-purple-300: #d8b4fe;
   --color-primary-purple-500: #a855f7;
   --color-primary-yellow-100: #fff7e5;
+  --color-primary-yellow-150: #feedc7;
   --color-primary-yellow-300: #f2d69d;
   --color-primary-yellow-500: #f2bb4b;
   --color-primary-pink-100: #fff2fa;
