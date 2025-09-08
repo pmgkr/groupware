@@ -5,14 +5,14 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const textareaVariants = cva(
-  "w-full text-gray-900 bg-white border placeholder:text-gray-400 flex field-sizing-content inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-base font-regular transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none hover:shadow shadow-gray-400 focus:border-blue-500 disabled:bg-gray-300 disabled:placeholder:text-gray-800 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive cursor-pointer text-base resize-none",
+  "w-full text-[var(--color-gray-900)] bg-white border placeholder:text-[var(--color-gray-400)] flex field-sizing-content inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-base font-regular transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none hover:shadow shadow-[var(--color-gray-400)] focus:border-[var(--color-primary-blue-500)] disabled:bg-[var(--color-gray-300)] disabled:placeholder:text-[var(--color-gray-800)] dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive cursor-pointer text-base resize-none",
   {
     variants: {
       variant: {
         default: '',
-        filled: 'border-gray-700',
-        focus: 'border-blue-500',
-        disabled: 'bg-gray-300 placeholder:text-gray-800',
+        filled: 'border-[var(--color-gray-700)]',
+        focus: 'border-[var(--color-primary-blue-500)]',
+        disabled: 'bg-[var(--color-gray-300)] placeholder:text-[var(--color-gray-800)]',
         error: 'text-[var(--negative-base)] border-[var(--negative-base)]',
       },
       size: {
@@ -55,7 +55,7 @@ function Textarea({
         {...props} 
       />
       {description && !errorMessage && (
-        <p className="mt-1 text-sm text-gray-500">{description}</p>
+        <p className="mt-1 text-sm text-[var(--color-gray-500)]">{description}</p>
       )}
       {errorMessage && (
         <p className="mt-1 text-sm text-[var(--negative-base)]">{errorMessage}</p>
