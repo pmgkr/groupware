@@ -171,7 +171,7 @@ export const Form: Story = {
               <Textbox
                 id="deadline"
                 type="date"
-                className="w-full align-left"
+                className="w-full justify-start"
               />
             </div>
           </div>
