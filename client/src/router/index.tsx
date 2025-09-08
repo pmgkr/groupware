@@ -18,9 +18,9 @@ import ErrorPage from '@/pages/ErrorPage';
 import ItDevice from '@/pages/Office/ItDevice';
 
 import Book from '@/pages/Office/Book';
-import BookDetail from '@/components/book/BookDetail';
 import BookList from '@/components/book/BookList';
 import BookWish from '@/components/book/BookWish';
+import ItDeviceDetail from '@/components/itdevice/ItDeviceDetail';
 
 export const router = createBrowserRouter([
   {
@@ -98,12 +98,15 @@ export const router = createBrowserRouter([
             element: <ItDevice />,
           },
           {
+            path: 'itdevice/:id',
+            element: <ItDeviceDetail />,
+          },
+          {
             path: 'book',
             element: <Book />,
             children: [
               { index: true, element: <BookList /> }, // /book/list
               { path: 'wish', element: <BookWish /> }, // /book/wish
-              //{ path: ':id', element: <BookDetail /> }, // /book/wish
             ],
           },
         ],
