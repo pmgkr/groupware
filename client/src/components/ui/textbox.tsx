@@ -56,11 +56,22 @@ function Textbox({
   const [date, setDate] = React.useState<Date | undefined>(
     value ? new Date(value as string) : undefined
   );
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  // value prop이 변경될 때 내부 상태 동기화
+  React.useEffect(() => {
+    if (value) {
+      setDate(new Date(value as string));
+    } else {
+      setDate(undefined);
+    }
+  }, [value]);
 
   // type="date"일 때 DayPicker 사용
   if (type === 'date') {
     const handleDateSelect = (selectedDate: Date | undefined) => {
       setDate(selectedDate);
+      setIsOpen(false); // 날짜 선택 후 닫기
       if (onChange) {
         const event = {
           target: {
@@ -71,33 +82,49 @@ function Textbox({
       }
     };
 
+    // 외부 클릭 감지
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    
+    React.useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
+      };
+
+      if (isOpen) {
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+      }
+    }, [isOpen]);
+
     return (
-      <div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                textboxVariants({ variant, size }),
-                "w-full justify-start text-left font-normal",
-                !date && "text-muted-foreground",
-                className
-              )}
-              disabled={variant === 'disabled' ? true : props.disabled}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(date, "PPP", { locale: ko }) : (props.placeholder || "날짜를 선택하세요")}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+      <div ref={containerRef} className="relative">
+        <Button
+          variant="outline"
+          className={cn(
+            textboxVariants({ variant, size }),
+            "w-full justify-start text-left font-normal",
+            !date && "text-muted-foreground",
+            className
+          )}
+          disabled={variant === 'disabled' ? true : props.disabled}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {date ? format(date, "PPP", { locale: ko }) : (props.placeholder || "날짜를 선택하세요")}
+        </Button>
+        {isOpen && (
+          <div className="absolute z-50 mt-1 w-auto rounded-md border bg-white p-0 shadow-lg">
             <DayPicker
+              captionLayout='dropdown'
               mode="single"
               selected={date}
               onSelect={handleDateSelect}
-              initialFocus
+              initialFocus={false}
             />
-          </PopoverContent>
-        </Popover>
+          </div>
+        )}
         {description && !errorMessage && (
           <p className="mt-1 text-sm text-[var(--color-gray-500)]">{description}</p>
         )}
