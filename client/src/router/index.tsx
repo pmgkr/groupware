@@ -22,6 +22,8 @@ import Book from '@/pages/Office/Book';
 import BookList from '@/components/book/BookList';
 import BookWish from '@/components/book/BookWish';
 
+import Report from '@/pages/Office/Report';
+
 // 마이페이지
 import Mypage from '@/pages/Mypage';
 import MyExpense from '@/pages/Mypage/Expense';
@@ -30,8 +32,6 @@ import MyExpense from '@/pages/Mypage/Expense';
 import Manager from '@/pages/Manager';
 
 import ErrorPage from '@/pages/ErrorPage';
-
-import Report from '@/pages/Office/Report';
 
 export const router = createBrowserRouter([
   {
