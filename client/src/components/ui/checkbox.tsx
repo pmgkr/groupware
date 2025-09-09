@@ -93,11 +93,19 @@ function CheckboxWrapper({ children, className, size }: CheckboxWrapperProps) {
 
 function Checkbox({ className, label, labelProps, size, ...props }: CheckboxProps) {
   const checkboxElement = (
-    <CheckboxPrimitive.Root data-slot="checkbox" className={cn(checkboxVariants({ size }), className)} {...props}>
+    <CheckboxPrimitive.Root
+      data-slot="checkbox"
+      className={cn(
+        'peer data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive size-4 shrink-0 rounded-[2px] border-1 border-[var(--color-gray-600)] text-[var(--color-gray-500)] shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50',
+        'disabled:cursor-not-allowed disabled:border-[var(--color-gray-400)] disabled:bg-[var(--color-gray-50)] disabled:text-[var(--color-gray-400)] disabled:shadow-none data-[state=checked]:disabled:border-[var(--color-gray-400)]',
+        'hover:shadow-blue cursor-pointer',
+        className
+      )}
+      {...props}>
       <CheckboxPrimitive.Indicator
         data-slot="checkbox-indicator"
-        className="flex items-center justify-center text-white transition-none data-[disabled]:bg-gray-400">
-        <CheckIcon className={iconVariants({ size })} />
+        className="flex items-center justify-center text-white transition-none data-[disabled]:bg-[var(--color-gray-400)]">
+        <CheckIcon className="size-4" />
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   );
@@ -109,10 +117,10 @@ function Checkbox({ className, label, labelProps, size, ...props }: CheckboxProp
         {checkboxElement}
         <label
           className={cn(
-            labelVariants({
-              size,
-              disabled: props.disabled,
-            }),
+            'text-base transition-colors select-none',
+            props.disabled
+              ? 'cursor-not-allowed text-[var(--color-gray-400)]'
+              : 'peer-data-[state=checked]:text-primary-blue-500 cursor-pointer text-[var(--color-gray-700)]',
             labelProps?.className
           )}
           htmlFor={props.id}

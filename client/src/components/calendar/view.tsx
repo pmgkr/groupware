@@ -141,7 +141,7 @@ export default function CalendarView({
         onNavigate={onNavigate}
         onView={onViewChange}
         defaultView="month"
-        views={["month", "week", "day"]}
+        views={["month", "week", "day", "agenda"]}
         step={60}
         timeslots={1}
         selectable

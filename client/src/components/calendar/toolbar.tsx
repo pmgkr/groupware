@@ -2,15 +2,35 @@
 import React from 'react';
 import type { View } from "react-big-calendar";
 import { Button } from "../ui/button";
+import { MultiSelect } from "../multiselect/multi-select";
+
+// 셀렉트 옵션 타입 정의
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectConfig {
+  id: string;
+  placeholder: string;
+  options: SelectOption[];
+  value?: string[];
+  autoSize?: boolean;
+  maxCount?: number;
+  searchable?: boolean;
+  hideSelectAll?: boolean;
+}
 
 interface ToolbarProps {
   onNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
   onView: (view: View) => void;
   currentView: View;
   currentDate: Date;
+  selectConfigs: SelectConfig[];
+  onSelectChange: (selectId: string, value: string[]) => void;
 }
 
-export default function CustomToolbar({ onNavigate, onView, currentView, currentDate }: ToolbarProps) {
+export default function CustomToolbar({ onNavigate, onView, currentView, currentDate, selectConfigs, onSelectChange }: ToolbarProps) {
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('ko-KR', {
       year: 'numeric',
@@ -20,15 +40,26 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
 
   return (
     <div className="flex items-center justify-between mb-5 relative">
+
       {/* 왼쪽: 네비게이션 버튼들 */}
       <div className="flex items-center gap-2">
-        <Button
-          onClick={() => onNavigate('TODAY')}
-          variant="outline"
-          size="sm"
-        >
-          오늘
-        </Button>
+
+        {/* 동적 셀렉트 렌더링 */}
+        {selectConfigs.map((config) => (
+          <MultiSelect
+            key={config.id}
+            options={config.options}
+            onValueChange={(value) => onSelectChange(config.id, value)}
+            defaultValue={config.value || []}
+            placeholder={config.placeholder}
+            size="sm"
+            maxCount={config.maxCount}
+            searchable={config.searchable}
+            hideSelectAll={config.hideSelectAll}
+            autoSize={config.autoSize}
+            className="min-w-[120px] max-w-[150px] multi-select"
+          />
+        ))}
 
         {/* 중앙: 현재 날짜 표시 */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5">
@@ -65,13 +96,27 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
       {/* 오른쪽: 뷰 변경 버튼들 */}
       <div className="flex items-center gap-1">
         <Button
+          onClick={() => onNavigate('TODAY')}
+          variant="outline"
+          size="sm"
+        >
+          오늘
+        </Button>
+        <Button
           onClick={() => onView('month')}
           variant={currentView === 'month' ? 'default' : 'outline'}
           size="sm"
         >
-          월간
+          달력
         </Button>
         <Button
+          onClick={() => onView('agenda')}
+          variant={currentView === 'agenda' ? 'default' : 'outline'}
+          size="sm"
+        >
+          전체
+        </Button>
+        {/* <Button
           onClick={() => onView('week')}
           variant={currentView === 'week' ? 'default' : 'outline'}
           size="sm"
@@ -84,7 +129,7 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
           size="sm"
         >
           일간
-        </Button>
+        </Button> */}
       </div>
     </div>
   );

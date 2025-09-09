@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { DayPicker } from '@components/daypicker';
 
 const meta: Meta<typeof DayPicker> = {
-  title: 'Components/DayPicker/DayPicker',
+  title: 'Calendar/DayPicker',
   component: DayPicker,
   tags: ['autodocs'],
   args: {
