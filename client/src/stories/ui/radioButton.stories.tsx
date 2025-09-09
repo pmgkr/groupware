@@ -23,9 +23,9 @@ const meta: Meta<typeof RadioButton> = {
     },
     variant: {
       control: 'select',
-      options: ['default', 'outline', 'dynamic'],
+      options: ['default', 'outline', 'dynamic', 'dynamicBlue'],
       defaultValue: 'outline',
-      description: 'default: 파란색 배경, outline: 회색 테두리, dynamic: 체크 상태에 따라 자동 변경',
+      description: 'default: 파란색 배경, outline: 회색 테두리, dynamic: 체크 상태에 따라 자동 변경, dynamicBlue: 체크 상태에 따라 자동 변경 (호버 효과 포함)',
     },
   },
 };
@@ -93,6 +93,15 @@ export const Variants: Story = {
           <div className="flex items-center space-x-4">
             <RadioButton id="dynamic1" variant="dynamic" label="Dynamic Option 1" value="dynamic1" />
             <RadioButton id="dynamic2" variant="dynamic" label="Dynamic Option 2" value="dynamic2" />
+          </div>
+        </RadioGroup>
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold mb-3">DynamicBlue Variant (체크 상태에 따라 자동 변경, 진한 파란색)</h3>
+        <RadioGroup>
+          <div className="flex items-center space-x-4">
+            <RadioButton id="dynamicBlue1" variant="dynamicBlue" label="DynamicBlue Option 1" value="dynamicBlue1" />
+            <RadioButton id="dynamicBlue2" variant="dynamicBlue" label="DynamicBlue Option 2" value="dynamicBlue2" />
           </div>
         </RadioGroup>
       </div>

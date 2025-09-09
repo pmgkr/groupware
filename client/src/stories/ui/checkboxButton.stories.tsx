@@ -24,9 +24,9 @@ const meta: Meta<typeof CheckboxButton> = {
     },
     variant: {
       control: 'select',
-      options: ['default', 'outline', 'dynamic'],
+      options: ['default', 'outline', 'dynamic', 'dynamicBlue'],
       defaultValue: 'outline',
-      description: 'default: 파란색 배경, outline: 회색 테두리, dynamic: 체크 상태에 따라 자동 변경',
+      description: 'default: 파란색 배경, outline: 회색 테두리, dynamic: 체크 상태에 따라 자동 변경 (연한 파란색), dynamicBlue: 체크 상태에 따라 자동 변경 (진한 파란색)',
     },
   },
 };
@@ -134,10 +134,17 @@ export const Variants: Story = {
         </div>
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-3">Dynamic Variant (체크 상태에 따라 버튼 색상 자동 변경)</h3>
+        <h3 className="text-lg font-semibold mb-3">Dynamic Variant (체크 상태에 따라 자동 변경, 연한 파란색)</h3>
         <div className="flex items-center space-x-4">
           <CheckboxButton id="dynamic1" variant="dynamic" label="Dynamic Unchecked" />
           <CheckboxButton id="dynamic2" variant="dynamic" checked label="Dynamic Checked" />
+        </div>
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold mb-3">DynamicBlue Variant (체크 상태에 따라 자동 변경, 진한 파란색)</h3>
+        <div className="flex items-center space-x-4">
+          <CheckboxButton id="dynamicBlue1" variant="dynamicBlue" label="DynamicBlue Unchecked" />
+          <CheckboxButton id="dynamicBlue2" variant="dynamicBlue" checked label="DynamicBlue Checked" />
         </div>
       </div>
     </div>
