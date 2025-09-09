@@ -4,6 +4,7 @@ import type { View } from "react-big-calendar";
 import { parse } from "date-fns/parse";
 import CustomToolbar from "./toolbar";
 import CalendarView from "./view";
+import EventDialog from "./EventDialog";
 
 // 셀렉트 옵션 타입 정의
 interface SelectOption {
@@ -182,9 +183,10 @@ const events = [
 ];
 
 export default function CustomCalendar() {
-  const [myEvents] = useState(events);
+  const [myEvents, setMyEvents] = useState(events);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<View>('month');
+  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   
   // 셀렉트 옵션 설정 => 툴바에 반영됨
   const [selectConfigs, setSelectConfigs] = useState<SelectConfig[]>([
@@ -265,6 +267,34 @@ export default function CustomCalendar() {
     );
   };
 
+  // 일정 등록 Dialog 핸들러
+  const handleAddEvent = () => {
+    setIsEventDialogOpen(true);
+  };
+
+  const handleCloseEventDialog = () => {
+    setIsEventDialogOpen(false);
+  };
+
+  const handleSaveEvent = (eventData: any) => {
+    // 새로운 이벤트 생성
+    const newEvent = {
+      title: eventData.title,
+      start: parse(`${eventData.startDate} ${eventData.allDay ? '00:00' : eventData.startTime}`, "yyyy-MM-dd HH:mm", new Date()),
+      end: parse(`${eventData.endDate} ${eventData.allDay ? '23:59' : eventData.endTime}`, "yyyy-MM-dd HH:mm", new Date()),
+      allDay: eventData.allDay,
+      author: eventData.author,
+      description: eventData.description,
+      resource: {
+        userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x", // 실제로는 로그인한 사용자 ID
+        eventType: eventData.eventType
+      }
+    };
+
+    // 이벤트 목록에 추가
+    setMyEvents(prev => [...prev, newEvent]);
+  };
+
   return (
     <div className="calendar-container w-full bg-white">
       <CustomToolbar
@@ -274,6 +304,7 @@ export default function CustomCalendar() {
         currentDate={currentDate}
         selectConfigs={selectConfigs}
         onSelectChange={handleSelectChange}
+        onAddEvent={handleAddEvent}
       />
       <CalendarView
         events={myEvents}
@@ -284,6 +315,14 @@ export default function CustomCalendar() {
           setCurrentView(view as View);
         }}
         onViewChange={handleViewChange}
+      />
+      
+      {/* 일정 등록 Dialog */}
+      <EventDialog
+        isOpen={isEventDialogOpen}
+        onClose={handleCloseEventDialog}
+        onSave={handleSaveEvent}
+        selectedDate={currentDate}
       />
     </div>
   );

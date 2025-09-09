@@ -28,9 +28,10 @@ interface ToolbarProps {
   currentDate: Date;
   selectConfigs: SelectConfig[];
   onSelectChange: (selectId: string, value: string[]) => void;
+  onAddEvent: () => void;
 }
 
-export default function CustomToolbar({ onNavigate, onView, currentView, currentDate, selectConfigs, onSelectChange }: ToolbarProps) {
+export default function CustomToolbar({ onNavigate, onView, currentView, currentDate, selectConfigs, onSelectChange, onAddEvent }: ToolbarProps) {
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('ko-KR', {
       year: 'numeric',
@@ -95,6 +96,13 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
 
       {/* 오른쪽: 뷰 변경 버튼들 */}
       <div className="flex items-center gap-1">
+        <Button
+          onClick={onAddEvent}
+          variant="outline"
+          size="sm"
+        >
+          + 일정 등록
+        </Button>
         <Button
           onClick={() => onNavigate('TODAY')}
           variant="outline"
