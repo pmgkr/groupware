@@ -82,7 +82,7 @@ export const Disabled: Story = {
 
 export const WithCheckbox: Story = {
   render: () => (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center space-x-2 cursor-pointer">
       <Checkbox
         id="terms"
         type="checkbox"

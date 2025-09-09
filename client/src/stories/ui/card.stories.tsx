@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@components/ui/card';
 
-const meta: Meta<typeof Alert> = {
-  title: 'Components/UI/Card',
+const meta: Meta<typeof Card> = {
+  title: 'Components/UI/Card(작업중)',
   component: Card,
   tags: ['autodocs'],
   args: {

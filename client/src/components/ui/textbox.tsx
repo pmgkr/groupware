@@ -115,7 +115,7 @@ function Textbox({
           {date ? format(date, "PPP", { locale: ko }) : (props.placeholder || "날짜를 선택하세요")}
         </Button>
         {isOpen && (
-          <div className="absolute z-50 mt-1 w-auto rounded-md border bg-white p-0 shadow-lg">
+          <div className="absolute z-50 mt-1 w-auto rounded-md border border-[var(--color-gray-300)] bg-white p-0 shadow-lg">
             <DayPicker
               captionLayout='dropdown'
               mode="single"

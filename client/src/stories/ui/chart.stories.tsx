@@ -7,7 +7,7 @@ import {
   ChartLegend, 
   ChartLegendContent,
   type ChartConfig 
-} from '../../components/ui/chart';
+} from '@components/ui/chart';
 import { 
   LineChart as RechartsLineChart, 
   Line, 
@@ -23,7 +23,7 @@ import {
 } from 'recharts';
 
 const meta: Meta<typeof ChartContainer> = {
-  title: 'Components/UI/Chart',
+  title: 'Components/UI/Chart(작업중)',
   component: ChartContainer,
   tags: ['autodocs'],
   parameters: {
