@@ -1,7 +1,7 @@
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Navigate, useNavigate, useParams } from 'react-router';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default function itDeviceDetail() {
   const { id } = useParams<{ id: string }>(); // /itdevice/:id

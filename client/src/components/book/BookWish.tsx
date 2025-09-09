@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { SearchGray } from '@/assets/images/icons';
 import { useNavigate } from 'react-router';
-import { Checkbox } from '../ui/checkbox';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useState } from 'react';
+import { Edit, Delete, Download } from '@/assets/images/icons';
 
 export default function BookWish() {
   //더미 데이터
@@ -143,6 +144,16 @@ export default function BookWish() {
               <TableCell>{post.publish}</TableCell>
               <TableCell>{post.team}</TableCell>
               <TableCell>{post.user}</TableCell>
+              <TableCell>
+                <div className="text-gray-700">
+                  <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="수정">
+                    <Edit className="size-4" />
+                  </Button>
+                  <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="삭제">
+                    <Delete className="size-4" />
+                  </Button>
+                </div>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

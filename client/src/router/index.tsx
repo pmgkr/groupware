@@ -15,12 +15,15 @@ import Meetingroom from '@/pages/Office/Meetingroom';
 import Mypage from '@/pages/Mypage';
 import MyExpense from '@/pages/Mypage/Expense';
 import ErrorPage from '@/pages/ErrorPage';
+
 import ItDevice from '@/pages/Office/ItDevice';
+import ItDeviceDetail from '@/components/itdevice/ItDeviceDetail';
 
 import Book from '@/pages/Office/Book';
 import BookList from '@/components/book/BookList';
 import BookWish from '@/components/book/BookWish';
-import ItDeviceDetail from '@/components/itdevice/ItDeviceDetail';
+
+import Report from '@/pages/Office/Report';
 
 export const router = createBrowserRouter([
   {
@@ -77,6 +80,10 @@ export const router = createBrowserRouter([
               to: '/book',
               label: '도서',
             },
+            {
+              to: '/report',
+              label: '기안서',
+            },
           ],
         },
         children: [
@@ -108,6 +115,10 @@ export const router = createBrowserRouter([
               { index: true, element: <BookList /> }, // /book/list
               { path: 'wish', element: <BookWish /> }, // /book/wish
             ],
+          },
+          {
+            path: 'report',
+            element: <Report />,
           },
         ],
       },
