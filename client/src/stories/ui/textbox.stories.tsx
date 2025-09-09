@@ -74,6 +74,130 @@ export const Error: Story = {
 };
 
 
+export const DateInput: Story = {
+  args: {
+    type: 'date',
+    placeholder: '날짜를 선택하세요',
+    description: '날짜를 선택해주세요.',
+    className: 'w-full justify-start'
+  },
+};
+
+export const EmailInput: Story = {
+  args: {
+    type: 'email',
+    placeholder: '이메일을 입력하세요',
+    description: '유효한 이메일 주소를 입력해주세요.',
+    className: 'w-full'
+  },
+};
+
+export const NumberInput: Story = {
+  args: {
+    type: 'number',
+    placeholder: '숫자를 입력하세요',
+    description: '숫자만 입력 가능합니다.',
+    className: 'w-full'
+  },
+};
+
+export const PasswordInput: Story = {
+  args: {
+    type: 'password',
+    placeholder: '비밀번호를 입력하세요',
+    description: '8자 이상 입력해주세요.',
+    className: 'w-full'
+  },
+};
+
+export const TelInput: Story = {
+  args: {
+    type: 'tel',
+    placeholder: '전화번호를 입력하세요',
+    description: '예: 010-1234-5678',
+    className: 'w-full'
+  },
+};
+
+export const TimeInput: Story = {
+  args: {
+    type: 'time',
+    placeholder: '시간을 선택하세요',
+    description: '시간을 선택해주세요.',
+    className: 'w-full justify-start'
+  },
+};
+
+export const ColorInput: Story = {
+  args: {
+    type: 'color',
+    className: 'w-20 h-10'
+  },
+};
+
+export const UrlInput: Story = {
+  args: {
+    type: 'url',
+    placeholder: 'https://example.com',
+    description: '유효한 URL을 입력해주세요.',
+    className: 'w-full'
+  },
+};
+
+export const SearchInput: Story = {
+  args: {
+    type: 'search',
+    placeholder: '검색어를 입력하세요',
+    description: '검색할 내용을 입력해주세요.',
+    className: 'w-full'
+  },
+};
+
+export const MonthInput: Story = {
+  args: {
+    type: 'month',
+    placeholder: '월을 선택하세요',
+    description: '월을 선택해주세요.',
+    className: 'w-full justify-start'
+  },
+};
+
+export const WeekInput: Story = {
+  args: {
+    type: 'week',
+    placeholder: '주를 선택하세요',
+    description: '주를 선택해주세요.',
+    className: 'w-full justify-start'
+  },
+};
+
+export const DateTimeLocalInput: Story = {
+  args: {
+    type: 'datetime-local',
+    placeholder: '날짜와 시간을 선택하세요',
+    description: '날짜와 시간을 선택해주세요.',
+    className: 'w-full justify-start'
+  },
+};
+
+export const RangeInput: Story = {
+  args: {
+    type: 'range',
+    min: 0,
+    max: 100,
+    defaultValue: 50,
+    className: 'w-full'
+  },
+};
+
+export const FileInput: Story = {
+  args: {
+    type: 'file',
+    accept: 'image/*',
+    className: 'w-full'
+  },
+};
+
 export const Examples: Story = {
   render: () => (
     <>
@@ -89,6 +213,7 @@ export const Examples: Story = {
       </div>
       <div className="flex flex-col flex-wrap gap-4">
         <Textbox size="full" placeholder="Full Textbox" />
+        <Textbox type="date" placeholder="날짜 선택" className="w-full justify-start" />
       </div>
     </>
   ),
