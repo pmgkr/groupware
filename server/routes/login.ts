@@ -27,18 +27,6 @@ router.post("/", async (req: Request, res: Response) => {
     // user 테이블에서 유저프로필 조회
     const user = await prisma.user.findUnique({
         where: {user_id},
-        select: {
-          user_id: true,
-          user_name: true,
-          user_name_en: true,
-          team_id: true,
-          phone: true,
-          job_role: true,
-          birth_date: true,
-          profile_image: true,
-          user_level: true,
-          user_status: true,
-        }
     });
     if(!user) return res.status(400).json({ message: '사용자 정보를 찾을 수 없음. 프로필 작성 필요'});
 

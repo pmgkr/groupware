@@ -1,49 +1,49 @@
-// src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import type { LoginPayload, UserDTO } from '@/api/auth';
-import { loginApi, getUser, logoutApi } from '@/api/auth';
+import type { UserDTO } from '@/api/auth';
+import { getUser, logoutApi } from '@/api/auth';
+import { refreshAccessToken } from '@/lib/http';
 import { setToken as setTokenStore } from '@/lib/tokenStore';
 
+// AuthContext에서 제공할 값의 타입
 type AuthValue = {
   user: UserDTO | null;
   loading: boolean;
-  login: (payload: LoginPayload, opts?: { rememberEmail?: boolean }) => Promise<void>;
   logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthValue | null>(null);
-const LS_KEY_REMEMBER_EMAIL = 'remember_email'; // LocalStorage 이메일 기억하기 key
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserDTO | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const login = async (payload: LoginPayload, opts?: { rememberEmail?: boolean }) => {
-    setLoading(true);
+  // ✅ 부팅 시: 토큰 유무에 관계없이 refresh 먼저 시도
+  useEffect(() => {
+    const authLoading = async () => {
+      try {
+        await refreshAccessToken(); // 쿠키 있으면 access 발급, 없으면 throw
+        const me = await getUser(); // access가 생겼으니 /user 호출
+        setUser(me.user);
+      } catch {
+        // 로그인 전/쿠키 없음/검증 실패 → user는 null 유지
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const res = await loginApi(payload); // 서버 검증 + users row 포함 응답
-
-    if (res.accessToken) setTokenStore(res.accessToken);
-
-    // 로그인 성공 후 사용자 정보 하이드레이션
-    const me = await getUser();
-    setUser(me.user);
-
-    // 이메일 기억하기
-    if (opts?.rememberEmail) localStorage.setItem(LS_KEY_REMEMBER_EMAIL, payload.user_id);
-    else localStorage.removeItem(LS_KEY_REMEMBER_EMAIL);
-  };
+    authLoading();
+  }, []);
 
   const logout = async () => {
     try {
-      await logoutApi(); // 서버에서 refresh_token 쿠키 제거
+      await logoutApi();
     } catch {}
     setUser(null);
     setTokenStore(undefined);
   };
 
-  const value = useMemo<AuthValue>(() => ({ user, loading, login, logout }), [user, loading]);
-
+  const value = useMemo<AuthValue>(() => ({ user, loading, logout }), [user, loading]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
@@ -52,7 +52,3 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
-
-export const AuthStorageKeys = {
-  REMEMBER_EMAIL: LS_KEY_REMEMBER_EMAIL,
-};

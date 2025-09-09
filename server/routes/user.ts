@@ -23,15 +23,25 @@ router.get("/user", async (req: Request, res: Response) => {
         team_id: true,
         phone: true,
         job_role: true,
-        birth_date: true,
         profile_image: true,
         user_level: true,
         user_status: true,
-      },
+        birth_date: true,
+        hire_date: true,
+      }
     });
 
+    // login 테이블엔 유저 정보가 있는데 user 테이블엔 정보가 없는 경우 (그룹웨어 초기 세팅 > 프로필 업데이트 페이지 등으로 리다이렉트)
     if (!user) return res.status(404).json({ message: "사용자 없음" });
-    return res.json({ user });
+
+    // User 정보 조회 후 정제해서 프론트로 전송
+    const fomattedUser = {
+      ...user, 
+      birth_date: user.birth_date ? user.birth_date.toISOString().substring(0, 10) : null,
+      hire_date: user.hire_date ? user.hire_date.toISOString().substring(0, 10) : null,
+    }
+
+    return res.json({user: fomattedUser});
   } catch (err) {
     return res.status(401).json({ message: "Invalid token" });
   }

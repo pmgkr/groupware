@@ -1,13 +1,15 @@
+// client/src/components/auth/LoginForm.tsx
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { useAuth, AuthStorageKeys } from '@/contexts/AuthContext'; // setUser 제공
+import { loginApi } from '@/api/auth';
+import { setToken as setTokenStore } from '@/lib/tokenStore';
 
 import { Button } from '@components/ui/button';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
 import { Checkbox } from '@components/ui/checkbox';
 
@@ -22,9 +24,9 @@ export type LoginValues = z.infer<typeof LoginSchema>;
 
 export function LoginForm() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const storageRemember = 'remember_email'; // 로컬스토리지 이메일 기억하기 key 값
 
-  const remembered = localStorage.getItem(AuthStorageKeys.REMEMBER_EMAIL) ?? '';
+  const remembered = localStorage.getItem(storageRemember) ?? '';
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(LoginSchema),
@@ -41,11 +43,15 @@ export function LoginForm() {
     form.clearErrors('root');
 
     try {
-      await login({ user_id: values.user_id, user_pw: values.user_pw }, { rememberEmail: !!values.remember });
+      // 로그인 → 토큰만 세팅 → /dashboard로 이동
+      const res = await loginApi({ user_id: values.user_id, user_pw: values.user_pw });
+      setTokenStore(res.accessToken);
 
-      // 3) 성공 이동
+      // 이메일 기억하기
+      if (values.remember) localStorage.setItem(storageRemember, values.user_id);
+      else localStorage.removeItem(storageRemember);
+
       navigate('/dashboard', { replace: true });
-      return;
     } catch (err) {
       form.setError('root', {
         type: 'manual',

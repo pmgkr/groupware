@@ -1,7 +1,7 @@
 // src/lib/http.ts
 import { setToken, getToken } from '@/lib/tokenStore';
 
-async function refreshAccessToken() {
+export async function refreshAccessToken() {
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/refresh`, {
     method: 'POST',
     credentials: 'include', // 쿠키 전송

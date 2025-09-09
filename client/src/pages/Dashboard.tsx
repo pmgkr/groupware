@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUser } from '@/hooks/useUser';
 import { getImageUrl } from '@/utils';
 
 import Header from '@/layouts/Header';
@@ -13,9 +13,9 @@ import getWelcomeMessage from '@components/features/Dashboard/welcome';
 import WorkHoursBar from '@components/common/WorkHoursBar';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user_name } = useUser();
 
-  console.log(user, user?.user_name);
+  console.log(user_name);
 
   // Daypicker 선택된 날짜 관리 (Default : Today)
   const [selected, setSelected] = useState<Date | undefined>(new Date());
