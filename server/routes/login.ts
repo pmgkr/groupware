@@ -1,10 +1,14 @@
 // server/routes/login.ts
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma"; 
+import jwt, { SignOptions, Secret, JwtPayload } from "jsonwebtoken";
 // import bcrypt from "bcrypt"; // 패스워드 암호화를 고려한다면 필요
-// import jwt from "jsonwebtoken"; // JWT 인증을 고려한다면 필요
 
 const router = Router();
+
+const JWT_SECRET: Secret = process.env.JWT_SECRET as string;
+const accessOpts: SignOptions = { expiresIn: process.env.JWT_ACCESS_EXPIRES || "1h" } as Object;
+const refreshOpts: SignOptions = { expiresIn: process.env.JWT_REFRESH_EXPIRES || "7d" } as Object;
 
 router.post("/", async (req: Request, res: Response) => {
   try {
@@ -14,24 +18,46 @@ router.post("/", async (req: Request, res: Response) => {
       return res.status(400).json({ message: "아이디와 비밀번호를 입력해주세요." });
     }
 
-    const login = await prisma.login.findUnique({ where : { user_id }});
-    if(!login || login.user_pw !== user_pw) {
+    // 로그인 검증
+    const loginCred = await prisma.login.findUnique({ where : { user_id }});
+    if(!loginCred || loginCred.user_pw !== user_pw) {
         return res.status(400).json({ message: '이메일 또는 비밀번호가 올바르지 않습니다.'})
     }
 
+    // user 테이블에서 유저프로필 조회
     const user = await prisma.user.findUnique({
         where: {user_id},
+        select: {
+          user_id: true,
+          user_name: true,
+          user_name_en: true,
+          team_id: true,
+          phone: true,
+          job_role: true,
+          birth_date: true,
+          profile_image: true,
+          user_level: true,
+          user_status: true,
+        }
+    });
+    if(!user) return res.status(400).json({ message: '사용자 정보를 찾을 수 없음. 프로필 작성 필요'});
+
+    // 토큰 발급
+    const accessToken = jwt.sign({ userId: user.user_id }, JWT_SECRET, accessOpts);
+    const refreshToken = jwt.sign({ userId: user.user_id }, JWT_SECRET, refreshOpts);
+
+
+    // 리프레시 토큰 HttpOnly 쿠키로 세팅
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: false, // HTTP 환경에선 false, 'lax'로 
+      sameSite: 'lax', // HTTPS 환경에선 true, 'strict'로 CSRF 보호
+      maxAge: 1000 * 60 * 60 * 24 * 7 
     });
 
-    if(!user) {
-        return res.status(400).json({ message: '사용자 정보를 찾을 수 없음. 프로필 작성 필요'})
-    }
-
-    return res.json({
-        message: 'success',
-        user, // 이 user 정보를 context에 저장해야함
-    })
-
+    // 프론트에 액세스 토큰과 프로필 반환
+    return res.json({ message: 'success', accessToken, user });
+    
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "서버 오류" });

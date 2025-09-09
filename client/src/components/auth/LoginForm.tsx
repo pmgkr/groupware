@@ -1,10 +1,10 @@
-import { loginApi } from '@/api';
-import { useAuth } from '@/contexts/AuthContext'; // setUser 제공
-
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+
+import { useAuth, AuthStorageKeys } from '@/contexts/AuthContext'; // setUser 제공
 
 import { Button } from '@components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@components/ui/form';
@@ -14,54 +14,34 @@ import { Checkbox } from '@components/ui/checkbox';
 // 로그인 입력값 스키마
 const LoginSchema = z.object({
   user_id: z.string().email('이메일을 입력해 주세요.'),
-  user_pw: z.string().min(8, '비밀번호를 입력해 주세요.'),
+  user_pw: z.string().nonempty({ message: '비밀번호를 입력해 주세요.' }).min(8, { message: '비밀번호는 8자 이상이어야 합니다.' }),
   remember: z.boolean().optional(),
 });
 
 export type LoginValues = z.infer<typeof LoginSchema>;
 
-type LoginFormProps = {
-  /**
-   * 실제 로그인 호출을 수행하는 비동기 함수.
-   * 성공 시 아무 에러도 throw 하지 않고 resolve 해주세요.
-   * 실패 시 Error 를 throw 하면 폼 에러로 표시됩니다.
-   */
-  onLogin?: (values: LoginValues) => Promise<void>;
-  defaultEmail?: string;
-  enableByPass?: boolean; // 디버그용 기본 true
-};
-
-export function LoginForm({ onLogin, defaultEmail }: LoginFormProps) {
+export function LoginForm() {
   const navigate = useNavigate();
-  // const { setUser } = useAuth();
+  const { login } = useAuth();
+
+  const remembered = localStorage.getItem(AuthStorageKeys.REMEMBER_EMAIL) ?? '';
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
-      user_id: defaultEmail ?? '',
+      user_id: remembered,
       user_pw: '',
-      remember: false,
+      remember: !!remembered,
     },
   });
 
-  async function handleSubmit(values: LoginValues) {
+  const rootError = form.formState.errors.root?.message;
+
+  const onSubmit = async (values: LoginValues) => {
     form.clearErrors('root');
 
     try {
-      // 1) 백엔드 호출
-      if (onLogin) {
-        await onLogin(values); // 외부 주입 방식이면 이걸 사용
-      } else {
-        const res = await loginApi({ user_id: values.user_id, user_pw: values.user_pw });
-        setUser(res.user); // 컨텍스트에 users row 저장
-      }
-
-      // 2) remember 옵션 처리 (이메일 저장 등)
-      // if (values.remember) {
-      //   localStorage.setItem('remember_email', values.user_id);
-      // } else {
-      //   localStorage.removeItem('remember_email');
-      // }
+      await login({ user_id: values.user_id, user_pw: values.user_pw }, { rememberEmail: !!values.remember });
 
       // 3) 성공 이동
       navigate('/dashboard', { replace: true });
@@ -74,14 +54,12 @@ export function LoginForm({ onLogin, defaultEmail }: LoginFormProps) {
       form.setFocus('user_pw');
       form.setValue('user_pw', '');
     }
-  }
-
-  const rootError = form.formState.errors.root?.message;
+  };
 
   return (
     <>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} noValidate>
+        <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
           <FormField
             control={form.control}
             name="user_id"

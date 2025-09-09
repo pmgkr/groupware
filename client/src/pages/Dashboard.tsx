@@ -1,26 +1,21 @@
-import Header from '@/layouts/Header';
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { useAuth } from '@/contexts/AuthContext';
 import { getImageUrl } from '@/utils';
+
+import Header from '@/layouts/Header';
+
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Badge } from '@components/ui/badge';
 import { DayPicker } from '@components/daypicker';
 import { Avatar, AvatarImage, AvatarFallback } from '@components/ui/avatar';
-
-import getWelcomeMessage from '@/components/features/Dashboard/welcome';
-import WorkHoursBar from '@/components/common/WorkHoursBar';
-
-type User = {
-  name: string;
-  birthday: string; // YYYY-MM-DD
-};
+import getWelcomeMessage from '@components/features/Dashboard/welcome';
+import WorkHoursBar from '@components/common/WorkHoursBar';
 
 export default function Dashboard() {
-  // 임시 유저 데이터 (추후 DB 연동)
-  const user = {
-    name: '김예지',
-    birthday: '1993-09-04',
-  };
+  const { user } = useAuth();
+
+  console.log(user, user?.user_name);
 
   // Daypicker 선택된 날짜 관리 (Default : Today)
   const [selected, setSelected] = useState<Date | undefined>(new Date());
@@ -30,7 +25,7 @@ export default function Dashboard() {
       <Header />
       <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8">
         <div className="flex items-center justify-between text-base text-gray-800">
-          <p>{getWelcomeMessage(user)}</p>
+          <p>{getWelcomeMessage()}</p>
           <div className="flex">서울 날씨 ☀️ 25°C, 맑음</div>
         </div>
         <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6">

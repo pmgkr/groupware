@@ -1,57 +1,58 @@
-// client/src/contexts/AuthContext.tsx
+// src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import type { LoginPayload, UserDTO } from '@/api/auth';
+import { loginApi, getUser, logoutApi } from '@/api/auth';
+import { setToken as setTokenStore } from '@/lib/tokenStore';
 
-type User = { id: string; name?: string; team?: number } | null;
-
-type AuthContextType = {
-  user: User;
-  token?: string;
-  login: (user: User, token?: string) => void;
-  logout: () => void;
-  isAuthed: boolean;
+type AuthValue = {
+  user: UserDTO | null;
+  loading: boolean;
+  login: (payload: LoginPayload, opts?: { rememberEmail?: boolean }) => Promise<void>;
+  logout: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthValue | null>(null);
+const LS_KEY_REMEMBER_EMAIL = 'remember_email'; // LocalStorage 이메일 기억하기 key
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User>(null);
-  const [token, setToken] = useState<string | undefined>();
+  const [user, setUser] = useState<UserDTO | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('auth');
-    if (saved) {
-      const { user, token } = JSON.parse(saved);
-      setUser(user);
-      setToken(token);
-    }
-  }, []);
+  const login = async (payload: LoginPayload, opts?: { rememberEmail?: boolean }) => {
+    setLoading(true);
 
-  const value = useMemo(
-    () => ({
-      user,
-      token,
-      isAuthed: !!user,
-      login: (u: User, t?: string) => {
-        setUser(u);
-        setToken(t);
-        localStorage.setItem('auth', JSON.stringify({ user: u, token: t }));
-      },
-      logout: () => {
-        setUser(null);
-        setToken(undefined);
-        localStorage.removeItem('auth');
-      },
-    }),
-    [user, token]
-  );
+    const res = await loginApi(payload); // 서버 검증 + users row 포함 응답
 
-  // 컨텍스트 생성자로 데이터 제공
+    if (res.accessToken) setTokenStore(res.accessToken);
+
+    // 로그인 성공 후 사용자 정보 하이드레이션
+    const me = await getUser();
+    setUser(me.user);
+
+    // 이메일 기억하기
+    if (opts?.rememberEmail) localStorage.setItem(LS_KEY_REMEMBER_EMAIL, payload.user_id);
+    else localStorage.removeItem(LS_KEY_REMEMBER_EMAIL);
+  };
+
+  const logout = async () => {
+    try {
+      await logoutApi(); // 서버에서 refresh_token 쿠키 제거
+    } catch {}
+    setUser(null);
+    setTokenStore(undefined);
+  };
+
+  const value = useMemo<AuthValue>(() => ({ user, loading, login, logout }), [user, loading]);
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// 컨텐스트  사용으로 데이터 얻기
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
+
+export const AuthStorageKeys = {
+  REMEMBER_EMAIL: LS_KEY_REMEMBER_EMAIL,
+};
