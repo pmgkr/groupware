@@ -72,6 +72,14 @@ export const Examples: Story = {
       <div className="flex items-center space-x-2">
         <CheckboxButton checked disabled id="chbb06" label="체크됨 + 비활성화" />
       </div>
+      <div>
+        <h3 className="text-lg font-semibold mb-3">체크박스 버튼 그룹 예시 <span className="text-sm text-gray-500">※ 라디오 버튼과의 차이: 체크박스는 다중 선택이 가능함</span></h3>
+        <div className="flex align-center gap-2 space-y-2">
+          <CheckboxButton id="comp1" label="옵션1" />
+          <CheckboxButton id="comp2" label="옵션2" />
+          <CheckboxButton id="comp5" label="옵션3" />
+        </div>
+      </div>
     </div>
   ),
 };
@@ -88,7 +96,7 @@ export const Comparison: Story = {
       </div>
       <div>
         <h3 className="text-lg font-semibold mb-3">체크박스 버튼</h3>
-        <div className="space-y-2">
+        <div className="flex align-center gap-2 space-y-2">
           <CheckboxButton id="comp3" label="체크박스 버튼" />
           <CheckboxButton checked id="comp4" label="체크박스 버튼 (체크됨)" />
         </div>
