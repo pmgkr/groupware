@@ -113,25 +113,36 @@ export const RadioGroupExample: Story = {
   render: () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-3">라디오 그룹 예시</h3>
+        <h3 className="text-lg font-semibold mb-3">라디오 그룹 예시 (Variant: Default)</h3>
         <RadioGroup defaultValue="option2">
-          <div className="space-y-2">
-            <RadioButton id="group1" label="옵션 1" value="option1" />
-            <RadioButton id="group2" label="옵션 2" value="option2" />
-            <RadioButton id="group3" label="옵션 3" value="option3" />
+          <div className="flex align-center gap-2 space-y-2">
+            <RadioButton variant="default" id="group1" label="옵션 1" value="option1" />
+            <RadioButton variant="default" id="group2" label="옵션 2" value="option2" />
+            <RadioButton variant="default" id="group3" label="옵션 3" value="option3" />
           </div>
         </RadioGroup>
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-3">Dynamic Variant 그룹</h3>
+        <h3 className="text-lg font-semibold mb-3">라디오 그룹 예시 (Variant: Dynamic)</h3>
         <RadioGroup defaultValue="dynamic2">
-          <div className="space-y-2">
+          <div className="flex align-center gap-2 space-y-2">
             <RadioButton id="dgroup1" variant="dynamic" label="동적 옵션 1" value="dynamic1" />
             <RadioButton id="dgroup2" variant="dynamic" label="동적 옵션 2" value="dynamic2" />
             <RadioButton id="dgroup3" variant="dynamic" label="동적 옵션 3" value="dynamic3" />
           </div>
         </RadioGroup>
       </div>
+      <div>
+        <h3 className="text-lg font-semibold mb-3">라디오 그룹 예시 (Variant: DynamicBlue)</h3>
+        <RadioGroup defaultValue="dynamic2">
+          <div className="flex align-center gap-2 space-y-2">
+            <RadioButton id="dgroup1" variant="dynamicBlue" label="동적 옵션 1" value="dynamic1" />
+            <RadioButton id="dgroup2" variant="dynamicBlue" label="동적 옵션 2" value="dynamic2" />
+            <RadioButton id="dgroup3" variant="dynamicBlue" label="동적 옵션 3" value="dynamic3" />
+          </div>
+        </RadioGroup>
+      </div>
+      <p className="text-sm text-gray-500">※ 체크박스 버튼과의 차이: 체크박스는 다중 선택, 라디오 버튼은 하나의 옵션만 선택 가능함</p>
     </div>
   ),
 };

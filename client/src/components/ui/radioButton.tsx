@@ -22,7 +22,7 @@ function RadioButton({ className, label, labelProps, size = 'sm', variant = 'out
           : 'hover:!text-primary-blue-500',
         // dynamic variant일 때는 체크 상태에 따라 default/outline 전환
         variant === 'dynamic' 
-          ? ' data-[state=checked]:bg-primary-blue-100 data-[state=checked]:!text-primary-blue-500 data-[state=checked]:border-primary-blue-500 data-[state=checked]:shadow-xs'
+          ? ' data-[state=checked]:bg-primary-blue-100 data-[state=checked]:!text-primary-blue-500 data-[state=checked]:border-primary-blue-300'
           : variant === 'dynamicBlue'
           ? ' data-[state=checked]:bg-primary-blue-500 data-[state=checked]:!text-white data-[state=checked]:border-primary-blue-500 data-[state=checked]:shadow-xs data-[state=checked]:hover:shadow-blue data-[state=checked]:hover:bg-primary-blue-500'
           : '',
