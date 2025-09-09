@@ -15,10 +15,14 @@ import BoardWrite from '@/components/board/BoardWrite';
 import BoardDetail from '@/components/board/BoardDetail';
 import BoardList from '@/components/board/BoardList';
 import Meetingroom from '@/pages/Office/Meetingroom';
+
 import ItDevice from '@/pages/Office/ItDevice';
+import ItDeviceDetail from '@/components/itdevice/ItDeviceDetail';
 import Book from '@/pages/Office/Book';
 import BookList from '@/components/book/BookList';
 import BookWish from '@/components/book/BookWish';
+
+import Report from '@/pages/Office/Report';
 
 // 마이페이지
 import Mypage from '@/pages/Mypage';
@@ -102,6 +106,10 @@ export const router = createBrowserRouter([
               to: '/book',
               label: '도서',
             },
+            {
+              to: '/report',
+              label: '기안서',
+            },
           ],
         },
         children: [
@@ -123,13 +131,20 @@ export const router = createBrowserRouter([
             element: <ItDevice />,
           },
           {
+            path: 'itdevice/:id',
+            element: <ItDeviceDetail />,
+          },
+          {
             path: 'book',
             element: <Book />,
             children: [
               { index: true, element: <BookList /> }, // /book/list
               { path: 'wish', element: <BookWish /> }, // /book/wish
-              //{ path: ':id', element: <BookDetail /> }, // /book/wish
             ],
+          },
+          {
+            path: 'report',
+            element: <Report />,
           },
         ],
       },

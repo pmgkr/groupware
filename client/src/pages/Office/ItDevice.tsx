@@ -4,7 +4,7 @@ import { AppPagination } from '@/components/ui/AppPagination';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { SearchGray } from '@/assets/images/icons';
-import { useNavigate } from 'react-router';
+import { useNavigate, Outlet } from 'react-router';
 
 export default function ItDevice() {
   const navigate = useNavigate();
@@ -42,8 +42,8 @@ export default function ItDevice() {
     },
     {
       id: 1,
-      device: 'LG',
-      brand: 'Monitor',
+      device: 'Monitor',
+      brand: 'LG',
       model: 'LED Monitor',
       serial: '203NTEPCT052',
       purchaseAt: '2025-06-01',
@@ -59,7 +59,9 @@ export default function ItDevice() {
       <div className="flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
           <Input className="h-[40px] px-4 [&]:bg-white" placeholder="검색어 입력" />
-          <SearchGray className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Button variant="svgIcon" size="icon" className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2" aria-label="검색">
+            <SearchGray className="text-gray-400" />
+          </Button>
         </div>
         <Button>등록하기</Button>
       </div>
@@ -97,6 +99,7 @@ export default function ItDevice() {
       <div className="mt-5">
         <AppPagination totalPages={10} initialPage={1} visibleCount={5} />
       </div>
+      <Outlet />
     </div>
   );
 }

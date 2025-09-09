@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { SearchGray } from '@/assets/images/icons';
 import { useNavigate } from 'react-router';
-import { Checkbox } from '../ui/checkbox';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useState } from 'react';
+import { Edit, Delete, Download } from '@/assets/images/icons';
 
 export default function BookWish() {
   //더미 데이터
@@ -89,7 +90,9 @@ export default function BookWish() {
       <div className="flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
           <Input className="h-[40px] px-4 [&]:bg-white" placeholder="검색어 입력" />
-          <SearchGray className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Button variant="svgIcon" size="icon" className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2" aria-label="검색">
+            <SearchGray className="text-gray-400" />
+          </Button>
         </div>
 
         <Button>도서 신청</Button>
@@ -99,7 +102,7 @@ export default function BookWish() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>
+            <TableHead className="[&>[role=checkbox]]:translate-x-[2px]">
               <Checkbox checked={allChecked} onCheckedChange={toggleAll} />
             </TableHead>
             <TableHead>상태</TableHead>
@@ -116,14 +119,24 @@ export default function BookWish() {
         <TableBody>
           {posts.map((post) => (
             <TableRow key={post.id}>
-              <TableCell>
+              <TableCell className="[&:has([role=checkbox])]:pr-auto">
                 <Checkbox
                   checked={selected.includes(post.id)}
                   onCheckedChange={() => toggleOne(post.id, post.status)}
                   disabled={post.status !== '신청'} // 완료된 건 체크박스 비활성화
                 />{' '}
               </TableCell>
-              <TableCell>{post.status}</TableCell>
+              <TableCell>
+                {post.status === '신청' ? (
+                  <Badge variant="lightpink" className="px-3">
+                    신청
+                  </Badge>
+                ) : (
+                  <Badge variant="pink" className="px-3">
+                    완료
+                  </Badge>
+                )}
+              </TableCell>
               <TableCell>{post.createdAt}</TableCell>
               <TableCell>{post.category}</TableCell>
               <TableCell>{post.title}</TableCell>
@@ -131,6 +144,16 @@ export default function BookWish() {
               <TableCell>{post.publish}</TableCell>
               <TableCell>{post.team}</TableCell>
               <TableCell>{post.user}</TableCell>
+              <TableCell>
+                <div className="text-gray-700">
+                  <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="수정">
+                    <Edit className="size-4" />
+                  </Button>
+                  <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="삭제">
+                    <Delete className="size-4" />
+                  </Button>
+                </div>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
