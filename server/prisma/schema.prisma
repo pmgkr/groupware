@@ -11,7 +11,6 @@ datasource db {
 model User {
   user_id                          String      @id @unique(map: "user_id_UNIQUE") @db.VarChar(100)
   team_id                          Int?        @unique(map: "team_id_UNIQUE")
-  user_pw                          String      @db.VarChar(50)
   user_name                        String      @db.VarChar(100)
   user_name_en                     String      @db.VarChar(100)
   phone                            String?     @db.VarChar(20)
@@ -26,15 +25,10 @@ model User {
   branch                           String?     @default("Seoul,Korea") @db.VarChar(100)
   created_at                       DateTime    @default(now())
   updated_at                       DateTime    @default(now())
-  
-  
-  team           Teams?        @relation(fields: [team_id], references: [team_id])
-  login          Login?        @relation("UserLogin")
   schedule_schedule_team_idTousers Schedule[]  @relation("schedule_team_idTousers")
   schedule_schedule_user_idTousers Schedule[]  @relation("schedule_user_idTousers")
 
   @@map("users")
-  @@index([team_id])
 }
 
 model Teams {
@@ -46,17 +40,7 @@ model Teams {
   manager_id   String? @db.VarChar(100)
   manager_name String? @db.VarChar(100)
 
-  users        User[]
-
   @@map("teams")
-}
-
-model Login {
-  login_seq Int    @id @default(autoincrement())
-  user_id   String @unique @db.VarChar(100)
-  user_pw   String @db.VarChar(50)
-
-  user       User     @relation("UserLogin", fields: [user_id], references: [user_id], onDelete: Cascade)
 }
 
 model Schedule {
@@ -82,8 +66,15 @@ model Schedule {
 
   @@index([team_id], map: "fk_schedule_team")
   @@index([user_id], map: "fk_schedule_user")
-
   @@map("schedule")
+}
+
+model Login {
+  login_seq Int    @id @default(autoincrement())
+  user_id   String @unique(map: "Login_user_id_key") @db.VarChar(100)
+  user_pw   String @db.VarChar(50)
+
+  @@map("login")
 }
 
 enum user_level {
