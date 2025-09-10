@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router'; // ← dom에서 가져오는 걸 추천
+import { createBrowserRouter } from 'react-router';
 import type { RouteObject } from 'react-router';
 
 import AuthLayout from '@/layouts/AuthLayout';
