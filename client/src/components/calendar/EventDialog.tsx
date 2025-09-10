@@ -7,6 +7,7 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { RadioButton, RadioGroup } from '../ui/radioButton';
 import { Checkbox } from '../ui/checkbox';
+import DateTimePicker from './datetime';
 
 interface EventDialogProps {
   isOpen: boolean;
@@ -68,15 +69,30 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
         newData.eventType = '';
       }
       
+      // 이벤트 타입이 변경되면 종료일을 시작일과 동일하게 설정
+      if (field === 'eventType') {
+        newData.endDate = newData.startDate;
+      }
+      
       return newData;
     });
   };
 
+  // 시간 선택이 필요한 이벤트 타입인지 확인
+  const isTimeRequired = formData.eventType && 
+    !['eventVacation', 'eventOfficialLeave'].includes(formData.eventType);
+
+  // datetime-local input을 위한 값 포맷팅
+  const formatDateTimeValue = (date: string, time: string) => {
+    if (!date || !time) return '';
+    return `${date}T${time}`;
+  };
+
   const handleSave = () => {
-    if (!formData.title.trim()) {
-      alert('제목을 입력해주세요.');
-      return;
-    }
+    // if (!formData.title.trim()) {
+    //   alert('제목을 입력해주세요.');
+    //   return;
+    // }
 
     onSave(formData);
     onClose();
@@ -103,6 +119,9 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>신규 일정 등록</DialogTitle>
+          <DialogDescription>
+            일정의 유형과 세부 정보를 입력해주세요.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
@@ -155,65 +174,52 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
           {/* 나머지 필드들 - 세부 유형이 선택된 경우에만 표시 */}
           {formData.eventType && (
             <>
-              {/* 전체일 여부 */}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="allDay"
-                  checked={formData.allDay}
-                  onCheckedChange={(checked) => handleInputChange('allDay', checked as boolean)}
-                />
-                <Label htmlFor="allDay">하루 종일</Label>
-              </div>
 
               {/* 시작일 */}
               <div className="space-y-2">
-                <Label htmlFor="startDate">시작일</Label>
+                <Label htmlFor="startDate">
+                  {isTimeRequired ? '시작일과 시간을 선택해주세요.' : '시작일을 선택해주세요.'}
+                </Label>
                 <Textbox
+                  key={`startDate-${isTimeRequired ? 'datetime' : 'date'}`}
                   id="startDate"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => handleInputChange('startDate', e.target.value)}
+                  type={isTimeRequired ? "datetime-local" : "date"}
+                  value={isTimeRequired ? formatDateTimeValue(formData.startDate, formData.startTime) : formData.startDate}
+                  onChange={(e) => {
+                    if (isTimeRequired) {
+                      const [date, time] = e.target.value.split('T');
+                      if (date) handleInputChange('startDate', date);
+                      if (time) handleInputChange('startTime', time);
+                    } else {
+                      handleInputChange('startDate', e.target.value);
+                    }
+                  }}
                   className="w-full"
                 />
               </div>
 
               {/* 종료일 */}
               <div className="space-y-2">
-                <Label htmlFor="endDate">종료일</Label>
+                <Label htmlFor="endDate">
+                  {isTimeRequired ? '종료일과 시간을 선택해주세요.' : '종료일을 선택해주세요.'}
+                </Label>
                 <Textbox
+                  key={`endDate-${isTimeRequired ? 'datetime' : 'date'}`}
                   id="endDate"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => handleInputChange('endDate', e.target.value)}
+                  type={isTimeRequired ? "datetime-local" : "date"}
+                  value={isTimeRequired ? formatDateTimeValue(formData.endDate, formData.endTime) : formData.endDate}
+                  onChange={(e) => {
+                    if (isTimeRequired) {
+                      const [date, time] = e.target.value.split('T');
+                      if (date) handleInputChange('endDate', date);
+                      if (time) handleInputChange('endTime', time);
+                    } else {
+                      handleInputChange('endDate', e.target.value);
+                    }
+                  }}
                   className="w-full"
                 />
               </div>
-
-              {/* 시간 (하루 종일이 아닐 때만 표시) */}
-              {!formData.allDay && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="startTime">시작 시간</Label>
-                    <Textbox
-                      id="startTime"
-                      type="time"
-                      value={formData.startTime}
-                      onChange={(e) => handleInputChange('startTime', e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="endTime">종료 시간</Label>
-                    <Textbox
-                      id="endTime"
-                      type="time"
-                      value={formData.endTime}
-                      onChange={(e) => handleInputChange('endTime', e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              )}
 
               {/* 설명 */}
               <div className="space-y-2">
