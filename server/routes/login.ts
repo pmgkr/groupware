@@ -24,11 +24,17 @@ router.post("/", async (req: Request, res: Response) => {
         return res.status(400).json({ message: '이메일 또는 비밀번호가 올바르지 않습니다.'})
     }
 
-    // user 테이블에서 유저프로필 조회
+    // user 테이블에서 유저 프로필 조회
     const user = await prisma.user.findUnique({
         where: {user_id},
     });
-    if(!user) return res.status(400).json({ message: '사용자 정보를 찾을 수 없음. 프로필 작성 필요'});
+    
+    // 프로필 없으면 온보딩 페이지로 이동 (온보딩 토큰 발급 후 409 반환)
+    if(!user) {
+      const onboardingToken = jwt.sign({ userId: user_id, purpose: 'onboarding'}, JWT_SECRET, { expiresIn: '30m'});
+
+      return res.status(409).json({ message: '사용자 정보를 찾을 수 없음. 프로필 작성 필요', code: 'PROFILE_NOT_FOUND', onboardingToken, email: user_id});
+    }
 
     // 토큰 발급
     const accessToken = jwt.sign({ userId: user.user_id }, JWT_SECRET, accessOpts);

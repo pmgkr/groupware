@@ -13,9 +13,7 @@ import getWelcomeMessage from '@components/features/Dashboard/welcome';
 import WorkHoursBar from '@components/common/WorkHoursBar';
 
 export default function Dashboard() {
-  const { user_name } = useUser();
-
-  console.log(user_name);
+  const { user_name, job_role } = useUser();
 
   // Daypicker 선택된 날짜 관리 (Default : Today)
   const [selected, setSelected] = useState<Date | undefined>(new Date());
@@ -38,8 +36,8 @@ export default function Dashboard() {
               </Link>
               <div className="mt-4 text-center text-base text-gray-700">
                 <Link to="/mypage">
-                  <strong className="block text-xl leading-none font-bold text-gray-950">김예지</strong>
-                  Front-end Developer
+                  <strong className="block text-xl leading-none font-bold text-gray-950">{user_name}</strong>
+                  {job_role}
                 </Link>
               </div>
             </div>
