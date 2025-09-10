@@ -139,7 +139,7 @@ export default function itDeviceDetail() {
               {post.device === 'Laptop' && post.ssdhdd && <li>SSD-HDD</li>}
               <li>구매일자</li>
             </ul>
-            <ul className="pl-8 leading-10">
+            <ul className="pl-8 text-base leading-10">
               <li>{post.device}</li>
               <li>{post.brand}</li>
               <li>{post.model}</li>
@@ -165,10 +165,11 @@ export default function itDeviceDetail() {
             {/* 현재 사용자 */}
             {currentUser && (
               <div className="border-primary-blue-300 bg-primary-blue-100 mb-4 flex items-center justify-between rounded border p-3">
-                <div className="flex items-center font-medium">
-                  {currentUser.user} <span className="pl-1 text-gray-500">({currentUser.team})</span>
+                <div className="flex items-center text-base font-medium">
+                  {currentUser.user} <span className="pl-1 text-sm text-gray-500">({currentUser.team})</span>
                   <Badge className="ml-2 bg-[#FF6B6B]">현재 사용중</Badge>
                 </div>
+
                 <div className="text-sm text-gray-600">시작일: {currentUser.createdAt}</div>
               </div>
             )}
@@ -178,8 +179,8 @@ export default function itDeviceDetail() {
               <div className="space-y-2">
                 {previousUsers.map((h) => (
                   <div key={h.historyId} className="flex justify-between rounded border p-3">
-                    <div className="font-medium">
-                      {h.user} <span className="text-gray-500">({h.team})</span>
+                    <div className="text-base font-medium">
+                      {h.user} <span className="text-sm text-gray-500">({h.team})</span>
                     </div>
                     <div className="text-sm text-gray-600">
                       {h.createdAt} ~ {h.returnedAt}

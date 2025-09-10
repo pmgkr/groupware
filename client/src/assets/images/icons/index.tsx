@@ -47,6 +47,8 @@ const Lazy_RightArr = React.lazy(() => import('./right_arr.svg?react'));
 const Lazy_SearchGray = React.lazy(() => import('./search_gray.svg?react'));
 const Lazy_TooltipNoti = React.lazy(() => import('./tooltip_noti.svg?react'));
 const Lazy_UpArr = React.lazy(() => import('./up_arr.svg?react'));
+const Lazy_ViewGrid = React.lazy(() => import('./view_grid.svg?react'));
+const Lazy_ViewList = React.lazy(() => import('./view_list.svg?react'));
 
 export const Add: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Add), { displayName: 'Add' });
 export const Admin: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Admin), { displayName: 'Admin' });
@@ -82,3 +84,5 @@ export const RightArr: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Rig
 export const SearchGray: React.FC<IconProps> = Object.assign(withSuspense(Lazy_SearchGray), { displayName: 'SearchGray' });
 export const TooltipNoti: React.FC<IconProps> = Object.assign(withSuspense(Lazy_TooltipNoti), { displayName: 'TooltipNoti' });
 export const UpArr: React.FC<IconProps> = Object.assign(withSuspense(Lazy_UpArr), { displayName: 'UpArr' });
+export const ViewGrid: React.FC<IconProps> = Object.assign(withSuspense(Lazy_ViewGrid), { displayName: 'ViewGrid' });
+export const ViewList: React.FC<IconProps> = Object.assign(withSuspense(Lazy_ViewList), { displayName: 'ViewList' });
