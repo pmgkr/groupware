@@ -134,12 +134,24 @@ export const RangeSelection: Story = {
   },
 };
 
+export const Dashboard: Story = {
+  render: (args) => <DayPickerWithState {...args} />,
+  args: {
+    variant: 'dashboard',
+    size: 'default',
+    mode: 'single',
+    captionLayout: 'label',
+  },
+};
+
 export const Examples: Story = {
   render: () => (
-    <div className="flex flex-wrap gap-4">
-      <DayPickerWithState variant="default" size="sm" mode="single" captionLayout="label" />
-      <DayPickerWithState variant="filled" size="default" mode="single" captionLayout="dropdown" />
-      <DayPickerWithState variant="minimal" size="lg" mode="single" captionLayout="label" />
-    </div>
+    <>
+      <div className="flex flex-wrap gap-4">
+        <DayPickerWithState variant="default" size="sm" mode="single" captionLayout="label" />
+        <DayPickerWithState variant="filled" size="default" mode="single" captionLayout="dropdown" />
+        <DayPickerWithState variant="minimal" size="lg" mode="single" captionLayout="label" />
+      </div>
+    </>
   ),
 };

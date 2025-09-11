@@ -1,0 +1,79 @@
+﻿-- CreateTable
+CREATE TABLE `users` (
+    `user_id` VARCHAR(100) NOT NULL,
+    `team_id` INTEGER NULL,
+    `user_name` VARCHAR(100) NOT NULL,
+    `user_name_en` VARCHAR(100) NOT NULL,
+    `phone` VARCHAR(20) NULL,
+    `address` VARCHAR(255) NULL,
+    `birth_date` DATE NULL,
+    `hire_date` DATE NULL,
+    `job_role` VARCHAR(100) NULL,
+    `user_level` ENUM('staff', 'manager', 'admin') NOT NULL DEFAULT 'staff',
+    `user_status` ENUM('active', 'inactive', 'suspended') NOT NULL DEFAULT 'active',
+    `emergency_phone` VARCHAR(255) NULL,
+    `profile_image` VARCHAR(255) NULL,
+    `branch` VARCHAR(100) NULL DEFAULT 'Seoul,Korea',
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updated_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    UNIQUE INDEX `user_id_UNIQUE`(`user_id`),
+    UNIQUE INDEX `team_id_UNIQUE`(`team_id`),
+    PRIMARY KEY (`user_id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `teams` (
+    `team_id` INTEGER NOT NULL AUTO_INCREMENT,
+    `parent_id` INTEGER NULL,
+    `team_name` VARCHAR(100) NOT NULL,
+    `level` INTEGER NOT NULL DEFAULT 1,
+    `order` INTEGER NULL DEFAULT 0,
+    `manager_id` VARCHAR(100) NULL,
+    `manager_name` VARCHAR(100) NULL,
+
+    PRIMARY KEY (`team_id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `schedule` (
+    `seq` INTEGER NOT NULL AUTO_INCREMENT,
+    `user_id` VARCHAR(100) NOT NULL,
+    `team_id` INTEGER NOT NULL,
+    `sch_title` VARCHAR(100) NOT NULL,
+    `sch_type` ENUM('vacation', 'event') NOT NULL,
+    `sch_vacation_type` ENUM('day', 'half', 'quarter') NULL,
+    `sch_event_type` ENUM('remote', 'field', 'etc') NULL,
+    `sch_sdate` DATE NOT NULL,
+    `sch_stime` TIME(0) NOT NULL,
+    `sch_edate` DATE NOT NULL,
+    `sch_etime` TIME(0) NOT NULL,
+    `sch_isAllday` ENUM('Y', 'N') NOT NULL,
+    `sch_isHoliday` ENUM('Y', 'N') NOT NULL,
+    `sch_description` TEXT NULL,
+    `sch_status` ENUM('Y', 'H', 'N') NOT NULL,
+    `sch_modified_at` TIMESTAMP(0) NULL,
+    `sch_created_at` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+
+    UNIQUE INDEX `seq_UNIQUE`(`seq`),
+    INDEX `fk_schedule_team`(`team_id`),
+    INDEX `fk_schedule_user`(`user_id`),
+    PRIMARY KEY (`seq`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `login` (
+    `login_seq` INTEGER NOT NULL AUTO_INCREMENT,
+    `user_id` VARCHAR(100) NOT NULL,
+    `user_pw` VARCHAR(50) NOT NULL,
+
+    UNIQUE INDEX `Login_user_id_key`(`user_id`),
+    PRIMARY KEY (`login_seq`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AddForeignKey
+ALTER TABLE `schedule` ADD CONSTRAINT `fk_schedule_team` FOREIGN KEY (`team_id`) REFERENCES `users`(`team_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `schedule` ADD CONSTRAINT `fk_schedule_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
