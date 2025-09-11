@@ -34,7 +34,7 @@ export default function Onboarding() {
             이용을 위해 프로필을 작성해 주세요 <span className="text-[.8em]">😊</span>
           </h1>
           <Button variant="ghost" className="w-fit gap-1 text-gray-700 transition-none hover:bg-transparent has-[>svg]:px-0" asChild>
-            <Link href="/">
+            <Link to="/">
               <LeftArr />
               로그인 돌아가기
             </Link>
