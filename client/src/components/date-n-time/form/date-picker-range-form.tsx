@@ -37,7 +37,11 @@ const FormSchema = z.object({
   }),
 });
 
-export function DatePickerWithRangeForm() {
+export function DatePickerWithRangeForm({
+  placeholder = "날짜 범위를 선택해주세요"
+}: {
+  placeholder?: string;
+} = {}) {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
   });
@@ -76,7 +80,7 @@ export function DatePickerWithRangeForm() {
                           format(field.value.from, "yyyy년 M월 d일 EEEE", { locale: ko })
                         )
                       ) : (
-                        <span>날짜 범위 선택</span>
+                        <span>{placeholder}</span>
                       )}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                     </Button>

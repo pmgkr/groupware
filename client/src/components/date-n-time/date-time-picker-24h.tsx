@@ -15,10 +15,34 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
-export function DateTimePicker24h() {
-  const [date, setDate] = React.useState<Date>(new Date());
+export function DateTimePicker24h({
+  placeholder = "날짜와 시간을 선택해주세요",
+  timeRestriction
+}: {
+  placeholder?: string;
+  timeRestriction?: {
+    startHour: number;
+    startMinute: number;
+    endHour: number;
+    endMinute: number;
+  };
+} = {}) {
+  const [date, setDate] = React.useState<Date | undefined>(undefined);
+  const [isOpen, setIsOpen] = React.useState(false);
 
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  // 시간 제한이 있는 경우 해당 시간대만 표시
+  const getAvailableHours = () => {
+    if (timeRestriction) {
+      const availableHours = [];
+      for (let hour = timeRestriction.startHour; hour <= timeRestriction.endHour; hour++) {
+        availableHours.push(hour);
+      }
+      return availableHours;
+    }
+    return Array.from({ length: 24 }, (_, i) => i);
+  };
+
+  const hours = getAvailableHours();
   const handleDateSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
       setDate(selectedDate);
@@ -40,8 +64,37 @@ export function DateTimePicker24h() {
     }
   };
 
+  // 시간 제한이 있는 경우 해당 시간대의 분만 표시
+  const getAvailableMinutes = () => {
+    if (timeRestriction && date) {
+      const currentHour = date.getHours();
+      const minutes = [];
+      
+      if (currentHour === timeRestriction.startHour) {
+        // 시작 시간인 경우 시작 분부터 60분까지
+        for (let min = timeRestriction.startMinute; min < 60; min += 5) {
+          minutes.push(min);
+        }
+      } else if (currentHour === timeRestriction.endHour) {
+        // 종료 시간인 경우 0분부터 종료 분까지
+        for (let min = 0; min <= timeRestriction.endMinute; min += 5) {
+          minutes.push(min);
+        }
+      } else {
+        // 중간 시간인 경우 0분부터 60분까지
+        for (let min = 0; min < 60; min += 5) {
+          minutes.push(min);
+        }
+      }
+      return minutes;
+    }
+    return Array.from({ length: 12 }, (_, i) => i * 5);
+  };
+
+  const availableMinutes = getAvailableMinutes();
+
   return (
-    <Popover>
+    <Popover modal={true} open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -54,22 +107,26 @@ export function DateTimePicker24h() {
           {date ? (
             format(date, "yyyy년 M월 d일 EEEE HH:mm", { locale: ko })
           ) : (
-            <span>YYYY/MM/DD HH:mm</span>
+            <span>{placeholder}</span>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
-        <div className="sm:flex">
-          <DayPicker
-            mode="single"
-            selected={date}
-            onSelect={handleDateSelect}
-            initialFocus
-          />
-          <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
+      <PopoverContent 
+        className="w-auto p-0 z-[1000]" 
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <div className="flex flex-col">
+          <div className="sm:flex">
+            <DayPicker
+              mode="single"
+              selected={date}
+              onSelect={handleDateSelect}
+              initialFocus
+            />
+            <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
             <ScrollArea className="w-64 sm:w-auto">
               <div className="flex sm:flex-col p-2">
-                {hours.reverse().map((hour) => (
+                {hours.map((hour) => (
                   <Button
                     key={hour}
                     size="icon"
@@ -85,7 +142,7 @@ export function DateTimePicker24h() {
             </ScrollArea>
             <ScrollArea className="w-64 sm:w-auto">
               <div className="flex sm:flex-col p-2">
-                {Array.from({ length: 12 }, (_, i) => i * 5).map((minute) => (
+                {availableMinutes.map((minute) => (
                   <Button
                     key={minute}
                     size="icon"
@@ -99,7 +156,18 @@ export function DateTimePicker24h() {
               </div>
               <ScrollBar orientation="horizontal" className="sm:hidden" />
             </ScrollArea>
+            </div>
           </div>
+          {date && (
+            <div className="p-3 border-t">
+              <Button 
+                className="w-full" 
+                onClick={() => setIsOpen(false)}
+              >
+                선택완료
+              </Button>
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>

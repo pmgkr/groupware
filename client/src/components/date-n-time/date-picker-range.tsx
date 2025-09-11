@@ -19,19 +19,19 @@ export function DatePickerWithRange({
   className,
   selected,
   onSelect,
+  placeholder = "날짜 범위를 선택해주세요"
 }: {
   className?: string;
   selected?: DateRange;
   onSelect?: (range: DateRange | undefined) => void;
+  placeholder?: string;
 }) {
-  const [date, setDate] = React.useState<DateRange | undefined>(selected || {
-    from: new Date(),
-    to: addDays(new Date(), 20),
-  })
+  const [date, setDate] = React.useState<DateRange | undefined>(selected)
+  const [open, setOpen] = React.useState(false)
 
   return (
     <div className={cn("grid gap-2", className)}>
-      <Popover>
+      <Popover modal={true} open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             id="date"
@@ -52,25 +52,38 @@ export function DatePickerWithRange({
                 format(date.from, "yyyy년 M월 d일 EEEE", { locale: ko })
               )
             ) : (
-              <span>날짜 범위 선택</span>
+              <span>{placeholder}</span>
             )}
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-auto p-0" 
+          className="w-auto p-0 z-[1000]" 
           align="start"
+          onPointerDown={(e) => e.stopPropagation()}
         >
-          <DayPicker
-            initialFocus
-            mode="range"
-            defaultMonth={date?.from}
-            selected={date}
-            onSelect={(selectedRange) => {
-              setDate(selectedRange);
-              onSelect?.(selectedRange);
-            }}
-            numberOfMonths={2}
-          />
+          <div className="flex flex-col">
+            <DayPicker
+              initialFocus
+              mode="range"
+              defaultMonth={date?.from}
+              selected={date}
+              onSelect={(selectedRange) => {
+                setDate(selectedRange);
+                onSelect?.(selectedRange);
+              }}
+              numberOfMonths={2}
+            />
+            {date?.from && date?.to && (
+              <div className="p-3 border-t">
+                <Button 
+                  className="w-full" 
+                  onClick={() => setOpen(false)}
+                >
+                  선택완료
+                </Button>
+              </div>
+            )}
+          </div>
         </PopoverContent>
       </Popover>
     </div>

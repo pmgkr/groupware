@@ -5,6 +5,7 @@ import { CalendarIcon } from "@radix-ui/react-icons";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useForm } from "react-hook-form";
+import { useState } from "react";
 import { z } from "zod";
 
 import { cn } from "@/lib/utils";
@@ -32,7 +33,11 @@ const FormSchema = z.object({
   }),
 });
 
-export function DatePickerForm() {
+export function DatePickerForm({
+  placeholder = "날짜를 선택해주세요"
+}: {
+  placeholder?: string;
+} = {}) {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
   });
@@ -47,10 +52,12 @@ export function DatePickerForm() {
         <FormField
           control={form.control}
           name="dob"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              {/* <FormLabel>Date of birth</FormLabel> */}
-              <Popover>
+          render={({ field }) => {
+            const [open, setOpen] = useState(false);
+            return (
+              <FormItem className="flex flex-col">
+                {/* <FormLabel>Date of birth</FormLabel> */}
+                <Popover modal={true} open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button
@@ -63,20 +70,26 @@ export function DatePickerForm() {
                       {field.value ? (
                         format(field.value, "yyyy년 M월 d일 EEEE", { locale: ko })
                       ) : (
-                        <span>날짜 선택</span>
+                        <span>{placeholder}</span>
                       )}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
                 <PopoverContent 
-                  className="w-auto p-0" 
+                  className="w-auto p-0 z-[1000]" 
                   align="start"
+                  onPointerDown={(e) => e.stopPropagation()}
                 >
                   <DayPicker
                     mode="single"
                     selected={field.value}
-                    onSelect={field.onChange}
+                    onSelect={(date) => {
+                      field.onChange(date);
+                      if (date) {
+                        setOpen(false);
+                      }
+                    }}
                     disabled={(date) =>
                       date > new Date() || date < new Date("1900-01-01")
                     }
@@ -89,7 +102,8 @@ export function DatePickerForm() {
               </FormDescription>
               <FormMessage />
             </FormItem>
-          )}
+            );
+          }}
         />
         <Button type="submit">제출</Button>
       </form>

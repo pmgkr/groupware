@@ -33,7 +33,11 @@ const FormSchema = z.object({
   }),
 });
 
-export function DateTimePicker24hForm() {
+export function DateTimePicker24hForm({
+  placeholder = "날짜와 시간을 선택해주세요"
+}: {
+  placeholder?: string;
+} = {}) {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -86,7 +90,7 @@ export function DateTimePicker24hForm() {
                       {field.value ? (
                         format(field.value, "yyyy년 M월 d일 EEEE HH:mm", { locale: ko })
                       ) : (
-                        <span>YYYY/MM/DD HH:mm</span>
+                        <span>{placeholder}</span>
                       )}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                     </Button>

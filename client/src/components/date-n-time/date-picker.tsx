@@ -16,15 +16,18 @@ import {
 
 export function DatePickerDemo({
   selected,
-  onSelect 
+  onSelect,
+  placeholder = "날짜를 선택해주세요"
 }: { 
   selected?: Date; 
-  onSelect?: (date: Date | undefined) => void; 
+  onSelect?: (date: Date | undefined) => void;
+  placeholder?: string;
 } = {}) {
   const [date, setDate] = React.useState<Date | undefined>(selected)
+  const [open, setOpen] = React.useState(false)
 
   return (
-    <Popover>
+    <Popover modal={true} open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant={"outline"}
@@ -34,22 +37,35 @@ export function DatePickerDemo({
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "yyyy년 M월 d일 EEEE", { locale: ko }) : <span>날짜 선택</span>}
+          {date ? format(date, "yyyy년 M월 d일 EEEE", { locale: ko }) : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-auto p-0" 
+        className="w-auto p-0 z-[1000]" 
         align="start"
+        onPointerDown={(e) => e.stopPropagation()}
       >
-        <DayPicker
-          mode="single"
-          selected={date}
-          onSelect={(selectedDate) => {
-            setDate(selectedDate);
-            onSelect?.(selectedDate);
-          }}
-          initialFocus
-        />
+        <div className="flex flex-col">
+          <DayPicker
+            mode="single"
+            selected={date}
+            onSelect={(selectedDate) => {
+              setDate(selectedDate);
+              onSelect?.(selectedDate);
+            }}
+            initialFocus
+          />
+          {date && (
+            <div className="p-3 border-t">
+              <Button 
+                className="w-full" 
+                onClick={() => setOpen(false)}
+              >
+                선택완료
+              </Button>
+            </div>
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   )
