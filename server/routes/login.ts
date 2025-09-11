@@ -33,7 +33,7 @@ router.post("/", async (req: Request, res: Response) => {
     if(!user) {
       const onboardingToken = jwt.sign({ userId: user_id, purpose: 'onboarding'}, JWT_SECRET, { expiresIn: '30m'});
 
-      return res.status(409).json({ message: '사용자 정보를 찾을 수 없음. 프로필 작성 필요', code: 'PROFILE_NOT_FOUND', onboardingToken, email: user_id});
+      return res.status(409).json({ message: 'PROFILE_NOT_FOUND', onboardingToken, email: user_id});
     }
 
     // 토큰 발급

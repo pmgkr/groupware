@@ -6,6 +6,7 @@ import PublicLayout from '@/layouts/PublicLayout';
 import Layout from '@/layouts/Layout';
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
+import Onboarding from '@/pages/Onboarding';
 import ErrorPage from '@/pages/ErrorPage';
 
 import { calendarRoutes } from './calendar';
@@ -28,7 +29,10 @@ export const router = createBrowserRouter([
   // 공개 구간
   {
     element: <PublicLayout />,
-    children: [{ path: '/', element: <Login /> }],
+    children: [
+      { path: '/', element: <Login /> },
+      { path: '/onboarding', element: <Onboarding /> },
+    ],
   },
 
   // 인증 구간

@@ -1,6 +1,6 @@
 import Logo from '@/assets/images/common/pmg_logo.svg?react';
 import { Place } from '@/assets/images/icons';
-import { LoginForm } from '@components/auth/LoginForm';
+import { LoginForm } from '@/components/features/Login/LoginForm';
 
 export default function Login() {
   return (

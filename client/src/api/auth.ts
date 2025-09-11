@@ -20,6 +20,7 @@ export type UserDTO = {
 export async function loginApi(payload: LoginPayload) {
   return http<{ message: string; accessToken: string; user: UserDTO }>('/login', {
     method: 'POST',
+    credentials: 'include',
     body: JSON.stringify(payload),
   });
 }

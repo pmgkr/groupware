@@ -65,6 +65,7 @@ function DayPicker({
       numberOfMonths={numberOfMonths}
       formatters={{
         formatMonthDropdown: (date) => date.toLocaleString('default', { month: 'short' }),
+        formatYearDropdown: (date) => format(date, 'yyyy년', { locale: ko }),
         formatCaption: (month) => format(month, 'yyyy년 M월', { locale: ko }),
         ...formatters,
       }}
@@ -84,9 +85,12 @@ function DayPicker({
           defaultClassNames.button_next
         ),
         month_caption: cn('flex items-center justify-center h-(--cell-size) w-full px-(--cell-size)', defaultClassNames.month_caption),
-        dropdowns: cn('w-full flex items-center text-sm font-medium justify-center h-(--cell-size) gap-1.5', defaultClassNames.dropdowns),
+        dropdowns: cn(
+          'w-full flex items-center text-sm font-medium justify-center h-(--cell-size) gap-1.5 flex-row-reverse',
+          defaultClassNames.dropdowns
+        ),
         dropdown_root: cn(
-          'relative has-focus:border-ring border border-input shadow-xs has-focus:ring-ring/50 has-focus:ring-[3px] rounded-md',
+          'relative has-focus:border-input border border-input shadow-xs has-focus:ring-ring/50 has-focus:ring-[3px] rounded-md',
           defaultClassNames.dropdown_root
         ),
         dropdown: cn('absolute bg-popover inset-0 opacity-0', defaultClassNames.dropdown),

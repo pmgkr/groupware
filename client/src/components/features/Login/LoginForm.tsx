@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-
+import { HttpError } from '@/lib/http'; // 추후 제거
 import { loginApi } from '@/api/auth';
 import { setToken as setTokenStore } from '@/lib/tokenStore';
 
@@ -52,7 +52,26 @@ export function LoginForm() {
       else localStorage.removeItem(storageRemember);
 
       navigate('/dashboard', { replace: true });
-    } catch (err) {
+    } catch (err: any) {
+      const status = err?.status ?? err?.response?.status;
+      const data = err?.data ?? err?.response?.data;
+
+      if (status === 409) {
+        // 온보딩 값 저장 키
+        const ONBOARDING_EMAIL_KEY = 'onboarding:email';
+        const ONBOARDING_TOKEN_KEY = 'onboarding:token';
+
+        // 새로고침/뒤로가기도 버틸 수 있게 sessionStorage에 저장
+        sessionStorage.setItem(ONBOARDING_EMAIL_KEY, data.email);
+        sessionStorage.setItem(ONBOARDING_TOKEN_KEY, data.onboardingToken);
+
+        navigate('/onboarding', {
+          replace: true,
+          state: { email: data.email, onboardingToken: data.onboardingToken },
+        });
+        return;
+      }
+
       form.setError('root', {
         type: 'manual',
         message: err instanceof Error ? err.message : '이메일 또는 비밀번호가 올바르지 않습니다.',
