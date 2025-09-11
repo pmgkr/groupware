@@ -1,14 +1,22 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Checkbox } from '@components/ui/checkbox';
+import { Checkbox } from '../../components/ui/checkbox';
+import React from 'react';
 
 const meta: Meta<typeof Checkbox> = {
   title: 'Components/UI/Checkbox',
   component: Checkbox,
   tags: ['autodocs'],
   argTypes: {
-    disabled: {
-      control: 'boolean',
-      defaultValue: false,
+    size: {
+      control: 'select',
+      options: ['sm', 'md', 'lg'],
+      defaultValue: 'md',
+      description: 'Checkbox 크기를 설정합니다',
+    },
+
+    label: {
+      control: 'text',
+      description: '체크박스 옆에 표시될 라벨 텍스트',
     },
   },
 };
@@ -28,10 +36,13 @@ export const Examples: Story = {
   render: () => (
     <div className="space-y-4">
       <div className="flex items-center space-x-2">
-        <Checkbox id="chb02" label="기본" />
+        <Checkbox id="chb02-1" size="sm" label="기본(sm)" />
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox checked id="chb05" label="기본" />
+        <Checkbox checked id="chb05" label="기본(sm)" />
+      </div>
+      <div className="flex items-center space-x-2">
+        <Checkbox id="chb02" label="md" size="md" />
       </div>
 
       <div className="flex items-center space-x-2">

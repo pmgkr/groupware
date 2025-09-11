@@ -55,7 +55,7 @@ function Switch({ className, variant, label, labelProps, ...props }: SwitchProps
         data-slot="switch-thumb"
         className={cn(
           'pointer-events-none block size-5 rounded-full ring-0 transition-transform',
-          'data-[state=checked]:translate-x-[calc(100%+0px data-[state=unchecked]:translate-x-0.5',
+          'data-[state=checked]:translate-x-[calc(100%+0px)] data-[state=unchecked]:translate-x-0.5',
           // props.disabled 값에 따라 조건부 적용
           props.disabled
             ? [
