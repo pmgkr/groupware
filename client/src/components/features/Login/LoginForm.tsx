@@ -1,86 +1,89 @@
+// client/src/components/auth/LoginForm.tsx
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { loginApi } from '@/api/auth';
+import { setToken as setTokenStore } from '@/lib/tokenStore';
 
 import { Button } from '@components/ui/button';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
 import { Checkbox } from '@components/ui/checkbox';
 
 // 로그인 입력값 스키마
 const LoginSchema = z.object({
-  user_id: z.string().email('올바른 이메일을 입력해주세요.'),
-  user_pw: z.string().min(8, '비밀번호는 8자 이상이어야 해요.'),
+  user_id: z.string().email('이메일을 입력해 주세요.'),
+  user_pw: z.string().nonempty({ message: '비밀번호를 입력해 주세요.' }).min(8, { message: '비밀번호는 8자 이상이어야 합니다.' }),
   remember: z.boolean().optional(),
 });
 
 export type LoginValues = z.infer<typeof LoginSchema>;
 
-type LoginFormProps = {
-  /**
-   * 실제 로그인 호출을 수행하는 비동기 함수.
-   * 성공 시 아무 에러도 throw 하지 않고 resolve 해주세요.
-   * 실패 시 Error 를 throw 하면 폼 에러로 표시됩니다.
-   */
-  onLogin?: (values: LoginValues) => Promise<void>;
-  defaultEmail?: string;
-  enableByPass?: boolean; // 디버그용 기본 true
-};
-
-export function LoginForm({ onLogin, defaultEmail, enableByPass = true }: LoginFormProps) {
+export function LoginForm() {
   const navigate = useNavigate();
+  const storageRemember = 'remember_email'; // 로컬스토리지 이메일 기억하기 key 값
 
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const remembered = localStorage.getItem(storageRemember) ?? '';
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
-      user_id: defaultEmail ?? '',
+      user_id: remembered,
       user_pw: '',
-      remember: false,
+      remember: !!remembered,
     },
   });
 
-  async function handleSubmit(values: LoginValues) {
-    setIsSubmitting(true);
+  const rootError = form.formState.errors.root?.message;
 
-    form.clearErrors('root'); // 폼 전체 에러 초기화
+  const onSubmit = async (values: LoginValues) => {
+    form.clearErrors('root');
 
     try {
-      // 로그인 테스트 계정
-      const isPass = enableByPass && values.user_id === 'test@test.com' && values.user_pw === 'qqqq1234';
+      // 로그인 → 토큰만 세팅 → /dashboard로 이동
+      const res = await loginApi({ user_id: values.user_id, user_pw: values.user_pw });
+      setTokenStore(res.accessToken);
 
-      if (!isPass) {
-        form.setError('root', {
-          type: 'manual',
-          message: '이메일 또는 비밀번호가 올바르지 않습니다.',
+      // 이메일 기억하기
+      if (values.remember) localStorage.setItem(storageRemember, values.user_id);
+      else localStorage.removeItem(storageRemember);
+
+      navigate('/dashboard', { replace: true });
+    } catch (err: any) {
+      const status = err?.status ?? err?.response?.status;
+      const data = err?.data ?? err?.response?.data;
+
+      if (status === 409) {
+        // 온보딩 값 저장 키
+        const ONBOARDING_EMAIL_KEY = 'onboarding:email';
+        const ONBOARDING_TOKEN_KEY = 'onboarding:token';
+
+        // 새로고침/뒤로가기도 버틸 수 있게 sessionStorage에 저장
+        sessionStorage.setItem(ONBOARDING_EMAIL_KEY, data.email);
+        sessionStorage.setItem(ONBOARDING_TOKEN_KEY, data.onboardingToken);
+
+        navigate('/onboarding', {
+          replace: true,
+          state: { email: data.email, onboardingToken: data.onboardingToken },
         });
-
-        form.setFocus('user_pw'); // 로그인 실패 시 비밀번호 포커스
-        form.setValue('user_pw', ''); // 로그인 실패 시 비밀번호 초기화
         return;
       }
 
-      // 로그인 성공 후 처리
-      navigate('/dashboard');
-      return;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '로그인 중 오류가 발생했습니다.';
-      setServerError(message);
-    } finally {
-      setIsSubmitting(false);
+      form.setError('root', {
+        type: 'manual',
+        message: err instanceof Error ? err.message : '이메일 또는 비밀번호가 올바르지 않습니다.',
+      });
+      form.setFocus('user_pw');
+      form.setValue('user_pw', '');
     }
-  }
-
-  const rootError = form.formState.errors.root?.message;
+  };
 
   return (
     <>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} noValidate>
+        <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
           <FormField
             control={form.control}
             name="user_id"

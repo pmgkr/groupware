@@ -1,222 +1,60 @@
-import { createBrowserRouter, Navigate } from 'react-router';
+import { createBrowserRouter } from 'react-router';
+import type { RouteObject } from 'react-router';
+
+import AuthLayout from '@/layouts/AuthLayout';
+import PublicLayout from '@/layouts/PublicLayout';
 import Layout from '@/layouts/Layout';
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
-
-// 캘린더 페이지
-import Calendar from '@/pages/Calendar/';
-
-// 출퇴근관리 페이지
-import Working from '@/pages/Working/';
-
-// 오피스 페이지
-import Notice from '@/pages/Office/Notice';
-import BoardWrite from '@/components/board/BoardWrite';
-import BoardDetail from '@/components/board/BoardDetail';
-import BoardList from '@/components/board/BoardList';
-import Meetingroom from '@/pages/Office/Meetingroom';
-
-import ItDevice from '@/pages/Office/ItDevice';
-import ItDeviceDetail from '@/components/itdevice/ItDeviceDetail';
-import Book from '@/pages/Office/Book';
-import BookList from '@/components/book/BookList';
-import BookWish from '@/components/book/BookWish';
-
-import Report from '@/pages/Office/Report';
-
-// 마이페이지
-import Mypage from '@/pages/Mypage';
-import MyExpense from '@/pages/Mypage/Expense';
-
-// 관리자 페이지
-import Manager from '@/pages/Manager';
-
+import Onboarding from '@/pages/Onboarding';
 import ErrorPage from '@/pages/ErrorPage';
 
-export const router = createBrowserRouter([
-  {
-    // 로그인은 레이아웃 없이 단독 라우트
-    path: '/',
-    element: <Login />,
-  },
-  {
-    path: '/dashboard',
-    element: <Dashboard />,
-  },
-  {
-    // 레이아웃이 필요한 영역
-    path: '/',
-    element: <Layout />,
-    errorElement: <ErrorPage />,
-    children: [
-      // { index: true, element: <Navigate to="dashboard" replace /> }, // 로그인 후 '/'로 접근 시 /dashboard로 보내야함
-      {
-        handle: {
-          title: '캘린더',
-          nav: [
-            {
-              to: '/calendar',
-              label: '전체',
-              end: true, // end=true → 정확히 /mypage와 일치할 때에만 활성
-            },
-          ],
-        },
-        children: [
-          {
-            path: 'calendar',
-            element: <Calendar />,
-          },
-        ],
-      },
-      {
-        handle: {
-          title: '출퇴근관리',
+import { calendarRoutes } from './calendar';
+import { workingRoutes } from './working';
+import { officeRoutes } from './office';
+import { mypageRoutes } from './mypage';
+import { managerRoutes } from './manager';
 
-          nav: [
-            {
-              to: '/working',
-              label: '전체',
-            },
-          ],
-        },
-        children: [
-          {
-            path: 'working',
-            element: <Working />,
-          },
-        ],
-      },
+// 인증 후 Layout 하위의 자식 라우트들
+const authedChildren: RouteObject[] = [
+  // 필요 순서대로
+  calendarRoutes,
+  workingRoutes,
+  officeRoutes,
+  mypageRoutes,
+  managerRoutes,
+];
+
+export const router = createBrowserRouter([
+  // 공개 구간
+  {
+    element: <PublicLayout />,
+    children: [
+      { path: '/', element: <Login /> },
+      { path: '/onboarding', element: <Onboarding /> },
+    ],
+  },
+
+  // 인증 구간
+  {
+    element: <AuthLayout />,
+    children: [
+      { path: '/dashboard', element: <Dashboard /> },
       {
-        handle: {
-          title: '오피스',
-          nav: [
-            {
-              to: '/notice',
-              label: '공지사항',
-            },
-            {
-              to: '/meetingroom',
-              label: '미팅룸',
-            },
-            {
-              to: '/itdevice',
-              label: 'IT디바이스',
-            },
-            {
-              to: '/book',
-              label: '도서',
-            },
-            {
-              to: '/report',
-              label: '기안서',
-            },
-          ],
-        },
+        path: '/',
+        element: <Layout />,
+        errorElement: <ErrorPage />,
         children: [
-          {
-            path: 'notice',
-            element: <Notice />,
-            children: [
-              { index: true, element: <BoardList /> }, // /notice
-              { path: 'write', element: <BoardWrite /> }, // /notice/write
-              { path: ':id', element: <BoardDetail /> }, // /notice/:id
-            ],
-          },
-          {
-            path: 'meetingroom',
-            element: <Meetingroom />,
-          },
-          {
-            path: 'itdevice',
-            element: <ItDevice />,
-          },
-          {
-            path: 'itdevice/:id',
-            element: <ItDeviceDetail />,
-          },
-          {
-            path: 'book',
-            element: <Book />,
-            children: [
-              { index: true, element: <BookList /> }, // /book/list
-              { path: 'wish', element: <BookWish /> }, // /book/wish
-            ],
-          },
-          {
-            path: 'report',
-            element: <Report />,
-          },
-        ],
-      },
-      {
-        path: '/mypage',
-        handle: {
-          title: '마이페이지',
-          nav: [
-            {
-              to: '/mypage',
-              label: '내 프로필',
-              end: true, // end=true → 정확히 /mypage와 일치할 때에만 활성
-            },
-            {
-              to: '/mypage/expense',
-              label: '내 비용관리',
-            },
-            {
-              to: '/mypage/vacation',
-              label: '휴가 내역',
-            },
-          ],
-        },
-        children: [
-          {
-            index: true,
-            element: <Mypage />,
-          },
-          {
-            path: 'expense',
-            element: <MyExpense />,
-          },
-        ],
-      },
-      {
-        path: '/manager',
-        handle: {
-          title: '관리자',
-          nav: [
-            {
-              to: '/manager',
-              label: '대시보드',
-            },
-            {
-              to: '/manager/working',
-              label: '근태 관리',
-            },
-            {
-              to: '/manager/expense',
-              label: '비용 관리',
-            },
-            {
-              to: '/manager/vacation',
-              label: '휴가 관리',
-            },
-            {
-              to: '/manager/member',
-              label: '구성원 관리',
-            },
-          ],
-        },
-        children: [
-          {
-            index: true,
-            element: <Manager />,
-          },
+          // 루트로 접근시 대시보드로 보내고 싶다면 주석 해제
+          // { index: true, element: <Navigate to="dashboard" replace /> },
+
+          // 섹션별 라우트 합치기
+          ...authedChildren,
         ],
       },
     ],
   },
-  {
-    path: '*',
-    element: <ErrorPage />,
-  },
+
+  // 404
+  { path: '*', element: <ErrorPage /> },
 ]);

@@ -1,12 +1,8 @@
-import { useNavigate } from 'react-router';
-
 import Logo from '@/assets/images/common/pmg_logo.svg?react';
 import { Place } from '@/assets/images/icons';
-import { LoginForm } from '@components/auth/LoginForm';
+import { LoginForm } from '@/components/features/Login/LoginForm';
 
 export default function Login() {
-  const navigate = useNavigate();
-
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-gray-200 p-25">
       <div className="flex w-full max-w-250 rounded-2xl bg-white p-3">
