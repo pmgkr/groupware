@@ -295,7 +295,7 @@ export default function CustomCalendar() {
         case 'eventWorkFromHome':
           return '재택';
         case 'eventExternal':
-          return '외부일정';
+          return '외부 일정';
         default:
           return '일정';
       }

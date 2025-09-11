@@ -44,15 +44,25 @@ const vacationTypes = [
 
 const eventTypes = [
   { value: 'eventWorkFromHome', label: '재택' },
-  { value: 'eventExternal', label: '외부일정' },
+  { value: 'eventExternal', label: '외부 일정' },
 ];
 
 export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: EventDialogProps) {
   const [formData, setFormData] = useState<EventData>({
     title: '',
     description: '',
-    startDate: selectedDate ? selectedDate.toISOString().split('T')[0] : '',
-    endDate: selectedDate ? selectedDate.toISOString().split('T')[0] : '',
+    startDate: selectedDate ? (() => {
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    })() : '',
+    endDate: selectedDate ? (() => {
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    })() : '',
     startTime: '09:30',
     endTime: '18:30',
     allDay: true,
@@ -87,7 +97,12 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
   // 단일 날짜 선택 핸들러
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
-      const dateStr = date.toISOString().split('T')[0];
+      // 로컬 시간 기준으로 YYYY-MM-DD 문자열 생성
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
       setFormData(prev => ({
         ...prev,
         selectedDate: date,
@@ -100,8 +115,17 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
   // 날짜 범위 선택 핸들러
   const handleDateRangeSelect = (range: DateRange | undefined) => {
     if (range && range.from && range.to) {
-      const startDateStr = range.from.toISOString().split('T')[0];
-      const endDateStr = range.to.toISOString().split('T')[0];
+      // 로컬 시간 기준으로 YYYY-MM-DD 문자열 생성
+      const formatDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      
+      const startDateStr = formatDate(range.from);
+      const endDateStr = formatDate(range.to);
+      
       setFormData(prev => ({
         ...prev,
         selectedDateRange: range,
@@ -111,9 +135,9 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     }
   };
 
-  // 시간 선택이 필요한 이벤트 타입인지 확인
+  // 시간 선택이 필요한 이벤트 타입인지 확인 (반차/반반차일때 시간 필요)
   const isTimeRequired = formData.eventType && 
-    !['eventVacation', 'eventOfficialLeave'].includes(formData.eventType);
+    ['eventHalfDayMorning', 'eventHalfDayAfternoon', 'eventHalfHalfDayMorning', 'eventHalfHalfDayAfternoon'].includes(formData.eventType);
 
   // 반차/반반차 시간 제한 설정
   const getTimeRestriction = () => {
@@ -131,9 +155,6 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     }
   };
 
-  // 연차나 공가인지 확인 (날짜 범위 선택 필요)
-  const isVacationOrOfficialLeave = formData.eventType && 
-    ['eventVacation', 'eventOfficialLeave'].includes(formData.eventType);
 
   // 휴가 일수 계산 (임시로 10일로 설정, 실제로는 API에서 가져와야 함)
   const remainingVacationDays = 10;
@@ -146,6 +167,33 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     // }
 
     onSave(formData);
+    
+    // 폼 데이터 리셋
+    setFormData({
+      title: '',
+      description: '',
+      startDate: selectedDate ? (() => {
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      })() : '',
+      endDate: selectedDate ? (() => {
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      })() : '',
+      startTime: '09:30',
+      endTime: '18:30',
+      allDay: true,
+      category: '',
+      eventType: '',
+      author: '이연상',
+      selectedDate: undefined,
+      selectedDateRange: undefined,
+    });
+    
     onClose();
   };
 
@@ -153,8 +201,18 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     setFormData({
       title: '',
       description: '',
-      startDate: selectedDate ? selectedDate.toISOString().split('T')[0] : '',
-      endDate: selectedDate ? selectedDate.toISOString().split('T')[0] : '',
+      startDate: selectedDate ? (() => {
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      })() : '',
+      endDate: selectedDate ? (() => {
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      })() : '',
       startTime: '09:00',
       endTime: '18:00',
       allDay: true,
@@ -239,25 +297,20 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
               {/* 시작일 */}
               <div className="space-y-2">
                 <Label htmlFor="startDate">
-                  {isTimeRequired ? '시작일과 시간을 선택해주세요.' : 
-                   isVacationOrOfficialLeave ? '휴가 기간을 선택해주세요.' : '시작일을 선택해주세요.'}
+                  {isTimeRequired ? '시작일 및 시간을 선택해주세요.' : '기간을 선택해주세요.'}
                 </Label>
                 {isTimeRequired ? (
                   <DateTimePicker24h 
-                    placeholder="시작일과 시간을 선택해주세요"
+                    selected={formData.selectedDate}
+                    onSelect={handleDateSelect}
+                    placeholder="휴가 사용일과 시간을 선택해주세요"
                     timeRestriction={getTimeRestriction()}
                   />
-                ) : isVacationOrOfficialLeave ? (
+                ) : (
                   <DatePickerWithRange 
                     selected={formData.selectedDateRange}
                     onSelect={handleDateRangeSelect}
-                    placeholder="휴가 기간을 선택해주세요"
-                  />
-                ) : (
-                  <DatePickerDemo 
-                    selected={formData.selectedDate}
-                    onSelect={handleDateSelect}
-                    placeholder="시작일을 선택해주세요"
+                    placeholder="기간을 선택해주세요"
                   />
                 )}
               </div>

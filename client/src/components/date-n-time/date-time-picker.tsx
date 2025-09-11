@@ -17,7 +17,9 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 export function DateTimePicker({
   placeholder = "날짜와 시간을 선택해주세요",
-  timeRestriction
+  timeRestriction,
+  selected,
+  onSelect
 }: {
   placeholder?: string;
   timeRestriction?: {
@@ -26,8 +28,10 @@ export function DateTimePicker({
     endHour: number;
     endMinute: number;
   };
+  selected?: Date;
+  onSelect?: (date: Date | undefined) => void;
 } = {}) {
-  const [date, setDate] = React.useState<Date | undefined>(undefined);
+  const [date, setDate] = React.useState<Date | undefined>(selected);
   const [isOpen, setIsOpen] = React.useState(false);
 
   // 시간 제한이 있는 경우 해당 시간대만 표시
@@ -51,7 +55,11 @@ export function DateTimePicker({
   const hours = getAvailableHours();
   const handleDateSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
-      setDate(selectedDate);
+      // 기존 시간을 유지하면서 날짜만 업데이트
+      const currentTime = date ? { hours: date.getHours(), minutes: date.getMinutes() } : { hours: 0, minutes: 0 };
+      const localDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), currentTime.hours, currentTime.minutes, 0);
+      setDate(localDate);
+      onSelect?.(localDate);
     }
   };
 
