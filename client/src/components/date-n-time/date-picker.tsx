@@ -49,10 +49,17 @@ export function DatePickerDemo({
           <DayPicker
             mode="single"
             selected={date}
-            onSelect={(selectedDate) => {
+          onSelect={(selectedDate) => {
+            if (selectedDate) {
+              // 시간대 설정
+              const localDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 12, 0, 0);
+              setDate(localDate);
+              onSelect?.(localDate);
+            } else {
               setDate(selectedDate);
               onSelect?.(selectedDate);
-            }}
+            }
+          }}
             initialFocus
           />
           {date && (

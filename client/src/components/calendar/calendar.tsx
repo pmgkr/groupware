@@ -277,9 +277,33 @@ export default function CustomCalendar() {
   };
 
   const handleSaveEvent = (eventData: any) => {
+    // eventType에 따른 제목 생성
+    const getEventTitle = (eventType: string) => {
+      switch (eventType) {
+        case 'eventVacation':
+          return '연차';
+        case 'eventHalfDayMorning':
+          return '오전 반차';
+        case 'eventHalfDayAfternoon':
+          return '오후 반차';
+        case 'eventHalfHalfDayMorning':
+          return '오전 반반차';
+        case 'eventHalfHalfDayAfternoon':
+          return '오후 반반차';
+        case 'eventOfficialLeave':
+          return '공가';
+        case 'eventWorkFromHome':
+          return '재택';
+        case 'eventExternal':
+          return '외부일정';
+        default:
+          return '일정';
+      }
+    };
+
     // 새로운 이벤트 생성
     const newEvent = {
-      title: eventData.title,
+      title: getEventTitle(eventData.eventType),
       start: parse(`${eventData.startDate} ${eventData.allDay ? '00:00' : eventData.startTime}`, "yyyy-MM-dd HH:mm", new Date()),
       end: parse(`${eventData.endDate} ${eventData.allDay ? '23:59' : eventData.endTime}`, "yyyy-MM-dd HH:mm", new Date()),
       allDay: eventData.allDay,

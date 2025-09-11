@@ -67,10 +67,20 @@ export function DatePickerWithRange({
               mode="range"
               defaultMonth={date?.from}
               selected={date}
-              onSelect={(selectedRange) => {
+            onSelect={(selectedRange) => {
+              if (selectedRange) {
+                // 시간대 설정 (9:30 ~ 18:30)
+                const localRange = {
+                  from: selectedRange.from ? new Date(selectedRange.from.getFullYear(), selectedRange.from.getMonth(), selectedRange.from.getDate(), 9, 30, 0) : undefined,
+                  to: selectedRange.to ? new Date(selectedRange.to.getFullYear(), selectedRange.to.getMonth(), selectedRange.to.getDate(), 18, 30, 0) : undefined
+                };
+                setDate(localRange);
+                onSelect?.(localRange);
+              } else {
                 setDate(selectedRange);
                 onSelect?.(selectedRange);
-              }}
+              }
+            }}
               numberOfMonths={2}
             />
             {date?.from && date?.to && (
