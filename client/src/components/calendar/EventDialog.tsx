@@ -231,14 +231,14 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
         <DialogHeader>
           <DialogTitle>신규 일정 등록</DialogTitle>
           <DialogDescription>
-            일정의 유형과 세부 정보를 입력해주세요.
+            등록하실 일정 정보를 입력하는 곳입니다.
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
 
           {/* 일정 카테고리 */}
-          <div className="space-y-3">
+          <div className="space-y-3 mb-8">
             <Label>등록하실 일정 유형을 선택해주세요.</Label>
             <RadioGroup
               value={formData.category}
@@ -250,24 +250,26 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
                 label="휴가"
                 variant="dynamic"
                 size='md'
+                className='mb-0'
               />
               <RadioButton
                 value="event"
                 label="이벤트"
                 variant="dynamic"
                 size='md'
+                className='mb-0'
               />
             </RadioGroup>
           </div>
 
           {/* 세부 일정 타입 - 카테고리가 선택된 경우에만 표시 */}
           {formData.category && (
-            <div className="space-y-3">
+            <div className="space-y-3 mb-8">
               <Label>
                 세부 유형을 선택해주세요.
                 {formData.category === 'vacation' && (
                     <small className="text-sm text-gray-600">
-                        (현재 휴가가 {remainingVacationDays}일 남았습니다)
+                        (현재 휴가가 <span className="text-[var(--color-primary-blue-500)]">{remainingVacationDays}</span>일 남았습니다)
                     </small>
                 )}    
             </Label>
@@ -283,6 +285,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
                     label={type.label}
                     variant="dynamic"
                     size="md"
+                    className='mb-0'
                   />
                 ))}
               </RadioGroup>
@@ -295,7 +298,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
             <>
 
               {/* 시작일 */}
-              <div className="space-y-2">
+              <div className="space-y-2 mb-8">
                 <Label htmlFor="startDate">
                   {isTimeRequired ? '시작일 및 시간을 선택해주세요.' : '기간을 선택해주세요.'}
                 </Label>
@@ -317,8 +320,8 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
 
 
               {/* 설명 */}
-              <div className="space-y-2">
-                <Label htmlFor="description">설명</Label>
+              <div className="space-y-2 mb-8">
+                <Label htmlFor="description">기타 설명을 기입해주세요.</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
