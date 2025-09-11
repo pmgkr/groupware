@@ -8,7 +8,11 @@
     "types": ["vite/client", "node"],
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@components/*": ["./src/components/*"]
+    }
   },
   "include": ["../src/**/*.ts", "../src/**/*.tsx", "../src/**/*.mdx", "../src/**/*.stories.@(ts|tsx|js|jsx|mjs)", "./*.ts", "./*.tsx"]
 }

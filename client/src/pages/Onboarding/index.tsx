@@ -1,8 +1,7 @@
 import Logo from '@/assets/images/common/pmg_logo.svg?react';
 import { Place } from '@/assets/images/icons';
-import { LoginForm } from '@/components/features/Login/LoginForm';
 
-export default function Login() {
+export default function Onboarding() {
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-gray-200 p-25">
       <div className="flex w-full max-w-250 rounded-2xl bg-white p-3">
@@ -19,8 +18,7 @@ export default function Login() {
           </div>
         </div>
         <div className="flex flex-1 flex-col gap-y-8 px-10 py-14 pr-7">
-          <h2 className="text-primary-blue text-3xl font-bold">그룹웨어 지금 시작하기</h2>
-          <LoginForm />
+          <h2 className="text-primary-blue text-3xl font-bold">프로필 작성하기</h2>
         </div>
       </div>
     </div>

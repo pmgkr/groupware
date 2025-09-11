@@ -1,15 +1,20 @@
-import Header from '@/layouts/Header';
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { useUser } from '@/hooks/useUser';
 import { getImageUrl } from '@/utils';
+
+import Header from '@/layouts/Header';
+
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Badge } from '@components/ui/badge';
 import { DayPicker } from '@components/daypicker';
 import { Avatar, AvatarImage, AvatarFallback } from '@components/ui/avatar';
-
-import WorkHoursBar from '@components/features/WorkHoursBar';
+import getWelcomeMessage from '@components/features/Dashboard/welcome';
+import WorkHoursBar from '@components/common/WorkHoursBar';
 
 export default function Dashboard() {
+  const { user_name, job_role, profile_image } = useUser();
+
   // Daypicker 선택된 날짜 관리 (Default : Today)
   const [selected, setSelected] = useState<Date | undefined>(new Date());
 
@@ -18,7 +23,7 @@ export default function Dashboard() {
       <Header />
       <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8">
         <div className="flex items-center justify-between text-base text-gray-800">
-          <p>예지님, 안녕하세요! 좋은 하루 보내시길 바랍니다 😊</p>
+          <p>{getWelcomeMessage()}</p>
           <div className="flex">서울 날씨 ☀️ 25°C, 맑음</div>
         </div>
         <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6">
@@ -29,10 +34,10 @@ export default function Dashboard() {
                   <img src={getImageUrl('dummy/profile')} alt="프로필 이미지" className="h-full w-full object-cover" />
                 </div>
               </Link>
-              <div className="mt-2 text-center text-base text-gray-700">
+              <div className="mt-4 text-center text-base text-gray-700">
                 <Link to="/mypage">
-                  <strong className="block text-xl font-semibold text-gray-950">Yeaji Kim</strong>
-                  Front-end Developer
+                  <strong className="block text-xl leading-none font-bold text-gray-950">{user_name}</strong>
+                  {job_role}
                 </Link>
               </div>
             </div>
