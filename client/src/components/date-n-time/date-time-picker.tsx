@@ -7,7 +7,7 @@ import { ko } from "date-fns/locale";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { DayPicker } from "@/components/daypicker";
 import {
   Popover,
   PopoverContent,
@@ -17,7 +17,6 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 export function DateTimePicker() {
   const [date, setDate] = React.useState<Date>(new Date());
-  const [isOpen, setIsOpen] = React.useState(false);
 
   const hours = Array.from({ length: 12 }, (_, i) => i + 1);
   const handleDateSelect = (selectedDate: Date | undefined) => {
@@ -49,7 +48,7 @@ export function DateTimePicker() {
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -68,7 +67,7 @@ export function DateTimePicker() {
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
         <div className="sm:flex">
-          <Calendar
+          <DayPicker
             mode="single"
             selected={date}
             onSelect={handleDateSelect}

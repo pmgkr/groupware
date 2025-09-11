@@ -9,7 +9,7 @@ import { z } from "zod";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { DayPicker } from "@/components/daypicker";
 import {
   Form,
   FormControl,
@@ -94,7 +94,7 @@ export function DateTimePicker24hForm() {
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <div className="sm:flex">
-                    <Calendar
+                    <DayPicker
                       mode="single"
                       selected={field.value}
                       onSelect={handleDateSelect}

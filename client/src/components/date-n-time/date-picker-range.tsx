@@ -8,7 +8,7 @@ import type { DateRange } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { DayPicker } from "@/components/daypicker"
 import {
   Popover,
   PopoverContent,
@@ -17,8 +17,14 @@ import {
 
 export function DatePickerWithRange({
   className,
-}: React.HTMLAttributes<HTMLDivElement>) {
-  const [date, setDate] = React.useState<DateRange | undefined>({
+  selected,
+  onSelect,
+}: {
+  className?: string;
+  selected?: DateRange;
+  onSelect?: (range: DateRange | undefined) => void;
+}) {
+  const [date, setDate] = React.useState<DateRange | undefined>(selected || {
     from: new Date(),
     to: addDays(new Date(), 20),
   })
@@ -50,13 +56,19 @@ export function DatePickerWithRange({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
+        <PopoverContent 
+          className="w-auto p-0" 
+          align="start"
+        >
+          <DayPicker
             initialFocus
             mode="range"
             defaultMonth={date?.from}
             selected={date}
-            onSelect={setDate}
+            onSelect={(selectedRange) => {
+              setDate(selectedRange);
+              onSelect?.(selectedRange);
+            }}
             numberOfMonths={2}
           />
         </PopoverContent>

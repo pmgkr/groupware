@@ -7,15 +7,21 @@ import { ko } from "date-fns/locale"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { DayPicker } from "@/components/daypicker"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-export function DatePickerDemo() {
-  const [date, setDate] = React.useState<Date>()
+export function DatePickerDemo({
+  selected,
+  onSelect 
+}: { 
+  selected?: Date; 
+  onSelect?: (date: Date | undefined) => void; 
+} = {}) {
+  const [date, setDate] = React.useState<Date | undefined>(selected)
 
   return (
     <Popover>
@@ -31,11 +37,17 @@ export function DatePickerDemo() {
           {date ? format(date, "yyyy년 M월 d일 EEEE", { locale: ko }) : <span>날짜 선택</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
+      <PopoverContent 
+        className="w-auto p-0" 
+        align="start"
+      >
+        <DayPicker
           mode="single"
           selected={date}
-          onSelect={setDate}
+          onSelect={(selectedDate) => {
+            setDate(selectedDate);
+            onSelect?.(selectedDate);
+          }}
           initialFocus
         />
       </PopoverContent>
