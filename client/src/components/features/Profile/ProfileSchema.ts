@@ -19,7 +19,7 @@ export const ProfileSchema = z.object({
   birth_date: z.coerce.date().optional(),
   hire_date: z.coerce.date().optional(),
   address: z.string().optional(),
-  emergency_phone: z.string({ required_error: '비상 연락망을 입력해 주세요' }),
+  emergency_phone: z.string().trim().min(5, '비상 연락망을 입력해 주세요'),
 });
 
 export type ProfileValues = z.infer<typeof ProfileSchema>;

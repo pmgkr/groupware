@@ -4,7 +4,6 @@ import { useNavigate, Link } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { HttpError } from '@/lib/http'; // 추후 제거
 import { loginApi } from '@/api/auth';
 import { setToken as setTokenStore } from '@/lib/tokenStore';
 

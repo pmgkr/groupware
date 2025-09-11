@@ -1,12 +1,14 @@
 // src/features/profile/ProfileForm.tsx
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ProfileSchema, type ProfileValues } from './ProfileSchema';
-import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { cn } from '@/lib/utils';
+import { onboardingApi } from '@/api/auth';
+import { setToken as setTokenStore } from '@/lib/tokenStore';
 
-import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@components/ui/form';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
 import { Button } from '@components/ui/button';
 import { DayPicker } from '@components/daypicker';
@@ -19,10 +21,9 @@ type ProfileFormProps = {
   email: string; // 로그인 409 응답에서 받은 email
   onboardingToken: string; // 로그인 409 응답에서 받은 onboardingToken
   className?: string;
-  onSuccess?: () => void; // 성공 후 콜백 (선택)
 };
 
-export default function ProfileForm({ email, onboardingToken, className, onSuccess }: ProfileFormProps) {
+export default function ProfileForm({ email, onboardingToken, className }: ProfileFormProps) {
   const navigate = useNavigate();
   const [dobOpen, setDobOpen] = useState(false); // 생년월일 팝오버용
   const [hireOpen, setHireOpen] = useState(false); // 입사일 팝오버용
@@ -35,10 +36,19 @@ export default function ProfileForm({ email, onboardingToken, className, onSucce
       user_name: '',
       user_name_en: '',
       phone: '',
+      job_role: '',
       birth_date: undefined,
+      hire_date: undefined,
+      address: '',
+      emergency_phone: '',
     },
     mode: 'onChange',
   });
+
+  const { setFocus } = form;
+  useEffect(() => {
+    setFocus('user_name'); // 처음 마운트 시 이름 란에 포커스
+  }, [setFocus]);
 
   // 사용자에게 010-1234-5678 포맷으로 보여주기 (내부 전송은 숫자만)
   const formatPhone = (raw: string) => {
@@ -48,38 +58,26 @@ export default function ProfileForm({ email, onboardingToken, className, onSucce
     return `${v.slice(0, 3)}-${v.slice(3, 7)}-${v.slice(7, 11)}`;
   };
 
-  // 생년월일 포맷
+  // 생년월일 YYYY-MM-DD 포맷으로 변경
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
 
   const onSubmit = async (values: ProfileValues) => {
     try {
       setSubmitting(true);
 
-      // 서버에는 숫자만 전달 (Schema.transform으로 이미 숫자만)
       const payload = {
         ...values,
+        birth_date: formatDate(values.birth_date),
+        hire_date: formatDate(values.hire_date),
         phone: values.phone.replace(/\D/g, ''),
       };
 
-      const res = await fetch('http://localhost:3001/user/profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // 온보딩 토큰으로 인증 (서버에서 purpose='onboarding' 검증)
-          Authorization: `Bearer ${onboardingToken}`,
-        },
-        credentials: 'include', // 쿠키 기반 세션/리프레시 토큰 사용 시
-        body: JSON.stringify(payload),
-      });
+      const res = await onboardingApi(payload, onboardingToken);
+      setTokenStore(res.accessToken);
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.message || `프로필 저장 실패 (${res.status})`);
+      if (res.message === 'saved') {
+        navigate('/dashboard', { replace: true });
       }
-
-      // 성공 처리: 토스트/리다이렉트/전역 상태 업데이트 등
-      onSuccess?.();
-      navigate('/'); // 원하는 초기 페이지로
     } catch (e: any) {
       alert(e.message ?? '프로필 저장 중 오류가 발생했습니다.');
     } finally {
@@ -208,7 +206,7 @@ export default function ProfileForm({ email, onboardingToken, className, onSucce
                           'border-input text-accent-foreground h-11 w-full px-3 text-left text-base font-normal hover:bg-[none]',
                           !field.value && 'text-muted-foreground hover:text-muted-foreground'
                         )}>
-                        {field.value ? formatDate(field.value) : <span>YYYY-MM-DD</span>}
+                        {field.value ? String(field.value) : <span>YYYY-MM-DD</span>}
                         <Calendar className="ml-auto size-4.5 opacity-50" />
                       </Button>
                     </FormControl>
@@ -219,7 +217,9 @@ export default function ProfileForm({ email, onboardingToken, className, onSucce
                       mode="single"
                       selected={field.value}
                       onSelect={(date) => {
-                        field.onChange(date ?? undefined);
+                        const formattedDate = date ? formatDate(date) : null;
+                        field.onChange(formattedDate);
+
                         if (date) setDobOpen(false);
                       }}
                     />
@@ -245,7 +245,7 @@ export default function ProfileForm({ email, onboardingToken, className, onSucce
                             'border-input text-accent-foreground h-11 w-full px-3 text-left text-base font-normal hover:bg-[none]',
                             !field.value && 'text-muted-foreground hover:text-muted-foreground'
                           )}>
-                          {field.value ? formatDate(field.value) : <span>YYYY-MM-DD</span>}
+                          {field.value ? String(field.value) : <span>YYYY-MM-DD</span>}
                           <Calendar className="ml-auto size-4.5 opacity-50" />
                         </Button>
                       </FormControl>
@@ -258,7 +258,9 @@ export default function ProfileForm({ email, onboardingToken, className, onSucce
                       mode="single"
                       selected={field.value}
                       onSelect={(date) => {
-                        field.onChange(date ?? undefined);
+                        const formattedDate = date ? formatDate(date) : null;
+                        field.onChange(formattedDate);
+
                         if (date) setHireOpen(false);
                       }}
                     />
@@ -306,7 +308,6 @@ export default function ProfileForm({ email, onboardingToken, className, onSucce
           <Button type="submit" size="full" disabled={submitting}>
             {submitting ? '저장 중...' : '프로필 저장'}
           </Button>
-          {/* 필요시 돌아가기/로그아웃 버튼 */}
         </div>
       </form>
     </Form>

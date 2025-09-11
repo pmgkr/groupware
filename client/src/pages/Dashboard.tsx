@@ -13,7 +13,7 @@ import getWelcomeMessage from '@components/features/Dashboard/welcome';
 import WorkHoursBar from '@components/common/WorkHoursBar';
 
 export default function Dashboard() {
-  const { user_name, job_role } = useUser();
+  const { user_name, job_role, profile_image } = useUser();
 
   // Daypicker 선택된 날짜 관리 (Default : Today)
   const [selected, setSelected] = useState<Date | undefined>(new Date());

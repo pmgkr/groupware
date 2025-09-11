@@ -8,6 +8,5 @@
   "bracketSpacing": true,
   "arrowParens": "always",
   "endOfLine": "auto",
-  "bracketSameLine": true,
-  "plugins": ["prettier-plugin-tailwindcss"]
+  "bracketSameLine": true
 }

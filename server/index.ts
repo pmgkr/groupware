@@ -4,20 +4,14 @@ import express, { Express } from 'express';
 import cors from 'cors'; // cors 미들웨어 임포트
 import cookieParser from 'cookie-parser';
 
-import loginRouter from './routes/login'; 
+import loginRouter from './routes/login';
 import refreshRouter from './routes/refresh';
 import userRouter from './routes/user';
-import logoutRouter from './routes/logout';
-
-
+// import logoutRouter from './routes/logout';
 
 const app: Express = express();
 
-const allowlist = new Set([
-  process.env.CLIENT_ORIGIN,      
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-].filter(Boolean));
+const allowlist = new Set([process.env.CLIENT_ORIGIN, 'http://localhost:5173', 'http://127.0.0.1:5173'].filter(Boolean));
 
 const corsOptions: cors.CorsOptions = {
   origin(origin, cb) {
@@ -30,15 +24,12 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 
-
 app.use(express.json());
 app.use(cookieParser());
 
-
-app.use("/login", loginRouter);
-app.use("/", refreshRouter);
-app.use("/", logoutRouter);
-app.use("/", userRouter);
+app.use('/refresh', refreshRouter);
+app.use('/', loginRouter);
+app.use('/', userRouter);
 
 app.listen(3001, () => {
   console.log(`Server is running on http://localhost:3001`);

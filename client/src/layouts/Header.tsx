@@ -1,6 +1,6 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
-
+import { useUser } from '@/hooks/useUser';
 import { cn } from '@/lib/utils';
 import { getImageUrl } from '@/utils';
 
@@ -13,10 +13,12 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const { user_name, job_role, profile_image } = useUser();
   const { logout } = useAuth();
+
   const logoutClick = async () => {
     await logout(); // 서버 쿠키 삭제 + 토큰 초기화
-    navigate('/', { replace: true }); // ← 여기서 홈으로 이동
+    navigate('/', { replace: true });
   };
 
   // 오피스 하위 경로들 (오피스는 /office 라우트가 없음)
@@ -60,8 +62,8 @@ export default function Header() {
           </Link>
           <div className="my-2.5 text-center text-sm text-gray-700">
             <Link to="/mypage">
-              <strong className="block text-xl font-medium text-gray-950">Yeaji Kim</strong>
-              Front-end Developer
+              <strong className="block text-xl font-medium text-gray-950">{user_name}</strong>
+              {job_role}
             </Link>
           </div>
         </div>

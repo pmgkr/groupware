@@ -28,9 +28,12 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
+    "eslint-config-prettier": "^10.1.8",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "prisma": "^6.15.0"
+    "prettier": "^3.6.2",
+    "prisma": "^6.15.0",
+    "zod": "^4.1.7"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.9",
