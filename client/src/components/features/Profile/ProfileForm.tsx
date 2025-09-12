@@ -6,6 +6,7 @@ import { ProfileSchema, type ProfileValues } from './ProfileSchema';
 import { useNavigate } from 'react-router';
 import { cn } from '@/lib/utils';
 import { onboardingApi } from '@/api/auth';
+import { getTeams, type TeamDto } from '@/api/teams';
 import { setToken as setTokenStore } from '@/lib/tokenStore';
 
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
@@ -29,6 +30,9 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
   const [hireOpen, setHireOpen] = useState(false); // 입사일 팝오버용
   const [submitting, setSubmitting] = useState(false);
 
+  const [teams, setTeams] = useState<TeamDto[]>([]);
+  const [teamLoading, setTeamLoading] = useState(true);
+
   const form = useForm<ProfileValues>({
     resolver: zodResolver(ProfileSchema),
     defaultValues: {
@@ -48,6 +52,24 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
   const { setFocus } = form;
   useEffect(() => {
     setFocus('user_name'); // 처음 마운트 시 이름 란에 포커스
+
+    let alive = true;
+    (async () => {
+      try {
+        setTeamLoading(true);
+
+        const data = await getTeams();
+        if (!alive) return;
+        setTeams(data);
+      } catch (e: any) {
+        if (!alive) return;
+      } finally {
+        if (alive) setTeamLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
   }, [setFocus]);
 
   // 사용자에게 010-1234-5678 포맷으로 보여주기 (내부 전송은 숫자만)
@@ -67,6 +89,7 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
 
       const payload = {
         ...values,
+        team_id: Number(values.team_id),
         birth_date: formatDate(values.birth_date),
         hire_date: formatDate(values.hire_date),
         phone: values.phone.replace(/\D/g, ''),
@@ -133,23 +156,54 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
           )}
         />
 
-        {/* 휴대폰 & 직무 */}
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>휴대폰 번호</FormLabel>
+              <FormControl>
+                <Input
+                  inputMode="numeric"
+                  placeholder="'-' 없이 입력해 주세요"
+                  value={formatPhone(field.value)}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  maxLength={13}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 팀 & 직무 */}
         <div className="grid grid-cols-2 gap-x-2">
           <FormField
             control={form.control}
-            name="phone"
+            name="team_id"
             render={({ field }) => (
               <FormItem className="mb-auto">
-                <FormLabel>휴대폰 번호</FormLabel>
-                <FormControl>
-                  <Input
-                    inputMode="numeric"
-                    placeholder="'-' 없이 입력해 주세요"
-                    value={formatPhone(field.value)}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    maxLength={13}
-                  />
-                </FormControl>
+                <FormLabel>팀</FormLabel>
+                <Select
+                  value={field.value !== undefined ? String(field.value) : ''}
+                  onValueChange={(v) => field.onChange(Number(v))} // value 타입 Number로 변경
+                  name={field.name}
+                  disabled={teamLoading}>
+                  <FormControl>
+                    <SelectTrigger className="aria-[invalid=true]:border-destructive w-full">
+                      <SelectValue placeholder="팀 선택" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="max-h-80 w-full">
+                    {!teamLoading &&
+                      teams.map((t) => (
+                        <SelectItem key={t.team_id} value={String(t.team_id)}>
+                          {t.team_name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+
                 <FormMessage />
               </FormItem>
             )}

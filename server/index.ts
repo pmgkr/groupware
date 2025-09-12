@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import loginRouter from './routes/login';
 import refreshRouter from './routes/refresh';
 import userRouter from './routes/user';
+import teamRouter from './routes/teams';
 // import logoutRouter from './routes/logout';
 
 const app: Express = express();
@@ -30,6 +31,7 @@ app.use(cookieParser());
 app.use('/refresh', refreshRouter);
 app.use('/', loginRouter);
 app.use('/', userRouter);
+app.use('/teams', teamRouter);
 
 app.listen(3001, () => {
   console.log(`Server is running on http://localhost:3001`);
