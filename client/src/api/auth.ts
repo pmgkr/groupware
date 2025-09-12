@@ -6,6 +6,7 @@ export type OnboardingPayload = {
   user_id: string;
   user_name?: string;
   user_name_en?: string;
+  team_id?: number | null;
   phone?: string | null;
   job_role?: string | null;
   birth_date?: string | null;

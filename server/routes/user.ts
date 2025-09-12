@@ -23,6 +23,7 @@ const OnboardingDto = z.object({
   user_id: z.string().email(), // 실제 값은 token에 저장된 값으로 저장
   user_name: z.string().trim().optional(),
   user_name_en: z.string().trim().optional(),
+  team_id: z.number().optional(),
   phone: z.string().trim().nullable().optional(),
   job_role: z.string().trim().nullable().optional(),
   birth_date: z.string().nullable().optional(),
@@ -119,6 +120,7 @@ router.post('/onboarding', async (req: Request, res: Response) => {
       update: {
         user_name: dto.user_name ?? undefined,
         user_name_en: dto.user_name_en ?? undefined,
+        team_id: dto.team_id ?? undefined,
         phone: normalizedPhone ?? undefined,
         job_role: dto.job_role ?? undefined,
         birth_date: birthDate ?? undefined,
@@ -131,6 +133,7 @@ router.post('/onboarding', async (req: Request, res: Response) => {
         user_id: userIdFromToken,
         user_name: dto.user_name ?? '',
         user_name_en: dto.user_name_en ?? '',
+        team_id: dto.team_id ?? null,
         phone: normalizedPhone,
         job_role: dto.job_role ?? null,
         birth_date: birthDate,
