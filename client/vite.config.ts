@@ -76,10 +76,10 @@ export default defineConfig(async ({}) => {
       rollupOptions: {
         output: {
           manualChunks: {
-            // React 관련 라이브러리들을 별도 청크로 분리
+            // React 관련 라이브러리
             'react-vendor': ['react', 'react-dom', 'react-router'],
             
-            // UI 라이브러리들을 별도 청크로 분리
+            // UI 라이브러리
             'ui-vendor': [
               '@radix-ui/react-avatar',
               '@radix-ui/react-checkbox',
@@ -97,27 +97,27 @@ export default defineConfig(async ({}) => {
               '@radix-ui/react-toast'
             ],
             
-            // 폼 관련 라이브러리들
+            // 폼 관련 라이브러리
             'form-vendor': [
               '@hookform/resolvers',
               'react-hook-form',
               'zod'
             ],
             
-            // 차트 및 시각화 라이브러리들
+            // 차트 및 시각화 라이브러리
             'chart-vendor': [
               'recharts',
               'react-big-calendar'
             ],
             
-            // 날짜 관련 라이브러리들
+            // 날짜 관련 라이브러리
             'date-vendor': [
               'date-fns',
               'react-datetime',
               'react-day-picker'
             ],
             
-            // 유틸리티 라이브러리들
+            // 유틸리티 라이브러리
             'utils-vendor': [
               'clsx',
               'tailwind-merge',
@@ -125,32 +125,7 @@ export default defineConfig(async ({}) => {
               'cmdk',
               'framer-motion',
               'lucide-react'
-            ],
-            
-            // 폰트 파일들을 별도 청크로 분리
-            'fonts': [
-              './src/assets/fonts/Pretendard-Regular.woff2',
-              './src/assets/fonts/Pretendard-Medium.woff2',
-              './src/assets/fonts/Pretendard-SemiBold.woff2',
-              './src/assets/fonts/Pretendard-Bold.woff2'
             ]
-          },
-          // 청크 크기 제한 설정
-          chunkFileNames: (chunkInfo) => {
-            const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
-            return `assets/js/[name]-[hash].js`;
-          },
-          entryFileNames: 'assets/js/[name]-[hash].js',
-          assetFileNames: (assetInfo) => {
-            const info = assetInfo.name.split('.');
-            const ext = info[info.length - 1];
-            if (/\.(woff2?|eot|ttf|otf)$/.test(assetInfo.name)) {
-              return `assets/fonts/[name]-[hash].${ext}`;
-            }
-            if (/\.(png|jpe?g|gif|svg)$/.test(assetInfo.name)) {
-              return `assets/images/[name]-[hash].${ext}`;
-            }
-            return `assets/[name]-[hash].${ext}`;
           }
         }
       },
