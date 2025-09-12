@@ -37,7 +37,7 @@ const events = [
       teamId: 1,
       schTitle: "연차",
       schType: "vacation",
-      schVacationType: "day",
+      schVacationType: "day" as string | null,
       schEventType: null,
       schSdate: "2025-08-20",
       schStime: "10:00:00",
@@ -59,8 +59,23 @@ const events = [
     author: "이연상",
     description: "오전 반반차입니다.",
     resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventHalfHalfDay" 
+      seq: 2,
+      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      teamId: 1,
+      schTitle: "오전 반반차",
+      schType: "vacation",
+      schVacationType: "quarter" as string | null,
+      schEventType: null,
+      schSdate: "2025-09-02",
+      schStime: "09:00:00",
+      schEdate: "2025-09-02",
+      schEtime: "10:00:00",
+      schIsAllday: "Y",
+      schIsHoliday: "N",
+      schDescription: "오전 반반차입니다.",
+      schStatus: "Y",
+      schModifiedAt: new Date(),
+      schCreatedAt: new Date()
     }
   },
   {
@@ -69,10 +84,25 @@ const events = [
     end: parse("2025-09-02 10:00", "yyyy-MM-dd HH:mm", new Date()),
     allDay: true,
     author: "이연상",
-    description: "오전 반반차입니다.",
+    description: "오후 반반차입니다.",
     resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventHalfHalfDay" 
+      seq: 3,
+      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      teamId: 1,
+      schTitle: "오후 반반차",
+      schType: "vacation",
+      schVacationType: "quarter" as string | null,
+      schEventType: null,
+      schSdate: "2025-09-02",
+      schStime: "09:00:00",
+      schEdate: "2025-09-02",
+      schEtime: "10:00:00",
+      schIsAllday: "Y",
+      schIsHoliday: "N",
+      schDescription: "오후 반반차입니다.",
+      schStatus: "Y",
+      schModifiedAt: new Date(),
+      schCreatedAt: new Date()
     }
   },
   {
@@ -83,8 +113,23 @@ const events = [
     author: "이연상",
     description: "외부 일정입니다.",
     resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventExternal" 
+      seq: 4,
+      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      teamId: 1,
+      schTitle: "외부 일정",
+      schType: "event",
+      schVacationType: null,
+      schEventType: "field" as string | null,
+      schSdate: "2025-08-30",
+      schStime: "09:00:00",
+      schEdate: "2025-09-01",
+      schEtime: "10:00:00",
+      schIsAllday: "Y",
+      schIsHoliday: "N",
+      schDescription: "외부 일정입니다.",
+      schStatus: "Y",
+      schModifiedAt: new Date(),
+      schCreatedAt: new Date()
     }
   },
   {
@@ -95,8 +140,23 @@ const events = [
     author: "이연상",
     description: "외부 일정입니다.",
     resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventExternal" 
+      seq: 5,
+      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      teamId: 1,
+      schTitle: "외부 일정",
+      schType: "event",
+      schVacationType: null,
+      schEventType: "field" as string | null,
+      schSdate: "2025-09-20",
+      schStime: "09:00:00",
+      schEdate: "2025-09-21",
+      schEtime: "10:00:00",
+      schIsAllday: "Y",
+      schIsHoliday: "N",
+      schDescription: "외부 일정입니다.",
+      schStatus: "Y",
+      schModifiedAt: new Date(),
+      schCreatedAt: new Date()
     }
   },
   {
@@ -107,8 +167,23 @@ const events = [
     author: "이연상",
     description: "외부 일정입니다.",
     resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventExternal" 
+      seq: 6,
+      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      teamId: 1,
+      schTitle: "외부 일정",
+      schType: "event",
+      schVacationType: null,
+      schEventType: "field" as string | null,
+      schSdate: "2025-09-03",
+      schStime: "09:00:00",
+      schEdate: "2025-09-03",
+      schEtime: "10:00:00",
+      schIsAllday: "Y",
+      schIsHoliday: "N",
+      schDescription: "외부 일정입니다.",
+      schStatus: "Y",
+      schModifiedAt: new Date(),
+      schCreatedAt: new Date()
     }
   },
 ];
@@ -216,7 +291,7 @@ export default function CustomCalendar() {
       return 'event';
     };
 
-    const getSchVacationType = (eventType: string) => {
+    const getSchVacationType = (eventType: string): string | null => {
       switch (eventType) {
         case 'eventVacation':
         case 'eventOfficialLeave':
@@ -296,7 +371,7 @@ export default function CustomCalendar() {
     };
 
     // 이벤트 목록에 추가
-    setMyEvents(prev => [...prev, newEvent]);
+    setMyEvents(prev => [...prev, newEvent as any]);
   };
 
   return (

@@ -1,6 +1,7 @@
 import React from 'react';
 import Datetime from 'react-datetime';
 import 'react-datetime/css/react-datetime.css';
+import type { Moment } from 'moment';
 
 interface DateTimePickerProps {
   value?: string | Date;
@@ -21,8 +22,12 @@ export default function DateTimePicker({
   timeFormat = "HH:mm",
   inputProps = {}
 }: DateTimePickerProps) {
-  const handleChange = (selectedDate: string | Date) => {
-    onChange(selectedDate);
+  const handleChange = (selectedDate: string | Moment) => {
+    // Moment 객체를 Date로 변환
+    const dateValue = selectedDate instanceof Date ? selectedDate : 
+                     typeof selectedDate === 'string' ? selectedDate : 
+                     selectedDate.toDate();
+    onChange(dateValue);
   };
 
   return (
