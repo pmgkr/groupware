@@ -5,9 +5,11 @@ import BoardDetail from '@/components/board/BoardDetail';
 import BoardList from '@/components/board/BoardList';
 import Meetingroom from '@/pages/Office/Meetingroom';
 import ItDevice from '@/pages/Office/ItDevice';
+import ItDeviceDetail from '@/components/itdevice/ItDeviceDetail';
 import Book from '@/pages/Office/Book';
 import BookList from '@/components/book/BookList';
 import BookWish from '@/components/book/BookWish';
+import Report from '@/pages/Office/Report';
 
 export const officeRoutes: RouteObject = {
   handle: {
@@ -17,6 +19,7 @@ export const officeRoutes: RouteObject = {
       { to: '/meetingroom', label: '미팅룸' },
       { to: '/itdevice', label: 'IT디바이스' },
       { to: '/book', label: '도서' },
+      { to: '/report', label: '기안서' },
     ],
   },
   children: [
@@ -32,6 +35,10 @@ export const officeRoutes: RouteObject = {
     { path: 'meetingroom', element: <Meetingroom /> },
     { path: 'itdevice', element: <ItDevice /> },
     {
+      path: 'itdevice/:id',
+      element: <ItDeviceDetail />,
+    },
+    {
       path: 'book',
       element: <Book />,
       children: [
@@ -39,5 +46,6 @@ export const officeRoutes: RouteObject = {
         { path: 'wish', element: <BookWish /> }, // /book/wish
       ],
     },
+    { path: 'report', element: <Report /> },
   ],
 };
