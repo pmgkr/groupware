@@ -21,7 +21,7 @@ export default function BookWish() {
       team: 'CCP',
       user: '홍길동',
       createdAt: '2025-07-01',
-      status: '신청',
+      state: '신청',
     },
     {
       id: 2,
@@ -32,7 +32,7 @@ export default function BookWish() {
       team: 'CCP',
       user: '김철수',
       createdAt: '2025-07-02',
-      status: '완료',
+      state: '완료',
     },
     {
       id: 3,
@@ -43,7 +43,7 @@ export default function BookWish() {
       team: 'CCD',
       user: '이영희',
       createdAt: '2025-07-03',
-      status: '신청',
+      state: '신청',
     },
     {
       id: 4,
@@ -54,20 +54,20 @@ export default function BookWish() {
       team: 'CCD',
       user: '김원필',
       createdAt: '2025-07-08',
-      status: '신청',
+      state: '신청',
     },
   ]);
 
   const [selected, setSelected] = useState<number[]>([]);
 
   // 신청 상태인 행만 체크 가능
-  const toggleOne = (id: number, status: string) => {
-    if (status !== '신청') return; // 완료된 건 체크 불가
+  const toggleOne = (id: number, state: string) => {
+    if (state !== '신청') return; // 완료된 건 체크 불가
     setSelected((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
   };
 
   // 전체선택 (신청 상태만)
-  const allRequestIds = posts.filter((p) => p.status === '신청').map((p) => p.id);
+  const allRequestIds = posts.filter((p) => p.state === '신청').map((p) => p.id);
   const allChecked = selected.length === allRequestIds.length && allRequestIds.length > 0;
   const someChecked = selected.length > 0 && !allChecked;
 
@@ -79,7 +79,7 @@ export default function BookWish() {
   const handleComplete = () => {
     if (selected.length === 0) return;
     if (window.confirm(`${selected.length}개 완료처리 하시겠습니까?`)) {
-      setPosts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, status: '완료' } : p)));
+      setPosts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, state: '완료' } : p)));
       setSelected([]); // 선택 초기화
     }
   };
@@ -122,12 +122,12 @@ export default function BookWish() {
               <TableCell className="[&:has([role=checkbox])]:pr-auto">
                 <Checkbox
                   checked={selected.includes(post.id)}
-                  onCheckedChange={() => toggleOne(post.id, post.status)}
-                  disabled={post.status !== '신청'} // 완료된 건 체크박스 비활성화
+                  onCheckedChange={() => toggleOne(post.id, post.state)}
+                  disabled={post.state !== '신청'} // 완료된 건 체크박스 비활성화
                 />{' '}
               </TableCell>
               <TableCell>
-                {post.status === '신청' ? (
+                {post.state === '신청' ? (
                   <Badge variant="lightpink" className="px-3">
                     신청
                   </Badge>

@@ -2,6 +2,12 @@ import { SectionHeader } from '@components/ui/SectionHeader';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textbox, textboxVariants } from '@/components/ui/textbox';
+import { Textarea } from '@/components/ui/textarea';
+import { useState } from 'react';
+import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 
 export default function itDeviceDetail() {
   const { id } = useParams<{ id: string }>(); // /itdevice/:id
@@ -112,6 +118,10 @@ export default function itDeviceDetail() {
     .sort((a, b) => new Date(b.returnedAt!).getTime() - new Date(a.returnedAt!).getTime());
 
   if (!post) return <div className="p-4">장비를 찾을 수 없습니다.</div>;
+
+  //dialog
+  const [open, setOpen] = useState(false);
+
   return (
     <>
       <h2 className="mb-5 text-3xl font-bold">
@@ -119,14 +129,57 @@ export default function itDeviceDetail() {
       </h2>
       <div className="flex gap-8">
         <div className="flex-1 rounded-md border p-8">
-          <SectionHeader
-            title="장비 정보"
-            buttonText="수정"
-            buttonVariant="outline"
-            buttonSize="sm"
-            buttonHref="#"
-            className="mb-4 shrink-0"
-          />
+          {/* 수정버튼 dialog */}
+          <Dialog>
+            <div className="mb-4 flex items-center justify-between border-b border-b-gray-300 pb-1.5">
+              <SectionHeader title="장비 정보" className="mb-0 border-0" />
+              {/* 다이얼로그 버튼은 DialogTrigger로 감싸기 */}
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  수정
+                </Button>
+              </DialogTrigger>
+            </div>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>장비 정보 수정</DialogTitle>
+              </DialogHeader>
+              <TableColumn className="max-w-md">
+                <TableColumnHeader>
+                  <TableColumnHeaderCell>디바이스</TableColumnHeaderCell>
+                  <TableColumnHeaderCell>브랜드</TableColumnHeaderCell>
+                  <TableColumnHeaderCell>모델</TableColumnHeaderCell>
+                  <TableColumnHeaderCell>시리얼넘버</TableColumnHeaderCell>
+                  <TableColumnHeaderCell>구매일자</TableColumnHeaderCell>
+                </TableColumnHeader>
+                <TableColumnBody>
+                  <TableColumnCell>
+                    <input type="text" value={post.device} />
+                  </TableColumnCell>
+                  <TableColumnCell>
+                    {' '}
+                    <input type="text" value={post.brand} />
+                  </TableColumnCell>
+                  <TableColumnCell>
+                    <input type="text" value={post.model} />
+                  </TableColumnCell>
+                  <TableColumnCell>
+                    <input type="text" value={post.serial} />
+                  </TableColumnCell>
+                  <TableColumnCell>
+                    <Textbox id="deadline" type="date" className="w-full justify-start" />
+                  </TableColumnCell>
+                </TableColumnBody>
+              </TableColumn>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpen(false)}>
+                  취소
+                </Button>
+                <Button onClick={() => setOpen(false)}>생성</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <div className="flex">
             <ul className="border-r pr-6 text-base leading-10">
               <li>디바이스</li>
@@ -139,7 +192,7 @@ export default function itDeviceDetail() {
               {post.device === 'Laptop' && post.ssdhdd && <li>SSD-HDD</li>}
               <li>구매일자</li>
             </ul>
-            <ul className="pl-8 leading-10">
+            <ul className="pl-8 text-base leading-10">
               <li>{post.device}</li>
               <li>{post.brand}</li>
               <li>{post.model}</li>
@@ -165,10 +218,11 @@ export default function itDeviceDetail() {
             {/* 현재 사용자 */}
             {currentUser && (
               <div className="border-primary-blue-300 bg-primary-blue-100 mb-4 flex items-center justify-between rounded border p-3">
-                <div className="flex items-center font-medium">
-                  {currentUser.user} <span className="pl-1 text-gray-500">({currentUser.team})</span>
+                <div className="flex items-center text-base font-medium">
+                  {currentUser.user} <span className="pl-1 text-sm text-gray-500">({currentUser.team})</span>
                   <Badge className="ml-2 bg-[#FF6B6B]">현재 사용중</Badge>
                 </div>
+
                 <div className="text-sm text-gray-600">시작일: {currentUser.createdAt}</div>
               </div>
             )}
@@ -178,8 +232,8 @@ export default function itDeviceDetail() {
               <div className="space-y-2">
                 {previousUsers.map((h) => (
                   <div key={h.historyId} className="flex justify-between rounded border p-3">
-                    <div className="font-medium">
-                      {h.user} <span className="text-gray-500">({h.team})</span>
+                    <div className="text-base font-medium">
+                      {h.user} <span className="text-sm text-gray-500">({h.team})</span>
                     </div>
                     <div className="text-sm text-gray-600">
                       {h.createdAt} ~ {h.returnedAt}
