@@ -32,68 +32,23 @@ const events = [
     author: "이연상",
     description: "연차입니다.",
     resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventVacation" 
-    }
-  },
-  {
-    title: "연차",
-    start: parse("2025-09-01 10:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-05 11:00", "yyyy-MM-dd HH:mm", new Date()),
-    allDay: true,
-    author: "이연상",
-    description: "연차입니다.",
-    resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventVacation" 
-    }
-  },
-  {
-    title: "오전 반차",
-    start: parse("2025-09-02-09:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-02 10:00", "yyyy-MM-dd HH:mm", new Date()),
-    allDay: true,
-    author: "이연상",
-    description: "오전 반차입니다.",
-    resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventHalfDay" 
-    }
-  },
-  {
-    title: "오후 반차",
-    start: parse("2025-09-02 13:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-02 14:00", "yyyy-MM-dd HH:mm", new Date()),
-    allDay: true,
-    author: "이연상",
-    description: "오후 반차입니다.",
-    resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventHalfDay" 
-    }
-  },
-  {
-    title: "오후 반차",
-    start: parse("2025-09-02 13:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-02 14:00", "yyyy-MM-dd HH:mm", new Date()),
-    allDay: true,
-    author: "이연상",
-    description: "오후 반차입니다.",
-    resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventHalfDay" 
-    }
-  },
-  {
-    title: "오후 반차",
-    start: parse("2025-09-02 09:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-02 10:00", "yyyy-MM-dd HH:mm", new Date()),
-    allDay: true,
-    author: "이연상",
-    description: "오후 반차입니다.",
-    resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventHalfDay" 
+      seq: 1,
+      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      teamId: 1,
+      schTitle: "연차",
+      schType: "vacation",
+      schVacationType: "day" as string | null,
+      schEventType: null,
+      schSdate: "2025-08-20",
+      schStime: "10:00:00",
+      schEdate: "2025-09-05", 
+      schEtime: "11:00:00",
+      schIsAllday: "Y",
+      schIsHoliday: "N",
+      schDescription: "연차입니다.",
+      schStatus: "Y",
+      schModifiedAt: new Date(),
+      schCreatedAt: new Date()
     }
   },
   {
@@ -104,20 +59,50 @@ const events = [
     author: "이연상",
     description: "오전 반반차입니다.",
     resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventHalfHalfDay" 
+      seq: 2,
+      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      teamId: 1,
+      schTitle: "오전 반반차",
+      schType: "vacation",
+      schVacationType: "quarter" as string | null,
+      schEventType: null,
+      schSdate: "2025-09-02",
+      schStime: "09:00:00",
+      schEdate: "2025-09-02",
+      schEtime: "10:00:00",
+      schIsAllday: "Y",
+      schIsHoliday: "N",
+      schDescription: "오전 반반차입니다.",
+      schStatus: "Y",
+      schModifiedAt: new Date(),
+      schCreatedAt: new Date()
     }
   },
   {
-    title: "오전 반반차",
+    title: "오후 반반차",
     start: parse("2025-09-02 09:00", "yyyy-MM-dd HH:mm", new Date()),
     end: parse("2025-09-02 10:00", "yyyy-MM-dd HH:mm", new Date()),
     allDay: true,
     author: "이연상",
-    description: "오전 반반차입니다.",
+    description: "오후 반반차입니다.",
     resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventHalfHalfDay" 
+      seq: 3,
+      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      teamId: 1,
+      schTitle: "오후 반반차",
+      schType: "vacation",
+      schVacationType: "quarter" as string | null,
+      schEventType: null,
+      schSdate: "2025-09-02",
+      schStime: "09:00:00",
+      schEdate: "2025-09-02",
+      schEtime: "10:00:00",
+      schIsAllday: "Y",
+      schIsHoliday: "N",
+      schDescription: "오후 반반차입니다.",
+      schStatus: "Y",
+      schModifiedAt: new Date(),
+      schCreatedAt: new Date()
     }
   },
   {
@@ -128,8 +113,23 @@ const events = [
     author: "이연상",
     description: "외부 일정입니다.",
     resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventExternal" 
+      seq: 4,
+      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      teamId: 1,
+      schTitle: "외부 일정",
+      schType: "event",
+      schVacationType: null,
+      schEventType: "field" as string | null,
+      schSdate: "2025-08-30",
+      schStime: "09:00:00",
+      schEdate: "2025-09-01",
+      schEtime: "10:00:00",
+      schIsAllday: "Y",
+      schIsHoliday: "N",
+      schDescription: "외부 일정입니다.",
+      schStatus: "Y",
+      schModifiedAt: new Date(),
+      schCreatedAt: new Date()
     }
   },
   {
@@ -140,32 +140,23 @@ const events = [
     author: "이연상",
     description: "외부 일정입니다.",
     resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventExternal" 
-    }
-  },
-  {
-    title: "오전 반반차",
-    start: parse("2025-09-03 09:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-04 10:00", "yyyy-MM-dd HH:mm", new Date()),
-    allDay: true,
-    author: "이연상",
-    description: "오전 반반차입니다.",
-    resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventHalfHalfDay" 
-    }
-  },
-  {
-    title: "오전 반반차",
-    start: parse("2025-09-03 09:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-03 10:00", "yyyy-MM-dd HH:mm", new Date()),
-    allDay: true,
-    author: "이연상",
-    description: "오전 반반차입니다.",
-    resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventHalfHalfDay" 
+      seq: 5,
+      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      teamId: 1,
+      schTitle: "외부 일정",
+      schType: "event",
+      schVacationType: null,
+      schEventType: "field" as string | null,
+      schSdate: "2025-09-20",
+      schStime: "09:00:00",
+      schEdate: "2025-09-21",
+      schEtime: "10:00:00",
+      schIsAllday: "Y",
+      schIsHoliday: "N",
+      schDescription: "외부 일정입니다.",
+      schStatus: "Y",
+      schModifiedAt: new Date(),
+      schCreatedAt: new Date()
     }
   },
   {
@@ -176,8 +167,23 @@ const events = [
     author: "이연상",
     description: "외부 일정입니다.",
     resource: {
-      userId:"ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
-      eventType:"eventExternal" 
+      seq: 6,
+      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      teamId: 1,
+      schTitle: "외부 일정",
+      schType: "event",
+      schVacationType: null,
+      schEventType: "field" as string | null,
+      schSdate: "2025-09-03",
+      schStime: "09:00:00",
+      schEdate: "2025-09-03",
+      schEtime: "10:00:00",
+      schIsAllday: "Y",
+      schIsHoliday: "N",
+      schDescription: "외부 일정입니다.",
+      schStatus: "Y",
+      schModifiedAt: new Date(),
+      schCreatedAt: new Date()
     }
   },
 ];
@@ -211,7 +217,7 @@ export default function CustomCalendar() {
       options: [
         { value: 'type_vacation', label: '연차' },
         { value: 'type_halfday', label: '반차' },
-        { value: 'type_halfhalfday', label: '반반차' },
+        { value: 'type_quarter', label: '반반차' },
         { value: 'type_external', label: '외부일정' },
       ],
       value: [],
@@ -277,22 +283,95 @@ export default function CustomCalendar() {
   };
 
   const handleSaveEvent = (eventData: any) => {
-    // 새로운 이벤트 생성
+    // eventType에 따른 MySQL enum 값 매핑
+    const getSchType = (eventType: string) => {
+      if (['eventVacation', 'eventHalfDayMorning', 'eventHalfDayAfternoon', 'eventHalfHalfDayMorning', 'eventHalfHalfDayAfternoon', 'eventOfficialLeave'].includes(eventType)) {
+        return 'vacation';
+      }
+      return 'event';
+    };
+
+    const getSchVacationType = (eventType: string): string | null => {
+      switch (eventType) {
+        case 'eventVacation':
+        case 'eventOfficialLeave':
+          return 'day';
+        case 'eventHalfDayMorning':
+        case 'eventHalfDayAfternoon':
+          return 'half';
+        case 'eventHalfHalfDayMorning':
+        case 'eventHalfHalfDayAfternoon':
+          return 'quarter';
+        default:
+          return null;
+      }
+    };
+
+    const getSchEventType = (eventType: string) => {
+      switch (eventType) {
+        case 'eventWorkFromHome':
+          return 'remote';
+        case 'eventExternal':
+          return 'field';
+        default:
+          return 'etc';
+      }
+    };
+
+    const getEventTitle = (eventType: string) => {
+      switch (eventType) {
+        case 'eventVacation':
+          return '연차';
+        case 'eventHalfDayMorning':
+          return '오전 반차';
+        case 'eventHalfDayAfternoon':
+          return '오후 반차';
+        case 'eventHalfHalfDayMorning':
+          return '오전 반반차';
+        case 'eventHalfHalfDayAfternoon':
+          return '오후 반반차';
+        case 'eventOfficialLeave':
+          return '공가';
+        case 'eventWorkFromHome':
+          return '재택';
+        case 'eventExternal':
+          return '외부 일정';
+        default:
+          return '일정';
+      }
+    };
+
+    // 새로운 이벤트 생성 (MySQL 테이블 구조에 맞춤)
     const newEvent = {
-      title: eventData.title,
+      title: getEventTitle(eventData.eventType),
       start: parse(`${eventData.startDate} ${eventData.allDay ? '00:00' : eventData.startTime}`, "yyyy-MM-dd HH:mm", new Date()),
       end: parse(`${eventData.endDate} ${eventData.allDay ? '23:59' : eventData.endTime}`, "yyyy-MM-dd HH:mm", new Date()),
       allDay: eventData.allDay,
       author: eventData.author,
       description: eventData.description,
       resource: {
+        seq: Date.now(), // 임시 ID (실제로는 DB에서 생성)
         userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x", // 실제로는 로그인한 사용자 ID
-        eventType: eventData.eventType
+        teamId: 1, // 실제로는 사용자의 팀 ID
+        schTitle: getEventTitle(eventData.eventType),
+        schType: getSchType(eventData.eventType),
+        schVacationType: getSchVacationType(eventData.eventType),
+        schEventType: getSchEventType(eventData.eventType),
+        schSdate: eventData.startDate,
+        schStime: eventData.startTime || "00:00:00",
+        schEdate: eventData.endDate,
+        schEtime: eventData.endTime || "23:59:00",
+        schIsAllday: eventData.allDay ? "Y" : "N",
+        schIsHoliday: "N",
+        schDescription: eventData.description || "",
+        schStatus: "Y",
+        schModifiedAt: new Date(),
+        schCreatedAt: new Date()
       }
     };
 
     // 이벤트 목록에 추가
-    setMyEvents(prev => [...prev, newEvent]);
+    setMyEvents(prev => [...prev, newEvent as any]);
   };
 
   return (
