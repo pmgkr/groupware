@@ -1,9 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import React from 'react';
+
 const meta: Meta<typeof TableColumn> = {
   title: 'Components/UI/tableColumn',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: '세로형 테이블 UI',
+      },
+    },
+  },
 };
 
 export default meta;

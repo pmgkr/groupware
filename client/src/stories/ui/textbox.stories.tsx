@@ -4,7 +4,7 @@ import { ChartNoAxesColumnIncreasing, ChevronLeft, ChevronRight } from 'lucide-r
 import { Textbox } from '@components/ui/textbox';
 
 const meta: Meta<typeof Textbox> = {
-  title: 'Components/UI/Textbox',
+  title: 'Components/UI/Input',
   component: Textbox,
   tags: ['autodocs'], // 자동 문서화를 위해 추가
   args: {
@@ -30,7 +30,7 @@ export const Default: Story = {
     variant: 'default',
     size: 'default',
     placeholder: 'Placeholder',
-    description: '내용을 입력해주세요.'
+    description: '내용을 입력해주세요.',
   },
 };
 
@@ -40,7 +40,7 @@ export const Filled: Story = {
     size: 'default',
     placeholder: 'Placeholder',
     defaultValue: 'Typed text',
-    description: ''
+    description: '',
   },
 };
 
@@ -49,7 +49,7 @@ export const Focus: Story = {
     variant: 'focus',
     size: 'default',
     placeholder: 'Placeholder',
-    description: ''    
+    description: '',
   },
 };
 
@@ -58,7 +58,7 @@ export const Disabled: Story = {
     variant: 'disabled',
     size: 'default',
     placeholder: 'Placeholder',
-    description: ''
+    description: '',
   },
 };
 
@@ -69,17 +69,16 @@ export const Error: Story = {
     placeholder: 'Placeholder',
     defaultValue: 'Error Message',
     readOnly: true,
-    errorMessage: '내용을 올바르게 입력해주세요.'
+    errorMessage: '내용을 올바르게 입력해주세요.',
   },
 };
-
 
 export const DateInput: Story = {
   args: {
     type: 'date',
     placeholder: '날짜를 선택하세요',
     description: '날짜를 선택해주세요.',
-    className: 'w-full justify-start'
+    className: 'w-full justify-start',
   },
 };
 
@@ -88,7 +87,7 @@ export const EmailInput: Story = {
     type: 'email',
     placeholder: '이메일을 입력하세요',
     description: '유효한 이메일 주소를 입력해주세요.',
-    className: 'w-full'
+    className: 'w-full',
   },
 };
 
@@ -97,7 +96,7 @@ export const NumberInput: Story = {
     type: 'number',
     placeholder: '숫자를 입력하세요',
     description: '숫자만 입력 가능합니다.',
-    className: 'w-full'
+    className: 'w-full',
   },
 };
 
@@ -106,7 +105,7 @@ export const PasswordInput: Story = {
     type: 'password',
     placeholder: '비밀번호를 입력하세요',
     description: '8자 이상 입력해주세요.',
-    className: 'w-full'
+    className: 'w-full',
   },
 };
 
@@ -115,7 +114,7 @@ export const TelInput: Story = {
     type: 'tel',
     placeholder: '전화번호를 입력하세요',
     description: '예: 010-1234-5678',
-    className: 'w-full'
+    className: 'w-full',
   },
 };
 
@@ -124,14 +123,14 @@ export const TimeInput: Story = {
     type: 'time',
     placeholder: '시간을 선택하세요',
     description: '시간을 선택해주세요.',
-    className: 'w-full justify-start'
+    className: 'w-full justify-start',
   },
 };
 
 export const ColorInput: Story = {
   args: {
     type: 'color',
-    className: 'w-20 h-10'
+    className: 'w-20 h-10',
   },
 };
 
@@ -140,7 +139,7 @@ export const UrlInput: Story = {
     type: 'url',
     placeholder: 'https://example.com',
     description: '유효한 URL을 입력해주세요.',
-    className: 'w-full'
+    className: 'w-full',
   },
 };
 
@@ -149,7 +148,7 @@ export const SearchInput: Story = {
     type: 'search',
     placeholder: '검색어를 입력하세요',
     description: '검색할 내용을 입력해주세요.',
-    className: 'w-full'
+    className: 'w-full',
   },
 };
 
@@ -158,7 +157,7 @@ export const MonthInput: Story = {
     type: 'month',
     placeholder: '월을 선택하세요',
     description: '월을 선택해주세요.',
-    className: 'w-full justify-start'
+    className: 'w-full justify-start',
   },
 };
 
@@ -167,7 +166,7 @@ export const WeekInput: Story = {
     type: 'week',
     placeholder: '주를 선택하세요',
     description: '주를 선택해주세요.',
-    className: 'w-full justify-start'
+    className: 'w-full justify-start',
   },
 };
 
@@ -176,7 +175,7 @@ export const DateTimeLocalInput: Story = {
     type: 'datetime-local',
     placeholder: '날짜와 시간을 선택하세요',
     description: '날짜와 시간을 선택해주세요.',
-    className: 'w-full justify-start'
+    className: 'w-full justify-start',
   },
 };
 
@@ -186,7 +185,7 @@ export const RangeInput: Story = {
     min: 0,
     max: 100,
     defaultValue: 50,
-    className: 'w-full'
+    className: 'w-full',
   },
 };
 
@@ -194,7 +193,7 @@ export const FileInput: Story = {
   args: {
     type: 'file',
     accept: 'image/*',
-    className: 'w-full'
+    className: 'w-full',
   },
 };
 

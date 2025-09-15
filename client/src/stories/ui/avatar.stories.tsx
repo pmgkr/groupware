@@ -8,6 +8,13 @@ const meta: Meta<typeof Avatar> = {
   args: {
     children: 'Avatar',
   },
+  parameters: {
+    docs: {
+      description: {
+        component: '프로필 사진 혹은 이미지가 없다면 AvatarFallback으로 대체 텍스트 제공',
+      },
+    },
+  },
 };
 
 export default meta;

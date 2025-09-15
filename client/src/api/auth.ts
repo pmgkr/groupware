@@ -25,7 +25,7 @@ export type UserDTO = {
   birth_date?: string | null;
   hire_date?: string | null;
   profile_image?: string | null;
-  user_level?: 'staff' | 'manager' | 'admin';
+  user_level?: 'user' | 'manager' | 'admin';
   user_status?: 'active' | 'inactive' | 'suspended';
 };
 

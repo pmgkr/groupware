@@ -6,6 +6,13 @@ const meta: Meta<typeof RadioButton> = {
   title: 'Components/UI/RadioButton',
   component: RadioButton,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: '커스텀한 라디오 버튼 (Check 아이콘으로 노출)',
+      },
+    },
+  },
   argTypes: {
     size: {
       control: 'select',
@@ -25,7 +32,8 @@ const meta: Meta<typeof RadioButton> = {
       control: 'select',
       options: ['default', 'outline', 'dynamic', 'dynamicBlue'],
       defaultValue: 'outline',
-      description: 'default: 파란색 배경, outline: 회색 테두리, dynamic: 체크 상태에 따라 자동 변경, dynamicBlue: 체크 상태에 따라 자동 변경 (호버 효과 포함)',
+      description:
+        'default: 파란색 배경, outline: 회색 테두리, dynamic: 체크 상태에 따라 자동 변경, dynamicBlue: 체크 상태에 따라 자동 변경 (호버 효과 포함)',
     },
   },
 };
@@ -70,7 +78,7 @@ export const Variants: Story = {
   render: () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-3">Default Variant</h3>
+        <h3 className="mb-3 text-lg font-semibold">Default Variant</h3>
         <RadioGroup>
           <div className="flex items-center space-x-4">
             <RadioButton id="default1" variant="default" label="Default Option 1" value="default1" />
@@ -79,7 +87,7 @@ export const Variants: Story = {
         </RadioGroup>
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-3">Outline Variant</h3>
+        <h3 className="mb-3 text-lg font-semibold">Outline Variant</h3>
         <RadioGroup>
           <div className="flex items-center space-x-4">
             <RadioButton id="outline1" variant="outline" label="Outline Option 1" value="outline1" />
@@ -88,7 +96,7 @@ export const Variants: Story = {
         </RadioGroup>
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-3">Dynamic Variant (체크 상태에 따라 자동 변경)</h3>
+        <h3 className="mb-3 text-lg font-semibold">Dynamic Variant (체크 상태에 따라 자동 변경)</h3>
         <RadioGroup>
           <div className="flex items-center space-x-4">
             <RadioButton id="dynamic1" variant="dynamic" label="Dynamic Option 1" value="dynamic1" />
@@ -97,7 +105,7 @@ export const Variants: Story = {
         </RadioGroup>
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-3">DynamicBlue Variant (체크 상태에 따라 자동 변경, 진한 파란색)</h3>
+        <h3 className="mb-3 text-lg font-semibold">DynamicBlue Variant (체크 상태에 따라 자동 변경, 진한 파란색)</h3>
         <RadioGroup>
           <div className="flex items-center space-x-4">
             <RadioButton id="dynamicBlue1" variant="dynamicBlue" label="DynamicBlue Option 1" value="dynamicBlue1" />
@@ -113,9 +121,9 @@ export const RadioGroupExample: Story = {
   render: () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-3">라디오 그룹 예시 (Variant: Default)</h3>
+        <h3 className="mb-3 text-lg font-semibold">라디오 그룹 예시 (Variant: Default)</h3>
         <RadioGroup defaultValue="option2">
-          <div className="flex align-center gap-2 space-y-2">
+          <div className="align-center flex gap-2 space-y-2">
             <RadioButton variant="default" id="group1" label="옵션 1" value="option1" />
             <RadioButton variant="default" id="group2" label="옵션 2" value="option2" />
             <RadioButton variant="default" id="group3" label="옵션 3" value="option3" />
@@ -123,9 +131,9 @@ export const RadioGroupExample: Story = {
         </RadioGroup>
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-3">라디오 그룹 예시 (Variant: Dynamic)</h3>
+        <h3 className="mb-3 text-lg font-semibold">라디오 그룹 예시 (Variant: Dynamic)</h3>
         <RadioGroup defaultValue="dynamic2">
-          <div className="flex align-center gap-2 space-y-2">
+          <div className="align-center flex gap-2 space-y-2">
             <RadioButton id="dgroup1" variant="dynamic" label="동적 옵션 1" value="dynamic1" />
             <RadioButton id="dgroup2" variant="dynamic" label="동적 옵션 2" value="dynamic2" />
             <RadioButton id="dgroup3" variant="dynamic" label="동적 옵션 3" value="dynamic3" />
@@ -133,9 +141,9 @@ export const RadioGroupExample: Story = {
         </RadioGroup>
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-3">라디오 그룹 예시 (Variant: DynamicBlue)</h3>
+        <h3 className="mb-3 text-lg font-semibold">라디오 그룹 예시 (Variant: DynamicBlue)</h3>
         <RadioGroup defaultValue="dynamic2">
-          <div className="flex align-center gap-2 space-y-2">
+          <div className="align-center flex gap-2 space-y-2">
             <RadioButton id="dgroup1" variant="dynamicBlue" label="동적 옵션 1" value="dynamic1" />
             <RadioButton id="dgroup2" variant="dynamicBlue" label="동적 옵션 2" value="dynamic2" />
             <RadioButton id="dgroup3" variant="dynamicBlue" label="동적 옵션 3" value="dynamic3" />

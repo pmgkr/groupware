@@ -9,7 +9,14 @@ const meta: Meta<typeof SectionHeader> = {
   title: 'Components/UI/SectionHeader',
   component: SectionHeader,
   tags: ['autodocs'],
-  parameters: { layout: 'centered' },
+  parameters: {
+    layout: 'centered',
+    docs: {
+      description: {
+        component: '서브 페이지 및 섹션 내 헤더 UI',
+      },
+    },
+  },
   argTypes: {
     title: { control: 'text' },
     buttonText: { control: 'text' },

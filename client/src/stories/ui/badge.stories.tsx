@@ -11,7 +11,14 @@ const meta: Meta<typeof Badge> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['default', 'secondary', 'outline', 'lightpink', 'pink'],
+      options: ['default', 'secondary', 'outline', 'lightpink', 'pink', 'dot'],
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        component: '여러 타입의 뱃지 제공',
+      },
     },
   },
 };

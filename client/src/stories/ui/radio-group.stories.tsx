@@ -15,6 +15,13 @@ const meta: Meta<typeof RadioGroup> = {
       options: ['default', 'disabled'],
     },
   },
+  parameters: {
+    docs: {
+      description: {
+        component: '일반적인 도트형 라디오 버튼',
+      },
+    },
+  },
 };
 
 export default meta;

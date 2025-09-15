@@ -6,9 +6,16 @@ import { MemoryRouter } from 'react-router';
 import BoardWrite from '@/components/board/BoardWrite';
 
 const meta: Meta<typeof BoardList> = {
-  title: 'Components/BoardList',
+  title: 'Board/BoardList',
   component: BoardList,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: '게시판 리스트, 상세, 글쓰기 페이지 UI',
+      },
+    },
+  },
   decorators: [
     (Story) => (
       <MemoryRouter>
