@@ -82,8 +82,8 @@
   --color-primary-pink-100: #fff2fa;
   --color-primary-pink-300: #f9a8d4;
   --color-primary-pink-500: #ec4899;
-  
-  --color-secondary-blue-500: #6366F1;
+
+  --color-secondary-blue-500: #6366f1;
 
   --color-gray-50: #ffffff;
   --color-gray-100: #fafafa;
@@ -337,6 +337,19 @@
 
   html {
     overflow-x: hidden;
+  }
+
+  body[data-scroll-locked] {
+    margin-right: 0 !important;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    scrollbar-width: none;
   }
 }
 
