@@ -60,7 +60,7 @@ export async function http<T = unknown>(path: string, options: RequestInit = {})
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new HttpError(res, data); // 💡 HttpError 객체를 던지도록 수정
+    throw new HttpError(res, data); // HttpError 객체를 던지도록 수정
   }
   return data as T;
 }

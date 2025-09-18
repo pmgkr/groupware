@@ -17,11 +17,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserDTO | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ 부팅 시: 토큰 유무에 관계없이 refresh 먼저 시도
   useEffect(() => {
     const authLoading = async () => {
       try {
-        // await refreshAccessToken(); // 쿠키 있으면 access 발급, 없으면 throw
+        await refreshAccessToken(); // 쿠키 있으면 access 발급, 없으면 throw
         const me = await getUser(); // access가 생겼으니 /user 호출
         setUser(me.user);
       } catch {

@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { loginApi } from '@/api/auth';
+import { loginApi } from '@/api';
 import { setToken as setTokenStore } from '@/lib/tokenStore';
 
 import { Button } from '@components/ui/button';

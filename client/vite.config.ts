@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import * as path from 'node:path';
 import svgr from 'vite-plugin-svgr';
+import mkcert from 'vite-plugin-mkcert';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { fileURLToPath } from 'node:url';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -21,6 +22,7 @@ export default defineConfig(({ mode }) => {
   // 공통(앱) 플러그인
   const plugins = [
     react(),
+    mkcert(),
     tailwindcss(),
     tsconfigPaths(),
     svgr({
@@ -106,11 +108,12 @@ export default defineConfig(({ mode }) => {
 
     server: {
       open: true,
+      port: 5173,
       proxy: {
         '/api': {
-          target: 'http://gbend.cafe24.com',
+          target: 'https://gbend.cafe24.com',
           changeOrigin: true,
-          secure: false,
+          secure: true,
           // 프론트에서 "/api/login" > 백엔드에선 "/login"
           rewrite: (pathStr: string) => pathStr.replace(/^\/api/, ''),
           // Vite 타입에 없지만 http-proxy가 지원

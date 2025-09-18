@@ -33,7 +33,6 @@ export type UserDTO = {
 export async function loginApi(payload: LoginPayload) {
   return http<{ message: string; accessToken: string; user: UserDTO }>('/login', {
     method: 'POST',
-    credentials: 'include',
     body: JSON.stringify(payload),
   });
 }
@@ -41,14 +40,12 @@ export async function loginApi(payload: LoginPayload) {
 export async function onboardingApi(payload: OnboardingPayload, token: string) {
   return http<{ message: string; accessToken: string; user: UserDTO }>('/onboarding', {
     method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(payload),
   });
 }
 
 export async function getUser() {
-  return http<{ user: UserDTO }>('/user', { method: 'GET' });
+  return http<{ user: UserDTO }>('/user/profile', { method: 'GET' });
 }
 
 export async function logoutApi() {

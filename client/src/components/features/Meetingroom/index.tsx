@@ -13,7 +13,7 @@ import { Calendar, LeftArr, More, RightArr } from '@/assets/images/icons';
 import { UserRound, Check } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
-import { createReservationService, type Room, type Reservation } from '@/services/reserveMeetingroom';
+import { createReservationService, type Room, type Reservation } from '@/api';
 import { LocalReservationService } from '@/services/localReserve';
 
 const service = createReservationService(new LocalReservationService());
