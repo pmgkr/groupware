@@ -26,8 +26,8 @@ export async function http<T = unknown>(path: string, options?: RequestInit): Pr
   let token = getToken();
 
   async function doFetch(withToken?: string) {
-    // const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}${path}`, {
-    const res = await fetch(`/api/${path}`, {
+    // const res = await fetch(`/api/${path}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}${path}`, {
       headers: {
         'Content-Type': 'application/json',
         ...(withToken ? { Authorization: `Bearer ${withToken}` } : {}),
