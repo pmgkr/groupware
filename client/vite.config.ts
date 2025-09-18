@@ -108,7 +108,6 @@ export default defineConfig(({ mode }) => {
 
     server: {
       open: true,
-      port: 5173,
       proxy: {
         '/api': {
           target: 'https://gbend.cafe24.com',
