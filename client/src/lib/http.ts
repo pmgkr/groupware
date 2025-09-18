@@ -1,6 +1,8 @@
 // src/lib/http.ts
 import { setToken, getToken } from '@/lib/tokenStore';
 
+const API = (import.meta.env.VITE_API_ORIGIN ?? '').replace(/\/$/, '');
+
 function isFormData(body: any): body is FormData {
   return typeof FormData !== 'undefined' && body instanceof FormData;
 }
@@ -16,9 +18,9 @@ export class HttpError extends Error {
 }
 
 export async function refreshAccessToken() {
-  const res = await fetch(`/api/refresh`, {
+  const res = await fetch(`${API}/refresh`, {
     method: 'POST',
-    credentials: 'include', // 쿠키 전송
+    credentials: 'include', // 쿠키 전송(백엔드 도메인으로)
   });
   if (!res.ok) throw new Error('Refresh failed');
   const data = await res.json();
@@ -27,23 +29,21 @@ export async function refreshAccessToken() {
 }
 
 export async function http<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
+  const toUrl = (p: string) => `${API}/${p.replace(/^\/+/, '')}`;
   let token = getToken();
 
   const buildHeaders = (withToken?: string) => {
-    const base: Record<string, string> = {
-      ...(withToken ? { Authorization: `Bearer ${withToken}` } : {}),
-    };
-    // body가 FormData가 아니고, 사용자가 Content-Type을 직접 지정하지 않았을 때만 JSON 기본값
     const userHeaders = (options.headers as Record<string, string>) || {};
-    const hasCT = Object.keys(userHeaders || {}).some((k) => k.toLowerCase() === 'content-type');
-    if (!hasCT && !isFormData(options.body)) {
-      base['Content-Type'] = 'application/json';
-    }
-    return { ...base, ...userHeaders };
+    const hasCT = Object.keys(userHeaders).some((k) => k.toLowerCase() === 'content-type');
+    return {
+      ...(withToken ? { Authorization: `Bearer ${withToken}` } : {}),
+      ...(!hasCT && !isFormData(options.body) ? { 'Content-Type': 'application/json' } : {}),
+      ...userHeaders,
+    };
   };
 
   async function doFetch(withToken?: string) {
-    return fetch(`/api/${path.replace(/^\/+/, '')}`, {
+    return fetch(toUrl(path), {
       credentials: 'include',
       ...options,
       headers: buildHeaders(withToken),
@@ -52,15 +52,16 @@ export async function http<T = unknown>(path: string, options: RequestInit = {})
 
   let res = await doFetch(token);
   if (res.status === 401 && token) {
-    // 액세스 만료 → 리프레시
-    const newToken = await refreshAccessToken();
-    res = await doFetch(newToken);
+    try {
+      const newToken = await refreshAccessToken();
+      res = await doFetch(newToken);
+    } catch {
+      setToken(undefined);
+      throw new HttpError(res, { message: 'Unauthorized' });
+    }
   }
 
   const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new HttpError(res, data); // HttpError 객체를 던지도록 수정
-  }
+  if (!res.ok) throw new HttpError(res, data);
   return data as T;
 }

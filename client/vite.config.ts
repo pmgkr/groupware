@@ -108,17 +108,18 @@ export default defineConfig(({ mode }) => {
 
     server: {
       open: true,
-      proxy: {
-        '/api': {
-          target: 'https://gbend.cafe24.com',
-          changeOrigin: true,
-          secure: true,
-          // 프론트에서 "/api/login" > 백엔드에선 "/login"
-          rewrite: (pathStr: string) => pathStr.replace(/^\/api/, ''),
-          // Vite 타입에 없지만 http-proxy가 지원
-          cookieDomainRewrite: 'localhost',
-        },
-      },
+      // 프론트에서 직접 호출로 proxy 주석처리
+      // proxy: {
+      //   '/api': {
+      //     target: 'https://gbend.cafe24.com',
+      //     changeOrigin: true,
+      //     secure: true,
+      //     // 프론트에서 "/api/login" > 백엔드에선 "/login"
+      //     rewrite: (pathStr: string) => pathStr.replace(/^\/api/, ''),
+      //     // Vite 타입에 없지만 http-proxy가 지원
+      //     cookieDomainRewrite: 'localhost',
+      //   },
+      // },
     },
 
     resolve: {
