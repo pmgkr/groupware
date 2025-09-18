@@ -1,6 +1,10 @@
 // src/lib/http.ts
 import { setToken, getToken } from '@/lib/tokenStore';
 
+function isFormData(body: any): body is FormData {
+  return typeof FormData !== 'undefined' && body instanceof FormData;
+}
+
 export class HttpError extends Error {
   status: number;
   data?: any;
@@ -12,7 +16,7 @@ export class HttpError extends Error {
 }
 
 export async function refreshAccessToken() {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/refresh`, {
+  const res = await fetch(`/api/refresh`, {
     method: 'POST',
     credentials: 'include', // 쿠키 전송
   });
@@ -22,21 +26,28 @@ export async function refreshAccessToken() {
   return data.accessToken as string;
 }
 
-export async function http<T = unknown>(path: string, options?: RequestInit): Promise<T> {
+export async function http<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   let token = getToken();
 
+  const buildHeaders = (withToken?: string) => {
+    const base: Record<string, string> = {
+      ...(withToken ? { Authorization: `Bearer ${withToken}` } : {}),
+    };
+    // body가 FormData가 아니고, 사용자가 Content-Type을 직접 지정하지 않았을 때만 JSON 기본값
+    const userHeaders = (options.headers as Record<string, string>) || {};
+    const hasCT = Object.keys(userHeaders || {}).some((k) => k.toLowerCase() === 'content-type');
+    if (!hasCT && !isFormData(options.body)) {
+      base['Content-Type'] = 'application/json';
+    }
+    return { ...base, ...userHeaders };
+  };
+
   async function doFetch(withToken?: string) {
-    // const res = await fetch(`/api/${path}`, {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}${path}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(withToken ? { Authorization: `Bearer ${withToken}` } : {}),
-        ...(options?.headers || {}),
-      },
+    return fetch(`/api/${path.replace(/^\/+/, '')}`, {
       credentials: 'include',
       ...options,
+      headers: buildHeaders(withToken),
     });
-    return res;
   }
 
   let res = await doFetch(token);

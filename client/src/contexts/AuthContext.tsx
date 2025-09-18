@@ -21,7 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const authLoading = async () => {
       try {
-        await refreshAccessToken(); // 쿠키 있으면 access 발급, 없으면 throw
+        // await refreshAccessToken(); // 쿠키 있으면 access 발급, 없으면 throw
         const me = await getUser(); // access가 생겼으니 /user 호출
         setUser(me.user);
       } catch {
