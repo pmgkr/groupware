@@ -58,7 +58,7 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
       try {
         setTeamLoading(true);
 
-        const data = await getTeams();
+        const data = await getTeams({ level: 2 }); // 팀 레벨 2만 가져오기 (국 제외)
         if (!alive) return;
         setTeams(data);
       } catch (e: any) {

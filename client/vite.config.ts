@@ -31,13 +31,14 @@ export default defineConfig(async ({}) => {
       },
     }),
     // 번들 분석을 위한 visualizer 플러그인 (빌드 시에만 실행)
-    process.env.ANALYZE && visualizer({
-      filename: 'dist/bundle-analysis.html',
-      open: true,
-      gzipSize: true,
-      brotliSize: true,
-      template: 'treemap', // 'treemap', 'sunburst', 'network' 중 선택
-    }),
+    process.env.ANALYZE &&
+      visualizer({
+        filename: 'dist/bundle-analysis.html',
+        open: true,
+        gzipSize: true,
+        brotliSize: true,
+        template: 'treemap', // 'treemap', 'sunburst', 'network' 중 선택
+      }),
   ].filter(Boolean);
 
   // Vitest에서만 Storybook 테스트 플러그인 동적 로드
@@ -78,7 +79,7 @@ export default defineConfig(async ({}) => {
           manualChunks: {
             // React 관련 라이브러리
             'react-vendor': ['react', 'react-dom', 'react-router'],
-            
+
             // UI 라이브러리
             'ui-vendor': [
               '@radix-ui/react-avatar',
@@ -94,43 +95,25 @@ export default defineConfig(async ({}) => {
               '@radix-ui/react-slot',
               '@radix-ui/react-switch',
               '@radix-ui/react-tabs',
-              '@radix-ui/react-toast'
+              '@radix-ui/react-toast',
             ],
-            
+
             // 폼 관련 라이브러리
-            'form-vendor': [
-              '@hookform/resolvers',
-              'react-hook-form',
-              'zod'
-            ],
-            
+            'form-vendor': ['@hookform/resolvers', 'react-hook-form', 'zod'],
+
             // 차트 및 시각화 라이브러리
-            'chart-vendor': [
-              'recharts',
-              'react-big-calendar'
-            ],
-            
+            'chart-vendor': ['recharts', 'react-big-calendar'],
+
             // 날짜 관련 라이브러리
-            'date-vendor': [
-              'date-fns',
-              'react-datetime',
-              'react-day-picker'
-            ],
-            
+            'date-vendor': ['date-fns', 'react-datetime', 'react-day-picker'],
+
             // 유틸리티 라이브러리
-            'utils-vendor': [
-              'clsx',
-              'tailwind-merge',
-              'class-variance-authority',
-              'cmdk',
-              'framer-motion',
-              'lucide-react'
-            ]
-          }
-        }
+            'utils-vendor': ['clsx', 'tailwind-merge', 'class-variance-authority', 'cmdk', 'framer-motion', 'lucide-react'],
+          },
+        },
       },
       // 청크 크기 경고 제한을 1000KB로 증가
-      chunkSizeWarningLimit: 1000
+      chunkSizeWarningLimit: 1000,
     },
     server: {
       open: true,
@@ -145,8 +128,11 @@ export default defineConfig(async ({}) => {
       // API 프록시 설정 (도커 환경)
       proxy: {
         '/api': {
-          target: 'http://groupware-server:3001',
+          target: 'http://gbend.cafe24.com',
+          // target: 'http://localhost:3001',
           changeOrigin: true,
+          secure: false,
+          cookieDomainRewrite: 'localhost',
         },
       },
     },
