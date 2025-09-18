@@ -46,11 +46,11 @@ export function LoginForm() {
       const res = await loginApi({ user_id: values.user_id, user_pw: values.user_pw });
       console.log(res);
 
-      // setTokenStore(res.accessToken);
+      setTokenStore(res.accessToken);
 
-      // // 이메일 기억하기
-      // if (values.remember) localStorage.setItem(storageRemember, values.user_id);
-      // else localStorage.removeItem(storageRemember);
+      // 이메일 기억하기
+      if (values.remember) localStorage.setItem(storageRemember, values.user_id);
+      else localStorage.removeItem(storageRemember);
 
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
