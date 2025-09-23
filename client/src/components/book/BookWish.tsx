@@ -230,18 +230,22 @@ export default function BookWish() {
           ))}
         </TableBody>
       </Table>
+
       {/* 상세 보기 다이얼로그 */}
       <Dialog open={openView} onOpenChange={setOpenView}>
         <DialogContent className="p-7" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="mb-3">신청도서 상세보기</DialogTitle>
           </DialogHeader>
-          {selectedPost && <BookForm form={selectedPost} onChange={() => {}} mode="view" />}
+          {selectedPost && <BookForm form={selectedPost} mode="view" />}
           <DialogFooter className="mt-5">
             <Button onClick={() => setOpenView(false)}>닫기</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 수정 다이얼로그 */}
+
       <div className="mt-5 flex justify-end">
         <Button onClick={handleComplete} variant="outline">
           완료 처리

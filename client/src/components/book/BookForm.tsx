@@ -12,14 +12,26 @@ export type BookFormData = {
   user?: string;
 };
 
-type BookFormProps = {
-  form: BookFormData;
-  onChange: (key: keyof BookFormData, value: string) => void;
-  mode?: 'create' | 'edit' | 'view' | 'apply';
-};
+type EditableBookFormData = Pick<BookFormData, 'category' | 'title' | 'author' | 'publish' | 'link' | 'purchaseAt'>;
 
-export function BookForm({ form, onChange, mode = 'create' }: BookFormProps) {
+type BookFormProps =
+  | {
+      mode: 'create' | 'edit' | 'apply';
+      form: EditableBookFormData;
+      onChange: (key: keyof EditableBookFormData, value: string) => void;
+    }
+  | {
+      mode: 'view';
+      form: BookFormData;
+      onChange?: never;
+    };
+
+export function BookForm(props: BookFormProps) {
+  const { form, mode } = props;
   const readOnly = mode === 'view';
+
+  // onChange는 view 모드일 때 없음
+  const handleChange = mode === 'view' ? undefined : props.onChange;
 
   return (
     <TableColumn>
@@ -43,7 +55,7 @@ export function BookForm({ form, onChange, mode = 'create' }: BookFormProps) {
             <input
               type="text"
               value={form.category}
-              onChange={(e) => onChange('category', e.target.value)}
+              onChange={(e) => handleChange?.('category', e.target.value)}
               placeholder="*yes24 기준 카테고리를 입력해주세요"
               className="w-full"
             />
@@ -58,7 +70,7 @@ export function BookForm({ form, onChange, mode = 'create' }: BookFormProps) {
             <input
               type="text"
               value={form.title}
-              onChange={(e) => onChange('title', e.target.value)}
+              onChange={(e) => handleChange?.('title', e.target.value)}
               placeholder="도서명 입력해주세요"
               className="w-full"
             />
@@ -70,7 +82,12 @@ export function BookForm({ form, onChange, mode = 'create' }: BookFormProps) {
           {readOnly ? (
             form.author
           ) : (
-            <input type="text" value={form.author} onChange={(e) => onChange('author', e.target.value)} placeholder="저자명 입력해주세요" />
+            <input
+              type="text"
+              value={form.author}
+              onChange={(e) => handleChange?.('author', e.target.value)}
+              placeholder="저자명 입력해주세요"
+            />
           )}
         </TableColumnCell>
 
@@ -82,13 +99,13 @@ export function BookForm({ form, onChange, mode = 'create' }: BookFormProps) {
             <input
               type="text"
               value={form.publish}
-              onChange={(e) => onChange('publish', e.target.value)}
+              onChange={(e) => handleChange?.('publish', e.target.value)}
               placeholder="출판사 입력해주세요"
             />
           )}
         </TableColumnCell>
 
-        {/* 링크 (apply, view 모드일 때) */}
+        {/* 링크 */}
         {(mode === 'apply' || mode === 'view') && (
           <TableColumnCell>
             {readOnly ? (
@@ -107,33 +124,29 @@ export function BookForm({ form, onChange, mode = 'create' }: BookFormProps) {
               <input
                 type="url"
                 value={form.link || ''}
-                onChange={(e) => onChange('link', e.target.value)}
+                onChange={(e) => handleChange?.('link', e.target.value)}
                 placeholder="링크 입력해주세요"
               />
             )}
           </TableColumnCell>
         )}
 
-        {/* 팀 (view 모드일 때) */}
-        {mode === 'view' && <TableColumnCell className={readOnly ? 'px-4 py-2.5' : 'p-0'}>{form.team}</TableColumnCell>}
+        {/* 팀 (view 전용) */}
+        {mode === 'view' && <TableColumnCell className="px-4 py-2.5">{form.team}</TableColumnCell>}
 
-        {/* 신청자 (view 모드일 때) */}
-        {mode === 'view' && <TableColumnCell className={readOnly ? 'px-4 py-2.5' : 'p-0'}>{form.user}</TableColumnCell>}
+        {/* 신청자 (view 전용) */}
+        {mode === 'view' && <TableColumnCell className="px-4 py-2.5">{form.user}</TableColumnCell>}
 
-        {/* 구매일자 (create 모드일 때) */}
+        {/* 구매일자 (create 전용) */}
         {mode === 'create' && (
-          <TableColumnCell className={readOnly ? 'px-4 py-2.5' : 'p-0'}>
-            {readOnly ? (
-              form.purchaseAt
-            ) : (
-              <Textbox
-                id="entryDate"
-                type="date"
-                className="w-full justify-start border-0"
-                value={form.purchaseAt}
-                onChange={(e) => onChange('purchaseAt', e.target.value)}
-              />
-            )}
+          <TableColumnCell>
+            <Textbox
+              id="entryDate"
+              type="date"
+              className="w-full justify-start border-0"
+              value={form.purchaseAt}
+              onChange={(e) => handleChange?.('purchaseAt', e.target.value)}
+            />
           </TableColumnCell>
         )}
       </TableColumnBody>
