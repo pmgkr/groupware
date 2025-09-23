@@ -8,6 +8,7 @@ import Logo from '@/assets/images/common/logo.svg?react';
 import { Dashboard, Project, Calendar, Alarm, Profile, Logout, Pto, Office, Manager, Admin } from '@/assets/images/icons';
 
 import { Button } from '@components/ui/button';
+import { Notification } from '@components/features/Dashboard/notifications';
 
 export default function Header() {
   const location = useLocation();
@@ -22,7 +23,7 @@ export default function Header() {
   };
 
   // 오피스 하위 경로들 (오피스는 /office 라우트가 없음)
-  const officePaths = ['/notice', '/meetingroom', '/seating', '/itdevice', '/book'];
+  const officePaths = ['/notice', '/meetingroom', '/seating', '/itdevice', '/book', '/report'];
   const isOfficeActive = officePaths.some((path) => location.pathname.startsWith(path));
 
   return (
@@ -35,9 +36,7 @@ export default function Header() {
         </h1>
         <ul className="text-primary-blue-300 flex items-center gap-x-4">
           <li>
-            <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="알람">
-              <Alarm className="size-6" />
-            </Button>
+            <Notification />
           </li>
           <li>
             <Button asChild variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="마이페이지">

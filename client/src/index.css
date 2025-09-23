@@ -98,8 +98,12 @@
   --color-gray-950: #000000;
 
   --color-white: var(--color-gray-50);
-  --color-black: var(--color-gary-950);
+  --color-black: var(--color-gray-950);
   --color-disable: #e0e0e0;
+
+  --positive-base: #4fb95f;
+  --positive-light: #9adba3;
+  --positive-dark: #31883e;
 
   --negative-base: #d81d00;
   --negative-light: #ff2200;
@@ -115,6 +119,7 @@
   --accent: var(--color-primary-blue-100);
   --accent-foreground: var(--color-gray-900);
   --destructive: var(--negative-base);
+  --valid: var(--positive-base);
   --popover: var(--color-white);
   --border: var(--color-gray-400);
   --input: var(--color-gray-400);
@@ -232,6 +237,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-valid: var(--valid);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
