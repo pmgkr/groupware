@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useState } from 'react';
 import { Edit, Delete, Download } from '@/assets/images/icons';
+import { BookForm, type BookFormData } from './BookForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 
 export default function BookWish() {
   //더미 데이터
@@ -22,6 +24,7 @@ export default function BookWish() {
       user: '홍길동',
       createdAt: '2025-07-01',
       state: '신청',
+      link: 'https://www.yes24.com/Product/Goods/154075122?WCode=033',
     },
     {
       id: 2,
@@ -84,6 +87,56 @@ export default function BookWish() {
     }
   };
 
+  //도서 신청 다이얼로그 상태
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<BookFormData>({
+    category: '',
+    title: '',
+    author: '',
+    publish: '',
+    link: '',
+  });
+  const handleChange = (key: keyof BookFormData, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  //도서 신청 등록
+  const handleRegister = () => {
+    if (!form.category || !form.title || !form.author || !form.publish || !form.link) {
+      alert('카테고리, 도서명, 저자, 출판사, 링크는 반드시 입력해야 합니다.');
+      return;
+    }
+    if (!window.confirm('도서를 신청하시겠습니까?')) return;
+
+    const nextId = posts.length > 0 ? Math.max(...posts.map((p) => p.id)) + 1 : 1;
+    const newBook = {
+      id: nextId,
+      ...form,
+      team: 'CCP', //임시
+      user: '강영현', //임시
+      createdAt: new Date().toLocaleDateString('sv-SE'),
+      state: '신청',
+    };
+
+    setPosts((prev) => [newBook, ...prev]);
+    setForm({
+      category: '',
+      title: '',
+      author: '',
+      publish: '',
+      link: '',
+    });
+    setOpen(false);
+  };
+
+  //신청도서 상세보기
+  const [openView, setOpenView] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<any | null>(null);
+  const handleRowClick = (post: any) => {
+    setSelectedPost(post);
+    setOpenView(true);
+  };
+
   return (
     <div>
       {/* 검색창 */}
@@ -95,7 +148,23 @@ export default function BookWish() {
           </Button>
         </div>
 
-        <Button>도서 신청</Button>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>도서 신청</Button>
+          </DialogTrigger>
+          <DialogContent aria-describedby={undefined}>
+            <DialogHeader>
+              <DialogTitle className="mb-3">도서 신청</DialogTitle>
+            </DialogHeader>
+            <BookForm form={form} onChange={handleChange} mode="apply" />
+            <DialogFooter className="mt-5">
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                취소
+              </Button>
+              <Button onClick={handleRegister}>등록</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* 게시판 테이블 */}
@@ -118,12 +187,15 @@ export default function BookWish() {
         </TableHeader>
         <TableBody>
           {posts.map((post) => (
-            <TableRow key={post.id}>
+            <TableRow key={post.id} onClick={() => handleRowClick(post)} className="cursor-pointer">
               <TableCell className="[&:has([role=checkbox])]:pr-auto">
                 <Checkbox
                   checked={selected.includes(post.id)}
-                  onCheckedChange={() => toggleOne(post.id, post.state)}
-                  disabled={post.state !== '신청'} // 완료된 건 체크박스 비활성화
+                  onCheckedChange={() => {
+                    toggleOne(post.id, post.state);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  disabled={post.state !== '신청'}
                 />{' '}
               </TableCell>
               <TableCell>
@@ -158,6 +230,22 @@ export default function BookWish() {
           ))}
         </TableBody>
       </Table>
+
+      {/* 상세 보기 다이얼로그 */}
+      <Dialog open={openView} onOpenChange={setOpenView}>
+        <DialogContent className="p-7" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle className="mb-3">신청도서 상세보기</DialogTitle>
+          </DialogHeader>
+          {selectedPost && <BookForm form={selectedPost} mode="view" />}
+          <DialogFooter className="mt-5">
+            <Button onClick={() => setOpenView(false)}>닫기</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 수정 다이얼로그 */}
+
       <div className="mt-5 flex justify-end">
         <Button onClick={handleComplete} variant="outline">
           완료 처리

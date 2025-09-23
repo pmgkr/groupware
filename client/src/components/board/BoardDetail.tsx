@@ -1,6 +1,8 @@
 import { useParams, useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
-import { Edit, Delete, Download } from '@/assets/images/icons';
+import { Edit, CircleX, Download, Delete, Enter, Send } from '@/assets/images/icons';
+import { Textbox } from '../ui/textbox';
+import { useState } from 'react';
 
 // 스토리북 view
 interface BoardDetailProps {
@@ -67,6 +69,52 @@ export default function BoardDetail({ id }: BoardDetailProps) {
 
   if (!post) return <div className="p-4">게시글을 찾을 수 없습니다.</div>;
 
+  //의견 댓글
+  const [comments, setComments] = useState([
+    {
+      id: 1,
+      postId: 1,
+      user: '박성진',
+      team: 'CCP',
+      content: '좋은 글 잘 읽었습니다!',
+      createdAt: '2025-09-17 13:20',
+    },
+    {
+      id: 2,
+      postId: 2,
+      user: '박보검',
+      team: 'CCD',
+      content: '공지사항 잘 읽었습니다~',
+      createdAt: '2025-09-17 17:20',
+    },
+  ]);
+  const [newComment, setNewComment] = useState('');
+
+  // postId 기준으로 필터링
+  const postComments = comments
+    .filter((c) => c.postId === Number(postId))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const formatted = new Date().toLocaleString('sv-SE').replace('T', ' ');
+  const handleAddComment = (postId: number) => {
+    if (!newComment.trim()) return;
+    const now = new Date();
+    const newItem = {
+      id: comments.length + 1,
+      postId,
+      user: '홍길동', // 실제 로그인 유저 정보에 따라 변경 가능
+      team: 'CCP', //
+      content: newComment,
+      createdAt: formatted,
+    };
+    setComments((prev) => [newItem, ...prev]); // 최신 댓글 위로
+    setNewComment('');
+  };
+
+  const handleDeleteComment = (id: number) => {
+    setComments(comments.filter((c) => c.id !== id));
+  };
+
   return (
     <article>
       <h2 className="border-b border-gray-900 p-4 text-xl font-bold">{post.title}</h2>
@@ -94,7 +142,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
             <Button
               key={index}
               variant="secondary"
-              className="text-sm [&]:border-gray-300 [&]:p-4"
+              className="hover:text-primary-blue-500 hover:bg-primary-blue-100 text-sm [&]:border-gray-300 [&]:p-4"
               onClick={() => {
                 console.log(`${file} 다운로드`);
               }}>
@@ -106,6 +154,61 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       )}
 
       <div className="border-b border-gray-900 p-4 pb-10 leading-relaxed whitespace-pre-line">{post.content}</div>
+
+      {/* 의견 댓글 영역 */}
+      <div className="py-7 pr-0 pl-5">
+        {/* 의견 작성 */}
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <h2 className="w-[140px] font-bold">의견</h2>
+          <div className="w-full flex-1">
+            <Textbox
+              className="w-full"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault(); //줄바꿈 방지
+                  handleAddComment(Number(postId));
+                }
+              }}></Textbox>
+          </div>
+          <Button
+            variant="svgIcon"
+            size="icon"
+            aria-label="의견 게시"
+            className="h-[40px] border border-gray-950 px-6"
+            onClick={() => handleAddComment(Number(postId))}>
+            <Send />
+          </Button>
+        </div>
+
+        {/* 의견 확인 */}
+        <div className="flex flex-col gap-3">
+          {postComments.map((c) => (
+            <div className="flex items-center justify-between gap-4" key={c.id}>
+              <div className="w-[140px] text-base">
+                {c.user} <span>({c.team})</span>
+              </div>
+              <div className="flex w-full flex-1 items-center justify-between text-base">
+                <p>{c.content}</p>
+                <div className="text-gray-600">{c.createdAt}</div>
+              </div>
+              <Button
+                variant="svgIcon"
+                size="icon"
+                aria-label="의견 삭제"
+                className="px-6"
+                onClick={() => {
+                  if (window.confirm('삭제 하시겠습니까?')) {
+                    handleDeleteComment(c.id);
+                  }
+                }}>
+                <CircleX />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="mt-3 text-right">
         <Button onClick={() => navigate('..')}>목록</Button>
