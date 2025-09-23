@@ -3,11 +3,10 @@ import { Navigate, useNavigate, useParams } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textbox } from '@/components/ui/textbox';
-import { Textarea } from '@/components/ui/textarea';
 import React, { useEffect, useState } from 'react';
+import { DeviceForm, type DeviceFormData } from './DeviceForm';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
+import { Textbox } from '../ui/textbox';
 
 export default function itDeviceDetail() {
   const { id } = useParams<{ id: string }>(); // /itdevice/:id
@@ -150,11 +149,17 @@ export default function itDeviceDetail() {
   //dialog
   const [openEdit, setOpenEdit] = useState(false);
   const [openAddUser, setOpenAddUser] = useState(false);
-  const [form, setForm] = React.useState({
+  const [openConfirm, setOpenConfirm] = useState(false);
+
+  const [form, setForm] = useState<DeviceFormData>({
     device: post.device,
     brand: post.brand,
     model: post.model,
     serial: post.serial,
+    os: post.os || '',
+    ram: post.ram || '',
+    gpu: post.gpu || '',
+    ssdhdd: post.ssdhdd || '',
     purchaseAt: post.purchaseAt,
   });
   const handleChange = (key: keyof typeof form, value: string) => {
@@ -232,73 +237,46 @@ export default function itDeviceDetail() {
               <DialogHeader>
                 <DialogTitle className="mb-3">장비 정보 수정</DialogTitle>
               </DialogHeader>
-              <TableColumn>
-                <TableColumnHeader className="text-base">
-                  <TableColumnHeaderCell>디바이스</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>브랜드</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>모델</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>시리얼넘버</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>구매일자</TableColumnHeaderCell>
-                </TableColumnHeader>
-                <TableColumnBody className="text-base">
-                  <TableColumnCell>
-                    <input type="text" value={form.device} onChange={(e) => handleChange('device', e.target.value)} />
-                  </TableColumnCell>
-                  <TableColumnCell>
-                    <input type="text" value={form.brand} onChange={(e) => handleChange('brand', e.target.value)} />
-                  </TableColumnCell>
-                  <TableColumnCell>
-                    <input type="text" value={form.model} onChange={(e) => handleChange('model', e.target.value)} />
-                  </TableColumnCell>
-                  <TableColumnCell>
-                    <input type="text" value={form.serial} onChange={(e) => handleChange('serial', e.target.value)} />
-                  </TableColumnCell>
-                  <TableColumnCell className="p-0">
-                    <Textbox
-                      id="entryDate"
-                      type="date"
-                      className="w-full justify-start border-0"
-                      value={form.purchaseAt}
-                      onChange={(e) => handleChange('purchaseAt', e.target.value)}
-                    />
-                  </TableColumnCell>
-                </TableColumnBody>
-              </TableColumn>
+              <DeviceForm form={form} onChange={handleChange} mode="edit" />
+
               <DialogFooter className="mt-5">
                 <Button variant="outline" onClick={() => setOpenEdit(false)}>
                   취소
                 </Button>
-                <Button onClick={handleSave}>완료</Button>
+                <Button
+                  onClick={() => {
+                    setOpenConfirm(true);
+                  }}>
+                  완료
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
-          <div className="flex">
-            <ul className="border-r pr-6 text-base leading-10">
-              <li>디바이스</li>
-              <li>브랜드</li>
-              <li>모델</li>
-              <li>시리얼넘버</li>
-              {post.device === 'Laptop' && post.os && <li>OS</li>}
-              {post.device === 'Laptop' && post.ram && <li>RAM</li>}
-              {post.device === 'Laptop' && post.gpu && <li>GPU</li>}
-              {post.device === 'Laptop' && post.ssdhdd && <li>SSD-HDD</li>}
-              <li>구매일자</li>
-            </ul>
-            <ul className="pl-8 text-base leading-10">
-              <li>{post.device}</li>
-              <li>{post.brand}</li>
-              <li>{post.model}</li>
-              <li>{post.serial}</li>
-              {post.device === 'Laptop' && post.os && <li>{post.os}</li>}
-              {post.device === 'Laptop' && post.ram && <li>{post.ram}</li>}
-              {post.device === 'Laptop' && post.gpu && <li>{post.gpu}</li>}
-              {post.device === 'Laptop' && post.ssdhdd && <li>{post.ssdhdd}</li>}
-              <li>{post.purchaseAt}</li>
-            </ul>
-          </div>
-        </div>
+          {/* 완료 컨펌 다이얼로그 */}
+          <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
+            <DialogContent className="w-[400px]">
+              <DialogHeader>
+                <DialogTitle>수정 확인</DialogTitle>
+                <DialogDescription>장비 정보를 수정하시겠습니까?</DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpenConfirm(false)}>
+                  취소
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleSave();
+                    setOpenConfirm(false);
+                  }}>
+                  확인
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
+          <DeviceForm form={post} onChange={() => {}} mode="view" />
+        </div>
         <div className="flex-1 rounded-md border p-8">
           <Dialog open={openAddUser} onOpenChange={setOpenAddUser}>
             <div className="mb-4 flex items-center justify-between border-b border-b-gray-300 pb-1.5">

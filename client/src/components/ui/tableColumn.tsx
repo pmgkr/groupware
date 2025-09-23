@@ -11,7 +11,7 @@ export function TableColumnHeader({ className, ...props }: React.ComponentProps<
   return (
     <div
       data-slot="tableColumn-header"
-      className={cn('flex w-28 flex-col border-r border-gray-300 bg-gray-50 text-sm font-medium text-gray-950', className)}
+      className={cn('flex w-28 flex-col border-r border-gray-300 bg-transparent text-sm font-medium text-gray-950', className)}
       {...props}
     />
   );
@@ -27,7 +27,7 @@ export function TableColumnHeaderCell({ className, ...props }: React.ComponentPr
   return (
     <div
       data-slot="tableColumn-header-cell"
-      className={cn('flex items-center border-b border-gray-300 px-5 py-2.5 last:border-b-0', className)}
+      className={cn('flex items-center border-b border-gray-300 bg-transparent px-5 py-2.5 last:border-b-0', className)}
       {...props}
     />
   );
