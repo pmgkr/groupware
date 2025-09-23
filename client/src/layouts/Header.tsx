@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { getImageUrl } from '@/utils';
 
 import Logo from '@/assets/images/common/logo.svg?react';
-import { Dashboard, Project, Calendar, Alarm, Profile, Logout, Pto, Office, Manager, Admin } from '@/assets/images/icons';
+import { Dashboard, Project, Calendar, Profile, Logout, Pto, Office, Manager, Admin } from '@/assets/images/icons';
 
 import { Button } from '@components/ui/button';
 import { Notification } from '@components/features/Dashboard/notifications';
