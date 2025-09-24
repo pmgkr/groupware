@@ -22,12 +22,8 @@ export function Notification() {
           <div className="flex-1">
             <Tabs defaultValue="today" className="h-full w-full">
               <TabsList className="h-12 w-full px-4 py-2">
-                <TabsTrigger value="today" className="cursor-pointer text-base">
-                  오늘
-                </TabsTrigger>
-                <TabsTrigger value="recent" className="cursor-pointer text-base">
-                  최근 알림
-                </TabsTrigger>
+                <TabsTrigger value="today">오늘</TabsTrigger>
+                <TabsTrigger value="recent">최근 알림</TabsTrigger>
               </TabsList>
               <TabsContent value="today" className="flex-1 overflow-hidden">
                 <ul className="max-h-[calc(100vh-(var(--spacing)*54))] overflow-y-auto overscroll-contain">
