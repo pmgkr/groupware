@@ -23,7 +23,7 @@ export async function getTeams(params: TeamParams = {}): Promise<TeamDto[]> {
   }
   const qs = search.toString();
   // level 값이 있으면 /teams?level=... 없으면 /teams 호출
-  const path = `/teams${qs ? `?${qs}` : ''}`;
+  const path = `/join/teamlist${qs ? `?${qs}` : ''}`;
 
   return http<TeamDto[]>(path, { method: 'GET' });
 }

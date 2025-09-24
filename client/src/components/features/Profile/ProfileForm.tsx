@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ProfileSchema, type ProfileValues } from './ProfileSchema';
 import { useNavigate } from 'react-router';
 import { cn } from '@/lib/utils';
-import { onboardingApi } from '@/api/auth';
+import { onboardingApi } from '@/api';
 import { getTeams, type TeamDto } from '@/api/teams';
 import { setToken as setTokenStore } from '@/lib/tokenStore';
 
