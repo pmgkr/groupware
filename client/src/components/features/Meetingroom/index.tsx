@@ -310,7 +310,7 @@ export default function MeetingRoomsAllPage() {
 
         {/* 생성 다이얼로그 */}
         <Dialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
-          <DialogContent className="sm:max-w-[700px]">
+          <DialogContent className="sm:max-w-[700px]" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle>미팅룸 예약하기</DialogTitle>
             </DialogHeader>
