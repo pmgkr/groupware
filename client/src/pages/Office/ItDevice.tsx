@@ -131,7 +131,7 @@ export default function ItDevice() {
           <DialogTrigger asChild>
             <Button>등록하기</Button>
           </DialogTrigger>
-          <DialogContent className="p-7 sm:max-w-[700px]">
+          <DialogContent className="p-7">
             <DialogHeader>
               <DialogTitle className="mb-3">장비 정보 등록</DialogTitle>
             </DialogHeader>
