@@ -49,5 +49,5 @@ export async function getUser() {
 }
 
 export async function logoutApi() {
-  return http<{ message: string }>('/logout', { method: 'POST' });
+  return http<{ message: string }>('/user/logout', { method: 'POST' });
 }
