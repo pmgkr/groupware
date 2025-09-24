@@ -61,6 +61,7 @@ export default function BookWish() {
     },
   ]);
 
+  // 완료 처리
   const [selected, setSelected] = useState<number[]>([]);
 
   // 신청 상태인 행만 체크 가능
@@ -135,6 +136,30 @@ export default function BookWish() {
   const handleRowClick = (post: any) => {
     setSelectedPost(post);
     setOpenView(true);
+  };
+
+  //수정, 삭제
+  const [openEdit, setOpenEdit] = useState(false);
+  const [editPost, setEditPost] = useState<BookFormData | null>(null);
+
+  const handleEdit = (post: BookFormData) => {
+    setEditPost(post);
+    setOpenEdit(true);
+  };
+  const handleEditUpdate = () => {
+    if (!editPost) return;
+    if (!editPost.category || !editPost.title || !editPost.author || !editPost.publish) {
+      alert('카테고리, 도서명, 저자, 출판사는 반드시 입력해야 합니다.');
+      return;
+    }
+    setPosts((prev) => prev.map((p) => (p.id === editPost.id ? { ...p, ...editPost } : p)));
+    setOpenEdit(false);
+  };
+
+  const handleDelete = (id: number) => {
+    if (window.confirm('삭제하시겠습니까?')) {
+      setPosts((prev) => prev.filter((p) => p.id !== id));
+    }
   };
 
   return (
@@ -218,10 +243,26 @@ export default function BookWish() {
               <TableCell>{post.user}</TableCell>
               <TableCell>
                 <div className="text-gray-700">
-                  <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="수정">
+                  <Button
+                    variant="svgIcon"
+                    size="icon"
+                    className="hover:text-primary-blue-500"
+                    aria-label="수정"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(post);
+                    }}>
                     <Edit className="size-4" />
                   </Button>
-                  <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="삭제">
+                  <Button
+                    variant="svgIcon"
+                    size="icon"
+                    className="hover:text-primary-blue-500"
+                    aria-label="삭제"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(post.id);
+                    }}>
                     <Delete className="size-4" />
                   </Button>
                 </div>
@@ -245,6 +286,26 @@ export default function BookWish() {
       </Dialog>
 
       {/* 수정 다이얼로그 */}
+      <Dialog open={openEdit} onOpenChange={setOpenEdit}>
+        <DialogContent className="p-7" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle className="mb-3">신청 도서 수정</DialogTitle>
+          </DialogHeader>
+          {editPost && (
+            <BookForm
+              form={editPost}
+              onChange={(key, value) => setEditPost((prev) => (prev ? { ...prev, [key]: value } : prev))}
+              mode="edit"
+            />
+          )}
+          <DialogFooter className="mt-5">
+            <Button variant="outline" onClick={() => setOpenEdit(false)}>
+              취소
+            </Button>
+            <Button onClick={handleEditUpdate}>수정 완료</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="mt-5 flex justify-end">
         <Button onClick={handleComplete} variant="outline">

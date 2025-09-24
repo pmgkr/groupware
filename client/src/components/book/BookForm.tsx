@@ -2,6 +2,7 @@ import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody,
 import { Textbox } from '@/components/ui/textbox';
 
 export type BookFormData = {
+  id?: number;
   category: string;
   title: string;
   author: string;
@@ -40,7 +41,7 @@ export function BookForm(props: BookFormProps) {
         <TableColumnHeaderCell>도서명</TableColumnHeaderCell>
         <TableColumnHeaderCell>저자명</TableColumnHeaderCell>
         <TableColumnHeaderCell>출판사</TableColumnHeaderCell>
-        {(mode === 'apply' || mode === 'view') && <TableColumnHeaderCell>링크</TableColumnHeaderCell>}
+        {(mode === 'apply' || mode === 'view' || mode === 'edit') && <TableColumnHeaderCell>링크</TableColumnHeaderCell>}
         {mode === 'view' && <TableColumnHeaderCell>팀</TableColumnHeaderCell>}
         {mode === 'view' && <TableColumnHeaderCell>신청자</TableColumnHeaderCell>}
         {mode === 'create' && <TableColumnHeaderCell>구매일자</TableColumnHeaderCell>}
@@ -87,6 +88,7 @@ export function BookForm(props: BookFormProps) {
               value={form.author}
               onChange={(e) => handleChange?.('author', e.target.value)}
               placeholder="저자명 입력해주세요"
+              className="w-full"
             />
           )}
         </TableColumnCell>
@@ -101,12 +103,13 @@ export function BookForm(props: BookFormProps) {
               value={form.publish}
               onChange={(e) => handleChange?.('publish', e.target.value)}
               placeholder="출판사 입력해주세요"
+              className="w-full"
             />
           )}
         </TableColumnCell>
 
         {/* 링크 */}
-        {(mode === 'apply' || mode === 'view') && (
+        {(mode === 'apply' || mode === 'view' || mode === 'edit') && (
           <TableColumnCell>
             {readOnly ? (
               form.link ? (
@@ -126,6 +129,7 @@ export function BookForm(props: BookFormProps) {
                 value={form.link || ''}
                 onChange={(e) => handleChange?.('link', e.target.value)}
                 placeholder="링크 입력해주세요"
+                className="w-full"
               />
             )}
           </TableColumnCell>
