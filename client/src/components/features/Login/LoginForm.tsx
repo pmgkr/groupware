@@ -44,7 +44,6 @@ export function LoginForm() {
     try {
       // 로그인 → 토큰만 세팅 → /dashboard로 이동
       const res = await loginApi({ user_id: values.user_id, user_pw: values.user_pw });
-      console.log(res);
 
       setTokenStore(res.accessToken);
 

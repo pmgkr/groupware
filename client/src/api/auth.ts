@@ -45,7 +45,7 @@ export async function onboardingApi(payload: OnboardingPayload, token: string) {
 }
 
 export async function getUser() {
-  return http<{ user: UserDTO }>('/user/profile', { method: 'GET' });
+  return http<UserDTO>('/user/profile', { method: 'GET' });
 }
 
 export async function logoutApi() {
