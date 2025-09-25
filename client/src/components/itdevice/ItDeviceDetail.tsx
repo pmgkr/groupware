@@ -3,23 +3,41 @@ import { Navigate, useNavigate, useParams } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textbox, textboxVariants } from '@/components/ui/textbox';
-import { Textarea } from '@/components/ui/textarea';
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { DeviceForm, type DeviceFormData } from './DeviceForm';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
+import { Textbox } from '../ui/textbox';
 
 export default function itDeviceDetail() {
   const { id } = useParams<{ id: string }>(); // /itdevice/:id
   const navigate = useNavigate();
 
-  const posts = [
+  type Post = {
+    id: number;
+    device: string;
+    brand: string;
+    model: string;
+    serial: string;
+    os: string;
+    ram: string;
+    gpu: string;
+    ssdhdd: string;
+    purchaseAt: string;
+    createdAt: string;
+    user: string;
+  };
+
+  const [posts, setPosts] = useState<Post[]>([
     {
       id: 4,
       device: 'Monitor',
       brand: 'SONY',
       model: 'sony monitor model name',
       serial: '12345687',
+      os: '',
+      ram: '',
+      gpu: '',
+      ssdhdd: '',
       purchaseAt: '2025-09-01',
       createdAt: '2025-09-02',
       user: '빙홍차',
@@ -44,6 +62,10 @@ export default function itDeviceDetail() {
       brand: 'Asus',
       model: 'Expert Book',
       serial: '12345687',
+      os: '',
+      ram: '',
+      gpu: '',
+      ssdhdd: '',
       purchaseAt: '2025-07-01',
       createdAt: '2025-07-02',
       user: '유승호',
@@ -54,13 +76,17 @@ export default function itDeviceDetail() {
       brand: 'LG',
       model: 'LED Monitor',
       serial: '203NTEPCT052',
+      os: '',
+      ram: '',
+      gpu: '',
+      ssdhdd: '',
       purchaseAt: '2025-06-01',
       createdAt: '2025-06-02',
       user: '이영서',
     },
-  ];
+  ]);
 
-  const history = [
+  const [history, setHistory] = useState([
     {
       historyId: 101,
       deviceId: 4, // device.id와 연결
@@ -101,26 +127,93 @@ export default function itDeviceDetail() {
       createdAt: '2025-08-02',
       returnedAt: null,
     },
-  ];
+  ]);
 
   //사용이력
   // 현재 장비
   const post = posts.find((p) => String(p.id) === id);
-
-  // 이 장비의 이력
-  const deviceHistories = history.filter((h) => String(h.deviceId) === id);
-
-  // 현재 사용자 = returnedAt === null
-  const currentUser = deviceHistories.find((h) => h.returnedAt === null);
-  // 이전 사용자들 = returnedAt !== null
-  const previousUsers = deviceHistories
-    .filter((h) => h.returnedAt !== null)
-    .sort((a, b) => new Date(b.returnedAt!).getTime() - new Date(a.returnedAt!).getTime());
-
   if (!post) return <div className="p-4">장비를 찾을 수 없습니다.</div>;
 
+  const deviceHistories = history.filter((h) => String(h.deviceId) === id);
+  const currentUser = deviceHistories.find((h) => h.returnedAt === null);
+  const previousUsers = history
+    .filter((h) => h.deviceId === post.id && h.returnedAt !== null)
+    .sort((a, b) => new Date(b.returnedAt!).getTime() - new Date(a.returnedAt!).getTime());
+
+  //반납하기
+  const handleReturn = (historyId: number) => {
+    const now = new Date().toISOString();
+    setHistory((prev) => prev.map((h) => (h.historyId === historyId ? { ...h, returnedAt: now } : h)));
+  };
+
   //dialog
-  const [open, setOpen] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
+  const [openAddUser, setOpenAddUser] = useState(false);
+  const [openConfirm, setOpenConfirm] = useState(false);
+
+  const [form, setForm] = useState<DeviceFormData>({
+    device: post.device,
+    brand: post.brand,
+    model: post.model,
+    serial: post.serial,
+    os: post.os || '',
+    ram: post.ram || '',
+    gpu: post.gpu || '',
+    ssdhdd: post.ssdhdd || '',
+    purchaseAt: post.purchaseAt,
+  });
+  const handleChange = (key: keyof typeof form, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+  const handleSave = () => {
+    // posts 배열에서 해당 id를 찾아 업데이트
+    setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, ...form } : p)));
+    setOpenEdit(false);
+  };
+
+  //사용자 추가
+  const [newForm, setNewForm] = useState({
+    team: '',
+    user: '',
+    createdAt: new Date().toISOString().slice(0, 10),
+  });
+  // 공용 핸들러
+  const handleNewFormChange = (key: keyof typeof newForm, value: string) => {
+    setNewForm((prev) => ({ ...prev, [key]: value }));
+  };
+  const handleAddUser = (deviceId: number, user: string, team: string, createdAt?: string) => {
+    setHistory((prev) => {
+      const now = new Date().toISOString();
+
+      // 현재 사용자(반납 안 한 사람) 찾기
+      const current = prev.find((h) => h.deviceId === deviceId && h.returnedAt === null);
+
+      let updated = prev;
+      if (current) {
+        // 반납 처리
+        updated = prev.map((h) => (h.historyId === current.historyId ? { ...h, returnedAt: now } : h));
+      }
+
+      // 새 사용자 추가
+      const newHistory = {
+        historyId: Date.now(),
+        deviceId,
+        user,
+        team,
+        createdAt: newForm.createdAt,
+        returnedAt: null,
+      };
+
+      return [...updated, newHistory];
+    });
+
+    setOpenAddUser(false); // 다이얼로그 닫기
+  };
+
+  function formatDate(isoString: string | null) {
+    if (!isoString) return '';
+    return isoString.slice(0, 10); // 'YYYY-MM-DD'
+  }
 
   return (
     <>
@@ -130,7 +223,7 @@ export default function itDeviceDetail() {
       <div className="flex gap-8">
         <div className="flex-1 rounded-md border p-8">
           {/* 수정버튼 dialog */}
-          <Dialog>
+          <Dialog open={openEdit} onOpenChange={setOpenEdit}>
             <div className="mb-4 flex items-center justify-between border-b border-b-gray-300 pb-1.5">
               <SectionHeader title="장비 정보" className="mb-0 border-0" />
               {/* 다이얼로그 버튼은 DialogTrigger로 감싸기 */}
@@ -140,80 +233,104 @@ export default function itDeviceDetail() {
                 </Button>
               </DialogTrigger>
             </div>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="p-7 sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>장비 정보 수정</DialogTitle>
+                <DialogTitle className="mb-3">장비 정보 수정</DialogTitle>
               </DialogHeader>
-              <TableColumn className="max-w-md">
-                <TableColumnHeader>
-                  <TableColumnHeaderCell>디바이스</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>브랜드</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>모델</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>시리얼넘버</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>구매일자</TableColumnHeaderCell>
-                </TableColumnHeader>
-                <TableColumnBody>
-                  <TableColumnCell>
-                    <input type="text" value={post.device} />
-                  </TableColumnCell>
-                  <TableColumnCell>
-                    {' '}
-                    <input type="text" value={post.brand} />
-                  </TableColumnCell>
-                  <TableColumnCell>
-                    <input type="text" value={post.model} />
-                  </TableColumnCell>
-                  <TableColumnCell>
-                    <input type="text" value={post.serial} />
-                  </TableColumnCell>
-                  <TableColumnCell>
-                    <Textbox id="deadline" type="date" className="w-full justify-start" />
-                  </TableColumnCell>
-                </TableColumnBody>
-              </TableColumn>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>
+              <DeviceForm form={form} onChange={handleChange} mode="edit" />
+
+              <DialogFooter className="mt-5">
+                <Button variant="outline" onClick={() => setOpenEdit(false)}>
                   취소
                 </Button>
-                <Button onClick={() => setOpen(false)}>생성</Button>
+                <Button
+                  onClick={() => {
+                    setOpenConfirm(true);
+                  }}>
+                  완료
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
-          <div className="flex">
-            <ul className="border-r pr-6 text-base leading-10">
-              <li>디바이스</li>
-              <li>브랜드</li>
-              <li>모델</li>
-              <li>시리얼넘버</li>
-              {post.device === 'Laptop' && post.os && <li>OS</li>}
-              {post.device === 'Laptop' && post.ram && <li>RAM</li>}
-              {post.device === 'Laptop' && post.gpu && <li>GPU</li>}
-              {post.device === 'Laptop' && post.ssdhdd && <li>SSD-HDD</li>}
-              <li>구매일자</li>
-            </ul>
-            <ul className="pl-8 text-base leading-10">
-              <li>{post.device}</li>
-              <li>{post.brand}</li>
-              <li>{post.model}</li>
-              <li>{post.serial}</li>
-              {post.device === 'Laptop' && post.os && <li>{post.os}</li>}
-              {post.device === 'Laptop' && post.ram && <li>{post.ram}</li>}
-              {post.device === 'Laptop' && post.gpu && <li>{post.gpu}</li>}
-              {post.device === 'Laptop' && post.ssdhdd && <li>{post.ssdhdd}</li>}
-              <li>{post.purchaseAt}</li>
-            </ul>
-          </div>
+          {/* 완료 컨펌 다이얼로그 */}
+          <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
+            <DialogContent className="w-[400px]">
+              <DialogHeader>
+                <DialogTitle>수정 확인</DialogTitle>
+                <DialogDescription>장비 정보를 수정하시겠습니까?</DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpenConfirm(false)}>
+                  취소
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleSave();
+                    setOpenConfirm(false);
+                  }}>
+                  확인
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <DeviceForm form={post} onChange={() => {}} mode="view" />
         </div>
         <div className="flex-1 rounded-md border p-8">
-          <SectionHeader
-            title="사용 이력"
-            buttonText="사용자 등록"
-            buttonVariant="outline"
-            buttonSize="sm"
-            buttonHref="#"
-            className="mb-4 shrink-0"
-          />
+          <Dialog open={openAddUser} onOpenChange={setOpenAddUser}>
+            <div className="mb-4 flex items-center justify-between border-b border-b-gray-300 pb-1.5">
+              <SectionHeader title="사용이력" className="mb-0 border-0" />
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  사용자 등록
+                </Button>
+              </DialogTrigger>
+            </div>
+            <DialogContent className="p-7 sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="mb-3">사용자 등록</DialogTitle>
+              </DialogHeader>
+              <TableColumn>
+                <TableColumnHeader className="text-base">
+                  <TableColumnHeaderCell>팀이름</TableColumnHeaderCell>
+                  <TableColumnHeaderCell>이름</TableColumnHeaderCell>
+                  <TableColumnHeaderCell>등록일자</TableColumnHeaderCell>
+                </TableColumnHeader>
+                <TableColumnBody className="text-base">
+                  <TableColumnCell>
+                    <input type="text" onChange={(e) => handleNewFormChange('team', e.target.value)} />
+                  </TableColumnCell>
+                  <TableColumnCell>
+                    <input type="text" onChange={(e) => handleNewFormChange('user', e.target.value)} />
+                  </TableColumnCell>
+                  <TableColumnCell className="p-0">
+                    <Textbox
+                      id="entryDate"
+                      type="date"
+                      className="w-full justify-start border-0"
+                      value={newForm.createdAt}
+                      onChange={(e) => handleNewFormChange('createdAt', e.target.value)}
+                    />
+                  </TableColumnCell>
+                </TableColumnBody>
+              </TableColumn>
+              <DialogFooter className="mt-5">
+                <Button variant="outline" onClick={() => setOpenAddUser(false)}>
+                  취소
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (window.confirm('사용자를 등록하시겠습니까?')) {
+                      handleAddUser(post.id, newForm.user, newForm.team, newForm.createdAt);
+                    }
+                  }}>
+                  완료
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <div className="">
             {/* 현재 사용자 */}
             {currentUser && (
@@ -231,12 +348,12 @@ export default function itDeviceDetail() {
             {previousUsers.length > 0 ? (
               <div className="space-y-2">
                 {previousUsers.map((h) => (
-                  <div key={h.historyId} className="flex justify-between rounded border p-3">
+                  <div key={h.historyId} className="flex items-center justify-between rounded border p-3">
                     <div className="text-base font-medium">
                       {h.user} <span className="text-sm text-gray-500">({h.team})</span>
                     </div>
                     <div className="text-sm text-gray-600">
-                      {h.createdAt} ~ {h.returnedAt}
+                      {formatDate(h.createdAt)} ~ {formatDate(h.returnedAt)}
                     </div>
                   </div>
                 ))}
@@ -247,7 +364,19 @@ export default function itDeviceDetail() {
           </div>
         </div>
       </div>
-      <div className="mt-3 text-right">
+      <div className="mt-5 text-right">
+        {currentUser && (
+          <Button
+            variant="secondary"
+            className="mr-3"
+            onClick={() => {
+              if (window.confirm('반납처리 하시겠습니까?')) {
+                handleReturn(currentUser.historyId);
+              }
+            }}>
+            반납 처리
+          </Button>
+        )}
         <Button onClick={() => navigate('/itdevice')}>목록</Button>
       </div>
     </>
