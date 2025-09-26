@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ProfileSchema, type ProfileValues } from './ProfileSchema';
 import { useNavigate } from 'react-router';
 import { cn } from '@/lib/utils';
-import { onboardingApi } from '@/api';
+import { onboardingApi } from '@/api/auth';
 import { getTeams, type TeamDto } from '@/api/teams';
 import { setToken as setTokenStore } from '@/lib/tokenStore';
 
@@ -58,7 +58,7 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
       try {
         setTeamLoading(true);
 
-        const data = await getTeams({ level: 2 }); // 팀 레벨 2만 가져오기 (국 제외)
+        const data = await getTeams();
         if (!alive) return;
         setTeams(data);
       } catch (e: any) {

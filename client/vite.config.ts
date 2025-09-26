@@ -1,52 +1,49 @@
 /// <reference types="vitest/config" />
 // vite.config.ts
-import { defineConfig, loadEnv, type PluginOption } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import * as path from 'node:path';
 import svgr from 'vite-plugin-svgr';
-import mkcert from 'vite-plugin-mkcert';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { fileURLToPath } from 'node:url';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { createRequire } from 'node:module';
 
 // ESM에서 __dirname 대체
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
+export default defineConfig(async ({}) => {
   const isVitest = !!process.env.VITEST;
 
   // 공통(앱) 플러그인
   const plugins = [
     react(),
-    mkcert(),
     tailwindcss(),
     tsconfigPaths(),
     svgr({
       include: '**/*.svg?react',
       svgrOptions: {
-        replaceAttrValues: { '#000': 'currentColor', black: 'currentColor' },
+        replaceAttrValues: {
+          '#000': 'currentColor',
+          black: 'currentColor',
+        },
       },
     }),
-    // 번들 분석(빌드 시 설정: ANALYZE=1)
-    env.ANALYZE &&
-      visualizer({
-        filename: 'dist/bundle-analysis.html',
-        open: true,
-        gzipSize: true,
-        brotliSize: true,
-        template: 'treemap',
-      }),
-  ].filter(Boolean) as PluginOption[];
+    // 번들 분석을 위한 visualizer 플러그인 (빌드 시에만 실행)
+    process.env.ANALYZE && visualizer({
+      filename: 'dist/bundle-analysis.html',
+      open: true,
+      gzipSize: true,
+      brotliSize: true,
+      template: 'treemap', // 'treemap', 'sunburst', 'network' 중 선택
+    }),
+  ].filter(Boolean);
 
-  // Vitest일 때만 Storybook 테스트 플러그인 동기 로드(비동기 X)
+  // Vitest에서만 Storybook 테스트 플러그인 동적 로드
   let testConfig: any = undefined;
   if (isVitest) {
-    const require = createRequire(import.meta.url);
-    const { storybookTest } = require('@storybook/addon-vitest/vitest-plugin');
+    const { storybookTest } = await import('@storybook/addon-vitest/vitest-plugin');
     testConfig = {
       projects: [
         {
@@ -73,13 +70,16 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins,
-
+    // Vercel의 Output 디렉토리와 일치시키는 걸 권장 (client 프로젝트면 보통 'dist')
     build: {
       outDir: 'dist',
       rollupOptions: {
         output: {
           manualChunks: {
+            // React 관련 라이브러리
             'react-vendor': ['react', 'react-dom', 'react-router'],
+            
+            // UI 라이브러리
             'ui-vendor': [
               '@radix-ui/react-avatar',
               '@radix-ui/react-checkbox',
@@ -94,43 +94,70 @@ export default defineConfig(({ mode }) => {
               '@radix-ui/react-slot',
               '@radix-ui/react-switch',
               '@radix-ui/react-tabs',
-              '@radix-ui/react-toast',
+              '@radix-ui/react-toast'
             ],
-            'form-vendor': ['@hookform/resolvers', 'react-hook-form', 'zod'],
-            'chart-vendor': ['recharts', 'react-big-calendar'],
-            'date-vendor': ['date-fns', 'react-datetime', 'react-day-picker'],
-            'utils-vendor': ['clsx', 'tailwind-merge', 'class-variance-authority', 'cmdk', 'framer-motion', 'lucide-react'],
-          },
-        },
+            
+            // 폼 관련 라이브러리
+            'form-vendor': [
+              '@hookform/resolvers',
+              'react-hook-form',
+              'zod'
+            ],
+            
+            // 차트 및 시각화 라이브러리
+            'chart-vendor': [
+              'recharts',
+              'react-big-calendar'
+            ],
+            
+            // 날짜 관련 라이브러리
+            'date-vendor': [
+              'date-fns',
+              'react-datetime',
+              'react-day-picker'
+            ],
+            
+            // 유틸리티 라이브러리
+            'utils-vendor': [
+              'clsx',
+              'tailwind-merge',
+              'class-variance-authority',
+              'cmdk',
+              'framer-motion',
+              'lucide-react'
+            ]
+          }
+        }
       },
-      chunkSizeWarningLimit: 1000,
+      // 청크 크기 경고 제한을 1000KB로 증가
+      chunkSizeWarningLimit: 1000
     },
-
     server: {
       open: true,
-      // 프론트에서 직접 호출로 proxy 주석처리
+      // 공휴일 API 프록시 서버 사용
       // proxy: {
-      //   '/api': {
-      //     target: 'https://gbend.cafe24.com',
+      //   '/api/holidays': {
+      //     target: 'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService',
       //     changeOrigin: true,
-      //     secure: true,
-      //     // 프론트에서 "/api/login" > 백엔드에선 "/login"
-      //     rewrite: (pathStr: string) => pathStr.replace(/^\/api/, ''),
-      //     // Vite 타입에 없지만 http-proxy가 지원
-      //     cookieDomainRewrite: 'localhost',
+      //     rewrite: (pathStr: string) => pathStr.replace(/^\/api\/holidays/, ''), // path → pathStr 타입 명시
       //   },
       // },
+      // API 프록시 설정 (도커 환경)
+      proxy: {
+        '/api': {
+          target: 'http://groupware-server:3001',
+          changeOrigin: true,
+        },
+      },
     },
-
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
         '@components': path.resolve(__dirname, 'src/components'),
       },
     },
-
     ...(isVitest ? { test: testConfig } : {}),
-
+    // 안전장치: 앱 번들 최적화에서 Storybook 패키지 제외 (혹시 간접 import가 있어도 차단)
     optimizeDeps: {
       exclude: [
         '@storybook/*',
