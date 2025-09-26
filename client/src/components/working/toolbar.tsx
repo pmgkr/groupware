@@ -1,7 +1,8 @@
 import React from 'react';
-import { Button } from "../ui/button";
-import { MultiSelect } from "../multiselect/multi-select";
-import WorkHoursBar from "../ui/WorkHoursBar";
+import { Button } from "@components/ui/button";
+import { MultiSelect } from "@components/multiselect/multi-select";
+import  WorkHoursBar from "@components/ui/WorkHoursBar";
+import { Badge } from "@components/ui/badge";
 
 
 // 셀렉트 옵션 타입 정의
@@ -29,6 +30,14 @@ interface ToolbarProps {
   selectConfigs: SelectConfig[];
   onSelectChange: (selectId: string, value: string[]) => void;
   onAddEvent: () => void;
+  formatWeekDisplay?: (date: Date) => string;
+  weeklyStats?: {
+    totalWorkHours: number;
+    totalBasicHours: number;
+    totalOvertimeHours: number;
+    vacationHours: number;
+    externalHours: number;
+  };
 }
 
 export default function Toolbar({ 
@@ -38,9 +47,14 @@ export default function Toolbar({
   currentDate, 
   selectConfigs, 
   onSelectChange, 
-  onAddEvent 
+  onAddEvent,
+  formatWeekDisplay,
+  weeklyStats
 }: ToolbarProps) {
   const formatDate = (date: Date) => {
+    if (formatWeekDisplay) {
+      return formatWeekDisplay(date);
+    }
     return new Intl.DateTimeFormat('ko-KR', {
       year: 'numeric',
       month: 'long',
@@ -52,23 +66,22 @@ export default function Toolbar({
 
       {/* 왼쪽: 네비게이션 버튼들 */}
       <div className="flex items-center gap-2">
-        <WorkHoursBar hours={35} />
-        {/* 동적 셀렉트 렌더링 */}
-        {selectConfigs.map((config) => (
-          <MultiSelect
-            key={config.id}
-            options={config.options}
-            onValueChange={(value) => onSelectChange(config.id, value)}
-            defaultValue={config.value || []}
-            placeholder={config.placeholder}
-            size="sm"
-            maxCount={config.maxCount}
-            searchable={config.searchable}
-            hideSelectAll={config.hideSelectAll}
-            autoSize={config.autoSize}
-            className="min-w-[120px] max-w-[150px] multi-select"
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-4">
+            <div className="before:bg-primary flex items-center gap-x-1 text-sm text-gray-700 before:h-1.5 before:w-1.5 before:rounded-[50%]">
+              <span>이번 주 근무시간</span>
+              <strong className="text-gray-950">{weeklyStats?.totalWorkHours || 0}시간 00분</strong>
+            </div>
+            <div className="flex items-center gap-x-1 text-sm text-gray-700 before:h-1.5 before:w-1.5 before:rounded-[50%] before:bg-gray-400">
+              <span>잔여 근무시간</span>
+              <strong className="text-gray-950">{Math.max(0, 52 - (weeklyStats?.totalWorkHours || 0))}시간 00분</strong>
+            </div>
+          </div>
+          <WorkHoursBar 
+            hours={weeklyStats?.totalWorkHours || 0} 
+            className="w-[400px]" 
           />
-        ))}
+        </div>
 
         {/* 중앙: 현재 날짜 표시 */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5">

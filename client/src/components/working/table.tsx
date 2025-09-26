@@ -12,6 +12,7 @@ interface WorkData {
   overtimeHours: number;
   totalHours: number;
   overtimeStatus: "신청하기" | "승인대기" | "승인완료";
+  dayOfWeek: string;
 }
 
 interface TableProps {
@@ -43,91 +44,94 @@ export default function Table({ data, onOvertimeRequest }: TableProps) {
       <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-base font-medium text-gray-500 uppercase tracking-wider">
               항목
             </th>
             {data.map((row, index) => (
-              <th key={index} className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {dayjs(row.date).format("MM-DD")}
+              <th key={index} className="px-6 py-3 text-center text-base font-medium text-gray-500 uppercase tracking-wider">
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold text-gray-700">{row.dayOfWeek}</span>
+                  <span className="text-xs text-gray-500">{dayjs(row.date).format("MM-DD")}</span>
+                </div>
               </th>
             ))}
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
               구분
             </td>
             {data.map((row, index) => (
               <td key={index} className="px-6 py-4 whitespace-nowrap text-center">
-                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getWorkTypeColor(row.workType)}`}>
+                <span className={`inline-flex px-2 py-1 text-base font-semibold rounded-full ${getWorkTypeColor(row.workType)}`}>
                   {row.workType}
                 </span>
               </td>
             ))}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
               출근시간
             </td>
             {data.map((row, index) => (
-              <td key={index} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+              <td key={index} className="px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center">
                 {row.startTime}
               </td>
             ))}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
               퇴근시간
             </td>
             {data.map((row, index) => (
-              <td key={index} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+              <td key={index} className="px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center">
                 {row.endTime}
               </td>
             ))}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 bg-gray-50">
-              기본근무시간
+            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
+              기본근무시간<br/><small>휴게시간 1시간 제외</small>
             </td>
             {data.map((row, index) => (
-              <td key={index} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+              <td key={index} className="px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center">
                 {row.basicHours}시간
               </td>
             ))}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 bg-gray-50">
-              연장근무시간
+            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
+              연장근무시간<br/><small>휴게시간 1시간 제외</small>
             </td>
             {data.map((row, index) => (
-              <td key={index} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+              <td key={index} className="px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center">
                 {row.overtimeHours}시간
               </td>
             ))}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
               총 근무시간
             </td>
             {data.map((row, index) => (
-              <td key={index} className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center">
+              <td key={index} className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 text-center">
                 {row.totalHours}시간
               </td>
             ))}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
               추가근무 신청
             </td>
             {data.map((row, index) => (
-              <td key={index} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+              <td key={index} className="px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center">
                 <Button
                   onClick={() => onOvertimeRequest(index)}
                   disabled={row.overtimeStatus === "승인완료"}
                   variant={getOvertimeButtonVariant(row.overtimeStatus)}
                   size="sm"
-                  className="text-xs"
+                  className="text-base"
                 >
                   {row.overtimeStatus}
                 </Button>
