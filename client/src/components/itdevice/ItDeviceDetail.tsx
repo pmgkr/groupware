@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { DeviceForm, type DeviceFormData } from './DeviceForm';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import { Textbox } from '../ui/textbox';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 export default function itDeviceDetail() {
   const { id } = useParams<{ id: string }>(); // /itdevice/:id
@@ -149,7 +150,6 @@ export default function itDeviceDetail() {
   //dialog
   const [openEdit, setOpenEdit] = useState(false);
   const [openAddUser, setOpenAddUser] = useState(false);
-  const [openConfirm, setOpenConfirm] = useState(false);
 
   const [form, setForm] = useState<DeviceFormData>({
     device: post.device,
@@ -180,6 +180,13 @@ export default function itDeviceDetail() {
   // 공용 핸들러
   const handleNewFormChange = (key: keyof typeof newForm, value: string) => {
     setNewForm((prev) => ({ ...prev, [key]: value }));
+  };
+  const handleAddUserClick = () => {
+    if (!newForm.team || !newForm.user) {
+      alert('팀이름과 사용자는 반드시 입력해야 합니다.');
+      return;
+    }
+    openConfirm('사용자를 등록하시겠습니까?', () => handleAddUser(post.id, newForm.user, newForm.team, newForm.createdAt));
   };
   const handleAddUser = (deviceId: number, user: string, team: string, createdAt?: string) => {
     setHistory((prev) => {
@@ -215,6 +222,18 @@ export default function itDeviceDetail() {
     return isoString.slice(0, 10); // 'YYYY-MM-DD'
   }
 
+  // 컨펌 다이얼로그상태
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    action?: () => void;
+    title: string;
+  }>({ open: false, title: '' });
+
+  // 열기 함수
+  const openConfirm = (title: string, action: () => void) => {
+    setConfirmState({ open: true, title, action });
+  };
+
   return (
     <>
       <h2 className="mb-5 text-3xl font-bold">
@@ -245,31 +264,9 @@ export default function itDeviceDetail() {
                 </Button>
                 <Button
                   onClick={() => {
-                    setOpenConfirm(true);
+                    openConfirm('장비 정보를 수정하시겠습니까?', () => handleSave());
                   }}>
                   완료
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* 완료 컨펌 다이얼로그 */}
-          <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
-            <DialogContent className="w-[400px]">
-              <DialogHeader>
-                <DialogTitle>수정 확인</DialogTitle>
-                <DialogDescription>장비 정보를 수정하시겠습니까?</DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpenConfirm(false)}>
-                  취소
-                </Button>
-                <Button
-                  onClick={() => {
-                    handleSave();
-                    setOpenConfirm(false);
-                  }}>
-                  확인
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -319,14 +316,7 @@ export default function itDeviceDetail() {
                 <Button variant="outline" onClick={() => setOpenAddUser(false)}>
                   취소
                 </Button>
-                <Button
-                  onClick={() => {
-                    if (window.confirm('사용자를 등록하시겠습니까?')) {
-                      handleAddUser(post.id, newForm.user, newForm.team, newForm.createdAt);
-                    }
-                  }}>
-                  완료
-                </Button>
+                <Button onClick={handleAddUserClick}>완료</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -370,15 +360,21 @@ export default function itDeviceDetail() {
             variant="secondary"
             className="mr-3"
             onClick={() => {
-              if (window.confirm('반납처리 하시겠습니까?')) {
-                handleReturn(currentUser.historyId);
-              }
+              openConfirm('반납처리 하시겠습니까?', () => handleReturn(currentUser.historyId));
             }}>
             반납 처리
           </Button>
         )}
         <Button onClick={() => navigate('/itdevice')}>목록</Button>
       </div>
+
+      {/* 공통 다이얼로그 */}
+      <ConfirmDialog
+        open={confirmState.open}
+        onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
+        title={confirmState.title}
+        onConfirm={() => confirmState.action?.()}
+      />
     </>
   );
 }

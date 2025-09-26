@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 
 interface ReportCard {
   id: number;
@@ -189,6 +190,8 @@ export default function BlockItem({ filter = 'all' }: BlockItemProps) {
   };
   const emojis = ['💗', '😀', '🔥', '👍', '🎉', '😢', '💡'];
 
+  const navigate = useNavigate();
+
   return (
     <>
       {filteredReports.map((report) => (
@@ -216,11 +219,19 @@ export default function BlockItem({ filter = 'all' }: BlockItemProps) {
               }[report.state]
             }
           </div>
-          <h3 className="mb-2.5 font-bold">{report.title}</h3>
+          <h3 className="mb-2.5 cursor-pointer font-bold" key={report.id} onClick={() => navigate(`${report.id}`)}>
+            {report.title}
+          </h3>
           <p className="mb-3.5 w-full truncate text-sm text-gray-600">{report.content}</p>
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="자세히 보기">
+              <Button
+                variant="svgIcon"
+                size="icon"
+                className="hover:text-primary-blue-500"
+                aria-label="자세히 보기"
+                key={report.id}
+                onClick={() => navigate(`${report.id}`)}>
                 <Plus className="size-5" />
               </Button>
               <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="고정하기">

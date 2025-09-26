@@ -10,6 +10,7 @@ import Book from '@/pages/Office/Book';
 import BookList from '@/components/book/BookList';
 import BookWish from '@/components/book/BookWish';
 import Report from '@/pages/Office/Report';
+import ReportDetail from '@/components/report/ReportDetail';
 
 export const officeRoutes: RouteObject = {
   handle: {
@@ -47,5 +48,9 @@ export const officeRoutes: RouteObject = {
       ],
     },
     { path: 'report', element: <Report /> },
+    {
+      path: 'report/:id',
+      element: <ReportDetail />,
+    },
   ],
 };

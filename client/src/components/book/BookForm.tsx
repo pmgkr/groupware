@@ -2,6 +2,7 @@ import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody,
 import { Textbox } from '@/components/ui/textbox';
 
 export type BookFormData = {
+  id?: number;
   category: string;
   title: string;
   author: string;
