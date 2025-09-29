@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import dayjs from "dayjs";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
+import OvertimeDialog from "./OvertimeDialog";
+
 
 // 근무 데이터 타입 정의
 interface WorkData {
@@ -21,6 +23,9 @@ interface TableProps {
 }
 
 export default function Table({ data, onOvertimeRequest }: TableProps) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
   const getWorkTypeColor = (workType: string) => {
     switch (workType) {
       case "정상근무": return "bg-blue-100 text-blue-800";
@@ -39,6 +44,24 @@ export default function Table({ data, onOvertimeRequest }: TableProps) {
     }
   };
 
+  const handleOvertimeClick = (index: number) => {
+    setSelectedIndex(index);
+    setDialogOpen(true);
+  };
+
+  const handleOvertimeSave = (overtimeData: any) => {
+    if (selectedIndex !== null) {
+      onOvertimeRequest(selectedIndex);
+    }
+    setDialogOpen(false);
+    setSelectedIndex(null);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setSelectedIndex(null);
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow">
@@ -50,8 +73,8 @@ export default function Table({ data, onOvertimeRequest }: TableProps) {
             {data.map((row, index) => (
               <th key={index} className="px-6 py-3 text-center text-base font-medium text-gray-500 uppercase tracking-wider">
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold text-gray-700">{row.dayOfWeek}</span>
-                  <span className="text-xs text-gray-500">{dayjs(row.date).format("MM-DD")}</span>
+                  <span className="text-base font-semibold text-gray-700">{row.dayOfWeek}</span>
+                  <span className="text-base text-gray-500">{dayjs(row.date).format("MM-DD")}</span>
                 </div>
               </th>
             ))}
@@ -127,12 +150,11 @@ export default function Table({ data, onOvertimeRequest }: TableProps) {
             {data.map((row, index) => (
               <td key={index} className="px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center">
                 <Button
-                  onClick={() => onOvertimeRequest(index)}
+                  onClick={() => handleOvertimeClick(index)}
                   disabled={row.overtimeStatus === "승인완료"}
                   variant={getOvertimeButtonVariant(row.overtimeStatus)}
                   size="sm"
-                  className="text-base"
-                >
+                  className="text-base">
                   {row.overtimeStatus}
                 </Button>
               </td>
@@ -140,6 +162,14 @@ export default function Table({ data, onOvertimeRequest }: TableProps) {
           </tr>
         </tbody>
       </table>
+      
+      <OvertimeDialog
+        isOpen={dialogOpen}
+        onClose={handleDialogClose}
+        onSave={handleOvertimeSave}
+        selectedDay={selectedIndex !== null ? data[selectedIndex] : undefined}
+        selectedIndex={selectedIndex || undefined}
+      />
     </div>
   );
 }
