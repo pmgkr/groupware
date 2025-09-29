@@ -117,7 +117,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
           <DialogDescription>
             {selectedDay && (
               <>
-                {dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} ({selectedDay.dayOfWeek})의 초과근무를 신청합니다.
+                {dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} {selectedDay.dayOfWeek}요일의 초과근무를 신청합니다.
               </>
             )}
           </DialogDescription>
