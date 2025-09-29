@@ -5,7 +5,6 @@ import Toolbar from "@components/working/toolbar";
 import Table from "@components/working/table";
 import WorkHoursBar from "@components/ui/WorkHoursBar";
 import { Badge } from "@components/ui/badge";
-
 // 근무 데이터 타입 정의
 interface WorkData {
   date: string;
@@ -151,10 +150,10 @@ export default function WorkHoursTable() {
     return startDate;
   };
   
-  // 현재 주의 데이터 생성
-  const weekStartDate = getWeekStartDate(currentDate);
+  // 현재 주의 시작일을 메모이제이션
+  const weekStartDate = useMemo(() => getWeekStartDate(currentDate), [currentDate]);
   const weekData = useMemo(() => generateWeekData(weekStartDate), [weekStartDate]);
-  const [data, setData] = useState<WorkData[]>(weekData);
+  const [data, setData] = useState<WorkData[]>(() => weekData);
   
   // 헤더용 셀렉트 설정 (현재는 사용하지 않음)
   const selectConfigs: any[] = [];
@@ -204,10 +203,10 @@ export default function WorkHoursTable() {
     return `${month}월 ${weekName}주`;
   };
 
-  // 데이터가 변경될 때마다 업데이트
+  // currentDate가 변경될 때 data 업데이트
   React.useEffect(() => {
     setData(weekData);
-  }, [weekData]);
+  }, [currentDate]);
 
   // 주간 근무시간 통계 계산
   const weeklyStats = useMemo(() => {
