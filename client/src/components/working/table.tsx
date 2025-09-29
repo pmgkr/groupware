@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import dayjs from "dayjs";
 import { Button } from "@/components/ui/button";
 import OvertimeDialog from "./OvertimeDialog";
+import OvertimeViewDialog from "./OvertimeViewDialog";
 
 
 // 근무 데이터 타입 정의
@@ -24,14 +25,15 @@ interface TableProps {
 
 export default function Table({ data, onOvertimeRequest }: TableProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const getWorkTypeColor = (workType: string) => {
     switch (workType) {
-      case "정상근무": return "bg-blue-100 text-blue-800";
-      case "외부근무": return "bg-green-100 text-green-800";
-      case "휴가": return "bg-gray-100 text-gray-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "정상근무": return "bg-primary-blue-150 text-primary-blue";
+      case "외부근무": return "bg-primary-yellow-150 text-primary-orange-600";
+      case "휴가": return "bg-primary-gray-100 text-primary-gray";
+      default: return "bg-primary-gray-100 text-primary-gray";
     }
   };
 
@@ -46,7 +48,13 @@ export default function Table({ data, onOvertimeRequest }: TableProps) {
 
   const handleOvertimeClick = (index: number) => {
     setSelectedIndex(index);
-    setDialogOpen(true);
+    const workData = data[index];
+    
+    if (workData.overtimeStatus === "신청하기") {
+      setDialogOpen(true);
+    } else if (workData.overtimeStatus === "승인대기" || workData.overtimeStatus === "승인완료") {
+      setViewDialogOpen(true);
+    }
   };
 
   const handleOvertimeSave = (overtimeData: any) => {
@@ -59,6 +67,11 @@ export default function Table({ data, onOvertimeRequest }: TableProps) {
 
   const handleDialogClose = () => {
     setDialogOpen(false);
+    setSelectedIndex(null);
+  };
+
+  const handleViewDialogClose = () => {
+    setViewDialogOpen(false);
     setSelectedIndex(null);
   };
 
@@ -87,7 +100,7 @@ export default function Table({ data, onOvertimeRequest }: TableProps) {
             </td>
             {data.map((row, index) => (
               <td key={index} className="px-6 py-4 whitespace-nowrap text-center">
-                <span className={`inline-flex px-2 py-1 text-base font-semibold rounded-full ${getWorkTypeColor(row.workType)}`}>
+                <span className={`inline-flex px-3 py-1 text-base font-semibold rounded-full ${getWorkTypeColor(row.workType)}`}>
                   {row.workType}
                 </span>
               </td>
@@ -153,7 +166,7 @@ export default function Table({ data, onOvertimeRequest }: TableProps) {
                   onClick={() => handleOvertimeClick(index)}
                   disabled={row.overtimeStatus === "승인완료"}
                   variant={getOvertimeButtonVariant(row.overtimeStatus)}
-                  size="sm"
+                  size="default"
                   className="text-base">
                   {row.overtimeStatus}
                 </Button>
@@ -167,6 +180,13 @@ export default function Table({ data, onOvertimeRequest }: TableProps) {
         isOpen={dialogOpen}
         onClose={handleDialogClose}
         onSave={handleOvertimeSave}
+        selectedDay={selectedIndex !== null ? data[selectedIndex] : undefined}
+        selectedIndex={selectedIndex || undefined}
+      />
+      
+      <OvertimeViewDialog
+        isOpen={viewDialogOpen}
+        onClose={handleViewDialogClose}
         selectedDay={selectedIndex !== null ? data[selectedIndex] : undefined}
         selectedIndex={selectedIndex || undefined}
       />
