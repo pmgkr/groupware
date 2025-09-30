@@ -166,6 +166,16 @@ export default function WorkHoursTable() {
     setData(newData);
   };
 
+  const handleOvertimeCancel = (index: number) => {
+    const newData = [...data];
+    if (newData[index].overtimeStatus === "승인대기") {
+      newData[index].overtimeStatus = "신청하기";
+      newData[index].overtimeHours = 0;
+      newData[index].totalHours = newData[index].basicHours;
+    }
+    setData(newData);
+  };
+
   // 헤더 관련 함수들
   const onNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
     const newDate = new Date(currentDate);
@@ -241,7 +251,8 @@ export default function WorkHoursTable() {
 
       <Table 
         data={data} 
-        onOvertimeRequest={handleOvertimeRequest} 
+        onOvertimeRequest={handleOvertimeRequest}
+        onOvertimeCancel={handleOvertimeCancel}
       />
     </div>
   );
