@@ -116,32 +116,11 @@ export default function Toolbar({
       {/* 오른쪽: 뷰 변경 버튼들 */}
       <div className="flex items-center gap-1">
         <Button
-          onClick={onAddEvent}
-          variant="outline"
-          size="sm"
-        >
-          + 근무 등록
-        </Button>
-        <Button
           onClick={() => onNavigate('TODAY')}
           variant="outline"
           size="sm"
         >
           오늘
-        </Button>
-        <Button
-          onClick={() => onView('table')}
-          variant={currentView === 'table' ? 'default' : 'outline'}
-          size="sm"
-        >
-          테이블
-        </Button>
-        <Button
-          onClick={() => onView('chart')}
-          variant={currentView === 'chart' ? 'default' : 'outline'}
-          size="sm"
-        >
-          차트
         </Button>
       </div>
     </div>

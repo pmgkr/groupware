@@ -21,9 +21,10 @@ interface WorkData {
 interface TableProps {
   data: WorkData[];
   onOvertimeRequest: (index: number) => void;
+  onOvertimeCancel?: (index: number) => void;
 }
 
-export default function Table({ data, onOvertimeRequest }: TableProps) {
+export default function Table({ data, onOvertimeRequest, onOvertimeCancel }: TableProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -71,6 +72,14 @@ export default function Table({ data, onOvertimeRequest }: TableProps) {
   };
 
   const handleViewDialogClose = () => {
+    setViewDialogOpen(false);
+    setSelectedIndex(null);
+  };
+
+  const handleOvertimeCancel = () => {
+    if (selectedIndex !== null && onOvertimeCancel) {
+      onOvertimeCancel(selectedIndex);
+    }
     setViewDialogOpen(false);
     setSelectedIndex(null);
   };
@@ -187,6 +196,7 @@ export default function Table({ data, onOvertimeRequest }: TableProps) {
       <OvertimeViewDialog
         isOpen={viewDialogOpen}
         onClose={handleViewDialogClose}
+        onCancel={handleOvertimeCancel}
         selectedDay={selectedIndex !== null ? data[selectedIndex] : undefined}
         selectedIndex={selectedIndex || undefined}
       />

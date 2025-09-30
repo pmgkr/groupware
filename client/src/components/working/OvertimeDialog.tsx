@@ -43,55 +43,121 @@ interface OvertimeData {
 
 export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, selectedIndex }: OvertimeDialogProps) {
   const [formData, setFormData] = useState<OvertimeData>({
-    overtimeHours: "0",
+    overtimeHours: "",
     overtimeReason: "",
     clientName: "",
     workDescription: "",
-    overtimeType: "special_vacation",
-    expectedEndTime: "18",
-    expectedEndMinute: "0",
-    mealAllowance: "no",
-    transportationAllowance: "no"
+    overtimeType: "",
+    expectedEndTime: "",
+    expectedEndMinute: "",
+    mealAllowance: "",
+    transportationAllowance: ""
   });
+
+  const [errors, setErrors] = useState<Partial<Record<keyof OvertimeData, string>>>({});
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   const handleInputChange = (field: keyof OvertimeData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+    
+    // 사용자 상호작용 표시
+    setHasUserInteracted(true);
+    
+    // 입력 시 해당 필드의 에러 메시지 제거
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: undefined
+      }));
+    }
+  };
+
+  // 유효성 검사 함수
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof OvertimeData, string>> = {};
+    
+    // 클라이언트명 검증
+    if (!formData.clientName.trim()) {
+      newErrors.clientName = "클라이언트명을 입력해주세요.";
+    }
+    
+    // 작업 내용 검증
+    if (!formData.workDescription.trim()) {
+      newErrors.workDescription = "작업 내용을 입력해주세요.";
+    }
+    
+    // 평일인 경우 예상 퇴근 시간 검증
+    if (selectedDay && !isWeekend(selectedDay.dayOfWeek)) {
+      if (!formData.expectedEndTime) {
+        newErrors.expectedEndTime = "예상 퇴근 시간을 선택해주세요.";
+      }
+      if (!formData.expectedEndMinute) {
+        newErrors.expectedEndMinute = "예상 퇴근 분을 선택해주세요.";
+      }
+      if (!formData.mealAllowance) {
+        newErrors.mealAllowance = "식대 사용여부를 선택해주세요.";
+      }
+      if (!formData.transportationAllowance) {
+        newErrors.transportationAllowance = "교통비 사용여부를 선택해주세요.";
+      }
+    }
+    
+    // 주말인 경우 초과근무 시간 및 보상 지급방식 검증
+    if (selectedDay && isWeekend(selectedDay.dayOfWeek)) {
+      if (!formData.overtimeHours) {
+        newErrors.overtimeHours = "초과근무 시간을 선택해주세요.";
+      }
+      if (!formData.overtimeType) {
+        newErrors.overtimeType = "보상 지급방식을 선택해주세요.";
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSave = () => {
+    if (!validateForm()) {
+      return; // 유효성 검사 실패 시 저장하지 않음
+    }
+    
     onSave(formData);
     onClose();
     // 폼 초기화
     setFormData({
-      overtimeHours: "0",
+      overtimeHours: "",
       overtimeReason: "",
       clientName: "",
       workDescription: "",
-      overtimeType: "special_vacation",
-      expectedEndTime: "18",
-      expectedEndMinute: "0",
-      mealAllowance: "no",
-      transportationAllowance: "no"
+      overtimeType: "",
+      expectedEndTime: "",
+      expectedEndMinute: "",
+      mealAllowance: "",
+      transportationAllowance: ""
     });
+    setErrors({}); // 에러 상태도 초기화
+    setHasUserInteracted(false); // 사용자 상호작용 상태도 초기화
   };
 
   const handleClose = () => {
     onClose();
     // 폼 초기화
     setFormData({
-      overtimeHours: "0",
+      overtimeHours: "",
       overtimeReason: "",
       clientName: "",
       workDescription: "",
-      overtimeType: "special_vacation",
-      expectedEndTime: "18",
-      expectedEndMinute: "0",
-      mealAllowance: "no",
-      transportationAllowance: "no"
+      overtimeType: "",
+      expectedEndTime: "",
+      expectedEndMinute: "",
+      mealAllowance: "",
+      transportationAllowance: ""
     });
+    setErrors({}); // 에러 상태도 초기화
+    setHasUserInteracted(false); // 사용자 상호작용 상태도 초기화
   };
 
   // 주말 여부 확인 함수
@@ -99,15 +165,24 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
     return dayOfWeek === '토' || dayOfWeek === '일';
   };
 
-  // 다이얼로그가 열릴 때 선택된 날짜의 초기값 설정
+  // 다이얼로그가 열릴 때 상태 초기화
   React.useEffect(() => {
-    if (isOpen && selectedDay) {
-      setFormData(prev => ({
-        ...prev,
-        overtimeHours: selectedDay.overtimeHours.toString()
-      }));
+    if (isOpen) {
+      setFormData({
+        overtimeHours: "",
+        overtimeReason: "",
+        clientName: "",
+        workDescription: "",
+        overtimeType: "",
+        expectedEndTime: "",
+        expectedEndMinute: "",
+        mealAllowance: "",
+        transportationAllowance: ""
+      });
+      setHasUserInteracted(false); // 사용자 상호작용 상태 초기화
+      setErrors({}); // 에러 상태 초기화
     }
-  }, [isOpen, selectedDay]);
+  }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -126,14 +201,14 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
           {/* 평일 (월-금) 신청 시 표시되는 내용 */}
           {selectedDay && !isWeekend(selectedDay.dayOfWeek) && (
             <>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label htmlFor="expected-end-time">예상 퇴근 시간을 선택해주세요.</Label>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <Select
                     value={formData.expectedEndTime}
                     onValueChange={(value) => handleInputChange('expectedEndTime', value)}
                   >
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className={`flex-1 ${errors.expectedEndTime ? 'border-red-500' : ''}`}>
                       <SelectValue placeholder="시간을 선택하세요" />
                     </SelectTrigger>
                     <SelectContent>
@@ -156,7 +231,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
                     value={formData.expectedEndMinute}
                     onValueChange={(value) => handleInputChange('expectedEndMinute', value)}
                   >
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className={`flex-1 ${errors.expectedEndMinute ? 'border-red-500' : ''}`}>
                       <SelectValue placeholder="분을 선택하세요" />
                     </SelectTrigger>
                     <SelectContent>
@@ -175,14 +250,19 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
                     </SelectContent>
                   </Select>
                 </div>
+                {(errors.expectedEndTime || errors.expectedEndMinute) && (
+                  <p className="text-sm text-red-500">
+                    {errors.expectedEndTime || errors.expectedEndMinute}
+                  </p>
+                )}
               </div>
 
-              <div className="space-y-3 mb-8">
+              <div className="space-y-3">
                 <Label>식대 사용여부를 선택해주세요.</Label>
                 <RadioGroup
                   value={formData.mealAllowance}
                   onValueChange={(value) => handleInputChange('mealAllowance', value)}
-                  className="grid grid-cols-2 gap-4"
+                  className="grid grid-cols-2 gap-3 mb-1"
                 >
                   <RadioButton
                     value="yes"
@@ -199,14 +279,17 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
                     className='mb-0'
                   />
                 </RadioGroup>
+                {errors.mealAllowance && (
+                  <p className="text-sm text-red-500">{errors.mealAllowance}</p>
+                )}
               </div>
 
-              <div className="space-y-3 mb-8">
+              <div className="space-y-3">
                 <Label>교통비 사용여부를 선택해주세요.</Label>
                 <RadioGroup
                   value={formData.transportationAllowance}
                   onValueChange={(value) => handleInputChange('transportationAllowance', value)}
-                  className="grid grid-cols-2 gap-4"
+                  className="grid grid-cols-2 gap-3 mb-1"
                 >
                   <RadioButton
                     value="yes"
@@ -223,6 +306,9 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
                     className='mb-0'
                   />
                 </RadioGroup>
+                {errors.transportationAllowance && (
+                  <p className="text-sm text-red-500">{errors.transportationAllowance}</p>
+                )}
               </div>
             </>
           )}
@@ -230,13 +316,13 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
           {/* 주말 (토, 일) 신청 시 표시되는 내용 */}
           {selectedDay && isWeekend(selectedDay.dayOfWeek) && (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="overtime-hours">초과근무 시간</Label>
+              <div className="space-y-3">
+                <Label htmlFor="overtime-hours">주말 예상 근무 시간을 선택해주세요.</Label>
                 <Select
                   value={formData.overtimeHours}
                   onValueChange={(value) => handleInputChange('overtimeHours', value)}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className={`w-full ${errors.overtimeHours ? 'border-red-500' : ''}`}>
                     <SelectValue placeholder="시간을 선택하세요" />
                   </SelectTrigger>
                   <SelectContent>
@@ -255,14 +341,17 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
                     <SelectItem value="12">12시간</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.overtimeHours && (
+                  <p className="text-sm text-red-500">{errors.overtimeHours}</p>
+                )}
               </div>
 
-              <div className="space-y-3 mb-8">
+              <div className="space-y-3">
                 <Label>보상 지급방식을 선택해주세요.</Label>
                 <RadioGroup
                   value={formData.overtimeType}
                   onValueChange={(value) => handleInputChange('overtimeType', value)}
-                  className="grid grid-cols-2 gap-4"
+                  className="grid grid-cols-2 gap-3"
                 >
                   <RadioButton
                     value="special_vacation"
@@ -286,11 +375,14 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
                     className='mb-0'
                   />
                 </RadioGroup>
+                {errors.overtimeType && (
+                  <p className="text-sm text-red-500">{errors.overtimeType}</p>
+                )}
               </div>
             </>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label htmlFor="client-name">클라이언트명을 입력해주세요.</Label>
             <Textbox
               id="client-name"
@@ -298,10 +390,11 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
               value={formData.clientName}
               onChange={(e) => handleInputChange('clientName', e.target.value)}
               className="w-full"
+              errorMessage={errors.clientName}
             />
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label htmlFor="work-description">작업 내용을 작성해주세요.</Label>
             <Textarea
               id="work-description"
@@ -309,14 +402,13 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
               value={formData.workDescription}
               onChange={(e) => handleInputChange('workDescription', e.target.value)}
               className="w-full"
+              errorMessage={errors.workDescription}
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
-            취소
-          </Button>
           <Button onClick={handleSave}>신청하기</Button>
+          <Button variant="outline" onClick={handleClose}>닫기</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

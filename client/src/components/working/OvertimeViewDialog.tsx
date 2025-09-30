@@ -19,6 +19,7 @@ interface WorkData {
 interface OvertimeViewDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onCancel: () => void;
   selectedDay?: WorkData;
   selectedIndex?: number;
 }
@@ -28,7 +29,7 @@ const isWeekend = (dayOfWeek: string) => {
   return dayOfWeek === '토' || dayOfWeek === '일';
 };
 
-export default function OvertimeViewDialog({ isOpen, onClose, selectedDay, selectedIndex }: OvertimeViewDialogProps) {
+export default function OvertimeViewDialog({ isOpen, onClose, onCancel, selectedDay, selectedIndex }: OvertimeViewDialogProps) {
   // 샘플 데이터
   const sampleOvertimeData = {
     expectedEndTime: "22",
@@ -64,12 +65,12 @@ export default function OvertimeViewDialog({ isOpen, onClose, selectedDay, selec
               <div className="space-y-2">
                 <Label htmlFor="expected-end-time">예상 퇴근 시간</Label>
                 <div className="flex gap-2">
-                  <div className="flex-1 p-3 border border-gray-300 rounded-md bg-gray-50">
+                  <div className="flex-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-50">
                     <span className="text-base">
                       {sampleOvertimeData.expectedEndTime}시
                     </span>
                   </div>
-                  <div className="flex-1 p-3 border border-gray-300 rounded-md bg-gray-50">
+                  <div className="flex-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-50">
                     <span className="text-base">
                       {sampleOvertimeData.expectedEndMinute}분
                     </span>
@@ -124,7 +125,7 @@ export default function OvertimeViewDialog({ isOpen, onClose, selectedDay, selec
             <>
               <div className="space-y-2">
                 <Label htmlFor="overtime-hours">초과근무 시간</Label>
-                <div className="p-3 border border-gray-300 rounded-md bg-gray-50">
+                <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-50">
                   <span className="text-base">{sampleOvertimeData.overtimeHours}시간</span>
                 </div>
               </div>
@@ -161,21 +162,21 @@ export default function OvertimeViewDialog({ isOpen, onClose, selectedDay, selec
           {/* 공통 필드 */}
           <div className="space-y-2">
             <Label htmlFor="client-name">클라이언트명</Label>
-            <div className="p-3 border border-gray-300 rounded-md bg-gray-50">
+            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-50">
               <span className="text-base">{sampleOvertimeData.clientName}</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="work-description">작업 내용</Label>
-            <div className="p-3 border border-gray-300 rounded-md bg-gray-50 min-h-[80px]">
+            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[80px]">
               <span className="text-base">{sampleOvertimeData.workDescription}</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>신청 상태</Label>
-            <div className={`p-4 rounded-lg border-2 ${
+            <div className={`px-4 py-2 rounded-lg border-2 ${
               status === "승인대기" 
                 ? "border-gray-300 bg-gray-100" 
                 : status === "승인완료"
@@ -197,9 +198,10 @@ export default function OvertimeViewDialog({ isOpen, onClose, selectedDay, selec
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button onClick={onClose}>확인</Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button variant="destructive" onClick={onCancel}>신청 취소하기</Button>
+            <Button variant="outline" onClick={onClose}>닫기</Button>
+          </DialogFooter>
       </DialogContent>
     </Dialog>
   );
