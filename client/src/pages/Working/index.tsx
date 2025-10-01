@@ -8,7 +8,7 @@ import { Badge } from "@components/ui/badge";
 // 근무 데이터 타입 정의
 interface WorkData {
   date: string;
-  workType: "종일근무" | "외부근무" | "휴가";
+  workType: "종일근무" | "외부근무" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차";
   startTime: string;
   endTime: string;
   basicHours: number;
@@ -21,6 +21,17 @@ interface WorkData {
   dayOfWeek: string;
   rejectionDate?: string;
   rejectionReason?: string;
+  // 신청 데이터 추가
+  overtimeData?: {
+    expectedEndTime: string;
+    expectedEndMinute: string;
+    mealAllowance: string;
+    transportationAllowance: string;
+    overtimeHours: string;
+    overtimeType: string;
+    clientName: string;
+    workDescription: string;
+  };
 }
 
 // 주차 계산 함수
@@ -47,7 +58,7 @@ const generateWeekData = (startDate: Date): WorkData[] => {
   // 9월 22일-28일 샘플 데이터 (2025년)
   const sampleDataMap: { [key: string]: Omit<WorkData, 'date' | 'dayOfWeek'> } = {
     '2025-09-29': { // 일요일
-      workType: "휴가",
+      workType: "오전반반차",
       startTime: "-",
       endTime: "-",
       basicHours: 0,
@@ -191,12 +202,16 @@ export default function WorkHoursTable() {
   // 헤더용 셀렉트 설정 (현재는 사용하지 않음)
   const selectConfigs: any[] = [];
 
-  const handleOvertimeRequest = (index: number) => {
+  const handleOvertimeRequest = (index: number, overtimeData?: any) => {
     const newData = [...data];
     const currentStatus = newData[index].overtimeStatus;
     
     if (currentStatus === "신청하기" || currentStatus === "반려됨") {
       newData[index].overtimeStatus = "승인대기";
+      // 신청 데이터 저장
+      if (overtimeData) {
+        newData[index].overtimeData = overtimeData;
+      }
       // 재신청인 경우 반려 정보 초기화
       if (currentStatus === "반려됨") {
         newData[index].rejectionDate = undefined;
