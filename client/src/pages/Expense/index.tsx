@@ -1,3 +1,9 @@
+import ExpenseList from '@components/features/Expense/ExpenseList';
+
 export default function Expense() {
-  return <div>Expense Page</div>;
+  return (
+    <>
+      <ExpenseList />
+    </>
+  );
 }
