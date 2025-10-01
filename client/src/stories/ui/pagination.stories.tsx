@@ -110,10 +110,10 @@ function DemoPagination({ totalPages, initialPage, siblingCount = 1 }: DemoProps
   );
 }
 
-/** ── Storybook 메타 ─────────────────────────────────────────── */
 const meta: Meta<typeof DemoPagination> = {
   title: 'Components/UI/Pagination',
   component: DemoPagination,
+  tags: ['autodocs'],
   parameters: { layout: 'centered' },
   args: { totalPages: 12, initialPage: 3, siblingCount: 1 },
   argTypes: {

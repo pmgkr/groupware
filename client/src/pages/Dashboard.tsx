@@ -10,7 +10,7 @@ import { Badge } from '@components/ui/badge';
 import { DayPicker } from '@components/daypicker';
 import { Avatar, AvatarImage, AvatarFallback } from '@components/ui/avatar';
 import getWelcomeMessage from '@components/features/Dashboard/welcome';
-import WorkHoursBar from '@components/common/WorkHoursBar';
+import WorkHoursBar from '@/components/ui/WorkHoursBar';
 
 export default function Dashboard() {
   const { user_name, job_role, profile_image } = useUser();
