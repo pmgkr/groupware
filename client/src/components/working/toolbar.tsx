@@ -37,6 +37,10 @@ interface ToolbarProps {
     totalOvertimeHours: number;
     vacationHours: number;
     externalHours: number;
+    workHours: number;
+    workMinutes: number;
+    remainingHours: number;
+    remainingMinutes: number;
   };
 }
 
@@ -70,11 +74,11 @@ export default function Toolbar({
           <div className="flex gap-4">
             <div className="before:bg-primary flex items-center gap-x-1 text-sm text-gray-700 before:h-1.5 before:w-1.5 before:rounded-[50%]">
               <span>이번 주 근무시간</span>
-              <strong className="text-gray-950">{weeklyStats?.totalWorkHours || 0}시간 00분</strong>
+              <strong className="text-gray-950">{weeklyStats?.workHours || 0}시간 {String(weeklyStats?.workMinutes || 0).padStart(2, '0')}분</strong>
             </div>
             <div className="flex items-center gap-x-1 text-sm text-gray-700 before:h-1.5 before:w-1.5 before:rounded-[50%] before:bg-gray-400">
               <span>잔여 근무시간</span>
-              <strong className="text-gray-950">{Math.max(0, 52 - (weeklyStats?.totalWorkHours || 0))}시간 00분</strong>
+              <strong className="text-gray-950">{weeklyStats?.remainingHours || 0}시간 {String(weeklyStats?.remainingMinutes || 0).padStart(2, '0')}분</strong>
             </div>
           </div>
           <WorkHoursBar 

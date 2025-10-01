@@ -11,13 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface WorkData {
   date: string;
-  workType: "정상근무" | "외부근무" | "휴가";
+  workType: "종일근무" | "외부근무" | "휴가";
   startTime: string;
   endTime: string;
   basicHours: number;
   overtimeHours: number;
   totalHours: number;
-  overtimeStatus: "신청하기" | "승인대기" | "승인완료";
+  overtimeStatus: "신청하기" | "승인대기" | "승인완료" | "반려됨";
   dayOfWeek: string;
 }
 
@@ -58,6 +58,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   const handleInputChange = (field: keyof OvertimeData, value: string) => {
+    console.log('Select value changed:', field, value); // 디버깅용 로그
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -203,15 +204,16 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
             <>
               <div className="space-y-3">
                 <Label htmlFor="expected-end-time">예상 퇴근 시간을 선택해주세요.</Label>
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   <Select
-                    value={formData.expectedEndTime}
+                    key="expected-end-time"
+                    value={formData.expectedEndTime || undefined}
                     onValueChange={(value) => handleInputChange('expectedEndTime', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndTime ? 'border-red-500' : ''}`}>
                       <SelectValue placeholder="시간을 선택하세요" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[200]">
                       <SelectItem value="18">18시</SelectItem>
                       <SelectItem value="19">19시</SelectItem>
                       <SelectItem value="20">20시</SelectItem>
@@ -228,13 +230,14 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
                     </SelectContent>
                   </Select>
                   <Select
-                    value={formData.expectedEndMinute}
+                    key="expected-end-minute"
+                    value={formData.expectedEndMinute || undefined}
                     onValueChange={(value) => handleInputChange('expectedEndMinute', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndMinute ? 'border-red-500' : ''}`}>
                       <SelectValue placeholder="분을 선택하세요" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[200]">
                       <SelectItem value="0">0분</SelectItem>
                       <SelectItem value="5">5분</SelectItem>
                       <SelectItem value="10">10분</SelectItem>
@@ -262,7 +265,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
                 <RadioGroup
                   value={formData.mealAllowance}
                   onValueChange={(value) => handleInputChange('mealAllowance', value)}
-                  className="grid grid-cols-2 gap-3 mb-1"
+                  className="grid grid-cols-2 gap-2 mb-1"
                 >
                   <RadioButton
                     value="yes"
@@ -289,7 +292,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
                 <RadioGroup
                   value={formData.transportationAllowance}
                   onValueChange={(value) => handleInputChange('transportationAllowance', value)}
-                  className="grid grid-cols-2 gap-3 mb-1"
+                  className="grid grid-cols-2 gap-2 mb-1"
                 >
                   <RadioButton
                     value="yes"
@@ -319,13 +322,14 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
               <div className="space-y-3">
                 <Label htmlFor="overtime-hours">주말 예상 근무 시간을 선택해주세요.</Label>
                 <Select
-                  value={formData.overtimeHours}
+                  key="overtime-hours"
+                  value={formData.overtimeHours || undefined}
                   onValueChange={(value) => handleInputChange('overtimeHours', value)}
                 >
                   <SelectTrigger className={`w-full ${errors.overtimeHours ? 'border-red-500' : ''}`}>
                     <SelectValue placeholder="시간을 선택하세요" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[200]">
                     <SelectItem value="0">0시간</SelectItem>
                     <SelectItem value="1">1시간</SelectItem>
                     <SelectItem value="2">2시간</SelectItem>
@@ -351,7 +355,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
                 <RadioGroup
                   value={formData.overtimeType}
                   onValueChange={(value) => handleInputChange('overtimeType', value)}
-                  className="grid grid-cols-2 gap-3"
+                  className="grid grid-cols-2 gap-2"
                 >
                   <RadioButton
                     value="special_vacation"
