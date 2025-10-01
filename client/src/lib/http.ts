@@ -20,7 +20,7 @@ export class HttpError extends Error {
 export async function refreshAccessToken() {
   const res = await fetch(`${API}/refresh`, {
     method: 'POST',
-    credentials: 'include', // 쿠키 전송(백엔드 도메인으로)
+    credentials: 'include',
   });
   if (!res.ok) throw new Error('Refresh failed');
   const data = await res.json();
