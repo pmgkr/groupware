@@ -15,10 +15,26 @@ interface WorkData {
   startTime: string;
   endTime: string;
   basicHours: number;
+  basicMinutes: number;
   overtimeHours: number;
+  overtimeMinutes: number;
   totalHours: number;
+  totalMinutes: number;
   overtimeStatus: "신청하기" | "승인대기" | "승인완료" | "반려됨";
   dayOfWeek: string;
+  rejectionDate?: string;
+  rejectionReason?: string;
+  // 신청 데이터 추가
+  overtimeData?: {
+    expectedEndTime: string;
+    expectedEndMinute: string;
+    mealAllowance: string;
+    transportationAllowance: string;
+    overtimeHours: string;
+    overtimeType: string;
+    clientName: string;
+    workDescription: string;
+  };
 }
 
 interface OvertimeDialogProps {

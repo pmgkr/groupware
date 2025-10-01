@@ -27,11 +27,22 @@ interface WorkData {
   dayOfWeek: string;
   rejectionDate?: string;
   rejectionReason?: string;
+  // 신청 데이터 추가
+  overtimeData?: {
+    expectedEndTime: string;
+    expectedEndMinute: string;
+    mealAllowance: string;
+    transportationAllowance: string;
+    overtimeHours: string;
+    overtimeType: string;
+    clientName: string;
+    workDescription: string;
+  };
 }
 
 interface TableProps {
   data: WorkData[];
-  onOvertimeRequest: (index: number) => void;
+  onOvertimeRequest: (index: number, overtimeData?: any) => void;
   onOvertimeCancel?: (index: number) => void;
   onOvertimeReapply?: (index: number) => void;
 }
@@ -44,12 +55,11 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
   const getWorkTypeColor = (workType: string) => {
     switch (workType) {
       case "종일근무": return "bg-primary-blue-150 text-primary-blue";
-      case "오전반차": return "bg-primary-blue-150 text-primary-blue";
-      case "오전반반차": return "bg-primary-blue-150 text-primary-blue";
-      case "오후반차": return "bg-primary-blue-150 text-primary-blue";
-      case "오후반반차": return "bg-primary-blue-150 text-primary-blue";
+      case "오전반차": return "bg-primary-pink-300 text-primary-pink-500";
+      case "오전반반차": return "bg-primary-purple-150 text-primary-purple-500";
+      case "오후반차": return "bg-primary-pink-300 text-primary-pink-500";
+      case "오후반반차": return "bg-primary-purple-150 text-primary-purple-500";
       case "외부근무": return "bg-primary-yellow-150 text-primary-orange-600";
-      case "휴가": return "bg-primary-gray-100 text-primary-gray";
       default: return "bg-primary-gray-100 text-primary-gray";
     }
   };
@@ -77,7 +87,7 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
 
   const handleOvertimeSave = (overtimeData: any) => {
     if (selectedIndex !== null) {
-      onOvertimeRequest(selectedIndex);
+      onOvertimeRequest(selectedIndex, overtimeData);
     }
     setDialogOpen(false);
     setSelectedIndex(null);

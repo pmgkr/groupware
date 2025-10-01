@@ -19,6 +19,17 @@ interface WorkData {
   dayOfWeek: string;
   rejectionDate?: string;
   rejectionReason?: string;
+  // 신청 데이터 추가
+  overtimeData?: {
+    expectedEndTime: string;
+    expectedEndMinute: string;
+    mealAllowance: string;
+    transportationAllowance: string;
+    overtimeHours: string;
+    overtimeType: string;
+    clientName: string;
+    workDescription: string;
+  };
 }
 
 interface OvertimeViewDialogProps {
@@ -36,8 +47,11 @@ const isWeekend = (dayOfWeek: string) => {
 };
 
 export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReapply, selectedDay, selectedIndex }: OvertimeViewDialogProps) {
-  // 샘플 데이터
-  const sampleOvertimeData = {
+  // selectedDay에서 상태 가져오기
+  const status = selectedDay?.overtimeStatus || "신청하기";
+  
+  // 실제 신청 데이터 사용 (없으면 기본값)
+  const overtimeData = selectedDay?.overtimeData || {
     expectedEndTime: "22",
     expectedEndMinute: "30",
     mealAllowance: "yes",
@@ -47,9 +61,6 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
     clientName: "BAT",
     workDescription: "집에 가고싶다"
   };
-
-  // selectedDay에서 상태 가져오기
-  const status = selectedDay?.overtimeStatus || "신청하기";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -71,14 +82,14 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
               <div className="space-y-2">
                 <Label htmlFor="expected-end-time">예상 퇴근 시간</Label>
                 <div className="flex gap-2">
-                  <div className="flex-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-50">
+                  <div className="flex-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
                     <span className="text-base">
-                      {sampleOvertimeData.expectedEndTime}시
+                      {overtimeData.expectedEndTime}시
                     </span>
                   </div>
-                  <div className="flex-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-50">
+                  <div className="flex-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
                     <span className="text-base">
-                      {sampleOvertimeData.expectedEndMinute}분
+                      {overtimeData.expectedEndMinute}분
                     </span>
                   </div>
                 </div>
@@ -88,14 +99,14 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
                 <Label>식대 사용여부</Label>
                 <div className="flex gap-2">
                   <div className={`px-4 py-2 rounded-md border ${
-                    sampleOvertimeData.mealAllowance === 'yes' 
+                    overtimeData.mealAllowance === 'yes' 
                       ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
                       : 'bg-gray-100 border-gray-300 text-gray-600'
                   }`}>
                     <span className="text-base font-medium">사용함</span>
                   </div>
                   <div className={`px-4 py-2 rounded-md border ${
-                    sampleOvertimeData.mealAllowance === 'no' 
+                    overtimeData.mealAllowance === 'no' 
                       ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
                       : 'bg-gray-100 border-gray-300 text-gray-600'
                   }`}>
@@ -108,14 +119,14 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
                 <Label>교통비 사용여부</Label>
                 <div className="flex gap-2">
                   <div className={`px-4 py-2 rounded-md border ${
-                    sampleOvertimeData.transportationAllowance === 'yes' 
+                    overtimeData.transportationAllowance === 'yes' 
                       ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
                       : 'bg-gray-100 border-gray-300 text-gray-600'
                   }`}>
                     <span className="text-base font-medium">사용함</span>
                   </div>
                   <div className={`px-4 py-2 rounded-md border ${
-                    sampleOvertimeData.transportationAllowance === 'no' 
+                    overtimeData.transportationAllowance === 'no' 
                       ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
                       : 'bg-gray-100 border-gray-300 text-gray-600'
                   }`}>
@@ -131,8 +142,8 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
             <>
               <div className="space-y-2">
                 <Label htmlFor="overtime-hours">초과근무 시간</Label>
-                <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-50">
-                  <span className="text-base">{sampleOvertimeData.overtimeHours}시간</span>
+                <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
+                  <span className="text-base">{overtimeData.overtimeHours}시간</span>
                 </div>
               </div>
 
@@ -140,21 +151,21 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
                 <Label>보상 지급방식</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <div className={`px-4 py-2 rounded-md border ${
-                    sampleOvertimeData.overtimeType === 'special_vacation' 
+                    overtimeData.overtimeType === 'special_vacation' 
                       ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
                       : 'bg-gray-100 border-gray-300 text-gray-600'
                   }`}>
                     <span className="text-base font-medium">특별대휴</span>
                   </div>
                   <div className={`px-4 py-2 rounded-md border ${
-                    sampleOvertimeData.overtimeType === 'compensation_vacation' 
+                    overtimeData.overtimeType === 'compensation_vacation' 
                       ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
                       : 'bg-gray-100 border-gray-300 text-gray-600'
                   }`}>
                     <span className="text-base font-medium">보상휴가</span>
                   </div>
                   <div className={`px-4 py-2 rounded-md border ${
-                    sampleOvertimeData.overtimeType === 'event' 
+                    overtimeData.overtimeType === 'event' 
                       ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
                       : 'bg-gray-100 border-gray-300 text-gray-600'
                   }`}>
@@ -168,65 +179,63 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
           {/* 공통 필드 */}
           <div className="space-y-2">
             <Label htmlFor="client-name">클라이언트명</Label>
-            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-50">
-              <span className="text-base">{sampleOvertimeData.clientName}</span>
+            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
+              <span className="text-base">{overtimeData.clientName}</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="work-description">작업 내용</Label>
-            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[80px]">
-              <span className="text-base">{sampleOvertimeData.workDescription}</span>
+            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100 min-h-[80px]">
+              <span className="text-base">{overtimeData.workDescription}</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>신청 상태</Label>
-            <div className={`px-4 py-2 rounded-lg border-2 ${
-              status === "승인대기" 
-                ? "border-gray-300 bg-gray-100" 
-                : status === "승인완료"
-                ? "border-gray-300 bg-white"
-                : status === "반려됨"
+            <div className={`px-4 py-2 rounded-lg border ${
+              status === "반려됨" 
                 ? "border-red-300 bg-red-50"
                 : "border-gray-300 bg-gray-100"
             }`}>
                 <div>
                   <span className={`text-base font-semibold ${
-                    status === "승인대기" ? "text-gray-700" : 
-                    status === "승인완료" ? "text-gray-600" : 
                     status === "반려됨" ? "text-red-700" :
-                    "text-gray-700"
+                    "text-gray-800"
                   }`}>
                     {status}
                   </span>
                   {status === "승인완료" && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      승인일: 2024년 1월 15일
+                    <p className="text-sm text-gray-800 mt-1">
+                      승인일: 2025년 10월 11일
                     </p>
+                  )}
+                  {status === "반려됨" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
+                    <>
+                    <p className="text-sm text-gray-800 mt-1">
+                        반려일: {dayjs(selectedDay.rejectionDate).format('YYYY년 MM월 DD일')}
+                    </p>
+                    <p className="text-sm text-gray-800">
+                        반려사유: {selectedDay.rejectionReason}
+                    </p>
+                    </>
                   )}
                 </div>
             </div>
           </div>
 
           {/* 반려 정보 표시 */}
-          {status === "반려됨" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
+          {/* {status === "반려됨" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
             <>
-              <div className="space-y-2">
-                <Label>반려일</Label>
-                <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-50">
-                  <span className="text-base">{dayjs(selectedDay.rejectionDate).format('YYYY년 MM월 DD일')}</span>
-                </div>
-              </div>
               
               <div className="space-y-2">
                 <Label>반려사유</Label>
-                <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[80px]">
+                <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100 min-h-[80px]">
                   <span className="text-base">{selectedDay.rejectionReason}</span>
                 </div>
               </div>
             </>
-          )}
+          )} */}
         </div>
           <DialogFooter>
             {status === "반려됨" && onReapply && (
