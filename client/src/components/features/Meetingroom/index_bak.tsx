@@ -1,22 +1,11 @@
-// src/components/features/Meetingroom/
+// src/pages/MeetingRooms.tsx
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { getImageUrl } from '@/utils';
 
-import { addMinutes, format, setHours, setMinutes, startOfDay, addDays, parse } from 'date-fns';
-import { Button } from '@components/ui/button';
+import { addMinutes, format, setHours, setMinutes, startOfDay, addDays } from 'date-fns';
+import { Button } from '@/components/ui/button';
 import { DayPicker } from '@components/daypicker';
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@components/ui/alert-dialog';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
@@ -46,9 +35,7 @@ function makeSlots(baseDate: Date): Slot[] {
     return { index: i, start, end, label: format(start, 'HH:mm') };
   });
 }
-
 const isoLocal = (d: Date) => new Date(d).toISOString();
-const withDateTime = (dateStr: string, time: string): Date => parse(`${dateStr} ${time}`, 'yyyy-MM-dd HH:mm:ss', new Date());
 const withinDayBounds = (s: Date, e: Date) => {
   const sH = s.getHours() + s.getMinutes() / 60;
   const eH = e.getHours() + e.getMinutes() / 60;
@@ -64,7 +51,6 @@ function useAllReservations(dateStr: string) {
   React.useEffect(() => {
     (async () => {
       try {
-        // 회의실 목록 API 통신 후 상태 설정
         const list = await service.listRooms();
         setRooms(list);
       } catch {
@@ -94,7 +80,7 @@ function useAllReservations(dateStr: string) {
 }
 
 type PendingSelection = {
-  roomId: number | null;
+  roomId: string | null;
   start: Date | null;
   end: Date | null;
 };
@@ -102,9 +88,6 @@ type PendingSelection = {
 export default function MeetingRoomsAllPage() {
   const [open, setOpen] = React.useState(false);
   const [dateStr, setDateStr] = React.useState(format(new Date(), 'yyyy-MM-dd'));
-  const [alertMsg, setAlertMsg] = React.useState<string | null>(null); // 얼럿 메세지용
-  const [alertOpen, setAlertOpen] = React.useState(false); // 얼럿 다이얼로그 오픈용
-
   const date = new Date(`${dateStr}T00:00:00`);
   const slots = React.useMemo(() => makeSlots(date), [date]);
 
@@ -119,7 +102,7 @@ export default function MeetingRoomsAllPage() {
   const [title, setTitle] = React.useState('');
 
   // 다이얼로그 내 미팅룸 스크롤
-  const scrollRoomIntoView = React.useCallback((roomId: number) => {
+  const scrollRoomIntoView = React.useCallback((roomId: string | number) => {
     const list = roomListRef.current;
     const el = roomItemRefs.current[String(roomId)];
     if (!list || !el) return;
@@ -134,62 +117,36 @@ export default function MeetingRoomsAllPage() {
     return () => cancelAnimationFrame(id);
   }, [pending?.roomId, scrollRoomIntoView]);
 
-  // 미팅룸 예약하기
   async function submitReservation() {
     if (!pending) return;
 
-    const title = titleRef.current?.value?.trim() ?? '';
-    setTitle(title);
+    const t = titleRef.current?.value?.trim() ?? '';
+    setTitle(t);
 
     if (!pending.roomId) {
-      setAlertMsg('미팅룸을 선택해 주세요.');
-      setAlertOpen(true);
+      alert('미팅룸을 선택해 주세요.');
       return;
     }
     if (!pending.start || !pending.end) {
-      setAlertMsg('미팅 시간을 선택해 주세요.');
-      setAlertOpen(true);
+      alert('시작/종료 시간을 선택해 주세요.');
       return;
     }
     if (!withinDayBounds(pending.start, pending.end)) {
-      setAlertMsg('운영 시간(09:00~20:00) 내에서 종료 시간이 시작 이후가 되도록 선택해 주세요.');
-      setAlertOpen(true);
+      alert('운영 시간(09:00~20:00) 내에서 종료 시간이 시작 이후가 되도록 선택해 주세요.');
       return;
     }
 
     try {
-      // 미팅 예약하기 API 호출
       await service.createReservation(pending.roomId, {
-        date: dateStr,
-        title: title || '미팅 예약',
-        start: format(pending.start, 'HH:mm:ss'),
-        end: format(pending.end, 'HH:mm:ss'),
+        title: t || '(제목 없음)',
+        start: isoLocal(pending.start),
+        end: isoLocal(pending.end),
       });
-
       setPending(null);
       setTitle('');
       await refresh();
-      setAlertMsg(null); // 성공 시 얼럿 메세지 초기화
     } catch (e: any) {
-      if (e.message === 'OVERLAP') {
-        setAlertMsg('이미 예약된 시간대입니다. 다른 시간대를 선택해 주세요.');
-        setAlertOpen(true);
-      } else {
-        setAlertMsg('예약 생성 중 오류가 발생했습니다.');
-        setAlertOpen(true);
-      }
-    }
-  }
-
-  /* 미팅룸 예약 취소 */
-  async function cancleReservation(id: number) {
-    try {
-      await service.cancelReservation(id);
-      await refresh();
-    } catch (err) {
-      console.error('예약 삭제 실패:', err);
-      setAlertMsg('예약 삭제 중 오류가 발생했습니다.');
-      setAlertOpen(true);
+      alert(e?.message ?? '예약 생성 오류');
     }
   }
 
@@ -199,8 +156,8 @@ export default function MeetingRoomsAllPage() {
   const handleNextDay = () => setDateStr(format(addDays(date, 1), 'yyyy-MM-dd'));
 
   /* 미팅룸 예약하기 */
-  const handleSelectRoom = (roomId: number) => {
-    setPending((prev) => (prev ? { ...prev, roomId: roomId } : prev));
+  const handleSelectRoom = (roomId: string | number) => {
+    setPending((prev) => (prev ? { ...prev, roomId: String(roomId) } : prev));
     scrollRoomIntoView(roomId);
   };
 
@@ -297,10 +254,12 @@ export default function MeetingRoomsAllPage() {
 
       <div>
         <div className="rounded-sm bg-gray-200">
+          {/* 2x2 Grid: [좌측 시간라벨, 우측 컨텐츠] x [헤더행, 바디행] */}
           <div className="grid grid-cols-[80px_1fr] py-4 pr-2">
+            {/* 좌측-헤더행: 빈칸(헤더 높이 맞춤) */}
             <div className={`${HEADER_H_CLASS} border-b border-gray-400/50`} />
 
-            {/* 우측-헤더행: 미팅룸 카드 */}
+            {/* 우측-헤더행: 방 카드(헤더) */}
             <div className="grid grid-cols-6">
               {rooms.map((room, idx) => (
                 <RoomHeader key={room.id} room={room} showRightBorder={idx !== rooms.length - 1} />
@@ -319,16 +278,13 @@ export default function MeetingRoomsAllPage() {
             {/* 우측-바디행: RoomLane(슬롯 영역만) */}
             <div className="grid grid-cols-6">
               {rooms.map((room) => {
-                const all = roomResMap[room.id] ?? [];
-
-                // 당일과 겹치는 예약만 전달 (Date 변환 후)
-                const reservationsForDay = all
-                  .map((rv) => {
-                    const s = withDateTime(dateStr, rv.start);
-                    const e = withDateTime(dateStr, rv.end);
-                    return { ...rv, start: s, end: e }; // start/end를 Date로 교체
-                  })
-                  .filter((rv) => rv.end > dayStart && rv.start < dayEnd);
+                const all = roomResMap[String(room.id)] ?? [];
+                // 당일과 겹치는 예약만 전달
+                const reservationsForDay = all.filter((rv) => {
+                  const s = new Date(rv.start);
+                  const e = new Date(rv.end);
+                  return e > dayStart && s < dayEnd;
+                });
 
                 return (
                   <RoomLane
@@ -339,35 +295,14 @@ export default function MeetingRoomsAllPage() {
                     onSelect={(range) => {
                       if (!withinDayBounds(range.start, range.end)) return;
                       setTitle('');
-                      setPending({
-                        roomId: Number(room.id),
-                        start: range.start,
-                        end: range.end,
-                      });
+                      setPending({ roomId: String(room.id), start: range.start, end: range.end });
                     }}
-                    onDelete={cancleReservation}
                   />
                 );
               })}
             </div>
           </div>
         </div>
-
-        {alertMsg && (
-          <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>예약 실패</AlertDialogTitle>
-                <AlertDialogDescription>{alertMsg}</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="h-8 px-3.5 text-sm" onClick={() => setOpen(false)}>
-                  닫기
-                </AlertDialogCancel>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
 
         {loading && <div className="mt-3 text-sm text-gray-500">불러오는 중…</div>}
         {error && <div className="mt-3 text-sm text-red-600">{error}</div>}
@@ -380,29 +315,28 @@ export default function MeetingRoomsAllPage() {
             </DialogHeader>
             {pending && (
               <div className="flex w-full flex-col gap-y-5 overflow-hidden">
-                {/* 다이얼로그 내 미팅룸 선택 영역 */}
+                {/* 다이얼로그 내 방 가로 스크롤 선택 */}
                 <div>
                   <ul
                     ref={roomListRef}
                     className="scrollbar-horz-thin flex gap-x-3 overflow-auto overscroll-contain py-2 whitespace-nowrap">
                     {rooms.map((room) => {
-                      const selected = Number(pending.roomId) === Number(room.id);
+                      const selected = pending.roomId === String(room.id);
                       return (
                         <li
                           className="w-40 flex-none"
                           key={room.id}
                           ref={(el) => {
-                            roomItemRefs.current[room.id] = el;
+                            roomItemRefs.current[String(room.id)] = el;
                           }}>
                           <button
                             type="button"
                             className="cursor-pointer"
-                            onClick={() => handleSelectRoom(Number(room.id))}
+                            onClick={() => handleSelectRoom(room.id)}
                             aria-pressed={selected}>
                             <div className="relative w-full overflow-hidden rounded-sm">
-                              {/* 추후 실제 이미지 경로로 교체 */}
                               <img
-                                src={getImageUrl(`dummy/${room.imageUrl}`)}
+                                src={getImageUrl(`dummy/${room.id}`)}
                                 alt={`${room.name} 이미지`}
                                 className="h-full w-full object-cover"
                               />
@@ -492,8 +426,8 @@ function RoomHeader({ room, showRightBorder }: { room: Room; showRightBorder: bo
   return (
     <div className={cn('relative border-b border-gray-400/50 p-2', showRightBorder ? 'border-r' : '', HEADER_H_CLASS)}>
       <div className="w-full overflow-hidden rounded-sm">
-        {/* 추후 실제 이미지 경로로 교체 */}
-        <img src={getImageUrl(`dummy/${room.imageUrl}`)} alt="프로필 이미지" className="h-full w-full object-cover" />
+        {/* HEADER_H_CLASS로 높이 통일 */}
+        <img src={getImageUrl(`dummy/${room.id}`)} alt="프로필 이미지" className="h-full w-full object-cover" />
       </div>
       <div className="mt-2 text-base font-bold">{room.name}</div>
       <div className="flex gap-x-1 text-sm text-gray-500">
@@ -508,23 +442,16 @@ function RoomHeader({ room, showRightBorder }: { room: Room; showRightBorder: bo
   );
 }
 
-type ReservationWithDate = Omit<Reservation, 'start' | 'end'> & {
-  start: Date;
-  end: Date;
-};
-
 function RoomLane({
   room,
   slots,
   reservations,
   onSelect,
-  onDelete,
 }: {
   room: Room;
   slots: Slot[];
-  reservations: ReservationWithDate[];
+  reservations: Reservation[];
   onSelect: (range: { start: Date; end: Date }) => void;
-  onDelete: (id: number) => void;
 }) {
   const COLORS = ['#bff3ce', '#ffc7c7', '#bddbff', '#ffcca9', '#9cb4ff', '#e9a7ff'] as const;
   type Color = (typeof COLORS)[number];
@@ -546,11 +473,10 @@ function RoomLane({
   const idxFromTime = (d: Date) =>
     Math.max(0, Math.min(slots.length - 1, Math.floor(((d.getHours() - OPEN_HOUR) * 60 + d.getMinutes()) / SLOT_MINUTES)));
 
-  // 예약 → 화면 블록 변환
   const blocks = React.useMemo(() => {
     return reservations.map((rv) => {
-      const s = rv.start;
-      const e = rv.end;
+      const s = new Date(rv.start);
+      const e = new Date(rv.end);
       const startIdx = idxFromTime(s);
       const endIdxExclusive = Math.min(slots.length, Math.ceil(((e.getHours() - OPEN_HOUR) * 60 + e.getMinutes()) / SLOT_MINUTES));
       const length = Math.max(1, endIdxExclusive - startIdx);
@@ -558,7 +484,6 @@ function RoomLane({
     });
   }, [reservations, slots.length]);
 
-  // 색상 랜덤 선택
   const colorsForBlocks = React.useMemo(() => {
     let prev: Color | null = null;
     return blocks.map(() => {
@@ -578,7 +503,7 @@ function RoomLane({
     setSelEnd(null);
   }
 
-  // 날짜/예약/슬롯 바뀌면 드래그 상태 초기화
+  // 날짜/예약/슬롯 바뀌면 드래그 상태만 초기화(헤더는 별도 컴포넌트라 깜빡임 없음)
   React.useEffect(() => {
     setSelecting(false);
     setSelStart(null);
@@ -590,7 +515,6 @@ function RoomLane({
       {slots.map((slot) => {
         const active =
           selStart != null && selEnd != null && slot.index >= Math.min(selStart, selEnd) && slot.index <= Math.max(selStart, selEnd);
-
         return (
           <div
             key={slot.index}
@@ -612,8 +536,6 @@ function RoomLane({
       {/* 예약 블록 오버레이 */}
       <div>
         {blocks.map((b, i) => {
-          console.log(b);
-
           const top = b.startIdx * ROW_H + 3;
           const height = b.length * ROW_H - 6;
           return (
@@ -621,40 +543,28 @@ function RoomLane({
               key={b.id}
               className="absolute right-1 left-1 overflow-hidden border border-t-3 border-gray-400/50 bg-white p-2"
               style={{ top, height, borderTopColor: colorsForBlocks[i] }}
-              title={`${b.title} · ${format(b.start, 'HH:mm')}~${format(b.end, 'HH:mm')}`}>
+              title={`${b.title} · ${format(new Date(b.start), 'HH:mm')}~${format(new Date(b.end), 'HH:mm')}`}>
               <div className="text-sm font-semibold">{b.title}</div>
               {b.length > 1 && (
                 <div className="text-xs text-gray-500">
-                  {format(b.start, 'HH:mm')} - {format(b.end, 'HH:mm')} · {b.user_name}
+                  {format(new Date(b.start), 'HH:mm')} - {format(new Date(b.end), 'HH:mm')} · 홍길동
                 </div>
               )}
-              {/* 미팅 예약자와 접속한 유저의 아이디값 비교해서 Popover 노출 필요 */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="svgIcon" size="icon" className="absolute top-2 right-1 size-3">
                     <More />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-fit p-0" align="start">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="hover:bg-gray-100">
-                        삭제하기
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>예약 삭제</AlertDialogTitle>
-                        <AlertDialogDescription>미팅룸 예약을 삭제하시겠습니까?</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="h-8 px-3.5 text-sm">닫기</AlertDialogCancel>
-                        <AlertDialogAction className="h-8 px-3.5 text-sm" onClick={() => onDelete(b.id)}>
-                          삭제
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                <PopoverContent className="w-fit p-0">
+                  <div className="flex flex-col">
+                    <Button variant="ghost" size="sm" className="rounded-none hover:bg-gray-100">
+                      수정하기
+                    </Button>
+                    <Button variant="ghost" size="sm" className="rounded-none border-t hover:bg-gray-100">
+                      삭제하기
+                    </Button>
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>

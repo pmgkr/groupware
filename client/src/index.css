@@ -114,8 +114,12 @@
   --secondary: var(--color-gray-500);
   --secondary-foreground: var(--color-white);
 
+  --card: var(--color-gray-100);
+  --card-foreground: var(--color-gray-300);
+
   --muted: var(--color-gray-300);
   --muted-foreground: var(--color-gray-500);
+
   --accent: var(--color-primary-blue-100);
   --accent-foreground: var(--color-gray-900);
   --destructive: var(--negative-base);
