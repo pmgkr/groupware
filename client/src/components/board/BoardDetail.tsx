@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Edit, CircleX, Download, Delete, Enter, Send } from '@/assets/images/icons';
 import { Textbox } from '../ui/textbox';
 import { useState } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 // 스토리북 view
 interface BoardDetailProps {
@@ -111,6 +112,9 @@ export default function BoardDetail({ id }: BoardDetailProps) {
     setNewComment('');
   };
 
+  //컨펌 다이얼로그
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
   const handleDeleteComment = (id: number) => {
     setComments(comments.filter((c) => c.id !== id));
   };
@@ -199,14 +203,37 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                 aria-label="의견 삭제"
                 className="px-6"
                 onClick={() => {
-                  if (window.confirm('삭제 하시겠습니까?')) {
-                    handleDeleteComment(c.id);
-                  }
+                  setCommentToDelete(c.id);
+                  setOpenConfirm(true);
                 }}>
                 <CircleX />
               </Button>
             </div>
           ))}
+          {/* 삭제 컨펌 다이얼로그 */}
+          <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
+            <DialogContent className="w-[400px] pt-8">
+              <DialogHeader>
+                <DialogTitle>댓글을 삭제하시겠습니까?</DialogTitle>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpenConfirm(false)}>
+                  취소
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (commentToDelete !== null) {
+                      handleDeleteComment(commentToDelete);
+                    }
+                    setOpenConfirm(false);
+                    setCommentToDelete(null);
+                  }}>
+                  삭제
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

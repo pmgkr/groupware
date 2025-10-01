@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { Edit, Delete, Download } from '@/assets/images/icons';
 import { BookForm, type BookFormData } from './BookForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 export default function BookWish() {
   //더미 데이터
@@ -79,13 +80,22 @@ export default function BookWish() {
     setSelected(allChecked ? [] : allRequestIds);
   };
 
-  // 완료 처리
+  // 완료 처리 함수
   const handleComplete = () => {
     if (selected.length === 0) return;
-    if (window.confirm(`${selected.length}개 완료처리 하시겠습니까?`)) {
+    setPosts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, state: '완료' } : p)));
+    setSelected([]); // 선택 초기화
+  };
+  const handleCompleteClick = () => {
+    if (selected.length === 0) {
+      openConfirm('완료처리할 도서를 선택해주세요', () => handleComplete()); //
+      return;
+    }
+
+    openConfirm(`${selected.length}개 완료처리 하시겠습니까?`, () => {
       setPosts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, state: '완료' } : p)));
       setSelected([]); // 선택 초기화
-    }
+    });
   };
 
   //도서 신청 다이얼로그 상태
@@ -101,14 +111,16 @@ export default function BookWish() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  //도서 신청 등록
-  const handleRegister = () => {
+  //도서 신청 등록 유효성 검증
+  const handleRegisterClick = () => {
     if (!form.category || !form.title || !form.author || !form.publish || !form.link) {
       alert('카테고리, 도서명, 저자, 출판사, 링크는 반드시 입력해야 합니다.');
       return;
     }
-    if (!window.confirm('도서를 신청하시겠습니까?')) return;
-
+    openConfirm('도서를 신청하시겠습니까?', () => handleRegister());
+  };
+  //도서 신청 등록
+  const handleRegister = () => {
     const nextId = posts.length > 0 ? Math.max(...posts.map((p) => p.id)) + 1 : 1;
     const newBook = {
       id: nextId,
@@ -146,20 +158,35 @@ export default function BookWish() {
     setEditPost(post);
     setOpenEdit(true);
   };
-  const handleEditUpdate = () => {
+
+  //수정 유효성 검사
+  const handleEditUpdateClick = () => {
     if (!editPost) return;
     if (!editPost.category || !editPost.title || !editPost.author || !editPost.publish) {
       alert('카테고리, 도서명, 저자, 출판사는 반드시 입력해야 합니다.');
       return;
     }
-    setPosts((prev) => prev.map((p) => (p.id === editPost.id ? { ...p, ...editPost } : p)));
+    openConfirm('신청 도서를 수정하시겠습니까?', () => handleEditUpdate());
+  };
+  const handleEditUpdate = () => {
+    setPosts((prev) => prev.map((p) => (p.id === editPost!.id ? { ...p, ...editPost } : p)));
     setOpenEdit(false);
   };
 
   const handleDelete = (id: number) => {
-    if (window.confirm('삭제하시겠습니까?')) {
-      setPosts((prev) => prev.filter((p) => p.id !== id));
-    }
+    setPosts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // 컨펌 다이얼로그상태
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    action?: () => void;
+    title: string;
+  }>({ open: false, title: '' });
+
+  // 열기 함수
+  const openConfirm = (title: string, action: () => void) => {
+    setConfirmState({ open: true, title, action });
   };
 
   return (
@@ -186,7 +213,7 @@ export default function BookWish() {
               <Button variant="outline" onClick={() => setOpen(false)}>
                 취소
               </Button>
-              <Button onClick={handleRegister}>등록</Button>
+              <Button onClick={handleRegisterClick}>등록</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -242,30 +269,32 @@ export default function BookWish() {
               <TableCell>{post.team}</TableCell>
               <TableCell>{post.user}</TableCell>
               <TableCell>
-                <div className="text-gray-700">
-                  <Button
-                    variant="svgIcon"
-                    size="icon"
-                    className="hover:text-primary-blue-500"
-                    aria-label="수정"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEdit(post);
-                    }}>
-                    <Edit className="size-4" />
-                  </Button>
-                  <Button
-                    variant="svgIcon"
-                    size="icon"
-                    className="hover:text-primary-blue-500"
-                    aria-label="삭제"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(post.id);
-                    }}>
-                    <Delete className="size-4" />
-                  </Button>
-                </div>
+                {post.state !== '완료' && (
+                  <div className="text-gray-700">
+                    <Button
+                      variant="svgIcon"
+                      size="icon"
+                      className="hover:text-primary-blue-500"
+                      aria-label="수정"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(post);
+                      }}>
+                      <Edit className="size-4" />
+                    </Button>
+                    <Button
+                      variant="svgIcon"
+                      size="icon"
+                      className="hover:text-primary-blue-500"
+                      aria-label="삭제"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openConfirm('신청도서를 삭제하시겠습니까?', () => handleDelete(post.id));
+                      }}>
+                      <Delete className="size-4" />
+                    </Button>
+                  </div>
+                )}
               </TableCell>
             </TableRow>
           ))}
@@ -302,16 +331,24 @@ export default function BookWish() {
             <Button variant="outline" onClick={() => setOpenEdit(false)}>
               취소
             </Button>
-            <Button onClick={handleEditUpdate}>수정 완료</Button>
+            <Button onClick={handleEditUpdateClick}>수정 완료</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <div className="mt-5 flex justify-end">
-        <Button onClick={handleComplete} variant="outline">
+        <Button onClick={handleCompleteClick} variant="outline">
           완료 처리
         </Button>
       </div>
+
+      {/* 공통 다이얼로그 */}
+      <ConfirmDialog
+        open={confirmState.open}
+        onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
+        title={confirmState.title}
+        onConfirm={() => confirmState.action?.()}
+      />
 
       <div>
         <AppPagination totalPages={10} initialPage={1} visibleCount={5} />

@@ -8,6 +8,7 @@ import { useNavigate, Outlet } from 'react-router';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useState } from 'react';
 import { DeviceForm } from '@/components/itdevice/DeviceForm';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export default function ItDevice() {
   const navigate = useNavigate();
@@ -74,12 +75,17 @@ export default function ItDevice() {
   const handleChange = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
-  // 등록 완료
-  const handleRegister = () => {
+  //등록 유효성 검사
+  const handleRegisterClick = () => {
     if (!form.device || !form.brand || !form.model || !form.serial || !form.purchaseAt) {
       alert('디바이스, 브랜드, 모델, 시리얼넘버, 구매일자는 반드시 입력해야 합니다.');
       return;
     }
+    openConfirm('장비 정보를 등록하시겠습니까?', () => handleRegister());
+  };
+
+  // 등록 완료
+  const handleRegister = () => {
     const nextId = posts.length > 0 ? Math.max(...posts.map((p) => p.id)) + 1 : 1;
 
     const newDevice = {
@@ -115,6 +121,17 @@ export default function ItDevice() {
     setOpenRegister(false); // 다이얼로그 닫기
   };
 
+  // 컨펌 다이얼로그 상태
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    action?: () => void;
+    title: string;
+  }>({ open: false, title: '' });
+  // 열기 함수
+  const openConfirm = (title: string, action: () => void) => {
+    setConfirmState({ open: true, title, action });
+  };
+
   return (
     <div>
       {/* 검색창 */}
@@ -142,7 +159,7 @@ export default function ItDevice() {
               <Button variant="outline" onClick={() => setOpenRegister(false)}>
                 취소
               </Button>
-              <Button onClick={handleRegister}>완료</Button>
+              <Button onClick={handleRegisterClick}>완료</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -177,6 +194,13 @@ export default function ItDevice() {
           ))}
         </TableBody>
       </Table>
+      {/* 공통 다이얼로그 */}
+      <ConfirmDialog
+        open={confirmState.open}
+        onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
+        title={confirmState.title}
+        onConfirm={() => confirmState.action?.()}
+      />
 
       <div className="mt-5">
         <AppPagination totalPages={10} initialPage={1} visibleCount={5} />

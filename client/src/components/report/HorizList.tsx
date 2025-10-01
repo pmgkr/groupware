@@ -175,7 +175,7 @@ const tabs = [
   { key: 'reference', label: '참조 문서' },
 ];
 
-export default function HorizList() {
+export default function HorizList({ tab }: { tab: 'block' | 'horiz' }) {
   const [activeTab, setActiveTab] = useState('draft');
   const navigate = useNavigate();
 
@@ -240,7 +240,10 @@ export default function HorizList() {
               </TableCell>
             ) : (
               filteredReports.map((report) => (
-                <TableRow key={report.id} onClick={() => navigate(`${report.id}`)} className={`cursor-pointer hover:bg-gray-100`}>
+                <TableRow
+                  key={report.id}
+                  onClick={() => navigate(`/report/${report.id}?tab=${tab}`)}
+                  className={`cursor-pointer hover:bg-gray-100`}>
                   <TableCell>{report.report_num}</TableCell>
                   <TableCell>{report.category}</TableCell>
                   <TableCell className="text-left">{report.title}</TableCell>

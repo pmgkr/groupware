@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router';
 import { useState } from 'react';
 import { BookForm } from './BookForm';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 export default function BookList() {
   const navigate = useNavigate();
@@ -61,14 +62,16 @@ export default function BookList() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  //등록 완료
-  const handleRegister = () => {
+  //등록 유효성 검사
+  const handleRegisterClick = () => {
     if (!form.category || !form.title || !form.author || !form.publish) {
       alert('카테고리, 도서명, 저자, 출판사는 반드시 입력해야 합니다.');
       return;
     }
-    if (!window.confirm('등록하시겠습니까?')) return;
-
+    openConfirm('도서를 등록하시겠습니까?', () => handleRegister());
+  };
+  //등록 완료
+  const handleRegister = () => {
     const nextId = posts.length > 0 ? Math.max(...posts.map((p) => p.id)) + 1 : 1; //id 부여
 
     const newBook = {
@@ -94,6 +97,18 @@ export default function BookList() {
     setOpen(false); // 다이얼로그 닫기
   };
 
+  // 컨펌 다이얼로그 상태
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    action?: () => void;
+    title: string;
+  }>({ open: false, title: '' });
+
+  // 열기 함수
+  const openConfirm = (title: string, action: () => void) => {
+    setConfirmState({ open: true, title, action });
+  };
+
   return (
     <div>
       {/* 검색창 */}
@@ -117,7 +132,7 @@ export default function BookList() {
               <Button variant="outline" onClick={() => setOpen(false)}>
                 취소
               </Button>
-              <Button onClick={handleRegister}>완료</Button>
+              <Button onClick={handleRegisterClick}>완료</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -152,6 +167,13 @@ export default function BookList() {
           ))}
         </TableBody>
       </Table>
+      {/* 공통 다이얼로그 */}
+      <ConfirmDialog
+        open={confirmState.open}
+        onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
+        title={confirmState.title}
+        onConfirm={() => confirmState.action?.()}
+      />
 
       <div className="mt-5">
         <AppPagination totalPages={10} initialPage={1} visibleCount={5} />
