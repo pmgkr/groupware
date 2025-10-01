@@ -6,4 +6,3 @@ export * from './teams';
 export * from './office';
 // export * from './users';
 // export * from './working';
-export * from './office';
