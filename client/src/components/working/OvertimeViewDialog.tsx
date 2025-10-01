@@ -6,20 +6,26 @@ import { Label } from '@components/ui/label';
 
 interface WorkData {
   date: string;
-  workType: "정상근무" | "외부근무" | "휴가";
+  workType: "종일근무" | "외부근무" | "휴가";
   startTime: string;
   endTime: string;
   basicHours: number;
+  basicMinutes: number;
   overtimeHours: number;
+  overtimeMinutes: number;
   totalHours: number;
-  overtimeStatus: "신청하기" | "승인대기" | "승인완료";
+  totalMinutes: number;
+  overtimeStatus: "신청하기" | "승인대기" | "승인완료" | "반려됨";
   dayOfWeek: string;
+  rejectionDate?: string;
+  rejectionReason?: string;
 }
 
 interface OvertimeViewDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onCancel: () => void;
+  onReapply?: () => void;
   selectedDay?: WorkData;
   selectedIndex?: number;
 }
@@ -29,7 +35,7 @@ const isWeekend = (dayOfWeek: string) => {
   return dayOfWeek === '토' || dayOfWeek === '일';
 };
 
-export default function OvertimeViewDialog({ isOpen, onClose, onCancel, selectedDay, selectedIndex }: OvertimeViewDialogProps) {
+export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReapply, selectedDay, selectedIndex }: OvertimeViewDialogProps) {
   // 샘플 데이터
   const sampleOvertimeData = {
     expectedEndTime: "22",
@@ -80,7 +86,7 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, selected
 
               <div className="space-y-3 mb-8">
                 <Label>식대 사용여부</Label>
-                <div className="flex gap-4">
+                <div className="flex gap-2">
                   <div className={`px-4 py-2 rounded-md border ${
                     sampleOvertimeData.mealAllowance === 'yes' 
                       ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
@@ -100,7 +106,7 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, selected
 
               <div className="space-y-3 mb-8">
                 <Label>교통비 사용여부</Label>
-                <div className="flex gap-4">
+                <div className="flex gap-2">
                   <div className={`px-4 py-2 rounded-md border ${
                     sampleOvertimeData.transportationAllowance === 'yes' 
                       ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
@@ -132,7 +138,7 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, selected
 
               <div className="space-y-3 mb-8">
                 <Label>보상 지급방식</Label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div className={`px-4 py-2 rounded-md border ${
                     sampleOvertimeData.overtimeType === 'special_vacation' 
                       ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
@@ -181,11 +187,16 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, selected
                 ? "border-gray-300 bg-gray-100" 
                 : status === "승인완료"
                 ? "border-gray-300 bg-white"
+                : status === "반려됨"
+                ? "border-red-300 bg-red-50"
                 : "border-gray-300 bg-gray-100"
             }`}>
                 <div>
                   <span className={`text-base font-semibold ${
-                    status === "승인대기" ? "text-gray-700" : status === "승인완료" ? "text-gray-600" : "text-gray-700"
+                    status === "승인대기" ? "text-gray-700" : 
+                    status === "승인완료" ? "text-gray-600" : 
+                    status === "반려됨" ? "text-red-700" :
+                    "text-gray-700"
                   }`}>
                     {status}
                   </span>
@@ -197,9 +208,33 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, selected
                 </div>
             </div>
           </div>
+
+          {/* 반려 정보 표시 */}
+          {status === "반려됨" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
+            <>
+              <div className="space-y-2">
+                <Label>반려일</Label>
+                <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-50">
+                  <span className="text-base">{dayjs(selectedDay.rejectionDate).format('YYYY년 MM월 DD일')}</span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>반려사유</Label>
+                <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[80px]">
+                  <span className="text-base">{selectedDay.rejectionReason}</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
           <DialogFooter>
-            <Button variant="destructive" onClick={onCancel}>신청 취소하기</Button>
+            {status === "반려됨" && onReapply && (
+              <Button variant="default" onClick={onReapply}>재신청하기</Button>
+            )}
+            {status !== "반려됨" && (
+              <Button variant="destructive" onClick={onCancel}>신청 취소하기</Button>
+            )}
             <Button variant="outline" onClick={onClose}>닫기</Button>
           </DialogFooter>
       </DialogContent>

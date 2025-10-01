@@ -8,14 +8,19 @@ import { Badge } from "@components/ui/badge";
 // 근무 데이터 타입 정의
 interface WorkData {
   date: string;
-  workType: "정상근무" | "외부근무" | "휴가";
+  workType: "종일근무" | "외부근무" | "휴가";
   startTime: string;
   endTime: string;
   basicHours: number;
+  basicMinutes: number;
   overtimeHours: number;
+  overtimeMinutes: number;
   totalHours: number;
-  overtimeStatus: "신청하기" | "승인대기" | "승인완료";
+  totalMinutes: number;
+  overtimeStatus: "신청하기" | "승인대기" | "승인완료" | "반려됨";
   dayOfWeek: string;
+  rejectionDate?: string;
+  rejectionReason?: string;
 }
 
 // 주차 계산 함수
@@ -41,68 +46,91 @@ const generateWeekData = (startDate: Date): WorkData[] => {
   
   // 9월 22일-28일 샘플 데이터 (2025년)
   const sampleDataMap: { [key: string]: Omit<WorkData, 'date' | 'dayOfWeek'> } = {
-    '2025-09-22': { // 일요일
+    '2025-09-29': { // 일요일
       workType: "휴가",
       startTime: "-",
       endTime: "-",
       basicHours: 0,
+      basicMinutes: 0,
       overtimeHours: 0,
+      overtimeMinutes: 0,
       totalHours: 0,
+      totalMinutes: 0,
       overtimeStatus: "신청하기"
     },
-    '2025-09-23': { // 월요일
-      workType: "정상근무",
+    '2025-09-30': { // 월요일
+      workType: "종일근무",
       startTime: "09:00",
       endTime: "18:00",
       basicHours: 8,
+      basicMinutes: 0,
       overtimeHours: 0,
+      overtimeMinutes: 0,
       totalHours: 8,
+      totalMinutes: 0,
       overtimeStatus: "신청하기"
     },
-    '2025-09-24': { // 화요일
-      workType: "정상근무",
+    '2025-10-01': { // 화요일
+      workType: "종일근무",
       startTime: "09:30",
-      endTime: "18:30",
+      endTime: "18:40",
       basicHours: 8,
+      basicMinutes: 0,
       overtimeHours: 1,
+      overtimeMinutes: 10,
       totalHours: 9,
+      totalMinutes: 10,
       overtimeStatus: "승인대기"
     },
-    '2025-09-25': { // 수요일
+    '2025-10-02': { // 수요일
       workType: "외부근무",
       startTime: "10:00",
       endTime: "17:00",
       basicHours: 7,
+      basicMinutes: 0,
       overtimeHours: 0,
+      overtimeMinutes: 0,
       totalHours: 7,
+      totalMinutes: 0,
       overtimeStatus: "신청하기"
     },
-    '2025-09-26': { // 목요일
-      workType: "정상근무",
+    '2025-10-03': { // 목요일
+      workType: "종일근무",
       startTime: "09:00",
       endTime: "20:00",
       basicHours: 8,
+      basicMinutes: 0,
       overtimeHours: 3,
+      overtimeMinutes: 0,
       totalHours: 11,
+      totalMinutes: 0,
       overtimeStatus: "승인완료"
     },
-    '2025-09-27': { // 금요일
-      workType: "정상근무",
+    '2025-10-04': { // 금요일
+      workType: "종일근무",
       startTime: "08:30",
       endTime: "17:30",
       basicHours: 8,
+      basicMinutes: 0,
       overtimeHours: 1,
+      overtimeMinutes: 0,
       totalHours: 9,
+      totalMinutes: 0,
       overtimeStatus: "신청하기"
     },
-    '2025-09-28': { // 토요일
-      workType: "정상근무",
+    '2025-10-05': { // 토요일
+      workType: "종일근무",
       startTime: "10:00",
       endTime: "16:00",
       basicHours: 6,
+      basicMinutes: 0,
       overtimeHours: 0,
+      overtimeMinutes: 0,
       totalHours: 6,
-      overtimeStatus: "신청하기"
+      totalMinutes: 0,
+      overtimeStatus: "반려됨",
+      rejectionDate: "2025-10-06",
+      rejectionReason: "주말 근무는 사전 승인이 필요합니다. 담당자와 상의 후 재신청해주세요."
     }
   };
   
@@ -113,15 +141,20 @@ const generateWeekData = (startDate: Date): WorkData[] => {
     const dateString = dayjs(currentDate).format('YYYY-MM-DD');
     const dayOfWeek = daysOfWeek[i];
     
-    // 9월 22일-28일이 아니면 빈 데이터
+    // 데이터가 없는 경우
     const sampleData = sampleDataMap[dateString] || {
       workType: "" as const,
       startTime: "-",
       endTime: "-",
       basicHours: 0,
+      basicMinutes: 0,
       overtimeHours: 0,
+      overtimeMinutes: 0,
       totalHours: 0,
-      overtimeStatus: "신청하기" as const
+      totalMinutes: 0,
+      overtimeStatus: "신청하기" as const,
+      rejectionDate: undefined,
+      rejectionReason: undefined
     };
     
     const workData: WorkData = {
@@ -160,8 +193,15 @@ export default function WorkHoursTable() {
 
   const handleOvertimeRequest = (index: number) => {
     const newData = [...data];
-    if (newData[index].overtimeStatus === "신청하기") {
+    const currentStatus = newData[index].overtimeStatus;
+    
+    if (currentStatus === "신청하기" || currentStatus === "반려됨") {
       newData[index].overtimeStatus = "승인대기";
+      // 재신청인 경우 반려 정보 초기화
+      if (currentStatus === "반려됨") {
+        newData[index].rejectionDate = undefined;
+        newData[index].rejectionReason = undefined;
+      }
     }
     setData(newData);
   };
@@ -174,6 +214,12 @@ export default function WorkHoursTable() {
       newData[index].totalHours = newData[index].basicHours;
     }
     setData(newData);
+  };
+
+  const handleOvertimeReapply = (index: number) => {
+    // 재신청하기 버튼 클릭 시에는 상태를 변경하지 않음
+    // 실제 신청이 완료될 때만 상태가 변경됨
+    console.log('재신청하기 버튼 클릭:', index);
   };
 
   // 헤더 관련 함수들
@@ -221,17 +267,33 @@ export default function WorkHoursTable() {
   // 주간 근무시간 통계 계산
   const weeklyStats = useMemo(() => {
     const totalBasicHours = weekData.reduce((sum, day) => sum + day.basicHours, 0);
+    const totalBasicMinutes = weekData.reduce((sum, day) => sum + day.basicMinutes, 0);
     const totalOvertimeHours = weekData.reduce((sum, day) => sum + day.overtimeHours, 0);
+    const totalOvertimeMinutes = weekData.reduce((sum, day) => sum + day.overtimeMinutes, 0);
     const totalWorkHours = weekData.reduce((sum, day) => sum + day.totalHours, 0);
+    const totalWorkMinutes = weekData.reduce((sum, day) => sum + day.totalMinutes, 0);
     const vacationHours = weekData.filter(day => day.workType === "휴가").length * 8; // 휴가일은 8시간으로 계산
     const externalHours = weekData.filter(day => day.workType === "외부근무").reduce((sum, day) => sum + day.totalHours, 0);
+    
+    // 실제 시간과 분 계산
+    const totalWorkMinutesAll = (totalWorkHours * 60) + (totalWorkMinutes || 0);
+    const workHours = Math.floor(totalWorkMinutesAll / 60);
+    const workMinutes = totalWorkMinutesAll % 60;
+    
+    const remainingMinutes = Math.max(0, (52 * 60) - totalWorkMinutesAll); // 52시간 = 3120분
+    const remainingHours = Math.floor(remainingMinutes / 60);
+    const remainingMins = remainingMinutes % 60;
     
     return {
       totalBasicHours,
       totalOvertimeHours,
       totalWorkHours,
       vacationHours,
-      externalHours
+      externalHours,
+      workHours,
+      workMinutes,
+      remainingHours,
+      remainingMinutes: remainingMins
     };
   }, [weekData]);
 
@@ -253,6 +315,7 @@ export default function WorkHoursTable() {
         data={data} 
         onOvertimeRequest={handleOvertimeRequest}
         onOvertimeCancel={handleOvertimeCancel}
+        onOvertimeReapply={handleOvertimeReapply}
       />
     </div>
   );

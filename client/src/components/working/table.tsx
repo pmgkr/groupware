@@ -18,19 +18,25 @@ interface WorkData {
   startTime: string;
   endTime: string;
   basicHours: number;
+  basicMinutes: number;
   overtimeHours: number;
+  overtimeMinutes: number;
   totalHours: number;
-  overtimeStatus: "신청하기" | "승인대기" | "승인완료";
+  totalMinutes: number;
+  overtimeStatus: "신청하기" | "승인대기" | "승인완료" | "반려됨";
   dayOfWeek: string;
+  rejectionDate?: string;
+  rejectionReason?: string;
 }
 
 interface TableProps {
   data: WorkData[];
   onOvertimeRequest: (index: number) => void;
   onOvertimeCancel?: (index: number) => void;
+  onOvertimeReapply?: (index: number) => void;
 }
 
-export default function Table({ data, onOvertimeRequest, onOvertimeCancel }: TableProps) {
+export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOvertimeReapply }: TableProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -64,7 +70,7 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel }: Tab
     
     if (workData.overtimeStatus === "신청하기") {
       setDialogOpen(true);
-    } else if (workData.overtimeStatus === "승인대기" || workData.overtimeStatus === "승인완료") {
+    } else if (workData.overtimeStatus === "승인대기" || workData.overtimeStatus === "승인완료" || workData.overtimeStatus === "반려됨") {
       setViewDialogOpen(true);
     }
   };
@@ -95,6 +101,14 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel }: Tab
     setSelectedIndex(null);
   };
 
+  const handleOvertimeReapply = () => {
+    if (selectedIndex !== null && onOvertimeReapply) {
+      onOvertimeReapply(selectedIndex);
+    }
+    setViewDialogOpen(false);
+    setDialogOpen(true); // 재신청을 위해 신청 다이얼로그 열기
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow">
@@ -111,7 +125,7 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel }: Tab
               };
               
               return (
-                <th key={index} className={`px-6 py-3 text-center text-base font-medium text-gray-500 uppercase tracking-wider ${isToday(row.date) ? 'bg-primary-blue-100' : ''}`}>
+                <th key={index} className={`px-6 py-3 text-center text-base font-medium text-gray-500 uppercase tracking-wider ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                   <div className="flex flex-col">
                     <span className={`text-base font-semibold ${getDayColor(row.dayOfWeek)}`}>{row.dayOfWeek}요일</span>
                     <span className="text-base text-gray-800">{dayjs(row.date).format("MM-DD")}</span>
@@ -127,7 +141,7 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel }: Tab
               구분
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-center ${isToday(row.date) ? 'bg-primary-blue-100' : ''}`}>
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                 <span className={`inline-flex px-3 py-1 text-base font-semibold rounded-full ${getWorkTypeColor(row.workType)}`}>
                   {row.workType}
                 </span>
@@ -139,7 +153,7 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel }: Tab
               출근시간
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-100' : ''}`}>
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                 {row.startTime}
               </td>
             ))}
@@ -149,7 +163,7 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel }: Tab
               퇴근시간
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-100' : ''}`}>
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                 {row.endTime}
               </td>
             ))}
@@ -171,8 +185,8 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel }: Tab
               </div>
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-100' : ''}`}>
-                {row.basicHours}시간
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                {row.basicHours}시간 {String(row.basicMinutes || 0).padStart(2, '0')}분
               </td>
             ))}
           </tr>
@@ -193,8 +207,8 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel }: Tab
               </div>
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-100' : ''}`}>
-                {row.overtimeHours}시간
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                {row.overtimeHours}시간 {String(row.overtimeMinutes || 0).padStart(2, '0')}분
               </td>
             ))}
           </tr>
@@ -203,8 +217,8 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel }: Tab
               총 근무시간
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base font-bold text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-100' : ''}`}>
-                {row.totalHours}시간
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base font-bold text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                {row.totalHours}시간 {String(row.totalMinutes || 0).padStart(2, '0')}분
               </td>
             ))}
           </tr>
@@ -213,7 +227,7 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel }: Tab
               추가근무 신청
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-100' : ''}`}>
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                 <Button
                   onClick={() => handleOvertimeClick(index)}
                   disabled={false}
@@ -240,6 +254,7 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel }: Tab
         isOpen={viewDialogOpen}
         onClose={handleViewDialogClose}
         onCancel={handleOvertimeCancel}
+        onReapply={handleOvertimeReapply}
         selectedDay={selectedIndex !== null ? data[selectedIndex] : undefined}
         selectedIndex={selectedIndex || undefined}
       />
