@@ -17,16 +17,12 @@ export default function Report() {
         <div className="flex items-center justify-between">
           <Button>새 기안서 작성</Button>
           <TabsList className="bg-white">
-            <TabsTrigger
-              value="block"
-              className="[&]:data-[state=active]:border-primary-blue-300 p-4 px-1 data-[state=active]:bg-white dark:data-[state=active]:bg-white [&]:data-[state=active]:text-gray-950">
+            <TabsTrigger value="block" className="px-1">
               <Button variant="svgIcon" size="icon">
                 <ViewGrid className="size-5" />
               </Button>
             </TabsTrigger>
-            <TabsTrigger
-              value="horiz"
-              className="[&]:data-[state=active]:border-primary-blue-300 p-4 px-1 data-[state=active]:bg-white dark:data-[state=active]:bg-white [&]:data-[state=active]:text-gray-950">
+            <TabsTrigger value="horiz" className="px-1">
               <Button variant="svgIcon" size="icon">
                 <ViewList className="size-5" />
               </Button>
