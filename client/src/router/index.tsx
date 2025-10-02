@@ -13,7 +13,6 @@ const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Onboarding = lazy(() => import('@/pages/Onboarding'));
 const ErrorPage = lazy(() => import('@/pages/ErrorPage'));
 
-import { expenseRoutes } from './expense';
 import { calendarRoutes } from './calendar';
 import { workingRoutes } from './working';
 import { officeRoutes } from './office';
@@ -26,15 +25,14 @@ const authedChildren: RouteObject[] = [
   calendarRoutes,
   workingRoutes,
   officeRoutes,
-  expenseRoutes,
   mypageRoutes,
   managerRoutes,
 ];
 
 // 로딩 컴포넌트
 const LoadingSpinner = () => (
-  <div className="flex min-h-screen items-center justify-center">
-    <div className="h-32 w-32 animate-spin rounded-full border-b-2 border-blue-500"></div>
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
   </div>
 );
 
@@ -47,21 +45,21 @@ export const router = createBrowserRouter([
       </Suspense>
     ),
     children: [
-      {
-        path: '/',
+      { 
+        path: '/', 
         element: (
           <Suspense fallback={<LoadingSpinner />}>
             <Login />
           </Suspense>
-        ),
+        ) 
       },
-      {
-        path: '/onboarding',
+      { 
+        path: '/onboarding', 
         element: (
           <Suspense fallback={<LoadingSpinner />}>
             <Onboarding />
           </Suspense>
-        ),
+        ) 
       },
     ],
   },
@@ -74,13 +72,13 @@ export const router = createBrowserRouter([
       </Suspense>
     ),
     children: [
-      {
-        path: '/dashboard',
+      { 
+        path: '/dashboard', 
         element: (
           <Suspense fallback={<LoadingSpinner />}>
             <Dashboard />
           </Suspense>
-        ),
+        ) 
       },
       {
         path: '/',
@@ -95,6 +93,9 @@ export const router = createBrowserRouter([
           </Suspense>
         ),
         children: [
+          // 루트로 접근시 대시보드로 보내고 싶다면 주석 해제
+          // { index: true, element: <Navigate to="dashboard" replace /> },
+
           // 섹션별 라우트 합치기
           ...authedChildren,
         ],
@@ -103,12 +104,12 @@ export const router = createBrowserRouter([
   },
 
   // 404
-  {
-    path: '*',
+  { 
+    path: '*', 
     element: (
       <Suspense fallback={<LoadingSpinner />}>
         <ErrorPage />
       </Suspense>
-    ),
+    ) 
   },
 ]);

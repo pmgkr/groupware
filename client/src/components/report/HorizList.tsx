@@ -6,7 +6,6 @@ import { SearchGray } from '@/assets/images/icons';
 import { useNavigate } from 'react-router';
 import { useState } from 'react';
 import { Badge } from '../ui/badge';
-import { formatAmount } from '@/utils';
 
 interface ReportCard {
   id: number;
@@ -175,7 +174,7 @@ const tabs = [
   { key: 'reference', label: '참조 문서' },
 ];
 
-export default function HorizList({ tab }: { tab: 'block' | 'horiz' }) {
+export default function HorizList() {
   const [activeTab, setActiveTab] = useState('draft');
   const navigate = useNavigate();
 
@@ -223,6 +222,7 @@ export default function HorizList({ tab }: { tab: 'block' | 'horiz' }) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[80px]">번호</TableHead>
               <TableHead className="w-[120px]">문서번호</TableHead>
               <TableHead className="w-[120px]">구분</TableHead>
               <TableHead className="w-[500px]">제목</TableHead>
@@ -240,14 +240,12 @@ export default function HorizList({ tab }: { tab: 'block' | 'horiz' }) {
               </TableCell>
             ) : (
               filteredReports.map((report) => (
-                <TableRow
-                  key={report.id}
-                  onClick={() => navigate(`/report/${report.id}?tab=${tab}`)}
-                  className={`cursor-pointer hover:bg-gray-100`}>
+                <TableRow key={report.id} onClick={() => navigate(`${report.id}`)} className={`cursor-pointer hover:bg-gray-100`}>
+                  <TableCell>{report.id}</TableCell>
                   <TableCell>{report.report_num}</TableCell>
                   <TableCell>{report.category}</TableCell>
                   <TableCell className="text-left">{report.title}</TableCell>
-                  <TableCell>{formatAmount(report.price)}</TableCell>
+                  <TableCell>{report.price}</TableCell>
                   <TableCell>{report.team}</TableCell>
                   <TableCell>{report.user}</TableCell>
                   <TableCell>{report.date}</TableCell>

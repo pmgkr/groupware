@@ -8,9 +8,6 @@ import { useNavigate } from 'react-router';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useState } from 'react';
 import { Edit, Delete, Download } from '@/assets/images/icons';
-import { BookForm, type BookFormData } from './BookForm';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 export default function BookWish() {
   //더미 데이터
@@ -25,7 +22,6 @@ export default function BookWish() {
       user: '홍길동',
       createdAt: '2025-07-01',
       state: '신청',
-      link: 'https://www.yes24.com/Product/Goods/154075122?WCode=033',
     },
     {
       id: 2,
@@ -62,7 +58,6 @@ export default function BookWish() {
     },
   ]);
 
-  // 완료 처리
   const [selected, setSelected] = useState<number[]>([]);
 
   // 신청 상태인 행만 체크 가능
@@ -80,113 +75,13 @@ export default function BookWish() {
     setSelected(allChecked ? [] : allRequestIds);
   };
 
-  // 완료 처리 함수
+  // 완료 처리
   const handleComplete = () => {
     if (selected.length === 0) return;
-    setPosts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, state: '완료' } : p)));
-    setSelected([]); // 선택 초기화
-  };
-  const handleCompleteClick = () => {
-    if (selected.length === 0) {
-      openConfirm('완료처리할 도서를 선택해주세요', () => handleComplete()); //
-      return;
-    }
-
-    openConfirm(`${selected.length}개 완료처리 하시겠습니까?`, () => {
+    if (window.confirm(`${selected.length}개 완료처리 하시겠습니까?`)) {
       setPosts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, state: '완료' } : p)));
       setSelected([]); // 선택 초기화
-    });
-  };
-
-  //도서 신청 다이얼로그 상태
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<BookFormData>({
-    category: '',
-    title: '',
-    author: '',
-    publish: '',
-    link: '',
-  });
-  const handleChange = (key: keyof BookFormData, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  //도서 신청 등록 유효성 검증
-  const handleRegisterClick = () => {
-    if (!form.category || !form.title || !form.author || !form.publish || !form.link) {
-      alert('카테고리, 도서명, 저자, 출판사, 링크는 반드시 입력해야 합니다.');
-      return;
     }
-    openConfirm('도서를 신청하시겠습니까?', () => handleRegister());
-  };
-  //도서 신청 등록
-  const handleRegister = () => {
-    const nextId = posts.length > 0 ? Math.max(...posts.map((p) => p.id)) + 1 : 1;
-    const newBook = {
-      id: nextId,
-      ...form,
-      team: 'CCP', //임시
-      user: '강영현', //임시
-      createdAt: new Date().toLocaleDateString('sv-SE'),
-      state: '신청',
-    };
-
-    setPosts((prev) => [newBook, ...prev]);
-    setForm({
-      category: '',
-      title: '',
-      author: '',
-      publish: '',
-      link: '',
-    });
-    setOpen(false);
-  };
-
-  //신청도서 상세보기
-  const [openView, setOpenView] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<any | null>(null);
-  const handleRowClick = (post: any) => {
-    setSelectedPost(post);
-    setOpenView(true);
-  };
-
-  //수정, 삭제
-  const [openEdit, setOpenEdit] = useState(false);
-  const [editPost, setEditPost] = useState<BookFormData | null>(null);
-
-  const handleEdit = (post: BookFormData) => {
-    setEditPost(post);
-    setOpenEdit(true);
-  };
-
-  //수정 유효성 검사
-  const handleEditUpdateClick = () => {
-    if (!editPost) return;
-    if (!editPost.category || !editPost.title || !editPost.author || !editPost.publish) {
-      alert('카테고리, 도서명, 저자, 출판사는 반드시 입력해야 합니다.');
-      return;
-    }
-    openConfirm('신청 도서를 수정하시겠습니까?', () => handleEditUpdate());
-  };
-  const handleEditUpdate = () => {
-    setPosts((prev) => prev.map((p) => (p.id === editPost!.id ? { ...p, ...editPost } : p)));
-    setOpenEdit(false);
-  };
-
-  const handleDelete = (id: number) => {
-    setPosts((prev) => prev.filter((p) => p.id !== id));
-  };
-
-  // 컨펌 다이얼로그상태
-  const [confirmState, setConfirmState] = useState<{
-    open: boolean;
-    action?: () => void;
-    title: string;
-  }>({ open: false, title: '' });
-
-  // 열기 함수
-  const openConfirm = (title: string, action: () => void) => {
-    setConfirmState({ open: true, title, action });
   };
 
   return (
@@ -200,23 +95,7 @@ export default function BookWish() {
           </Button>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>도서 신청</Button>
-          </DialogTrigger>
-          <DialogContent aria-describedby={undefined}>
-            <DialogHeader>
-              <DialogTitle className="mb-3">도서 신청</DialogTitle>
-            </DialogHeader>
-            <BookForm form={form} onChange={handleChange} mode="apply" />
-            <DialogFooter className="mt-5">
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                취소
-              </Button>
-              <Button onClick={handleRegisterClick}>등록</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button>도서 신청</Button>
       </div>
 
       {/* 게시판 테이블 */}
@@ -239,15 +118,12 @@ export default function BookWish() {
         </TableHeader>
         <TableBody>
           {posts.map((post) => (
-            <TableRow key={post.id} onClick={() => handleRowClick(post)} className="cursor-pointer">
+            <TableRow key={post.id}>
               <TableCell className="[&:has([role=checkbox])]:pr-auto">
                 <Checkbox
                   checked={selected.includes(post.id)}
-                  onCheckedChange={() => {
-                    toggleOne(post.id, post.state);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  disabled={post.state !== '신청'}
+                  onCheckedChange={() => toggleOne(post.id, post.state)}
+                  disabled={post.state !== '신청'} // 완료된 건 체크박스 비활성화
                 />{' '}
               </TableCell>
               <TableCell>
@@ -269,86 +145,24 @@ export default function BookWish() {
               <TableCell>{post.team}</TableCell>
               <TableCell>{post.user}</TableCell>
               <TableCell>
-                {post.state !== '완료' && (
-                  <div className="text-gray-700">
-                    <Button
-                      variant="svgIcon"
-                      size="icon"
-                      className="hover:text-primary-blue-500"
-                      aria-label="수정"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEdit(post);
-                      }}>
-                      <Edit className="size-4" />
-                    </Button>
-                    <Button
-                      variant="svgIcon"
-                      size="icon"
-                      className="hover:text-primary-blue-500"
-                      aria-label="삭제"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openConfirm('신청도서를 삭제하시겠습니까?', () => handleDelete(post.id));
-                      }}>
-                      <Delete className="size-4" />
-                    </Button>
-                  </div>
-                )}
+                <div className="text-gray-700">
+                  <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="수정">
+                    <Edit className="size-4" />
+                  </Button>
+                  <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="삭제">
+                    <Delete className="size-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-
-      {/* 상세 보기 다이얼로그 */}
-      <Dialog open={openView} onOpenChange={setOpenView}>
-        <DialogContent className="p-7" aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle className="mb-3">신청도서 상세보기</DialogTitle>
-          </DialogHeader>
-          {selectedPost && <BookForm form={selectedPost} mode="view" />}
-          <DialogFooter className="mt-5">
-            <Button onClick={() => setOpenView(false)}>닫기</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* 수정 다이얼로그 */}
-      <Dialog open={openEdit} onOpenChange={setOpenEdit}>
-        <DialogContent className="p-7" aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle className="mb-3">신청 도서 수정</DialogTitle>
-          </DialogHeader>
-          {editPost && (
-            <BookForm
-              form={editPost}
-              onChange={(key, value) => setEditPost((prev) => (prev ? { ...prev, [key]: value } : prev))}
-              mode="edit"
-            />
-          )}
-          <DialogFooter className="mt-5">
-            <Button variant="outline" onClick={() => setOpenEdit(false)}>
-              취소
-            </Button>
-            <Button onClick={handleEditUpdateClick}>수정 완료</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <div className="mt-5 flex justify-end">
-        <Button onClick={handleCompleteClick} variant="outline">
+        <Button onClick={handleComplete} variant="outline">
           완료 처리
         </Button>
       </div>
-
-      {/* 공통 다이얼로그 */}
-      <ConfirmDialog
-        open={confirmState.open}
-        onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
-        title={confirmState.title}
-        onConfirm={() => confirmState.action?.()}
-      />
 
       <div>
         <AppPagination totalPages={10} initialPage={1} visibleCount={5} />
