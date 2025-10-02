@@ -14,7 +14,7 @@ const isToday = (date: string) => {
 // 근무 데이터 타입 정의
 interface WorkData {
   date: string;
-  workType: "종일근무" | "외부근무" | "휴가";
+  workType: "일반근무" | "외부근무" | "휴가";
   startTime: string;
   endTime: string;
   basicHours: number;
@@ -54,7 +54,7 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
 
   const getWorkTypeColor = (workType: string) => {
     switch (workType) {
-      case "종일근무": return "bg-primary-blue-150 text-primary-blue";
+      case "일반근무": return "bg-primary-blue-150 text-primary-blue";
       case "오전반차": return "bg-primary-pink-300 text-primary-pink-500";
       case "오전반반차": return "bg-primary-purple-150 text-primary-purple-500";
       case "오후반차": return "bg-primary-pink-300 text-primary-pink-500";

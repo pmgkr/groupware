@@ -8,7 +8,7 @@ import { Badge } from "@components/ui/badge";
 // 근무 데이터 타입 정의
 interface WorkData {
   date: string;
-  workType: "종일근무" | "외부근무" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차";
+  workType: "일반근무" | "외부근무" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차";
   startTime: string;
   endTime: string;
   basicHours: number;
@@ -70,7 +70,7 @@ const generateWeekData = (startDate: Date): WorkData[] => {
       overtimeStatus: "신청하기"
     },
     '2025-09-30': { // 월요일
-      workType: "종일근무",
+      workType: "일반근무",
       startTime: "09:00",
       endTime: "18:00",
       basicHours: 8,
@@ -82,7 +82,7 @@ const generateWeekData = (startDate: Date): WorkData[] => {
       overtimeStatus: "신청하기"
     },
     '2025-10-01': { // 화요일
-      workType: "종일근무",
+      workType: "일반근무",
       startTime: "09:30",
       endTime: "18:40",
       basicHours: 8,
@@ -106,7 +106,7 @@ const generateWeekData = (startDate: Date): WorkData[] => {
       overtimeStatus: "신청하기"
     },
     '2025-10-03': { // 목요일
-      workType: "종일근무",
+      workType: "일반근무",
       startTime: "09:00",
       endTime: "20:00",
       basicHours: 8,
@@ -118,7 +118,7 @@ const generateWeekData = (startDate: Date): WorkData[] => {
       overtimeStatus: "승인완료"
     },
     '2025-10-04': { // 금요일
-      workType: "종일근무",
+      workType: "일반근무",
       startTime: "08:30",
       endTime: "17:30",
       basicHours: 8,
@@ -130,7 +130,7 @@ const generateWeekData = (startDate: Date): WorkData[] => {
       overtimeStatus: "신청하기"
     },
     '2025-10-05': { // 토요일
-      workType: "종일근무",
+      workType: "일반근무",
       startTime: "10:00",
       endTime: "16:00",
       basicHours: 6,
