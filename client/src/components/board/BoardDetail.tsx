@@ -1,11 +1,14 @@
+// src/components/board/BoardDetail.tsx
 import { useParams, useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
-import { Edit, CircleX, Download, Delete, Enter, Send } from '@/assets/images/icons';
+import { Edit, CircleX, Download, Delete, Send } from '@/assets/images/icons';
 import { Textbox } from '../ui/textbox';
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useEffect, useState } from 'react';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-// 스토리북 view
+import { getBoardDetail } from '@/api/office/notice';
+import type { BoardDTO } from '@/api/office/notice';
+
 interface BoardDetailProps {
   id?: string;
 }
@@ -13,64 +16,12 @@ interface BoardDetailProps {
 export default function BoardDetail({ id }: BoardDetailProps) {
   const { id: routeId } = useParams();
   const navigate = useNavigate();
+  const postId = id ?? routeId;
 
-  const postId = id ?? routeId; // props > URL 순서로 id 사용
+  // Hook들은 최상단에서 선언
+  const [post, setPost] = useState<BoardDTO | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const posts = [
-    {
-      id: 999,
-      category: '전체공지',
-      title: '📢 공지사항 제목',
-      content: `
-안녕하세요.
-서비스 안정화를 위해 아래 일정으로 시스템 점검이 진행됩니다.
-
-- 일시: 2025년 9월 1일(월) 00:00 ~ 02:00
-- 영향: 점검 시간 동안 로그인 및 일부 기능 제한
-
-이용에 불편을 드려 죄송합니다.
-      `,
-      writer: '관리자',
-      views: 1000,
-      createdAt: '2025-07-01',
-      isNotice: true,
-      attachments: ['첨부파일.pdf', '시스템점검안내.docx'],
-    },
-    {
-      id: 3,
-      category: '일반',
-      title: '제목 제목 제목 제목 제목',
-      content: '3번 글 내용입니다.',
-      writer: '홍길동',
-      views: 15,
-      createdAt: '2025-07-01',
-    },
-    {
-      id: 2,
-      category: '프로젝트',
-      title: '제목 제목 제목 제목',
-      content: '2번 글 내용입니다.',
-      writer: '박보검',
-      views: 222,
-      createdAt: '2025-07-25',
-    },
-    {
-      id: 1,
-      category: '기타',
-      title: '제목 제목 제목',
-      content: '1번 글 내용입니다.',
-      writer: '윤도운',
-      views: 825,
-      createdAt: '2025-08-30',
-      attachments: ['드럼 악보.pdf'],
-    },
-  ];
-
-  const post = posts.find((p) => String(p.id) === postId);
-
-  if (!post) return <div className="p-4">게시글을 찾을 수 없습니다.</div>;
-
-  //의견 댓글
   const [comments, setComments] = useState([
     {
       id: 1,
@@ -90,31 +41,55 @@ export default function BoardDetail({ id }: BoardDetailProps) {
     },
   ]);
   const [newComment, setNewComment] = useState('');
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
 
-  // postId 기준으로 필터링
+  // 게시글 상세 API 호출
+  useEffect(() => {
+    (async () => {
+      if (!postId) {
+        setPost(null);
+        setLoading(false);
+        return;
+      }
+      try {
+        const data = await getBoardDetail(Number(postId));
+        //console.log('상세 API 응답:', data);
+        setPost(data);
+      } catch (err) {
+        //console.error('게시글 불러오기 실패:', err);
+        setPost(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [postId]);
+
+  // 분기는 여기서만
+  if (loading) return <div className="p-4">불러오는 중...</div>;
+  if (!post) return <div className="p-4">게시글을 찾을 수 없습니다.</div>;
+
+  // 댓글 필터링
   const postComments = comments
     .filter((c) => c.postId === Number(postId))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const formatted = new Date().toLocaleString('sv-SE').replace('T', ' ');
+
   const handleAddComment = (postId: number) => {
     if (!newComment.trim()) return;
-    const now = new Date();
     const newItem = {
       id: comments.length + 1,
       postId,
-      user: '홍길동', // 실제 로그인 유저 정보에 따라 변경 가능
-      team: 'CCP', //
+      user: '홍길동', // TODO: 로그인 사용자 정보로 대체
+      team: 'CCP',
       content: newComment,
       createdAt: formatted,
     };
-    setComments((prev) => [newItem, ...prev]); // 최신 댓글 위로
+    setComments((prev) => [newItem, ...prev]);
     setNewComment('');
   };
 
-  //컨펌 다이얼로그
-  const [openConfirm, setOpenConfirm] = useState(false);
-  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
   const handleDeleteComment = (id: number) => {
     setComments(comments.filter((c) => c.id !== id));
   };
@@ -126,9 +101,9 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       <div className="flex items-center justify-between border-b border-gray-300">
         <div className="flex divide-x divide-gray-300 p-4 text-sm leading-tight text-gray-500">
           <div className="px-3 pl-0">{post.category}</div>
-          <div className="px-3">{post.writer}</div>
-          <div className="px-3">{post.createdAt}</div>
-          <div className="px-3">조회 {post.views}</div>
+          <div className="px-3">{post.user_name}</div>
+          <div className="px-3">{post.reg_date.substring(0, 10)}</div>
+          <div className="px-3">조회 {post.v_count}</div>
         </div>
         <div className="text-gray-700">
           <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="수정">
@@ -140,23 +115,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
         </div>
       </div>
 
-      {post.attachments && post.attachments.length > 0 && (
-        <div className="flex flex-wrap gap-1 bg-gray-200 py-3 pl-4">
-          {post.attachments.map((file, index) => (
-            <Button
-              key={index}
-              variant="secondary"
-              className="hover:text-primary-blue-500 hover:bg-primary-blue-100 text-sm [&]:border-gray-300 [&]:p-4"
-              onClick={() => {
-                console.log(`${file} 다운로드`);
-              }}>
-              <span className="font-normal">{file}</span>
-              <Download className="size-4.5" />
-            </Button>
-          ))}
-        </div>
-      )}
-
+      {/* 본문 */}
       <div className="border-b border-gray-900 p-4 pb-10 leading-relaxed whitespace-pre-line">{post.content}</div>
 
       {/* 의견 댓글 영역 */}
@@ -171,10 +130,11 @@ export default function BoardDetail({ id }: BoardDetailProps) {
               onChange={(e) => setNewComment(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  e.preventDefault(); //줄바꿈 방지
+                  e.preventDefault();
                   handleAddComment(Number(postId));
                 }
-              }}></Textbox>
+              }}
+            />
           </div>
           <Button
             variant="svgIcon"
@@ -210,6 +170,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
               </Button>
             </div>
           ))}
+
           {/* 삭제 컨펌 다이얼로그 */}
           <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
             <DialogContent className="w-[400px] pt-8">
