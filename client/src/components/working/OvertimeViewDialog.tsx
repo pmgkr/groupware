@@ -6,7 +6,7 @@ import { Label } from '@components/ui/label';
 
 interface WorkData {
   date: string;
-  workType: "종일근무" | "외부근무" | "휴가";
+  workType: "일반근무" | "외부근무" | "휴가";
   startTime: string;
   endTime: string;
   basicHours: number;
