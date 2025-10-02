@@ -96,6 +96,19 @@ export default function Header() {
           </li>
           <li>
             <NavLink
+              to="/expense"
+              className={({ isActive }) =>
+                cn(
+                  'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
+                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+                )
+              }>
+              <Project />
+              <span>비용관리</span>
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
               to="/calendar"
               className={({ isActive }) =>
                 cn(

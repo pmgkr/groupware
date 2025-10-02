@@ -1,6 +1,14 @@
 import { useUser } from '@/hooks/useUser';
 
-const messages = ['좋은 하루 보내시길 바랍니다 😊', '오늘도 멋지게 해내실 거예요 🚀', '행복한 하루 보내세요 🌼'];
+const messages = [
+  '언제나 든든한 응원을 보낼게요 🌈',
+  '작은 순간도 소중히, 오늘도 화이팅입니다 ✨',
+  '작은 행복들이 모여 행복으로 가득한 하루 보내세요 🌼',
+  '잠시 쉬어가도 괜찮아요, 쉬어가는 순간도 소중하니까요 ☕',
+  '화이팅! 우리는 함께 하고 있어요 💪',
+  '마음이 편안해지는 하루가 되길 바랍니다 🌿',
+  '오늘도 당신이 가는 길을 응원하고 있습니다 🚀',
+];
 
 export default function getWelcomeMessage() {
   const { user_name, birth_date } = useUser();

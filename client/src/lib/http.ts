@@ -1,6 +1,14 @@
 // src/lib/http.ts
 import { setToken, getToken } from '@/lib/tokenStore';
 
+const API = (import.meta.env.VITE_API_ORIGIN ?? '').replace(/\/$/, '');
+
+// 요청 body가 FormData인지 확인 (FormData일 경우엔 Content-Type을 설정하지 않게끔)
+function isFormData(body: any): body is FormData {
+  return typeof FormData !== 'undefined' && body instanceof FormData;
+}
+
+// API 요청 실패 시 커스텀 에러 클래스 (status는 HTTP 상태 코드, 에러 메시지는 data.message 없으면 res.statusText.)
 export class HttpError extends Error {
   status: number;
   data?: any;
@@ -11,10 +19,12 @@ export class HttpError extends Error {
   }
 }
 
+// 리프레시 토큰 쿠키를 서버에 전송해서 새로운 Access Token을 발급
+// 성공 시 tokenStore에 setToken으로 새 토큰 저장
 export async function refreshAccessToken() {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/refresh`, {
+  const res = await fetch(`${API}/refresh`, {
     method: 'POST',
-    credentials: 'include', // 쿠키 전송
+    credentials: 'include',
   });
   if (!res.ok) throw new Error('Refresh failed');
   const data = await res.json();
@@ -22,33 +32,50 @@ export async function refreshAccessToken() {
   return data.accessToken as string;
 }
 
-export async function http<T = unknown>(path: string, options?: RequestInit): Promise<T> {
+{
+  /* API 호출 핵심 함수 */
+}
+// API 경로(path)와 fetch 옵션(options)을 받아서 실제 API 호출 수행
+// 토큰이 만료된 경우 refreshAccessToken()으로 토큰 갱신 시도 후 재요청
+// T는 제네릭(Generic) 타입 파라미터. 서버에서 내려온 데이터의 타입을 지정하기 위한 용도
+export async function http<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
+  const toUrl = (p: string) => `${API}/${p.replace(/^\/+/, '')}`;
   let token = getToken();
 
+  // 요청 헤더 빌드
+  const buildHeaders = (withToken?: string) => {
+    const userHeaders = (options.headers as Record<string, string>) || {};
+    const hasCT = Object.keys(userHeaders).some((k) => k.toLowerCase() === 'content-type');
+    return {
+      ...(withToken ? { Authorization: `Bearer ${withToken}` } : {}),
+      ...(!hasCT && !isFormData(options.body) ? { 'Content-Type': 'application/json' } : {}),
+      ...userHeaders,
+    };
+  };
+
+  // 실제 fetch 실행
   async function doFetch(withToken?: string) {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}${path}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(withToken ? { Authorization: `Bearer ${withToken}` } : {}),
-        ...(options?.headers || {}),
-      },
+    return fetch(toUrl(path), {
       credentials: 'include',
       ...options,
+      headers: buildHeaders(withToken),
     });
-    return res;
   }
 
+  // 토큰 만료 시 새 토큰 갱신 후 재요청
   let res = await doFetch(token);
   if (res.status === 401 && token) {
-    // 액세스 만료 → 리프레시
-    const newToken = await refreshAccessToken();
-    res = await doFetch(newToken);
+    try {
+      const newToken = await refreshAccessToken();
+      res = await doFetch(newToken);
+    } catch {
+      setToken(undefined);
+      throw new HttpError(res, { message: 'Unauthorized' });
+    }
   }
 
+  // API 응답 처리
   const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new HttpError(res, data); // 💡 HttpError 객체를 던지도록 수정
-  }
+  if (!res.ok) throw new HttpError(res, data);
   return data as T;
 }
