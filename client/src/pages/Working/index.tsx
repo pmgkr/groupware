@@ -287,7 +287,7 @@ export default function WorkHoursTable() {
     const totalOvertimeMinutes = weekData.reduce((sum, day) => sum + day.overtimeMinutes, 0);
     const totalWorkHours = weekData.reduce((sum, day) => sum + day.totalHours, 0);
     const totalWorkMinutes = weekData.reduce((sum, day) => sum + day.totalMinutes, 0);
-    const vacationHours = weekData.filter(day => day.workType === "휴가").length * 8; // 휴가일은 8시간으로 계산
+    const vacationHours = weekData.filter(day => day.workType === "오전반차" || day.workType === "오후반차" || day.workType === "오전반반차" || day.workType === "오후반반차").length * 8; // 반차일은 8시간으로 계산
     const externalHours = weekData.filter(day => day.workType === "외부근무").reduce((sum, day) => sum + day.totalHours, 0);
     
     // 실제 시간과 분 계산
