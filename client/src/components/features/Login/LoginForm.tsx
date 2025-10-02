@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { loginApi } from '@/api';
+import { loginApi } from '@/api/auth';
 import { setToken as setTokenStore } from '@/lib/tokenStore';
 
 import { Button } from '@components/ui/button';
@@ -44,7 +44,6 @@ export function LoginForm() {
     try {
       // 로그인 → 토큰만 세팅 → /dashboard로 이동
       const res = await loginApi({ user_id: values.user_id, user_pw: values.user_pw });
-
       setTokenStore(res.accessToken);
 
       // 이메일 기억하기

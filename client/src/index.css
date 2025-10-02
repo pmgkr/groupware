@@ -63,6 +63,7 @@
   --color-primary-orange: #f17d16;
   --color-primary-yellow: #ffaa00;
 
+  --color-primary-blue-50: #fafcff;
   --color-primary-blue-100: #f2f4fe;
   --color-primary-blue-150: #e0e5ff;
   --color-primary-blue-300: #a5b4fc;
@@ -82,8 +83,8 @@
   --color-primary-pink-100: #fff2fa;
   --color-primary-pink-300: #f9a8d4;
   --color-primary-pink-500: #ec4899;
-
-  --color-secondary-blue-500: #6366f1;
+  
+  --color-secondary-blue-500: #6366F1;
 
   --color-gray-50: #ffffff;
   --color-gray-100: #fafafa;
@@ -98,12 +99,8 @@
   --color-gray-950: #000000;
 
   --color-white: var(--color-gray-50);
-  --color-black: var(--color-gray-950);
+  --color-black: var(--color-gary-950);
   --color-disable: #e0e0e0;
-
-  --positive-base: #4fb95f;
-  --positive-light: #9adba3;
-  --positive-dark: #31883e;
 
   --negative-base: #d81d00;
   --negative-light: #ff2200;
@@ -123,7 +120,6 @@
   --accent: var(--color-primary-blue-100);
   --accent-foreground: var(--color-gray-900);
   --destructive: var(--negative-base);
-  --valid: var(--positive-base);
   --popover: var(--color-white);
   --border: var(--color-gray-400);
   --input: var(--color-gray-400);
@@ -241,7 +237,6 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
-  --color-valid: var(--valid);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -347,19 +342,6 @@
 
   html {
     overflow-x: hidden;
-  }
-
-  body[data-scroll-locked] {
-    margin-right: 0 !important;
-  }
-}
-
-@layer utilities {
-  .scrollbar-hide {
-    &::-webkit-scrollbar {
-      display: none;
-    }
-    scrollbar-width: none;
   }
 }
 

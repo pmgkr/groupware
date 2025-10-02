@@ -5,10 +5,9 @@ import { cn } from '@/lib/utils';
 import { getImageUrl } from '@/utils';
 
 import Logo from '@/assets/images/common/logo.svg?react';
-import { Dashboard, Project, Calendar, Profile, Logout, Pto, Office, Manager, Admin } from '@/assets/images/icons';
+import { Dashboard, Project, Calendar, Alarm, Profile, Logout, Pto, Office, Manager, Admin } from '@/assets/images/icons';
 
 import { Button } from '@components/ui/button';
-import { Notification } from '@components/features/Dashboard/notifications';
 
 export default function Header() {
   const location = useLocation();
@@ -23,12 +22,12 @@ export default function Header() {
   };
 
   // 오피스 하위 경로들 (오피스는 /office 라우트가 없음)
-  const officePaths = ['/notice', '/meetingroom', '/seating', '/itdevice', '/book', '/report'];
+  const officePaths = ['/notice', '/meetingroom', '/seating', '/itdevice', '/book'];
   const isOfficeActive = officePaths.some((path) => location.pathname.startsWith(path));
 
   return (
     <>
-      <header className="fixed top-0 left-0 z-49 flex h-18 w-full items-center justify-between border-b-1 border-b-gray-300 bg-white px-7">
+      <header className="fixed top-0 left-0 z-99 flex h-18 w-full items-center justify-between border-b-1 border-b-gray-300 bg-white px-7">
         <h1 className="w-42">
           <Link to="/">
             <Logo className="w-full" />
@@ -36,7 +35,9 @@ export default function Header() {
         </h1>
         <ul className="text-primary-blue-300 flex items-center gap-x-4">
           <li>
-            <Notification />
+            <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="알람">
+              <Alarm className="size-6" />
+            </Button>
           </li>
           <li>
             <Button asChild variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="마이페이지">
