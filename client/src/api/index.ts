@@ -4,5 +4,6 @@
 export * from './auth';
 export * from './teams';
 export * from './office';
+export * from './calendar';
 // export * from './users';
 // export * from './working';

@@ -89,7 +89,7 @@ const generateWeekData = (startDate: Date): WorkData[] => {
       basicMinutes: 0,
       overtimeHours: 1,
       overtimeMinutes: 10,
-      totalHours: 0,
+      totalHours: 9,
       totalMinutes: 10,
       overtimeStatus: "승인대기"
     },
@@ -101,7 +101,7 @@ const generateWeekData = (startDate: Date): WorkData[] => {
       basicMinutes: 0,
       overtimeHours: 0,
       overtimeMinutes: 0,
-      totalHours: 3,
+      totalHours: 7,
       totalMinutes: 0,
       overtimeStatus: "신청하기"
     },
