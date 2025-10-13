@@ -24,11 +24,9 @@ export default function BoardList() {
     (async () => {
       try {
         const data = await getBoardList(page, pageSize);
-        //console.log('API 응답:', data);
         setPosts(data.items);
         setTotal(data.total);
       } catch (err) {
-        //console.error('게시글 불러오기 실패:', err);
         setPosts([]);
       } finally {
         setLoading(false);
@@ -104,7 +102,7 @@ export default function BoardList() {
           totalPages={Math.ceil(total / pageSize)}
           initialPage={page}
           visibleCount={5}
-          onPageChange={(p) => setPage(p)} // ✅ 부모 state 업데이트
+          onPageChange={(p) => setPage(p)} //부모 state 업데이트
         />
       </div>
     </div>

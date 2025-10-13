@@ -9,6 +9,7 @@ type ConfirmDialogProps = {
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => void;
+  confirmVariant?: 'default' | 'destructive' | 'secondary';
 };
 
 export function ConfirmDialog({
@@ -18,6 +19,7 @@ export function ConfirmDialog({
   description,
   confirmText = '확인',
   cancelText = '취소',
+  confirmVariant = 'default',
   onConfirm,
 }: ConfirmDialogProps) {
   return (
@@ -32,6 +34,7 @@ export function ConfirmDialog({
             {cancelText}
           </Button>
           <Button
+            variant={confirmVariant}
             onClick={() => {
               onConfirm();
               onOpenChange(false);

@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Edit, CircleX, Download, Delete, Send } from '@/assets/images/icons';
 import { Textbox } from '../ui/textbox';
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
-import { getBoardDetail } from '@/api/office/notice';
+import { deactivateBoard, getBoardDetail } from '@/api/office/notice';
 import type { BoardDTO } from '@/api/office/notice';
 
 interface BoardDetailProps {
@@ -22,6 +22,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
   const [post, setPost] = useState<BoardDTO | null>(null);
   const [loading, setLoading] = useState(true);
 
+  //댓글 hook
   const [comments, setComments] = useState([
     {
       id: 1,
@@ -41,8 +42,25 @@ export default function BoardDetail({ id }: BoardDetailProps) {
     },
   ]);
   const [newComment, setNewComment] = useState('');
-  const [openConfirm, setOpenConfirm] = useState(false);
-  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
+
+  //컨펌 다이얼로그 상태
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    title: string;
+    confirmText?: string;
+    confirmVariant?: 'default' | 'destructive' | 'secondary';
+    action?: () => void;
+  }>({ open: false, title: '' });
+
+  // 컨펌 다이얼로그 열기
+  const openConfirm = (
+    title: string,
+    action: () => void,
+    confirmText = '확인',
+    confirmVariant: 'default' | 'destructive' | 'secondary' = 'default'
+  ) => {
+    setConfirmState({ open: true, title, action, confirmText, confirmVariant });
+  };
 
   // 게시글 상세 API 호출
   useEffect(() => {
@@ -54,10 +72,8 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       }
       try {
         const data = await getBoardDetail(Number(postId));
-        //console.log('상세 API 응답:', data);
         setPost(data);
       } catch (err) {
-        //console.error('게시글 불러오기 실패:', err);
         setPost(null);
       } finally {
         setLoading(false);
@@ -65,7 +81,19 @@ export default function BoardDetail({ id }: BoardDetailProps) {
     })();
   }, [postId]);
 
-  // 분기는 여기서만
+  // 수정하기
+  const handleEdit = () => {
+    if (!post) return;
+    navigate('../write', { state: { mode: 'edit', post } });
+  };
+
+  // 삭제하기 (비활성화 상태로 변경)
+  const handleDelete = async () => {
+    if (!routeId) return;
+    await deactivateBoard(Number(routeId));
+    navigate('/notice');
+  };
+
   if (loading) return <div className="p-4">불러오는 중...</div>;
   if (!post) return <div className="p-4">게시글을 찾을 수 없습니다.</div>;
 
@@ -106,17 +134,25 @@ export default function BoardDetail({ id }: BoardDetailProps) {
           <div className="px-3">조회 {post.v_count}</div>
         </div>
         <div className="text-gray-700">
-          <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="수정">
+          <Button variant="svgIcon" size="icon" onClick={handleEdit} className="hover:text-primary-blue-500" aria-label="수정">
             <Edit className="size-4" />
           </Button>
-          <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="삭제">
+          <Button
+            variant="svgIcon"
+            size="icon"
+            className="hover:text-primary-blue-500"
+            aria-label="삭제"
+            onClick={() => openConfirm('게시글을 삭제하시겠습니까?', handleDelete, '삭제', 'destructive')}>
             <Delete className="size-4" />
           </Button>
         </div>
       </div>
 
       {/* 본문 */}
-      <div className="border-b border-gray-900 p-4 pb-10 leading-relaxed whitespace-pre-line">{post.content}</div>
+      <div
+        className="border-b border-gray-900 p-4 pb-10 leading-relaxed whitespace-pre-line"
+        dangerouslySetInnerHTML={{ __html: post.content }}
+      />
 
       {/* 의견 댓글 영역 */}
       <div className="py-7 pr-0 pl-5">
@@ -162,39 +198,21 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                 size="icon"
                 aria-label="의견 삭제"
                 className="px-6"
-                onClick={() => {
-                  setCommentToDelete(c.id);
-                  setOpenConfirm(true);
-                }}>
+                onClick={() => openConfirm('의견을 삭제하시겠습니까?', () => handleDeleteComment(c.id), '삭제', 'destructive')}>
                 <CircleX />
               </Button>
             </div>
           ))}
 
-          {/* 삭제 컨펌 다이얼로그 */}
-          <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
-            <DialogContent className="w-[400px] pt-8">
-              <DialogHeader>
-                <DialogTitle>댓글을 삭제하시겠습니까?</DialogTitle>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpenConfirm(false)}>
-                  취소
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    if (commentToDelete !== null) {
-                      handleDeleteComment(commentToDelete);
-                    }
-                    setOpenConfirm(false);
-                    setCommentToDelete(null);
-                  }}>
-                  삭제
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {/* 공통 다이얼로그 */}
+          <ConfirmDialog
+            open={confirmState.open}
+            onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
+            title={confirmState.title}
+            confirmText={confirmState.confirmText ?? '확인'}
+            confirmVariant={confirmState.confirmVariant ?? 'default'}
+            onConfirm={() => confirmState.action?.()}
+          />
         </div>
       </div>
 
