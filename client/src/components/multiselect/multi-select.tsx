@@ -901,7 +901,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                         }}>
                         {`+ ${selectedValues.length - responsiveSettings.maxCount} more`}
                         <XCircle
-                          className={cn('ml-2 h-4 w-4 cursor-pointer', responsiveSettings.compactMode && 'ml-1 h-3 w-3')}
+                          className={cn('ml-1 h-4 w-4 cursor-pointer', responsiveSettings.compactMode && 'ml-1 h-3 w-3')}
                           onClick={(event) => {
                             event.stopPropagation();
                             clearExtraOptions();
