@@ -947,11 +947,24 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
             aria-multiselectable="true"
             aria-label="Available options"
             className={cn(
-              'w-auto p-0',
-              getPopoverAnimationClass(),
-              screenSize === 'mobile' && 'w-[85vw] max-w-[280px]',
-              screenSize === 'tablet' && 'w-[70vw] max-w-md',
-              screenSize === 'desktop' && 'min-w-[300px]',
+              size === 'sm'
+                ? [
+                    // sm 사이즈 스타일
+                    'w-auto p-0 text-sm',
+                    '[&_input]:h-7 [&_input]:px-2 [&_input]:py-1 [&_input]:text-xs', // 검색 input
+                    '[&_svg]:h-3.5 [&_svg]:w-3.5', // 아이콘 크기 줄이기
+                    '[&_div[role=option]]:px-2 [&_div[role=option]]:py-1', // 옵션 항목 padding 축소
+                    '[&_div[role=group]]:gap-1', // 그룹 간 간격 축소
+                    'max-w-[240px] min-w-[160px]', // 전체 폭 살짝 줄이기
+                  ]
+                : [
+                    // 기존 default / lg 스타일
+                    'w-auto p-0',
+                    getPopoverAnimationClass(),
+                    screenSize === 'mobile' && 'w-[85vw] max-w-[280px]',
+                    screenSize === 'tablet' && 'w-[70vw] max-w-md',
+                    screenSize === 'desktop' && 'min-w-[300px]',
+                  ],
               popoverClassName
             )}
             style={{

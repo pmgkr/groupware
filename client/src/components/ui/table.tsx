@@ -1,23 +1,45 @@
 import * as React from 'react';
-
 import { cn } from '@/lib/utils';
 
-function Table({ className, ...props }: React.ComponentProps<'table'>) {
+// table variants 추가
+type TableVariants = 'default' | 'primary';
+type TableAlign = 'left' | 'center' | 'right';
+const TableContext = React.createContext<{ variant: TableVariants; align: TableAlign }>({ variant: 'default', align: 'center' });
+
+function Table({
+  className,
+  variant = 'default',
+  align = 'center',
+  ...props
+}: React.ComponentProps<'table'> & { variant?: TableVariants; align?: TableAlign }) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
-      <table data-slot="table" className={cn('w-full caption-bottom text-base font-light', className)} {...props} />
-    </div>
+    <TableContext.Provider value={{ variant, align }}>
+      <div data-slot="table-container" className="relative w-full overflow-x-auto">
+        <table data-slot="table" className={cn('w-full caption-bottom text-base font-light', className)} {...props} />
+      </div>
+    </TableContext.Provider>
   );
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
+  const { variant } = React.useContext(TableContext);
+
   return (
-    <thead data-slot="table-header" className={cn('[&_tr]:border-primary-blue-500 text-gray-500 [&_tr]:border-b', className)} {...props} />
+    <thead
+      data-slot="table-header"
+      className={cn(
+        'text-gray-900 [&_tr]:border-b',
+        variant === 'default' && '[&_tr]:bg-gray-200',
+        variant === 'primary' && '[&_tr]:bg-primary-blue-100 [&_tr]:hover:bg-primary-blue-100',
+        className
+      )}
+      {...props}
+    />
   );
 }
 
 function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {
-  return <tbody data-slot="table-body" className={cn('[&_tr:last-child]:border-primary-blue-500', className)} {...props} />;
+  return <tbody data-slot="table-body" className={cn(className)} {...props} />;
 }
 
 function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>) {
@@ -29,7 +51,7 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
     <tr
       data-slot="table-row"
       className={cn(
-        'data-[state=selected]:bg-muted hover:bg-muted/50 border-b border-gray-300 transition-colors [&_td:nth-child(3)]:text-left',
+        'data-[state=selected]:bg-muted hover:bg-muted/50 border-b border-gray-300 transition-colors',
         '[&.anchor]:bg-primary-blue-100',
         className
       )}
@@ -39,11 +61,16 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
 }
 
 function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
+  const { align } = React.useContext(TableContext);
+
   return (
     <th
       data-slot="table-head"
       className={cn(
-        'text-foreground h-11 px-2 text-center align-middle font-normal whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+        'text-foreground h-11 px-5 align-middle font-normal whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+        align === 'center' && 'text-center',
+        align === 'left' && 'text-left',
+        align === 'right' && 'text-right',
         className
       )}
       {...props}
@@ -52,11 +79,16 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
 }
 
 function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
+  const { align } = React.useContext(TableContext);
+
   return (
     <td
       data-slot="table-cell"
       className={cn(
-        'p-3 text-center align-middle font-normal whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+        'p-2.5 px-5 align-middle font-normal whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+        align === 'center' && 'text-center',
+        align === 'left' && 'text-left',
+        align === 'right' && 'text-right',
         className
       )}
       {...props}
