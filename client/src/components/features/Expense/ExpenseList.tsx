@@ -96,6 +96,7 @@ export default function ExpenseList() {
               autoSize={true}
               closeOnSelect={false}
               searchable={false}
+              simpleSelect={true}
             />
 
             {/* 증빙수단 다중 선택 */}
@@ -110,6 +111,7 @@ export default function ExpenseList() {
               autoSize={true}
               closeOnSelect={false}
               searchable={false}
+              simpleSelect={true}
             />
 
             {/* 증빙상태 다중 선택 */}
@@ -124,6 +126,7 @@ export default function ExpenseList() {
               autoSize={true}
               closeOnSelect={false}
               searchable={false}
+              simpleSelect={true}
             />
           </div>
         </div>
@@ -150,69 +153,142 @@ export default function ExpenseList() {
           {/* TODO: 여기에 DB 데이터 매핑 */}
           <TableRow>
             <TableCell>
-              <Link to="/expense/1" className="rounded-[4px] border-1 p-1 text-sm">
+              <Link to="/expense/1" className="rounded-[4px] border-1 bg-white p-1 text-sm">
                 PN25-27564
               </Link>
             </TableCell>
             <TableCell>야근교통비</TableCell>
             <TableCell>야근교통비 3건</TableCell>
-            <TableCell>영수증</TableCell>
             <TableCell>
-              <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
-                제출
+              <Badge variant="outline" className="border-gray-300 text-gray-700">
+                현금영수증
               </Badge>
+            </TableCell>
+            <TableCell>
+              <Badge variant="secondary">제출</Badge>
             </TableCell>
             <TableCell>45,000원</TableCell>
             <TableCell>
-              <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
-                승인대기
-              </Badge>
+              <Badge variant="secondary">승인대기</Badge>
             </TableCell>
             <TableCell>홍길동</TableCell>
             <TableCell>2025-07-04 14:44:00</TableCell>
           </TableRow>
           <TableRow>
             <TableCell>
-              <Link to="/expense/1" className="rounded-[4px] border-1 p-1 text-sm">
+              <Link to="/expense/1" className="rounded-[4px] border-1 bg-white p-1 text-sm">
                 PN25-27564
               </Link>
             </TableCell>
             <TableCell>야근교통비</TableCell>
             <TableCell>야근교통비 3건</TableCell>
-            <TableCell>영수증</TableCell>
             <TableCell>
-              <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
-                제출
+              <Badge variant="outline" className="border-gray-300 text-gray-700">
+                PMG 법인
               </Badge>
+            </TableCell>
+            <TableCell>
+              <Badge variant="secondary">제출</Badge>
             </TableCell>
             <TableCell>45,000원</TableCell>
             <TableCell>
-              <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
-                승인대기
-              </Badge>
+              <Badge variant="secondary">승인대기</Badge>
             </TableCell>
             <TableCell>홍길동</TableCell>
             <TableCell>2025-07-04 14:44:00</TableCell>
           </TableRow>
           <TableRow>
             <TableCell>
-              <Link to="/expense/1" className="rounded-[4px] border-1 p-1 text-sm">
+              <Link to="/expense/1" className="rounded-[4px] border-1 bg-white p-1 text-sm">
                 PN25-27564
               </Link>
             </TableCell>
             <TableCell>야근교통비</TableCell>
             <TableCell>야근교통비 3건</TableCell>
-            <TableCell>영수증</TableCell>
             <TableCell>
-              <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
+              <Badge variant="outline" className="border-gray-300 text-gray-700">
+                PMG 법인
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <Badge variant="secondary">제출</Badge>
+            </TableCell>
+            <TableCell>45,000원</TableCell>
+            <TableCell>
+              <Badge variant="secondary">승인대기</Badge>
+            </TableCell>
+            <TableCell>홍길동</TableCell>
+            <TableCell>2025-07-04 14:44:00</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>
+              <Link to="/expense/1" className="rounded-[4px] border-1 bg-white p-1 text-sm">
+                PN25-27564
+              </Link>
+            </TableCell>
+            <TableCell>야근교통비</TableCell>
+            <TableCell>야근교통비 3건</TableCell>
+            <TableCell>
+              <Badge variant="outline" size="table" className="border-gray-300 text-gray-700">
+                PMG 법인
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <Badge variant="secondary" size="table">
                 제출
               </Badge>
             </TableCell>
             <TableCell>45,000원</TableCell>
             <TableCell>
-              <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
-                승인대기
+              <Badge variant="secondary">승인대기</Badge>
+            </TableCell>
+            <TableCell>홍길동</TableCell>
+            <TableCell>2025-07-04 14:44:00</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>
+              <Link to="/expense/1" className="rounded-[4px] border-1 bg-white p-1 text-sm">
+                PN25-27564
+              </Link>
+            </TableCell>
+            <TableCell>야근교통비</TableCell>
+            <TableCell>야근교통비 3건</TableCell>
+            <TableCell>
+              <Badge variant="outline" size="table" className="border-gray-300 text-gray-700">
+                현금영수증
               </Badge>
+            </TableCell>
+            <TableCell>
+              <Badge variant="secondary" size="table">
+                제출
+              </Badge>
+            </TableCell>
+            <TableCell>45,000원</TableCell>
+            <TableCell>
+              <Badge variant="secondary">승인대기</Badge>
+            </TableCell>
+            <TableCell>홍길동</TableCell>
+            <TableCell>2025-07-04 14:44:00</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>
+              <Link to="/expense/1" className="rounded-[4px] border-1 bg-white p-1 text-sm">
+                PN25-27564
+              </Link>
+            </TableCell>
+            <TableCell>야근교통비</TableCell>
+            <TableCell>야근교통비 3건</TableCell>
+            <TableCell>
+              <Badge variant="outline" className="border-gray-300 text-gray-700">
+                MCS 법인
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <Badge variant="grayish">미제출</Badge>
+            </TableCell>
+            <TableCell>45,000원</TableCell>
+            <TableCell>
+              <Badge variant="secondary">승인대기</Badge>
             </TableCell>
             <TableCell>홍길동</TableCell>
             <TableCell>2025-07-04 14:44:00</TableCell>
