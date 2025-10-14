@@ -74,17 +74,17 @@ export default function BoardWrite() {
 
     try {
       if (editMode && post) {
-        // 기본 정보 수정
+        // 수정 모드
         await updateBoard(post.n_seq, {
           category,
           title,
           content,
         });
-
         //공지 고정 상태 변경 필요 시
         if (isNotice !== post.pinned) {
           await pinBoard(post.n_seq, isNotice);
         }
+        navigate(`/notice/${post.n_seq}`);
       } else {
         // 등록 모드
         const res = await registerBoard({
@@ -99,9 +99,8 @@ export default function BoardWrite() {
         if (isNotice === 'Y' && n_seq) {
           await pinBoard(n_seq, 'Y');
         }
+        navigate('..');
       }
-
-      navigate('..');
     } catch (err) {
       console.error(err);
       alert('저장 중 오류가 발생했습니다.');

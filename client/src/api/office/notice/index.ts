@@ -70,3 +70,39 @@ export async function deactivateBoard(n_seq: number) {
     body: JSON.stringify({ display_flag: 'N' }), //비활성화
   });
 }
+
+//댓글 데이터 타입
+export type CommentDTO = {
+  bc_seq: number;
+  n_seq: number;
+  postId: number;
+  user_id: string;
+  user_name: string;
+  comment: string;
+  created_at: string;
+};
+
+// 댓글 목록
+export async function getComment(n_seq: number) {
+  const res = await http<{ items: CommentDTO[] }>(`/user/notice/comment/${n_seq}`, {
+    method: 'GET',
+  });
+  // res.items가 없으면 빈 배열 반환
+  return Array.isArray(res.items) ? res.items : [];
+}
+
+//댓글 등록
+export async function registerComment(data: { n_seq: number; user_id: string; user_name: string; comment: string }) {
+  return http<{ id: number }>(`/user/notice/comment/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+//댓글 삭제
+export async function removeComment(bc_seq: number) {
+  return http(`/user/notice/comment/remove/${bc_seq}`, {
+    method: 'DELETE',
+  });
+}

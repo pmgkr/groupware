@@ -6,8 +6,11 @@ import { Textbox } from '../ui/textbox';
 import { useEffect, useState } from 'react';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
-import { deactivateBoard, getBoardDetail } from '@/api/office/notice';
-import type { BoardDTO } from '@/api/office/notice';
+import { deactivateBoard, getBoardDetail, getComment, registerComment, removeComment } from '@/api/office/notice';
+import type { BoardDTO, CommentDTO } from '@/api/office/notice';
+
+import { useAuth } from '@/contexts/AuthContext';
+import { formatKST } from '@/utils';
 
 interface BoardDetailProps {
   id?: string;
@@ -22,25 +25,8 @@ export default function BoardDetail({ id }: BoardDetailProps) {
   const [post, setPost] = useState<BoardDTO | null>(null);
   const [loading, setLoading] = useState(true);
 
-  //댓글 hook
-  const [comments, setComments] = useState([
-    {
-      id: 1,
-      postId: 1,
-      user: '박성진',
-      team: 'CCP',
-      content: '좋은 글 잘 읽었습니다!',
-      createdAt: '2025-09-17 13:20',
-    },
-    {
-      id: 2,
-      postId: 2,
-      user: '박보검',
-      team: 'CCD',
-      content: '공지사항 잘 읽었습니다~',
-      createdAt: '2025-09-17 17:20',
-    },
-  ]);
+  //댓글 상태
+  const [comments, setComments] = useState<CommentDTO[]>([]);
   const [newComment, setNewComment] = useState('');
 
   //컨펌 다이얼로그 상태
@@ -73,6 +59,11 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       try {
         const data = await getBoardDetail(Number(postId));
         setPost(data);
+
+        //댓글 불러오기
+        const commentData = await getComment(Number(postId));
+        //console.log('댓글 API 응답:', commentData);
+        setComments(commentData);
       } catch (err) {
         setPost(null);
       } finally {
@@ -94,33 +85,44 @@ export default function BoardDetail({ id }: BoardDetailProps) {
     navigate('/notice');
   };
 
+  // 댓글 등록
+  const { user } = useAuth();
+
+  const handleAddComment = async (postId: number) => {
+    if (!newComment.trim() || !user) return;
+
+    try {
+      await registerComment({
+        n_seq: Number(postId),
+        user_id: user.user_id,
+        user_name: user.user_name!,
+        comment: newComment,
+      });
+
+      // 등록 성공 후 댓글 다시 불러오기
+      const updated = await getComment(postId);
+      setComments(updated);
+      setNewComment('');
+    } catch (err) {
+      console.error('댓글 등록 실패:', err);
+      alert('댓글 등록 중 오류가 발생했습니다.');
+    }
+  };
+
+  //댓글 삭제
+  const handleDeleteComment = async (bc_seq: number) => {
+    try {
+      await removeComment(bc_seq);
+      const updated = await getComment(Number(postId));
+      setComments(updated);
+    } catch (err) {
+      console.error('댓글 삭제 실패:', err);
+      alert('댓글 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
   if (loading) return <div className="p-4">불러오는 중...</div>;
   if (!post) return <div className="p-4">게시글을 찾을 수 없습니다.</div>;
-
-  // 댓글 필터링
-  const postComments = comments
-    .filter((c) => c.postId === Number(postId))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  const formatted = new Date().toLocaleString('sv-SE').replace('T', ' ');
-
-  const handleAddComment = (postId: number) => {
-    if (!newComment.trim()) return;
-    const newItem = {
-      id: comments.length + 1,
-      postId,
-      user: '홍길동', // TODO: 로그인 사용자 정보로 대체
-      team: 'CCP',
-      content: newComment,
-      createdAt: formatted,
-    };
-    setComments((prev) => [newItem, ...prev]);
-    setNewComment('');
-  };
-
-  const handleDeleteComment = (id: number) => {
-    setComments(comments.filter((c) => c.id !== id));
-  };
 
   return (
     <article>
@@ -155,10 +157,10 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       />
 
       {/* 의견 댓글 영역 */}
-      <div className="py-7 pr-0 pl-5">
+      <div className="py-7 pr-0 pl-6">
         {/* 의견 작성 */}
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <h2 className="w-[140px] font-bold">의견</h2>
+        <div className="mb-5 flex items-center justify-between gap-5">
+          <h2 className="w-[120px] text-base font-bold">댓글</h2>
           <div className="w-full flex-1">
             <Textbox
               className="w-full"
@@ -182,23 +184,23 @@ export default function BoardDetail({ id }: BoardDetailProps) {
           </Button>
         </div>
 
-        {/* 의견 확인 */}
-        <div className="flex flex-col gap-3">
-          {postComments.map((c) => (
-            <div className="flex items-center justify-between gap-4" key={c.id}>
+        {/* 의견 목록 */}
+        <div className="flex flex-col gap-1">
+          {comments.map((c) => (
+            <div className="flex items-center justify-between gap-4" key={c.bc_seq}>
               <div className="w-[140px] text-base">
-                {c.user} <span>({c.team})</span>
+                {c.user_name} {/* <span>({c.team})</span> */}
               </div>
               <div className="flex w-full flex-1 items-center justify-between text-base">
-                <p>{c.content}</p>
-                <div className="text-gray-600">{c.createdAt}</div>
+                <p>{c.comment}</p>
+                <div className="text-sm text-gray-600">{formatKST(c.created_at)}</div>
               </div>
               <Button
                 variant="svgIcon"
                 size="icon"
                 aria-label="의견 삭제"
                 className="px-6"
-                onClick={() => openConfirm('의견을 삭제하시겠습니까?', () => handleDeleteComment(c.id), '삭제', 'destructive')}>
+                onClick={() => openConfirm('댓글을 삭제하시겠습니까?', () => handleDeleteComment(c.bc_seq), '삭제', 'destructive')}>
                 <CircleX />
               </Button>
             </div>
