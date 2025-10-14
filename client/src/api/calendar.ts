@@ -5,6 +5,7 @@ export interface Schedule {
   id: number; // PK, auto increment
   seq?: number; // unique
   user_id?: string; // 조회 시에만 반환됨
+  user_name?: string; // 사용자 이름 (조회 시 users 테이블 조인)
   team_id: number;
   sch_title: string; // 필수
   sch_year: number; // 필수

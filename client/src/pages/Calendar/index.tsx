@@ -47,9 +47,18 @@ interface SelectConfig {
 }
 
 // DB 데이터를 CalendarEvent로 변환하는 함수
-const convertScheduleToEvent = (schedule: Schedule): CalendarEvent => {
+const convertScheduleToEvent = (schedule: Schedule, currentUser?: any): CalendarEvent => {
   const startDate = parse(`${schedule.sch_sdate} ${schedule.sch_stime}`, "yyyy-MM-dd HH:mm:ss", new Date());
   const endDate = parse(`${schedule.sch_edate} ${schedule.sch_etime}`, "yyyy-MM-dd HH:mm:ss", new Date());
+  
+  // user_name 결정: API에서 제공하면 사용, 없으면 현재 로그인 사용자 정보 활용
+  const getUserName = (): string => {
+    if (schedule.user_name) return schedule.user_name;
+    if (currentUser && schedule.user_id === currentUser.user_id) {
+      return currentUser.user_name || currentUser.user_id;
+    }
+    return schedule.user_id || '';
+  };
   
   // 팀명 매핑
   const getTeamName = (teamId: number): string => {
@@ -90,11 +99,11 @@ const convertScheduleToEvent = (schedule: Schedule): CalendarEvent => {
   };
 
   return {
-    title: getEventTitle(schedule),
+    title: getEventTitle(schedule), // sch_title 또는 타입으로 생성된 제목 ("연차", "재택" 등)
     start: startDate,
     end: endDate,
     allDay: schedule.sch_isAllday === 'Y',
-    author: schedule.user_id || '', // 프로덕션 서버에서는 조회 시 반환될 수 있음
+    author: getUserName(), // user_name 표시
     description: schedule.sch_description || '',
     resource: {
       seq: schedule.seq || 0,
@@ -257,11 +266,12 @@ export default function Calendar() {
       // API 응답에서 실제 스케줄 배열 추출
       const schedules = apiResponse.items?.items || [];
       console.log('Schedules array:', schedules);
+      console.log('First schedule sample:', schedules[0]); // 첫 번째 일정의 구조 확인
       
-      // null이 아닌 항목만 필터링하고 변환
+      // null이 아닌 항목만 필터링하고 변환 (현재 사용자 정보 전달)
       const calendarEvents = schedules
         .filter((schedule: any) => schedule !== null && schedule.sch_sdate)
-        .map(convertScheduleToEvent);
+        .map((schedule: any) => convertScheduleToEvent(schedule, user));
       console.log('Calendar events converted:', calendarEvents);
       
       setEvents(calendarEvents);
