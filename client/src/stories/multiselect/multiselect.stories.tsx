@@ -69,14 +69,7 @@ const sampleOptions = [
 const MultiSelectWithState = ({ options = sampleOptions, ...props }: any) => {
   const [selected, setSelected] = useState<string[]>([]);
 
-  return (
-    <MultiSelect
-      {...props}
-      options={options}
-      onValueChange={setSelected}
-      defaultValue={selected}
-    />
-  );
+  return <MultiSelect {...props} options={options} onValueChange={setSelected} defaultValue={selected} />;
 };
 
 export const Default: Story = {
@@ -97,14 +90,7 @@ export const Default: Story = {
 export const WithPreselected: Story = {
   render: (args) => {
     const [selected, setSelected] = useState<string[]>(['react', 'typescript']);
-    return (
-      <MultiSelect
-        {...args}
-        options={sampleOptions}
-        onValueChange={setSelected}
-        defaultValue={selected}
-      />
-    );
+    return <MultiSelect {...args} options={sampleOptions} onValueChange={setSelected} defaultValue={selected} />;
   },
   args: {
     placeholder: '프레임워크를 선택하세요.',
@@ -122,14 +108,7 @@ export const WithPreselected: Story = {
 export const Disabled: Story = {
   render: (args) => {
     const [selected, setSelected] = useState<string[]>(['react', 'vue']);
-    return (
-      <MultiSelect
-        {...args}
-        options={sampleOptions}
-        onValueChange={setSelected}
-        defaultValue={selected}
-      />
-    );
+    return <MultiSelect {...args} options={sampleOptions} onValueChange={setSelected} defaultValue={selected} />;
   },
   args: {
     placeholder: '비활성화된 상태입니다.',
@@ -251,26 +230,10 @@ export const FullSize: Story = {
 export const DifferentVariants: Story = {
   render: () => (
     <div className="flex flex-col gap-4">
-      <MultiSelectWithState 
-        placeholder="Default variant" 
-        variant="default"
-        size="default"
-      />
-      <MultiSelectWithState 
-        placeholder="fill variant" 
-        variant="fill"
-        size="default"
-      />
-      <MultiSelectWithState 
-        placeholder="Secondary variant" 
-        variant="secondary"
-        size="default"
-      />
-      <MultiSelectWithState 
-        placeholder="Ghost variant" 
-        variant="ghost"
-        size="default"
-      />
+      <MultiSelectWithState placeholder="Default variant" variant="default" size="default" />
+      <MultiSelectWithState placeholder="fill variant" variant="fill" size="default" />
+      <MultiSelectWithState placeholder="Secondary variant" variant="secondary" size="default" />
+      <MultiSelectWithState placeholder="Ghost variant" variant="ghost" size="default" />
     </div>
   ),
 };
@@ -293,5 +256,39 @@ export const ManyOptions: Story = {
     hideSelectAll: false,
     autoSize: false,
     modalPopover: false,
+  },
+};
+
+export const simpleSelect: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: '비용 관리에서 사용하는 다중 선택. Trigger의 placeholder 고정 & 뱃지 커스텀 & 화살표 숨김처리',
+      },
+    },
+  },
+  render: (args) => {
+    const manyOptions = Array.from({ length: 6 }, (_, i) => ({
+      label: `옵션 ${i + 1}`,
+      value: `option-${i + 1}`,
+    }));
+    return (
+      <div className="flex gap-x-2">
+        <MultiSelect className="max-w-[80px] min-w-auto!" {...args} options={manyOptions} />
+        <MultiSelect className="max-w-[80px] min-w-auto!" {...args} options={manyOptions} />
+      </div>
+    );
+  },
+  args: {
+    placeholder: '심플 선택',
+    variant: 'default',
+    size: 'sm',
+    disabled: false,
+    maxCount: 0,
+    searchable: false,
+    hideSelectAll: true,
+    autoSize: true,
+    closeOnSelect: false,
+    simpleSelect: true,
   },
 };
