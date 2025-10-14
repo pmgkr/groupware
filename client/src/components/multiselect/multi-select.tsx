@@ -257,6 +257,12 @@ interface MultiSelectProps
    * Optional, defaults to false.
    */
   closeOnSelect?: boolean;
+
+  /**
+   * 비용 관리 커스텀 옵션
+   * Trigger의 placeholder 고정 & 뱃지 커스텀 & 화살표 숨김처리
+   */
+  simpleSelect?: boolean;
 }
 
 /**
@@ -313,6 +319,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
       deduplicateOptions = false,
       resetOnDefaultValueChange = true,
       closeOnSelect = false,
+      simpleSelect = false,
       ...props
     },
     ref
@@ -798,141 +805,163 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 maxWidth: `min(${widthConstraints.maxWidth}, 100%)`,
               }}>
               {selectedValues.length > 0 ? (
-                <div className="flex w-full items-center justify-between">
-                  <div
-                    className={cn(
-                      'flex items-center gap-0.5',
-                      singleLine ? 'multiselect-singleline-scroll overflow-x-auto' : 'flex-wrap',
-                      responsiveSettings.compactMode && 'gap-0.5'
-                    )}
-                    style={
-                      singleLine
-                        ? {
-                            paddingBottom: '4px',
+                !simpleSelect ? ( // simpleSelect : false 일 때 (default)
+                  <div className="flex w-full items-center justify-between">
+                    <div
+                      className={cn(
+                        'flex items-center gap-0.5',
+                        singleLine ? 'multiselect-singleline-scroll overflow-x-auto' : 'flex-wrap',
+                        responsiveSettings.compactMode && 'gap-0.5'
+                      )}
+                      style={
+                        singleLine
+                          ? {
+                              paddingBottom: '4px',
+                            }
+                          : {}
+                      }>
+                      {selectedValues
+                        .slice(0, responsiveSettings.maxCount)
+                        .map((value) => {
+                          const option = getOptionByValue(value);
+                          const IconComponent = option?.icon;
+                          const customStyle = option?.style;
+                          if (!option) {
+                            return null;
                           }
-                        : {}
-                    }>
-                    {selectedValues
-                      .slice(0, responsiveSettings.maxCount)
-                      .map((value) => {
-                        const option = getOptionByValue(value);
-                        const IconComponent = option?.icon;
-                        const customStyle = option?.style;
-                        if (!option) {
-                          return null;
-                        }
-                        const badgeStyle: React.CSSProperties = {
-                          animationDuration: `${animation}s`,
-                          ...(customStyle?.badgeColor && {
-                            backgroundColor: customStyle.badgeColor,
-                          }),
-                          ...(customStyle?.gradient && {
-                            background: customStyle.gradient,
-                            color: 'white',
-                          }),
-                        };
-                        return (
-                          <Badge
-                            key={value}
-                            className={cn(
-                              getBadgeAnimationClass(),
-                              multiSelectVariants({ variant }),
-                              customStyle?.gradient && 'border-transparent text-white',
-                              getBadgeSizeClasses(),
-                              responsiveSettings.compactMode && 'px-1.5 py-0.5 text-xs',
-                              screenSize === 'mobile' && 'max-w-[120px] truncate',
-                              singleLine && 'flex-shrink-0 whitespace-nowrap',
-                              '[&>svg]:pointer-events-auto'
-                            )}
-                            style={{
-                              ...badgeStyle,
-                              animationDuration: `${animationConfig?.duration || animation}s`,
-                              animationDelay: `${animationConfig?.delay || 0}s`,
-                            }}>
-                            {IconComponent && !responsiveSettings.hideIcons && (
-                              <IconComponent
-                                className={cn(
-                                  'mr-2 h-4 w-4',
-                                  responsiveSettings.compactMode && 'mr-1 h-3 w-3',
-                                  customStyle?.iconColor && 'text-current'
-                                )}
-                                {...(customStyle?.iconColor && {
-                                  style: { color: customStyle.iconColor },
-                                })}
-                              />
-                            )}
-                            <span className={cn(screenSize === 'mobile' && 'truncate')}>{option.label}</span>
-                            <div
-                              role="button"
-                              tabIndex={0}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                toggleOption(value);
-                              }}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault();
+                          const badgeStyle: React.CSSProperties = {
+                            animationDuration: `${animation}s`,
+                            ...(customStyle?.badgeColor && {
+                              backgroundColor: customStyle.badgeColor,
+                            }),
+                            ...(customStyle?.gradient && {
+                              background: customStyle.gradient,
+                              color: 'white',
+                            }),
+                          };
+                          return (
+                            <Badge
+                              key={value}
+                              className={cn(
+                                getBadgeAnimationClass(),
+                                multiSelectVariants({ variant }),
+                                customStyle?.gradient && 'border-transparent text-white',
+                                getBadgeSizeClasses(),
+                                responsiveSettings.compactMode && 'px-1.5 py-0.5 text-xs',
+                                screenSize === 'mobile' && 'max-w-[120px] truncate',
+                                singleLine && 'flex-shrink-0 whitespace-nowrap',
+                                '[&>svg]:pointer-events-auto'
+                              )}
+                              style={{
+                                ...badgeStyle,
+                                animationDuration: `${animationConfig?.duration || animation}s`,
+                                animationDelay: `${animationConfig?.delay || 0}s`,
+                              }}>
+                              {IconComponent && !responsiveSettings.hideIcons && (
+                                <IconComponent
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    responsiveSettings.compactMode && 'mr-1 h-3 w-3',
+                                    customStyle?.iconColor && 'text-current'
+                                  )}
+                                  {...(customStyle?.iconColor && {
+                                    style: { color: customStyle.iconColor },
+                                  })}
+                                />
+                              )}
+                              <span className={cn(screenSize === 'mobile' && 'truncate')}>{option.label}</span>
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                onClick={(event) => {
                                   event.stopPropagation();
                                   toggleOption(value);
-                                }
-                              }}
-                              aria-label={`Remove ${option.label} from selection`}
-                              className="align-center hover:bg-[var(--color-primary-white)/20 -m-0.5 ml-2 flex h-4.5 w-4 cursor-pointer justify-center rounded-sm p-0.5 focus:ring-1 focus:ring-white/50 focus:outline-none">
-                              <XCircle className={cn('h-3 w-3', responsiveSettings.compactMode && 'h-2.5 w-2.5')} />
-                            </div>
-                          </Badge>
-                        );
-                      })
-                      .filter(Boolean)}
-                    {selectedValues.length > responsiveSettings.maxCount && (
-                      <Badge
+                                }}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    toggleOption(value);
+                                  }
+                                }}
+                                aria-label={`Remove ${option.label} from selection`}
+                                className="align-center hover:bg-[var(--color-primary-white)/20 -m-0.5 ml-2 flex h-4.5 w-4 cursor-pointer justify-center rounded-sm p-0.5 focus:ring-1 focus:ring-white/50 focus:outline-none">
+                                <XCircle className={cn('h-3 w-3', responsiveSettings.compactMode && 'h-2.5 w-2.5')} />
+                              </div>
+                            </Badge>
+                          );
+                        })
+                        .filter(Boolean)}
+                      {selectedValues.length > responsiveSettings.maxCount && (
+                        <Badge
+                          className={cn(
+                            'text-foreground border-foreground/1 bg-transparent hover:bg-transparent',
+                            getBadgeAnimationClass(),
+                            multiSelectVariants({ variant }),
+                            getBadgeSizeClasses(),
+                            responsiveSettings.compactMode && 'px-1.5 py-0.5 text-xs',
+                            singleLine && 'flex-shrink-0 whitespace-nowrap',
+                            '[&>svg]:pointer-events-auto'
+                          )}
+                          style={{
+                            animationDuration: `${animationConfig?.duration || animation}s`,
+                            animationDelay: `${animationConfig?.delay || 0}s`,
+                          }}>
+                          {`+ ${selectedValues.length - responsiveSettings.maxCount} more`}
+                          <XCircle
+                            className={cn('ml-2 h-4 w-4 cursor-pointer', responsiveSettings.compactMode && 'ml-1 h-3 w-3')}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              clearExtraOptions();
+                            }}
+                          />
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleClear();
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleClear();
+                          }
+                        }}
+                        aria-label={`Clear all ${selectedValues.length} selected options`}
+                        className="text-muted-foreground hover:text-foreground focus:ring-ring mx-2 flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm focus:ring-2 focus:ring-offset-1 focus:outline-none">
+                        <XIcon className="h-4 w-4" />
+                      </div>
+                      <Separator orientation="vertical" className="flex h-full min-h-6" />
+                      <ChevronDown className="text-muted-foreground mx-2 h-4 cursor-pointer" aria-hidden="true" />
+                    </div>
+                  </div>
+                ) : (
+                  // simpleSelect : true 일 때
+                  <div className="mx-auto flex w-full items-center justify-between">
+                    <span className="text-muted-foreground text-sm">{placeholder}</span>
+
+                    {selectedValues.length > 0 && (
+                      <span
                         className={cn(
-                          'text-foreground border-foreground/1 bg-transparent hover:bg-transparent',
+                          'text-primary bg-primary-blue-150 hover:bg-primary-blue-100 round ml-1.5 rounded-xl px-2 py-0.5',
                           getBadgeAnimationClass(),
                           multiSelectVariants({ variant }),
                           getBadgeSizeClasses(),
                           responsiveSettings.compactMode && 'px-1.5 py-0.5 text-xs',
                           singleLine && 'flex-shrink-0 whitespace-nowrap',
                           '[&>svg]:pointer-events-auto'
-                        )}
-                        style={{
-                          animationDuration: `${animationConfig?.duration || animation}s`,
-                          animationDelay: `${animationConfig?.delay || 0}s`,
-                        }}>
-                        {`+ ${selectedValues.length - responsiveSettings.maxCount} more`}
-                        <XCircle
-                          className={cn('ml-2 h-4 w-4 cursor-pointer', responsiveSettings.compactMode && 'ml-1 h-3 w-3')}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            clearExtraOptions();
-                          }}
-                        />
-                      </Badge>
+                        )}>
+                        {`+ ${selectedValues.length}`}
+                      </span>
                     )}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleClear();
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          handleClear();
-                        }
-                      }}
-                      aria-label={`Clear all ${selectedValues.length} selected options`}
-                      className="text-muted-foreground hover:text-foreground focus:ring-ring mx-2 flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm focus:ring-2 focus:ring-offset-1 focus:outline-none">
-                      <XIcon className="h-4 w-4" />
-                    </div>
-                    <Separator orientation="vertical" className="flex h-full min-h-6" />
-                    <ChevronDown className="text-muted-foreground mx-2 h-4 cursor-pointer" aria-hidden="true" />
-                  </div>
-                </div>
+                )
               ) : (
                 <div className="mx-auto flex w-full items-center justify-between">
                   <span className="text-muted-foreground text-sm">{placeholder}</span>
@@ -950,10 +979,10 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               size === 'sm'
                 ? [
                     // sm 사이즈 스타일
-                    'w-auto p-0 text-sm',
+                    'w-auto p-0',
                     '[&_input]:h-7 [&_input]:px-2 [&_input]:py-1 [&_input]:text-xs', // 검색 input
                     '[&_svg]:h-3.5 [&_svg]:w-3.5', // 아이콘 크기 줄이기
-                    '[&_div[role=option]]:px-2 [&_div[role=option]]:py-1', // 옵션 항목 padding 축소
+                    '[&_div[role=option]]:px-2 [&_div[role=option]]:py-1 [&_div[role=option]]:text-sm', // 옵션 항목 padding 축소
                     '[&_div[role=group]]:gap-1', // 그룹 간 간격 축소
                     'max-w-[240px] min-w-[160px]', // 전체 폭 살짝 줄이기
                   ]

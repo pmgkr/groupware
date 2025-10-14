@@ -17,6 +17,8 @@ export default function ExpenseList() {
     { label: '야근식대', value: '야근식대' },
     { label: '야근교통비', value: '야근교통비' },
     { label: '소모품비', value: '소모품비' },
+    { label: '소모품비2', value: '소모품비2' },
+    { label: '소모품비3', value: '소모품비3' },
   ];
 
   const statusOptions: MultiSelectOption[] = [
@@ -38,8 +40,6 @@ export default function ExpenseList() {
   const proofStatusOptions: MultiSelectOption[] = [
     { label: '제출', value: '제출' },
     { label: '미제출', value: '미제출' },
-    { label: '검토중', value: '검토중' },
-    { label: '완료', value: '완료' },
   ];
 
   return (
@@ -76,12 +76,12 @@ export default function ExpenseList() {
               placeholder="용도 선택"
               options={typeOptions}
               onValueChange={setSelectedType}
-              defaultValue={[]}
               maxCount={0}
               hideSelectAll={true}
               autoSize={true}
               closeOnSelect={false}
               searchable={false}
+              simpleSelect={true}
             />
 
             {/* 상태 다중 선택 */}
@@ -91,7 +91,6 @@ export default function ExpenseList() {
               placeholder="상태 선택"
               options={statusOptions}
               onValueChange={setSelectedStatus}
-              defaultValue={[]}
               maxCount={0}
               hideSelectAll={true}
               autoSize={true}
@@ -106,7 +105,6 @@ export default function ExpenseList() {
               placeholder="증빙 수단"
               options={proofOptions}
               onValueChange={setSelectedProof}
-              defaultValue={[]}
               maxCount={0}
               hideSelectAll={true}
               autoSize={true}
@@ -121,7 +119,6 @@ export default function ExpenseList() {
               placeholder="증빙 상태"
               options={proofStatusOptions}
               onValueChange={setSelectedProofStatus}
-              defaultValue={[]}
               maxCount={0}
               hideSelectAll={true}
               autoSize={true}
@@ -151,6 +148,52 @@ export default function ExpenseList() {
 
         <TableBody>
           {/* TODO: 여기에 DB 데이터 매핑 */}
+          <TableRow>
+            <TableCell>
+              <Link to="/expense/1" className="rounded-[4px] border-1 p-1 text-sm">
+                PN25-27564
+              </Link>
+            </TableCell>
+            <TableCell>야근교통비</TableCell>
+            <TableCell>야근교통비 3건</TableCell>
+            <TableCell>영수증</TableCell>
+            <TableCell>
+              <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
+                제출
+              </Badge>
+            </TableCell>
+            <TableCell>45,000원</TableCell>
+            <TableCell>
+              <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
+                승인대기
+              </Badge>
+            </TableCell>
+            <TableCell>홍길동</TableCell>
+            <TableCell>2025-07-04 14:44:00</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>
+              <Link to="/expense/1" className="rounded-[4px] border-1 p-1 text-sm">
+                PN25-27564
+              </Link>
+            </TableCell>
+            <TableCell>야근교통비</TableCell>
+            <TableCell>야근교통비 3건</TableCell>
+            <TableCell>영수증</TableCell>
+            <TableCell>
+              <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
+                제출
+              </Badge>
+            </TableCell>
+            <TableCell>45,000원</TableCell>
+            <TableCell>
+              <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
+                승인대기
+              </Badge>
+            </TableCell>
+            <TableCell>홍길동</TableCell>
+            <TableCell>2025-07-04 14:44:00</TableCell>
+          </TableRow>
           <TableRow>
             <TableCell>
               <Link to="/expense/1" className="rounded-[4px] border-1 p-1 text-sm">
