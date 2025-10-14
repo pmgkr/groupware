@@ -3,6 +3,7 @@ import { parse } from "date-fns/parse";
 import { useState, useEffect } from 'react';
 import { scheduleApi } from '@/api/calendar';
 import type { Schedule } from '@/api/calendar';
+import { useAuth } from '@/contexts/AuthContext';
 
 // 타입 정의 (캘린더 컴포넌트와 동일)
 interface CalendarEvent {
@@ -63,6 +64,12 @@ const convertScheduleToEvent = (schedule: Schedule): CalendarEvent => {
 
   // 이벤트 제목 생성
   const getEventTitle = (schedule: Schedule): string => {
+    // sch_title이 있으면 그대로 사용
+    if (schedule.sch_title) {
+      return schedule.sch_title;
+    }
+    
+    // 없으면 타입으로 생성
     if (schedule.sch_type === 'vacation') {
       switch (schedule.sch_vacation_type) {
         case 'day': return '연차';
@@ -87,27 +94,27 @@ const convertScheduleToEvent = (schedule: Schedule): CalendarEvent => {
     start: startDate,
     end: endDate,
     allDay: schedule.sch_isAllday === 'Y',
-    author: schedule.user_id, // 실제로는 사용자명을 가져와야 함
-    description: schedule.sch_description,
+    author: schedule.user_id || '', // 프로덕션 서버에서는 조회 시 반환될 수 있음
+    description: schedule.sch_description || '',
     resource: {
-      seq: schedule.seq,
-      userId: schedule.user_id,
+      seq: schedule.seq || 0,
+      userId: schedule.user_id || '',
       teamId: schedule.team_id,
       teamName: getTeamName(schedule.team_id),
       schTitle: getEventTitle(schedule),
       schType: schedule.sch_type,
-      schVacationType: schedule.sch_vacation_type,
-      schEventType: schedule.sch_event_type,
+      schVacationType: schedule.sch_vacation_type || null,
+      schEventType: schedule.sch_event_type || null,
       schSdate: schedule.sch_sdate,
       schStime: schedule.sch_stime,
       schEdate: schedule.sch_edate,
       schEtime: schedule.sch_etime,
       schIsAllday: schedule.sch_isAllday,
-      schIsHoliday: 'N', // DB에 없으므로 기본값
-      schDescription: schedule.sch_description,
+      schIsHoliday: 'N',
+      schDescription: schedule.sch_description || '',
       schStatus: schedule.sch_status,
-      schModifiedAt: new Date(schedule.sch_modified_at),
-      schCreatedAt: new Date(schedule.sch_created_at)
+      schModifiedAt: schedule.sch_modified_at ? new Date(schedule.sch_modified_at) : (schedule.sch_created_at ? new Date(schedule.sch_created_at) : new Date()),
+      schCreatedAt: schedule.sch_created_at ? new Date(schedule.sch_created_at) : new Date()
     }
   };
 };
@@ -225,9 +232,11 @@ const customEventFilter = (events: CalendarEvent[], selectConfigs: SelectConfig[
 };
 
 export default function Calendar() {
+  const { user } = useAuth(); // 로그인한 사용자 정보
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   // 현재 날짜 기준으로 데이터 로드
   const loadEvents = async (date: Date = new Date()) => {
@@ -271,6 +280,171 @@ export default function Calendar() {
     }
   };
 
+  // 일정 등록 핸들러
+  const handleSaveEvent = async (eventData: any) => {
+    try {
+      console.log('Saving event:', eventData);
+      
+      // eventType에 따른 MySQL enum 값 매핑
+      const getSchType = (eventType: string): 'vacation' | 'event' => {
+        if (['eventVacation', 'eventHalfDayMorning', 'eventHalfDayAfternoon', 'eventQuarter', 'eventOfficialLeave'].includes(eventType)) {
+          return 'vacation';
+        }
+        return 'event';
+      };
+
+      const getSchVacationType = (eventType: string): 'day' | 'half' | 'quarter' | 'official' | null => {
+        switch (eventType) {
+          case 'eventVacation':
+            return 'day';
+          case 'eventOfficialLeave':
+            return 'official';
+          case 'eventHalfDayMorning':
+          case 'eventHalfDayAfternoon':
+            return 'half';
+          case 'eventQuarter':
+            return 'quarter';
+          default:
+            return null;
+        }
+      };
+
+      const getSchEventType = (eventType: string): 'remote' | 'field' | 'etc' | null => {
+        switch (eventType) {
+          case 'eventRemote':
+            return 'remote';
+          case 'eventField':
+          case 'eventExternal': // 외부 일정도 field로 매핑
+            return 'field';
+          case 'eventEtc':
+            return 'etc';
+          default:
+            return null;
+        }
+      };
+
+      const schType = getSchType(eventData.eventType);
+      const schVacationType = getSchVacationType(eventData.eventType);
+      const schEventType = getSchEventType(eventData.eventType);
+
+      // 로그인한 사용자 정보 확인
+      if (!user?.user_id || !user?.team_id) {
+        alert('사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
+        return false;
+      }
+
+      // 일정 제목 생성
+      const getSchTitle = (eventType: string): string => {
+        switch (eventType) {
+          case 'eventVacation': return '연차';
+          case 'eventHalfDayMorning': return '오전 반차';
+          case 'eventHalfDayAfternoon': return '오후 반차';
+          case 'eventQuarter': return '반반차';
+          case 'eventOfficialLeave': return '공가';
+          case 'eventRemote': return '재택';
+          case 'eventField':
+          case 'eventExternal': return '외부 일정';
+          case 'eventEtc': return '기타 일정';
+          default: return '일정';
+        }
+      };
+
+      // sch_year 계산 (시작 날짜의 연도)
+      const schYear = new Date(eventData.startDate).getFullYear();
+
+      // sch_vacation_used 계산
+      const calculateVacationUsed = (eventType: string, startDate: string, endDate: string): number => {
+        if (schType !== 'vacation' || !schVacationType) return 0;
+        
+        switch (schVacationType) {
+          case 'day': {
+            // 연차: 날짜 차이 계산 (종료일 - 시작일 + 1)
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const diffTime = Math.abs(end.getTime() - start.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            return diffDays;
+          }
+          case 'half':
+            return 0.5;
+          case 'quarter':
+            return 0.25;
+          case 'official':
+            return 0;
+          default:
+            return 0;
+        }
+      };
+
+      // DB에 저장할 데이터 구조 - 프로덕션 서버 API에 맞춤
+      const scheduleData: any = {
+        team_id: user.team_id, // 프로덕션 서버 필수 (user_id는 JWT에서 자동 추출)
+        sch_title: getSchTitle(eventData.eventType),
+        sch_year: schYear, // 프로덕션 서버 필수
+        sch_type: schType,
+        sch_sdate: eventData.startDate,
+        sch_stime: eventData.allDay ? '00:00:00' : `${eventData.startTime}:00`,
+        sch_edate: eventData.endDate,
+        sch_etime: eventData.allDay ? '23:59:59' : `${eventData.endTime}:00`,
+        sch_isAllday: eventData.allDay ? 'Y' : 'N',
+        sch_description: eventData.description || '',
+        sch_status: 'Y'
+      };
+
+      // vacation 타입일 때만 vacation 관련 필드 추가
+      if (schVacationType) {
+        scheduleData.sch_vacation_type = schVacationType;
+        scheduleData.sch_vacation_used = calculateVacationUsed(eventData.eventType, eventData.startDate, eventData.endDate);
+      }
+
+      // event 타입일 때만 event_type 추가
+      if (schEventType) {
+        scheduleData.sch_event_type = schEventType;
+      }
+
+      console.log('Schedule data to save:', scheduleData);
+      console.log('Schedule data JSON:', JSON.stringify(scheduleData, null, 2));
+      console.log('Event data received:', eventData);
+
+      // API 호출하여 DB에 저장
+      const result = await scheduleApi.createSchedule(scheduleData);
+      console.log('Schedule created:', result);
+
+      // 성공 시 현재 월의 데이터 다시 로드
+      await loadEvents(currentDate);
+      
+      alert('일정이 성공적으로 등록되었습니다!');
+      return true;
+    } catch (err: any) {
+      console.error('Failed to save event:', err);
+      console.error('Error data:', err.data);
+      console.error('Error message:', err.message);
+      console.error('Error status:', err.status);
+      
+      // 서버 응답 메시지 확인
+      let errorMessage = '일정 등록에 실패했습니다';
+      if (err.message) {
+        errorMessage += `\n에러: ${err.message}`;
+      }
+      if (err.data) {
+        console.error('Server response data:', err.data);
+        if (err.data.message) {
+          errorMessage += `\n상세: ${err.data.message}`;
+        }
+        if (err.data.error) {
+          errorMessage += `\n${err.data.error}`;
+        }
+        // 필드별 에러가 있는 경우
+        if (err.data.errors) {
+          errorMessage += `\n필드 에러: ${JSON.stringify(err.data.errors)}`;
+        }
+      }
+      
+      alert(errorMessage);
+      return false;
+    }
+  };
+
   // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
     loadEvents();
@@ -302,6 +476,8 @@ export default function Calendar() {
       eventFilter={customEventFilter}
       defaultView="month"
       defaultDate={new Date()}
+      onSaveEvent={handleSaveEvent}
+      onDateChange={setCurrentDate}
     />
   );
 } 

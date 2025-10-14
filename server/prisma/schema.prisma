@@ -44,23 +44,25 @@ model Teams {
 }
 
 model Schedule {
-  seq                           Int                         @id @unique(map: "seq_UNIQUE") @default(autoincrement())
+  id                            Int                         @id @default(autoincrement())
+  seq                           Int?                        @unique(map: "seq_UNIQUE")
   user_id                       String                      @db.VarChar(100)
   team_id                       Int
-  sch_title                     String                      @db.VarChar(100)
+  sch_year                      Int?                        @db.Int
   sch_type                      schedule_sch_type
   sch_vacation_type             schedule_sch_vacation_type?
+  sch_vacation_used             Decimal?                    @db.Decimal(4, 1)
   sch_event_type                schedule_sch_event_type?
   sch_sdate                     DateTime                    @db.Date
   sch_stime                     DateTime                    @db.Time(0)
   sch_edate                     DateTime                    @db.Date
   sch_etime                     DateTime                    @db.Time(0)
   sch_isAllday                  schedule_sch_isAllday
-  sch_isHoliday                 schedule_sch_isHoliday
   sch_description               String?                     @db.Text
   sch_status                    schedule_sch_status
-  sch_modified_at               DateTime?                   @db.Timestamp(0)
   sch_created_at                DateTime                    @default(now()) @db.Timestamp(0)
+  sch_modified_at               DateTime?                   @db.Timestamp(0)
+  google_calendar_idx           String?                     @db.VarChar(50)
   users_schedule_team_idTousers User                        @relation("schedule_team_idTousers", fields: [team_id], references: [team_id], onDelete: Cascade, map: "fk_schedule_team")
   users_schedule_user_idTousers User                        @relation("schedule_user_idTousers", fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_schedule_user")
 

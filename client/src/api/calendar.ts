@@ -1,26 +1,27 @@
 import { http } from '@/lib/http';
 
-// Schedule 타입 정의
+// Schedule 타입 정의 - 프로덕션 서버 API 기준
 export interface Schedule {
-  id: number;
-  seq: number;
-  user_id: string;
+  id: number; // PK, auto increment
+  seq?: number; // unique
+  user_id?: string; // 조회 시에만 반환됨
   team_id: number;
-  sch_year: number;
+  sch_title: string; // 필수
+  sch_year: number; // 필수
   sch_type: 'vacation' | 'event';
-  sch_vacation_type: 'day' | 'half' | 'quarter' | 'official' | null;
-  sch_vacation_used: number;
-  sch_event_type: 'remote' | 'field' | 'etc' | null;
+  sch_vacation_type?: 'day' | 'half' | 'quarter' | 'official' | null;
+  sch_vacation_used?: number | null;
+  sch_event_type?: 'remote' | 'field' | 'etc' | null;
   sch_sdate: string; // YYYY-MM-DD
   sch_stime: string; // HH:mm:ss
   sch_edate: string; // YYYY-MM-DD
   sch_etime: string; // HH:mm:ss
   sch_isAllday: 'Y' | 'N';
-  sch_description: string;
+  sch_description?: string;
   sch_status: 'Y' | 'H' | 'N';
-  sch_created_at: string;
-  sch_modified_at: string;
-  google_calendar_idx: string | null;
+  sch_created_at?: string;
+  sch_modified_at?: string | null;
+  google_calendar_idx?: string | null;
 }
 
 // Schedule 조회 파라미터
@@ -61,9 +62,9 @@ export const scheduleApi = {
     return response;
   },
 
-  // 스케줄 생성
-  createSchedule: async (schedule: Omit<Schedule, 'id' | 'sch_created_at' | 'sch_modified_at'>): Promise<Schedule> => {
-    const response = await http<Schedule>('/user/schedule/register', {
+  // 스케줄 생성 (id, seq, user_id, created_at, modified_at은 서버에서 자동 생성)
+  createSchedule: async (schedule: Omit<Schedule, 'id' | 'seq' | 'user_id' | 'sch_created_at' | 'sch_modified_at' | 'google_calendar_idx'>): Promise<{ ok: boolean; id: number }> => {
+    const response = await http<{ ok: boolean; id: number }>('/user/schedule/register', {
       method: 'POST',
       body: JSON.stringify(schedule)
     });

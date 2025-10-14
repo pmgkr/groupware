@@ -1,5 +1,5 @@
 // client/src/components/calendar/calendar.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { View } from "react-big-calendar";
 import { parse } from "date-fns/parse";
 import CustomToolbar from "./toolbar";
@@ -67,6 +67,8 @@ interface CustomCalendarProps {
   eventFilter?: EventFilter;
   defaultView?: View;
   defaultDate?: Date;
+  onSaveEvent?: (eventData: any) => Promise<boolean>;
+  onDateChange?: (date: Date) => void;
 }
 
 // 기본 이벤트 제목 매핑 함수
@@ -187,7 +189,9 @@ export default function CustomCalendar({
   eventTitleMapper = defaultEventTitleMapper,
   eventFilter = defaultEventFilter,
   defaultView = 'month',
-  defaultDate = new Date()
+  defaultDate = new Date(),
+  onSaveEvent,
+  onDateChange
 }: CustomCalendarProps) {
   const [myEvents, setMyEvents] = useState<CalendarEvent[]>(initialEvents);
   const [currentDate, setCurrentDate] = useState(defaultDate);
@@ -196,6 +200,11 @@ export default function CustomCalendar({
   
   // 셀렉트 옵션 설정 => 툴바에 반영됨
   const [selectConfigsState, setSelectConfigsState] = useState<SelectConfig[]>(selectConfigs);
+
+  // initialEvents가 변경되면 myEvents 업데이트
+  useEffect(() => {
+    setMyEvents(initialEvents);
+  }, [initialEvents]);
 
   // 이벤트 필터링 로직
   const filteredEvents = eventFilter(myEvents, selectConfigsState);
@@ -228,6 +237,10 @@ export default function CustomCalendar({
     }
     
     setCurrentDate(newDate);
+    // 부모 컴포넌트에 날짜 변경 알림
+    if (onDateChange) {
+      onDateChange(newDate);
+    }
   };
 
   const handleViewChange = (view: View) => {
@@ -254,7 +267,18 @@ export default function CustomCalendar({
     setIsEventDialogOpen(false);
   };
 
-  const handleSaveEvent = (eventData: any) => {
+  const handleSaveEvent = async (eventData: any) => {
+    // 부모 컴포넌트의 onSaveEvent가 있으면 호출
+    if (onSaveEvent) {
+      const success = await onSaveEvent(eventData);
+      if (success) {
+        // 성공 시 다이얼로그 닫기
+        setIsEventDialogOpen(false);
+      }
+      return;
+    }
+
+    // onSaveEvent가 없으면 기본 동작 (로컬 상태에만 추가)
     // eventType에 따른 MySQL enum 값 매핑
     const getSchType = (eventType: string) => {
       if (['eventVacation', 'eventHalfDayMorning', 'eventHalfDayAfternoon', 'eventQuarter', 'eventOfficialLeave'].includes(eventType)) {
@@ -322,6 +346,7 @@ export default function CustomCalendar({
 
     // 이벤트 목록에 추가
     setMyEvents(prev => [...prev, newEvent as any]);
+    setIsEventDialogOpen(false);
   };
 
   return (
