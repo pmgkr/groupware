@@ -12,11 +12,12 @@ import {
 
 type AppPaginationProps = {
   totalPages: number; // 총 페이지 수
-  initialPage?: number;
-  visibleCount?: number; // 한 번에 몇 개 보일지
+  initialPage?: number; // 시작 페이지
+  visibleCount?: number; // 한 번에 보이는 페이지 개수
+  onPageChange?: (page: number) => void; // 부모로 알림
 };
 
-export function AppPagination({ totalPages, initialPage = 1, visibleCount = 5 }: AppPaginationProps) {
+export function AppPagination({ totalPages, initialPage = 1, visibleCount = 5, onPageChange }: AppPaginationProps) {
   const [page, setPage] = React.useState(initialPage);
 
   React.useEffect(() => {
@@ -27,16 +28,16 @@ export function AppPagination({ totalPages, initialPage = 1, visibleCount = 5 }:
   const isLast = page >= totalPages;
 
   const go = (p: number) => {
-    setPage(Math.min(Math.max(1, p), totalPages));
+    const newPage = Math.min(Math.max(1, p), totalPages);
+    setPage(newPage);
+    onPageChange?.(newPage); // ✅ 부모에게 알림
   };
 
-  // 항상 visibleCount 개수 유지
   const pages: number[] = React.useMemo(() => {
     const half = Math.floor(visibleCount / 2);
     let start = page - half;
     let end = page + half;
 
-    // 범위 보정
     if (start < 1) {
       start = 1;
       end = Math.min(totalPages, visibleCount);
@@ -63,6 +64,7 @@ export function AppPagination({ totalPages, initialPage = 1, visibleCount = 5 }:
             }}
           />
         </PaginationItem>
+
         {/* 이전 */}
         <PaginationItem>
           <PaginationPrevious

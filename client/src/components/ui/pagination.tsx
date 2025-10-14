@@ -42,8 +42,8 @@ function PaginationLink({ className, isActive, size = 'icon', ...props }: Pagina
         }),
         // 커스텀 스타일 추가
         isActive
-          ? ':bg-white text-primary-blue-500 [&]:border-primary-blue-500 [&:hover]:border-primary-blue-500 [&:hover]:bg-primary-blue-500 [&]:bg-white'
-          : 'text-gray-400 hover:text-gray-900',
+          ? '[&]:border-primary-blue-500 [&]:bg-primary-blue-500 [&]:hover:text-primary-blue-500 text-white hover:bg-white'
+          : '[&]:hover:border-primary-blue-500 [&]:hover:text-primary-blue-500 text-gray-400',
         'h-[28px] w-[28px] aria-disabled:pointer-events-none aria-disabled:opacity-50',
         className
       )}

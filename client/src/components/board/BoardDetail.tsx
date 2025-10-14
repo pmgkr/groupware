@@ -1,11 +1,17 @@
+// src/components/board/BoardDetail.tsx
 import { useParams, useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
-import { Edit, CircleX, Download, Delete, Enter, Send } from '@/assets/images/icons';
+import { Edit, CircleX, Download, Delete, Send } from '@/assets/images/icons';
 import { Textbox } from '../ui/textbox';
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useEffect, useState } from 'react';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
-// 스토리북 view
+import { deactivateBoard, getBoardDetail, getComment, registerComment, removeComment } from '@/api/office/notice';
+import type { BoardDTO, CommentDTO } from '@/api/office/notice';
+
+import { useAuth } from '@/contexts/AuthContext';
+import { formatKST } from '@/utils';
+
 interface BoardDetailProps {
   id?: string;
 }
@@ -13,111 +19,110 @@ interface BoardDetailProps {
 export default function BoardDetail({ id }: BoardDetailProps) {
   const { id: routeId } = useParams();
   const navigate = useNavigate();
+  const postId = id ?? routeId;
 
-  const postId = id ?? routeId; // props > URL 순서로 id 사용
+  // Hook들은 최상단에서 선언
+  const [post, setPost] = useState<BoardDTO | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const posts = [
-    {
-      id: 999,
-      category: '전체공지',
-      title: '📢 공지사항 제목',
-      content: `
-안녕하세요.
-서비스 안정화를 위해 아래 일정으로 시스템 점검이 진행됩니다.
-
-- 일시: 2025년 9월 1일(월) 00:00 ~ 02:00
-- 영향: 점검 시간 동안 로그인 및 일부 기능 제한
-
-이용에 불편을 드려 죄송합니다.
-      `,
-      writer: '관리자',
-      views: 1000,
-      createdAt: '2025-07-01',
-      isNotice: true,
-      attachments: ['첨부파일.pdf', '시스템점검안내.docx'],
-    },
-    {
-      id: 3,
-      category: '일반',
-      title: '제목 제목 제목 제목 제목',
-      content: '3번 글 내용입니다.',
-      writer: '홍길동',
-      views: 15,
-      createdAt: '2025-07-01',
-    },
-    {
-      id: 2,
-      category: '프로젝트',
-      title: '제목 제목 제목 제목',
-      content: '2번 글 내용입니다.',
-      writer: '박보검',
-      views: 222,
-      createdAt: '2025-07-25',
-    },
-    {
-      id: 1,
-      category: '기타',
-      title: '제목 제목 제목',
-      content: '1번 글 내용입니다.',
-      writer: '윤도운',
-      views: 825,
-      createdAt: '2025-08-30',
-      attachments: ['드럼 악보.pdf'],
-    },
-  ];
-
-  const post = posts.find((p) => String(p.id) === postId);
-
-  if (!post) return <div className="p-4">게시글을 찾을 수 없습니다.</div>;
-
-  //의견 댓글
-  const [comments, setComments] = useState([
-    {
-      id: 1,
-      postId: 1,
-      user: '박성진',
-      team: 'CCP',
-      content: '좋은 글 잘 읽었습니다!',
-      createdAt: '2025-09-17 13:20',
-    },
-    {
-      id: 2,
-      postId: 2,
-      user: '박보검',
-      team: 'CCD',
-      content: '공지사항 잘 읽었습니다~',
-      createdAt: '2025-09-17 17:20',
-    },
-  ]);
+  //댓글 상태
+  const [comments, setComments] = useState<CommentDTO[]>([]);
   const [newComment, setNewComment] = useState('');
 
-  // postId 기준으로 필터링
-  const postComments = comments
-    .filter((c) => c.postId === Number(postId))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  //컨펌 다이얼로그 상태
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    title: string;
+    confirmText?: string;
+    confirmVariant?: 'default' | 'destructive' | 'secondary';
+    action?: () => void;
+  }>({ open: false, title: '' });
 
-  const formatted = new Date().toLocaleString('sv-SE').replace('T', ' ');
-  const handleAddComment = (postId: number) => {
-    if (!newComment.trim()) return;
-    const now = new Date();
-    const newItem = {
-      id: comments.length + 1,
-      postId,
-      user: '홍길동', // 실제 로그인 유저 정보에 따라 변경 가능
-      team: 'CCP', //
-      content: newComment,
-      createdAt: formatted,
-    };
-    setComments((prev) => [newItem, ...prev]); // 최신 댓글 위로
-    setNewComment('');
+  // 컨펌 다이얼로그 열기
+  const openConfirm = (
+    title: string,
+    action: () => void,
+    confirmText = '확인',
+    confirmVariant: 'default' | 'destructive' | 'secondary' = 'default'
+  ) => {
+    setConfirmState({ open: true, title, action, confirmText, confirmVariant });
   };
 
-  //컨펌 다이얼로그
-  const [openConfirm, setOpenConfirm] = useState(false);
-  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
-  const handleDeleteComment = (id: number) => {
-    setComments(comments.filter((c) => c.id !== id));
+  // 게시글 상세 API 호출
+  useEffect(() => {
+    (async () => {
+      if (!postId) {
+        setPost(null);
+        setLoading(false);
+        return;
+      }
+      try {
+        const data = await getBoardDetail(Number(postId));
+        setPost(data);
+
+        //댓글 불러오기
+        const commentData = await getComment(Number(postId));
+        //console.log('댓글 API 응답:', commentData);
+        setComments(commentData);
+      } catch (err) {
+        setPost(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [postId]);
+
+  // 수정하기
+  const handleEdit = () => {
+    if (!post) return;
+    navigate('../write', { state: { mode: 'edit', post } });
   };
+
+  // 삭제하기 (비활성화 상태로 변경)
+  const handleDelete = async () => {
+    if (!routeId) return;
+    await deactivateBoard(Number(routeId));
+    navigate('/notice');
+  };
+
+  // 댓글 등록
+  const { user } = useAuth();
+
+  const handleAddComment = async (postId: number) => {
+    if (!newComment.trim() || !user) return;
+
+    try {
+      await registerComment({
+        n_seq: Number(postId),
+        user_id: user.user_id,
+        user_name: user.user_name!,
+        comment: newComment,
+      });
+
+      // 등록 성공 후 댓글 다시 불러오기
+      const updated = await getComment(postId);
+      setComments(updated);
+      setNewComment('');
+    } catch (err) {
+      console.error('댓글 등록 실패:', err);
+      alert('댓글 등록 중 오류가 발생했습니다.');
+    }
+  };
+
+  //댓글 삭제
+  const handleDeleteComment = async (bc_seq: number) => {
+    try {
+      await removeComment(bc_seq);
+      const updated = await getComment(Number(postId));
+      setComments(updated);
+    } catch (err) {
+      console.error('댓글 삭제 실패:', err);
+      alert('댓글 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  if (loading) return <div className="p-4">불러오는 중...</div>;
+  if (!post) return <div className="p-4">게시글을 찾을 수 없습니다.</div>;
 
   return (
     <article>
@@ -126,44 +131,36 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       <div className="flex items-center justify-between border-b border-gray-300">
         <div className="flex divide-x divide-gray-300 p-4 text-sm leading-tight text-gray-500">
           <div className="px-3 pl-0">{post.category}</div>
-          <div className="px-3">{post.writer}</div>
-          <div className="px-3">{post.createdAt}</div>
-          <div className="px-3">조회 {post.views}</div>
+          <div className="px-3">{post.user_name}</div>
+          <div className="px-3">{post.reg_date.substring(0, 10)}</div>
+          <div className="px-3">조회 {post.v_count}</div>
         </div>
         <div className="text-gray-700">
-          <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="수정">
+          <Button variant="svgIcon" size="icon" onClick={handleEdit} className="hover:text-primary-blue-500" aria-label="수정">
             <Edit className="size-4" />
           </Button>
-          <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="삭제">
+          <Button
+            variant="svgIcon"
+            size="icon"
+            className="hover:text-primary-blue-500"
+            aria-label="삭제"
+            onClick={() => openConfirm('게시글을 삭제하시겠습니까?', handleDelete, '삭제', 'destructive')}>
             <Delete className="size-4" />
           </Button>
         </div>
       </div>
 
-      {post.attachments && post.attachments.length > 0 && (
-        <div className="flex flex-wrap gap-1 bg-gray-200 py-3 pl-4">
-          {post.attachments.map((file, index) => (
-            <Button
-              key={index}
-              variant="secondary"
-              className="hover:text-primary-blue-500 hover:bg-primary-blue-100 text-sm [&]:border-gray-300 [&]:p-4"
-              onClick={() => {
-                console.log(`${file} 다운로드`);
-              }}>
-              <span className="font-normal">{file}</span>
-              <Download className="size-4.5" />
-            </Button>
-          ))}
-        </div>
-      )}
-
-      <div className="border-b border-gray-900 p-4 pb-10 leading-relaxed whitespace-pre-line">{post.content}</div>
+      {/* 본문 */}
+      <div
+        className="border-b border-gray-900 p-4 pb-10 leading-relaxed whitespace-pre-line"
+        dangerouslySetInnerHTML={{ __html: post.content }}
+      />
 
       {/* 의견 댓글 영역 */}
-      <div className="py-7 pr-0 pl-5">
+      <div className="py-7 pr-0 pl-6">
         {/* 의견 작성 */}
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <h2 className="w-[140px] font-bold">의견</h2>
+        <div className="mb-5 flex items-center justify-between gap-5">
+          <h2 className="w-[120px] text-base font-bold">댓글</h2>
           <div className="w-full flex-1">
             <Textbox
               className="w-full"
@@ -171,10 +168,11 @@ export default function BoardDetail({ id }: BoardDetailProps) {
               onChange={(e) => setNewComment(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  e.preventDefault(); //줄바꿈 방지
+                  e.preventDefault();
                   handleAddComment(Number(postId));
                 }
-              }}></Textbox>
+              }}
+            />
           </div>
           <Button
             variant="svgIcon"
@@ -186,54 +184,37 @@ export default function BoardDetail({ id }: BoardDetailProps) {
           </Button>
         </div>
 
-        {/* 의견 확인 */}
-        <div className="flex flex-col gap-3">
-          {postComments.map((c) => (
-            <div className="flex items-center justify-between gap-4" key={c.id}>
+        {/* 의견 목록 */}
+        <div className="flex flex-col gap-1">
+          {comments.map((c) => (
+            <div className="flex items-center justify-between gap-4" key={c.bc_seq}>
               <div className="w-[140px] text-base">
-                {c.user} <span>({c.team})</span>
+                {c.user_name} {/* <span>({c.team})</span> */}
               </div>
               <div className="flex w-full flex-1 items-center justify-between text-base">
-                <p>{c.content}</p>
-                <div className="text-gray-600">{c.createdAt}</div>
+                <p>{c.comment}</p>
+                <div className="text-sm text-gray-600">{formatKST(c.created_at)}</div>
               </div>
               <Button
                 variant="svgIcon"
                 size="icon"
                 aria-label="의견 삭제"
                 className="px-6"
-                onClick={() => {
-                  setCommentToDelete(c.id);
-                  setOpenConfirm(true);
-                }}>
+                onClick={() => openConfirm('댓글을 삭제하시겠습니까?', () => handleDeleteComment(c.bc_seq), '삭제', 'destructive')}>
                 <CircleX />
               </Button>
             </div>
           ))}
-          {/* 삭제 컨펌 다이얼로그 */}
-          <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
-            <DialogContent className="w-[400px] pt-8">
-              <DialogHeader>
-                <DialogTitle>댓글을 삭제하시겠습니까?</DialogTitle>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpenConfirm(false)}>
-                  취소
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    if (commentToDelete !== null) {
-                      handleDeleteComment(commentToDelete);
-                    }
-                    setOpenConfirm(false);
-                    setCommentToDelete(null);
-                  }}>
-                  삭제
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+
+          {/* 공통 다이얼로그 */}
+          <ConfirmDialog
+            open={confirmState.open}
+            onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
+            title={confirmState.title}
+            confirmText={confirmState.confirmText ?? '확인'}
+            confirmVariant={confirmState.confirmVariant ?? 'default'}
+            onConfirm={() => confirmState.action?.()}
+          />
         </div>
       </div>
 
