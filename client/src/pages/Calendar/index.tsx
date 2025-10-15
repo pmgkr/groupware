@@ -60,6 +60,7 @@ const convertScheduleToEvent = (schedule: Schedule, currentUser?: any): Calendar
     return schedule.user_id || '';
   };
   
+  
   // 팀명 매핑
   const getTeamName = (teamId: number): string => {
     switch (teamId) {
@@ -243,14 +244,12 @@ const customEventFilter = (events: CalendarEvent[], selectConfigs: SelectConfig[
 export default function Calendar() {
   const { user } = useAuth(); // 로그인한 사용자 정보
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // 현재 날짜 기준으로 데이터 로드
   const loadEvents = async (date: Date = new Date()) => {
     try {
-      setLoading(true);
       setError(null);
       
       const year = date.getFullYear();
@@ -267,6 +266,8 @@ export default function Calendar() {
       const schedules = apiResponse.items?.items || [];
       console.log('Schedules array:', schedules);
       console.log('First schedule sample:', schedules[0]); // 첫 번째 일정의 구조 확인
+      console.log('First schedule user_name:', schedules[0]?.user_name); // user_name 확인
+      console.log('First schedule user_id:', schedules[0]?.user_id); // user_id 확인
       
       // null이 아닌 항목만 필터링하고 변환 (현재 사용자 정보 전달)
       const calendarEvents = schedules
@@ -285,8 +286,6 @@ export default function Calendar() {
       setError(`일정을 불러오는데 실패했습니다: ${err instanceof Error ? err.message : 'Unknown error'}`);
       // 에러 시 빈 배열 사용
       setEvents([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -389,6 +388,7 @@ export default function Calendar() {
       // DB에 저장할 데이터 구조 - 프로덕션 서버 API에 맞춤
       const scheduleData: any = {
         team_id: user.team_id, // 프로덕션 서버 필수 (user_id는 JWT에서 자동 추출)
+        // user_name: user.user_name, // TODO: 프로덕션 서버 업데이트 후 활성화
         sch_title: getSchTitle(eventData.eventType),
         sch_year: schYear, // 프로덕션 서버 필수
         sch_type: schType,
@@ -423,7 +423,7 @@ export default function Calendar() {
       // 성공 시 현재 월의 데이터 다시 로드
       await loadEvents(currentDate);
       
-      alert('일정이 성공적으로 등록되었습니다!');
+      // alert('일정이 성공적으로 등록되었습니다!');
       return true;
     } catch (err: any) {
       console.error('Failed to save event:', err);
@@ -460,15 +460,6 @@ export default function Calendar() {
     loadEvents();
   }, []);
 
-  // 로딩 중일 때
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">일정을 불러오는 중...</div>
-      </div>
-    );
-  }
-
   // 에러 발생 시
   if (error) {
     return (
@@ -488,6 +479,7 @@ export default function Calendar() {
       defaultDate={new Date()}
       onSaveEvent={handleSaveEvent}
       onDateChange={setCurrentDate}
+      showHolidays={false} // 공휴일 API 키 만료로 임시 비활성화
     />
   );
 } 

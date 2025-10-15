@@ -313,7 +313,7 @@ export default function WorkHoursTable() {
   }, [weekData]);
 
   return (
-    <div className="p-6">
+    <div>
       <Toolbar
         onNavigate={onNavigate}
         onView={onView}

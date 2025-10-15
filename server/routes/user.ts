@@ -241,6 +241,7 @@ router.post('/user/schedule/register', async (req: Request, res: Response) => {
     
     const {
       user_id,
+      user_name,
       team_id,
       sch_type,
       sch_vacation_type,
@@ -328,6 +329,7 @@ router.post('/user/schedule/register', async (req: Request, res: Response) => {
     // Prisma create 데이터 준비
     const createData: any = {
       user_id,
+      user_name: user_name || null, // user_name 추가
       team_id: Number(team_id),
       sch_year: schYear,
       sch_type,

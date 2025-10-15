@@ -47,6 +47,7 @@ model Schedule {
   id                            Int                         @id @default(autoincrement())
   seq                           Int?                        @unique(map: "seq_UNIQUE")
   user_id                       String                      @db.VarChar(100)
+  user_name                     String?                     @db.VarChar(100)
   team_id                       Int
   sch_year                      Int?                        @db.Int
   sch_type                      schedule_sch_type
