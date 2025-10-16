@@ -137,7 +137,7 @@ export default function ItDevice() {
       {/* 검색창 */}
       <div className="flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
-          <Input className="h-[40px] px-4 [&]:bg-white" placeholder="검색어 입력" />
+          <Input className="h-[32px] px-4 [&]:bg-white" placeholder="검색어 입력" />
           <Button variant="svgIcon" size="icon" className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2" aria-label="검색">
             <SearchGray className="text-gray-400" />
           </Button>
@@ -146,7 +146,7 @@ export default function ItDevice() {
         {/* 등록 다이얼로그 */}
         <Dialog open={openRegister} onOpenChange={setOpenRegister}>
           <DialogTrigger asChild>
-            <Button>등록하기</Button>
+            <Button size="sm">등록하기</Button>
           </DialogTrigger>
           <DialogContent className="p-7">
             <DialogHeader>

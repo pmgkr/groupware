@@ -97,11 +97,7 @@ function PaginationFirst({ className, ...props }: React.ComponentProps<typeof Pa
 // ✅ 맨뒤로 가기
 function PaginationLast({ className, ...props }: React.ComponentProps<typeof PaginationLink>) {
   return (
-    <PaginationLink
-      aria-label="Go to last page"
-      size="default"
-      className={cn('gap-1 px-2.5 text-gray-950 sm:pr-2.5', className)}
-      {...props}>
+    <PaginationLink aria-label="Go to last page" size="default" className={cn('gap-1 px-2.5 text-gray-950', className)} {...props}>
       <span className="hidden sm:block"></span>
       <ChevronsRightIcon />
     </PaginationLink>

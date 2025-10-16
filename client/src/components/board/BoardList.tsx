@@ -46,12 +46,14 @@ export default function BoardList() {
       {/* 검색창 */}
       <div className="flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
-          <Input className="h-[40px] px-4 [&]:bg-white" placeholder="검색어 입력" />
+          <Input className="h-[32px] px-4 [&]:bg-white" placeholder="검색어 입력" />
           <Button variant="svgIcon" size="icon" className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2" aria-label="검색">
             <SearchGray className="text-gray-400" />
           </Button>
         </div>
-        <Button onClick={() => navigate('write')}>글쓰기</Button>
+        <Button size="sm" onClick={() => navigate('write')}>
+          글쓰기
+        </Button>
       </div>
 
       {/* 게시판 테이블 */}
@@ -61,50 +63,61 @@ export default function BoardList() {
             <TableHead className="w-[80px]">번호</TableHead>
             <TableHead className="w-[120px]">카테고리</TableHead>
             <TableHead className="w-[700px]">제목</TableHead>
-            <TableHead>작성자</TableHead>
-            <TableHead>작성날짜</TableHead>
-            <TableHead>조회</TableHead>
+            <TableHead className="w-[270px]">작성자</TableHead>
+            <TableHead className="w-[220px]">작성날짜</TableHead>
+            <TableHead className="w-[91px]">조회</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {/* 공지글: 항상 맨 위 */}
-          {notices.map((post) => (
-            <TableRow
-              key={`notice-${post.n_seq}`}
-              onClick={() => navigate(`${post.n_seq}`)}
-              className="bg-primary-blue-100 hover:bg-primary-blue-100 cursor-pointer">
-              <TableCell className="font-medium">
-                <Badge>공지</Badge>
+          {posts.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="border-b-0 py-3 text-center text-gray-500">
+                게시글을 찾을 수 없습니다.
               </TableCell>
-              <TableCell>{post.category}</TableCell>
-              <TableCell className="text-left">{post.title}</TableCell>
-              <TableCell>{post.user_name}</TableCell>
-              <TableCell>{post.reg_date.substring(0, 10)}</TableCell>
-              <TableCell>{post.v_count}</TableCell>
             </TableRow>
-          ))}
-          {/* 일반글: 최신순 + 번호 */}
-          {normals.map((post, index) => (
-            <TableRow key={post.n_seq} onClick={() => navigate(`${post.n_seq}`)} className="cursor-pointer hover:bg-gray-100">
-              <TableCell className="font-medium">{total - startNo - index}</TableCell>
-              <TableCell>{post.category}</TableCell>
-              <TableCell className="text-left">{post.title}</TableCell>
-              <TableCell>{post.user_name}</TableCell>
-              <TableCell>{post.reg_date.substring(0, 10)}</TableCell>
-              <TableCell>{post.v_count}</TableCell>
-            </TableRow>
-          ))}
+          ) : (
+            <>
+              {/* 공지글: 항상 맨 위 */}
+              {notices.map((post) => (
+                <TableRow
+                  key={`notice-${post.n_seq}`}
+                  onClick={() => navigate(`${post.n_seq}`)}
+                  className="bg-primary-blue-100 cursor-pointer">
+                  <TableCell className="font-medium">
+                    <Badge>공지</Badge>
+                  </TableCell>
+                  <TableCell>{post.category}</TableCell>
+                  <TableCell className="text-left">{post.title}</TableCell>
+                  <TableCell>{post.user_name}</TableCell>
+                  <TableCell>{post.reg_date.substring(0, 10)}</TableCell>
+                  <TableCell>{post.v_count}</TableCell>
+                </TableRow>
+              ))}
+              {/* 일반글: 최신순 + 번호 */}
+              {normals.map((post, index) => (
+                <TableRow key={post.n_seq} onClick={() => navigate(`${post.n_seq}`)} className="cursor-pointer hover:bg-gray-100">
+                  <TableCell className="font-medium">{total - startNo - index}</TableCell>
+                  <TableCell>{post.category}</TableCell>
+                  <TableCell className="text-left">{post.title}</TableCell>
+                  <TableCell>{post.user_name}</TableCell>
+                  <TableCell>{post.reg_date.substring(0, 10)}</TableCell>
+                  <TableCell>{post.v_count}</TableCell>
+                </TableRow>
+              ))}
+            </>
+          )}
         </TableBody>
       </Table>
-
-      <div className="mt-5">
-        <AppPagination
-          totalPages={Math.ceil(total / pageSize)}
-          initialPage={page}
-          visibleCount={5}
-          onPageChange={(p) => setPage(p)} //부모 state 업데이트
-        />
-      </div>
+      {posts.length > 0 && total > 1 && (
+        <div className="mt-5">
+          <AppPagination
+            totalPages={Math.ceil(total / pageSize)}
+            initialPage={page}
+            visibleCount={5}
+            onPageChange={(p) => setPage(p)} //부모 state 업데이트
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -30,6 +30,8 @@ const Lazy_Enter = React.lazy(() => import('./enter.svg?react'));
 const Lazy_File = React.lazy(() => import('./file.svg?react'));
 const Lazy_FilterOff = React.lazy(() => import('./filter_off.svg?react'));
 const Lazy_FilterOn = React.lazy(() => import('./filter_on.svg?react'));
+const Lazy_Heart = React.lazy(() => import('./heart.svg?react'));
+const Lazy_HeartFull = React.lazy(() => import('./heart_full.svg?react'));
 const Lazy_LeftArr = React.lazy(() => import('./left_arr.svg?react'));
 const Lazy_Logout = React.lazy(() => import('./logout.svg?react'));
 const Lazy_MailMin = React.lazy(() => import('./mail_min.svg?react'));
@@ -69,6 +71,8 @@ export const Enter: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Enter)
 export const File: React.FC<IconProps> = Object.assign(withSuspense(Lazy_File), { displayName: 'File' });
 export const FilterOff: React.FC<IconProps> = Object.assign(withSuspense(Lazy_FilterOff), { displayName: 'FilterOff' });
 export const FilterOn: React.FC<IconProps> = Object.assign(withSuspense(Lazy_FilterOn), { displayName: 'FilterOn' });
+export const Heart: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Heart), { displayName: 'Heart' });
+export const HeartFull: React.FC<IconProps> = Object.assign(withSuspense(Lazy_HeartFull), { displayName: 'HeartFull' });
 export const LeftArr: React.FC<IconProps> = Object.assign(withSuspense(Lazy_LeftArr), { displayName: 'LeftArr' });
 export const Logout: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Logout), { displayName: 'Logout' });
 export const MailMin: React.FC<IconProps> = Object.assign(withSuspense(Lazy_MailMin), { displayName: 'MailMin' });
