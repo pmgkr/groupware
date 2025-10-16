@@ -9,12 +9,12 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: ' min-w-6 bg-primary-blue-500 text-primary-foreground [a&]:hover:bg-primary/90',
-        secondary: 'min-w-6 bg-primary-blue-100 text-primary-blue [a&]:hover:bg-secondary/90 border-primary-blue-300/10',
-        grayish: 'min-w-6 bg-gray-100 text-gray-700 [a&]:hover:bg-gray-300/90 border-gray-300/50',
-        outline: 'min-w-6 text-primary-blue-500 border-primary-blue-500  [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
-        lightpink: 'min-w-6 bg-primary-pink-300 text-primary-pink [a&]:hover:bg-primary/90',
-        pink: 'min-w-6 bg-primary-pink text-primary-foreground [a&]:hover:bg-primary/90',
+        default: ' bg-primary-blue-500 text-primary-foreground [a&]:hover:bg-primary/90',
+        secondary: 'bg-primary-blue-100 text-primary-blue [a&]:hover:bg-secondary/90 border-primary-blue-300/10',
+        grayish: 'bg-gray-100 text-gray-700 [a&]:hover:bg-gray-300/90 border-gray-300/50',
+        outline: 'text-primary-blue-500 border-primary-blue-500  [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
+        lightpink: 'bg-primary-pink-300 text-primary-pink [a&]:hover:bg-primary/90',
+        pink: 'bg-primary-pink text-primary-foreground [a&]:hover:bg-primary/90',
         dot: 'block max-w-full before:inline-block before:h-1.5 before:w-1.5 before:rounded-[50%] before:bg-primary-blue-500 before:mr-1  before:align-center text-gray-500 p-0 text-ellipsis overflow-hidden whitespace-nowrap',
 
         // 🔵 dot variants (6px 사이즈, 원형, 색상별)
@@ -23,9 +23,10 @@ const badgeVariants = cva(
         'dot-pink': 'w-1.5 h-1.5 rounded-full bg-primary-pink  border-none p-0',
       },
       size: {
-        default: 'px-2 py-0.5 text-xs',
-        md: 'px-2 py-0.5 text-sm',
-        table: 'px-2 py-.25 text-sm', // 테이블 안에 들어가는 badge
+        default: 'min-w-6 px-2 py-0.5 text-xs',
+        md: 'min-w-5 px-2 py-0.5 text-sm',
+        table: 'min-w-6 px-2 py-.25 text-sm', // 테이블 안에 들어가는 badge
+        dot: 'p-0 w-1.5 h-1.5 rounded-full text-[0px]',
       },
     },
     defaultVariants: {
