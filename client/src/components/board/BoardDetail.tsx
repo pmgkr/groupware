@@ -1,16 +1,18 @@
 // src/components/board/BoardDetail.tsx
 import { useParams, useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
-import { Edit, CircleX, Download, Delete, Send } from '@/assets/images/icons';
+import { Edit, CircleX, Download, Delete, Send, HeartFull, Check } from '@/assets/images/icons';
 import { Textbox } from '../ui/textbox';
 import { useEffect, useState } from 'react';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
-import { deactivateBoard, getBoardDetail, getComment, registerComment, removeComment } from '@/api/office/notice';
+import { deactivateBoard, editComment, getBoardDetail, getComment, registerComment, removeComment } from '@/api/office/notice';
 import type { BoardDTO, CommentDTO } from '@/api/office/notice';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { formatKST } from '@/utils';
+import { Textarea } from '../ui/textarea';
+import { Heart } from 'lucide-react';
 
 interface BoardDetailProps {
   id?: string;
@@ -25,9 +27,16 @@ export default function BoardDetail({ id }: BoardDetailProps) {
   const [post, setPost] = useState<BoardDTO | null>(null);
   const [loading, setLoading] = useState(true);
 
+  //게시글 조아요
+  const [likeCount, setLikeCount] = useState(0);
+  const [liked, setLiked] = useState(false);
+
   //댓글 상태
   const [comments, setComments] = useState<CommentDTO[]>([]);
   const [newComment, setNewComment] = useState('');
+  const [editCommentMode, setEditCommentMode] = useState(false);
+  const [editCommentModeId, setEditCommentModeId] = useState<number | null>(null);
+  const [editText, setEditText] = useState<{ [key: number]: string }>({});
 
   //컨펌 다이얼로그 상태
   const [confirmState, setConfirmState] = useState<{
@@ -62,7 +71,6 @@ export default function BoardDetail({ id }: BoardDetailProps) {
 
         //댓글 불러오기
         const commentData = await getComment(Number(postId));
-        //console.log('댓글 API 응답:', commentData);
         setComments(commentData);
       } catch (err) {
         setPost(null);
@@ -92,12 +100,19 @@ export default function BoardDetail({ id }: BoardDetailProps) {
     if (!newComment.trim() || !user) return;
 
     try {
-      await registerComment({
-        n_seq: Number(postId),
-        user_id: user.user_id,
-        user_name: user.user_name!,
-        comment: newComment,
-      });
+      //수정
+      if (editCommentMode && editCommentModeId) {
+        await editComment(editCommentModeId, { comment: newComment });
+        setEditCommentMode(false);
+        setEditCommentModeId(null);
+      } else {
+        await registerComment({
+          n_seq: Number(postId),
+          user_id: user.user_id,
+          user_name: user.user_name!,
+          comment: newComment,
+        });
+      }
 
       // 등록 성공 후 댓글 다시 불러오기
       const updated = await getComment(postId);
@@ -121,12 +136,30 @@ export default function BoardDetail({ id }: BoardDetailProps) {
     }
   };
 
+  //게시글 조아요
+  const handleLike = () => {
+    if (liked) {
+      setLikeCount((prev) => prev - 1);
+    } else {
+      setLikeCount((prev) => prev + 1);
+    }
+    setLiked((prev) => !prev);
+  };
+
   if (loading) return <div className="p-4">불러오는 중...</div>;
   if (!post) return <div className="p-4">게시글을 찾을 수 없습니다.</div>;
 
   return (
     <article>
-      <h2 className="border-b border-gray-900 p-4 text-xl font-bold">{post.title}</h2>
+      <div className="flex justify-between border-b p-4 pr-1">
+        <h2 className="border-gray-900 text-2xl font-bold">{post.title}</h2>
+        <div className="flex items-center">
+          <p className="mr-2 w-[30px] text-right text-base">{likeCount}</p>
+          <Button variant="svgIcon" size="icon" onClick={handleLike} className="size-5" aria-label="게시글 좋아요">
+            {liked ? <HeartFull className="scale-110" /> : <Heart />}
+          </Button>
+        </div>
+      </div>
 
       <div className="flex items-center justify-between border-b border-gray-300">
         <div className="flex divide-x divide-gray-300 p-4 text-sm leading-tight text-gray-500">
@@ -135,19 +168,22 @@ export default function BoardDetail({ id }: BoardDetailProps) {
           <div className="px-3">{post.reg_date.substring(0, 10)}</div>
           <div className="px-3">조회 {post.v_count}</div>
         </div>
-        <div className="text-gray-700">
-          <Button variant="svgIcon" size="icon" onClick={handleEdit} className="hover:text-primary-blue-500" aria-label="수정">
-            <Edit className="size-4" />
-          </Button>
-          <Button
-            variant="svgIcon"
-            size="icon"
-            className="hover:text-primary-blue-500"
-            aria-label="삭제"
-            onClick={() => openConfirm('게시글을 삭제하시겠습니까?', handleDelete, '삭제', 'destructive')}>
-            <Delete className="size-4" />
-          </Button>
-        </div>
+
+        {user?.user_id === post.user_id && (
+          <div className="text-gray-700">
+            <Button variant="svgIcon" size="icon" onClick={handleEdit} className="hover:text-primary-blue-500" aria-label="수정">
+              <Edit className="size-4" />
+            </Button>
+            <Button
+              variant="svgIcon"
+              size="icon"
+              className="hover:text-primary-blue-500"
+              aria-label="삭제"
+              onClick={() => openConfirm('게시글을 삭제하시겠습니까?', handleDelete, '삭제', 'destructive')}>
+              <Delete className="size-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* 본문 */}
@@ -156,56 +192,134 @@ export default function BoardDetail({ id }: BoardDetailProps) {
         dangerouslySetInnerHTML={{ __html: post.content }}
       />
 
-      {/* 의견 댓글 영역 */}
-      <div className="py-7 pr-0 pl-6">
-        {/* 의견 작성 */}
-        <div className="mb-5 flex items-center justify-between gap-5">
-          <h2 className="w-[120px] text-base font-bold">댓글</h2>
+      {/* 댓글 영역 */}
+      <div className="bg-gray-100 p-7">
+        {/* 댓글 작성 */}
+        <div className="mb-5 flex items-start justify-between gap-5">
+          <h2 className="w-[100px] text-base font-bold">댓글</h2>
           <div className="w-full flex-1">
-            <Textbox
+            <Textarea
+              size="sm"
               className="w-full"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              onKeyDown={(e) => {
+              /* onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
                   handleAddComment(Number(postId));
                 }
-              }}
+              }} */
             />
           </div>
           <Button
             variant="svgIcon"
             size="icon"
-            aria-label="의견 게시"
-            className="h-[40px] border border-gray-950 px-6"
+            aria-label="댓글 게시"
+            className="h-[64px] w-[64px] border border-gray-950 px-6"
             onClick={() => handleAddComment(Number(postId))}>
             <Send />
           </Button>
         </div>
 
-        {/* 의견 목록 */}
-        <div className="flex flex-col gap-1">
+        {/* 댓글 목록 */}
+        <div className="flex flex-col">
           {comments.map((c) => (
-            <div className="flex items-center justify-between gap-4" key={c.bc_seq}>
-              <div className="w-[140px] text-base">
-                {c.user_name} {/* <span>({c.team})</span> */}
+            <div className="mb-3 flex items-start justify-between gap-4" key={c.bc_seq}>
+              <div className="w-[100px] pt-1.5 text-base text-gray-700">{c.user_name}</div>
+              {/* 댓글 내용 / 수정 */}
+              <div className="flex w-full flex-1 items-start justify-between text-base">
+                {editCommentModeId === c.bc_seq ? (
+                  //수정중
+                  <Textarea
+                    size="sm"
+                    className="w-[1212px] flex-1"
+                    value={editText[c.bc_seq] ?? ''}
+                    onChange={(e) => setEditText((prev) => ({ ...prev, [c.bc_seq]: e.target.value }))}
+                  />
+                ) : (
+                  //일반 댓글 목록
+                  <p className="w-[1050px] pt-1 text-base whitespace-pre-line text-gray-700">{c.comment}</p>
+                )}
               </div>
-              <div className="flex w-full flex-1 items-center justify-between text-base">
-                <p>{c.comment}</p>
-                <div className="text-sm text-gray-600">{formatKST(c.created_at)}</div>
+
+              {/* 수정모드일때 일시 숨기기 */}
+              {!(editCommentMode && editCommentModeId === c.bc_seq) && (
+                <div className="w-[120px] pt-1.5 text-sm text-gray-600">{formatKST(c.created_at)}</div>
+              )}
+              {/* 수정 모드일 때 "댓글작성으로 돌아가기" 버튼 */}
+
+              <div className="flex w-[64px]">
+                {user?.user_id === c.user_id && (
+                  <div className="flex">
+                    {editCommentModeId === c.bc_seq ? (
+                      <>
+                        {/* 수정완료 버튼 */}
+                        <Button
+                          variant="svgIcon"
+                          size="icon"
+                          aria-label="댓글 수정완료"
+                          onClick={async () => {
+                            try {
+                              const updatedText = editText[c.bc_seq] ?? '';
+                              await editComment(c.bc_seq, { comment: updatedText });
+                              setEditCommentMode(false);
+                              setEditCommentModeId(null);
+                              setEditText((prev) => ({ ...prev, [c.bc_seq]: '' }));
+                              const updated = await getComment(Number(postId));
+                              setComments(updated);
+                            } catch (err) {
+                              console.error('댓글 수정 실패:', err);
+                              alert('댓글 수정 중 오류가 발생했습니다.');
+                            }
+                          }}>
+                          <Check />
+                        </Button>
+
+                        {/* 나가기(수정 취소) 버튼 */}
+                        <Button
+                          variant="svgIcon"
+                          size="icon"
+                          aria-label="수정 취소"
+                          onClick={() => {
+                            setEditCommentMode(false);
+                            setEditCommentModeId(null);
+                            setNewComment('');
+                          }}>
+                          <CircleX />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        {/* 댓글 수정  */}
+                        <Button
+                          variant="svgIcon"
+                          size="icon"
+                          aria-label="댓글 수정"
+                          onClick={() => {
+                            setEditCommentMode(true);
+                            setEditCommentModeId(c.bc_seq);
+                            setEditText((prev) => ({ ...prev, [c.bc_seq]: c.comment }));
+                          }}>
+                          <Edit />
+                        </Button>
+
+                        {/* 삭제 */}
+                        <Button
+                          variant="svgIcon"
+                          size="icon"
+                          aria-label="댓글 삭제"
+                          onClick={() =>
+                            openConfirm('댓글을 삭제하시겠습니까?', () => handleDeleteComment(c.bc_seq), '삭제', 'destructive')
+                          }>
+                          <Delete />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
-              <Button
-                variant="svgIcon"
-                size="icon"
-                aria-label="의견 삭제"
-                className="px-6"
-                onClick={() => openConfirm('댓글을 삭제하시겠습니까?', () => handleDeleteComment(c.bc_seq), '삭제', 'destructive')}>
-                <CircleX />
-              </Button>
             </div>
           ))}
-
           {/* 공통 다이얼로그 */}
           <ConfirmDialog
             open={confirmState.open}
