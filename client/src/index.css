@@ -368,6 +368,10 @@
   .short-v-divider {
     @apply relative before:absolute before:top-1/2 before:left-0 before:h-11 before:w-px before:-translate-y-1/2 before:bg-gray-300 before:content-[''] first:before:hidden;
   }
+
+  .long-v-divider {
+    @apply relative before:absolute before:top-1/2 before:left-0 before:h-15 before:w-px before:-translate-y-1/2 before:bg-gray-300 before:content-[''] first:before:hidden;
+  }
 }
 
 .modal {
