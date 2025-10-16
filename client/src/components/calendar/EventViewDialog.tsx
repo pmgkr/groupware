@@ -1,6 +1,9 @@
 import React from 'react';
 import dayjs from 'dayjs';
+import 'dayjs/locale/ko';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@components/ui/dialog';
+
+dayjs.locale('ko');
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
 import { useUser } from '@/hooks/useUser';
@@ -83,17 +86,17 @@ export default function EventViewDialog({
     // 종일 이벤트인 경우
     if (allDay) {
       if (startDate.isSame(endDate, 'day')) {
-        return startDate.format('YYYY년 MM월 DD일 (ddd)');
+        return startDate.format('YYYY년 MM월 DD일 ddd요일');
       } else {
-        return `${startDate.format('YYYY년 MM월 DD일 (ddd)')} ~ ${endDate.format('YYYY년 MM월 DD일 (ddd)')}`;
+        return `${startDate.format('YYYY년 MM월 DD일 ddd요일')} ~ ${endDate.format('YYYY년 MM월 DD일 ddd요일')}`;
       }
     }
     
     // 종일이 아닌 경우 시간도 포함
     if (startDate.isSame(endDate, 'day')) {
-      return `${startDate.format('YYYY년 MM월 DD일 (ddd)')} ${startTime} ~ ${endTime}`;
+      return `${startDate.format('YYYY년 MM월 DD일 ddd요일')} ${startTime} ~ ${endTime}`;
     } else {
-      return `${startDate.format('YYYY년 MM월 DD일 (ddd)')} ${startTime} ~ ${endDate.format('YYYY년 MM월 DD일 (ddd)')} ${endTime}`;
+      return `${startDate.format('YYYY년 MM월 DD일 ddd요일')} ${startTime} ~ ${endDate.format('YYYY년 MM월 DD일 ddd요일')} ${endTime}`;
     }
   };
 
