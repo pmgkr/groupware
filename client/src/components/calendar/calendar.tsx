@@ -5,6 +5,7 @@ import { parse } from "date-fns/parse";
 import CustomToolbar from "./toolbar";
 import CalendarView from "./view";
 import EventDialog from "./EventDialog";
+import EventViewDialog from "./EventViewDialog";
 
 // 셀렉트 옵션 타입 정의
 interface SelectOption {
@@ -32,6 +33,7 @@ interface CalendarEvent {
   author: string;
   description: string;
   resource: {
+    id?: number;
     seq: number;
     userId: string;
     teamId: number;
@@ -197,6 +199,8 @@ export default function CustomCalendar({
   const [currentDate, setCurrentDate] = useState(defaultDate);
   const [currentView, setCurrentView] = useState<View>(defaultView);
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
+  const [isEventViewDialogOpen, setIsEventViewDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   
   // 셀렉트 옵션 설정 => 툴바에 반영됨
   const [selectConfigsState, setSelectConfigsState] = useState<SelectConfig[]>(selectConfigs);
@@ -267,6 +271,34 @@ export default function CustomCalendar({
     setIsEventDialogOpen(false);
   };
 
+  // 이벤트 클릭 핸들러
+  const handleSelectEvent = (event: CalendarEvent) => {
+    setSelectedEvent(event);
+    setIsEventViewDialogOpen(true);
+  };
+
+  // 이벤트 뷰 다이얼로그 닫기
+  const handleCloseEventViewDialog = () => {
+    setIsEventViewDialogOpen(false);
+    setSelectedEvent(null);
+  };
+
+  // 이벤트 취소 핸들러
+  const handleCancelEvent = () => {
+    if (selectedEvent) {
+      // 로컬 상태에서만 제거 (실제로는 API 호출 필요)
+      setMyEvents(prev => prev.filter(e => e.resource.seq !== selectedEvent.resource.seq));
+      handleCloseEventViewDialog();
+    }
+  };
+
+  // 이벤트 재신청 핸들러
+  const handleReapplyEvent = () => {
+    // 재신청 로직 (EventDialog를 열어서 기존 데이터를 채워줄 수 있음)
+    handleCloseEventViewDialog();
+    // TODO: EventDialog에 기존 데이터를 전달하여 편집 모드로 열기
+  };
+
   const handleSaveEvent = async (eventData: any) => {
     // 부모 컴포넌트의 onSaveEvent가 있으면 호출
     if (onSaveEvent) {
@@ -324,6 +356,7 @@ export default function CustomCalendar({
       author: eventData.author,
       description: eventData.description,
       resource: {
+        id: undefined, // DB에서 생성된 후에야 id를 받을 수 있음
         seq: Date.now(), // 임시 ID (실제로는 DB에서 생성)
         userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x", // 실제로는 로그인한 사용자 ID
         teamId: 1, // 실제로는 사용자의 팀 ID
@@ -369,6 +402,7 @@ export default function CustomCalendar({
           setCurrentView(view as View);
         }}
         onViewChange={handleViewChange}
+        onSelectEvent={handleSelectEvent}
       />
       
       {/* 일정 등록 Dialog */}
@@ -377,6 +411,37 @@ export default function CustomCalendar({
         onClose={handleCloseEventDialog}
         onSave={handleSaveEvent}
         selectedDate={currentDate}
+      />
+
+      {/* 일정 상세 보기 Dialog */}
+      <EventViewDialog
+        isOpen={isEventViewDialogOpen}
+        onClose={handleCloseEventViewDialog}
+        onCancel={handleCancelEvent}
+        onReapply={handleReapplyEvent}
+        selectedEvent={selectedEvent ? {
+          id: selectedEvent.resource.id?.toString() || selectedEvent.resource.seq?.toString() || '0',
+          title: selectedEvent.title,
+          description: selectedEvent.description,
+          startDate: selectedEvent.resource.schSdate,
+          endDate: selectedEvent.resource.schEdate,
+          startTime: selectedEvent.resource.schStime,
+          endTime: selectedEvent.resource.schEtime,
+          allDay: selectedEvent.resource.schIsAllday === 'Y',
+          category: selectedEvent.resource.schType,
+          eventType: selectedEvent.resource.schVacationType 
+            ? `event${selectedEvent.resource.schVacationType.charAt(0).toUpperCase() + selectedEvent.resource.schVacationType.slice(1)}`
+            : selectedEvent.resource.schEventType
+            ? `event${selectedEvent.resource.schEventType.charAt(0).toUpperCase() + selectedEvent.resource.schEventType.slice(1)}`
+            : 'event',
+          author: selectedEvent.author,
+          status: selectedEvent.resource.schStatus === 'Y' 
+            ? "승인완료" 
+            : selectedEvent.resource.schStatus === 'H' 
+            ? "취소요청됨" 
+            : "승인대기",
+          cancelRequestDate: selectedEvent.resource.schStatus === 'H' ? selectedEvent.resource.schModifiedAt?.toString() : undefined,
+        } : undefined}
       />
     </div>
   );
