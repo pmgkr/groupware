@@ -50,8 +50,8 @@ interface CalendarEvent {
     schIsHoliday: string;
     schDescription: string;
     schStatus: string;
-    schModifiedAt: Date;
     schCreatedAt: Date;
+    schModifiedAt: Date;
   };
 }
 
@@ -76,15 +76,17 @@ interface CustomCalendarProps {
 // 기본 이벤트 제목 매핑 함수
 const defaultEventTitleMapper: EventTitleMapper = (eventType: string) => {
   switch (eventType) {
-    case 'eventVacation':
+    case 'vacationDay':
       return '연차';
-    case 'eventHalfDayMorning':
+    case 'vacationHalfMorning':
       return '오전 반차';
-    case 'eventHalfDayAfternoon':
+    case 'vacationHalfAfternoon':
       return '오후 반차';
-    case 'eventQuarter':
-      return '반반차';
-    case 'eventOfficialLeave':
+    case 'vacationQuarterMorning':
+      return '오전 반반차';
+    case 'vacationQuarterAfternoon':
+      return '오후 반반차';
+    case 'vacationOfficial':
       return '공가';
     case 'eventRemote':
       return '재택';
@@ -313,7 +315,7 @@ export default function CustomCalendar({
     // onSaveEvent가 없으면 기본 동작 (로컬 상태에만 추가)
     // eventType에 따른 MySQL enum 값 매핑
     const getSchType = (eventType: string) => {
-      if (['eventVacation', 'eventHalfDayMorning', 'eventHalfDayAfternoon', 'eventQuarter', 'eventOfficialLeave'].includes(eventType)) {
+      if (['vacationDay', 'vacationHalfMorning', 'vacationHalfAfternoon', 'vacationQuarterMorning', 'vacationQuarterAfternoon', 'vacationOfficial'].includes(eventType)) {
         return 'vacation';
       }
       return 'event';
@@ -321,13 +323,15 @@ export default function CustomCalendar({
 
     const getSchVacationType = (eventType: string): string | null => {
       switch (eventType) {
-        case 'eventVacation':
-        case 'eventOfficialLeave':
+        case 'vacationDay':
           return 'day';
-        case 'eventHalfDayMorning':
-        case 'eventHalfDayAfternoon':
+        case 'vacationOfficial':
+          return 'official';
+        case 'vacationHalfMorning':
+        case 'vacationHalfAfternoon':
           return 'half';
-        case 'eventQuarter':
+        case 'vacationQuarterMorning':
+        case 'vacationQuarterAfternoon':
           return 'quarter';
         default:
           return null;
@@ -340,8 +344,10 @@ export default function CustomCalendar({
           return 'remote';
         case 'eventField':
           return 'field';
-        default:
+        case 'eventEtc':
           return 'etc';
+        default:
+          return null;
       }
     };
 
@@ -436,11 +442,13 @@ export default function CustomCalendar({
             : 'event',
           author: selectedEvent.author,
           status: selectedEvent.resource.schStatus === 'Y' 
-            ? "승인완료" 
+            ? "등록 완료" 
             : selectedEvent.resource.schStatus === 'H' 
-            ? "취소요청됨" 
-            : "승인대기",
+            ? "취소 요청됨" 
+            : "승인 대기",
           cancelRequestDate: selectedEvent.resource.schStatus === 'H' ? selectedEvent.resource.schModifiedAt?.toString() : undefined,
+          createdAt: selectedEvent.resource.schCreatedAt?.toString(),
+          modifiedAt: selectedEvent.resource.schModifiedAt?.toString(),
         } : undefined}
       />
     </div>

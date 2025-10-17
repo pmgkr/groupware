@@ -34,17 +34,17 @@ interface EventData {
 }
 
 const vacationTypes = [
-  { value: 'eventVacation', label: '연차' },
-  { value: 'eventHalfDayMorning', label: '오전반차' },
-  { value: 'eventHalfDayAfternoon', label: '오후반차' },
-  { value: 'eventHalfHalfDayMorning', label: '오전반반차' },
-  { value: 'eventHalfHalfDayAfternoon', label: '오후반반차' },
-  { value: 'eventOfficialLeave', label: '공가' },
+  { value: 'vacationDay', label: '연차' },
+  { value: 'vacationHalfMorning', label: '오전반차' },
+  { value: 'vacationHalfAfternoon', label: '오후반차' },
+  { value: 'vacationQuarterMorning', label: '오전반반차' },
+  { value: 'vacationQuarterAfternoon', label: '오후반반차' },
+  { value: 'vacationOfficial', label: '공가' },
 ];
 
 const eventTypes = [
-  { value: 'eventWorkFromHome', label: '재택' },
-  { value: 'eventExternal', label: '외부 일정' },
+  { value: 'eventRemote', label: '재택' },
+  { value: 'eventField', label: '외부 일정' },
 ];
 
 export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: EventDialogProps) {
@@ -85,9 +85,22 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
         newData.eventType = '';
       }
       
-      // 이벤트 타입이 변경되면 종료일을 시작일과 동일하게 설정
-      if (field === 'eventType') {
+      // 이벤트 타입이 변경되면 설정
+      if (field === 'eventType' && typeof value === 'string') {
         newData.endDate = newData.startDate;
+        
+        // 반차/반반차인 경우 allDay를 false로 설정 (시간은 DateTimePicker에서 선택)
+        if (['vacationHalfMorning', 'vacationHalfAfternoon', 'vacationQuarterMorning', 'vacationQuarterAfternoon'].includes(value)) {
+          newData.allDay = false;
+          // startTime은 DateTimePicker에서 선택될 때 설정됨
+          console.log('반차/반반차 타입 선택:', value);
+          console.log('allDay를 false로 설정 (시간은 DateTimePicker에서 선택 필요)');
+        } else if (value === 'vacationDay' || value === 'vacationOfficial') {
+          // 연차/공가는 종일로 설정
+          newData.allDay = true;
+          newData.startTime = '09:30';
+          newData.endTime = '18:30';
+        }
       }
       
       return newData;
@@ -96,6 +109,9 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
 
   // 단일 날짜 선택 핸들러
   const handleDateSelect = (date: Date | undefined) => {
+    console.log('=== handleDateSelect 호출 ===');
+    console.log('선택된 date:', date);
+    
     if (date) {
       // 로컬 시간 기준으로 YYYY-MM-DD 문자열 생성
       const year = date.getFullYear();
@@ -103,12 +119,29 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       const day = String(date.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
       
-      setFormData(prev => ({
-        ...prev,
-        selectedDate: date,
-        startDate: dateStr,
-        endDate: dateStr,
-      }));
+      // 시간 정보 추출 (HH:mm 형식)
+      const hour = String(date.getHours()).padStart(2, '0');
+      const minute = String(date.getMinutes()).padStart(2, '0');
+      const timeStr = `${hour}:${minute}`;
+      
+      console.log('생성된 dateStr:', dateStr);
+      console.log('생성된 timeStr:', timeStr);
+      console.log('hour:', hour, 'minute:', minute);
+      
+      setFormData(prev => {
+        const newData = {
+          ...prev,
+          selectedDate: date,
+          startDate: dateStr,
+          endDate: dateStr,
+          startTime: timeStr, // 시간 정보 저장
+        };
+        
+        console.log('업데이트된 formData.startTime:', newData.startTime);
+        return newData;
+      });
+    } else {
+      console.log('date가 undefined입니다');
     }
   };
 
@@ -137,18 +170,18 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
 
   // 시간 선택이 필요한 이벤트 타입인지 확인 (반차/반반차일때 시간 필요)
   const isTimeRequired = formData.eventType && 
-    ['eventHalfDayMorning', 'eventHalfDayAfternoon', 'eventHalfHalfDayMorning', 'eventHalfHalfDayAfternoon'].includes(formData.eventType);
+    ['vacationHalfMorning', 'vacationHalfAfternoon', 'vacationQuarterMorning', 'vacationQuarterAfternoon'].includes(formData.eventType);
 
   // 반차/반반차 시간 제한 설정
   const getTimeRestriction = () => {
     switch (formData.eventType) {
-      case 'eventHalfDayMorning':
+      case 'vacationHalfMorning':
         return { startHour: 9, startMinute: 30, endHour: 10, endMinute: 0 };
-      case 'eventHalfHalfDayMorning':
+      case 'vacationQuarterMorning':
         return { startHour: 9, startMinute: 30, endHour: 10, endMinute: 0 };
-      case 'eventHalfDayAfternoon':
+      case 'vacationHalfAfternoon':
         return { startHour: 14, startMinute: 30, endHour: 15, endMinute: 0 };
-      case 'eventHalfHalfDayAfternoon':
+      case 'vacationQuarterAfternoon':
         return { startHour: 16, startMinute: 30, endHour: 17, endMinute: 0 };
       default:
         return undefined;
@@ -165,6 +198,13 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     //   alert('제목을 입력해주세요.');
     //   return;
     // }
+
+    console.log('=== EventDialog handleSave ===');
+    console.log('저장할 formData:', JSON.stringify(formData, null, 2));
+    console.log('formData.startTime:', formData.startTime);
+    console.log('formData.endTime:', formData.endTime);
+    console.log('formData.eventType:', formData.eventType);
+    console.log('formData.selectedDate:', formData.selectedDate);
 
     onSave(formData);
     
@@ -303,12 +343,17 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
                   {isTimeRequired ? '시작일 및 시간을 선택해주세요.' : '기간을 선택해주세요.'}
                 </Label>
                 {isTimeRequired ? (
-                  <DateTimePicker24h 
-                    selected={formData.selectedDate}
-                    onSelect={handleDateSelect}
-                    placeholder="휴가 사용일과 시간을 선택해주세요"
-                    timeRestriction={getTimeRestriction()}
-                  />
+                  <>
+                    <DateTimePicker24h 
+                      selected={formData.selectedDate}
+                      onSelect={handleDateSelect}
+                      placeholder="휴가 사용일과 시간을 선택해주세요"
+                      timeRestriction={getTimeRestriction()}
+                    />
+                    <div className="text-xs text-gray-600 mt-1">
+                      선택된 시간: {formData.startTime || '없음'}
+                    </div>
+                  </>
                 ) : (
                   <DatePickerWithRange 
                     selected={formData.selectedDateRange}

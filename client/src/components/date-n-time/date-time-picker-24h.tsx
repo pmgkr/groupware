@@ -69,6 +69,7 @@ export function DateTimePicker24h({
         newDate.setMinutes(parseInt(value));
       }
       setDate(newDate);
+      onSelect?.(newDate); // 시간 변경 시 부모 컴포넌트에 알림
     }
   };
 
@@ -170,7 +171,10 @@ export function DateTimePicker24h({
             <div className="p-3 border-t">
               <Button 
                 className="w-full" 
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  onSelect?.(date); // 선택완료 시 최종 값 전달
+                  setIsOpen(false);
+                }}
               >
                 선택완료
               </Button>

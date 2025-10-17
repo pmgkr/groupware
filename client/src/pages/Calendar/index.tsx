@@ -83,8 +83,12 @@ const convertScheduleToEvent = (schedule: Schedule, currentUser?: any): Calendar
     if (schedule.sch_type === 'vacation') {
       switch (schedule.sch_vacation_type) {
         case 'day': return '연차';
-        case 'half': return schedule.sch_stime < '12:00:00' ? '오전 반차' : '오후 반차';
-        case 'quarter': return '반반차';
+        case 'half': 
+          // sch_vacation_time 필드로 오전/오후 구분
+          return schedule.sch_vacation_time === 'morning' ? '오전 반차' : '오후 반차';
+        case 'quarter': 
+          // sch_vacation_time 필드로 오전/오후 구분
+          return schedule.sch_vacation_time === 'morning' ? '오전 반반차' : '오후 반반차';
         case 'official': return '공가';
         default: return '휴가';
       }
@@ -167,15 +171,17 @@ const customSelectConfigs = [
 // 이벤트 제목 매핑 커스터마이징
 const customEventTitleMapper = (eventType: string) => {
   switch (eventType) {
-    case 'eventVacation':
+    case 'vacationDay':
       return '연차';
-    case 'eventHalfDayMorning':
+    case 'vacationHalfMorning':
       return '오전 반차';
-    case 'eventHalfDayAfternoon':
+    case 'vacationHalfAfternoon':
       return '오후 반차';
-    case 'eventQuarter':
-      return '반반차';
-    case 'eventOfficialLeave':
+    case 'vacationQuarterMorning':
+      return '오전 반반차';
+    case 'vacationQuarterAfternoon':
+      return '오후 반반차';
+    case 'vacationOfficial':
       return '공가';
     case 'eventRemote':
       return '재택';
@@ -292,11 +298,15 @@ export default function Calendar() {
   // 일정 등록 핸들러
   const handleSaveEvent = async (eventData: any) => {
     try {
-      console.log('Saving event:', eventData);
+      console.log('=== handleSaveEvent 시작 ===');
+      console.log('전체 eventData:', JSON.stringify(eventData, null, 2));
+      console.log('eventData.startTime:', eventData.startTime);
+      console.log('eventData.endTime:', eventData.endTime);
+      console.log('eventData.eventType:', eventData.eventType);
       
       // eventType에 따른 MySQL enum 값 매핑
       const getSchType = (eventType: string): 'vacation' | 'event' => {
-        if (['eventVacation', 'eventHalfDayMorning', 'eventHalfDayAfternoon', 'eventQuarter', 'eventOfficialLeave'].includes(eventType)) {
+        if (['vacationDay', 'vacationHalfMorning', 'vacationHalfAfternoon', 'vacationQuarterMorning', 'vacationQuarterAfternoon', 'vacationOfficial'].includes(eventType)) {
           return 'vacation';
         }
         return 'event';
@@ -304,15 +314,29 @@ export default function Calendar() {
 
       const getSchVacationType = (eventType: string): 'day' | 'half' | 'quarter' | 'official' | null => {
         switch (eventType) {
-          case 'eventVacation':
+          case 'vacationDay':
             return 'day';
-          case 'eventOfficialLeave':
+          case 'vacationOfficial':
             return 'official';
-          case 'eventHalfDayMorning':
-          case 'eventHalfDayAfternoon':
+          case 'vacationHalfMorning':
+          case 'vacationHalfAfternoon':
             return 'half';
-          case 'eventQuarter':
+          case 'vacationQuarterMorning':
+          case 'vacationQuarterAfternoon':
             return 'quarter';
+          default:
+            return null;
+        }
+      };
+
+      const getSchVacationTime = (eventType: string): 'morning' | 'afternoon' | null => {
+        switch (eventType) {
+          case 'vacationHalfMorning':
+          case 'vacationQuarterMorning':
+            return 'morning';
+          case 'vacationHalfAfternoon':
+          case 'vacationQuarterAfternoon':
+            return 'afternoon';
           default:
             return null;
         }
@@ -323,7 +347,6 @@ export default function Calendar() {
           case 'eventRemote':
             return 'remote';
           case 'eventField':
-          case 'eventExternal': // 외부 일정도 field로 매핑
             return 'field';
           case 'eventEtc':
             return 'etc';
@@ -334,7 +357,15 @@ export default function Calendar() {
 
       const schType = getSchType(eventData.eventType);
       const schVacationType = getSchVacationType(eventData.eventType);
+      const schVacationTime = getSchVacationTime(eventData.eventType);
       const schEventType = getSchEventType(eventData.eventType);
+
+      console.log('=== 타입 매핑 결과 ===');
+      console.log('eventType:', eventData.eventType);
+      console.log('schType:', schType);
+      console.log('schVacationType:', schVacationType);
+      console.log('schVacationTime:', schVacationTime);
+      console.log('schEventType:', schEventType);
 
       // 로그인한 사용자 정보 확인
       if (!user?.user_id || !user?.team_id) {
@@ -345,14 +376,14 @@ export default function Calendar() {
       // 일정 제목 생성
       const getSchTitle = (eventType: string): string => {
         switch (eventType) {
-          case 'eventVacation': return '연차';
-          case 'eventHalfDayMorning': return '오전 반차';
-          case 'eventHalfDayAfternoon': return '오후 반차';
-          case 'eventQuarter': return '반반차';
-          case 'eventOfficialLeave': return '공가';
+          case 'vacationDay': return '연차';
+          case 'vacationHalfMorning': return '오전 반차';
+          case 'vacationHalfAfternoon': return '오후 반차';
+          case 'vacationQuarterMorning': return '오전 반반차';
+          case 'vacationQuarterAfternoon': return '오후 반반차';
+          case 'vacationOfficial': return '공가';
           case 'eventRemote': return '재택';
-          case 'eventField':
-          case 'eventExternal': return '외부 일정';
+          case 'eventField': return '외부 일정';
           case 'eventEtc': return '기타 일정';
           default: return '일정';
         }
@@ -385,6 +416,72 @@ export default function Calendar() {
         }
       };
 
+      // 시간 계산 함수
+      const calculateTimes = () => {
+        console.log('=== calculateTimes 호출 ===');
+        console.log('schVacationType:', schVacationType);
+        console.log('eventData.startTime:', eventData.startTime);
+        console.log('eventData.allDay:', eventData.allDay);
+        
+        // 연차 또는 공가인 경우: 고정 시간 (9:30 ~ 18:30)
+        if (schVacationType === 'day' || schVacationType === 'official') {
+          console.log('연차/공가 처리');
+          return {
+            stime: '09:30:00',
+            etime: '18:30:00'
+          };
+        }
+        
+        // 반차 또는 반반차인 경우: 선택한 시간 기준으로 계산
+        if (schVacationType === 'half' || schVacationType === 'quarter') {
+          console.log('반차/반반차 처리');
+          
+          if (!eventData.startTime) {
+            console.error('❌ eventData.startTime이 없습니다!');
+            console.log('eventData 전체:', eventData);
+          }
+          
+          const selectedTime = eventData.startTime; // "HH:mm" 형식
+          console.log('selectedTime:', selectedTime);
+          
+          const [hour, minute] = selectedTime.split(':').map(Number);
+          console.log('파싱된 hour:', hour, 'minute:', minute);
+          
+          // 종료 시간 계산 (반차: +4시간, 반반차: +2시간)
+          const addHours = schVacationType === 'half' ? 4 : 2;
+          let endHour = hour + addHours;
+          let endMinute = minute;
+          
+          console.log('계산된 endHour:', endHour, 'endMinute:', endMinute);
+          
+          // 24시간 넘어가는 경우 처리
+          if (endHour >= 24) {
+            endHour = endHour - 24;
+          }
+          
+          const result = {
+            stime: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`,
+            etime: `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00`
+          };
+          console.log('반차/반반차 결과:', result);
+          return result;
+        }
+        
+        // 일반 이벤트인 경우
+        console.log('일반 이벤트 처리');
+        return {
+          stime: eventData.allDay ? '00:00:00' : `${eventData.startTime}:00`,
+          etime: eventData.allDay ? '23:59:59' : `${eventData.endTime}:00`
+        };
+      };
+
+      const times = calculateTimes();
+      
+      console.log('=== 최종 계산된 시간 ===');
+      console.log('startTime (from eventData):', eventData.startTime);
+      console.log('calculated times.stime:', times.stime);
+      console.log('calculated times.etime:', times.etime);
+
       // DB에 저장할 데이터 구조 - 프로덕션 서버 API에 맞춤
       const scheduleData: any = {
         team_id: user.team_id, // 프로덕션 서버 필수 (user_id는 JWT에서 자동 추출)
@@ -393,9 +490,9 @@ export default function Calendar() {
         sch_year: schYear, // 프로덕션 서버 필수
         sch_type: schType,
         sch_sdate: eventData.startDate,
-        sch_stime: eventData.allDay ? '00:00:00' : `${eventData.startTime}:00`,
+        sch_stime: times.stime,
         sch_edate: eventData.endDate,
-        sch_etime: eventData.allDay ? '23:59:59' : `${eventData.endTime}:00`,
+        sch_etime: times.etime,
         sch_isAllday: eventData.allDay ? 'Y' : 'N',
         sch_description: eventData.description || '',
         sch_status: 'Y'
@@ -405,6 +502,11 @@ export default function Calendar() {
       if (schVacationType) {
         scheduleData.sch_vacation_type = schVacationType;
         scheduleData.sch_vacation_used = calculateVacationUsed(eventData.eventType, eventData.startDate, eventData.endDate);
+        
+        // vacation_time 필드 추가 (반차/반반차의 경우 필수)
+        if (schVacationTime) {
+          scheduleData.sch_vacation_time = schVacationTime;
+        }
       }
 
       // event 타입일 때만 event_type 추가
@@ -412,9 +514,11 @@ export default function Calendar() {
         scheduleData.sch_event_type = schEventType;
       }
 
-      console.log('Schedule data to save:', scheduleData);
-      console.log('Schedule data JSON:', JSON.stringify(scheduleData, null, 2));
-      console.log('Event data received:', eventData);
+      console.log('=== 최종 DB 저장 데이터 ===');
+      console.log('scheduleData:', JSON.stringify(scheduleData, null, 2));
+      console.log('sch_vacation_time 값:', scheduleData.sch_vacation_time);
+      console.log('sch_stime 값:', scheduleData.sch_stime?.substring(0, 5) || scheduleData.sch_stime); // HH:mm 형식으로 표시
+      console.log('sch_etime 값:', scheduleData.sch_etime?.substring(0, 5) || scheduleData.sch_etime); // HH:mm 형식으로 표시
 
       // API 호출하여 DB에 저장
       const result = await scheduleApi.createSchedule(scheduleData);
@@ -479,7 +583,6 @@ export default function Calendar() {
       defaultDate={new Date()}
       onSaveEvent={handleSaveEvent}
       onDateChange={setCurrentDate}
-      showHolidays={false} // 공휴일 API 키 만료로 임시 비활성화
     />
   );
 } 

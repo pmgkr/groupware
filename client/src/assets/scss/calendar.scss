@@ -83,7 +83,10 @@
     @apply font-medium text-[var(--color-gray-900)];
   }
 
-  
+  &.event-default {
+    @apply bg-[var(--color-gray-300)];
+  }
+
   &.event-vacation {
     @apply bg-[var(--color-primary-blue-150)];
     

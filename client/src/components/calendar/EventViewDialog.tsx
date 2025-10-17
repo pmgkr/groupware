@@ -20,11 +20,12 @@ interface EventData {
   category: string; // 'vacation' | 'event'
   eventType: string;
   author: string;
-  status?: "승인대기" | "승인완료" | "반려됨" | "취소요청됨";
+  status?: "승인 대기" | "등록 완료" | "반려됨" | "취소 요청됨";
   approvalDate?: string;
   rejectionDate?: string;
   rejectionReason?: string;
   cancelRequestDate?: string;
+  createdAt?: string; // sch_created_at
 }
 
 interface EventViewDialogProps {
@@ -35,33 +36,6 @@ interface EventViewDialogProps {
   selectedEvent?: EventData;
 }
 
-// 카테고리 한글 변환
-const getCategoryLabel = (category: string) => {
-  switch (category) {
-    case 'vacation':
-      return '휴가';
-    case 'event':
-      return '이벤트';
-    default:
-      return category;
-  }
-};
-
-// 이벤트 타입 한글 변환
-const getEventTypeLabel = (eventType: string) => {
-  const types: Record<string, string> = {
-    eventVacation: '연차',
-    eventHalfDayMorning: '오전반차',
-    eventHalfDayAfternoon: '오후반차',
-    eventHalfHalfDayMorning: '오전반반차',
-    eventHalfHalfDayAfternoon: '오후반반차',
-    eventOfficialLeave: '공가',
-    eventWorkFromHome: '재택',
-    eventExternal: '외부 일정',
-  };
-  return types[eventType] || eventType;
-};
-
 export default function EventViewDialog({ 
   isOpen, 
   onClose, 
@@ -70,7 +44,7 @@ export default function EventViewDialog({
   selectedEvent 
 }: EventViewDialogProps) {
   const { user_name } = useUser();
-  const status = selectedEvent?.status || "승인완료";
+  const status = selectedEvent?.status || "등록 완료";
   
   // 본인의 일정인지 확인
   const isMyEvent = user_name && selectedEvent?.author === user_name;
@@ -83,20 +57,23 @@ export default function EventViewDialog({
     const endDate = dayjs(selectedEvent.endDate);
     const { startTime, endTime, allDay } = selectedEvent;
     
+    // 시간에서 초 제거 (HH:mm:ss -> HH:mm)
+    const formatTime = (time: string) => time?.substring(0, 5) || time;
+    
     // 종일 이벤트인 경우
     if (allDay) {
       if (startDate.isSame(endDate, 'day')) {
         return startDate.format('YYYY년 MM월 DD일 ddd요일');
       } else {
-        return `${startDate.format('YYYY년 MM월 DD일 ddd요일')} ~ ${endDate.format('YYYY년 MM월 DD일 ddd요일')}`;
+        return `${startDate.format('YYYY년 MM월 DD일 ddd요일')} - ${endDate.format('YYYY년 MM월 DD일 ddd요일')}`;
       }
     }
     
-    // 종일이 아닌 경우 시간도 포함
+    // 종일이 아닌 경우 시간도 포함 (초 제거)
     if (startDate.isSame(endDate, 'day')) {
-      return `${startDate.format('YYYY년 MM월 DD일 ddd요일')} ${startTime} ~ ${endTime}`;
+      return `${startDate.format('YYYY년 MM월 DD일 ddd요일')} ${formatTime(startTime)} - ${formatTime(endTime)}`;
     } else {
-      return `${startDate.format('YYYY년 MM월 DD일 ddd요일')} ${startTime} ~ ${endDate.format('YYYY년 MM월 DD일 ddd요일')} ${endTime}`;
+      return `${startDate.format('YYYY년 MM월 DD일 ddd요일')} ${formatTime(startTime)} - ${endDate.format('YYYY년 MM월 DD일 ddd요일')} ${formatTime(endTime)}`;
     }
   };
 
@@ -105,13 +82,13 @@ export default function EventViewDialog({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>일정 상세 정보</DialogTitle>
-          <DialogDescription>
+          {/* <DialogDescription>
             {selectedEvent && (
               <>
                 {getDateRangeText()}
               </>
             )}
-          </DialogDescription>
+          </DialogDescription> */}
         </DialogHeader>
         <div className="space-y-4 py-4">
             
@@ -125,20 +102,14 @@ export default function EventViewDialog({
 
           {/* 일정 유형 */}
           <div className="space-y-2">
-            <Label>일정 유형</Label>
+            <Label>{selectedEvent?.category === 'vacation' ? '휴가' : '이벤트'  } 유형</Label>
             <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
-              <span className="text-base">{selectedEvent && getCategoryLabel(selectedEvent.category)}</span>
+              <span className="text-base">
+                {selectedEvent?.title}
+              </span>
             </div>
           </div>
-
-          {/* 세부 유형 */}
-          <div className="space-y-2">
-            <Label>세부 유형</Label>
-            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
-              <span className="text-base">{selectedEvent && getEventTypeLabel(selectedEvent.eventType)}</span>
-            </div>
-          </div>
-
+          
           {/* 기간 */}
           <div className="space-y-2">
             <Label>기간</Label>
@@ -159,10 +130,10 @@ export default function EventViewDialog({
             </div>
           )}
 
-          {/* 승인 상태 - 본인의 일정일 때만 표시 */}
+          {/* 일정 상태 - 본인의 일정일 때만 표시 */}
           {isMyEvent && status && (
             <div className="space-y-2">
-              <Label>승인 상태</Label>
+              <Label>진행 상태</Label>
               <div className={`px-4 py-2 rounded-lg border ${
                 status === "반려됨" 
                   ? "border-red-300 bg-red-50"
@@ -175,12 +146,12 @@ export default function EventViewDialog({
                     }`}>
                       {status}
                     </span>
-                    {status === "승인완료" && (
+                    {status === "등록 완료" && selectedEvent?.createdAt && (
                       <p className="text-sm text-gray-800 mt-1">
-                        승인일: {selectedEvent?.approvalDate ? dayjs(selectedEvent.approvalDate).format('YYYY년 MM월 DD일') : '2025년 10월 11일'}
+                        등록일: {dayjs(selectedEvent.createdAt).format('YYYY년 MM월 DD일')}
                       </p>
                     )}
-                    {status === "취소요청됨" && selectedEvent?.cancelRequestDate && (
+                    {status === "취소 요청됨" && selectedEvent?.cancelRequestDate && (
                       <p className="text-sm text-gray-800 mt-1">
                         요청날짜: {dayjs(selectedEvent.cancelRequestDate).format('YYYY년 MM월 DD일')}
                       </p>

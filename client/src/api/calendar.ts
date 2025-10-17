@@ -11,6 +11,7 @@ export interface Schedule {
   sch_year: number; // 필수
   sch_type: 'vacation' | 'event';
   sch_vacation_type?: 'day' | 'half' | 'quarter' | 'official' | null;
+  sch_vacation_time?: 'morning' | 'afternoon' | null; // 반차/반반차의 오전/오후 구분
   sch_vacation_used?: number | null;
   sch_event_type?: 'remote' | 'field' | 'etc' | null;
   sch_sdate: string; // YYYY-MM-DD
