@@ -20,10 +20,8 @@ interface EventData {
   category: string; // 'vacation' | 'event'
   eventType: string;
   author: string;
-  status?: "승인 대기" | "등록 완료" | "반려됨" | "취소 요청됨";
-  approvalDate?: string;
-  rejectionDate?: string;
-  rejectionReason?: string;
+  userId: string; // 작성자 ID
+  status?: "등록 완료" | "취소 요청됨" | "취소 완료";
   cancelRequestDate?: string;
   createdAt?: string; // sch_created_at
 }
@@ -31,23 +29,21 @@ interface EventData {
 interface EventViewDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onCancel?: () => void;
-  onReapply?: () => void;
+  onRequestCancel?: () => void;
   selectedEvent?: EventData;
 }
 
 export default function EventViewDialog({ 
   isOpen, 
   onClose, 
-  onCancel, 
-  onReapply,
+  onRequestCancel,
   selectedEvent 
 }: EventViewDialogProps) {
-  const { user_name } = useUser();
+  const { user_id } = useUser();
   const status = selectedEvent?.status || "등록 완료";
   
-  // 본인의 일정인지 확인
-  const isMyEvent = user_name && selectedEvent?.author === user_name;
+  // 본인의 일정인지 확인 (user_id로 비교)
+  const isMyEvent = user_id && selectedEvent?.userId === user_id;
 
   // 날짜 범위 포맷팅
   const getDateRangeText = () => {
@@ -134,16 +130,9 @@ export default function EventViewDialog({
           {isMyEvent && status && (
             <div className="space-y-2">
               <Label>진행 상태</Label>
-              <div className={`px-4 py-2 rounded-lg border ${
-                status === "반려됨" 
-                  ? "border-red-300 bg-red-50"
-                  : "border-gray-300 bg-gray-100"
-              }`}>
+              <div className="px-4 py-2 rounded-lg border border-gray-300 bg-gray-100">
                   <div>
-                    <span className={`text-base font-semibold ${
-                      status === "반려됨" ? "text-red-700" :
-                      "text-gray-800"
-                    }`}>
+                    <span className="text-base font-semibold text-gray-800">
                       {status}
                     </span>
                     {status === "등록 완료" && selectedEvent?.createdAt && (
@@ -156,16 +145,6 @@ export default function EventViewDialog({
                         요청날짜: {dayjs(selectedEvent.cancelRequestDate).format('YYYY년 MM월 DD일')}
                       </p>
                     )}
-                    {status === "반려됨" && selectedEvent?.rejectionDate && selectedEvent?.rejectionReason && (
-                      <>
-                        <p className="text-sm text-gray-800 mt-1">
-                          반려일: {dayjs(selectedEvent.rejectionDate).format('YYYY년 MM월 DD일')}
-                        </p>
-                        <p className="text-sm text-gray-800">
-                          반려사유: {selectedEvent.rejectionReason}
-                        </p>
-                      </>
-                    )}
                   </div>
               </div>
             </div>
@@ -173,15 +152,8 @@ export default function EventViewDialog({
         </div>
         <DialogFooter>
           {/* 액션 버튼들 - 본인의 일정일 때만 표시 */}
-          {isMyEvent && (
-            <>
-              {status === "반려됨" && onReapply && (
-                <Button variant="default" onClick={onReapply}>재신청하기</Button>
-              )}
-              {status !== "반려됨" && onCancel && (
-                <Button variant="destructive" onClick={onCancel}>신청 취소하기</Button>
-              )}
-            </>
+          {isMyEvent && status === "등록 완료" && onRequestCancel && (
+            <Button variant="destructive" onClick={onRequestCancel}>취소 신청하기</Button>
           )}
           <Button variant="outline" onClick={onClose}>닫기</Button>
         </DialogFooter>

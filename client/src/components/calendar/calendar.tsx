@@ -285,20 +285,12 @@ export default function CustomCalendar({
     setSelectedEvent(null);
   };
 
-  // 이벤트 취소 핸들러
-  const handleCancelEvent = () => {
+  // 이벤트 취소 신청 핸들러
+  const handleRequestCancelEvent = () => {
     if (selectedEvent) {
-      // 로컬 상태에서만 제거 (실제로는 API 호출 필요)
-      setMyEvents(prev => prev.filter(e => e.resource.seq !== selectedEvent.resource.seq));
+      // TODO: API 호출하여 취소 신청 처리
       handleCloseEventViewDialog();
     }
-  };
-
-  // 이벤트 재신청 핸들러
-  const handleReapplyEvent = () => {
-    // 재신청 로직 (EventDialog를 열어서 기존 데이터를 채워줄 수 있음)
-    handleCloseEventViewDialog();
-    // TODO: EventDialog에 기존 데이터를 전달하여 편집 모드로 열기
   };
 
   const handleSaveEvent = async (eventData: any) => {
@@ -423,8 +415,7 @@ export default function CustomCalendar({
       <EventViewDialog
         isOpen={isEventViewDialogOpen}
         onClose={handleCloseEventViewDialog}
-        onCancel={handleCancelEvent}
-        onReapply={handleReapplyEvent}
+        onRequestCancel={handleRequestCancelEvent}
         selectedEvent={selectedEvent ? {
           id: selectedEvent.resource.id?.toString() || selectedEvent.resource.seq?.toString() || '0',
           title: selectedEvent.title,
@@ -441,14 +432,14 @@ export default function CustomCalendar({
             ? `event${selectedEvent.resource.schEventType.charAt(0).toUpperCase() + selectedEvent.resource.schEventType.slice(1)}`
             : 'event',
           author: selectedEvent.author,
+          userId: selectedEvent.resource.userId,
           status: selectedEvent.resource.schStatus === 'Y' 
             ? "등록 완료" 
             : selectedEvent.resource.schStatus === 'H' 
             ? "취소 요청됨" 
-            : "승인 대기",
+            : "취소 완료",
           cancelRequestDate: selectedEvent.resource.schStatus === 'H' ? selectedEvent.resource.schModifiedAt?.toString() : undefined,
-          createdAt: selectedEvent.resource.schCreatedAt?.toString(),
-          modifiedAt: selectedEvent.resource.schModifiedAt?.toString(),
+          createdAt: selectedEvent.resource.schCreatedAt?.toString()
         } : undefined}
       />
     </div>
