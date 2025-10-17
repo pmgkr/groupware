@@ -111,6 +111,7 @@ const convertScheduleToEvent = (schedule: Schedule, currentUser?: any): Calendar
     author: getUserName(), // user_name 표시
     description: schedule.sch_description || '',
     resource: {
+      id: schedule.id, // DB의 실제 ID 추가
       seq: schedule.seq || 0,
       userId: schedule.user_id || '',
       teamId: schedule.team_id,
@@ -261,34 +262,22 @@ export default function Calendar() {
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
       
-      console.log('Loading events for:', { year, month });
-      
       // 실제 API 호출
-      console.log('Loading schedules from API...');
       const apiResponse = await scheduleApi.getSchedules({ year, month }) as any;
-      console.log('API Response:', apiResponse);
-      
+
       // API 응답에서 실제 스케줄 배열 추출
-      const schedules = apiResponse.items?.items || [];
-      console.log('Schedules array:', schedules);
-      console.log('First schedule sample:', schedules[0]); // 첫 번째 일정의 구조 확인
-      console.log('First schedule user_name:', schedules[0]?.user_name); // user_name 확인
-      console.log('First schedule user_id:', schedules[0]?.user_id); // user_id 확인
+      const schedules = apiResponse.items?.items || apiResponse.items || [];
+
+      if (Array.isArray(schedules) && schedules.length > 0) {
+      }
       
       // null이 아닌 항목만 필터링하고 변환 (현재 사용자 정보 전달)
       const calendarEvents = schedules
         .filter((schedule: any) => schedule !== null && schedule.sch_sdate)
         .map((schedule: any) => convertScheduleToEvent(schedule, user));
-      console.log('Calendar events converted:', calendarEvents);
       
       setEvents(calendarEvents);
     } catch (err) {
-      console.error('Failed to load events:', err);
-      console.error('Error details:', {
-        message: err instanceof Error ? err.message : 'Unknown error',
-        stack: err instanceof Error ? err.stack : undefined,
-        name: err instanceof Error ? err.name : undefined
-      });
       setError(`일정을 불러오는데 실패했습니다: ${err instanceof Error ? err.message : 'Unknown error'}`);
       // 에러 시 빈 배열 사용
       setEvents([]);
@@ -298,12 +287,7 @@ export default function Calendar() {
   // 일정 등록 핸들러
   const handleSaveEvent = async (eventData: any) => {
     try {
-      console.log('=== handleSaveEvent 시작 ===');
-      console.log('전체 eventData:', JSON.stringify(eventData, null, 2));
-      console.log('eventData.startTime:', eventData.startTime);
-      console.log('eventData.endTime:', eventData.endTime);
-      console.log('eventData.eventType:', eventData.eventType);
-      
+
       // eventType에 따른 MySQL enum 값 매핑
       const getSchType = (eventType: string): 'vacation' | 'event' => {
         if (['vacationDay', 'vacationHalfMorning', 'vacationHalfAfternoon', 'vacationQuarterMorning', 'vacationQuarterAfternoon', 'vacationOfficial'].includes(eventType)) {
@@ -360,13 +344,6 @@ export default function Calendar() {
       const schVacationTime = getSchVacationTime(eventData.eventType);
       const schEventType = getSchEventType(eventData.eventType);
 
-      console.log('=== 타입 매핑 결과 ===');
-      console.log('eventType:', eventData.eventType);
-      console.log('schType:', schType);
-      console.log('schVacationType:', schVacationType);
-      console.log('schVacationTime:', schVacationTime);
-      console.log('schEventType:', schEventType);
-
       // 로그인한 사용자 정보 확인
       if (!user?.user_id || !user?.team_id) {
         alert('사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
@@ -418,14 +395,8 @@ export default function Calendar() {
 
       // 시간 계산 함수
       const calculateTimes = () => {
-        console.log('=== calculateTimes 호출 ===');
-        console.log('schVacationType:', schVacationType);
-        console.log('eventData.startTime:', eventData.startTime);
-        console.log('eventData.allDay:', eventData.allDay);
-        
         // 연차 또는 공가인 경우: 고정 시간 (9:30 ~ 18:30)
         if (schVacationType === 'day' || schVacationType === 'official') {
-          console.log('연차/공가 처리');
           return {
             stime: '09:30:00',
             etime: '18:30:00'
@@ -434,25 +405,23 @@ export default function Calendar() {
         
         // 반차 또는 반반차인 경우: 선택한 시간 기준으로 계산
         if (schVacationType === 'half' || schVacationType === 'quarter') {
-          console.log('반차/반반차 처리');
           
           if (!eventData.startTime) {
-            console.error('❌ eventData.startTime이 없습니다!');
-            console.log('eventData 전체:', eventData);
+            return {
+              stime: '00:00:00',
+              etime: '00:00:00'
+            };
           }
           
           const selectedTime = eventData.startTime; // "HH:mm" 형식
-          console.log('selectedTime:', selectedTime);
           
           const [hour, minute] = selectedTime.split(':').map(Number);
-          console.log('파싱된 hour:', hour, 'minute:', minute);
           
           // 종료 시간 계산 (반차: +4시간, 반반차: +2시간)
           const addHours = schVacationType === 'half' ? 4 : 2;
           let endHour = hour + addHours;
           let endMinute = minute;
           
-          console.log('계산된 endHour:', endHour, 'endMinute:', endMinute);
           
           // 24시간 넘어가는 경우 처리
           if (endHour >= 24) {
@@ -463,12 +432,10 @@ export default function Calendar() {
             stime: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`,
             etime: `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00`
           };
-          console.log('반차/반반차 결과:', result);
           return result;
         }
         
         // 일반 이벤트인 경우
-        console.log('일반 이벤트 처리');
         return {
           stime: eventData.allDay ? '00:00:00' : `${eventData.startTime}:00`,
           etime: eventData.allDay ? '23:59:59' : `${eventData.endTime}:00`
@@ -477,11 +444,6 @@ export default function Calendar() {
 
       const times = calculateTimes();
       
-      console.log('=== 최종 계산된 시간 ===');
-      console.log('startTime (from eventData):', eventData.startTime);
-      console.log('calculated times.stime:', times.stime);
-      console.log('calculated times.etime:', times.etime);
-
       // DB에 저장할 데이터 구조 - 프로덕션 서버 API에 맞춤
       const scheduleData: any = {
         team_id: user.team_id, // 프로덕션 서버 필수 (user_id는 JWT에서 자동 추출)
@@ -514,15 +476,8 @@ export default function Calendar() {
         scheduleData.sch_event_type = schEventType;
       }
 
-      console.log('=== 최종 DB 저장 데이터 ===');
-      console.log('scheduleData:', JSON.stringify(scheduleData, null, 2));
-      console.log('sch_vacation_time 값:', scheduleData.sch_vacation_time);
-      console.log('sch_stime 값:', scheduleData.sch_stime?.substring(0, 5) || scheduleData.sch_stime); // HH:mm 형식으로 표시
-      console.log('sch_etime 값:', scheduleData.sch_etime?.substring(0, 5) || scheduleData.sch_etime); // HH:mm 형식으로 표시
-
       // API 호출하여 DB에 저장
       const result = await scheduleApi.createSchedule(scheduleData);
-      console.log('Schedule created:', result);
 
       // 성공 시 현재 월의 데이터 다시 로드
       await loadEvents(currentDate);
@@ -530,10 +485,6 @@ export default function Calendar() {
       // alert('일정이 성공적으로 등록되었습니다!');
       return true;
     } catch (err: any) {
-      console.error('Failed to save event:', err);
-      console.error('Error data:', err.data);
-      console.error('Error message:', err.message);
-      console.error('Error status:', err.status);
       
       // 서버 응답 메시지 확인
       let errorMessage = '일정 등록에 실패했습니다';
@@ -541,7 +492,6 @@ export default function Calendar() {
         errorMessage += `\n에러: ${err.message}`;
       }
       if (err.data) {
-        console.error('Server response data:', err.data);
         if (err.data.message) {
           errorMessage += `\n상세: ${err.data.message}`;
         }

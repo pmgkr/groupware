@@ -286,10 +286,44 @@ export default function CustomCalendar({
   };
 
   // 이벤트 취소 신청 핸들러
-  const handleRequestCancelEvent = () => {
-    if (selectedEvent) {
-      // TODO: API 호출하여 취소 신청 처리
+  const handleRequestCancelEvent = async () => {
+    if (!selectedEvent) return;
+    
+    try {
+      console.log('취소 신청 - selectedEvent:', selectedEvent);
+      console.log('취소 신청 - resource:', selectedEvent.resource);
+      console.log('취소 신청 - resource.id:', selectedEvent.resource.id);
+      console.log('취소 신청 - resource.seq:', selectedEvent.resource.seq);
+      
+      // id로만 이벤트를 찾음 (seq는 사용하지 않음)
+      // const scheduleId = selectedEvent.resource.id;
+      console.log('취소 신청 - scheduleId:', scheduleId);
+      
+      if (!scheduleId) {
+        console.error('일정 ID를 찾을 수 없습니다. resource 객체:', selectedEvent.resource);
+        alert('일정 정보를 찾을 수 없습니다. (ID 없음)');
+        return;
+      }
+
+      // API 호출하여 sch_status를 'H'로 변경
+      const { scheduleApi } = await import('@/api/calendar');
+      console.log('API 호출 - scheduleId:', scheduleId);
+      await scheduleApi.updateSchedule(scheduleId, {
+        sch_status: 'H'
+      });
+
+      alert('취소 신청이 완료되었습니다.');
+      
+      // 다이얼로그 닫기
       handleCloseEventViewDialog();
+      
+      // 부모 컴포넌트에 날짜 변경 알림하여 데이터 새로고침
+      if (onDateChange) {
+        onDateChange(currentDate);
+      }
+    } catch (error) {
+      console.error('취소 신청 실패:', error);
+      alert('취소 신청에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
