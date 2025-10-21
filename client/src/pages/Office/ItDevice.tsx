@@ -6,12 +6,21 @@ import { Button } from '@/components/ui/button';
 import { SearchGray } from '@/assets/images/icons';
 import { useNavigate, Outlet } from 'react-router';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DeviceForm } from '@/components/itdevice/DeviceForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { getItDevice, type Device } from '@/api/office/itdevice';
 
 export default function ItDevice() {
   const navigate = useNavigate();
+  /* const [posts, setPosts] = useState<Device[]>([]);
+  useEffect(() => {
+    getItDevice()
+      .then((res) => setPosts(res.items))
+      .catch((err) => {
+        console.error('❌ IT Device 불러오기 실패:', err);
+      });
+  }, []); */
   // 더미 데이터
   const [posts, setPosts] = useState([
     {

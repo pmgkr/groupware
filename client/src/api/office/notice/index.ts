@@ -20,8 +20,9 @@ export type BoardListResponse = {
 };
 
 //페이지 네이션
-export async function getBoardList(page = 1, size = 10) {
-  return http<BoardListResponse>(`/user/office/notice/list?page=${page}&size=${size}`, {
+export async function getBoardList(page = 1, size = 10, q?: string) {
+  const query = q && q.trim() ? `&q=${encodeURIComponent(q)}` : '';
+  return http<BoardListResponse>(`/user/office/notice/list?page=${page}&size=${size}${query}`, {
     method: 'GET',
   });
 }

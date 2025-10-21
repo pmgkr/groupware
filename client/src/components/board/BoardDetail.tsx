@@ -36,7 +36,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
   const [newComment, setNewComment] = useState('');
   const [editCommentMode, setEditCommentMode] = useState(false);
   const [editCommentModeId, setEditCommentModeId] = useState<number | null>(null);
-  const [editText, setEditText] = useState<{ [key: number]: string }>({});
+  const [editCommentText, setEditCommentText] = useState<{ [key: number]: string }>({});
 
   //컨펌 다이얼로그 상태
   const [confirmState, setConfirmState] = useState<{
@@ -233,8 +233,8 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                   <Textarea
                     size="sm"
                     className="w-[1212px] flex-1"
-                    value={editText[c.bc_seq] ?? ''}
-                    onChange={(e) => setEditText((prev) => ({ ...prev, [c.bc_seq]: e.target.value }))}
+                    value={editCommentText[c.bc_seq] ?? ''}
+                    onChange={(e) => setEditCommentText((prev) => ({ ...prev, [c.bc_seq]: e.target.value }))}
                   />
                 ) : (
                   //일반 댓글 목록
@@ -260,11 +260,11 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                           aria-label="댓글 수정완료"
                           onClick={async () => {
                             try {
-                              const updatedText = editText[c.bc_seq] ?? '';
+                              const updatedText = editCommentText[c.bc_seq] ?? '';
                               await editComment(c.bc_seq, { comment: updatedText });
                               setEditCommentMode(false);
                               setEditCommentModeId(null);
-                              setEditText((prev) => ({ ...prev, [c.bc_seq]: '' }));
+                              setEditCommentText((prev) => ({ ...prev, [c.bc_seq]: '' }));
                               const updated = await getComment(Number(postId));
                               setComments(updated);
                             } catch (err) {
@@ -298,7 +298,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                           onClick={() => {
                             setEditCommentMode(true);
                             setEditCommentModeId(c.bc_seq);
-                            setEditText((prev) => ({ ...prev, [c.bc_seq]: c.comment }));
+                            setEditCommentText((prev) => ({ ...prev, [c.bc_seq]: c.comment }));
                           }}>
                           <Edit />
                         </Button>
