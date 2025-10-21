@@ -351,6 +351,8 @@
   }
 
   body[data-scroll-locked] {
+    /* scrollContent 등 body의 스크롤을 막으며 포지션이 달라지는 이슈 등으로 아래 스타일 커스텀 */
+    overflow: visible !important;
     margin-right: 0 !important;
   }
 }
