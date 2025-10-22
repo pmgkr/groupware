@@ -287,30 +287,38 @@ export default function CustomCalendar({
 
   // 이벤트 취소 신청 핸들러
   const handleRequestCancelEvent = async () => {
-    if (!selectedEvent) return;
+    if (!selectedEvent) {
+      console.error('selectedEvent가 없습니다.');
+      return;
+    }
     
     try {
       console.log('취소 신청 - selectedEvent:', selectedEvent);
       console.log('취소 신청 - resource:', selectedEvent.resource);
-      console.log('취소 신청 - resource.id:', selectedEvent.resource.id);
-      console.log('취소 신청 - resource.seq:', selectedEvent.resource.seq);
+      console.log('취소 신청 - resource.id:', selectedEvent.resource?.id);
+      console.log('취소 신청 - resource.seq:', selectedEvent.resource?.seq);
+      
+      // resource가 없으면 에러
+      if (!selectedEvent.resource) {
+        console.error('selectedEvent.resource가 없습니다.');
+        alert('일정 정보를 찾을 수 없습니다.');
+        return;
+      }
       
       // id로만 이벤트를 찾음 (seq는 사용하지 않음)
-      // const scheduleId = selectedEvent.resource.id;
-      console.log('취소 신청 - scheduleId:', scheduleId);
+      const eventId = selectedEvent.resource.id;
+      console.log('취소 신청 - eventId:', eventId);
       
-      if (!scheduleId) {
+      if (!eventId) {
         console.error('일정 ID를 찾을 수 없습니다. resource 객체:', selectedEvent.resource);
         alert('일정 정보를 찾을 수 없습니다. (ID 없음)');
         return;
       }
 
-      // API 호출하여 sch_status를 'H'로 변경
+      // 새로운 status 변경 전용 API 호출 (sch_status를 'H'로 변경)
       const { scheduleApi } = await import('@/api/calendar');
-      console.log('API 호출 - scheduleId:', scheduleId);
-      await scheduleApi.updateSchedule(scheduleId, {
-        sch_status: 'H'
-      });
+      console.log('API 호출 - eventId:', eventId);
+      await scheduleApi.updateScheduleStatus(eventId, 'H');
 
       alert('취소 신청이 완료되었습니다.');
       

@@ -82,6 +82,15 @@ export const scheduleApi = {
     return response;
   },
 
+  // 스케줄 상태 변경 (취소 요청 등)
+  updateScheduleStatus: async (id: number, status: 'Y' | 'H' | 'N'): Promise<{ ok: boolean; message?: string }> => {
+    const response = await http<{ ok: boolean; message?: string }>(`/user/schedule/status/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ sch_status: status })
+    });
+    return response;
+  },
+
   // 스케줄 삭제
   deleteSchedule: async (id: number): Promise<void> => {
     await http(`/user/schedule/remove/${id}`, {
@@ -102,5 +111,20 @@ export const scheduleApi = {
     }
 
     return await scheduleApi.getSchedules(params);
+  },
+
+  // 사용자 연차 정보 조회
+  getUserVacations: async (userId: string, year: number): Promise<UserVacation> => {
+    const response = await http<UserVacation>(`/user/vacations/${userId}/${year}`);
+    return response;
   }
 };
+
+// 사용자 연차 정보 타입
+export interface UserVacation {
+  user_id: string;
+  va_year: number;
+  va_total: string;
+  va_used: string;
+  va_remaining: string;
+}

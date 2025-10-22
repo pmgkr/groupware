@@ -1,5 +1,5 @@
 // client/src/components/calendar/EventDialog.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
@@ -10,6 +10,8 @@ import { DatePickerDemo } from '@/components/date-n-time/date-picker';
 import { DatePickerWithRange } from '@/components/date-n-time/date-picker-range';
 import { DateTimePicker24h } from '@/components/date-n-time/date-time-picker-24h';
 import type { DateRange } from 'react-day-picker';
+import { scheduleApi } from '@/api/calendar';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EventDialogProps {
   isOpen: boolean;
@@ -48,6 +50,8 @@ const eventTypes = [
 ];
 
 export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: EventDialogProps) {
+  const { user } = useAuth();
+  const [remainingVacationDays, setRemainingVacationDays] = useState<number>(0);
   const [formData, setFormData] = useState<EventData>({
     title: '',
     description: '',
@@ -68,10 +72,28 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     allDay: true,
     category: '',
     eventType: '',
-    author: '이연상', // 실제로는 로그인한 사용자 정보에서 가져와야 함
+    author: user?.user_name || '이연상',
     selectedDate: undefined,
     selectedDateRange: undefined,
   });
+
+  // 연차 정보 로드
+  useEffect(() => {
+    const loadVacationInfo = async () => {
+      if (user?.user_id && isOpen) {
+        try {
+          const currentYear = new Date().getFullYear();
+          const vacationInfo = await scheduleApi.getUserVacations(user.user_id, currentYear);
+          setRemainingVacationDays(parseFloat(vacationInfo.va_remaining));
+        } catch (error) {
+          console.error('연차 정보를 불러오는데 실패했습니다:', error);
+          setRemainingVacationDays(0);
+        }
+      }
+    };
+
+    loadVacationInfo();
+  }, [user, isOpen]);
 
   const handleInputChange = (field: keyof EventData, value: string | boolean) => {
     setFormData(prev => {
@@ -189,8 +211,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
   };
 
 
-  // 휴가 일수 계산 (임시로 10일로 설정, 실제로는 API에서 가져와야 함)
-  const remainingVacationDays = 10;
+  // remainingVacationDays는 이제 state로 관리됨
 
 
   const handleSave = () => {

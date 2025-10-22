@@ -263,12 +263,24 @@ export default function Calendar() {
       const month = date.getMonth() + 1;
       
       // 실제 API 호출
+      console.log('=== API 호출 시작 ===');
       const apiResponse = await scheduleApi.getSchedules({ year, month }) as any;
+      console.log('API Response:', apiResponse);
+      console.log('apiResponse.items 타입:', typeof apiResponse.items);
+      console.log('apiResponse.items는 배열인가?:', Array.isArray(apiResponse.items));
+      console.log('apiResponse.items.items:', apiResponse.items?.items);
+      console.log('apiResponse.items.items는 배열인가?:', Array.isArray(apiResponse.items?.items));
 
       // API 응답에서 실제 스케줄 배열 추출
-      const schedules = apiResponse.items?.items || apiResponse.items || [];
+      const schedules = Array.isArray(apiResponse.items) ? apiResponse.items : (apiResponse.items?.items || []);
+      console.log('Schedules 배열:', schedules);
+      console.log('Schedules 개수:', schedules.length);
 
       if (Array.isArray(schedules) && schedules.length > 0) {
+        console.log('첫 번째 일정:', schedules[0]);
+        console.log('모든 필드:', Object.keys(schedules[0]));
+        console.log('sch_vacation_time:', schedules[0].sch_vacation_time);
+        console.log('sch_vacation_used:', schedules[0].sch_vacation_used);
       }
       
       // null이 아닌 항목만 필터링하고 변환 (현재 사용자 정보 전달)
