@@ -16,7 +16,7 @@ const meta: Meta<typeof RadioButton> = {
   argTypes: {
     size: {
       control: 'select',
-      options: ['sm', 'md', 'lg'],
+      options: ['xs', 'sm', 'md', 'lg'],
       defaultValue: 'sm',
       description: 'RadioButton 크기를 설정합니다',
     },
@@ -34,6 +34,10 @@ const meta: Meta<typeof RadioButton> = {
       defaultValue: 'outline',
       description:
         'default: 파란색 배경, outline: 회색 테두리, dynamic: 체크 상태에 따라 자동 변경, dynamicBlue: 체크 상태에 따라 자동 변경 (호버 효과 포함)',
+    },
+    iconHide: {
+      control: 'boolean',
+      description: 'true인 경우 체크 아이콘 숨김. dynamic & dynamicBlue 일 때만 사용',
     },
   },
 };
@@ -147,6 +151,15 @@ export const RadioGroupExample: Story = {
             <RadioButton id="dgroup1" variant="dynamicBlue" label="동적 옵션 1" value="dynamic1" />
             <RadioButton id="dgroup2" variant="dynamicBlue" label="동적 옵션 2" value="dynamic2" />
             <RadioButton id="dgroup3" variant="dynamicBlue" label="동적 옵션 3" value="dynamic3" />
+          </div>
+        </RadioGroup>
+      </div>
+      <div>
+        <h3 className="mb-3 text-lg font-semibold">라디오 그룹 예시 (IconHide: true & Size : xs)</h3>
+        <RadioGroup defaultValue="disabled11">
+          <div className="align-center flex gap-2 space-y-2">
+            <RadioButton id="disabled10" variant="dynamic" label="옵션 A" size="xs" value="disabled10" iconHide={true} />
+            <RadioButton id="disabled11" variant="dynamic" label="옵션 B" size="xs" value="disabled11" iconHide={true} />
           </div>
         </RadioGroup>
       </div>

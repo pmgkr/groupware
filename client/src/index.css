@@ -63,6 +63,7 @@
   --color-primary-orange: #f17d16;
   --color-primary-yellow: #ffaa00;
 
+  --color-primary-blue-50: #fafcff;
   --color-primary-blue-100: #f2f4fe;
   --color-primary-blue-150: #e0e5ff;
   --color-primary-blue-300: #a5b4fc;
@@ -350,6 +351,8 @@
   }
 
   body[data-scroll-locked] {
+    /* scrollContent 등 body의 스크롤을 막으며 포지션이 달라지는 이슈 등으로 아래 스타일 커스텀 */
+    overflow: visible !important;
     margin-right: 0 !important;
   }
 }
@@ -366,6 +369,10 @@
 @layer components {
   .short-v-divider {
     @apply relative before:absolute before:top-1/2 before:left-0 before:h-11 before:w-px before:-translate-y-1/2 before:bg-gray-300 before:content-[''] first:before:hidden;
+  }
+
+  .long-v-divider {
+    @apply relative before:absolute before:top-1/2 before:left-0 before:h-15 before:w-px before:-translate-y-1/2 before:bg-gray-300 before:content-[''] first:before:hidden;
   }
 }
 
