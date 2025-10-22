@@ -9,6 +9,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectI
 import { Dialog, DialogClose, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { MultiSelect, type MultiSelectOption } from '@components/multiselect/multi-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { boolean } from 'zod';
 
 export default function ExpenseList() {
   const navigate = useNavigate();
@@ -72,7 +73,7 @@ export default function ExpenseList() {
     { label: '반려됨', value: '반려됨' },
   ];
 
-  const proofOptions: MultiSelectOption[] = [
+  const proofMethod: MultiSelectOption[] = [
     { label: 'PMG 법인', value: 'PMG 법인' },
     { label: 'MCS 법인', value: 'MCS 법인' },
     { label: '개인카드', value: '개인카드' },
@@ -134,7 +135,7 @@ export default function ExpenseList() {
               className="max-w-[80px] min-w-auto!"
               size="sm"
               placeholder="증빙 수단"
-              options={proofOptions}
+              options={proofMethod}
               onValueChange={setSelectedProof}
               maxCount={0}
               hideSelectAll={true}

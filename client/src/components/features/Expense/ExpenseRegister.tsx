@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useToggleState } from '@/hooks/useToggleState';
 import { UploadArea, type UploadAreaHandle, type PreviewFile } from './UploadArea';
 import { AttachmentField } from './AttachmentField';
+import { useUser } from '@/hooks/useUser';
 
 import {
   AlertDialog,
@@ -23,30 +24,34 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Input } from '@components/ui/input';
 import { Textarea } from '@components/ui/textarea';
 import { Button } from '@components/ui/button';
-import { Badge } from '@components/ui/badge';
+
 import { DayPicker } from '@components/daypicker';
 import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { Dialog, DialogTrigger, DialogContent } from '@components/ui/dialog';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
 
-import { Add, Calendar, TooltipNoti } from '@/assets/images/icons';
+import { Add, Calendar, TooltipNoti, Delete } from '@/assets/images/icons';
 import { format } from 'date-fns';
 
-import { getExpenseType, type ExpenseType } from '@/api';
+import { getBankList, type BankList, getExpenseType, type ExpenseType } from '@/api';
+
+import { UserRound, FileText } from 'lucide-react';
 
 export default function ExpenseRegister() {
+  const { user_id, user_level } = useUser();
   const form = useForm();
   const uploadRef = useRef<UploadAreaHandle>(null);
   const { state } = useLocation(); // Excel 업로드에서 rowCount 전달받음
 
   const [articleCount, setArticleCount] = useState(5); // 비용항목 초기값 5개
+  const [expenseTypes, setExpenseTypes] = useState<ExpenseType[]>([]); // 비용 유형 API State
+  const [bankList, setBankList] = useState<BankList[]>([]);
+
   const [files, setFiles] = useState<PreviewFile[]>([]);
   const [hasFiles, setHasFiles] = useState(false); // 추가 업로드 버튼 활성화 State
   const [linkedRows, setLinkedRows] = useState<Record<string, number | null>>({}); // 업로드된 이미지와 연결된 행 번호 저장용
   const [activeFile, setActiveFile] = useState<string | null>(null); // UploadArea & Attachment 연결상태 공유용
-
-  const [expenseTypes, setExpenseTypes] = useState<ExpenseType[]>([]); // 비용 유형 State
 
   const [alertMsg, setAlertMsg] = useState<string | null>(null); // 얼럿 메세지용
   const [alertOpen, setAlertOpen] = useState(false); // 얼럿 다이얼로그 오픈용
@@ -54,16 +59,31 @@ export default function ExpenseRegister() {
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : ''); // YYYY-MM-DD Date 포맷 변경
 
   useEffect(() => {
-    // 비용 유형 API 호출
     (async () => {
       try {
-        // 접속한 유저의 레벨에 따라 nexp_type1 : 매니저, nexp_type2 : 일반
-        const res = await getExpenseType('nexp_type2');
-        setExpenseTypes(res);
+        // 유저레벨이 staff나 user인 경우 nexp_type2 : manager나 admin인 경우 nexp_type1 호출
+        const expenseTypeParam = user_level === 'staff' || user_level === 'user' ? 'nexp_type2' : 'nexp_type1';
+
+        // 페이지 렌더 시 API 병렬 호출
+        const results = await Promise.allSettled([getBankList(), getExpenseType(expenseTypeParam)]);
+        const [bankResult, expResult] = results;
+
+        // API 개별 결과 관리
+        if (bankResult.status === 'fulfilled') {
+          const formattedBanks = bankResult.value.map((item: any) => item.code);
+          setBankList(formattedBanks);
+        } else {
+          console.error('은행 목록 불러오기 실패:', bankResult.reason);
+        }
+
+        if (expResult.status === 'fulfilled') {
+          setExpenseTypes(expResult.value);
+        } else {
+          console.error('비용 유형 불러오기 실패:', expResult.reason);
+        }
       } catch (error) {
-        setAlertMsg(`비용 유형을 불러오지 못했습니다.\n${error}`);
-        setAlertOpen(true);
-        return;
+        // Promise.allSettled 자체는 에러를 던지지 않지만, 안전하게 감싸줌
+        console.error('예상치 못한 오류 발생:', error);
       }
     })();
   }, []);
@@ -148,19 +168,27 @@ export default function ExpenseRegister() {
               <div className="pr-5 text-base leading-[1.5] text-gray-700">
                 <FormField
                   control={form.control}
-                  name="account_number"
+                  name="bank_account"
                   render={({ field }) => (
                     <FormItem>
-                      <div className="flex h-6 justify-between">
+                      <div className="flex h-6 items-center justify-between">
                         <FormLabel className="gap-.5 font-bold text-gray-950">
                           계좌번호<span className="text-primary-blue-500">*</span>
                         </FormLabel>
-                        <div className="flex">
-                          <Button variant="svgIcon" size="icon">
-                            <Add />
+                        <div className="flex h-5.5 overflow-hidden rounded-[var(--spacing)] border-1 border-gray-300">
+                          <Button
+                            variant="svgIcon"
+                            size="icon"
+                            title="내 대표계좌"
+                            className="bg-primary-blue-500/60 hover:bg-primary-blue-500/80 h-full rounded-none">
+                            <UserRound className="size-3.5 text-white" />
                           </Button>
-                          <Button variant="svgIcon" size="icon">
-                            <Add />
+                          <Button
+                            variant="svgIcon"
+                            size="icon"
+                            title="내 계좌리스트"
+                            className="h-full rounded-none bg-gray-400 hover:bg-gray-500/80">
+                            <FileText className="size-3.5 text-white" />
                           </Button>
                         </div>
                       </div>
@@ -196,13 +224,15 @@ export default function ExpenseRegister() {
                         <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
                           <FormControl>
                             <SelectTrigger className="aria-[invalid=true]:border-destructive w-full">
-                              <SelectValue placeholder="은행 선택" />
+                              <SelectValue placeholder={bankList.length ? '은행 선택' : '불러오는 중...'} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="max-h-80 w-full">
-                            <SelectItem value="국민은행">국민은행</SelectItem>
-                            <SelectItem value="신한은행">신한은행</SelectItem>
-                            <SelectItem value="농협은행">농협은행</SelectItem>
+                            {bankList.map((item, i) => (
+                              <SelectItem key={i} value={item.code}>
+                                {item.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </FormControl>
@@ -309,183 +339,187 @@ export default function ExpenseRegister() {
               className="mb-4"
             />
             <div>
-              {Array.from({ length: articleCount }).map((_, index) => (
-                <article key={index} className="border-b border-gray-300 py-6 first:pt-0 last:border-b-0">
-                  <div className="flex items-center justify-between">
-                    <RadioGroup defaultValue="PMG" className="flex gap-x-1.5 [&_button]:mb-0">
-                      <RadioButton value="PMG" label="PMG" variant="dynamic" size="xs" iconHide={true} />
-                      <RadioButton value="MCS" label="MCS" variant="dynamic" size="xs" iconHide={true} />
-                      <RadioButton value="개인" label="개인카드" variant="dynamic" size="xs" iconHide={true} />
-                      <RadioButton value="기타" label="기타" variant="dynamic" size="xs" iconHide={true} />
-                    </RadioGroup>
+              {Array.from({ length: articleCount }).map((_, index) => {
+                return (
+                  <article key={index} className="border-b border-gray-300 py-5 first:pt-0">
+                    <div className="flex items-center justify-between">
+                      <RadioGroup defaultValue="PMG" className="flex gap-x-1.5 [&_button]:mb-0">
+                        <RadioButton value="PMG" label="PMG" variant="dynamic" size="xs" iconHide={true} />
+                        <RadioButton value="MCS" label="MCS" variant="dynamic" size="xs" iconHide={true} />
+                        <RadioButton value="개인" label="개인카드" variant="dynamic" size="xs" iconHide={true} />
+                        <RadioButton value="기타" label="기타" variant="dynamic" size="xs" iconHide={true} />
+                      </RadioGroup>
 
-                    {/* 증빙자료 첨부 상태에 따라 Badge 상태 변경 */}
-                    <Badge className="bg-[#FFF098] text-[#BC9D47]">증빙자료 미제출</Badge>
-                  </div>
-                  <div className="mt-4 flex justify-between">
-                    <div className="grid w-[66%] grid-cols-3 gap-4 tracking-tight">
-                      <div className="long-v-divider text-base leading-[1.5] text-gray-700">
-                        <FormField
-                          control={form.control}
-                          name={`expense_type${index}`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex h-6 justify-between">
-                                <FormLabel className="gap-.5 font-bold text-gray-950">비용 유형</FormLabel>
-                              </div>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
-                                  <FormControl>
-                                    <SelectTrigger className="aria-[invalid=true]:border-destructive w-full">
-                                      <SelectValue placeholder={expenseTypes.length ? '비용 유형 선택' : '불러오는 중...'} />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent className="max-h-80 w-full">
-                                    {expenseTypes.map((item, i) => (
-                                      <SelectItem key={i} value={item.code}>
-                                        {item.code}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <div className="text-base leading-[1.5] text-gray-700">
-                        <FormField
-                          control={form.control}
-                          name={`expense_title${index}`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex h-6 justify-between">
-                                <FormLabel className="gap-.5 font-bold text-gray-950">가맹점명</FormLabel>
-                              </div>
-                              <FormControl>
-                                <Input placeholder="가맹점명" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <div className="text-base leading-[1.5] text-gray-700">
-                        <FormField
-                          control={form.control}
-                          name={`expense_date${index}`}
-                          render={({ field }) => {
-                            const { isOpen, setIsOpen, close } = useToggleState();
-                            return (
+                      <Button variant="svgIcon" size="xs" onClick={(e) => {}}>
+                        <Delete />
+                      </Button>
+                    </div>
+                    <div className="mt-4 flex justify-between">
+                      <div className="grid w-[66%] grid-cols-3 gap-4 tracking-tight">
+                        <div className="long-v-divider text-base leading-[1.5] text-gray-700">
+                          <FormField
+                            control={form.control}
+                            name={`expense_type${index}`}
+                            render={({ field }) => (
                               <FormItem>
                                 <div className="flex h-6 justify-between">
-                                  <FormLabel className="gap-.5 font-bold text-gray-950">매입 일자</FormLabel>
+                                  <FormLabel className="gap-.5 font-bold text-gray-950">비용 유형</FormLabel>
                                 </div>
-                                <Popover open={isOpen} onOpenChange={setIsOpen}>
-                                  <div className="relative w-full">
-                                    <PopoverTrigger asChild>
-                                      <FormControl>
-                                        <Button
-                                          variant={'outline'}
-                                          className={cn(
-                                            'border-input text-accent-foreground h-11 w-full px-3 text-left text-base font-normal hover:bg-[none]',
-                                            !field.value && 'text-muted-foreground hover:text-muted-foreground'
-                                          )}>
-                                          {field.value ? String(field.value) : <span>YYYY-MM-DD</span>}
-                                          <Calendar className="ml-auto size-4.5 opacity-50" />
-                                        </Button>
-                                      </FormControl>
-                                    </PopoverTrigger>
-                                  </div>
-
-                                  <PopoverContent className="w-auto p-0" align="start">
-                                    <DayPicker
-                                      captionLayout="dropdown"
-                                      mode="single"
-                                      selected={field.value}
-                                      onSelect={(date) => {
-                                        const formattedDate = date ? formatDate(date) : null;
-                                        field.onChange(formattedDate);
-
-                                        if (date) close();
-                                      }}
-                                    />
-                                  </PopoverContent>
-                                </Popover>
+                                <FormControl>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
+                                    <FormControl>
+                                      <SelectTrigger className="aria-[invalid=true]:border-destructive w-full">
+                                        <SelectValue placeholder={expenseTypes.length ? '비용 유형 선택' : '불러오는 중...'} />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent className="max-h-80 w-full">
+                                      {expenseTypes.map((item, i) => (
+                                        <SelectItem key={i} value={item.code}>
+                                          {item.code}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
                                 <FormMessage />
                               </FormItem>
-                            );
-                          }}
-                        />
+                            )}
+                          />
+                        </div>
+                        <div className="text-base leading-[1.5] text-gray-700">
+                          <FormField
+                            control={form.control}
+                            name={`expense_title${index}`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <div className="flex h-6 justify-between">
+                                  <FormLabel className="gap-.5 font-bold text-gray-950">가맹점명</FormLabel>
+                                </div>
+                                <FormControl>
+                                  <Input placeholder="가맹점명" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="text-base leading-[1.5] text-gray-700">
+                          <FormField
+                            control={form.control}
+                            name={`expense_date${index}`}
+                            render={({ field }) => {
+                              const { isOpen, setIsOpen, close } = useToggleState();
+                              return (
+                                <FormItem>
+                                  <div className="flex h-6 justify-between">
+                                    <FormLabel className="gap-.5 font-bold text-gray-950">매입 일자</FormLabel>
+                                  </div>
+                                  <Popover open={isOpen} onOpenChange={setIsOpen}>
+                                    <div className="relative w-full">
+                                      <PopoverTrigger asChild>
+                                        <FormControl>
+                                          <Button
+                                            variant={'outline'}
+                                            className={cn(
+                                              'border-input text-accent-foreground h-11 w-full px-3 text-left text-base font-normal hover:bg-[none]',
+                                              !field.value && 'text-muted-foreground hover:text-muted-foreground'
+                                            )}>
+                                            {field.value ? String(field.value) : <span>YYYY-MM-DD</span>}
+                                            <Calendar className="ml-auto size-4.5 opacity-50" />
+                                          </Button>
+                                        </FormControl>
+                                      </PopoverTrigger>
+                                    </div>
+
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                      <DayPicker
+                                        captionLayout="dropdown"
+                                        mode="single"
+                                        selected={field.value}
+                                        onSelect={(date) => {
+                                          const formattedDate = date ? formatDate(date) : null;
+                                          field.onChange(formattedDate);
+
+                                          if (date) close();
+                                        }}
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                  <FormMessage />
+                                </FormItem>
+                              );
+                            }}
+                          />
+                        </div>
+                        <div className="text-base leading-[1.5] text-gray-700">
+                          <FormField
+                            control={form.control}
+                            name={`expense_price${index}`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <div className="flex h-6 justify-between">
+                                  <FormLabel className="gap-.5 font-bold text-gray-950">금액</FormLabel>
+                                </div>
+                                <FormControl>
+                                  <Input placeholder="금액" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="text-base leading-[1.5] text-gray-700">
+                          <FormField
+                            control={form.control}
+                            name={`expense_tax${index}`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <div className="flex h-6 justify-between">
+                                  <FormLabel className="gap-.5 font-bold text-gray-950">세금</FormLabel>
+                                </div>
+                                <FormControl>
+                                  <Input placeholder="세금" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="text-base leading-[1.5] text-gray-700">
+                          <FormField
+                            control={form.control}
+                            name={`expense_total${index}`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <div className="flex h-6 justify-between">
+                                  <FormLabel className="gap-.5 font-bold text-gray-950">합계</FormLabel>
+                                </div>
+                                <FormControl>
+                                  <Input placeholder="합계" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </div>
-                      <div className="text-base leading-[1.5] text-gray-700">
-                        <FormField
+                      <div className="w-[32%] pl-2">
+                        <AttachmentField
                           control={form.control}
-                          name={`expense_price${index}`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex h-6 justify-between">
-                                <FormLabel className="gap-.5 font-bold text-gray-950">금액</FormLabel>
-                              </div>
-                              <FormControl>
-                                <Input placeholder="금액" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <div className="text-base leading-[1.5] text-gray-700">
-                        <FormField
-                          control={form.control}
-                          name={`expense_tax${index}`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex h-6 justify-between">
-                                <FormLabel className="gap-.5 font-bold text-gray-950">세금</FormLabel>
-                              </div>
-                              <FormControl>
-                                <Input placeholder="세금" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <div className="text-base leading-[1.5] text-gray-700">
-                        <FormField
-                          control={form.control}
-                          name={`expense_total${index}`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex h-6 justify-between">
-                                <FormLabel className="gap-.5 font-bold text-gray-950">합계</FormLabel>
-                              </div>
-                              <FormControl>
-                                <Input placeholder="합계" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                          name={`expense_attachment${index}`}
+                          rowIndex={index + 1}
+                          onDropFiles={handleDropFiles}
+                          onUploadFiles={handleAttachUpload}
+                          activeFile={activeFile}
+                          setActiveFile={setActiveFile}
+                          files={files}
                         />
                       </div>
                     </div>
-                    <div className="w-[32%] pl-2">
-                      <AttachmentField
-                        control={form.control}
-                        name={`expense_attachment${index}`}
-                        rowIndex={index + 1}
-                        onDropFiles={handleDropFiles}
-                        onUploadFiles={handleAttachUpload}
-                        activeFile={activeFile}
-                        setActiveFile={setActiveFile}
-                        files={files}
-                      />
-                    </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
+              <div className="bg-primary-blue-100">합계</div>
             </div>
           </div>
           <div className="relative col-span-2">
@@ -522,6 +556,10 @@ export default function ExpenseRegister() {
               </div>
             </div>
           </div>
+        </div>
+        <div className="my-10 flex justify-center gap-2">
+          <Button>등록</Button>
+          <Button variant="outline">취소</Button>
         </div>
       </Form>
 

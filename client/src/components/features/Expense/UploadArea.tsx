@@ -1,6 +1,10 @@
 import { useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { cn } from '@/lib/utils';
 import { useDropzone } from 'react-dropzone';
+
+import { getDocument, type PDFDocumentProxy } from 'pdfjs-dist';
+import 'pdfjs-dist/legacy/build/pdf.worker.min.mjs';
+
 import { Button } from '@components/ui/button';
 import { Checkbox } from '@components/ui/checkbox';
 import { Upload, Delete, Zoom } from '@/assets/images/icons';
@@ -30,16 +34,90 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
   ({ files, setFiles, onFilesChange, linkedRows, activeFile, setActiveFile }, ref) => {
     const selectedRef = useRef<string[]>([]);
 
+    // PDF 이미지 분할 함수 (좌/우 2등분)
+    const splitPdfToImages = async (file: File): Promise<PreviewFile[]> => {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf: PDFDocumentProxy = await getDocument({ data: arrayBuffer }).promise;
+      const allImages: PreviewFile[] = [];
+
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 2.0 }); // 해상도 조절
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d')!;
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        // pdf.js v5.x render
+        await page.render({
+          canvasContext: ctx,
+          viewport,
+          canvas,
+        }).promise;
+
+        // 가로 2분할
+        const halfWidth = canvas.width / 2;
+
+        const crop = (x: number) => {
+          const temp = document.createElement('canvas');
+          const tctx = temp.getContext('2d')!;
+          temp.width = halfWidth;
+          temp.height = canvas.height;
+          tctx.drawImage(canvas, x, 0, halfWidth, canvas.height, 0, 0, halfWidth, canvas.height);
+          return temp.toDataURL('image/png');
+        };
+
+        const left = crop(0);
+        const right = crop(halfWidth);
+
+        allImages.push({
+          name: `${file.name}_${pageNum}_l.png`,
+          type: 'image/png',
+          preview: left,
+        });
+        allImages.push({
+          name: `${file.name}_${pageNum}_r.png`,
+          type: 'image/png',
+          preview: right,
+        });
+      }
+
+      return allImages;
+    };
+
     const onDrop = useCallback(
-      (acceptedFiles: File[]) => {
-        const mapped = acceptedFiles.map((file) => ({
-          name: file.name,
-          type: file.type,
-          preview: URL.createObjectURL(file),
-        }));
-        const updated = [...files, ...mapped];
+      async (acceptedFiles: File[]) => {
+        const newFiles: PreviewFile[] = [];
+
+        for (const file of acceptedFiles) {
+          if (file.type === 'application/pdf') {
+            try {
+              const pages = await splitPdfToImages(file);
+              newFiles.push(...pages);
+            } catch (err) {
+              console.error('PDF 렌더링 실패:', err);
+            }
+          } else {
+            newFiles.push({
+              name: file.name,
+              type: file.type,
+              preview: URL.createObjectURL(file),
+            });
+          }
+        }
+
+        const updated = [...files, ...newFiles];
         setFiles(updated);
         onFilesChange?.(updated);
+
+        // const mapped = acceptedFiles.map((file) => ({
+        //   name: file.name,
+        //   type: file.type,
+        //   preview: URL.createObjectURL(file),
+        // }));
+        // const updated = [...files, ...mapped];
+        // setFiles(updated);
+        // onFilesChange?.(updated);
       },
       [files, setFiles, onFilesChange]
     );
@@ -93,16 +171,13 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
               const isLinkedActive = activeFile === file.name;
               const isSelected = selectedRef.current.includes(file.name);
 
-              console.log(activeFile);
-
               return (
                 <div
                   key={file.name}
                   className={cn(
-                    'relative aspect-[1/1.4] w-[calc(33.33%-var(--spacing)*2.667)] cursor-pointer overflow-hidden rounded-md border transition-all',
-                    'border-gray-300 hover:bg-gray-100/50',
+                    'relative aspect-[1/1.4] w-[calc(33.33%-var(--spacing)*2.667)] overflow-hidden rounded-md transition-all',
                     isLinkedActive && 'ring-primary-blue-300 ring-2',
-                    isSelected && 'ring-primary-blue-500 ring-2'
+                    isSelected && 'ring-primary-blue-500 cursor-pointer ring-2'
                   )}
                   onClick={() => {
                     toggleSelect(file.name);
