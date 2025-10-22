@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
 import { Close, Upload } from '@/assets/images/icons';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
@@ -81,8 +82,13 @@ export function AttachmentField({ control, name, rowIndex, files = [], onDropFil
       name={name}
       render={({ field }) => (
         <FormItem className="flex h-full flex-col">
-          <div className="flex h-6 justify-between">
-            <FormLabel className="gap-.5 font-bold text-gray-950">증빙자료 #{rowIndex}</FormLabel>
+          <div className="flex h-6 items-center justify-between">
+            <FormLabel className="gap-.5 flex font-bold text-gray-950">증빙자료 #{rowIndex}</FormLabel>
+            {attachments.length ? (
+              <span className="text-primary-blue-500 text-xs">제출됨</span>
+            ) : (
+              <span className="text-destructive text-xs">미제출</span>
+            )}
           </div>
           <FormControl>
             <div
