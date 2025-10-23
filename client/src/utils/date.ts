@@ -1,8 +1,8 @@
 // src/utils/date.ts
-export function formatKST(dateString: string): string {
+export function formatKST(dateString: string | Date, withOutTime = false): string {
   if (!dateString) return '';
 
-  const date = new Date(dateString); // 한국 시간으로 변환
+  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
 
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -11,5 +11,6 @@ export function formatKST(dateString: string): string {
   const minutes = String(date.getMinutes()).padStart(2, '0');
   const seconds = String(date.getSeconds()).padStart(2, '0');
 
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  /* return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`; */
+  return withOutTime ? `${year}-${month}-${day}` : `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }

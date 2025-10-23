@@ -6,14 +6,28 @@ import { Button } from '@/components/ui/button';
 import { SearchGray } from '@/assets/images/icons';
 import { useNavigate, Outlet } from 'react-router';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DeviceForm } from '@/components/itdevice/DeviceForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { getItDevice, type Device } from '@/api/office/itdevice';
 
 export default function ItDevice() {
   const navigate = useNavigate();
+  const [pageInfo, setPageInfo] = useState({
+    page: 1,
+    totalPages: 1,
+    total: 0,
+  });
+  const [posts, setPosts] = useState<Device[]>([]);
+  useEffect(() => {
+    getItDevice()
+      .then((res) => setPosts(res.items))
+      .catch((err) => {
+        console.error('❌ IT Device 불러오기 실패:', err);
+      });
+  }, []);
   // 더미 데이터
-  const [posts, setPosts] = useState([
+  /* const [posts, setPosts] = useState([
     {
       id: 4,
       device: 'Monitor',
@@ -54,7 +68,7 @@ export default function ItDevice() {
       createdAt: '2025-06-02',
       user: '이영서',
     },
-  ]);
+  ]); */
 
   //등록 다이얼로그 열기/닫기
   const [openRegister, setOpenRegister] = useState(false);

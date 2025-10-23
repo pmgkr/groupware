@@ -15,39 +15,79 @@ export default function BoardList() {
   const navigate = useNavigate();
   const [posts, setPosts] = useState<BoardDTO[]>([]);
   const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
+  //const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeQuery, setActiveQuery] = useState('');
 
   const pageSize = 10; // 한 페이지에 보여줄 개수
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await getBoardList(page, pageSize);
-        setPosts(data.items);
-        setTotal(data.total);
-      } catch (err) {
-        setPosts([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [page]); // 페이지 변경되면 다시 요청
+  const fetchBoardList = async () => {
+    setLoading(true);
+    try {
+      const data = await getBoardList(1, 1000);
+      setPosts(data.items);
+    } catch (err) {
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // posts에서 공지/일반 분리
+  useEffect(() => {
+    fetchBoardList();
+  }, []);
+
+  const handleSearch = () => {
+    setPage(1);
+    setActiveQuery(searchQuery);
+  };
+  /* const filteredNormals = activeQuery.trim()
+    ? posts.filter((p) => p.pinned !== 'Y' && p.title.toLowerCase().includes(activeQuery.toLowerCase()))
+    : posts.filter((p) => p.pinned !== 'Y'); */
+  const filteredNormals = activeQuery.trim()
+    ? posts.filter(
+        (p) =>
+          p.pinned !== 'Y' &&
+          (p.title.toLowerCase().includes(activeQuery.toLowerCase()) ||
+            p.category.toLowerCase().includes(activeQuery.toLowerCase()) ||
+            p.user_name.toLowerCase().includes(activeQuery.toLowerCase()))
+      )
+    : posts.filter((p) => p.pinned !== 'Y');
+
+  const notices = posts.filter((p) => p.pinned === 'Y');
+  const normals = filteredNormals.sort((a, b) => b.n_seq - a.n_seq);
+  // 공지 수만큼 일반글 개수 제한
+  const normalLimit = pageSize - notices.length;
+  const total = filteredNormals.length;
+  const startNo = (page - 1) * normalLimit;
+  const paginatedNormals = normals.slice(startNo, startNo + normalLimit);
+
+  /*  // posts에서 공지/일반 분리
   const notices = posts.filter((p) => p.pinned === 'Y');
   // 일반글: 최신순 정렬
   const normals = posts.filter((p) => p.pinned !== 'Y').sort((a, b) => b.n_seq - a.n_seq);
   // 화면에서 보여줄 번호 (페이지 기준 연속 번호)
-  const startNo = (page - 1) * pageSize;
+  const startNo = (page - 1) * pageSize; */
 
   return (
     <div>
       {/* 검색창 */}
       <div className="flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
-          <Input className="h-[32px] px-4 [&]:bg-white" placeholder="검색어 입력" />
-          <Button variant="svgIcon" size="icon" className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2" aria-label="검색">
+          <Input
+            className="h-[32px] px-4 [&]:bg-white"
+            placeholder="검색어 입력"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <Button
+            variant="svgIcon"
+            size="icon"
+            className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2"
+            aria-label="검색"
+            onClick={handleSearch}>
             <SearchGray className="text-gray-400" />
           </Button>
         </div>
@@ -94,7 +134,7 @@ export default function BoardList() {
                 </TableRow>
               ))}
               {/* 일반글: 최신순 + 번호 */}
-              {normals.map((post, index) => (
+              {paginatedNormals.map((post, index) => (
                 <TableRow key={post.n_seq} onClick={() => navigate(`${post.n_seq}`)} className="cursor-pointer hover:bg-gray-100">
                   <TableCell className="font-medium">{total - startNo - index}</TableCell>
                   <TableCell>{post.category}</TableCell>
@@ -108,14 +148,9 @@ export default function BoardList() {
           )}
         </TableBody>
       </Table>
-      {posts.length > 0 && total > 1 && (
+      {total > 0 && (
         <div className="mt-5">
-          <AppPagination
-            totalPages={Math.ceil(total / pageSize)}
-            initialPage={page}
-            visibleCount={5}
-            onPageChange={(p) => setPage(p)} //부모 state 업데이트
-          />
+          <AppPagination totalPages={Math.ceil(total / normalLimit)} initialPage={page} visibleCount={5} onPageChange={(p) => setPage(p)} />
         </div>
       )}
     </div>
