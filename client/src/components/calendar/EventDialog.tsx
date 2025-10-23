@@ -12,6 +12,7 @@ import { DateTimePicker24h } from '@/components/date-n-time/date-time-picker-24h
 import type { DateRange } from 'react-day-picker';
 import { scheduleApi } from '@/api/calendar';
 import { useAuth } from '@/contexts/AuthContext';
+import { getCachedHolidays } from '@/services/holidayApi';
 
 interface EventDialogProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ interface EventData {
   author: string;
   selectedDate?: Date; // 단일 날짜 선택용
   selectedDateRange?: DateRange; // 날짜 범위 선택용
+  vacationDaysUsed?: number; // 실제 사용된 연차 일수 (공휴일 제외)
 }
 
 const vacationTypes = [
@@ -52,6 +54,48 @@ const eventTypes = [
 export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: EventDialogProps) {
   const { user } = useAuth();
   const [remainingVacationDays, setRemainingVacationDays] = useState<number>(0);
+  const [calculatedVacationDays, setCalculatedVacationDays] = useState<number>(0);
+  
+  // 실제 근무일 수 계산 함수 (주말 및 공휴일 제외)
+  const calculateWorkingDays = async (startDate: Date, endDate: Date): Promise<number> => {
+    let count = 0;
+    const currentDate = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // 해당 연도의 공휴일 목록 가져오기
+    const year = currentDate.getFullYear();
+    const holidays = await getCachedHolidays(year);
+    
+    // 다음 해도 범위에 포함되는 경우 처리
+    const endYear = end.getFullYear();
+    let nextYearHolidays: typeof holidays = [];
+    if (endYear > year) {
+      nextYearHolidays = await getCachedHolidays(endYear);
+    }
+    
+    const allHolidays = [...holidays, ...nextYearHolidays];
+    
+    // 공휴일을 Set으로 변환 (빠른 검색을 위해)
+    const holidaySet = new Set(allHolidays.map(h => h.date));
+    
+    while (currentDate <= end) {
+      const dayOfWeek = currentDate.getDay();
+      const dateString = 
+        currentDate.getFullYear().toString() + 
+        String(currentDate.getMonth() + 1).padStart(2, '0') + 
+        String(currentDate.getDate()).padStart(2, '0');
+      
+      // 주말(0:일요일, 6:토요일)과 공휴일이 아닌 경우만 카운트
+      if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidaySet.has(dateString)) {
+        count++;
+      }
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return count;
+  };
+  
   const [formData, setFormData] = useState<EventData>({
     title: '',
     description: '',
@@ -168,7 +212,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
   };
 
   // 날짜 범위 선택 핸들러
-  const handleDateRangeSelect = (range: DateRange | undefined) => {
+  const handleDateRangeSelect = async (range: DateRange | undefined) => {
     if (range && range.from && range.to) {
       // 로컬 시간 기준으로 YYYY-MM-DD 문자열 생성
       const formatDate = (date: Date) => {
@@ -181,11 +225,20 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       const startDateStr = formatDate(range.from);
       const endDateStr = formatDate(range.to);
       
+      // 연차인 경우 실제 근무일 수 계산
+      let vacationDays = 0;
+      if (formData.category === 'vacation' && formData.eventType === 'vacationDay') {
+        vacationDays = await calculateWorkingDays(range.from, range.to);
+        setCalculatedVacationDays(vacationDays);
+        console.log(`연차 사용 일수 계산: ${vacationDays}일 (주말/공휴일 제외)`);
+      }
+      
       setFormData(prev => ({
         ...prev,
         selectedDateRange: range,
         startDate: startDateStr,
         endDate: endDateStr,
+        vacationDaysUsed: vacationDays > 0 ? vacationDays : undefined,
       }));
     }
   };
@@ -220,14 +273,45 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     //   return;
     // }
 
+    // 연차 사용일수 계산
+    let vacationDaysUsed = 0;
+    if (formData.category === 'vacation') {
+      switch (formData.eventType) {
+        case 'vacationDay':
+          // 연차는 이미 calculateWorkingDays로 계산된 값 사용
+          vacationDaysUsed = formData.vacationDaysUsed || calculatedVacationDays || 1;
+          break;
+        case 'vacationHalfMorning':
+        case 'vacationHalfAfternoon':
+          vacationDaysUsed = 0.5;
+          break;
+        case 'vacationQuarterMorning':
+        case 'vacationQuarterAfternoon':
+          vacationDaysUsed = 0.25;
+          break;
+        case 'vacationOfficial':
+          // 공가는 연차 차감 없음
+          vacationDaysUsed = 0;
+          break;
+        default:
+          vacationDaysUsed = 0;
+      }
+    }
+
+    const eventDataToSave = {
+      ...formData,
+      vacationDaysUsed,
+    };
+
     console.log('=== EventDialog handleSave ===');
-    console.log('저장할 formData:', JSON.stringify(formData, null, 2));
+    console.log('저장할 formData:', JSON.stringify(eventDataToSave, null, 2));
     console.log('formData.startTime:', formData.startTime);
     console.log('formData.endTime:', formData.endTime);
     console.log('formData.eventType:', formData.eventType);
     console.log('formData.selectedDate:', formData.selectedDate);
+    console.log('연차 사용일수:', vacationDaysUsed);
 
-    onSave(formData);
+    onSave(eventDataToSave);
     
     // 폼 데이터 리셋
     setFormData({
@@ -254,6 +338,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       selectedDate: undefined,
       selectedDateRange: undefined,
     });
+    setCalculatedVacationDays(0);
     
     onClose();
   };
@@ -283,6 +368,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       selectedDate: undefined,
       selectedDateRange: undefined,
     });
+    setCalculatedVacationDays(0);
     onClose();
   };
 
@@ -376,11 +462,18 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
                     </div>
                   </>
                 ) : (
-                  <DatePickerWithRange 
-                    selected={formData.selectedDateRange}
-                    onSelect={handleDateRangeSelect}
-                    placeholder="기간을 선택해주세요"
-                  />
+                  <>
+                    <DatePickerWithRange 
+                      selected={formData.selectedDateRange}
+                      onSelect={handleDateRangeSelect}
+                      placeholder="기간을 선택해주세요"
+                    />
+                    {formData.category === 'vacation' && formData.eventType === 'vacationDay' && calculatedVacationDays > 0 && (
+                      <div className="text-xs text-gray-600 mt-1">
+                        실제 사용 연차: <span className="font-semibold text-[var(--color-primary-blue-500)]">{calculatedVacationDays}일</span> (주말 및 공휴일 제외)
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 

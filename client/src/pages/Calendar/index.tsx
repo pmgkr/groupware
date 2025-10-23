@@ -385,9 +385,15 @@ export default function Calendar() {
       const calculateVacationUsed = (eventType: string, startDate: string, endDate: string): number => {
         if (schType !== 'vacation' || !schVacationType) return 0;
         
+        // EventDialog에서 이미 계산된 값이 있으면 사용 (공휴일 제외된 값)
+        if (eventData.vacationDaysUsed !== undefined && eventData.vacationDaysUsed > 0) {
+          return eventData.vacationDaysUsed;
+        }
+        
         switch (schVacationType) {
           case 'day': {
             // 연차: 날짜 차이 계산 (종료일 - 시작일 + 1)
+            // EventDialog에서 계산된 값이 없을 때만 여기서 계산
             const start = new Date(startDate);
             const end = new Date(endDate);
             const diffTime = Math.abs(end.getTime() - start.getTime());

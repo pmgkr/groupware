@@ -21,7 +21,8 @@ interface EventData {
   eventType: string;
   author: string;
   userId: string; // 작성자 ID
-  status?: "등록 완료" | "취소 요청됨" | "취소 완료";
+  teamId?: number; // 작성자 팀 ID
+  status?: "등록 완료" | "취소 요청됨" | "취소 완료" | "취소 승인하기";
   cancelRequestDate?: string;
   createdAt?: string; // sch_created_at
 }
@@ -39,11 +40,17 @@ export default function EventViewDialog({
   onRequestCancel,
   selectedEvent 
 }: EventViewDialogProps) {
-  const { user_id } = useUser();
+  const { user_id, user_level, team_id } = useUser();
   const status = selectedEvent?.status || "등록 완료";
   
   // 본인의 일정인지 확인 (user_id로 비교)
   const isMyEvent = user_id && selectedEvent?.userId === user_id;
+  
+  // staff 권한 확인
+  const isStaff = user_level === 'staff';
+  
+  // 같은 팀인지 확인
+  const isSameTeam = team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId;
 
   // 날짜 범위 포맷팅
   const getDateRangeText = () => {
@@ -151,6 +158,9 @@ export default function EventViewDialog({
           )}
         </div>
         <DialogFooter>
+          {isMyEvent && isStaff && isSameTeam && status === "취소 승인하기" && onRequestCancel && (
+            <Button variant="destructive" onClick={onRequestCancel}>취소 완료하기</Button>
+          )}
           {/* 액션 버튼들 - 본인의 일정일 때만 표시 */}
           {isMyEvent && status === "등록 완료" && onRequestCancel && (
             <Button variant="destructive" onClick={onRequestCancel}>취소 신청하기</Button>
