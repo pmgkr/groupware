@@ -47,9 +47,9 @@ export default function BookList() {
   const startNo = (page - 1) * pageSize;
 
   // 페이지 변경 핸들러
-  const handlePageChange = (nextPage: number) => {
+  /* const handlePageChange = (nextPage: number) => {
     setPageInfo((prev) => ({ ...prev, page: nextPage }));
-  };
+  }; */
 
   //다이얼로그 열림
   const [open, setOpen] = useState(false);
@@ -184,17 +184,17 @@ export default function BookList() {
       </div>
 
       {/* 게시판 테이블 */}
-      <Table>
+      <Table className="table-fixed">
         <TableHeader>
           <TableRow>
             <TableHead className="w-[80px]">번호</TableHead>
             <TableHead className="w-[130px]">카테고리</TableHead>
             <TableHead className="w-[400px]">도서명</TableHead>
-            <TableHead>저자</TableHead>
-            <TableHead>출판사</TableHead>
-            <TableHead>팀</TableHead>
-            <TableHead>신청자</TableHead>
-            <TableHead>날짜</TableHead>
+            <TableHead className="w-[200px]">저자</TableHead>
+            <TableHead className="w-[130px]">출판사</TableHead>
+            <TableHead className="w-[130px]">팀</TableHead>
+            <TableHead className="w-[130px]">신청자</TableHead>
+            <TableHead className="w-[130px]">날짜</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -202,10 +202,10 @@ export default function BookList() {
             return (
               <TableRow key={post.id}>
                 <TableCell>{total - startNo - index}</TableCell>
-                <TableCell>{post.category}</TableCell>
-                <TableCell>{post.title}</TableCell>
-                <TableCell>{post.author}</TableCell>
-                <TableCell>{post.publish}</TableCell>
+                <TableCell className="max-w-[130px] truncate">{post.category}</TableCell>
+                <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
+                <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
+                <TableCell className="max-w-[150px] truncate">{post.publish}</TableCell>
                 <TableCell>{post.team_id}</TableCell>
                 <TableCell>{post.user_name}</TableCell>
                 <TableCell>{formatKST(post.purchaseAt, true)}</TableCell>

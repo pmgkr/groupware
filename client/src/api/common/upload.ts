@@ -37,10 +37,15 @@ export async function uploadFilesToServer(files: File[], subdir: string) {
   }
 
   // 서버 구조를 우리 프로젝트에서 쓰기 편한 형태로 정규화
-  return data.files.map((f) => ({
-    fname: f.original, // 원본 파일명
-    sname: f.filename, // 서버 저장 파일명
-    url: f.url, // 접근 가능한 전체 URL
-    subdir: f.subdir, // 저장된 하위 디렉토리명
-  }));
+  return data.files.map((f) => {
+    const ext = f.original.split('.').pop()?.toLowerCase() || '';
+    return {
+      fname: f.original,
+      sname: f.filename,
+      url: f.url,
+      subdir: f.subdir,
+      mimetype: f.mimetype,
+      ext,
+    };
+  });
 }

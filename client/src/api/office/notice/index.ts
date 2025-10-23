@@ -1,4 +1,6 @@
+import { uploadFilesToServer } from '@/api/common';
 import { http } from '@/lib/http';
+import { validateFiles } from '@/utils';
 
 export type BoardDTO = {
   n_seq: number;
@@ -28,11 +30,20 @@ export async function getBoardList(page = 1, size = 10, q?: string) {
 }
 
 //게시글 상세보기
+//게시글 상세보기
 export async function getBoardDetail(n_seq: number) {
+  const res = await http<any>(`/user/office/notice/info/${n_seq}`, { method: 'GET' });
+  console.log('📦 getBoardDetail 응답:', res);
+
+  // ✅ 서버 구조에 맞게 data 혹은 그대로 반환
+  if (res?.data) return res.data;
+  return res; // ✅ post가 아니라 res를 반환해야 함
+}
+/* export async function getBoardDetail(n_seq: number) {
   return http<BoardDTO>(`/user/office/notice/info/${n_seq}`, {
     method: 'GET',
   });
-}
+} */
 
 // 게시글 등록
 export async function registerBoard(data: { category: string; title: string; content: string; user_id: string; user_name: string }) {
@@ -117,4 +128,68 @@ export async function editComment(bc_seq: number, data: { comment: string }) {
       'Content-Type': 'application/json',
     },
   });
+}
+
+// 공지사항 첨부파일
+/**
+ * 공지사항 첨부파일 업로드 + DB 등록 통합 처리
+ * @param n_seq 게시글 번호
+ * @param files 첨부할 File 배열
+ * @param subdir 업로드 폴더명 (기본값 'notice')
+ */
+export async function uploadNoticeAttachments(n_seq: number, files: File[], subdir = 'notice') {
+  if (!files.length) return [];
+
+  const uploaded = await uploadFilesToServer(files, subdir);
+
+  for (const f of uploaded) {
+    await http('/user/office/notice/attachment/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        n_seq,
+        f_name: f.fname,
+        nf_name: f.sname,
+        f_type: f.ext, //
+      }),
+    });
+  }
+
+  return uploaded;
+}
+
+// 첨부파일 가져오기
+export interface AttachmentDTO {
+  f_seq: number;
+  n_seq: number;
+  f_name: string; // 원본 파일명
+  nf_name: string; // 서버 저장 파일명
+  f_type: string;
+  reg_date: string;
+}
+export interface Attachment {
+  id: number;
+  name: string;
+  url: string;
+  type: string;
+  createdAt: string;
+}
+/**
+ * 공지사항 첨부파일 목록 조회
+ * GET /user/office/notice/attachment/{n_seq}
+ */
+export async function getNoticeAttachments(n_seq: number): Promise<Attachment[]> {
+  const dto = await http<any>(`/user/office/notice/attachment/${n_seq}`, { method: 'GET' });
+  //console.log('📎 첨부파일 API 응답:', dto);
+
+  // 서버가 { items: [...] } 형태로 응답할 때 처리
+  const files = Array.isArray(dto) ? dto : Array.isArray(dto.items) ? dto.items : dto.data && Array.isArray(dto.data) ? dto.data : [];
+
+  return files.map((f: any) => ({
+    id: f.f_seq,
+    name: f.f_name,
+    type: f.f_type,
+    createdAt: f.reg_date,
+    url: `https://gbend.cafe24.com/uploads/notice/${f.nf_name}`,
+  }));
 }

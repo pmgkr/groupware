@@ -5,14 +5,14 @@ import { Button } from '@components/ui/button';
 import { File, CircleX } from '@/assets/images/icons';
 import { useLocation, useNavigate } from 'react-router';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { pinBoard, registerBoard, updateBoard } from '@/api/office/notice';
+import { pinBoard, registerBoard, updateBoard, uploadNoticeAttachments } from '@/api/office/notice';
+import { validateFiles } from '@/utils';
 
 export default function BoardWrite() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -84,6 +84,10 @@ export default function BoardWrite() {
         if (isNotice !== post.pinned) {
           await pinBoard(post.n_seq, isNotice);
         }
+        // 이미 검증된 files만 API에 넘김
+        if (files.length > 0) {
+          await uploadNoticeAttachments(post.n_seq, files);
+        }
         navigate(`/notice/${post.n_seq}`);
       } else {
         // 등록 모드
@@ -96,9 +100,17 @@ export default function BoardWrite() {
         });
 
         const n_seq = res.n_seq;
+
+        // 검증 통과 파일만 업로드
+        if (files.length > 0 && n_seq) {
+          await uploadNoticeAttachments(n_seq, files);
+        }
+
+        //공지 고정
         if (isNotice === 'Y' && n_seq) {
           await pinBoard(n_seq, 'Y');
         }
+
         navigate('..');
       }
     } catch (err) {
@@ -107,15 +119,27 @@ export default function BoardWrite() {
     }
   };
 
+  // 파일 첨부
   const handleAttachFile = () => {
     fileInputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    // 여러 파일 선택 가능하게
-    setFiles((prev) => [...prev, ...(e.target.files ? Array.from(e.target.files) : [])]);
-    e.target.value = ''; // 같은 파일 선택 시에도 onChange 트리거 되도록 초기화
+
+    const selectedFiles = Array.from(e.target.files);
+
+    // 파일 유효성 검사 (여기서 validateFiles 실행)
+    const { valid, message, filtered } = validateFiles(selectedFiles);
+
+    if (!valid) {
+      alert(message);
+      if (filtered.length === 0) return;
+    }
+
+    // 통과된 파일만 state에 추가
+    setFiles((prev) => [...prev, ...filtered]);
+    e.target.value = ''; // 동일 파일 다시 선택 가능하게 초기화
   };
 
   const handleRemove = (name: string) => {
@@ -163,20 +187,20 @@ export default function BoardWrite() {
       </div>
 
       <div className="mt-2 flex justify-between">
+        {/* 파일 첨부 */}
         <div className="flex gap-1.5">
           <Button variant="outline" className="[&]:border-primary-blue-500 text-primary-blue-500" onClick={handleAttachFile}>
             <File className="mr-1 size-6" />
             파일 첨부
           </Button>
 
-          {/* 실제 파일 input */}
           <input type="file" multiple ref={fileInputRef} className="hidden" onChange={handleFileChange} />
 
           <div className="flex flex-wrap items-center gap-1.5">
             {files.map((file) => (
               <div key={file.name} className="flex items-center rounded-md border border-gray-300 p-1 pl-4">
                 <span className="text-base text-gray-500">{file.name}</span>
-                <Button variant="svgIcon" size="icon" aria-label="파일 삭제" onClick={() => handleRemove(file.name)}>
+                <Button variant="svgIcon" size="icon" onClick={() => handleRemove(file.name)}>
                   <CircleX className="size-4" />
                 </Button>
               </div>

@@ -57,26 +57,32 @@ export function toItBook(dto: BookDTO): Book {
 //도서 목록
 export async function getBookList(
   page = 1,
-  size = 10,
+  size = 100,
   q?: string
 ): Promise<{ items: Book[]; total: number; page: number; size: number; pages: number }> {
   const query = q && q.trim() ? `&q=${encodeURIComponent(q)}` : '';
+
+  //서버에서 모든 데이터를 한 번에 받아오기 (페이징 무시)
   const dto = await http<{ items: BookDTO[]; total: number; page: number; size: number; pages: number }>(
-    `/user/office/book/list?page=${page}&size=${size}${query}`,
+    `/user/office/book/list?page=1&size=9999${query}`,
     { method: 'GET' }
   );
 
   // "완료" 상태만 필터링
-  const filtered = dto.items.filter((item) => item.b_status === '완료');
-  const items = filtered.map(toItBook);
+  const filtered = dto.items.filter((item) => item.b_status?.trim() === '완료');
+  //  클라이언트에서 페이지 나누기
+  const startIdx = (page - 1) * size;
+  const pagedItems = filtered.slice(startIdx, startIdx + size);
 
-  // total/pages도 실제 필터링된 데이터 기준으로 계산 (옵션)
+  // DTO → 내부 모델 매핑
+  const items = pagedItems.map(toItBook);
+
   return {
     items,
     total: filtered.length,
-    page: dto.page,
-    size: dto.size,
-    pages: Math.ceil(filtered.length / dto.size),
+    page,
+    size,
+    pages: Math.ceil(filtered.length / size),
   };
 }
 
@@ -88,20 +94,23 @@ export async function getBookWishList(
 ): Promise<{ items: Book[]; total: number; page: number; size: number; pages: number }> {
   const query = q && q.trim() ? `&q=${encodeURIComponent(q)}` : '';
   const dto = await http<{ items: BookDTO[]; total: number; page: number; size: number; pages: number }>(
-    `/user/office/book/list?page=${page}&size=${size}${query}`,
+    `/user/office/book/list?page=1&size=9999${query}`,
     { method: 'GET' }
   );
 
   const filtered = dto.items.filter((item) => item.b_buylink && item.b_buylink.trim() !== '');
-  const items = filtered.map(toItBook);
+  const startIdx = (page - 1) * size;
+  const pagedItems = filtered.slice(startIdx, startIdx + size);
 
-  // total/pages도 실제 필터링된 데이터 기준으로 계산 (옵션)
+  // DTO → 내부 모델 매핑
+  const items = pagedItems.map(toItBook);
+
   return {
     items,
     total: filtered.length,
-    page: dto.page,
-    size: dto.size,
-    pages: Math.ceil(filtered.length / dto.size),
+    page,
+    size,
+    pages: Math.ceil(filtered.length / size),
   };
 }
 

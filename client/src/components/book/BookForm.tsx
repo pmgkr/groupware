@@ -10,7 +10,7 @@ export type BookFormData = {
   buylink?: string;
   purchaseAt?: string;
   team_id?: number;
-  user?: string;
+  user_name?: string;
   createdAt?: string;
 };
 
@@ -140,7 +140,7 @@ export function BookForm(props: BookFormProps) {
         {mode === 'view' && <TableColumnCell className="px-4 py-2.5">{form.team_id}</TableColumnCell>}
 
         {/* 신청자 (view 전용) */}
-        {mode === 'view' && <TableColumnCell className="px-4 py-2.5">{form.user}</TableColumnCell>}
+        {mode === 'view' && <TableColumnCell className="px-4 py-2.5">{form.user_name}</TableColumnCell>}
 
         {/* 구매일자 (create 전용) */}
         {mode === 'create' && (

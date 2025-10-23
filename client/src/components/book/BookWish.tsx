@@ -255,24 +255,24 @@ export default function BookWish() {
         </Dialog>
       </div>
 
-      {/* 게시판 테이블 */}
-      <Table>
+      {/* 도서 테이블 */}
+      <Table className="table-fixed">
         <TableHeader>
           <TableRow>
             {user?.user_id === Administrator && (
-              <TableHead className="[&>[role=checkbox]]:translate-x-[2px]">
+              <TableHead className="w-[40px] [&>[role=checkbox]]:translate-x-[2px]">
                 <Checkbox checked={allChecked} onCheckedChange={toggleAll} />
               </TableHead>
             )}
-            <TableHead>상태</TableHead>
-            <TableHead>날짜</TableHead>
+            <TableHead className="w-[100px]">상태</TableHead>
+            <TableHead className="w-[130px]">날짜</TableHead>
             <TableHead className="w-[130px]">카테고리</TableHead>
             <TableHead className="w-[400px]">도서명</TableHead>
-            <TableHead>저자</TableHead>
-            <TableHead>출판사</TableHead>
-            <TableHead>팀</TableHead>
-            <TableHead>신청자</TableHead>
-            <TableHead></TableHead>
+            <TableHead className="w-[200px]">저자</TableHead>
+            <TableHead className="w-[150px]">출판사</TableHead>
+            <TableHead className="w-[120px]">팀</TableHead>
+            <TableHead className="w-[120px]">신청자</TableHead>
+            <TableHead className="w-[88px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -303,10 +303,10 @@ export default function BookWish() {
                 )}
               </TableCell>
               <TableCell>{formatKST(post.purchaseAt, true)}</TableCell>
-              <TableCell>{post.category}</TableCell>
-              <TableCell>{post.title}</TableCell>
-              <TableCell>{post.author}</TableCell>
-              <TableCell>{post.publish}</TableCell>
+              <TableCell className="max-w-[130px] truncate">{post.category}</TableCell>
+              <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
+              <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
+              <TableCell className="max-w-[130px] truncate">{post.publish}</TableCell>
               <TableCell>{post.team_id}</TableCell>
               <TableCell>{post.user_name}</TableCell>
               <TableCell>

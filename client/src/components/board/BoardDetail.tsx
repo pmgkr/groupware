@@ -6,8 +6,16 @@ import { Textbox } from '../ui/textbox';
 import { useEffect, useState } from 'react';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
-import { deactivateBoard, editComment, getBoardDetail, getComment, registerComment, removeComment } from '@/api/office/notice';
-import type { BoardDTO, CommentDTO } from '@/api/office/notice';
+import {
+  deactivateBoard,
+  editComment,
+  getBoardDetail,
+  getComment,
+  getNoticeAttachments,
+  registerComment,
+  removeComment,
+} from '@/api/office/notice';
+import type { Attachment, BoardDTO, CommentDTO } from '@/api/office/notice';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { formatKST } from '@/utils';
@@ -37,6 +45,8 @@ export default function BoardDetail({ id }: BoardDetailProps) {
   const [editCommentMode, setEditCommentMode] = useState(false);
   const [editCommentModeId, setEditCommentModeId] = useState<number | null>(null);
   const [editCommentText, setEditCommentText] = useState<{ [key: number]: string }>({});
+  //첨부파일
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
 
   //컨펌 다이얼로그 상태
   const [confirmState, setConfirmState] = useState<{
@@ -58,6 +68,35 @@ export default function BoardDetail({ id }: BoardDetailProps) {
   };
 
   // 게시글 상세 API 호출
+  /* useEffect(() => {
+    (async () => {
+      if (!postId) {
+        console.warn('❌ postId 없음');
+        setPost(null);
+        setLoading(false);
+        return;
+      }
+      try {
+        console.log('🟢 요청 게시글 ID:', postId);
+        const data = await getBoardDetail(Number(postId));
+        console.log('📦 getBoardDetail 반환 데이터:', data);
+        setPost(data);
+
+        const attachList = await getNoticeAttachments(Number(postId));
+        console.log('📎 첨부파일 목록:', attachList);
+        setAttachments(attachList);
+
+        const commentData = await getComment(Number(postId));
+        console.log('💬 댓글 목록:', commentData);
+        setComments(commentData);
+      } catch (err) {
+        console.error('❌ 게시글 불러오기 실패:', err);
+        setPost(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [postId]); */
   useEffect(() => {
     (async () => {
       if (!postId) {
@@ -68,6 +107,10 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       try {
         const data = await getBoardDetail(Number(postId));
         setPost(data);
+
+        //첨부파일 목록 불러오기
+        const attachList = await getNoticeAttachments(Number(postId));
+        setAttachments(attachList);
 
         //댓글 불러오기
         const commentData = await getComment(Number(postId));
@@ -91,6 +134,15 @@ export default function BoardDetail({ id }: BoardDetailProps) {
     if (!routeId) return;
     await deactivateBoard(Number(routeId));
     navigate('/notice');
+  };
+
+  //첨부파일 다운로드
+  const handleDownload = (fileUrl: string, fileName: string) => {
+    const AfileDown = document.createElement('a');
+    AfileDown.href = fileUrl;
+    AfileDown.download = fileName;
+    AfileDown.target = '_blank';
+    AfileDown.click();
   };
 
   // 댓글 등록
@@ -191,6 +243,24 @@ export default function BoardDetail({ id }: BoardDetailProps) {
         className="border-b border-gray-900 p-4 pb-10 leading-relaxed whitespace-pre-line"
         dangerouslySetInnerHTML={{ __html: post.content }}
       />
+      {/* 첨부파일 목록 */}
+      {attachments.length > 0 && (
+        <div className="border-b border-gray-300 bg-gray-50 p-4">
+          {attachments.map((file) => (
+            <Button
+              key={file.id}
+              variant="secondary"
+              className="hover:text-primary-blue-500 hover:bg-primary-blue-100 mr-2 text-sm [&]:border-gray-300 [&]:p-4"
+              onClick={() => handleDownload(file.url, file.name)}>
+              <div className="flex items-center gap-2">
+                <span className="font-normal">{file.name}</span>
+                <span className="text-xs text-gray-400">{file.createdAt?.slice(0, 10)}</span>
+              </div>
+              <Download className="size-4.5" />
+            </Button>
+          ))}
+        </div>
+      )}
 
       {/* 댓글 영역 */}
       <div className="bg-gray-100 p-7">
