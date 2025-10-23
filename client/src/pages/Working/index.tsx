@@ -5,6 +5,8 @@ import Toolbar from "@components/working/toolbar";
 import Table from "@components/working/table";
 import WorkHoursBar from "@components/ui/WorkHoursBar";
 import { Badge } from "@components/ui/badge";
+import Overview from "@components/working/Overview";
+
 // 근무 데이터 타입 정의
 interface WorkData {
   date: string;
@@ -323,9 +325,8 @@ export default function WorkHoursTable() {
         onSelectChange={onSelectChange}
         onAddEvent={onAddEvent}
         formatWeekDisplay={formatWeekDisplay}
-        weeklyStats={weeklyStats}
       />
-
+      <Overview weeklyStats={weeklyStats} />
       <Table 
         data={data} 
         onOvertimeRequest={handleOvertimeRequest}
