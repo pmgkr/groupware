@@ -30,20 +30,13 @@ export async function getBoardList(page = 1, size = 10, q?: string) {
 }
 
 //게시글 상세보기
-//게시글 상세보기
 export async function getBoardDetail(n_seq: number) {
   const res = await http<any>(`/user/office/notice/info/${n_seq}`, { method: 'GET' });
-  console.log('📦 getBoardDetail 응답:', res);
 
-  // ✅ 서버 구조에 맞게 data 혹은 그대로 반환
+  // 서버 구조에 맞게 data 혹은 그대로 반환
   if (res?.data) return res.data;
-  return res; // ✅ post가 아니라 res를 반환해야 함
+  return res; // post가 아니라 res를 반환해야 함
 }
-/* export async function getBoardDetail(n_seq: number) {
-  return http<BoardDTO>(`/user/office/notice/info/${n_seq}`, {
-    method: 'GET',
-  });
-} */
 
 // 게시글 등록
 export async function registerBoard(data: { category: string; title: string; content: string; user_id: string; user_name: string }) {
@@ -143,6 +136,7 @@ export async function uploadNoticeAttachments(n_seq: number, files: File[], subd
   const uploaded = await uploadFilesToServer(files, subdir);
 
   for (const f of uploaded) {
+    const ext = f.fname?.split('.').pop()?.toLowerCase() || '';
     await http('/user/office/notice/attachment/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -150,7 +144,7 @@ export async function uploadNoticeAttachments(n_seq: number, files: File[], subd
         n_seq,
         f_name: f.fname,
         nf_name: f.sname,
-        f_type: f.ext, //
+        f_type: ext, //
       }),
     });
   }
@@ -186,10 +180,17 @@ export async function getNoticeAttachments(n_seq: number): Promise<Attachment[]>
   const files = Array.isArray(dto) ? dto : Array.isArray(dto.items) ? dto.items : dto.data && Array.isArray(dto.data) ? dto.data : [];
 
   return files.map((f: any) => ({
-    id: f.f_seq,
+    id: f.idx,
     name: f.f_name,
     type: f.f_type,
     createdAt: f.reg_date,
     url: `https://gbend.cafe24.com/uploads/notice/${f.nf_name}`,
   }));
+}
+
+//첨부파일 삭제
+export async function deleteNoticeAttachment(id: number) {
+  return await http(`/user/office/notice/attachment/remove/${id}`, {
+    method: 'DELETE',
+  });
 }

@@ -1,11 +1,10 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/board';
-import { Badge } from '@components/ui/badge';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { SearchGray } from '@/assets/images/icons';
 import { useNavigate, Outlet } from 'react-router';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useEffect, useState } from 'react';
 import { DeviceForm } from '@/components/itdevice/DeviceForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -13,67 +12,39 @@ import { getItDevice, type Device } from '@/api/office/itdevice';
 
 export default function ItDevice() {
   const navigate = useNavigate();
-  const [pageInfo, setPageInfo] = useState({
-    page: 1,
-    totalPages: 1,
-    total: 0,
-  });
-  const [posts, setPosts] = useState<Device[]>([]);
-  useEffect(() => {
-    getItDevice()
-      .then((res) => setPosts(res.items))
-      .catch((err) => {
-        console.error('❌ IT Device 불러오기 실패:', err);
-      });
-  }, []);
-  // 더미 데이터
-  /* const [posts, setPosts] = useState([
-    {
-      id: 4,
-      device: 'Monitor',
-      brand: 'SONY',
-      model: 'sony monitor model name',
-      serial: '12345687',
-      purchaseAt: '2025-09-01',
-      createdAt: '2025-09-02',
-      user: '빙홍차',
-    },
-    {
-      id: 3,
-      device: 'Laptop',
-      brand: 'SONY',
-      model: 'sony Laptop model name',
-      serial: '5445d26ds',
-      purchaseAt: '2025-08-01',
-      createdAt: '2025-08-02',
-      user: '김원필',
-    },
-    {
-      id: 2,
-      device: 'Desktop',
-      brand: 'Asus',
-      model: 'Expert Book',
-      serial: '12345687',
-      purchaseAt: '2025-07-01',
-      createdAt: '2025-07-02',
-      user: '유승호',
-    },
-    {
-      id: 1,
-      device: 'Monitor',
-      brand: 'LG',
-      model: 'LED Monitor',
-      serial: '203NTEPCT052',
-      purchaseAt: '2025-06-01',
-      createdAt: '2025-06-02',
-      user: '이영서',
-    },
-  ]); */
 
-  //등록 다이얼로그 열기/닫기
+  //   페이지네이션 상태
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const [posts, setPosts] = useState<Device[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  //   리스트 불러오기 (페이지 변경 시 실행)
+  const fetchDevices = async (pageNum: number) => {
+    setLoading(true);
+    try {
+      const res = await getItDevice(pageNum, pageSize);
+      setPosts(res.items);
+      setTotal(res.total);
+      setTotalPages(res.pages);
+    } catch (err) {
+      console.error('❌ IT Device 불러오기 실패:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDevices(page);
+  }, [page]);
+
+  // 등록 다이얼로그 열기/닫기
   const [openRegister, setOpenRegister] = useState(false);
 
-  //새로운 디바이스 등록
+  // 새 장비 등록 폼
   const [form, setForm] = useState({
     device: '',
     brand: '',
@@ -89,19 +60,19 @@ export default function ItDevice() {
   const handleChange = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
-  //등록 유효성 검사
+
+  // 등록 유효성 검사
   const handleRegisterClick = () => {
     if (!form.device || !form.brand || !form.model || !form.serial || !form.purchaseAt) {
       alert('디바이스, 브랜드, 모델, 시리얼넘버, 구매일자는 반드시 입력해야 합니다.');
       return;
     }
-    openConfirm('장비 정보를 등록하시겠습니까?', () => handleRegister());
+    openConfirm('장비 정보를 등록하시겠습니까?', handleRegister);
   };
 
   // 등록 완료
   const handleRegister = () => {
     const nextId = posts.length > 0 ? Math.max(...posts.map((p) => p.id)) + 1 : 1;
-
     const newDevice = {
       id: nextId,
       device: form.device,
@@ -113,13 +84,10 @@ export default function ItDevice() {
       gpu: form.gpu,
       ssdhdd: form.ssdhdd,
       purchaseAt: form.purchaseAt,
-      createdAt: new Date().toLocaleDateString('sv-SE'), // YYYY-MM-DD
-      user: '윤도운', // 기본값
+      createdAt: new Date().toLocaleDateString('sv-SE'),
+      user: '윤도운',
     };
-
-    setPosts((prev) => [newDevice, ...prev]); // 최신순 추가
-
-    // form 초기화
+    setPosts((prev) => [newDevice, ...prev]);
     setForm({
       device: '',
       brand: '',
@@ -131,24 +99,23 @@ export default function ItDevice() {
       ssdhdd: '',
       purchaseAt: '',
     });
-
-    setOpenRegister(false); // 다이얼로그 닫기
+    setOpenRegister(false);
   };
 
-  // 컨펌 다이얼로그 상태
+  // 컨펌 다이얼로그
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
     action?: () => void;
     title: string;
   }>({ open: false, title: '' });
-  // 열기 함수
+
   const openConfirm = (title: string, action: () => void) => {
     setConfirmState({ open: true, title, action });
   };
 
   return (
     <div>
-      {/* 검색창 */}
+      {/* 검색 + 등록 */}
       <div className="flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
           <Input className="h-[32px] px-4 [&]:bg-white" placeholder="검색어 입력" />
@@ -166,9 +133,7 @@ export default function ItDevice() {
             <DialogHeader>
               <DialogTitle className="mb-3">장비 정보 등록</DialogTitle>
             </DialogHeader>
-
-            <DeviceForm form={form} onChange={handleChange} mode="create"></DeviceForm>
-
+            <DeviceForm form={form} onChange={handleChange} mode="create" />
             <DialogFooter className="mt-5">
               <Button variant="outline" onClick={() => setOpenRegister(false)}>
                 취소
@@ -179,7 +144,7 @@ export default function ItDevice() {
         </Dialog>
       </div>
 
-      {/* 게시판 테이블 */}
+      {/* 테이블 */}
       <Table>
         <TableHeader>
           <TableRow>
@@ -193,21 +158,47 @@ export default function ItDevice() {
             <TableHead>등록일</TableHead>
           </TableRow>
         </TableHeader>
+
         <TableBody>
-          {posts.map((post) => (
-            <TableRow key={post.id} onClick={() => navigate(`${post.id}`)} className="cursor-pointer hover:bg-gray-100">
-              <TableCell>{post.id}</TableCell>
-              <TableCell>{post.device}</TableCell>
-              <TableCell>{post.purchaseAt}</TableCell>
-              <TableCell>{post.brand}</TableCell>
-              <TableCell>{post.model}</TableCell>
-              <TableCell>{post.serial}</TableCell>
-              <TableCell>{post.user}</TableCell>
-              <TableCell>{post.createdAt}</TableCell>
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={8} className="py-10 text-center text-gray-400">
+                불러오는 중...
+              </TableCell>
             </TableRow>
-          ))}
+          ) : posts.length > 0 ? (
+            posts.map((post, idx) => (
+              <TableRow key={post.id} onClick={() => navigate(`${post.id}`)} className="cursor-pointer hover:bg-gray-100">
+                <TableCell>{(page - 1) * pageSize + idx + 1}</TableCell>
+                <TableCell>{post.device}</TableCell>
+                <TableCell>{post.purchaseAt}</TableCell>
+                <TableCell>{post.brand}</TableCell>
+                <TableCell>{post.model}</TableCell>
+                <TableCell>{post.serial}</TableCell>
+                <TableCell>{post.user}</TableCell>
+                <TableCell>{post.createdAt}</TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={8} className="py-10 text-center text-gray-400">
+                등록된 장비가 없습니다.
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
+
+      {/* 페이지네이션 */}
+      <div className="mt-5">
+        <AppPagination
+          totalPages={totalPages}
+          initialPage={page}
+          visibleCount={5}
+          onPageChange={(newPage) => setPage(newPage)} //   클릭 시 page 상태 업데이트
+        />
+      </div>
+
       {/* 공통 다이얼로그 */}
       <ConfirmDialog
         open={confirmState.open}
@@ -216,9 +207,6 @@ export default function ItDevice() {
         onConfirm={() => confirmState.action?.()}
       />
 
-      <div className="mt-5">
-        <AppPagination totalPages={10} initialPage={1} visibleCount={5} />
-      </div>
       <Outlet />
     </div>
   );
