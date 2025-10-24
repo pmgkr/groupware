@@ -1,12 +1,9 @@
-import { useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useCallback, forwardRef, useImperativeHandle, useState, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { useDropzone } from 'react-dropzone';
-
 import { getDocument, type PDFDocumentProxy } from 'pdfjs-dist';
 import 'pdfjs-dist/legacy/build/pdf.worker.min.mjs';
-
 import { Button } from '@components/ui/button';
-import { Checkbox } from '@components/ui/checkbox';
 import { Upload, Delete, Zoom } from '@/assets/images/icons';
 
 export type PreviewFile = {
@@ -30,11 +27,75 @@ type UploadAreaProps = {
   setActiveFile?: (name: string | null) => void;
 };
 
+/* ✅ 개별 썸네일 카드 컴포넌트 */
+const FileCard = memo(
+  ({
+    file,
+    rowLinked,
+    isLinkedActive,
+    isSelected,
+    onToggle,
+    onRemove,
+    onDragStart,
+    onDragEnd,
+  }: {
+    file: PreviewFile;
+    rowLinked: number | null;
+    isLinkedActive: boolean;
+    isSelected: boolean;
+    onToggle: () => void;
+    onRemove: () => void;
+    onDragStart: (e: React.DragEvent<HTMLImageElement>) => void;
+    onDragEnd: () => void;
+  }) => {
+    return (
+      <div
+        key={file.name}
+        className={cn(
+          'relative aspect-[1/1.4] w-[calc(33.33%-var(--spacing)*2.667)] overflow-hidden rounded-md transition-all',
+          isLinkedActive && 'ring-primary-blue-300 ring-2',
+          isSelected && 'ring-primary-blue-500 cursor-pointer ring-2'
+        )}
+        onClick={onToggle}>
+        <div className="relative h-full w-full overflow-hidden">
+          <img
+            src={file.preview}
+            alt={file.name}
+            draggable={isSelected}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+            className="absolute top-0 left-0 w-[350%] max-w-none translate-x-[-12.5%] translate-y-[-2.5%]"
+          />
+        </div>
+
+        <div className="absolute bottom-0 flex h-6.5 w-full items-center justify-between bg-gray-700/50 px-1 text-xs text-white">
+          <div>{rowLinked ? `증빙자료 #${rowLinked}` : ''}</div>
+          <div className="flex gap-0.5">
+            <Button
+              type="button"
+              variant="svgIcon"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
+              className="size-5">
+              <Delete />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+);
+
+FileCard.displayName = 'FileCard';
+
 export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
   ({ files, setFiles, onFilesChange, linkedRows, activeFile, setActiveFile }, ref) => {
-    const selectedRef = useRef<string[]>([]);
+    const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
-    // PDF 이미지 분할 함수 (좌/우 2등분)
+    // PDF 이미지 분할
     const splitPdfToImages = async (file: File): Promise<PreviewFile[]> => {
       const arrayBuffer = await file.arrayBuffer();
       const pdf: PDFDocumentProxy = await getDocument({ data: arrayBuffer }).promise;
@@ -42,22 +103,14 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
 
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         const page = await pdf.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 2.0 }); // 해상도 조절
+        const viewport = page.getViewport({ scale: 2.0 });
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d')!;
         canvas.width = viewport.width;
         canvas.height = viewport.height;
+        await page.render({ canvasContext: ctx, viewport, canvas }).promise;
 
-        // pdf.js v5.x render
-        await page.render({
-          canvasContext: ctx,
-          viewport,
-          canvas,
-        }).promise;
-
-        // 가로 2분할
         const halfWidth = canvas.width / 2;
-
         const crop = (x: number) => {
           const temp = document.createElement('canvas');
           const tctx = temp.getContext('2d')!;
@@ -67,19 +120,8 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
           return temp.toDataURL('image/png');
         };
 
-        const left = crop(0);
-        const right = crop(halfWidth);
-
-        allImages.push({
-          name: `${file.name}_${pageNum}_l.png`,
-          type: 'image/png',
-          preview: left,
-        });
-        allImages.push({
-          name: `${file.name}_${pageNum}_r.png`,
-          type: 'image/png',
-          preview: right,
-        });
+        allImages.push({ name: `${file.name}_${pageNum}_l.png`, type: 'image/png', preview: crop(0) });
+        allImages.push({ name: `${file.name}_${pageNum}_r.png`, type: 'image/png', preview: crop(halfWidth) });
       }
 
       return allImages;
@@ -88,12 +130,10 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
     const onDrop = useCallback(
       async (acceptedFiles: File[]) => {
         const newFiles: PreviewFile[] = [];
-
         for (const file of acceptedFiles) {
           if (file.type === 'application/pdf') {
             try {
-              const pages = await splitPdfToImages(file);
-              newFiles.push(...pages);
+              newFiles.push(...(await splitPdfToImages(file)));
             } catch (err) {
               console.error('PDF 렌더링 실패:', err);
             }
@@ -109,15 +149,6 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
         const updated = [...files, ...newFiles];
         setFiles(updated);
         onFilesChange?.(updated);
-
-        // const mapped = acceptedFiles.map((file) => ({
-        //   name: file.name,
-        //   type: file.type,
-        //   preview: URL.createObjectURL(file),
-        // }));
-        // const updated = [...files, ...mapped];
-        // setFiles(updated);
-        // onFilesChange?.(updated);
       },
       [files, setFiles, onFilesChange]
     );
@@ -132,32 +163,36 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
     useImperativeHandle(ref, () => ({
       openFileDialog: open,
       deleteSelectedFiles: () => {
-        const updated = files.filter((f) => !selectedRef.current.includes(f.name));
+        const updated = files.filter((f) => !selectedFiles.includes(f.name));
         setFiles(updated);
         onFilesChange?.(updated);
-        selectedRef.current = [];
+        setSelectedFiles([]);
       },
       deleteAllFiles: () => {
         setFiles([]);
         onFilesChange?.([]);
-        selectedRef.current = [];
+        setSelectedFiles([]);
       },
     }));
 
     const toggleSelect = (name: string) => {
-      const sel = selectedRef.current;
-      selectedRef.current = sel.includes(name) ? sel.filter((n) => n !== name) : [...sel, name];
+      setSelectedFiles((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
+      setActiveFile?.(name);
     };
 
     const removeFile = (name: string) => {
       const updated = files.filter((f) => f.name !== name);
       setFiles(updated);
       onFilesChange?.(updated);
-      selectedRef.current = selectedRef.current.filter((n) => n !== name);
+      setSelectedFiles((prev) => prev.filter((n) => n !== name));
     };
 
     return (
-      <div className={`h-full w-full flex-1 overflow-y-auto rounded-md ${isDragActive ? 'bg-primary-blue-500/10' : 'bg-gray-400/30'}`}>
+      <div
+        className={cn(
+          'h-full w-full flex-1 overflow-y-auto rounded-md transition-colors',
+          isDragActive ? 'bg-primary-blue-500/10' : 'bg-gray-400/30'
+        )}>
         <input {...getInputProps()} />
         {files.length === 0 ? (
           <div {...getRootProps()} className="flex h-full w-full cursor-pointer flex-col items-center justify-center gap-4">
@@ -169,55 +204,28 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
             {files.map((file) => {
               const rowLinked = linkedRows?.[file.name] ?? null;
               const isLinkedActive = activeFile === file.name;
-              const isSelected = selectedRef.current.includes(file.name);
+              const isSelected = selectedFiles.includes(file.name);
 
               return (
-                <div
+                <FileCard
                   key={file.name}
-                  className={cn(
-                    'relative aspect-[1/1.4] w-[calc(33.33%-var(--spacing)*2.667)] overflow-hidden rounded-md transition-all',
-                    isLinkedActive && 'ring-primary-blue-300 ring-2',
-                    isSelected && 'ring-primary-blue-500 cursor-pointer ring-2'
-                  )}
-                  onClick={() => {
-                    toggleSelect(file.name);
-                    setActiveFile?.(file.name);
-                  }}>
-                  <Checkbox className="absolute top-0 left-0 h-0 w-0" />
-                  <div className="relative h-full w-full overflow-hidden">
-                    <img
-                      src={file.preview}
-                      alt={file.name}
-                      draggable
-                      onDragStart={(e) => {
-                        const draggedFiles = files.filter((f) => selectedRef.current.includes(f.name));
-                        e.dataTransfer.setData('application/json', JSON.stringify(draggedFiles));
-                        e.dataTransfer.effectAllowed = 'copy';
-                      }}
-                      onDragEnd={() => (selectedRef.current = [])}
-                      className="absolute top-0 left-0 w-[350%] max-w-none translate-x-[-12.5%] translate-y-[-2.5%]"
-                    />
-                  </div>
-
-                  <div className="absolute bottom-0 flex h-6.5 w-full items-center justify-between bg-gray-700/50 px-1 text-xs text-white">
-                    <div>{rowLinked ? `증빙자료 #${rowLinked}` : ''}</div>
-                    <div className="flex gap-0.5">
-                      <Button variant="svgIcon" size="icon" className="size-5">
-                        <Zoom />
-                      </Button>
-                      <Button
-                        variant="svgIcon"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeFile(file.name);
-                        }}
-                        className="size-5">
-                        <Delete />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                  file={file}
+                  rowLinked={rowLinked}
+                  isLinkedActive={isLinkedActive}
+                  isSelected={isSelected}
+                  onToggle={() => toggleSelect(file.name)}
+                  onRemove={() => removeFile(file.name)}
+                  onDragStart={(e) => {
+                    if (!isSelected) {
+                      e.preventDefault();
+                      return;
+                    }
+                    const draggedFiles = files.filter((f) => selectedFiles.includes(f.name));
+                    e.dataTransfer.setData('application/json', JSON.stringify(draggedFiles));
+                    e.dataTransfer.effectAllowed = 'copy';
+                  }}
+                  onDragEnd={() => setSelectedFiles([])}
+                />
               );
             })}
           </div>
