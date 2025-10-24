@@ -315,12 +315,21 @@ export default function CustomCalendar({
         return;
       }
 
-      // 새로운 status 변경 전용 API 호출 (sch_status를 'H'로 변경)
       const { scheduleApi } = await import('@/api/calendar');
-      console.log('API 호출 - eventId:', eventId);
-      await scheduleApi.updateScheduleStatus(eventId, 'H');
-
-      alert('취소 신청이 완료되었습니다.');
+      const currentStatus = selectedEvent.resource.schStatus;
+      
+      // 현재 상태에 따라 다른 처리
+      if (currentStatus === 'Y') {
+        // 등록 완료 상태 → 취소 신청 (H로 변경)
+        console.log('API 호출 - 취소 신청 (Y → H)');
+        await scheduleApi.updateScheduleStatus(eventId, 'H');
+        alert('취소 신청이 완료되었습니다.');
+      } else if (currentStatus === 'H') {
+        // 취소 요청됨 상태 → 취소 완료 (N으로 변경)
+        console.log('API 호출 - 취소 완료 (H → N)');
+        await scheduleApi.updateScheduleStatus(eventId, 'N');
+        alert('일정 취소가 완료되었습니다.');
+      }
       
       // 다이얼로그 닫기
       handleCloseEventViewDialog();
@@ -330,8 +339,8 @@ export default function CustomCalendar({
         onDateChange(currentDate);
       }
     } catch (error) {
-      console.error('취소 신청 실패:', error);
-      alert('취소 신청에 실패했습니다. 다시 시도해주세요.');
+      console.error('취소 처리 실패:', error);
+      alert('취소 처리에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -475,6 +484,7 @@ export default function CustomCalendar({
             : 'event',
           author: selectedEvent.author,
           userId: selectedEvent.resource.userId,
+          teamId: selectedEvent.resource.teamId,
           status: selectedEvent.resource.schStatus === 'Y' 
             ? "등록 완료" 
             : selectedEvent.resource.schStatus === 'H' 

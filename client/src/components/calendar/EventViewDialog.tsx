@@ -22,7 +22,7 @@ interface EventData {
   author: string;
   userId: string; // 작성자 ID
   teamId?: number; // 작성자 팀 ID
-  status?: "등록 완료" | "취소 요청됨" | "취소 완료" | "취소 승인하기";
+  status?: "등록 완료" | "취소 요청됨" | "취소 완료";
   cancelRequestDate?: string;
   createdAt?: string; // sch_created_at
 }
@@ -41,16 +41,30 @@ export default function EventViewDialog({
   selectedEvent 
 }: EventViewDialogProps) {
   const { user_id, user_level, team_id } = useUser();
-  const status = selectedEvent?.status || "등록 완료";
   
   // 본인의 일정인지 확인 (user_id로 비교)
   const isMyEvent = user_id && selectedEvent?.userId === user_id;
   
-  // staff 권한 확인
-  const isStaff = user_level === 'staff';
+  // manager 권한 확인 (같은 팀 직원의 연차 승인 가능)
+  const isManager = user_level === 'manager';
   
   // 같은 팀인지 확인
   const isSameTeam = team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId;
+  
+  // 상태 표시: 본인이 보면 "취소 요청됨", 매니저가 보면 "취소 요청됨"
+  const status = (() => {
+    const baseStatus = selectedEvent?.status || "등록 완료";
+    
+    // "취소 요청됨" 상태인 경우
+    if (baseStatus === "취소 요청됨") {
+      // 매니저이면서 같은 팀인 경우 "취소 요청됨"로 표시
+      if (isManager && isSameTeam && !isMyEvent) {
+        return "취소 요청됨";
+      }
+    }
+    
+    return baseStatus;
+  })();
 
   // 날짜 범위 포맷팅
   const getDateRangeText = () => {
@@ -133,8 +147,8 @@ export default function EventViewDialog({
             </div>
           )}
 
-          {/* 일정 상태 - 본인의 일정일 때만 표시 */}
-          {isMyEvent && status && (
+          {/* 일정 상태 - 본인의 일정이거나 매니저가 같은 팀 직원의 일정을 볼 때 표시 */}
+          {(isMyEvent || (isManager && isSameTeam)) && status && (
             <div className="space-y-2">
               <Label>진행 상태</Label>
               <div className="px-4 py-2 rounded-lg border border-gray-300 bg-gray-100">
@@ -158,8 +172,8 @@ export default function EventViewDialog({
           )}
         </div>
         <DialogFooter>
-          {isMyEvent && isStaff && isSameTeam && status === "취소 승인하기" && onRequestCancel && (
-            <Button variant="destructive" onClick={onRequestCancel}>취소 완료하기</Button>
+          {isManager && isSameTeam && status === "취소 요청됨" && onRequestCancel && (
+            <Button variant="destructive" onClick={onRequestCancel}>취소 요청 승인</Button>
           )}
           {/* 액션 버튼들 - 본인의 일정일 때만 표시 */}
           {isMyEvent && status === "등록 완료" && onRequestCancel && (

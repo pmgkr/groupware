@@ -14,6 +14,7 @@ interface CalendarEvent {
   author: string;
   description: string;
   resource: {
+    id?: number;
     seq: number;
     userId: string;
     teamId: number;
@@ -283,9 +284,9 @@ export default function Calendar() {
         console.log('sch_vacation_used:', schedules[0].sch_vacation_used);
       }
       
-      // null이 아닌 항목만 필터링하고 변환 (현재 사용자 정보 전달)
+      // null이 아닌 항목, sch_status가 'N'이 아닌 항목만 필터링하고 변환 (현재 사용자 정보 전달)
       const calendarEvents = schedules
-        .filter((schedule: any) => schedule !== null && schedule.sch_sdate)
+        .filter((schedule: any) => schedule !== null && schedule.sch_sdate && schedule.sch_status !== 'N')
         .map((schedule: any) => convertScheduleToEvent(schedule, user));
       
       setEvents(calendarEvents);
