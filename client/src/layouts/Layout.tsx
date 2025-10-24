@@ -15,6 +15,8 @@ export default function Layout() {
   const title: string | undefined = (active?.handle as any)?.title ?? (sectionWithNav?.handle as any)?.title;
   const childNav: { to: string; label: string; end?: boolean }[] | undefined = (sectionWithNav?.handle as any)?.nav;
 
+  const hideChildNav = (active?.handle as any)?.hideNav === true;
+
   return (
     <>
       <Header />
@@ -24,7 +26,7 @@ export default function Layout() {
           <div className="mb-5 flex items-center">
             <h1 className="text-3xl font-bold">{title}</h1>
             {/* 2차 메뉴 노출 */}
-            {childNav && childNav.length > 0 && (
+            {!hideChildNav && childNav && childNav.length > 0 && (
               <nav className="before:mx-5 before:inline-flex before:h-8 before:w-[1px] before:bg-gray-300 before:align-middle">
                 <ul className="inline-flex items-center gap-x-1">
                   {childNav.map((item) => (

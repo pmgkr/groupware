@@ -6,95 +6,81 @@ import { Button } from '@/components/ui/button';
 import { SearchGray } from '@/assets/images/icons';
 import { useNavigate } from 'react-router';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Edit, Delete, Download } from '@/assets/images/icons';
 import { BookForm, type BookFormData } from './BookForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
+import { completeBook, getBookWishList, type Book } from '@/api';
+import { registerBook, type BookRegisterPayload } from '@/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatKST } from '@/utils';
+
 export default function BookWish() {
-  //더미 데이터
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      category: 'IT',
-      title: '클린 코드',
-      author: '로버트 마틴',
-      publish: '인사이트',
-      team: 'CCP',
-      user: '홍길동',
-      createdAt: '2025-07-01',
-      state: '신청',
-      link: 'https://www.yes24.com/Product/Goods/154075122?WCode=033',
-    },
-    {
-      id: 2,
-      category: '경영',
-      title: '하드씽',
-      author: '벤 호로위츠',
-      publish: '한경',
-      team: 'CCP',
-      user: '김철수',
-      createdAt: '2025-07-02',
-      state: '완료',
-    },
-    {
-      id: 3,
-      category: '디자인',
-      title: '도넛 경제학',
-      author: '케이트',
-      publish: '어크로스',
-      team: 'CCD',
-      user: '이영희',
-      createdAt: '2025-07-03',
-      state: '신청',
-    },
-    {
-      id: 4,
-      category: '디자인',
-      title: '디자인 잘하는 법',
-      author: '김디자인',
-      publish: 'PMG',
-      team: 'CCD',
-      user: '김원필',
-      createdAt: '2025-07-08',
-      state: '신청',
-    },
-  ]);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [pageInfo, setPageInfo] = useState({
+    page: 1,
+    totalPages: 1,
+    total: 0,
+  });
+  const [posts, setPosts] = useState<Book[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState(''); // 검색어 상태 추가
 
-  // 완료 처리
+  const pageSize = 10;
+  const fetchBookWishList = async (pageNum = 1, query = '') => {
+    try {
+      const data = await getBookWishList(pageNum, pageSize, query);
+      setPosts(data.items);
+      setTotal(data.total);
+    } catch (err) {
+      setPosts([]);
+    }
+  };
+  useEffect(() => {
+    fetchBookWishList(page, searchQuery);
+  }, [page]);
+
+  const handleSearch = () => {
+    setPage(1);
+    fetchBookWishList(1, searchQuery);
+  };
+
+  // 페이지 변경
+  const handlePageChange = (nextPage: number) => {
+    setPageInfo((prev) => ({ ...prev, page: nextPage }));
+  };
+
+  //  완료 체크 관련
   const [selected, setSelected] = useState<number[]>([]);
+  const allRequestIds = posts.filter((p) => p.status === '신청').map((p) => p.id);
+  const allChecked = selected.length === allRequestIds.length && allRequestIds.length > 0;
 
-  // 신청 상태인 행만 체크 가능
-  const toggleOne = (id: number, state: string) => {
-    if (state !== '신청') return; // 완료된 건 체크 불가
+  const toggleAll = () => setSelected(allChecked ? [] : allRequestIds);
+  const toggleOne = (id: number, status: string) => {
+    if (status !== '신청') return;
     setSelected((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
   };
 
-  // 전체선택 (신청 상태만)
-  const allRequestIds = posts.filter((p) => p.state === '신청').map((p) => p.id);
-  const allChecked = selected.length === allRequestIds.length && allRequestIds.length > 0;
-  const someChecked = selected.length > 0 && !allChecked;
-
-  const toggleAll = () => {
-    setSelected(allChecked ? [] : allRequestIds);
-  };
-
-  // 완료 처리 함수
-  const handleComplete = () => {
-    if (selected.length === 0) return;
-    setPosts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, state: '완료' } : p)));
-    setSelected([]); // 선택 초기화
-  };
-  const handleCompleteClick = () => {
+  //  완료 처리
+  const Administrator = 'test@test.com';
+  const handleCompleteClick = async () => {
     if (selected.length === 0) {
-      openConfirm('완료처리할 도서를 선택해주세요', () => handleComplete()); //
+      openConfirm('완료처리할 도서를 선택해주세요', () => {});
       return;
     }
-
-    openConfirm(`${selected.length}개 완료처리 하시겠습니까?`, () => {
-      setPosts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, state: '완료' } : p)));
-      setSelected([]); // 선택 초기화
+    openConfirm(`${selected.length}개 완료처리 하시겠습니까?`, async () => {
+      try {
+        await Promise.all(selected.map((id) => completeBook(id)));
+        setPosts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, status: '완료', purchaseAt: formatKST(new Date()) } : p)));
+        setSelected([]);
+      } catch (err) {
+        console.error('❌ 완료처리 오류:', err);
+        alert('서버 오류로 인해 완료처리에 실패했습니다.');
+      }
     });
   };
 
@@ -105,7 +91,8 @@ export default function BookWish() {
     title: '',
     author: '',
     publish: '',
-    link: '',
+    buylink: '',
+    createdAt: '',
   });
   const handleChange = (key: keyof BookFormData, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -113,33 +100,71 @@ export default function BookWish() {
 
   //도서 신청 등록 유효성 검증
   const handleRegisterClick = () => {
-    if (!form.category || !form.title || !form.author || !form.publish || !form.link) {
+    if (!form.category || !form.title || !form.author || !form.publish || !form.buylink) {
       alert('카테고리, 도서명, 저자, 출판사, 링크는 반드시 입력해야 합니다.');
       return;
     }
     openConfirm('도서를 신청하시겠습니까?', () => handleRegister());
   };
-  //도서 신청 등록
-  const handleRegister = () => {
-    const nextId = posts.length > 0 ? Math.max(...posts.map((p) => p.id)) + 1 : 1;
-    const newBook = {
-      id: nextId,
-      ...form,
-      team: 'CCP', //임시
-      user: '강영현', //임시
-      createdAt: new Date().toLocaleDateString('sv-SE'),
-      state: '신청',
-    };
 
-    setPosts((prev) => [newBook, ...prev]);
-    setForm({
-      category: '',
-      title: '',
-      author: '',
-      publish: '',
-      link: '',
-    });
-    setOpen(false);
+  // 도서 신청 등록
+  const handleRegister = async (mode: 'apply' | 'register' = 'apply') => {
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    try {
+      const today = formatKST(new Date());
+      const payload = {
+        b_user_id: user.user_id,
+        b_user_name: user.user_name,
+        b_team_id: Number(user.team_id),
+        b_title: form.title,
+        b_category: form.category,
+        b_author: form.author,
+        b_publish: form.publish,
+        b_buylink: form.buylink,
+        b_date: formatKST(new Date()),
+
+        // 상태별 분기
+
+        ...(mode === 'apply'
+          ? {
+              b_status: '신청',
+              b_buy_date: null, // ✅ 신청일 경우 구매일자 강제 비움
+            }
+          : {
+              b_status: '완료',
+              b_buy_date: formatKST(new Date()), // ✅ 오프라인 등록일 경우 구매일자 함께
+            }),
+      };
+
+      const res = await registerBook(payload as BookRegisterPayload);
+      if (res.success) {
+        // 목록 새로고침
+        getBookWishList(pageInfo.page).then((res) => {
+          setPosts(res.items);
+          setPageInfo({ page: res.page, totalPages: res.pages, total: res.total });
+        });
+
+        // 입력폼 리셋 및 닫기
+        setForm({
+          category: '',
+          title: '',
+          author: '',
+          publish: '',
+          buylink: '',
+          createdAt: '',
+        });
+        setOpen(false);
+      } else {
+        alert('도서 신청에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error('❌ 도서 신청 오류:', err);
+      alert('서버 오류로 인해 도서 신청에 실패했습니다.');
+    }
   };
 
   //신청도서 상세보기
@@ -190,19 +215,30 @@ export default function BookWish() {
   };
 
   return (
-    <div>
+    <div className="relative">
       {/* 검색창 */}
-      <div className="flex justify-end gap-3">
+      <div className="absolute -top-11 right-0 flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
-          <Input className="h-[40px] px-4 [&]:bg-white" placeholder="검색어 입력" />
-          <Button variant="svgIcon" size="icon" className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2" aria-label="검색">
+          <Input
+            className="h-[32px] px-4 [&]:bg-white"
+            placeholder="검색어 입력"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <Button
+            variant="svgIcon"
+            size="icon"
+            className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2"
+            aria-label="검색"
+            onClick={handleSearch}>
             <SearchGray className="text-gray-400" />
           </Button>
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button>도서 신청</Button>
+            <Button size="sm">도서 신청</Button>
           </DialogTrigger>
           <DialogContent aria-describedby={undefined}>
             <DialogHeader>
@@ -219,39 +255,44 @@ export default function BookWish() {
         </Dialog>
       </div>
 
-      {/* 게시판 테이블 */}
-      <Table>
+      {/* 도서 테이블 */}
+      <Table className="table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead className="[&>[role=checkbox]]:translate-x-[2px]">
-              <Checkbox checked={allChecked} onCheckedChange={toggleAll} />
-            </TableHead>
-            <TableHead>상태</TableHead>
-            <TableHead>날짜</TableHead>
+            {user?.user_id === Administrator && (
+              <TableHead className="w-[40px] [&>[role=checkbox]]:translate-x-[2px]">
+                <Checkbox checked={allChecked} onCheckedChange={toggleAll} />
+              </TableHead>
+            )}
+            <TableHead className="w-[100px]">상태</TableHead>
+            <TableHead className="w-[130px]">날짜</TableHead>
             <TableHead className="w-[130px]">카테고리</TableHead>
             <TableHead className="w-[400px]">도서명</TableHead>
-            <TableHead>저자</TableHead>
-            <TableHead>출판사</TableHead>
-            <TableHead>팀</TableHead>
-            <TableHead>신청자</TableHead>
-            <TableHead></TableHead>
+            <TableHead className="w-[200px]">저자</TableHead>
+            <TableHead className="w-[150px]">출판사</TableHead>
+            <TableHead className="w-[120px]">팀</TableHead>
+            <TableHead className="w-[120px]">신청자</TableHead>
+            <TableHead className="w-[88px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {posts.map((post) => (
             <TableRow key={post.id} onClick={() => handleRowClick(post)} className="cursor-pointer">
-              <TableCell className="[&:has([role=checkbox])]:pr-auto">
-                <Checkbox
-                  checked={selected.includes(post.id)}
-                  onCheckedChange={() => {
-                    toggleOne(post.id, post.state);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  disabled={post.state !== '신청'}
-                />{' '}
-              </TableCell>
+              {user?.user_id === Administrator && (
+                <TableCell className="[&:has([role=checkbox])]:pr-auto">
+                  <Checkbox
+                    checked={selected.includes(post.id)}
+                    onCheckedChange={() => {
+                      toggleOne(post.id, post.status);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    disabled={post.status !== '신청'}
+                  />{' '}
+                </TableCell>
+              )}
+
               <TableCell>
-                {post.state === '신청' ? (
+                {post.status === '신청' ? (
                   <Badge variant="lightpink" className="px-3">
                     신청
                   </Badge>
@@ -261,15 +302,15 @@ export default function BookWish() {
                   </Badge>
                 )}
               </TableCell>
-              <TableCell>{post.createdAt}</TableCell>
-              <TableCell>{post.category}</TableCell>
-              <TableCell>{post.title}</TableCell>
-              <TableCell>{post.author}</TableCell>
-              <TableCell>{post.publish}</TableCell>
-              <TableCell>{post.team}</TableCell>
-              <TableCell>{post.user}</TableCell>
+              <TableCell>{formatKST(post.purchaseAt, true)}</TableCell>
+              <TableCell className="max-w-[130px] truncate">{post.category}</TableCell>
+              <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
+              <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
+              <TableCell className="max-w-[130px] truncate">{post.publish}</TableCell>
+              <TableCell>{post.team_id}</TableCell>
+              <TableCell>{post.user_name}</TableCell>
               <TableCell>
-                {post.state !== '완료' && (
+                {post.status !== '완료' && post.user === user?.user_id && (
                   <div className="text-gray-700">
                     <Button
                       variant="svgIcon"
@@ -336,11 +377,13 @@ export default function BookWish() {
         </DialogContent>
       </Dialog>
 
-      <div className="mt-5 flex justify-end">
-        <Button onClick={handleCompleteClick} variant="outline">
-          완료 처리
-        </Button>
-      </div>
+      {user?.user_id === Administrator && (
+        <div className="mt-5 flex justify-end">
+          <Button onClick={handleCompleteClick} variant="outline">
+            완료 처리
+          </Button>
+        </div>
+      )}
 
       {/* 공통 다이얼로그 */}
       <ConfirmDialog
@@ -350,9 +393,16 @@ export default function BookWish() {
         onConfirm={() => confirmState.action?.()}
       />
 
-      <div>
-        <AppPagination totalPages={10} initialPage={1} visibleCount={5} />
-      </div>
+      {posts.length > 0 && total > 1 && (
+        <div className="mt-5">
+          <AppPagination
+            totalPages={Math.ceil(total / pageSize)}
+            initialPage={page}
+            visibleCount={5}
+            onPageChange={(p) => setPage(p)} //부모 state 업데이트
+          />
+        </div>
+      )}
     </div>
   );
 }

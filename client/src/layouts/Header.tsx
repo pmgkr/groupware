@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { getImageUrl } from '@/utils';
 
 import Logo from '@/assets/images/common/logo.svg?react';
-import { Dashboard, Project, Calendar, Profile, Logout, Pto, Office, Manager, Admin } from '@/assets/images/icons';
+import { Dashboard, Project, Expense, Calendar, Profile, Logout, Pto, Office, Manager, Admin } from '@/assets/images/icons';
 
 import { Button } from '@components/ui/button';
 import { Notification } from '@components/features/Dashboard/notifications';
@@ -28,7 +28,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 z-49 flex h-18 w-full items-center justify-between border-b-1 border-b-gray-300 bg-white px-7">
+      <header className="fixed top-0 left-0 z-9 flex h-18 w-full items-center justify-between border-b-1 border-b-gray-300 bg-white px-7">
         <h1 className="w-42">
           <Link to="/">
             <Logo className="w-full" />
@@ -102,7 +102,7 @@ export default function Header() {
                   isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
                 )
               }>
-              <Project />
+              <Expense />
               <span>비용관리</span>
             </NavLink>
           </li>
