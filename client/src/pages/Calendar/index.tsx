@@ -249,7 +249,11 @@ const customEventFilter = (events: CalendarEvent[], selectConfigs: SelectConfig[
   return filteredEvents;
 };
 
-export default function Calendar() {
+interface CalendarProps {
+  filterMyEvents?: boolean;
+}
+
+export default function Calendar({ filterMyEvents = false }: CalendarProps) {
   const { user } = useAuth(); // 로그인한 사용자 정보
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -264,30 +268,24 @@ export default function Calendar() {
       const month = date.getMonth() + 1;
       
       // 실제 API 호출
-      console.log('=== API 호출 시작 ===');
       const apiResponse = await scheduleApi.getSchedules({ year, month }) as any;
-      console.log('API Response:', apiResponse);
-      console.log('apiResponse.items 타입:', typeof apiResponse.items);
-      console.log('apiResponse.items는 배열인가?:', Array.isArray(apiResponse.items));
-      console.log('apiResponse.items.items:', apiResponse.items?.items);
-      console.log('apiResponse.items.items는 배열인가?:', Array.isArray(apiResponse.items?.items));
 
       // API 응답에서 실제 스케줄 배열 추출
       const schedules = Array.isArray(apiResponse.items) ? apiResponse.items : (apiResponse.items?.items || []);
-      console.log('Schedules 배열:', schedules);
-      console.log('Schedules 개수:', schedules.length);
 
       if (Array.isArray(schedules) && schedules.length > 0) {
-        console.log('첫 번째 일정:', schedules[0]);
-        console.log('모든 필드:', Object.keys(schedules[0]));
-        console.log('sch_vacation_time:', schedules[0].sch_vacation_time);
-        console.log('sch_vacation_used:', schedules[0].sch_vacation_used);
+        console.log('schedules:', schedules);
       }
       
       // null이 아닌 항목, sch_status가 'N'이 아닌 항목만 필터링하고 변환 (현재 사용자 정보 전달)
-      const calendarEvents = schedules
+      let calendarEvents = schedules
         .filter((schedule: any) => schedule !== null && schedule.sch_sdate && schedule.sch_status !== 'N')
         .map((schedule: any) => convertScheduleToEvent(schedule, user));
+      
+      // "내 일정" 필터링
+      if (filterMyEvents && user?.user_id) {
+        calendarEvents = calendarEvents.filter((event: CalendarEvent) => event.resource.userId === user.user_id);
+      }
       
       setEvents(calendarEvents);
     } catch (err) {
@@ -528,10 +526,10 @@ export default function Calendar() {
     }
   };
 
-  // 컴포넌트 마운트 시 데이터 로드
+  // 컴포넌트 마운트 시 및 filterMyEvents 변경 시 데이터 로드
   useEffect(() => {
     loadEvents();
-  }, []);
+  }, [filterMyEvents]);
 
   // 에러 발생 시
   if (error) {
