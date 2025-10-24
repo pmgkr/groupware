@@ -58,7 +58,7 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
             searchable={config.searchable}
             hideSelectAll={config.hideSelectAll}
             autoSize={config.autoSize}
-            className="min-w-[120px] max-w-[150px] multi-select"
+            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
           />
         ))}
 

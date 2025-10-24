@@ -120,7 +120,7 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
   };
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto mt-15">
       <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow">
         <thead className="bg-gray-50">
           <tr>
@@ -135,10 +135,10 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
               };
               
               return (
-                <th key={index} className={`px-6 py-3 text-center text-base font-medium text-gray-500 uppercase tracking-wider ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                <th key={index} className={`w-[185px] px-6 py-3 text-center text-base font-medium text-gray-500 uppercase tracking-wider ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                   <div className="flex flex-col">
+                    <span className="text-base text-gray-800">{dayjs(row.date).format("MM/DD")}</span>
                     <span className={`text-base font-semibold ${getDayColor(row.dayOfWeek)}`}>{row.dayOfWeek}요일</span>
-                    <span className="text-base text-gray-800">{dayjs(row.date).format("MM-DD")}</span>
                   </div>
                 </th>
               );
@@ -151,7 +151,7 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
               구분
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+              <td key={index} className={`h-[65px] px-6 py-4 whitespace-nowrap text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                 <span className={`inline-flex px-3 py-1 text-base font-semibold rounded-full ${getWorkTypeColor(row.workType)}`}>
                   {row.workType}
                 </span>
@@ -242,8 +242,8 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
                   onClick={() => handleOvertimeClick(index)}
                   disabled={false}
                   variant={getOvertimeButtonVariant(row.overtimeStatus)}
-                  size="default"
-                  className="text-base">
+                  size="sm"
+                  className="text-base w-[80px]">
                   {row.overtimeStatus}
                 </Button>
               </td>
