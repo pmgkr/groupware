@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import dayjs from "dayjs";
 import { Button } from "@components/ui/button";
 import Toolbar from "@components/working/toolbar";
@@ -6,6 +6,8 @@ import Table from "@components/working/table";
 import WorkHoursBar from "@components/ui/WorkHoursBar";
 import { Badge } from "@components/ui/badge";
 import Overview from "@components/working/Overview";
+import { workingApi } from "@/api/working";
+import { useAuth } from "@/contexts/AuthContext";
 
 // 근무 데이터 타입 정의
 interface WorkData {
@@ -183,8 +185,10 @@ const generateWeekData = (startDate: Date): WorkData[] => {
 };
 
 export default function WorkHoursTable() {
+  const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState('table');
+  const [isLoading, setIsLoading] = useState(false);
   
   // 현재 주의 시작일 계산 (월요일부터 시작)
   const getWeekStartDate = (date: Date) => {
@@ -291,21 +295,163 @@ export default function WorkHoursTable() {
     return `${formatDate(monday)} - ${formatDate(sunday)}`;
   };
 
-  // currentDate가 변경될 때 data 업데이트
-  React.useEffect(() => {
-    setData(weekData);
-  }, [currentDate]);
+  // API에서 근태 로그 데이터 가져오기
+  const loadWorkLogs = async () => {
+    if (!user?.user_id) return;
+    
+    setIsLoading(true);
+    try {
+      // 주의 시작일과 종료일 계산
+      const startDate = weekStartDate;
+      const endDate = new Date(weekStartDate);
+      endDate.setDate(endDate.getDate() + 6);
+      
+      const sdate = dayjs(startDate).format('YYYY-MM-DD');
+      const edate = dayjs(endDate).format('YYYY-MM-DD');
+      
+      const response = await workingApi.getWorkLogs({
+        search_id: user.user_id,
+        sdate,
+        edate,
+      });
+      
+      console.log('근태 로그 응답:', response);
+      console.log('wlog 데이터:', response.wlog);
+      console.log('vacation 데이터:', response.vacation);
+      
+      // API 데이터를 WorkData 형식으로 변환 (wlog와 vacation 모두 전달)
+      const apiData = convertApiDataToWorkData(response.wlog, response.vacation, weekStartDate);
+      setData(apiData);
+    } catch (error) {
+      console.error('근태 로그 로드 실패:', error);
+      // 실패 시 샘플 데이터 사용
+      setData(weekData);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // API 데이터를 WorkData 형식으로 변환하는 함수
+  const convertApiDataToWorkData = (wlogs: any[], vacations: any[], startDate: Date): WorkData[] => {
+    const daysOfWeek = ['월', '화', '수', '목', '금', '토', '일'];
+    const weekData: WorkData[] = [];
+    
+    // vacation 타입을 workType으로 변환하는 헬퍼 함수
+    const getWorkTypeFromVacation = (vacation: any): WorkData['workType'] => {
+      const schType = vacation.sch_type;
+      const schVacationType = vacation.sch_vacation_type;
+      const schVacationTime = vacation.sch_vacation_time;
+      const schEventType = vacation.sch_event_type;
+      
+      // 휴가 타입인 경우
+      if (schType === 'vacation') {
+        if (schVacationType === 'half') {
+          return schVacationTime === 'morning' ? '오전반차' : '오후반차';
+        } else if (schVacationType === 'quarter') {
+          return schVacationTime === 'morning' ? '오전반반차' : '오후반반차';
+        }
+      }
+      
+      // 이벤트 타입인 경우
+      if (schType === 'event' && schEventType === 'field') {
+        return '외부근무';
+      }
+      
+      return '일반근무';
+    };
+    
+    for (let i = 0; i < 7; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+      const dateString = dayjs(currentDate).format('YYYY-MM-DD');
+      const dayOfWeek = daysOfWeek[i];
+      
+      // 해당 날짜의 wlog와 vacation 찾기
+      const wlog = wlogs.find((log: any) => log.wlog_date === dateString);
+      const vacation = vacations.find((vac: any) => {
+        const vacStartDate = vac.sch_sdate;
+        const vacEndDate = vac.sch_edate;
+        return dateString >= vacStartDate && dateString <= vacEndDate;
+      });
+      
+      // 근무 구분 결정
+      const workType = vacation ? getWorkTypeFromVacation(vacation) : '일반근무';
+      
+      // 출근/퇴근 시간 (HH:mm:ss -> HH:mm 형식으로 변환)
+      const formatTime = (time: string) => {
+        if (!time || time === '-') return '-';
+        // HH:mm:ss 형식에서 HH:mm만 추출
+        return time.substring(0, 5);
+      };
+      
+      const startTime = formatTime(wlog?.wlog_checkin || "-");
+      const endTime = formatTime(wlog?.wlog_checkout || "-");
+      
+      if (wlog && wlog.wlog_checkin && wlog.wlog_checkout) {
+        // 실제 wlog 데이터가 있는 경우
+        const workHours = wlog.wlog_workhours || 0;
+        const hours = Math.floor(workHours);
+        const minutes = Math.round((workHours % 1) * 60);
+        
+        // 기본 근무시간: 8시간 기준
+        const basicHours = Math.min(hours, 8);
+        const basicMinutes = hours < 8 ? minutes : 0;
+        
+        // 초과 근무시간
+        const overtimeHours = Math.max(0, hours - 8);
+        const overtimeMinutes = hours >= 8 ? minutes : 0;
+        
+        weekData.push({
+          date: dateString,
+          dayOfWeek,
+          workType,
+          startTime,
+          endTime,
+          basicHours,
+          basicMinutes,
+          overtimeHours,
+          overtimeMinutes,
+          totalHours: hours,
+          totalMinutes: minutes,
+          overtimeStatus: "신청하기",
+        });
+      } else {
+        // wlog 데이터가 없는 경우
+        weekData.push({
+          date: dateString,
+          dayOfWeek,
+          workType,
+          startTime,
+          endTime,
+          basicHours: 0,
+          basicMinutes: 0,
+          overtimeHours: 0,
+          overtimeMinutes: 0,
+          totalHours: 0,
+          totalMinutes: 0,
+          overtimeStatus: "신청하기",
+        });
+      }
+    }
+    
+    return weekData;
+  };
+  
+  // currentDate가 변경될 때 데이터 로드
+  useEffect(() => {
+    loadWorkLogs();
+  }, [currentDate, weekStartDate, user?.user_id]);
 
-  // 주간 근무시간 통계 계산
+  // 주간 근무시간 통계 계산 (실제 데이터 기준)
   const weeklyStats = useMemo(() => {
-    const totalBasicHours = weekData.reduce((sum, day) => sum + day.basicHours, 0);
-    const totalBasicMinutes = weekData.reduce((sum, day) => sum + day.basicMinutes, 0);
-    const totalOvertimeHours = weekData.reduce((sum, day) => sum + day.overtimeHours, 0);
-    const totalOvertimeMinutes = weekData.reduce((sum, day) => sum + day.overtimeMinutes, 0);
-    const totalWorkHours = weekData.reduce((sum, day) => sum + day.totalHours, 0);
-    const totalWorkMinutes = weekData.reduce((sum, day) => sum + day.totalMinutes, 0);
-    const vacationHours = weekData.filter(day => day.workType === "오전반차" || day.workType === "오후반차" || day.workType === "오전반반차" || day.workType === "오후반반차").length * 8; // 반차일은 8시간으로 계산
-    const externalHours = weekData.filter(day => day.workType === "외부근무").reduce((sum, day) => sum + day.totalHours, 0);
+    const totalBasicHours = data.reduce((sum, day) => sum + day.basicHours, 0);
+    const totalBasicMinutes = data.reduce((sum, day) => sum + day.basicMinutes, 0);
+    const totalOvertimeHours = data.reduce((sum, day) => sum + day.overtimeHours, 0);
+    const totalOvertimeMinutes = data.reduce((sum, day) => sum + day.overtimeMinutes, 0);
+    const totalWorkHours = data.reduce((sum, day) => sum + day.totalHours, 0);
+    const totalWorkMinutes = data.reduce((sum, day) => sum + day.totalMinutes, 0);
+    const vacationHours = data.filter(day => day.workType === "오전반차" || day.workType === "오후반차" || day.workType === "오전반반차" || day.workType === "오후반반차").length * 8; // 반차일은 8시간으로 계산
+    const externalHours = data.filter(day => day.workType === "외부근무").reduce((sum, day) => sum + day.totalHours, 0);
     
     // 실제 시간과 분 계산
     const totalWorkMinutesAll = (totalWorkHours * 60) + (totalWorkMinutes || 0);
@@ -327,7 +473,7 @@ export default function WorkHoursTable() {
       remainingHours,
       remainingMinutes: remainingMins
     };
-  }, [weekData]);
+  }, [data]);
 
   return (
     <div>
