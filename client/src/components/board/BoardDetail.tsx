@@ -68,35 +68,6 @@ export default function BoardDetail({ id }: BoardDetailProps) {
   };
 
   // 게시글 상세 API 호출
-  /* useEffect(() => {
-    (async () => {
-      if (!postId) {
-        console.warn('❌ postId 없음');
-        setPost(null);
-        setLoading(false);
-        return;
-      }
-      try {
-        console.log('🟢 요청 게시글 ID:', postId);
-        const data = await getBoardDetail(Number(postId));
-        console.log('📦 getBoardDetail 반환 데이터:', data);
-        setPost(data);
-
-        const attachList = await getNoticeAttachments(Number(postId));
-        console.log('📎 첨부파일 목록:', attachList);
-        setAttachments(attachList);
-
-        const commentData = await getComment(Number(postId));
-        console.log('💬 댓글 목록:', commentData);
-        setComments(commentData);
-      } catch (err) {
-        console.error('❌ 게시글 불러오기 실패:', err);
-        setPost(null);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [postId]); */
   useEffect(() => {
     (async () => {
       if (!postId) {

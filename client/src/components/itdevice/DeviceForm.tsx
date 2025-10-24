@@ -11,7 +11,7 @@ export type DeviceFormData = {
   ram?: string;
   gpu?: string;
   ssdhdd?: string;
-  purchaseAt: string;
+  p_date: string;
 };
 
 type DeviceFormProps = {
@@ -98,14 +98,14 @@ export function DeviceForm({ form, onChange, mode = 'create' }: DeviceFormProps)
         {/* 구매일자 */}
         <TableColumnCell className={readOnly ? 'px-4 py-2.5' : 'p-0'}>
           {readOnly ? (
-            form.purchaseAt
+            form.p_date
           ) : (
             <Textbox
               id="entryDate"
               type="date"
               className="w-full justify-start border-0"
-              value={form.purchaseAt}
-              onChange={(e) => onChange('purchaseAt', e.target.value)}
+              value={form.p_date}
+              onChange={(e) => onChange('p_date', e.target.value)}
             />
           )}
         </TableColumnCell>

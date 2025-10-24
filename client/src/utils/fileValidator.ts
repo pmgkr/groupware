@@ -90,7 +90,7 @@ const res = validateFiles(selectedFiles, { maxSizeMB: 30 });
 
   // 업로드 진행 (filtered 파일만 전송)
   const uploaded = await uploadFilesToServer(filtered, 'notice');
-  console.log(uploaded);
+
 }
 
 */

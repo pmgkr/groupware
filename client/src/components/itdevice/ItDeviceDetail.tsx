@@ -8,6 +8,7 @@ import { DeviceForm, type DeviceFormData } from './DeviceForm';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import { Textbox } from '../ui/textbox';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { getItDeviceDetail, type Device, type DeviceHistory } from '@/api';
 
 export default function itDeviceDetail() {
   const { id } = useParams<{ id: string }>(); // /itdevice/:id
@@ -28,123 +29,40 @@ export default function itDeviceDetail() {
     user: string;
   };
 
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: 4,
-      device: 'Monitor',
-      brand: 'SONY',
-      model: 'sony monitor model name',
-      serial: '12345687',
-      os: '',
-      ram: '',
-      gpu: '',
-      ssdhdd: '',
-      purchaseAt: '2025-09-01',
-      createdAt: '2025-09-02',
-      user: '빙홍차',
-    },
-    {
-      id: 3,
-      device: 'Laptop',
-      brand: 'SONY',
-      model: 'sony Laptop model name',
-      serial: '5445d26ds',
-      os: 'Windows 11 Business',
-      ram: '16.0GB',
-      gpu: '-',
-      ssdhdd: 'ssdhdd',
-      purchaseAt: '2025-08-01',
-      createdAt: '2025-08-02',
-      user: '김원필',
-    },
-    {
-      id: 2,
-      device: 'Desktop',
-      brand: 'Asus',
-      model: 'Expert Book',
-      serial: '12345687',
-      os: '',
-      ram: '',
-      gpu: '',
-      ssdhdd: '',
-      purchaseAt: '2025-07-01',
-      createdAt: '2025-07-02',
-      user: '유승호',
-    },
-    {
-      id: 1,
-      device: 'Monitor',
-      brand: 'LG',
-      model: 'LED Monitor',
-      serial: '203NTEPCT052',
-      os: '',
-      ram: '',
-      gpu: '',
-      ssdhdd: '',
-      purchaseAt: '2025-06-01',
-      createdAt: '2025-06-02',
-      user: '이영서',
-    },
-  ]);
+  const [posts, setPosts] = useState<Device | null>(null);
+  const [history, setHistory] = useState<DeviceHistory[]>([]);
 
-  const [history, setHistory] = useState([
-    {
-      historyId: 101,
-      deviceId: 4, // device.id와 연결
-      user: '구경이',
-      team: 'CCD',
-      createdAt: '2024-04-05',
-      returnedAt: '2025-05-29',
-    },
-    {
-      historyId: 102,
-      deviceId: 4,
-      user: '빙홍차',
-      team: 'CCP',
-      createdAt: '2025-09-02',
-      returnedAt: null,
-    },
-    {
-      historyId: 103,
-      deviceId: 1,
-      user: '이영서',
-      team: 'CCD',
-      createdAt: '2025-06-02',
-      returnedAt: null,
-    },
-    {
-      historyId: 104,
-      deviceId: 2,
-      user: '유승호',
-      team: 'CCD',
-      createdAt: '2025-07-02',
-      returnedAt: null,
-    },
-    {
-      historyId: 105,
-      deviceId: 3,
-      user: '김원필',
-      team: 'CCP',
-      createdAt: '2025-08-02',
-      returnedAt: null,
-    },
-  ]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        const data = await getItDeviceDetail(Number(id));
+        setPosts(data.device);
+        setHistory(data.history);
+      } catch (err) {
+        console.error('❌ 디바이스 상세 불러오기 실패:', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
 
   //사용이력
   // 현재 장비
-  const post = posts.find((p) => String(p.id) === id);
-  if (!post) return <div className="p-4">장비를 찾을 수 없습니다.</div>;
 
-  const deviceHistories = history.filter((h) => String(h.deviceId) === id);
-  const currentUser = deviceHistories.find((h) => h.returnedAt === null);
+  const deviceHistories = history;
+  const currentUser = history.find((h) => !h.returnedAt);
+  //const currentUser = deviceHistories.find((h) => h.returnedAt === null);
   const previousUsers = history
-    .filter((h) => h.deviceId === post.id && h.returnedAt !== null)
+    .filter((h) => h.returnedAt) // returnedAt이 존재하면 이전 사용자
     .sort((a, b) => new Date(b.returnedAt!).getTime() - new Date(a.returnedAt!).getTime());
 
   //반납하기
   const handleReturn = (historyId: number) => {
     const now = new Date().toISOString();
-    setHistory((prev) => prev.map((h) => (h.historyId === historyId ? { ...h, returnedAt: now } : h)));
+    setHistory((prev) => prev.map((h) => (h.id === historyId ? { ...h, returnedAt: now } : h)));
   };
 
   //dialog
@@ -152,24 +70,32 @@ export default function itDeviceDetail() {
   const [openAddUser, setOpenAddUser] = useState(false);
 
   const [form, setForm] = useState<DeviceFormData>({
-    device: post.device,
-    brand: post.brand,
-    model: post.model,
-    serial: post.serial,
-    os: post.os || '',
-    ram: post.ram || '',
-    gpu: post.gpu || '',
-    ssdhdd: post.ssdhdd || '',
-    purchaseAt: post.purchaseAt,
+    device: '',
+    brand: '',
+    model: '',
+    serial: '',
+    p_date: '',
   });
+
+  useEffect(() => {
+    if (posts) {
+      setForm({
+        device: posts.device,
+        brand: posts.brand,
+        model: posts.model,
+        serial: posts.serial,
+        p_date: posts.p_date,
+      });
+    }
+  }, [posts]);
   const handleChange = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
-  const handleSave = () => {
+  /* const handleSave = () => {
     // posts 배열에서 해당 id를 찾아 업데이트
-    setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, ...form } : p)));
+    setPosts((prev) => prev.map((p) => (p.id === posts.id ? { ...p, ...form } : p)));
     setOpenEdit(false);
-  };
+  }; */
 
   //사용자 추가
   const [newForm, setNewForm] = useState({
@@ -177,6 +103,16 @@ export default function itDeviceDetail() {
     user: '',
     createdAt: new Date().toISOString().slice(0, 10),
   });
+
+  // 컨펌 다이얼로그상태
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    action?: () => void;
+    title: string;
+  }>({ open: false, title: '' });
+
+  if (!posts) return <div className="p-4">장비를 찾을 수 없습니다.</div>;
+
   // 공용 핸들러
   const handleNewFormChange = (key: keyof typeof newForm, value: string) => {
     setNewForm((prev) => ({ ...prev, [key]: value }));
@@ -186,19 +122,19 @@ export default function itDeviceDetail() {
       alert('팀이름과 사용자는 반드시 입력해야 합니다.');
       return;
     }
-    openConfirm('사용자를 등록하시겠습니까?', () => handleAddUser(post.id, newForm.user, newForm.team, newForm.createdAt));
+    openConfirm('사용자를 등록하시겠습니까?', () => handleAddUser(posts.id, newForm.user, newForm.team, newForm.createdAt));
   };
   const handleAddUser = (deviceId: number, user: string, team: string, createdAt?: string) => {
-    setHistory((prev) => {
+    /* setHistory((prev) => {
       const now = new Date().toISOString();
 
       // 현재 사용자(반납 안 한 사람) 찾기
-      const current = prev.find((h) => h.deviceId === deviceId && h.returnedAt === null);
+      const current = prev.find((h) => h.id === deviceId && h.returnedAt === null);
 
       let updated = prev;
       if (current) {
         // 반납 처리
-        updated = prev.map((h) => (h.historyId === current.historyId ? { ...h, returnedAt: now } : h));
+        updated = prev.map((h) => (h.id === current.id ? { ...h, returnedAt: now } : h));
       }
 
       // 새 사용자 추가
@@ -212,7 +148,7 @@ export default function itDeviceDetail() {
       };
 
       return [...updated, newHistory];
-    });
+    }); */
 
     setOpenAddUser(false); // 다이얼로그 닫기
   };
@@ -222,13 +158,6 @@ export default function itDeviceDetail() {
     return isoString.slice(0, 10); // 'YYYY-MM-DD'
   }
 
-  // 컨펌 다이얼로그상태
-  const [confirmState, setConfirmState] = useState<{
-    open: boolean;
-    action?: () => void;
-    title: string;
-  }>({ open: false, title: '' });
-
   // 열기 함수
   const openConfirm = (title: string, action: () => void) => {
     setConfirmState({ open: true, title, action });
@@ -237,7 +166,7 @@ export default function itDeviceDetail() {
   return (
     <>
       <h2 className="mb-5 text-3xl font-bold">
-        [{post.device}] {post.model}
+        [{posts?.device ?? '-'}] {posts?.model ?? '-'}
       </h2>
       <div className="flex gap-8">
         <div className="flex-1 rounded-md border p-8">
@@ -263,16 +192,21 @@ export default function itDeviceDetail() {
                   취소
                 </Button>
                 <Button
-                  onClick={() => {
+                /* onClick={() => {
                     openConfirm('장비 정보를 수정하시겠습니까?', () => handleSave());
-                  }}>
+                  }} */
+                >
                   완료
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
-          <DeviceForm form={post} onChange={() => {}} mode="view" />
+          {posts ? (
+            <DeviceForm form={posts} onChange={() => {}} mode="view" />
+          ) : (
+            <div className="text-sm text-gray-500">장비 정보를 불러오는 중...</div>
+          )}
         </div>
         <div className="flex-1 rounded-md border p-8">
           <Dialog open={openAddUser} onOpenChange={setOpenAddUser}>
@@ -321,7 +255,7 @@ export default function itDeviceDetail() {
             </DialogContent>
           </Dialog>
 
-          <div className="">
+          <div>
             {/* 현재 사용자 */}
             {currentUser && (
               <div className="border-primary-blue-300 bg-primary-blue-100 mb-4 flex items-center justify-between rounded border p-3">
@@ -338,7 +272,7 @@ export default function itDeviceDetail() {
             {previousUsers.length > 0 ? (
               <div className="space-y-2">
                 {previousUsers.map((h) => (
-                  <div key={h.historyId} className="flex items-center justify-between rounded border p-3">
+                  <div key={h.id} className="flex items-center justify-between rounded border p-3">
                     <div className="text-base font-medium">
                       {h.user} <span className="text-sm text-gray-500">({h.team})</span>
                     </div>
@@ -360,7 +294,7 @@ export default function itDeviceDetail() {
             variant="secondary"
             className="mr-3"
             onClick={() => {
-              openConfirm('반납처리 하시겠습니까?', () => handleReturn(currentUser.historyId));
+              openConfirm('반납처리 하시겠습니까?', () => handleReturn(currentUser.id));
             }}>
             반납 처리
           </Button>
