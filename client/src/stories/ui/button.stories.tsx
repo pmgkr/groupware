@@ -16,7 +16,7 @@ const meta: Meta<typeof Button> = {
     },
     size: {
       control: 'select',
-      options: ['default', 'sm', 'lg', 'full', 'icon'],
+      options: ['default', 'xs', 'sm', 'lg', 'full', 'icon'],
     },
   },
   parameters: {
@@ -52,6 +52,7 @@ export const Examples: Story = {
   render: () => (
     <>
       <div className="flex flex-wrap gap-4">
+        <Button size="xs">XS Button</Button>
         <Button size="sm">Small Button</Button>
         <Button size="default">Default Button</Button>
         <Button size="lg">Large Button</Button>

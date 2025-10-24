@@ -1,25 +1,145 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Checkbox } from '@components/ui/checkbox';
 import { Input } from '@components/ui/input';
-import { Textarea } from '@components/ui/textarea';
 import { Button } from '@components/ui/button';
 import { File, CircleX } from '@/assets/images/icons';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@components/ui/select';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
+
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
+
+import { useAuth } from '@/contexts/AuthContext';
+import { pinBoard, registerBoard, updateBoard, uploadNoticeAttachments } from '@/api/office/notice';
+import { validateFiles } from '@/utils';
 
 export default function BoardWrite() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [files, setFiles] = useState<File[]>([]);
+  const [content, setContent] = useState('');
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('');
+  const [isNotice, setIsNotice] = useState<'Y' | 'N'>('N');
+  const location = useLocation();
+  const editMode = location.state?.mode === 'edit';
+  const post = location.state?.post;
 
-  const handleButtonClick = () => {
+  //컨펌 다이얼로그 상태
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    title: string;
+    confirmText?: string;
+    action?: () => void;
+  }>({ open: false, title: '' });
+
+  // 컨펌 다이얼로그 열기
+  const openConfirm = (title: string, action: () => void, confirmText = '확인') => {
+    setConfirmState({ open: true, title, action, confirmText });
+  };
+
+  //수정모드일때
+  useEffect(() => {
+    if (editMode) {
+      if (post) {
+        setTitle(post.title || '');
+        setContent(post.content || '');
+        setCategory(post.category || '');
+        setIsNotice(post.pinned === 'Y' ? 'Y' : 'N');
+      }
+    } else {
+      // 글쓰기 모드일 때
+      setTitle('');
+      setContent('');
+      setCategory('');
+      setIsNotice('N');
+    }
+  }, [editMode, post]);
+
+  const { user } = useAuth(); //로그인한 유저 정보 (AuthContext 기반)
+
+  const handleSubmit = async () => {
+    if (!user) {
+      alert('로그인 후 이용해주세요.');
+      return;
+    }
+    // content가 Quill의 "빈 HTML"일 때도 막기
+    const isEmptyContent = !content || content.trim() === '' || content === '<p><br></p>' || content === '<p></p>';
+
+    // 카테고리, 제목, 내용 모두 체크
+    if (!category.trim() || !title.trim() || isEmptyContent) {
+      alert('카테고리, 제목, 내용을 모두 입력해주세요.');
+      return;
+    }
+
+    try {
+      if (editMode && post) {
+        // 수정 모드
+        await updateBoard(post.n_seq, {
+          category,
+          title,
+          content,
+        });
+        //공지 고정 상태 변경 필요 시
+        if (isNotice !== post.pinned) {
+          await pinBoard(post.n_seq, isNotice);
+        }
+        // 이미 검증된 files만 API에 넘김
+        if (files.length > 0) {
+          await uploadNoticeAttachments(post.n_seq, files);
+        }
+        navigate(`/notice/${post.n_seq}`);
+      } else {
+        // 등록 모드
+        const res = await registerBoard({
+          category,
+          title,
+          content,
+          user_id: user.user_id,
+          user_name: user.user_name!,
+        });
+
+        const n_seq = res.n_seq;
+
+        // 검증 통과 파일만 업로드
+        if (files.length > 0 && n_seq) {
+          await uploadNoticeAttachments(n_seq, files);
+        }
+
+        //공지 고정
+        if (isNotice === 'Y' && n_seq) {
+          await pinBoard(n_seq, 'Y');
+        }
+
+        navigate('..');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('저장 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 파일 첨부
+  const handleAttachFile = () => {
     fileInputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    // 여러 파일 선택 가능하게
-    setFiles((prev) => [...prev, ...(e.target.files ? Array.from(e.target.files) : [])]);
-    e.target.value = ''; // 같은 파일 선택 시에도 onChange 트리거 되도록 초기화
+
+    const selectedFiles = Array.from(e.target.files);
+
+    // 파일 유효성 검사 (여기서 validateFiles 실행)
+    const { valid, message, filtered } = validateFiles(selectedFiles);
+
+    if (!valid) {
+      alert(message);
+      if (filtered.length === 0) return;
+    }
+
+    // 통과된 파일만 state에 추가
+    setFiles((prev) => [...prev, ...filtered]);
+    e.target.value = ''; // 동일 파일 다시 선택 가능하게 초기화
   };
 
   const handleRemove = (name: string) => {
@@ -29,10 +149,10 @@ export default function BoardWrite() {
   return (
     <div>
       <div className="mb-3 flex justify-end">
-        <Checkbox id="exnotice" label="공지 설정"></Checkbox>
+        <Checkbox id="notice" label="공지 설정" checked={isNotice === 'Y'} onCheckedChange={(v) => setIsNotice(v === true ? 'Y' : 'N')} />
       </div>
       <div className="mb-3 flex gap-1.5">
-        <Select>
+        <Select value={category} onValueChange={setCategory}>
           <SelectTrigger className="!h-[50px] w-[180px]">
             <SelectValue placeholder="카테고리" />
           </SelectTrigger>
@@ -47,26 +167,40 @@ export default function BoardWrite() {
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Input className="h-[50px] [&]:bg-white [&]:text-lg" placeholder="제목을 입력해주세요"></Input>
+        <Input
+          className="h-[50px] [&]:bg-white [&]:text-lg"
+          placeholder="제목을 입력해주세요"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}></Input>
       </div>
 
-      <Textarea size="board"></Textarea>
+      {/*  에디터 영역 */}
+      <div className="mb-4" style={{ height: '58vh' }}>
+        <ReactQuill
+          theme="snow"
+          value={content}
+          onChange={setContent}
+          placeholder="내용을 입력하세요..."
+          className="rounded-lg bg-white"
+          style={{ height: 'calc(100% - 50px)' }}
+        />
+      </div>
 
       <div className="mt-2 flex justify-between">
+        {/* 파일 첨부 */}
         <div className="flex gap-1.5">
-          <Button variant="outline" className="[&]:border-primary-blue-500 text-primary-blue-500" onClick={handleButtonClick}>
+          <Button variant="outline" className="[&]:border-primary-blue-500 text-primary-blue-500" onClick={handleAttachFile}>
             <File className="mr-1 size-6" />
             파일 첨부
           </Button>
 
-          {/* 실제 파일 input */}
           <input type="file" multiple ref={fileInputRef} className="hidden" onChange={handleFileChange} />
 
           <div className="flex flex-wrap items-center gap-1.5">
             {files.map((file) => (
               <div key={file.name} className="flex items-center rounded-md border border-gray-300 p-1 pl-4">
                 <span className="text-base text-gray-500">{file.name}</span>
-                <Button variant="svgIcon" size="icon" aria-label="파일 삭제" onClick={() => handleRemove(file.name)}>
+                <Button variant="svgIcon" size="icon" onClick={() => handleRemove(file.name)}>
                   <CircleX className="size-4" />
                 </Button>
               </div>
@@ -75,12 +209,21 @@ export default function BoardWrite() {
         </div>
 
         <div className="flex justify-end gap-1.5">
-          <Button>등록</Button>
+          <Button onClick={() => openConfirm(editMode ? '게시글을 수정하시겠습니까?' : '게시글을 등록하시겠습니까?', handleSubmit)}>
+            {editMode ? '수정완료' : '등록'}
+          </Button>
           <Button onClick={() => navigate('..')} variant="secondary">
             취소
           </Button>
         </div>
       </div>
+      {/* 공통 다이얼로그 */}
+      <ConfirmDialog
+        open={confirmState.open}
+        onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
+        title={confirmState.title}
+        onConfirm={() => confirmState.action?.()}
+      />
     </div>
   );
 }

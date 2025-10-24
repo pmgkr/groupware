@@ -6,14 +6,28 @@ import { Button } from '@/components/ui/button';
 import { SearchGray } from '@/assets/images/icons';
 import { useNavigate, Outlet } from 'react-router';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DeviceForm } from '@/components/itdevice/DeviceForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { getItDevice, type Device } from '@/api/office/itdevice';
 
 export default function ItDevice() {
   const navigate = useNavigate();
+  const [pageInfo, setPageInfo] = useState({
+    page: 1,
+    totalPages: 1,
+    total: 0,
+  });
+  const [posts, setPosts] = useState<Device[]>([]);
+  useEffect(() => {
+    getItDevice()
+      .then((res) => setPosts(res.items))
+      .catch((err) => {
+        console.error('❌ IT Device 불러오기 실패:', err);
+      });
+  }, []);
   // 더미 데이터
-  const [posts, setPosts] = useState([
+  /* const [posts, setPosts] = useState([
     {
       id: 4,
       device: 'Monitor',
@@ -54,7 +68,7 @@ export default function ItDevice() {
       createdAt: '2025-06-02',
       user: '이영서',
     },
-  ]);
+  ]); */
 
   //등록 다이얼로그 열기/닫기
   const [openRegister, setOpenRegister] = useState(false);
@@ -137,7 +151,7 @@ export default function ItDevice() {
       {/* 검색창 */}
       <div className="flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
-          <Input className="h-[40px] px-4 [&]:bg-white" placeholder="검색어 입력" />
+          <Input className="h-[32px] px-4 [&]:bg-white" placeholder="검색어 입력" />
           <Button variant="svgIcon" size="icon" className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2" aria-label="검색">
             <SearchGray className="text-gray-400" />
           </Button>
@@ -146,7 +160,7 @@ export default function ItDevice() {
         {/* 등록 다이얼로그 */}
         <Dialog open={openRegister} onOpenChange={setOpenRegister}>
           <DialogTrigger asChild>
-            <Button>등록하기</Button>
+            <Button size="sm">등록하기</Button>
           </DialogTrigger>
           <DialogContent className="p-7">
             <DialogHeader>

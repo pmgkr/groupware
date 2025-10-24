@@ -42,8 +42,8 @@ function PaginationLink({ className, isActive, size = 'icon', ...props }: Pagina
         }),
         // 커스텀 스타일 추가
         isActive
-          ? ':bg-white text-primary-blue-500 [&]:border-primary-blue-500 [&:hover]:border-primary-blue-500 [&:hover]:bg-primary-blue-500 [&]:bg-white'
-          : 'text-gray-400 hover:text-gray-900',
+          ? '[&]:border-primary-blue-500 [&]:bg-primary-blue-500 [&]:hover:text-primary-blue-500 text-white hover:bg-white'
+          : '[&]:hover:border-primary-blue-500 [&]:hover:text-primary-blue-500 text-gray-400',
         'h-[28px] w-[28px] aria-disabled:pointer-events-none aria-disabled:opacity-50',
         className
       )}
@@ -97,11 +97,7 @@ function PaginationFirst({ className, ...props }: React.ComponentProps<typeof Pa
 // ✅ 맨뒤로 가기
 function PaginationLast({ className, ...props }: React.ComponentProps<typeof PaginationLink>) {
   return (
-    <PaginationLink
-      aria-label="Go to last page"
-      size="default"
-      className={cn('gap-1 px-2.5 text-gray-950 sm:pr-2.5', className)}
-      {...props}>
+    <PaginationLink aria-label="Go to last page" size="default" className={cn('gap-1 px-2.5 text-gray-950', className)} {...props}>
       <span className="hidden sm:block"></span>
       <ChevronsRightIcon />
     </PaginationLink>

@@ -133,6 +133,7 @@ export default defineConfig(({ mode }) => {
 
     optimizeDeps: {
       exclude: [
+        'pdfjs-dist',
         '@storybook/*',
         '@storybook/addon-essentials',
         '@storybook/addon-docs',

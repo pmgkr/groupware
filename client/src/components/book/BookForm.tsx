@@ -7,13 +7,14 @@ export type BookFormData = {
   title: string;
   author: string;
   publish: string;
-  link?: string;
+  buylink?: string;
   purchaseAt?: string;
-  team?: string;
-  user?: string;
+  team_id?: number;
+  user_name?: string;
+  createdAt?: string;
 };
 
-type EditableBookFormData = Pick<BookFormData, 'category' | 'title' | 'author' | 'publish' | 'link' | 'purchaseAt'>;
+type EditableBookFormData = Pick<BookFormData, 'category' | 'title' | 'author' | 'publish' | 'buylink' | 'purchaseAt'>;
 
 type BookFormProps =
   | {
@@ -112,13 +113,13 @@ export function BookForm(props: BookFormProps) {
         {(mode === 'apply' || mode === 'view' || mode === 'edit') && (
           <TableColumnCell>
             {readOnly ? (
-              form.link ? (
+              form.buylink ? (
                 <a
-                  href={form.link}
+                  href={form.buylink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="max-w-[300px] truncate text-blue-600 underline hover:text-blue-800">
-                  {form.link}
+                  {form.buylink}
                 </a>
               ) : (
                 '-'
@@ -126,8 +127,8 @@ export function BookForm(props: BookFormProps) {
             ) : (
               <input
                 type="url"
-                value={form.link || ''}
-                onChange={(e) => handleChange?.('link', e.target.value)}
+                value={form.buylink || ''}
+                onChange={(e) => handleChange?.('buylink', e.target.value)}
                 placeholder="링크 입력해주세요"
                 className="w-full"
               />
@@ -136,10 +137,10 @@ export function BookForm(props: BookFormProps) {
         )}
 
         {/* 팀 (view 전용) */}
-        {mode === 'view' && <TableColumnCell className="px-4 py-2.5">{form.team}</TableColumnCell>}
+        {mode === 'view' && <TableColumnCell className="px-4 py-2.5">{form.team_id}</TableColumnCell>}
 
         {/* 신청자 (view 전용) */}
-        {mode === 'view' && <TableColumnCell className="px-4 py-2.5">{form.user}</TableColumnCell>}
+        {mode === 'view' && <TableColumnCell className="px-4 py-2.5">{form.user_name}</TableColumnCell>}
 
         {/* 구매일자 (create 전용) */}
         {mode === 'create' && (

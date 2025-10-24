@@ -11,13 +11,17 @@ const meta: Meta<typeof Badge> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['default', 'secondary', 'outline', 'lightpink', 'pink', 'dot'],
+      options: ['default', 'secondary', 'grayish', 'outline', 'lightpink', 'pink', 'dot'],
+    },
+    size: {
+      control: 'select',
+      options: ['default', 'md', 'table', 'dot'],
     },
   },
   parameters: {
     docs: {
       description: {
-        component: '여러 타입의 뱃지 제공',
+        component: '여러 타입 & 사이즈의 뱃지',
       },
     },
   },
@@ -35,6 +39,12 @@ export const Default: Story = {
 export const secondary: Story = {
   args: {
     variant: 'secondary',
+  },
+};
+
+export const Grayish: Story = {
+  args: {
+    variant: 'grayish',
   },
 };
 
@@ -67,7 +77,7 @@ export const Examples: Story = {
         <Badge>1</Badge>
         <Badge>N</Badge>
         <Badge>!</Badge>
-        <Badge variant="dot-default" />
+        <Badge variant="dot-default" size="dot" />
       </div>
       <div className="my-5 flex gap-1">
         <h3 className="mr-2">Secondary</h3>
@@ -77,7 +87,16 @@ export const Examples: Story = {
         <Badge variant="secondary">1</Badge>
         <Badge variant="secondary">N</Badge>
         <Badge variant="secondary">!</Badge>
-        <Badge variant="dot-secondary" />
+        <Badge variant="dot-secondary" size="dot" />
+      </div>
+      <div className="my-5 flex gap-1">
+        <h3 className="mr-2">Grayish</h3>
+        <Badge variant="grayish">Grayish</Badge>
+        <Badge variant="grayish">공지</Badge>
+        <Badge variant="grayish">+99</Badge>
+        <Badge variant="grayish">1</Badge>
+        <Badge variant="grayish">N</Badge>
+        <Badge variant="grayish">!</Badge>
       </div>
       <div className="my-5 flex gap-1">
         <h3 className="mr-2">Outline</h3>
@@ -87,7 +106,7 @@ export const Examples: Story = {
         <Badge variant="outline">1</Badge>
         <Badge variant="outline">N</Badge>
         <Badge variant="outline">!</Badge>
-        <Badge variant="dot-default" />
+        <Badge variant="dot-default" size="dot" />
       </div>
       <div className="my-5 flex gap-1">
         <h3 className="mr-2">Lightpink</h3>
@@ -97,7 +116,7 @@ export const Examples: Story = {
         <Badge variant="lightpink">1</Badge>
         <Badge variant="lightpink">N</Badge>
         <Badge variant="lightpink">!</Badge>
-        <Badge variant="dot-pink" />
+        <Badge variant="dot-pink" size="dot" />
       </div>
       <div className="my-5 flex gap-1">
         <h3 className="mr-2">Pink</h3>
@@ -107,7 +126,7 @@ export const Examples: Story = {
         <Badge variant="pink">1</Badge>
         <Badge variant="pink">N</Badge>
         <Badge variant="pink">!</Badge>
-        <Badge variant="dot-pink" />
+        <Badge variant="dot-pink" size="dot" />
       </div>
       <div className="my-5 flex gap-1">
         <h3 className="mr-2">Dot</h3>
