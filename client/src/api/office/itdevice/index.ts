@@ -28,7 +28,7 @@ export interface Device {
   brand: string;
   model: string;
   serial: string;
-  purchaseAt: string;
+  p_date: string;
   createdAt: string;
 }
 export interface DeviceHistory {
@@ -50,7 +50,7 @@ export function toItDevice(dto: any): Device {
     brand: dto.it_brand ?? dto.brand ?? '-',
     model: dto.it_model ?? dto.model ?? '-',
     serial: dto.it_serial ?? dto.serial ?? '-',
-    purchaseAt: date(dto.it_date ?? dto.p_date),
+    p_date: date(dto.it_date ?? dto.p_date),
     createdAt: date(dto.it_reg_date ?? dto.reg_date),
   };
 }
@@ -75,7 +75,7 @@ export async function getItDevice(
 ): Promise<{ items: Device[]; total: number; page: number; size: number; pages: number }> {
   const query = q && q.trim() ? `&q=${encodeURIComponent(q)}` : '';
   const dto = await http<{ items: DeviceDTO[]; total: number; page: number; size: number; pages: number }>(
-    `/user/office/device/list?page=1&size=10${query}`,
+    `/user/office/device/list?page=${page}&size=${size}${query}`,
     {
       method: 'GET',
     }
@@ -83,21 +83,31 @@ export async function getItDevice(
   //console.log('📦 [getItDevice] 응답 원본:', dto.items);
 
   const items = dto.items.map(toItDevice);
-  //console.log('✅ [getItDevice] 변환 결과:', items);
   return { items, total: dto.total, page: dto.page, size: dto.size, pages: dto.pages };
 }
 
 //it디바이스 상세
 export async function getItDeviceDetail(it_seq: number): Promise<{ device: Device; history: DeviceHistory[] }> {
-  //console.log('📡 [getItDeviceDetail] 요청 URL:', `/user/office/device/info/${it_seq}`);
-
   const dto = await http<{ device: DeviceDTO; history: DeviceHistoryDTO[] }>(`/user/office/device/info/${it_seq}`, {
     method: 'GET',
   });
 
-  console.log('📦 [getItDeviceDetail] 응답 원본:', dto);
   return {
     device: toItDevice(dto.device),
     history: dto.history.map(toDeviceHistory),
   };
+}
+
+// it디바이스 등록
+export async function registerItDevice(data: {
+  it_device: string;
+  it_brand: string;
+  it_model: string;
+  it_serial: string;
+  it_date: string;
+}): Promise<void> {
+  await http('/user/office/device/register', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }

@@ -8,10 +8,12 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { useEffect, useState } from 'react';
 import { DeviceForm } from '@/components/itdevice/DeviceForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { getItDevice, type Device } from '@/api/office/itdevice';
+import { getItDevice, registerItDevice, type Device } from '@/api/office/itdevice';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ItDevice() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   //   페이지네이션 상태
   const [page, setPage] = useState(1);
@@ -54,7 +56,7 @@ export default function ItDevice() {
     ram: '',
     gpu: '',
     ssdhdd: '',
-    purchaseAt: '',
+    p_date: '',
   });
 
   const handleChange = (key: keyof typeof form, value: string) => {
@@ -63,43 +65,42 @@ export default function ItDevice() {
 
   // 등록 유효성 검사
   const handleRegisterClick = () => {
-    if (!form.device || !form.brand || !form.model || !form.serial || !form.purchaseAt) {
+    if (!form.device || !form.brand || !form.model || !form.serial || !form.p_date) {
       alert('디바이스, 브랜드, 모델, 시리얼넘버, 구매일자는 반드시 입력해야 합니다.');
       return;
     }
     openConfirm('장비 정보를 등록하시겠습니까?', handleRegister);
   };
 
-  // 등록 완료
-  const handleRegister = () => {
-    const nextId = posts.length > 0 ? Math.max(...posts.map((p) => p.id)) + 1 : 1;
-    const newDevice = {
-      id: nextId,
-      device: form.device,
-      brand: form.brand,
-      model: form.model,
-      serial: form.serial,
-      os: form.os,
-      ram: form.ram,
-      gpu: form.gpu,
-      ssdhdd: form.ssdhdd,
-      purchaseAt: form.purchaseAt,
-      createdAt: new Date().toLocaleDateString('sv-SE'),
-      user: '윤도운',
-    };
-    setPosts((prev) => [newDevice, ...prev]);
-    setForm({
-      device: '',
-      brand: '',
-      model: '',
-      serial: '',
-      os: '',
-      ram: '',
-      gpu: '',
-      ssdhdd: '',
-      purchaseAt: '',
-    });
-    setOpenRegister(false);
+  // 등록
+  const handleRegister = async () => {
+    try {
+      await registerItDevice({
+        it_device: form.device,
+        it_brand: form.brand,
+        it_model: form.model,
+        it_serial: form.serial,
+        it_date: form.p_date,
+      });
+      console.log(form.p_date);
+      alert('✅ 장비가 성공적으로 등록되었습니다.');
+      setOpenRegister(false);
+      setForm({
+        device: '',
+        brand: '',
+        model: '',
+        serial: '',
+        os: '',
+        ram: '',
+        gpu: '',
+        ssdhdd: '',
+        p_date: '',
+      });
+      fetchDevices(page); // 목록 새로고침
+    } catch (err) {
+      console.error('❌ 장비 등록 실패:', err);
+      alert('장비 등록 중 오류가 발생했습니다.');
+    }
   };
 
   // 컨펌 다이얼로그
@@ -150,12 +151,12 @@ export default function ItDevice() {
           <TableRow>
             <TableHead className="w-[80px]">번호</TableHead>
             <TableHead>디바이스</TableHead>
-            <TableHead>구매일자</TableHead>
             <TableHead>브랜드</TableHead>
-            <TableHead>모델</TableHead>
-            <TableHead>시리얼넘버</TableHead>
+            <TableHead className="w-[300px]">모델</TableHead>
+            <TableHead className="w-[300px]">시리얼넘버</TableHead>
             <TableHead>사용자</TableHead>
-            <TableHead>등록일</TableHead>
+            <TableHead>구매일자</TableHead>
+            {/* <TableHead>등록일</TableHead> */}
           </TableRow>
         </TableHeader>
 
@@ -171,12 +172,12 @@ export default function ItDevice() {
               <TableRow key={post.id} onClick={() => navigate(`${post.id}`)} className="cursor-pointer hover:bg-gray-100">
                 <TableCell>{(page - 1) * pageSize + idx + 1}</TableCell>
                 <TableCell>{post.device}</TableCell>
-                <TableCell>{post.purchaseAt}</TableCell>
                 <TableCell>{post.brand}</TableCell>
                 <TableCell>{post.model}</TableCell>
                 <TableCell>{post.serial}</TableCell>
                 <TableCell>{post.user}</TableCell>
-                <TableCell>{post.createdAt}</TableCell>
+                <TableCell>{post.p_date}</TableCell>
+                {/* <TableCell>{post.createdAt}</TableCell> */}
               </TableRow>
             ))
           ) : (

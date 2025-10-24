@@ -74,7 +74,7 @@ export default function itDeviceDetail() {
     brand: '',
     model: '',
     serial: '',
-    purchaseAt: '',
+    p_date: '',
   });
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export default function itDeviceDetail() {
         brand: posts.brand,
         model: posts.model,
         serial: posts.serial,
-        purchaseAt: posts.purchaseAt,
+        p_date: posts.p_date,
       });
     }
   }, [posts]);
