@@ -6,12 +6,14 @@ import { formatKST, formatAmount } from '@/utils';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
+import { Checkbox } from '@components/ui/checkbox';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
 import { Dialog, DialogClose, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { MultiSelect, type MultiSelectOption } from '@components/multiselect/multi-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Excel } from '@/assets/images/icons';
+import { RefreshCw } from 'lucide-react';
 
 import { getExpenseLists, type ExpenseListItem, getExpenseType } from '@/api';
 
@@ -20,11 +22,17 @@ export default function ExpenseList() {
   const { user_id, user_level } = useUser();
 
   // 상단 필터용 state
+  const [activeTab, setActiveTab] = useState<'all' | 'saved'>('all');
+  const [selectedYear, setSelectedYear] = useState('2025');
   const [selectedType, setSelectedType] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [selectedProof, setSelectedProof] = useState<string[]>([]);
   const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>([]);
   const [registerDialog, setRegisterDialog] = useState(false);
+
+  // 리스트 내 체크박스 state
+  const [checkedItems, setCheckedItems] = useState<number[]>([]); // 선택된 seq 목록
+  const [checkAll, setCheckAll] = useState(false); // 전체 선택 상태
 
   // API 데이터 state
   const [typeOptions, setTypeOptions] = useState<MultiSelectOption[]>([]);
@@ -56,10 +64,45 @@ export default function ExpenseList() {
     fileInputRef.current?.click();
   };
 
-  // 리스트 페이지네이션
+  // 페이지네이션
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const pageSize = 15; // 한 페이지에 보여줄 개수
+
+  // 필터 변경 시 page 초기화
+  const handleFilterChange = (setter: any, value: any) => {
+    setter(value);
+    setPage(1);
+  };
+
+  // 탭 변경 시 필터 초기화
+  const handleTabChange = (tab: 'all' | 'saved') => {
+    setActiveTab(tab);
+    setPage(1);
+
+    setSelectedYear('2025');
+    setSelectedType([]);
+    setSelectedStatus([]);
+    setSelectedProof([]);
+    setSelectedProofStatus([]);
+    setCheckedItems([]);
+  };
+
+  // 전체 선택 체크박스 핸들러
+  const handleCheckAll = (checked: boolean) => {
+    setCheckAll(checked);
+    if (checked) {
+      const allSeq = expenseList.map((item) => item.seq);
+      setCheckedItems(allSeq);
+    } else {
+      setCheckedItems([]);
+    }
+  };
+
+  // 개별 체크박스 핸들러
+  const handleCheckItem = (seq: number, checked: boolean) => {
+    setCheckedItems((prev) => (checked ? [...prev, seq] : prev.filter((id) => id !== seq)));
+  };
 
   // 필터 옵션 정의
   const statusOptions: MultiSelectOption[] = [
@@ -80,8 +123,8 @@ export default function ExpenseList() {
   ];
 
   const proofStatusOptions: MultiSelectOption[] = [
-    { label: '제출', value: '제출' },
-    { label: '미제출', value: '미제출' },
+    { label: '제출', value: 'Y' },
+    { label: '미제출', value: 'N' },
   ];
 
   // 비용 유형 가져오기
@@ -103,14 +146,25 @@ export default function ExpenseList() {
     })();
   }, []);
 
-  // 비용 리스트 가져오기
+  // 비용 리스트 가져오기 (상단 필터 변경 시마다 자동 실행)
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
 
-        const res = await getExpenseLists();
-        console.log('✅ 비용 리스트:', res);
+        // 필터 파라미터 구성
+        const params: Record<string, any> = {
+          type: selectedType.join(',') || undefined,
+          method: selectedProof.join(',') || undefined,
+          attach: selectedProofStatus.join(',') || undefined,
+          status: activeTab === 'all' ? selectedStatus.join(',') || undefined : activeTab, // 탭 선택 시 강제 상태
+          page,
+          size: pageSize,
+        };
+
+        const res = await getExpenseLists(params);
+        console.log('📦 비용 리스트 요청 파라미터:', params);
+        console.log('✅ 비용 리스트 응답:', res);
 
         setExpenseList(res.items);
         setTotal(res.total);
@@ -120,22 +174,42 @@ export default function ExpenseList() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [activeTab, selectedYear, selectedType, selectedProof, selectedProofStatus, selectedStatus, page]);
+
+  useEffect(() => {
+    if (expenseList.length === 0) return;
+    const allSeq = expenseList.map((item) => item.seq);
+    setCheckAll(allSeq.length > 0 && allSeq.every((seq) => checkedItems.includes(seq)));
+  }, [checkedItems, expenseList]);
 
   return (
     <>
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center">
           <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
-            <Button className="bg-primary h-8 w-18 rounded-sm p-0 text-sm text-white hover:shadow-none">전체</Button>
-            <Button className="text-muted-foreground h-8 w-18 rounded-sm bg-transparent p-0 text-sm hover:shadow-none active:bg-transparent">
+            <Button
+              onClick={() => handleTabChange('all')}
+              className={`h-8 w-18 rounded-sm p-0 text-sm ${
+                activeTab === 'all'
+                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+              }`}>
+              전체
+            </Button>
+            <Button
+              onClick={() => handleTabChange('saved')}
+              className={`h-8 w-18 rounded-sm p-0 text-sm ${
+                activeTab === 'saved'
+                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+              }`}>
               임시 저장
             </Button>
           </div>
 
           <div className="flex items-center gap-x-2 before:mx-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
             {/* 연도 단일 선택 */}
-            <Select defaultValue="2025">
+            <Select value={selectedYear} onValueChange={(v) => handleFilterChange(setSelectedYear, v)}>
               <SelectTrigger size="sm">
                 <SelectValue placeholder="연도 선택" />
               </SelectTrigger>
@@ -157,7 +231,7 @@ export default function ExpenseList() {
               size="sm"
               placeholder="비용 용도"
               options={typeOptions}
-              onValueChange={setSelectedType}
+              onValueChange={(v) => handleFilterChange(setSelectedType, v)}
               maxCount={0}
               hideSelectAll={true}
               autoSize={true}
@@ -172,7 +246,7 @@ export default function ExpenseList() {
               size="sm"
               placeholder="증빙 수단"
               options={proofMethod}
-              onValueChange={setSelectedProof}
+              onValueChange={(v) => handleFilterChange(setSelectedProof, v)}
               maxCount={0}
               hideSelectAll={true}
               autoSize={true}
@@ -187,7 +261,7 @@ export default function ExpenseList() {
               size="sm"
               placeholder="증빙 상태"
               options={proofStatusOptions}
-              onValueChange={setSelectedProofStatus}
+              onValueChange={(v) => handleFilterChange(setSelectedProofStatus, v)}
               maxCount={0}
               hideSelectAll={true}
               autoSize={true}
@@ -202,7 +276,7 @@ export default function ExpenseList() {
               size="sm"
               placeholder="비용 상태"
               options={statusOptions}
-              onValueChange={setSelectedStatus}
+              onValueChange={(v) => handleFilterChange(setSelectedStatus, v)}
               maxCount={0}
               hideSelectAll={true}
               autoSize={true}
@@ -210,6 +284,10 @@ export default function ExpenseList() {
               searchable={false}
               simpleSelect={true}
             />
+
+            <Button type="button" variant="svgIcon" size="icon" className="hover:text-primary-blue-500 size-6 text-gray-600">
+              <RefreshCw />
+            </Button>
           </div>
         </div>
 
@@ -222,16 +300,21 @@ export default function ExpenseList() {
         </Button>
       </div>
 
-      <Table variant="primary" align="center">
+      <Table variant="primary" align="center" className="teble-fixed">
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[6%]">EXP#</TableHead>
+            {activeTab === 'saved' && (
+              <TableHead className="w-[3%] px-0">
+                <Checkbox id="chk_all" className="bg-white" checked={checkAll} onCheckedChange={(v) => handleCheckAll(!!v)} />
+              </TableHead>
+            )}
+            <TableHead className="w-[6%] text-left">EXP#</TableHead>
             <TableHead className="w-[6%]">증빙 수단</TableHead>
             <TableHead className="w-[8%]">비용 용도</TableHead>
             <TableHead>비용 제목</TableHead>
-            <TableHead className="w-[8%]">증빙 상태</TableHead>
+            <TableHead className="w-[6%]">증빙 상태</TableHead>
             <TableHead className="w-[10%]">금액</TableHead>
-            <TableHead className="w-[6%]">세금</TableHead>
+            <TableHead className="w-[6%] text-right">세금</TableHead>
             <TableHead className="w-[10%]">합계</TableHead>
             <TableHead className="w-[6%]">상태</TableHead>
             <TableHead className="w-[14%]">작성 일시</TableHead>
@@ -241,13 +324,13 @@ export default function ExpenseList() {
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell className="h-100 text-gray-500" colSpan={10}>
+              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 11 : 10}>
                 비용 리스트 불러오는 중 . . .
               </TableCell>
             </TableRow>
           ) : expenseList.length === 0 ? (
             <TableRow>
-              <TableCell className="h-100 text-gray-500" colSpan={10}>
+              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 11 : 10}>
                 리스트가 없습니다.
               </TableCell>
             </TableRow>
@@ -266,6 +349,16 @@ export default function ExpenseList() {
 
               return (
                 <TableRow key={item.seq} className="[&_td]:text-[13px]">
+                  {activeTab === 'saved' && (
+                    <TableHead className="px-0">
+                      <Checkbox
+                        id={`chk_${item.seq}`}
+                        className="bg-white"
+                        checked={checkedItems.includes(item.seq)}
+                        onCheckedChange={(v) => handleCheckItem(item.seq, !!v)}
+                      />
+                    </TableHead>
+                  )}
                   <TableCell>
                     <Link to={`/expense/${item.exp_id}`} className="rounded-[4px] border-1 bg-white p-1 text-sm">
                       {item.exp_id}
@@ -281,9 +374,9 @@ export default function ExpenseList() {
                   <TableCell>
                     {item.el_attach === 'Y' ? <Badge variant="secondary">제출</Badge> : <Badge variant="grayish">미제출</Badge>}
                   </TableCell>
-                  <TableCell>{formatAmount(item.el_amount)}원</TableCell>
-                  <TableCell>{item.el_tax === 0 ? 0 : `${formatAmount(item.el_tax)}원`}</TableCell>
-                  <TableCell>{formatAmount(item.el_total)}원</TableCell>
+                  <TableCell className="text-right">{formatAmount(item.el_amount)}원</TableCell>
+                  <TableCell className="text-right">{item.el_tax === 0 ? 0 : `${formatAmount(item.el_tax)}원`}</TableCell>
+                  <TableCell className="text-right">{formatAmount(item.el_total)}원</TableCell>
                   <TableCell>{status}</TableCell>
                   <TableCell>{formatKST(item.wdate)}</TableCell>
                 </TableRow>
@@ -301,6 +394,12 @@ export default function ExpenseList() {
             visibleCount={5}
             onPageChange={(p) => setPage(p)} //부모 state 업데이트
           />
+        )}
+
+        {activeTab === 'saved' && (
+          <Button type="button" size="sm">
+            승인요청
+          </Button>
         )}
       </div>
 

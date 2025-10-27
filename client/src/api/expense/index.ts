@@ -11,6 +11,16 @@ export type BankList = {
   name: string;
 };
 
+export interface ExpenseListParams {
+  page?: number;
+  size?: number;
+  year?: string;
+  type?: string;
+  method?: string;
+  attach?: string;
+  status?: string;
+}
+
 export type ExpenseListItem = {
   seq: number;
   exp_id: string;
@@ -95,16 +105,36 @@ export async function getExpenseType(type: string): Promise<ExpenseType[]> {
   return http<ExpenseType[]>(`/user/common/codeList?ctype=${type}`, { method: 'GET' });
 }
 
-export async function getExpenseLists(page: number = 1): Promise<{
+export async function getExpenseLists(params: ExpenseListParams = {}): Promise<{
   items: ExpenseListItem[];
   total: number;
   page: number;
   size: number;
   pages: number;
 }> {
+  const { page = 1, size = 15, year, type, method, attach, status } = params;
+
+  // 쿼리스트링 자동 생성
+  const query = new URLSearchParams();
+  query.append('page', String(page));
+  query.append('size', String(size));
+  if (year) query.append('year', year);
+  if (type) query.append('type', type);
+  if (method) query.append('method', method);
+  if (attach) query.append('attach', attach);
+  if (status) query.append('status', status);
+
+  const url = `/user/nexpense/list?${query.toString()}`;
+  console.log('📡 GET:', url);
+
   // 일반비용 리스트 가져오기
-  const res = await http<any>(`/user/nexpense/list?page=${page}`, { method: 'GET' });
-  return res;
+  return http<{
+    items: ExpenseListItem[];
+    total: number;
+    page: number;
+    size: number;
+    pages: number;
+  }>(url, { method: 'GET' });
 }
 
 export async function expenseRegister(payload: ExpenseRegisterPayload) {
