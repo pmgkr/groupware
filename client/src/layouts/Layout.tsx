@@ -16,13 +16,14 @@ export default function Layout() {
   const childNav: { to: string; label: string; end?: boolean }[] | undefined = (sectionWithNav?.handle as any)?.nav;
 
   const hideChildNav = (active?.handle as any)?.hideNav === true;
+  const hideTitle = (active?.handle as any)?.hideTitle === true;
 
   return (
     <>
       <Header />
       <div className="mt-18 ml-60 min-h-200 bg-white px-25 py-8">
         {/* 페이지 타이틀 : router의 handle.title 값 노출 */}
-        {title && (
+        {!hideTitle && title && (
           <div className="mb-5 flex items-center">
             <h1 className="text-3xl font-bold">{title}</h1>
             {/* 2차 메뉴 노출 */}

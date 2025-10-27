@@ -317,6 +317,8 @@ export default function ExpenseRegister() {
         attachments: fileMap[idx + 1] || [], // rowIndex는 1부터 시작해서 +1
       }));
 
+      console.log('enrichedItems:', enrichedItems);
+
       // [6] 유형별로 그룹화
       const grouped = enrichedItems.reduce((acc: any, item: any) => {
         const type = item.type;
@@ -347,7 +349,8 @@ export default function ExpenseRegister() {
           ei_total: Number(i.total),
           pro_id: !i.pro_id || i.pro_id === '0' || isNaN(Number(i.pro_id)) ? null : Number(i.pro_id),
           attachments: (i.attachments || []).map((att: any) => ({
-            filename: att.fname || att.filename,
+            filename: att.fname,
+            savename: att.sname,
             url: att.url,
           })),
         })),
@@ -356,30 +359,14 @@ export default function ExpenseRegister() {
       console.log('📦 최종 payload:', payload);
 
       // 모든 리스트 병렬 API 호출 (성공/실패 결과 각각 수집)
-      const results = await Promise.allSettled(payload.map((list) => expenseRegister(list)));
+      const result = await expenseRegister(payload);
 
-      const successResults = results.filter((r) => r.status === 'fulfilled');
-      const failedResults = results.filter((r) => r.status === 'rejected');
+      console.log('✅ 등록 성공:', result);
 
-      console.log('✅ 성공 목록:', successResults);
-      console.log('❌ 실패 목록:', failedResults);
-
-      // [8] 사용자 피드백
-      if (failedResults.length === 0) {
-        setAlertTitle('비용 등록');
-        setAlertDescription(`총 ${successResults.length}건의 비용이 성공적으로 등록되었습니다.`);
-        setAlertOpen(true);
-        setSuccessState(true);
-
-        return;
-      } else {
-        setAlertTitle('비용 등록 오류');
-        setAlertDescription(`총 ${payload.length}건 중 ${successResults.length}건 등록 성공\n${failedResults.length}건 등록 실패했습니다.`);
-        setAlertOpen(true);
-        setSuccessState(true);
-
-        return;
-      }
+      setAlertTitle('비용 등록');
+      setAlertDescription(`총 ${payload.length}개의 리스트가 등록되었습니다.`);
+      setSuccessState(true);
+      setAlertOpen(true);
     } catch (err) {
       console.error('❌ 등록 실패:', err);
 
@@ -597,7 +584,7 @@ export default function ExpenseRegister() {
               <div>
                 {fields.map((field, index) => {
                   return (
-                    <article key={field.id} className="border-b border-gray-300 py-6 first:pt-0 last-of-type:border-b-0">
+                    <article key={field.id} className="border-b border-gray-300 px-5 py-8 first:pt-0 last-of-type:border-b-0">
                       <div className="flex items-center justify-between">
                         <div className="flex w-full justify-between gap-x-4">
                           <FormField
@@ -607,7 +594,7 @@ export default function ExpenseRegister() {
                               <FormItem className="flex items-center gap-x-2">
                                 <FormControl>
                                   <Select>
-                                    <SelectTrigger size="sm">
+                                    <SelectTrigger className="w-100">
                                       <SelectValue placeholder="지출 기안서 선택" />
                                     </SelectTrigger>
                                     <SelectContent>
