@@ -23,17 +23,15 @@ import {
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
-import { Checkbox } from '@components/ui/checkbox';
 import { Textarea } from '@components/ui/textarea';
 import { Button } from '@components/ui/button';
 
 import { DayPicker } from '@components/daypicker';
 import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
-import { Dialog, DialogTrigger, DialogContent } from '@components/ui/dialog';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
 
-import { Add, Calendar, TooltipNoti, Delete } from '@/assets/images/icons';
+import { Add, Calendar, TooltipNoti, Delete, Close } from '@/assets/images/icons';
 import { UserRound, FileText } from 'lucide-react';
 
 import { format } from 'date-fns';
@@ -78,7 +76,6 @@ export default function ExpenseRegister() {
   const [bankList, setBankList] = useState<BankList[]>([]);
 
   const [files, setFiles] = useState<PreviewFile[]>([]);
-  const [selectedRows, setSelectedRows] = useState<number[]>([]); // 선택된 비용 항목 State
   const [hasFiles, setHasFiles] = useState(false); // 추가 업로드 버튼 활성화 State
   const [linkedRows, setLinkedRows] = useState<Record<string, number | null>>({}); // 업로드된 이미지와 연결된 행 번호 저장용
   const [activeFile, setActiveFile] = useState<string | null>(null); // UploadArea & Attachment 연결상태 공유용
@@ -194,11 +191,6 @@ export default function ExpenseRegister() {
       }
     }
   }, [state]);
-
-  // 체크박스 핸들러 함수
-  const handleCheckRow = useCallback((index: number, checked: string | boolean) => {
-    setSelectedRows((prev) => (checked ? [...prev, index] : prev.filter((i) => i !== index)));
-  }, []);
 
   // 항목 추가 버튼 클릭 시
   const handleAddArticle = () => {
@@ -378,6 +370,7 @@ export default function ExpenseRegister() {
         setAlertDescription(`총 ${successResults.length}건의 비용이 성공적으로 등록되었습니다.`);
         setAlertOpen(true);
         setSuccessState(true);
+
         return;
       } else {
         setAlertTitle('비용 등록 오류');
@@ -385,10 +378,7 @@ export default function ExpenseRegister() {
         setAlertOpen(true);
         setSuccessState(true);
 
-        alert(
-          `총 ${payload.length}건 중 ${successResults.length}건 등록 성공, ${failedResults.length}건 실패했습니다.\n\n` +
-            '실패한 항목은 관리자에게 문의해주세요.'
-        );
+        return;
       }
     } catch (err) {
       console.error('❌ 등록 실패:', err);
@@ -593,7 +583,7 @@ export default function ExpenseRegister() {
                           <FormLabel className="gap-.5 font-bold text-gray-950">비고</FormLabel>
                         </div>
                         <FormControl>
-                          <Textarea placeholder="추가 기입할 정보가 있으면 입력해 주세요." className="hover:shadow-none" {...field} />
+                          <Textarea placeholder="추가 기입할 정보가 있으면 입력해 주세요." className="h-16 min-h-16" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -610,45 +600,35 @@ export default function ExpenseRegister() {
                     <article key={field.id} className="border-b border-gray-300 py-6 first:pt-0 last-of-type:border-b-0">
                       <div className="flex items-center justify-between">
                         <div className="flex w-full justify-between gap-x-4">
-                          <div className="flex items-center gap-x-2">
-                            <Checkbox
-                              id={`expense_items.${index}`}
-                              className="hover:shadow-none"
-                              checked={selectedRows.includes(index)}
-                              onCheckedChange={(checked) => handleCheckRow(index, checked)}
-                            />
-                          </div>
-                          <div className="flex w-[32%] gap-2 pl-2">
-                            <FormField
-                              control={form.control}
-                              name={`expense_items.${index}.pro_id`}
-                              render={({ field }) => (
-                                <FormItem className="flex flex-1 items-center gap-x-2">
-                                  <FormControl>
-                                    <Select>
-                                      <SelectTrigger size="sm" className="w-full">
-                                        <SelectValue placeholder="지출 기안서 선택" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectGroup>
-                                          <SelectItem value="apple">Apple</SelectItem>
-                                          <SelectItem value="banana">Banana</SelectItem>
-                                          <SelectItem value="blueberry">Blueberry</SelectItem>
-                                          <SelectItem value="grapes">Grapes</SelectItem>
-                                          <SelectItem value="pineapple">Pineapple</SelectItem>
-                                        </SelectGroup>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                          <FormField
+                            control={form.control}
+                            name={`expense_items.${index}.pro_id`}
+                            render={({ field }) => (
+                              <FormItem className="flex items-center gap-x-2">
+                                <FormControl>
+                                  <Select>
+                                    <SelectTrigger size="sm">
+                                      <SelectValue placeholder="지출 기안서 선택" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectGroup>
+                                        <SelectItem value="apple">Apple</SelectItem>
+                                        <SelectItem value="banana">Banana</SelectItem>
+                                        <SelectItem value="blueberry">Blueberry</SelectItem>
+                                        <SelectItem value="grapes">Grapes</SelectItem>
+                                        <SelectItem value="pineapple">Pineapple</SelectItem>
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-                            <Button type="button" variant="svgIcon" size="icon" onClick={() => handleRemoveArticle(index)}>
-                              <Delete className="size-5" />
-                            </Button>
-                          </div>
+                          <Button type="button" variant="svgIcon" size="icon" onClick={() => handleRemoveArticle(index)}>
+                            <Close className="size-5" />
+                          </Button>
                         </div>
                       </div>
                       <div className="mt-4 flex justify-between">
@@ -855,25 +835,7 @@ export default function ExpenseRegister() {
                   );
                 })}
 
-                <div className="flex justify-between">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      if (selectedRows.length === 0) {
-                        setAlertTitle('알림');
-                        setAlertDescription('삭제할 항목을 선택해주세요.');
-                        setAlertOpen(true);
-                        return;
-                      }
-
-                      const sorted = [...selectedRows].sort((a, b) => b - a);
-                      sorted.forEach((i) => handleRemoveArticle(i));
-                      setSelectedRows([]);
-                    }}>
-                    선택 항목 삭제
-                  </Button>
+                <div className="flex justify-end">
                   <Button type="button" size="sm" onClick={handleAddArticle}>
                     비용 항목 추가
                   </Button>
@@ -894,7 +856,7 @@ export default function ExpenseRegister() {
                     비용 관리 증빙자료 업로드 가이드
                   </Link>
                   {hasFiles && (
-                    <Button size="sm" onClick={handleAddUploadClick}>
+                    <Button type="button" size="sm" onClick={handleAddUploadClick}>
                       추가 업로드
                     </Button>
                   )}
@@ -922,8 +884,10 @@ export default function ExpenseRegister() {
             </div>
           </div>
           <div className="my-10 flex justify-center gap-2">
-            <Button type="submit">등록</Button>
-            <Button type="button" variant="outline" asChild>
+            <Button type="submit" size="lg">
+              등록
+            </Button>
+            <Button type="button" variant="outline" size="lg" asChild>
               <Link to="/expense">취소</Link>
             </Button>
           </div>
