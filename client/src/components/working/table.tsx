@@ -14,7 +14,7 @@ const isToday = (date: string) => {
 // 근무 데이터 타입 정의
 interface WorkData {
   date: string;
-  workType: "일반근무" | "외부근무" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차";
+  workType: "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가";
   startTime: string;
   endTime: string;
   basicHours: number;
@@ -54,12 +54,16 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
 
   const getWorkTypeColor = (workType: string) => {
     switch (workType) {
-      case "일반근무": return "bg-primary-blue-150 text-primary-blue";
+      case "-": return "bg-gray-50 text-gray-400";
+      case "일반근무": return "font-semibold text-gray-900";
+      case "연차": return "bg-primary-blue-150 text-primary-blue";
       case "오전반차": return "bg-primary-pink-300 text-primary-pink-500";
       case "오전반반차": return "bg-primary-purple-150 text-primary-purple-500";
       case "오후반차": return "bg-primary-pink-300 text-primary-pink-500";
       case "오후반반차": return "bg-primary-purple-150 text-primary-purple-500";
       case "외부근무": return "bg-primary-yellow-150 text-primary-orange-600";
+      case "재택근무": return "bg-primary-blue-100 text-primary-blue-600";
+      case "공가": return "bg-red-100 text-red-600";
       default: return "bg-primary-gray-100 text-primary-gray";
     }
   };
@@ -163,8 +167,8 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
               출근시간
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                {row.startTime}
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                {row.workType === '-' ? '-' : row.startTime}
               </td>
             ))}
           </tr>
@@ -173,8 +177,8 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
               퇴근시간
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                {row.endTime}
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                {row.workType === '-' ? '-' : row.endTime}
               </td>
             ))}
           </tr>
@@ -195,8 +199,8 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
               </div>
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                {row.basicHours}시간 {String(row.basicMinutes || 0).padStart(2, '0')}분
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                {row.workType === '-' ? '-' : `${row.basicHours}시간 ${String(row.basicMinutes || 0).padStart(2, '0')}분`}
               </td>
             ))}
           </tr>
@@ -217,8 +221,8 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
               </div>
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                {row.overtimeHours}시간 {String(row.overtimeMinutes || 0).padStart(2, '0')}분
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                {row.workType === '-' ? '-' : `${row.overtimeHours}시간 ${String(row.overtimeMinutes || 0).padStart(2, '0')}분`}
               </td>
             ))}
           </tr>
@@ -227,8 +231,8 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
               총 근무시간
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base font-bold text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                {row.totalHours}시간 {String(row.totalMinutes || 0).padStart(2, '0')}분
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base ${row.workType === '-' ? 'text-gray-400 font-normal' : 'text-gray-900 font-bold'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                {row.workType === '-' ? '-' : `${row.totalHours}시간 ${String(row.totalMinutes || 0).padStart(2, '0')}분`}
               </td>
             ))}
           </tr>

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface WorkData {
   date: string;
-  workType: "일반근무" | "외부근무" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차";
+  workType: "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가";
   startTime: string;
   endTime: string;
   basicHours: number;
@@ -180,6 +180,16 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
   // 주말 여부 확인 함수
   const isWeekend = (dayOfWeek: string) => {
     return dayOfWeek === '토' || dayOfWeek === '일';
+  };
+
+  // 토요일 여부 확인 함수
+  const isSaturday = (dayOfWeek: string) => {
+    return dayOfWeek === '토';
+  };
+
+  // 일요일 또는 공휴일 여부 확인 함수
+  const isSundayOrHoliday = (dayOfWeek: string, workType: string) => {
+    return dayOfWeek === '일' || workType === '공휴일';
   };
 
   // 다이얼로그가 열릴 때 상태 초기화
@@ -373,27 +383,36 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
                   onValueChange={(value) => handleInputChange('overtimeType', value)}
                   className="grid grid-cols-2 gap-2"
                 >
-                  <RadioButton
-                    value="special_vacation"
-                    label="특별대휴"
-                    variant="dynamic"
-                    size='md'
-                    className='mb-0'
-                  />
-                  <RadioButton
-                    value="compensation_vacation"
-                    label="보상휴가"
-                    variant="dynamic"
-                    size='md'
-                    className='mb-0'
-                  />
-                  <RadioButton
-                    value="event"
-                    label="수당지급"
-                    variant="dynamic"
-                    size='md'
-                    className='mb-0'
-                  />
+                  {/* 토요일인 경우: 특별대휴만 표시 */}
+                  {isSaturday(selectedDay.dayOfWeek) && (
+                    <RadioButton
+                      value="special_vacation"
+                      label="특별대휴"
+                      variant="dynamic"
+                      size='md'
+                      className='mb-0'
+                    />
+                  )}
+                  
+                  {/* 일요일 또는 공휴일인 경우: 보상휴가, 수당지급 표시 */}
+                  {isSundayOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
+                    <>
+                      <RadioButton
+                        value="compensation_vacation"
+                        label="보상휴가"
+                        variant="dynamic"
+                        size='md'
+                        className='mb-0'
+                      />
+                      <RadioButton
+                        value="event"
+                        label="수당지급"
+                        variant="dynamic"
+                        size='md'
+                        className='mb-0'
+                      />
+                    </>
+                  )}
                 </RadioGroup>
                 {errors.overtimeType && (
                   <p className="text-sm text-red-500">{errors.overtimeType}</p>
