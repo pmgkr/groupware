@@ -272,12 +272,11 @@ export default function ExpenseRegister() {
         return;
       }
 
-      /// [1] 연결된 파일 추출
+      /// [1] 연결된 파일 업로드
       const linkedFiles = files.filter((f) => linkedRows[f.name] !== null);
       let uploadedFiles: any[] = [];
 
       if (linkedFiles.length > 0) {
-        // [2] File 객체로 변환 (dataURL → Blob)
         const uploadable = await Promise.all(
           linkedFiles.map(async (f) => {
             const res = await fetch(f.preview);
@@ -286,12 +285,12 @@ export default function ExpenseRegister() {
           })
         );
 
-        // [3] 서버 업로드
+        // [2] 서버 업로드
         uploadedFiles = await uploadFilesToServer(uploadable, 'nexpense');
         console.log('✅ 업로드 완료:', uploadedFiles);
       }
 
-      // [4] 파일을 행(rowIndex)별로 매핑
+      // [3] 파일을 항목별로 매핑
       const fileMap = Object.entries(linkedRows).reduce(
         (acc, [fname, row]) => {
           if (row !== null) {
@@ -311,7 +310,7 @@ export default function ExpenseRegister() {
         {} as Record<number, any[]>
       );
 
-      // [5] expense_items에 파일 연결
+      // [4] expense_items에 파일 연결
       const enrichedItems = items.map((item: any, idx: number) => ({
         ...item,
         attachments: fileMap[idx + 1] || [], // rowIndex는 1부터 시작해서 +1
@@ -319,15 +318,8 @@ export default function ExpenseRegister() {
 
       console.log('enrichedItems:', enrichedItems);
 
-      // [6] 유형별로 그룹화
-      const grouped = enrichedItems.reduce((acc: any, item: any) => {
-        const type = item.type;
-        if (!acc[type]) acc[type] = [];
-        acc[type].push(item);
-        return acc;
-      }, {});
-
-      const payload = Object.keys(grouped).map((type) => ({
+      // [5] 단일 객체로 데이터 전송
+      const payload = {
         header: {
           user_id: user_id!,
           el_method: values.el_method,
@@ -339,7 +331,7 @@ export default function ExpenseRegister() {
           account_name: values.account_name,
           remark: values.expense_remark || '',
         },
-        items: grouped[type].map((i: any) => ({
+        items: enrichedItems.map((i: any) => ({
           el_type: i.type,
           ei_title: i.title,
           ei_pdate: i.date,
@@ -354,7 +346,7 @@ export default function ExpenseRegister() {
             url: att.url,
           })),
         })),
-      }));
+      };
 
       console.log('📦 최종 payload:', payload);
 
@@ -363,10 +355,19 @@ export default function ExpenseRegister() {
 
       console.log('✅ 등록 성공:', result);
 
-      setAlertTitle('비용 등록');
-      setAlertDescription(`총 ${payload.length}개의 리스트가 등록되었습니다.`);
-      setSuccessState(true);
-      setAlertOpen(true);
+      if (result.ok && result.docs?.inserted) {
+        const { list_count, item_count } = result.docs.inserted;
+        setAlertTitle('비용 등록');
+        setAlertDescription(
+          `총 <span class="text-primary-blue-500">${item_count}개</span> 비용 항목이 <span class="text-primary-blue-500">${list_count}개</span>의 리스트로 등록 되었습니다.`
+        );
+        setSuccessState(true);
+        setAlertOpen(true);
+      } else {
+        setAlertTitle('등록 실패');
+        setAlertDescription('등록 결과를 가져오지 못했습니다.');
+        setAlertOpen(true);
+      }
     } catch (err) {
       console.error('❌ 등록 실패:', err);
 

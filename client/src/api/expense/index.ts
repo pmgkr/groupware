@@ -56,10 +56,20 @@ export type ExpenseListItem = {
 // ------------------------------
 // 공통 Header / Item 구조
 // ------------------------------
+// (1) ExpenseRegister에서 사용하는 증빙자료 타입 정의
 export interface ExpenseAttachment {
   filename: string;
   original: string;
   url: string;
+}
+
+// (2) ExpenseView에서 Response로 받는 증빙자료 타입 정의
+export interface ExpenseAttachmentDTO {
+  seq: number; // 첨부파일 PK
+  ei_seq: number; // 연결된 item의 seq
+  ea_fname: string; // 원본 파일명
+  ea_sname: string; // 서버 저장 파일명
+  uploaded_at: string; // 업로드 일시 (ISO)
 }
 
 export interface ExpenseItemBase {
@@ -94,10 +104,23 @@ export interface ExpenseRegisterPayload {
 }
 
 export interface ExpenseRegisterResponse {
-  success: boolean;
-  message: string;
-  data?: {
-    el_id: number;
+  ok: boolean;
+  docs?: {
+    results: {
+      el_type: string;
+      exp_id: string;
+      list_seq: number;
+      totals: {
+        amount: number;
+        tax: number;
+        total: number;
+      };
+      count_items: number;
+    }[];
+    inserted: {
+      list_count: number;
+      item_count: number;
+    };
   };
 }
 
@@ -120,16 +143,30 @@ export interface ExpenseHeaderDTO extends ExpenseHeaderBase {
   wdate: string;
   ddate?: string | null;
   edate?: string | null;
+  cdate?: string | null;
+  rejected_by?: string | null;
 }
 
-export interface ExpenseItemDTO extends ExpenseItemBase {
+export interface ExpenseItemDTO extends Omit<ExpenseItemBase, 'attachments'> {
   seq: number;
   exp_id: string;
+  attachments: ExpenseAttachmentDTO[];
+}
+
+export interface ExpenseLogDTO {
+  idx: number;
+  seq: number;
+  user_nm: string;
+  exp_status: string;
+  remark?: string | null;
+  url: string;
+  log_date: string;
 }
 
 export interface ExpenseViewDTO {
   header: ExpenseHeaderDTO;
   items: ExpenseItemDTO[];
+  logs: ExpenseLogDTO[];
 }
 
 // 은행리스트 가져오기
@@ -182,7 +219,7 @@ export async function getExpenseView(expid: string | undefined): Promise<Expense
 }
 
 // 일반비용 작성하기
-export async function expenseRegister(payload: ExpenseRegisterPayload[]) {
+export async function expenseRegister(payload: ExpenseRegisterPayload) {
   return http<ExpenseRegisterResponse>(`/user/nexpense/register`, {
     method: 'POST',
     headers: {
