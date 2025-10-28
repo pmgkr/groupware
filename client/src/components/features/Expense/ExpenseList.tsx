@@ -109,6 +109,7 @@ export default function ExpenseList() {
     { label: '임시저장', value: '임시저장' },
     { label: '승인대기', value: '승인대기' },
     { label: '승인완료', value: '승인완료' },
+    { label: '지급대기', value: '지급대기' },
     { label: '지급완료', value: '지급완료' },
     { label: '반려됨', value: '반려됨' },
   ];
@@ -341,6 +342,7 @@ export default function ExpenseList() {
                 Saved: <Badge variant="grayish">임시저장</Badge>,
                 Claimed: <Badge variant="secondary">승인대기</Badge>,
                 Confirmed: <Badge>승인완료</Badge>,
+                Approved: <Badge className="bg-primary-blue/80">지급대기</Badge>,
                 Completed: <Badge className="bg-primary-blue">지급완료</Badge>,
                 Rejected: <Badge className="bg-destructive">반려됨</Badge>,
               };
@@ -350,14 +352,14 @@ export default function ExpenseList() {
               return (
                 <TableRow key={item.seq} className="[&_td]:text-[13px]">
                   {activeTab === 'saved' && (
-                    <TableHead className="px-0">
+                    <TableCell className="px-0">
                       <Checkbox
                         id={`chk_${item.seq}`}
                         className="bg-white"
                         checked={checkedItems.includes(item.seq)}
                         onCheckedChange={(v) => handleCheckItem(item.seq, !!v)}
                       />
-                    </TableHead>
+                    </TableCell>
                   )}
                   <TableCell>
                     <Link to={`/expense/${item.exp_id}`} className="rounded-[4px] border-1 bg-white p-1 text-sm">
@@ -386,6 +388,17 @@ export default function ExpenseList() {
         </TableBody>
       </Table>
 
+      {activeTab === 'saved' && (
+        <div className="mt-4 flex gap-2">
+          <Button type="button" size="sm" variant="outline">
+            선택 삭제
+          </Button>
+          <Button type="button" size="sm" variant="outline">
+            선택 청구
+          </Button>
+        </div>
+      )}
+
       <div className="mt-5">
         {expenseList.length !== 0 && (
           <AppPagination
@@ -394,12 +407,6 @@ export default function ExpenseList() {
             visibleCount={5}
             onPageChange={(p) => setPage(p)} //부모 state 업데이트
           />
-        )}
-
-        {activeTab === 'saved' && (
-          <Button type="button" size="sm">
-            승인요청
-          </Button>
         )}
       </div>
 
