@@ -7,13 +7,12 @@ import { cva, type VariantProps } from 'class-variance-authority';
 // Checkbox size variants
 const checkboxVariants = cva(
   [
-    'peer shrink-0 rounded-[2px] border-2 border-gray-600 text-gray-500 shadow-xs transition-shadow outline-none',
+    'peer shrink-0 rounded-[2px] border-2 border-input text-gray-500 outline-none',
     'data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary',
     'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
     'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
-    'disabled:cursor-not-allowed disabled:opacity-50 disabled:border-gray-400 disabled:bg-gray-50 disabled:text-gray-400 disabled:shadow-none',
+    'disabled:cursor-not-allowed disabled:opacity-50 disabled:border-gray-400 disabled:bg-gray-50 disabled:text-gray-400',
     'data-[state=checked]:disabled:border-gray-400',
-    'hover:shadow-blue',
   ],
   {
     variants: {
@@ -96,15 +95,15 @@ function Checkbox({ className, label, labelProps, size, ...props }: CheckboxProp
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
-        'peer data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive size-4 shrink-0 rounded-[2px] border-1 border-[var(--color-gray-600)] text-[var(--color-gray-500)] shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50',
-        'disabled:cursor-not-allowed disabled:border-[var(--color-gray-400)] disabled:bg-[var(--color-gray-50)] disabled:text-[var(--color-gray-400)] disabled:shadow-none data-[state=checked]:disabled:border-[var(--color-gray-400)]',
-        'hover:shadow-blue cursor-pointer',
+        'peer data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border-input size-4 shrink-0 rounded-[2px] border-1 text-[var(--color-gray-500)] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50',
+        'disabled:cursor-not-allowed disabled:border-gray-400 disabled:bg-[var(--color-gray-50)] disabled:text-gray-400 data-[state=checked]:disabled:border-gray-400',
+        'cursor-pointer',
         className
       )}
       {...props}>
       <CheckboxPrimitive.Indicator
         data-slot="checkbox-indicator"
-        className="flex items-center justify-center text-white transition-none data-[disabled]:bg-[var(--color-gray-400)]">
+        className="flex items-center justify-center text-white transition-none data-[disabled]:bg-gray-400">
         <CheckIcon className="size-4" />
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
@@ -119,7 +118,7 @@ function Checkbox({ className, label, labelProps, size, ...props }: CheckboxProp
           className={cn(
             'text-base transition-colors select-none',
             props.disabled
-              ? 'cursor-not-allowed text-[var(--color-gray-400)]'
+              ? 'cursor-not-allowed text-gray-400'
               : 'peer-data-[state=checked]:text-primary-blue-500 cursor-pointer text-[var(--color-gray-700)]',
             labelProps?.className
           )}
@@ -134,6 +133,5 @@ function Checkbox({ className, label, labelProps, size, ...props }: CheckboxProp
   // label이 없으면 체크박스만 반환
   return checkboxElement;
 }
-
 
 export { Checkbox, CheckboxWrapper, checkboxVariants, labelVariants, iconVariants };

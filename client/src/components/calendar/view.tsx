@@ -81,6 +81,7 @@ interface CalendarViewProps {
   currentView: View;
   onNavigate?: (newDate: Date, view: string, action: string) => void;
   onViewChange?: (newView: View) => void;
+  onSelectEvent?: (event: any) => void;
 }
 
 export default function CalendarView({
@@ -89,6 +90,7 @@ export default function CalendarView({
   currentView,
   onNavigate,
   onViewChange,
+  onSelectEvent,
 }: CalendarViewProps) {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [holidayCache, setHolidayCache] = useState<Map<string, boolean>>(new Map());
@@ -140,11 +142,12 @@ export default function CalendarView({
         dayPropGetter={(date) => dayPropGetter(date, holidayCache)}
         onNavigate={onNavigate}
         onView={onViewChange}
+        onSelectEvent={onSelectEvent}
         defaultView="month"
         views={["month", "week", "day", "agenda"]}
         step={60}
         timeslots={1}
-        selectable
+        // selectable
         popup
         toolbar={false}
         tooltipAccessor={(event) => event.title}

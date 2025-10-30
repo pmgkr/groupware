@@ -18,6 +18,10 @@
   @apply text-sm bg-transparent pl-1 pr-1 pt-0 pb-0; 
 }
 
+.rbc-event.rbc-selected, .rbc-day-slot .rbc-selected.rbc-background-event {
+  @apply bg-transparent
+}
+
 
 .rbc-month-view {
   // @apply bg-gray-50 border border-gray-200 rounded-lg;
@@ -79,7 +83,10 @@
     @apply font-medium text-[var(--color-gray-900)];
   }
 
-  
+  &.event-default {
+    @apply bg-[var(--color-gray-300)];
+  }
+
   &.event-vacation {
     @apply bg-[var(--color-primary-blue-150)];
     

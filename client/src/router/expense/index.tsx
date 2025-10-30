@@ -2,6 +2,7 @@ import type { RouteObject } from 'react-router';
 import Expense from '@/pages/Expense';
 import Proposal from '@/pages/Expense/proposal';
 import Register from '@/pages/Expense/register';
+import ExpenseView from '@/pages/Expense/view';
 
 export const expenseRoutes: RouteObject = {
   path: 'expense', // 상위 Layout 기준 → /expense
@@ -21,6 +22,15 @@ export const expenseRoutes: RouteObject = {
       handle: {
         // hideNav 시 Layout에서 2차 메뉴 숨김처리
         hideNav: true,
+      },
+    },
+    {
+      path: ':expId',
+      element: <ExpenseView />,
+      handle: {
+        // hideNav 시 Layout에서 2차 메뉴 숨김처리
+        hideNav: true,
+        hideTitle: true,
       },
     },
   ],

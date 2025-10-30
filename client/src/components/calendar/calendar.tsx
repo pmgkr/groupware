@@ -1,10 +1,11 @@
 // client/src/components/calendar/calendar.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { View } from "react-big-calendar";
 import { parse } from "date-fns/parse";
 import CustomToolbar from "./toolbar";
 import CalendarView from "./view";
 import EventDialog from "./EventDialog";
+import EventViewDialog from "./EventViewDialog";
 
 // 셀렉트 옵션 타입 정의
 interface SelectOption {
@@ -32,6 +33,7 @@ interface CalendarEvent {
   author: string;
   description: string;
   resource: {
+    id?: number;
     seq: number;
     userId: string;
     teamId: number;
@@ -48,8 +50,8 @@ interface CalendarEvent {
     schIsHoliday: string;
     schDescription: string;
     schStatus: string;
-    schModifiedAt: Date;
     schCreatedAt: Date;
+    schModifiedAt: Date;
   };
 }
 
@@ -67,20 +69,24 @@ interface CustomCalendarProps {
   eventFilter?: EventFilter;
   defaultView?: View;
   defaultDate?: Date;
+  onSaveEvent?: (eventData: any) => Promise<boolean>;
+  onDateChange?: (date: Date) => void;
 }
 
 // 기본 이벤트 제목 매핑 함수
 const defaultEventTitleMapper: EventTitleMapper = (eventType: string) => {
   switch (eventType) {
-    case 'eventVacation':
+    case 'vacationDay':
       return '연차';
-    case 'eventHalfDayMorning':
+    case 'vacationHalfMorning':
       return '오전 반차';
-    case 'eventHalfDayAfternoon':
+    case 'vacationHalfAfternoon':
       return '오후 반차';
-    case 'eventQuarter':
-      return '반반차';
-    case 'eventOfficialLeave':
+    case 'vacationQuarterMorning':
+      return '오전 반반차';
+    case 'vacationQuarterAfternoon':
+      return '오후 반반차';
+    case 'vacationOfficial':
       return '공가';
     case 'eventRemote':
       return '재택';
@@ -187,15 +193,24 @@ export default function CustomCalendar({
   eventTitleMapper = defaultEventTitleMapper,
   eventFilter = defaultEventFilter,
   defaultView = 'month',
-  defaultDate = new Date()
+  defaultDate = new Date(),
+  onSaveEvent,
+  onDateChange
 }: CustomCalendarProps) {
   const [myEvents, setMyEvents] = useState<CalendarEvent[]>(initialEvents);
   const [currentDate, setCurrentDate] = useState(defaultDate);
   const [currentView, setCurrentView] = useState<View>(defaultView);
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
+  const [isEventViewDialogOpen, setIsEventViewDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   
   // 셀렉트 옵션 설정 => 툴바에 반영됨
   const [selectConfigsState, setSelectConfigsState] = useState<SelectConfig[]>(selectConfigs);
+
+  // initialEvents가 변경되면 myEvents 업데이트
+  useEffect(() => {
+    setMyEvents(initialEvents);
+  }, [initialEvents]);
 
   // 이벤트 필터링 로직
   const filteredEvents = eventFilter(myEvents, selectConfigsState);
@@ -228,6 +243,10 @@ export default function CustomCalendar({
     }
     
     setCurrentDate(newDate);
+    // 부모 컴포넌트에 날짜 변경 알림
+    if (onDateChange) {
+      onDateChange(newDate);
+    }
   };
 
   const handleViewChange = (view: View) => {
@@ -254,10 +273,92 @@ export default function CustomCalendar({
     setIsEventDialogOpen(false);
   };
 
-  const handleSaveEvent = (eventData: any) => {
+  // 이벤트 클릭 핸들러
+  const handleSelectEvent = (event: CalendarEvent) => {
+    setSelectedEvent(event);
+    setIsEventViewDialogOpen(true);
+  };
+
+  // 이벤트 뷰 다이얼로그 닫기
+  const handleCloseEventViewDialog = () => {
+    setIsEventViewDialogOpen(false);
+    setSelectedEvent(null);
+  };
+
+  // 이벤트 취소 신청 핸들러
+  const handleRequestCancelEvent = async () => {
+    if (!selectedEvent) {
+      console.error('selectedEvent가 없습니다.');
+      return;
+    }
+    
+    try {
+      console.log('취소 신청 - selectedEvent:', selectedEvent);
+      console.log('취소 신청 - resource:', selectedEvent.resource);
+      console.log('취소 신청 - resource.id:', selectedEvent.resource?.id);
+      console.log('취소 신청 - resource.seq:', selectedEvent.resource?.seq);
+      
+      // resource가 없으면 에러
+      if (!selectedEvent.resource) {
+        console.error('selectedEvent.resource가 없습니다.');
+        alert('일정 정보를 찾을 수 없습니다.');
+        return;
+      }
+      
+      // id로만 이벤트를 찾음 (seq는 사용하지 않음)
+      const eventId = selectedEvent.resource.id;
+      console.log('취소 신청 - eventId:', eventId);
+      
+      if (!eventId) {
+        console.error('일정 ID를 찾을 수 없습니다. resource 객체:', selectedEvent.resource);
+        alert('일정 정보를 찾을 수 없습니다. (ID 없음)');
+        return;
+      }
+
+      const { scheduleApi } = await import('@/api/calendar');
+      const currentStatus = selectedEvent.resource.schStatus;
+      
+      // 현재 상태에 따라 다른 처리
+      if (currentStatus === 'Y') {
+        // 등록 완료 상태 → 취소 신청 (H로 변경)
+        console.log('API 호출 - 취소 신청 (Y → H)');
+        await scheduleApi.updateScheduleStatus(eventId, 'H');
+        alert('취소 신청이 완료되었습니다.');
+      } else if (currentStatus === 'H') {
+        // 취소 요청됨 상태 → 취소 완료 (N으로 변경)
+        console.log('API 호출 - 취소 완료 (H → N)');
+        await scheduleApi.updateScheduleStatus(eventId, 'N');
+        alert('일정 취소가 완료되었습니다.');
+      }
+      
+      // 다이얼로그 닫기
+      handleCloseEventViewDialog();
+      
+      // 부모 컴포넌트에 날짜 변경 알림하여 데이터 새로고침
+      if (onDateChange) {
+        onDateChange(currentDate);
+      }
+    } catch (error) {
+      console.error('취소 처리 실패:', error);
+      alert('취소 처리에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
+  const handleSaveEvent = async (eventData: any) => {
+    // 부모 컴포넌트의 onSaveEvent가 있으면 호출
+    if (onSaveEvent) {
+      const success = await onSaveEvent(eventData);
+      if (success) {
+        // 성공 시 다이얼로그 닫기
+        setIsEventDialogOpen(false);
+      }
+      return;
+    }
+
+    // onSaveEvent가 없으면 기본 동작 (로컬 상태에만 추가)
     // eventType에 따른 MySQL enum 값 매핑
     const getSchType = (eventType: string) => {
-      if (['eventVacation', 'eventHalfDayMorning', 'eventHalfDayAfternoon', 'eventQuarter', 'eventOfficialLeave'].includes(eventType)) {
+      if (['vacationDay', 'vacationHalfMorning', 'vacationHalfAfternoon', 'vacationQuarterMorning', 'vacationQuarterAfternoon', 'vacationOfficial'].includes(eventType)) {
         return 'vacation';
       }
       return 'event';
@@ -265,13 +366,15 @@ export default function CustomCalendar({
 
     const getSchVacationType = (eventType: string): string | null => {
       switch (eventType) {
-        case 'eventVacation':
-        case 'eventOfficialLeave':
+        case 'vacationDay':
           return 'day';
-        case 'eventHalfDayMorning':
-        case 'eventHalfDayAfternoon':
+        case 'vacationOfficial':
+          return 'official';
+        case 'vacationHalfMorning':
+        case 'vacationHalfAfternoon':
           return 'half';
-        case 'eventQuarter':
+        case 'vacationQuarterMorning':
+        case 'vacationQuarterAfternoon':
           return 'quarter';
         default:
           return null;
@@ -284,8 +387,10 @@ export default function CustomCalendar({
           return 'remote';
         case 'eventField':
           return 'field';
-        default:
+        case 'eventEtc':
           return 'etc';
+        default:
+          return null;
       }
     };
 
@@ -300,6 +405,7 @@ export default function CustomCalendar({
       author: eventData.author,
       description: eventData.description,
       resource: {
+        id: undefined, // DB에서 생성된 후에야 id를 받을 수 있음
         seq: Date.now(), // 임시 ID (실제로는 DB에서 생성)
         userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x", // 실제로는 로그인한 사용자 ID
         teamId: 1, // 실제로는 사용자의 팀 ID
@@ -322,6 +428,7 @@ export default function CustomCalendar({
 
     // 이벤트 목록에 추가
     setMyEvents(prev => [...prev, newEvent as any]);
+    setIsEventDialogOpen(false);
   };
 
   return (
@@ -344,6 +451,7 @@ export default function CustomCalendar({
           setCurrentView(view as View);
         }}
         onViewChange={handleViewChange}
+        onSelectEvent={handleSelectEvent}
       />
       
       {/* 일정 등록 Dialog */}
@@ -352,6 +460,39 @@ export default function CustomCalendar({
         onClose={handleCloseEventDialog}
         onSave={handleSaveEvent}
         selectedDate={currentDate}
+      />
+
+      {/* 일정 상세 보기 Dialog */}
+      <EventViewDialog
+        isOpen={isEventViewDialogOpen}
+        onClose={handleCloseEventViewDialog}
+        onRequestCancel={handleRequestCancelEvent}
+        selectedEvent={selectedEvent ? {
+          id: selectedEvent.resource.id?.toString() || selectedEvent.resource.seq?.toString() || '0',
+          title: selectedEvent.title,
+          description: selectedEvent.description,
+          startDate: selectedEvent.resource.schSdate,
+          endDate: selectedEvent.resource.schEdate,
+          startTime: selectedEvent.resource.schStime,
+          endTime: selectedEvent.resource.schEtime,
+          allDay: selectedEvent.resource.schIsAllday === 'Y',
+          category: selectedEvent.resource.schType,
+          eventType: selectedEvent.resource.schVacationType 
+            ? `event${selectedEvent.resource.schVacationType.charAt(0).toUpperCase() + selectedEvent.resource.schVacationType.slice(1)}`
+            : selectedEvent.resource.schEventType
+            ? `event${selectedEvent.resource.schEventType.charAt(0).toUpperCase() + selectedEvent.resource.schEventType.slice(1)}`
+            : 'event',
+          author: selectedEvent.author,
+          userId: selectedEvent.resource.userId,
+          teamId: selectedEvent.resource.teamId,
+          status: selectedEvent.resource.schStatus === 'Y' 
+            ? "등록 완료" 
+            : selectedEvent.resource.schStatus === 'H' 
+            ? "취소 요청됨" 
+            : "취소 완료",
+          cancelRequestDate: selectedEvent.resource.schStatus === 'H' ? selectedEvent.resource.schModifiedAt?.toString() : undefined,
+          createdAt: selectedEvent.resource.schCreatedAt?.toString()
+        } : undefined}
       />
     </div>
   );

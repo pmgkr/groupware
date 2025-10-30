@@ -5,6 +5,8 @@ import Toolbar from "@components/working/toolbar";
 import Table from "@components/working/table";
 import WorkHoursBar from "@components/ui/WorkHoursBar";
 import { Badge } from "@components/ui/badge";
+import Overview from "@components/working/Overview";
+
 // 근무 데이터 타입 정의
 interface WorkData {
   date: string;
@@ -266,12 +268,27 @@ export default function WorkHoursTable() {
     console.log('근무 등록 클릭');
   };
 
-  // 현재 주의 월/주차 표시 형식
+  // 현재 주의 날짜 범위 표시 형식 (월요일 ~ 일요일)
   const formatWeekDisplay = (date: Date) => {
-    const month = date.getMonth() + 1;
-    const weekNumber = getWeekOfMonth(date);
-    const weekName = getWeekName(weekNumber);
-    return `${month}월 ${weekName}주`;
+    // 해당 주의 월요일 구하기
+    const dayOfWeek = date.getDay();
+    const monday = new Date(date);
+    // 일요일(0)인 경우 -6일, 나머지는 -(dayOfWeek-1)일
+    const daysToMonday = dayOfWeek === 0 ? -6 : -(dayOfWeek - 1);
+    monday.setDate(date.getDate() + daysToMonday);
+    
+    // 해당 주의 일요일 구하기 (월요일 + 6일)
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    
+    const formatDate = (d: Date) => {
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      return `${year}년 ${month}월 ${day}일`;
+    };
+    
+    return `${formatDate(monday)} - ${formatDate(sunday)}`;
   };
 
   // currentDate가 변경될 때 data 업데이트
@@ -313,7 +330,7 @@ export default function WorkHoursTable() {
   }, [weekData]);
 
   return (
-    <div className="p-6">
+    <div>
       <Toolbar
         onNavigate={onNavigate}
         onView={onView}
@@ -323,9 +340,8 @@ export default function WorkHoursTable() {
         onSelectChange={onSelectChange}
         onAddEvent={onAddEvent}
         formatWeekDisplay={formatWeekDisplay}
-        weeklyStats={weeklyStats}
       />
-
+      <Overview weeklyStats={weeklyStats} />
       <Table 
         data={data} 
         onOvertimeRequest={handleOvertimeRequest}

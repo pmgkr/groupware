@@ -7,5 +7,6 @@ export * from './common';
 export * from './expense/';
 export * from './teams';
 export * from './office';
+export * from './calendar';
 // export * from './users';
 // export * from './working';
