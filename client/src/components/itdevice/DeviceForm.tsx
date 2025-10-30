@@ -1,6 +1,11 @@
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import { Select, SelectGroup, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textbox } from '@/components/ui/textbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/assets/images/icons';
+import { DayPicker } from '../daypicker';
+import { useState } from 'react';
+import { formatKST } from '@/utils';
+import { Button } from '../ui/button';
 
 export type DeviceFormData = {
   device: string;
@@ -10,7 +15,7 @@ export type DeviceFormData = {
   os?: string;
   ram?: string;
   gpu?: string;
-  ssdhdd?: string;
+  storage?: string;
   p_date: string;
 };
 
@@ -22,6 +27,10 @@ type DeviceFormProps = {
 
 export function DeviceForm({ form, onChange, mode = 'create' }: DeviceFormProps) {
   const readOnly = mode === 'view';
+
+  const [open, setOpen] = useState(false);
+  const [selectDate, setSelectDate] = useState(form.p_date || formatKST(new Date(), true));
+  const date = new Date(selectDate);
 
   return (
     <TableColumn>
@@ -81,16 +90,20 @@ export function DeviceForm({ form, onChange, mode = 'create' }: DeviceFormProps)
         {form.device === 'Laptop' && (
           <>
             <TableColumnCell>
-              {readOnly ? form.os : <input type="text" value={form.os} onChange={(e) => onChange('os', e.target.value)} />}
+              {readOnly ? form.os || '-' : <input type="text" value={form.os} onChange={(e) => onChange('os', e.target.value)} />}
             </TableColumnCell>
             <TableColumnCell>
-              {readOnly ? form.ram : <input type="text" value={form.ram} onChange={(e) => onChange('ram', e.target.value)} />}
+              {readOnly ? form.ram || '-' : <input type="text" value={form.ram} onChange={(e) => onChange('ram', e.target.value)} />}
             </TableColumnCell>
             <TableColumnCell>
-              {readOnly ? form.gpu : <input type="text" value={form.gpu} onChange={(e) => onChange('gpu', e.target.value)} />}
+              {readOnly ? form.gpu || '-' : <input type="text" value={form.gpu} onChange={(e) => onChange('gpu', e.target.value)} />}
             </TableColumnCell>
             <TableColumnCell>
-              {readOnly ? form.ssdhdd : <input type="text" value={form.ssdhdd} onChange={(e) => onChange('ssdhdd', e.target.value)} />}
+              {readOnly ? (
+                form.storage || '-'
+              ) : (
+                <input type="text" value={form.storage} onChange={(e) => onChange('storage', e.target.value)} />
+              )}
             </TableColumnCell>
           </>
         )}
@@ -100,13 +113,34 @@ export function DeviceForm({ form, onChange, mode = 'create' }: DeviceFormProps)
           {readOnly ? (
             form.p_date
           ) : (
-            <Textbox
-              id="entryDate"
-              type="date"
-              className="w-full justify-start border-0"
-              value={form.p_date}
-              onChange={(e) => onChange('p_date', e.target.value)}
-            />
+            <Popover open={open} onOpenChange={setOpen}>
+              <div className="relative">
+                <PopoverTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-[45px] w-full rounded-none border-0 px-5 text-left font-normal text-gray-900 shadow-none">
+                    <Calendar className="ml-auto size-4.5 opacity-50" />
+                    {selectDate}
+                  </Button>
+                </PopoverTrigger>
+              </div>
+              <PopoverContent className="w-auto p-0" align="start">
+                <DayPicker
+                  key={selectDate}
+                  captionLayout="dropdown"
+                  mode="single"
+                  selected={date}
+                  month={date}
+                  onSelect={(d) => {
+                    if (!d) return;
+                    setSelectDate(formatKST(d, true));
+                    onChange('p_date', formatKST(d, true));
+                    setOpen(false);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
           )}
         </TableColumnCell>
       </TableColumnBody>

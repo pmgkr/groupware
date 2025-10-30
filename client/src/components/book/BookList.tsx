@@ -46,11 +46,6 @@ export default function BookList() {
   // 화면에서 보여줄 번호 (페이지 기준 연속 번호)
   const startNo = (page - 1) * pageSize;
 
-  // 페이지 변경 핸들러
-  /* const handlePageChange = (nextPage: number) => {
-    setPageInfo((prev) => ({ ...prev, page: nextPage }));
-  }; */
-
   //다이얼로그 열림
   const [open, setOpen] = useState(false);
 
@@ -96,7 +91,7 @@ export default function BookList() {
         b_publish: form.publish,
         b_buylink: form.buylink,
         b_date: today,
-        b_buy_date: purchaseDate, // ✅ 구매일자
+        b_buy_date: purchaseDate,
         b_status: '완료',
       };
       const res = await registerBook(payload as BookRegisterPayload);
@@ -163,7 +158,13 @@ export default function BookList() {
           </Button>
         </div>
         {user?.user_id === Administrator && (
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog
+            open={open}
+            onOpenChange={(open) => {
+              if (confirmState.open) return;
+              setOpen(open);
+            }}
+            modal={false}>
             <DialogTrigger asChild>
               <Button size="sm">도서 등록</Button>
             </DialogTrigger>
@@ -206,7 +207,7 @@ export default function BookList() {
                 <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
                 <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
                 <TableCell className="max-w-[150px] truncate">{post.publish}</TableCell>
-                <TableCell>{post.team_id}</TableCell>
+                <TableCell>{post.team_name}</TableCell>
                 <TableCell>{post.user_name}</TableCell>
                 <TableCell>{formatKST(post.purchaseAt, true)}</TableCell>
               </TableRow>

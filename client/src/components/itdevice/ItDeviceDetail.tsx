@@ -2,37 +2,39 @@ import { SectionHeader } from '@components/ui/SectionHeader';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import React, { useEffect, useState } from 'react';
 import { DeviceForm, type DeviceFormData } from './DeviceForm';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
-import { Textbox } from '../ui/textbox';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { getItDeviceDetail, type Device, type DeviceHistory } from '@/api';
+import {
+  getItDeviceDetail,
+  getMemberList,
+  getTeamList,
+  registerItDeviceUser,
+  updateItDevice,
+  updateItDeviceStatus,
+  type Device,
+  type DeviceHistory,
+} from '@/api';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+import { formatKST } from '@/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/assets/images/icons';
+import { DayPicker } from '../daypicker';
 
 export default function itDeviceDetail() {
   const { id } = useParams<{ id: string }>(); // /itdevice/:id
   const navigate = useNavigate();
 
-  type Post = {
-    id: number;
-    device: string;
-    brand: string;
-    model: string;
-    serial: string;
-    os: string;
-    ram: string;
-    gpu: string;
-    ssdhdd: string;
-    purchaseAt: string;
-    createdAt: string;
-    user: string;
-  };
-
   const [posts, setPosts] = useState<Device | null>(null);
   const [history, setHistory] = useState<DeviceHistory[]>([]);
-
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [selectDate, setSelectDate] = useState(formatKST(new Date(), true));
+
+  const date = new Date(selectDate);
 
   useEffect(() => {
     if (!id) return;
@@ -51,29 +53,40 @@ export default function itDeviceDetail() {
 
   //사용이력
   // 현재 장비
-
-  const deviceHistories = history;
   const currentUser = history.find((h) => !h.returnedAt);
-  //const currentUser = deviceHistories.find((h) => h.returnedAt === null);
   const previousUsers = history
     .filter((h) => h.returnedAt) // returnedAt이 존재하면 이전 사용자
     .sort((a, b) => new Date(b.returnedAt!).getTime() - new Date(a.returnedAt!).getTime());
 
   //반납하기
-  const handleReturn = (historyId: number) => {
+  const handleReturn = async (historyId: number) => {
     const now = new Date().toISOString();
+
     setHistory((prev) => prev.map((h) => (h.id === historyId ? { ...h, returnedAt: now } : h)));
+    try {
+      await updateItDeviceStatus(Number(id), '재고');
+      setPosts((prev) => (prev ? { ...prev, it_status: '재고' } : prev));
+
+      //console.log('✅ 반납 완료 → 재고 상태로 변경');
+    } catch (err) {
+      //console.error('❌ 반납 후 상태 변경 실패:', err);
+    }
   };
 
   //dialog
   const [openEdit, setOpenEdit] = useState(false);
   const [openAddUser, setOpenAddUser] = useState(false);
 
+  //등록
   const [form, setForm] = useState<DeviceFormData>({
     device: '',
     brand: '',
     model: '',
     serial: '',
+    os: '',
+    ram: '',
+    gpu: '',
+    storage: '',
     p_date: '',
   });
 
@@ -84,26 +97,124 @@ export default function itDeviceDetail() {
         brand: posts.brand,
         model: posts.model,
         serial: posts.serial,
+        os: posts.os,
+        ram: posts.ram,
+        gpu: posts.gpu,
+        storage: posts.storage,
         p_date: posts.p_date,
       });
+
+      if (posts.p_date) {
+        setSelectDate(posts.p_date);
+      }
     }
   }, [posts]);
   const handleChange = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
-  /* const handleSave = () => {
-    // posts 배열에서 해당 id를 찾아 업데이트
-    setPosts((prev) => prev.map((p) => (p.id === posts.id ? { ...p, ...form } : p)));
-    setOpenEdit(false);
-  }; */
+
+  const handleSave = async () => {
+    if (!id) return;
+
+    try {
+      const dto = { ...form, it_seq: Number(id) };
+      await updateItDevice(dto);
+
+      setPosts((prev) => (prev ? { ...prev, ...form } : prev));
+    } catch (err) {
+      console.error('❌ 장비 정보 수정 실패:', err);
+      alert('수정 중 오류가 발생했습니다.');
+    }
+  };
 
   //사용자 추가
+  const [teams, setTeams] = useState<{ team_id: number; team_name: string }[]>([]);
   const [newForm, setNewForm] = useState({
-    team: '',
+    team_id: '',
+    team_name: '',
     user: '',
-    createdAt: new Date().toISOString().slice(0, 10),
+    user_id: '',
+    createdAt: '',
   });
+  //팀 목록 불러오기
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getTeamList();
+        setTeams(res);
+      } catch (err) {
+        console.error('❌ 팀 목록 불러오기 실패:', err);
+      }
+    })();
+  }, []);
 
+  const handleNewFormChange = (key: string, value: string | number) => {
+    setNewForm((prev) => {
+      const updated = { ...prev, [key]: value };
+      return updated;
+    });
+  };
+  // 이름 입력 시 자동으로 user_id 조회
+  useEffect(() => {
+    if (!newForm.user) return;
+    const fetchUserId = async () => {
+      try {
+        const res = await getMemberList();
+        // 이름이 일치하는 사용자 찾기 (team_id 일치 시 필터 강화 가능)
+        const matched = res.find((m) => m.user_name === newForm.user);
+
+        if (matched) {
+          handleNewFormChange('user_id', matched.user_id);
+        } else {
+          handleNewFormChange('user_id', '');
+        }
+      } catch (err) {
+        console.error('❌ 사용자 목록 조회 실패:', err);
+      }
+    };
+    fetchUserId();
+  }, [newForm.user]);
+
+  useEffect(() => {
+    if (openAddUser) {
+      const today = formatKST(new Date(), true);
+      setSelectDate(today);
+      handleNewFormChange('createdAt', today);
+    }
+  }, [openAddUser]);
+
+  //사용자 등록 클릭
+  const handleAddUserClick = async () => {
+    if (!newForm.team_id || !newForm.user) {
+      alert('팀과 사용자를 입력해주세요.');
+      return;
+    }
+    const finalDate = newForm.createdAt && newForm.createdAt.trim() !== '' ? newForm.createdAt : new Date().toISOString().slice(0, 10);
+    try {
+      await registerItDeviceUser({
+        it_seq: Number(id),
+        ih_user_id: newForm.user_id,
+        ih_user_name: newForm.user,
+        ih_team_id: newForm.team_id,
+        ih_created_at: finalDate,
+      });
+      // 사용자 등록 시 it_status = '사용'으로 변경
+      /* await updateItDeviceStatus(Number(id), '사용');
+      setPosts((prev) => (prev ? { ...prev, it_status: '사용' } : prev)); */
+      //console.log(newForm);
+      const updated = await getItDeviceDetail(Number(id));
+      setHistory(updated.history);
+      setOpenAddUser(false);
+    } catch (err) {
+      console.error('❌ 사용자 등록 실패:', err);
+      alert('등록 중 오류가 발생했습니다.');
+    }
+  };
+
+  function formatDate(isoString: string | null) {
+    if (!isoString) return '';
+    return isoString.slice(0, 10); // 'YYYY-MM-DD'
+  }
   // 컨펌 다이얼로그상태
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
@@ -111,70 +222,29 @@ export default function itDeviceDetail() {
     title: string;
   }>({ open: false, title: '' });
 
-  if (!posts) return <div className="p-4">장비를 찾을 수 없습니다.</div>;
-
-  // 공용 핸들러
-  const handleNewFormChange = (key: keyof typeof newForm, value: string) => {
-    setNewForm((prev) => ({ ...prev, [key]: value }));
-  };
-  const handleAddUserClick = () => {
-    if (!newForm.team || !newForm.user) {
-      alert('팀이름과 사용자는 반드시 입력해야 합니다.');
-      return;
-    }
-    openConfirm('사용자를 등록하시겠습니까?', () => handleAddUser(posts.id, newForm.user, newForm.team, newForm.createdAt));
-  };
-  const handleAddUser = (deviceId: number, user: string, team: string, createdAt?: string) => {
-    /* setHistory((prev) => {
-      const now = new Date().toISOString();
-
-      // 현재 사용자(반납 안 한 사람) 찾기
-      const current = prev.find((h) => h.id === deviceId && h.returnedAt === null);
-
-      let updated = prev;
-      if (current) {
-        // 반납 처리
-        updated = prev.map((h) => (h.id === current.id ? { ...h, returnedAt: now } : h));
-      }
-
-      // 새 사용자 추가
-      const newHistory = {
-        historyId: Date.now(),
-        deviceId,
-        user,
-        team,
-        createdAt: newForm.createdAt,
-        returnedAt: null,
-      };
-
-      return [...updated, newHistory];
-    }); */
-
-    setOpenAddUser(false); // 다이얼로그 닫기
-  };
-
-  function formatDate(isoString: string | null) {
-    if (!isoString) return '';
-    return isoString.slice(0, 10); // 'YYYY-MM-DD'
-  }
-
-  // 열기 함수
   const openConfirm = (title: string, action: () => void) => {
     setConfirmState({ open: true, title, action });
   };
 
+  if (!posts) return <div className="p-4">장비를 찾을 수 없습니다.</div>;
+
   return (
     <>
-      <h2 className="mb-5 text-3xl font-bold">
+      <h2 className="pt-3 text-3xl font-bold">
         [{posts?.device ?? '-'}] {posts?.model ?? '-'}
       </h2>
       <div className="flex gap-8">
-        <div className="flex-1 rounded-md border p-8">
+        <div className="flex-1 p-6 pl-0">
           {/* 수정버튼 dialog */}
-          <Dialog open={openEdit} onOpenChange={setOpenEdit}>
+          <Dialog
+            open={openEdit}
+            onOpenChange={(open) => {
+              if (confirmState.open) return;
+              setOpenEdit(open);
+            }}
+            modal={false}>
             <div className="mb-4 flex items-center justify-between border-b border-b-gray-300 pb-1.5">
               <SectionHeader title="장비 정보" className="mb-0 border-0" />
-              {/* 다이얼로그 버튼은 DialogTrigger로 감싸기 */}
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
                   수정
@@ -192,10 +262,9 @@ export default function itDeviceDetail() {
                   취소
                 </Button>
                 <Button
-                /* onClick={() => {
+                  onClick={() => {
                     openConfirm('장비 정보를 수정하시겠습니까?', () => handleSave());
-                  }} */
-                >
+                  }}>
                   완료
                 </Button>
               </DialogFooter>
@@ -208,8 +277,8 @@ export default function itDeviceDetail() {
             <div className="text-sm text-gray-500">장비 정보를 불러오는 중...</div>
           )}
         </div>
-        <div className="flex-1 rounded-md border p-8">
-          <Dialog open={openAddUser} onOpenChange={setOpenAddUser}>
+        <div className="flex-1 p-6">
+          <Dialog open={openAddUser} onOpenChange={setOpenAddUser} modal={false}>
             <div className="mb-4 flex items-center justify-between border-b border-b-gray-300 pb-1.5">
               <SectionHeader title="사용이력" className="mb-0 border-0" />
               <DialogTrigger asChild>
@@ -229,20 +298,56 @@ export default function itDeviceDetail() {
                   <TableColumnHeaderCell>등록일자</TableColumnHeaderCell>
                 </TableColumnHeader>
                 <TableColumnBody className="text-base">
-                  <TableColumnCell>
-                    <input type="text" onChange={(e) => handleNewFormChange('team', e.target.value)} />
+                  <TableColumnCell className="p-0">
+                    <Select
+                      value={String(newForm.team_id || '')}
+                      onValueChange={(value) => {
+                        const team = teams.find((t) => String(t.team_id) === value);
+                        handleNewFormChange('team_id', Number(value));
+                        handleNewFormChange('team_name', team?.team_name || '');
+                      }}>
+                      <SelectTrigger className="w-full border-0 bg-transparent">
+                        <SelectValue placeholder="팀선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teams.map((team) => (
+                          <SelectItem key={team.team_id} value={String(team.team_id)}>
+                            {team.team_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </TableColumnCell>
                   <TableColumnCell>
                     <input type="text" onChange={(e) => handleNewFormChange('user', e.target.value)} />
                   </TableColumnCell>
                   <TableColumnCell className="p-0">
-                    <Textbox
-                      id="entryDate"
-                      type="date"
-                      className="w-full justify-start border-0"
-                      value={newForm.createdAt}
-                      onChange={(e) => handleNewFormChange('createdAt', e.target.value)}
-                    />
+                    <Popover open={open} onOpenChange={setOpen}>
+                      <div className="relative">
+                        <PopoverTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-[45px] w-full rounded-none border-0 px-5 text-left font-normal text-gray-900 shadow-none">
+                            <Calendar className="ml-auto size-4.5 opacity-50" />
+                            {selectDate}
+                          </Button>
+                        </PopoverTrigger>
+                      </div>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <DayPicker
+                          captionLayout="dropdown"
+                          mode="single"
+                          selected={date}
+                          onSelect={(d) => {
+                            if (!d) return;
+                            setSelectDate(formatKST(d, true));
+                            handleNewFormChange('createdAt', formatKST(d, true));
+                            setOpen(false);
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </TableColumnCell>
                 </TableColumnBody>
               </TableColumn>
@@ -307,7 +412,11 @@ export default function itDeviceDetail() {
         open={confirmState.open}
         onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
         title={confirmState.title}
-        onConfirm={() => confirmState.action?.()}
+        onConfirm={async () => {
+          await confirmState.action?.(); // handleSave 실행
+          setConfirmState((prev) => ({ ...prev, open: false }));
+          setOpenEdit(false); // 여기서 수정 다이얼로그 닫기
+        }}
       />
     </>
   );

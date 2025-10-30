@@ -1,5 +1,11 @@
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import { Textbox } from '@/components/ui/textbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/assets/images/icons';
+import { DayPicker } from '../daypicker';
+import { useState } from 'react';
+import { formatKST } from '@/utils';
+import { Button } from '../ui/button';
 
 export type BookFormData = {
   id?: number;
@@ -31,6 +37,9 @@ type BookFormProps =
 export function BookForm(props: BookFormProps) {
   const { form, mode } = props;
   const readOnly = mode === 'view';
+  const [open, setOpen] = useState(false);
+  const [selectDate, setSelectDate] = useState(formatKST(new Date(), true));
+  const date = new Date(selectDate);
 
   // onChange는 view 모드일 때 없음
   const handleChange = mode === 'view' ? undefined : props.onChange;
@@ -144,14 +153,34 @@ export function BookForm(props: BookFormProps) {
 
         {/* 구매일자 (create 전용) */}
         {mode === 'create' && (
-          <TableColumnCell>
-            <Textbox
-              id="entryDate"
-              type="date"
-              className="w-full justify-start border-0"
-              value={form.purchaseAt}
-              onChange={(e) => handleChange?.('purchaseAt', e.target.value)}
-            />
+          <TableColumnCell className="p-0">
+            <Popover open={open} onOpenChange={setOpen}>
+              <div className="relative">
+                <PopoverTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-[45px] w-full rounded-none border-0 px-5 text-left font-normal text-gray-900 shadow-none">
+                    <Calendar className="ml-auto size-4.5 opacity-50" />
+                    {selectDate}
+                  </Button>
+                </PopoverTrigger>
+              </div>
+              <PopoverContent className="w-auto p-0" align="start">
+                <DayPicker
+                  key={selectDate}
+                  captionLayout="dropdown"
+                  mode="single"
+                  selected={date}
+                  month={date}
+                  onSelect={(d) => {
+                    if (!d) return;
+                    setSelectDate(formatKST(d, true));
+                    handleChange?.('purchaseAt', formatKST(d, true));
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
           </TableColumnCell>
         )}
       </TableColumnBody>
