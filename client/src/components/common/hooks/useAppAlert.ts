@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { type AppAlertItem } from '@/components/ui/AppAlertStack';
+import { type AppAlertItem } from '@/components/common/ui/AppAlert/AppAlert';
 import { v4 as uuidv4 } from 'uuid';
 
 export function useAppAlert() {

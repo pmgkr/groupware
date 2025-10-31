@@ -4,8 +4,8 @@ import * as XLSX from 'xlsx';
 import { useUser } from '@/hooks/useUser';
 import { formatKST, formatAmount } from '@/utils';
 
-import { AppAlertStack } from '@/components/ui/AppAlertStack';
-import { useAppAlert } from '@/components/ui/hooks/useAppAlert';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
 import { Checkbox } from '@components/ui/checkbox';
@@ -46,8 +46,9 @@ export default function ExpenseList() {
   const [checkedItems, setCheckedItems] = useState<number[]>([]); // 선택된 seq 목록
   const [checkAll, setCheckAll] = useState(false); // 전체 선택 상태
 
-  // 공통 AppAlert State
-  const { alerts, addAlert, removeAlert } = useAppAlert(); // AppAlert 훅 사용
+  const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
+
   const [alertDialogOpen, setAlertDialogOpen] = useState(false); // Alert Dialog 오픈용 State
   const [dialogTitle, setDialogTitle] = useState(''); // Alert Dialog 제목
   const [dialogMsg, setDialogMsg] = useState(''); // Alert Dialog 메시지
@@ -126,11 +127,27 @@ export default function ExpenseList() {
   // 선택 삭제 이벤트 핸들러
   const handleDeleteSelected = () => {
     if (checkedItems.length === 0) {
-      addAlert({
-        title: '삭제할 비용 항목을 선택해주세요.',
-        icon: <OctagonAlert />,
-        duration: 2000,
+      addDialog({
+        title: '삭제 확인',
+        message: '이 항목을 정말 삭제하시겠습니까?',
+        confirmText: '삭제',
+        cancelText: '취소',
+        onConfirm: () => {
+          addAlert({
+            title: '삭제 완료',
+            message: '항목이 성공적으로 삭제되었습니다.',
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        },
       });
+
+      // addAlert({
+      //   title: '삭제할 비용 항목을 선택해주세요.',
+      //   message: '삭제할 비용 항목을 선택해주세요.',
+      //   icon: <OctagonAlert />,
+      //   duration: 2000,
+      // });
       return;
     }
 
@@ -502,8 +519,6 @@ export default function ExpenseList() {
           />
         )}
       </div>
-
-      <AppAlertStack alerts={alerts} onRemove={removeAlert} />
 
       <AlertDialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
         <AlertDialogContent className="sm:max-w-sm">
