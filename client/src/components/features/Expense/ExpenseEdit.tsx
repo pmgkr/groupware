@@ -1,14 +1,23 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useToggleState } from '@/hooks/useToggleState';
 import { UploadArea, type UploadAreaHandle, type PreviewFile } from './UploadArea';
-import { AttachmentField } from './AttachmentField';
+import { AttachmentFieldEdit } from './AttachmentFieldEdit';
 import { useUser } from '@/hooks/useUser';
-import { formatAmount, mapExcelToExpenseItems } from '@/utils';
-import { uploadFilesToServer, expenseRegister, getBankList, type BankList, getExpenseType, type ExpenseType } from '@/api';
+import { formatKST, formatAmount } from '@/utils';
+import {
+  getExpenseView,
+  getBankList,
+  type BankList,
+  uploadFilesToServer,
+  type ExpenseViewDTO,
+  delExpenseAttachment,
+  expenseUpdate,
+} from '@/api';
 
 import {
   AlertDialog,
@@ -21,23 +30,23 @@ import {
   AlertDialogCancel,
 } from '@components/ui/alert-dialog';
 import { SectionHeader } from '@components/ui/SectionHeader';
+import { Badge } from '@components/ui/badge';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
 import { Textarea } from '@components/ui/textarea';
 import { Button } from '@components/ui/button';
-
 import { DayPicker } from '@components/daypicker';
 import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
+import { Calendar, TooltipNoti, Close } from '@/assets/images/icons';
+import { FileText, UserRound } from 'lucide-react';
 
-import { Add, Calendar, TooltipNoti, Delete, Close } from '@/assets/images/icons';
-import { UserRound, FileText } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { statusIconMap, getLogMessage } from './utils/statusUtils';
 
-import { format } from 'date-fns';
-import { zodResolver } from '@hookform/resolvers/zod';
-
-const expenseSchema = z.object({
+// ✅ zod schema
+const editSchema = z.object({
   el_method: z.string().nonempty('결제 수단을 선택해주세요.'),
   account_name: z.string().nonempty('예금주명을 입력해주세요.'),
   bank_code: z.string().nonempty('은행명을 선택해주세요.'),
@@ -64,64 +73,141 @@ const expenseSchema = z.object({
     .optional(),
 });
 
-export default function ExpenseRegister() {
+type UploadedPreviewFile = {
+  seq: number;
+  ei_seq: number;
+  fname: string;
+  sname: string;
+};
+
+type EditFormValues = z.infer<typeof editSchema>;
+
+interface ExpenseEditProps {
+  expId: string;
+}
+
+export default function ExpenseEdit({ expId }: ExpenseEditProps) {
   const navigate = useNavigate();
-  const { user_id, user_name, user_level } = useUser();
-  const uploadRef = useRef<UploadAreaHandle>(null);
+  const { user_id } = useUser();
 
-  const { state } = useLocation(); // Excel 업로드 시 state.excelData 로 전달
-  // 비용 항목 기본 세팅값 : Excel 업로드 시 0으로 세팅, 수기 작성 시 5개로 세팅
-  const [articleCount, setArticleCount] = useState(state?.excelData ? 0 : 5);
-  const [expenseTypes, setExpenseTypes] = useState<ExpenseType[]>([]); // 비용 유형 API State
   const [bankList, setBankList] = useState<BankList[]>([]);
+  const [data, setData] = useState<ExpenseViewDTO | null>(null);
+  const [header, setHeader] = useState<any>(null);
+  const [logs, setLogs] = useState<any>(null);
 
-  const [files, setFiles] = useState<PreviewFile[]>([]);
-  const [hasFiles, setHasFiles] = useState(false); // 추가 업로드 버튼 활성화 State
-  const [linkedRows, setLinkedRows] = useState<Record<string, number | null>>({}); // 업로드된 이미지와 연결된 행 번호 저장용
-  const [activeFile, setActiveFile] = useState<string | null>(null); // UploadArea & Attachment 연결상태 공유용
+  const [newAttachments, setNewAttachments] = useState<Record<number, PreviewFile[]>>({}); // 새 증빙자료 State
+  const [rowAttachments, setRowAttachments] = useState<Record<number, UploadedPreviewFile[]>>({}); // 기존 증빙자료 State
 
+  const [loading, setLoading] = useState(true);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertDescription, setAlertDescription] = useState('');
   const [successState, setSuccessState] = useState(false);
-  const [alertOpen, setAlertOpen] = useState(false); // Alert 오픈 On/Off
-  const [alertTitle, setAlertTitle] = useState<string | null>(null); // Alert 타이틀 State
-  const [alertDescription, setAlertDescription] = useState<string | null>(null); // Alert 내용 State
 
-  const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : ''); // YYYY-MM-DD Date 포맷 변경
+  const formatDate = (d?: string | Date | null) => {
+    if (!d) return '';
+    const date = typeof d === 'string' ? new Date(d) : d;
+    return format(date, 'yyyy-MM-dd');
+  };
 
-  const form = useForm({
-    mode: 'onSubmit',
-    resolver: zodResolver(expenseSchema) as any,
+  // ✅ react-hook-form 초기화
+  const form = useForm<EditFormValues>({
+    resolver: zodResolver(editSchema),
     defaultValues: {
       el_method: '',
       bank_account: '',
-      bank_name: '',
       bank_code: '',
+      bank_name: '',
       account_name: '',
       el_deposit: '',
       remark: '',
-      expense_items: Array.from({ length: articleCount }).map(() => ({
-        type: '',
-        title: '',
-        number: '',
-        date: '',
-        price: '',
-        tax: '',
-        total: '',
-        pro_id: '',
-      })),
+      expense_items: [],
     },
   });
 
-  const { control } = form;
-  const { fields, append, replace, remove } = useFieldArray({
-    control,
-    name: 'expense_items',
-  });
-
+  const { control, reset } = form;
+  const { fields, replace } = useFieldArray({ control, name: 'expense_items' });
   const watchedItems = useWatch({
     control,
     name: 'expense_items',
   });
 
+  // ✅ 은행 + 비용유형 가져오기
+  useEffect(() => {
+    (async () => {
+      try {
+        const [bankResult] = await Promise.allSettled([getBankList()]);
+
+        if (bankResult.status === 'fulfilled') {
+          const formattedBanks = bankResult.value.map((item: any) => item.code);
+          setBankList(formattedBanks);
+        } else {
+          console.error('은행 목록 불러오기 실패:', bankResult.reason);
+        }
+      } catch (error) {
+        console.error('예상치 못한 오류 발생:', error);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getExpenseView(expId);
+        setData(res);
+        setHeader(res.header);
+        setLogs(res.logs || []);
+
+        console.log('📥 비용 상세 데이터:', res);
+
+        const h = res.header;
+        const mappedItems = res.items.map((i) => ({
+          type: h.el_type,
+          title: i.ei_title,
+          date: formatDate(i.ei_pdate),
+          price: i.ei_amount.toString(),
+          tax: i.ei_tax.toString(),
+          total: i.ei_total.toString(),
+        }));
+
+        reset({
+          el_method: h.el_method,
+          bank_account: h.bank_account,
+          bank_name: h.bank_name,
+          bank_code: h.bank_code,
+          account_name: h.account_name,
+          el_deposit: formatDate(h.el_deposit) || '',
+          remark: h.remark || '',
+          expense_items: mappedItems,
+        });
+
+        const groupedAttachments: Record<number, UploadedPreviewFile[]> = {};
+
+        res.items.forEach((item, idx) => {
+          if (item.attachments && item.attachments.length > 0) {
+            groupedAttachments[idx + 1] = item.attachments.map((att: any) => ({
+              seq: att.seq,
+              ei_seq: att.ei_seq,
+              fname: att.ea_fname,
+              sname: att.ea_sname,
+              isServerFile: true,
+            }));
+          }
+        });
+
+        setRowAttachments(groupedAttachments);
+
+        setLoading(false);
+      } catch (err) {
+        console.error('❌ 상세 조회 실패:', err);
+        setAlertTitle('조회 실패');
+        setAlertDescription('비용 데이터를 불러오지 못했습니다.');
+        setAlertOpen(true);
+      }
+    })();
+  }, [expId, reset, replace]);
+
+  // 합계 계산
   const totalSum = useMemo(() => {
     if (!Array.isArray(watchedItems)) return 0;
     return watchedItems.reduce((sum, item) => {
@@ -132,169 +218,39 @@ export default function ExpenseRegister() {
 
   const formattedTotal = totalSum.toLocaleString();
 
-  useEffect(() => {
-    (async () => {
-      try {
-        // 유저레벨이 staff나 user인 경우 nexp_type2 : manager나 admin인 경우 nexp_type1 호출
-        const expenseTypeParam = user_level === 'staff' || user_level === 'user' ? 'nexp_type2' : 'nexp_type1';
+  // 증빙자료 삭제 핸들러
+  const handleDeleteServerFile = async (seq: any, rowIdx: number) => {
+    const backup = rowAttachments[rowIdx] || [];
 
-        // 페이지 렌더 시 API 병렬 호출
-        const [bankResult, expResult] = await Promise.allSettled([getBankList(), getExpenseType(expenseTypeParam)]);
-
-        // API 개별 결과 관리
-        if (bankResult.status === 'fulfilled') {
-          const formattedBanks = bankResult.value.map((item: any) => item.code);
-          setBankList(formattedBanks);
-        } else {
-          console.error('은행 목록 불러오기 실패:', bankResult.reason);
-        }
-
-        if (expResult.status === 'fulfilled') {
-          setExpenseTypes(expResult.value);
-        } else {
-          console.error('비용 유형 불러오기 실패:', expResult.reason);
-        }
-      } catch (error) {
-        // Promise.allSettled 자체는 에러를 던지지 않지만, 안전하게 감싸줌
-        console.error('예상치 못한 오류 발생:', error);
-      }
-    })();
-  }, []);
-
-  // Excel 업로드 시 전달받은 rowCount 반영
-  useEffect(() => {
-    if (state?.excelData && Array.isArray(state.excelData)) {
-      const mapped = mapExcelToExpenseItems(state.excelData);
-
-      if (mapped.length > 0) {
-        setArticleCount(mapped.length);
-        replace(mapped);
-
-        form.reset({
-          ...form.getValues(),
-          expense_items: mapped,
-        });
-      } else {
-        form.reset({
-          ...form.getValues(),
-          expense_items: Array.from({ length: 5 }).map(() => ({
-            type: '',
-            title: '',
-            number: '',
-            date: '',
-            price: '',
-            tax: '',
-            total: '',
-            pro_id: '',
-          })),
-        });
-      }
-    }
-  }, [state]);
-
-  // 항목 추가 버튼 클릭 시
-  const handleAddArticle = () => {
-    setArticleCount((prev) => prev + 1);
-    append({ type: '', title: '', number: '', date: '', price: '', tax: '', total: '', pro_id: '' });
-  };
-
-  // 항목 삭제 버튼 클릭 시
-  const handleRemoveArticle = (index: number) => {
-    if (fields.length === 1) {
-      setAlertTitle('알림');
-      setAlertDescription('최소 1개의 비용 항목이 등록되어야 합니다.');
-      setAlertOpen(true);
-      return;
-    }
-
-    remove(index); // 해당 인덱스 행 삭제
-    form.clearErrors('expense_items');
-    setArticleCount((prev) => Math.max(prev - 1, 1)); // 상태 동기화
-  };
-
-  // 증빙자료 추가 업로드 버튼 클릭 시 업로드 창 노출
-  const handleAddUploadClick = () => {
-    uploadRef.current?.openFileDialog();
-  };
-
-  // UploadArea에 파일이 업로드 파악 후 setHasFiels State 변경
-  const handleFilesChange = (newFiles: PreviewFile[]) => {
-    setFiles(newFiles);
-    setHasFiles(newFiles.length > 0);
-    setLinkedRows((prev) => {
-      const updated = { ...prev };
-      newFiles.forEach((f) => {
-        if (!(f.name in updated)) updated[f.name] = null;
-      });
-      return updated;
-    });
-  };
-
-  // AttachmentField에 개별 업로드 시
-  const handleAttachUpload = (newFiles: PreviewFile[], rowIndex: number | null) => {
-    setFiles((prev) => {
-      const unique = newFiles.filter((nf) => !prev.some((pf) => pf.name === nf.name));
-      return [...prev, ...unique];
-    });
-    handleDropFiles(newFiles, '', rowIndex);
-  };
-
-  // UploadArea → AttachmentField 드롭 시
-  const handleDropFiles = (files: PreviewFile[], fieldName: string, rowIndex: number | null) => {
-    setLinkedRows((prev) => {
-      const updated = { ...prev };
-
-      if (rowIndex === null) {
-        files.forEach((file) => {
-          if (updated[file.name] !== undefined) {
-            updated[file.name] = null;
-          }
-        });
-      } else {
-        files.forEach((file) => {
-          updated[file.name] = rowIndex;
-        });
-      }
-
-      return updated;
-    });
-  };
-
-  // 등록 버튼 클릭 시
-  const onSubmit = async (values: any) => {
     try {
-      const items = values.expense_items.filter((v: any) => v.title || v.price || v.total);
+      setRowAttachments((prev) => {
+        const updated = { ...prev };
+        updated[rowIdx] = backup.filter((f) => f.seq !== seq);
+        return updated;
+      });
 
-      if (items.length === 0) {
-        setAlertTitle('알림');
-        setAlertDescription('최소 1개의 비용 항목이 등록되어야 합니다.');
-        setAlertOpen(true);
-        return;
-      }
+      await delExpenseAttachment(seq);
+      console.log(`✅ 첨부파일 #${seq} 삭제 완료`);
+    } catch (err) {
+      console.error('❌ 삭제 실패, 복구 진행:', err);
+      setRowAttachments((prev) => ({
+        ...prev,
+        [rowIdx]: backup,
+      }));
+    }
+  };
 
-      // [1] 연결된 파일 업로드
-      const linkedFiles = files.filter((f) => linkedRows[f.name] !== null);
+  // ✅ 폼 제출 (임시)
+  const onSubmit = async (values: EditFormValues) => {
+    try {
+      // 1️⃣ 새 업로드할 파일 목록 정리
+      const allNewFiles = Object.entries(newAttachments).flatMap(([rowIdx, files]) => files.map((f) => ({ ...f, rowIdx: Number(rowIdx) })));
+
       let uploadedFiles: any[] = [];
 
-      if (linkedFiles.length > 0) {
-        // 🔹 행별 그룹화
-        const filesByRow = linkedFiles.reduce<Record<number, PreviewFile[]>>((acc, f) => {
-          const rowIdx = linkedRows[f.name];
-          if (rowIdx !== null) {
-            if (!acc[rowIdx]) acc[rowIdx] = [];
-            acc[rowIdx].push(f);
-          }
-          return acc;
-        }, {});
-
-        // 🔹 업로드 대상 파일 변환
-        const allNewFiles = linkedFiles.map((f) => ({
-          ...f,
-          rowIdx: linkedRows[f.name]!,
-        }));
-
+      if (allNewFiles.length > 0) {
         const uploadable = await Promise.all(
-          allNewFiles.map(async (f) => {
+          allNewFiles.map(async (f, idx) => {
             const res = await fetch(f.preview);
             const blob = await res.blob();
 
@@ -303,48 +259,46 @@ export default function ExpenseRegister() {
             const item = values.expense_items?.[f.rowIdx - 1];
             const purchaseDate = item?.date ? format(new Date(item.date), 'yyyyMMdd') : format(new Date(), 'yyyyMMdd');
 
-            // ✅ 사용자명, 증빙수단 정제
-            const safeUserNm = (user_name || 'unknown').replace(/[^\w가-힣]/g, '');
-            const safeElType = (item.type || '기타').replace(/[^\w가-힣]/g, '');
+            const safeUserNm = (header.user_nm || 'unknown').replace(/[^\w가-힣]/g, '');
+            const safeElType = (header.el_type || '기타').replace(/[^\w가-힣]/g, '');
 
-            // ✅ 기존 파일 중 가장 큰 인덱스
-            const existingFiles = filesByRow[f.rowIdx] ?? [];
+            // ✅ 1️⃣ 기존 첨부파일 중 가장 큰 인덱스 찾기
+            const existingFiles = rowAttachments[f.rowIdx] ?? [];
             let maxIndex = -1;
 
             existingFiles.forEach((att) => {
-              const match = att.name.match(/_(\d+)\.[^.]+$/);
+              const match = att.fname.match(/_(\d+)\.[^.]+$/); // 예: _3.jpg
               if (match) {
                 const num = parseInt(match[1], 10);
                 if (!isNaN(num) && num > maxIndex) maxIndex = num;
               }
             });
 
-            // ✅ 같은 rowIdx 내 새 파일 순서
+            // ✅ 2️⃣ 같은 rowIdx의 새 파일 중 순서(index)
             const newFilesInRow = allNewFiles.filter((nf) => nf.rowIdx === f.rowIdx);
             const localIndex = newFilesInRow.indexOf(f);
 
-            // ✅ 최종 인덱스
+            // ✅ 3️⃣ 최종 인덱스 = (기존 파일 중 최대 인덱스 + 1) + 로컬 인덱스
             const nextIndex = maxIndex + 1 + localIndex;
 
-            // ✅ 최종 파일명 포맷
+            // ✅ 4️⃣ 최종 파일명
             const newFileName = `${safeUserNm}_${safeElType}_${purchaseDate}_${nextIndex}.${ext}`;
 
             return new File([blob], newFileName, { type: f.type || 'image/png' });
           })
         );
 
-        // 🔹 서버 업로드
+        // 3️⃣ 서버 업로드
         uploadedFiles = await uploadFilesToServer(uploadable, 'nexpense');
         uploadedFiles = uploadedFiles.map((file, i) => ({
           ...file,
           rowIdx: allNewFiles[i]?.rowIdx ?? 0,
         }));
-
         console.log('✅ 업로드 완료:', uploadedFiles);
       }
 
-      // [3] 파일을 항목별로 매핑
-      const fileMap = uploadedFiles.reduce(
+      // 4️⃣ 업로드된 파일을 항목별로 매핑
+      const uploadedMap = uploadedFiles.reduce(
         (acc, file) => {
           if (!acc[file.rowIdx]) acc[file.rowIdx] = [];
           acc[file.rowIdx].push(file);
@@ -353,37 +307,64 @@ export default function ExpenseRegister() {
         {} as Record<number, any[]>
       );
 
-      // [4] expense_items에 파일 연결
-      const enrichedItems = items.map((item: any, idx: number) => ({
-        ...item,
-        attachments: fileMap[idx + 1] || [], // rowIndex는 1부터 시작해서 +1
-      }));
+      // 5️⃣ expense_items 병합
+      const enrichedItems = (values.expense_items ?? []).map((item, idx) => {
+        const rowIdx = idx + 1;
 
-      console.log('enrichedItems:', enrichedItems);
+        // (1) 기존 서버 첨부파일
+        const existingAtt =
+          rowAttachments[rowIdx]?.map((att) => ({
+            fname: att.fname,
+            sname: att.sname,
+            url: `${import.meta.env.VITE_API_BASE_URL}/uploads/nexpense/${att.sname}`,
+          })) ?? [];
 
-      // [5] 단일 객체로 데이터 전송
+        // (2) 새 업로드된 파일
+        const newAtt =
+          uploadedMap[rowIdx]?.map((f: any) => ({
+            fname: f.fname,
+            sname: f.sname,
+            url: f.url,
+          })) ?? [];
+
+        return {
+          el_type: item.type,
+          ei_title: item.title,
+          ei_pdate: item.date,
+          ei_number: item.number || null,
+          ei_amount: Number(item.price || 0),
+          ei_tax: Number(item.tax || 0),
+          ei_total: Number(item.total || 0),
+          pro_id: !item.pro_id || item.pro_id === '0' || isNaN(Number(item.pro_id)) ? null : Number(item.pro_id),
+          attachments: [...existingAtt, ...newAtt],
+        };
+      });
+
+      console.log('enrichedItems', enrichedItems);
+
+      // 6️⃣ 최종 payload 구성
       const payload = {
         header: {
           user_id: user_id!,
           el_method: values.el_method,
-          el_attach: files.length > 0 ? 'Y' : 'N',
-          el_deposit: values.el_deposit || '',
+          el_attach: enrichedItems.some((item) => item.attachments.length > 0) ? 'Y' : 'N',
+          el_deposit: values.el_deposit || null,
           bank_account: values.bank_account.replace(/-/g, ''),
-          bank_name: values.bank_name,
+          bank_name: values.bank_name || '',
           bank_code: values.bank_code,
           account_name: values.account_name,
           remark: values.remark || '',
         },
-        items: enrichedItems.map((i: any) => ({
-          el_type: i.type,
-          ei_title: i.title,
-          ei_pdate: i.date,
-          ei_number: i.number || null,
-          ei_amount: Number(i.price),
-          ei_tax: Number(i.tax || 0),
-          ei_total: Number(i.total),
-          pro_id: !i.pro_id || i.pro_id === '0' || isNaN(Number(i.pro_id)) ? null : Number(i.pro_id),
-          attachments: (i.attachments || []).map((att: any) => ({
+        items: enrichedItems.map((item: any) => ({
+          el_type: item.el_type ?? '',
+          ei_title: item.ei_title,
+          ei_pdate: item.ei_pdate,
+          ei_number: item.ei_number,
+          ei_amount: item.ei_amount,
+          ei_tax: item.ei_tax,
+          ei_total: item.ei_total,
+          pro_id: item.pro_id,
+          attachments: item.attachments.map((att: any) => ({
             filename: att.fname,
             savename: att.sname,
             url: att.url,
@@ -391,47 +372,59 @@ export default function ExpenseRegister() {
         })),
       };
 
-      console.log('📦 최종 payload:', payload);
+      console.log('📦 최종 수정 payload:', payload);
 
-      // 모든 리스트 병렬 API 호출 (성공/실패 결과 각각 수집)
-      const result = await expenseRegister(payload);
+      const res = await expenseUpdate(header.seq, payload);
 
-      console.log('✅ 등록 성공:', result);
-
-      if (result.ok && result.docs?.inserted) {
-        const { list_count, item_count } = result.docs.inserted;
-        setAlertTitle('비용 등록');
-        setAlertDescription(
-          `총 <span class="text-primary-blue-500">${item_count}개</span> 비용 항목이 <span class="text-primary-blue-500">${list_count}개</span>의 리스트로 등록 되었습니다.`
-        );
+      if (res.ok) {
+        setAlertTitle('수정 완료');
+        setAlertDescription('비용 정보가 성공적으로 수정되었습니다.');
         setSuccessState(true);
-        setAlertOpen(true);
       } else {
-        setAlertTitle('등록 실패');
+        setAlertTitle('수정 실패');
         setAlertDescription('등록 결과를 가져오지 못했습니다.');
-        setAlertOpen(true);
       }
-    } catch (err) {
-      console.error('❌ 등록 실패:', err);
-
-      setAlertTitle('등록 실패');
-      setAlertDescription(`등록 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.`);
       setAlertOpen(true);
-      return;
+    } catch (err) {
+      console.error('❌ 수정 실패:', err);
+      setAlertTitle('수정 실패');
+      setAlertDescription('수정 중 오류가 발생했습니다.');
+      setAlertOpen(true);
     }
   };
+
+  if (loading) return <p className="p-10 text-center text-gray-500">로딩 중...</p>;
 
   return (
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="grid min-h-160 grid-cols-6 grid-rows-1 gap-6">
-            <div className="col-span-4">
+          <div className="flex items-end justify-between border-b border-b-gray-300 pb-2">
+            <div>
+              <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-950">
+                [{header.el_method}] {header.el_title}{' '}
+                <Badge variant="grayish" size="md">
+                  임시저장
+                </Badge>
+              </h1>
+              <ul className="itmes-center flex gap-2 text-base text-gray-500">
+                <li className="text-gray-700">{header.exp_id}</li>
+                <li className="before:mr-2 before:inline-flex before:h-[3px] before:w-[3px] before:rounded-[50%] before:bg-gray-400 before:align-middle">
+                  {header.user_nm}
+                </li>
+                <li className="before:mr-2 before:inline-flex before:h-[3px] before:w-[3px] before:rounded-[50%] before:bg-gray-400 before:align-middle">
+                  {formatKST(header.wdate)}
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="flex min-h-140 flex-wrap justify-between pt-6 pb-12">
+            <div className="w-[74%] tracking-tight">
               <SectionHeader title="기본 정보" className="mb-4" />
               {/* 기본정보 입력 폼 */}
               <div className="mb-6">
                 <FormField
-                  control={form.control}
+                  control={control}
                   name="el_method"
                   render={({ field }) => (
                     <FormItem>
@@ -439,10 +432,10 @@ export default function ExpenseRegister() {
                         증빙 수단<span className="text-primary-blue-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-x-1.5 [&_button]:mb-0">
+                        <RadioGroup onValueChange={field.onChange} value={field.value} className="flex gap-x-1.5 [&_button]:mb-0">
                           <RadioButton value="PMG" label="PMG" variant="dynamic" iconHide />
                           <RadioButton value="MCS" label="MCS" variant="dynamic" iconHide />
-                          <RadioButton value="개인카드" label="개인카드" variant="dynamic" iconHide />
+                          <RadioButton value="개인" label="개인카드" variant="dynamic" iconHide />
                           <RadioButton value="세금계산서" label="세금계산서" variant="dynamic" iconHide />
                           <RadioButton value="현금영수증" label="현금영수증" variant="dynamic" iconHide />
                         </RadioGroup>
@@ -452,10 +445,11 @@ export default function ExpenseRegister() {
                   )}
                 />
               </div>
+
               <div className="grid-row-3 mb-12 grid grid-cols-4 gap-y-6 tracking-tight">
                 <div className="pr-5 text-base leading-[1.5] text-gray-700">
                   <FormField
-                    control={form.control}
+                    control={control}
                     name="bank_account"
                     render={({ field }) => (
                       <FormItem>
@@ -497,9 +491,10 @@ export default function ExpenseRegister() {
                     )}
                   />
                 </div>
+
                 <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
                   <FormField
-                    control={form.control}
+                    control={control}
                     name="bank_code"
                     render={({ field }) => (
                       <FormItem>
@@ -537,9 +532,10 @@ export default function ExpenseRegister() {
                     )}
                   />
                 </div>
+
                 <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
                   <FormField
-                    control={form.control}
+                    control={control}
                     name="account_name"
                     render={({ field }) => (
                       <FormItem>
@@ -556,50 +552,45 @@ export default function ExpenseRegister() {
                     )}
                   />
                 </div>
+
                 <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
                   <FormField
-                    control={form.control}
+                    control={control}
                     name="el_deposit"
                     render={({ field }) => {
                       const { isOpen, setIsOpen, close } = useToggleState();
-
                       return (
-                        <FormItem className="flex flex-col">
+                        <FormItem>
                           <div className="flex h-6 justify-between">
                             <FormLabel className="gap-.5 font-bold text-gray-950">입금희망일</FormLabel>
                           </div>
                           <Popover open={isOpen} onOpenChange={setIsOpen}>
                             <div className="relative w-full">
                               <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant={'outline'}
-                                    className={cn(
-                                      'border-input h-11 w-full px-3 text-left text-base font-normal text-gray-700 hover:bg-[none]',
-                                      !field.value && 'text-muted-foreground hover:text-muted-foreground'
-                                    )}>
-                                    {field.value ? String(field.value) : <span>YYYY-MM-DD</span>}
-                                    <Calendar className="ml-auto size-4.5 opacity-50" />
-                                  </Button>
-                                </FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    'border-input h-11 w-full px-3 text-left text-base font-normal text-gray-700 hover:bg-[none]',
+                                    !field.value && 'text-muted-foreground hover:text-muted-foreground'
+                                  )}>
+                                  {field.value ? String(field.value) : 'YYYY-MM-DD'}
+                                  <Calendar className="ml-auto size-4.5 opacity-50" />
+                                </Button>
                               </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <DayPicker
+                                  mode="single"
+                                  selected={field.value ? new Date(field.value) : undefined}
+                                  onSelect={(date) => {
+                                    const formattedDate = date ? formatDate(date) : null;
+                                    field.onChange(formattedDate);
+
+                                    if (date) close();
+                                  }}
+                                />
+                              </PopoverContent>
                             </div>
-
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <DayPicker
-                                captionLayout="dropdown"
-                                mode="single"
-                                selected={field.value ? new Date(field.value) : undefined}
-                                onSelect={(date) => {
-                                  const formattedDate = date ? formatDate(date) : null;
-                                  field.onChange(formattedDate);
-
-                                  if (date) close();
-                                }}
-                              />
-                            </PopoverContent>
                           </Popover>
-                          <FormMessage />
                         </FormItem>
                       );
                     }}
@@ -607,7 +598,7 @@ export default function ExpenseRegister() {
                 </div>
                 <div className="col-span-4 text-base leading-[1.5] text-gray-700">
                   <FormField
-                    control={form.control}
+                    control={control}
                     name="remark"
                     render={({ field }) => (
                       <FormItem>
@@ -615,7 +606,11 @@ export default function ExpenseRegister() {
                           <FormLabel className="gap-.5 font-bold text-gray-950">비고</FormLabel>
                         </div>
                         <FormControl>
-                          <Textarea placeholder="추가 기입할 정보가 있으면 입력해 주세요." className="h-16 min-h-16" {...field} />
+                          <Textarea
+                            placeholder="추가 기입할 정보가 있으면 입력해 주세요."
+                            className="scrollbar-hide h-16 min-h-16"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -629,31 +624,15 @@ export default function ExpenseRegister() {
               <div>
                 {fields.map((field, index) => {
                   return (
-                    <article key={field.id} className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0">
-                      <div className="absolute top-1 left-0 flex w-full items-center justify-between gap-2 pl-[68%]">
-                        {/* <FormField
-                            control={form.control}
-                            name={`expense_items.${index}.pro_id`}
-                            render={({ field }) => (
-                              <FormItem className="flex items-center gap-x-2">
-                                <FormControl></FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          /> */}
-                        <button
-                          type="button"
-                          className="text-primary-blue-500 flex cursor-pointer items-center gap-1 text-sm hover:underline"
-                          onClick={() => setActiveFile(field.id)}>
+                    <article
+                      key={`${field.id}`}
+                      className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0 last-of-type:pb-4">
+                      <div className="absolute top-2 left-0 flex w-full items-center justify-end gap-2">
+                        <Button type="button" variant="outlinePrimary" size="xs" className="border-0">
                           <FileText className="size-3.5" /> 기안서 매칭
-                        </button>
-
-                        <Button type="button" variant="svgIcon" size="icon" onClick={() => handleRemoveArticle(index)}>
-                          <Close className="size-4" />
                         </Button>
                       </div>
                       <div className="flex justify-between">
-                        {/* Excel로 로드 시 승인번호 숨김처리로 노출 */}
                         <input type="hidden" name={`expense_items.${index}.number`} value="" />
                         <div className="grid w-[66%] grid-cols-3 gap-4 tracking-tight">
                           <div className="text-base leading-[1.5] text-gray-700">
@@ -663,32 +642,18 @@ export default function ExpenseRegister() {
                               render={({ field }) => (
                                 <FormItem>
                                   <div className="flex h-6 justify-between">
-                                    <FormLabel className="gap-.5 font-bold text-gray-950">비용 유형</FormLabel>
+                                    <FormLabel className="gap-.5 font-bold text-gray-950">비용유형</FormLabel>
                                   </div>
                                   <FormControl>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
-                                      <FormControl>
-                                        <SelectTrigger className="aria-[invalid=true]:border-destructive w-full">
-                                          <SelectValue placeholder={expenseTypes.length ? '비용 유형 선택' : '불러오는 중...'} />
-                                        </SelectTrigger>
-                                      </FormControl>
-                                      <SelectContent className="max-h-80 w-full">
-                                        {expenseTypes.map((item, i) => (
-                                          <SelectItem key={i} value={item.code}>
-                                            {item.code}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
+                                    <Input {...field} className="cursor-default bg-gray-100 text-gray-600" readOnly />
                                   </FormControl>
-                                  <FormMessage />
                                 </FormItem>
                               )}
                             />
                           </div>
                           <div className="text-base leading-[1.5] text-gray-700">
                             <FormField
-                              control={form.control}
+                              control={control}
                               name={`expense_items.${index}.title`}
                               render={({ field }) => (
                                 <FormItem>
@@ -696,16 +661,15 @@ export default function ExpenseRegister() {
                                     <FormLabel className="gap-.5 font-bold text-gray-950">가맹점명</FormLabel>
                                   </div>
                                   <FormControl>
-                                    <Input placeholder="가맹점명" {...field} />
+                                    <Input {...field} />
                                   </FormControl>
-                                  <FormMessage />
                                 </FormItem>
                               )}
                             />
                           </div>
                           <div className="text-base leading-[1.5] text-gray-700">
                             <FormField
-                              control={form.control}
+                              control={control}
                               name={`expense_items.${index}.date`}
                               render={({ field }) => {
                                 const { isOpen, setIsOpen, close } = useToggleState();
@@ -751,7 +715,7 @@ export default function ExpenseRegister() {
                           </div>
                           <div className="text-base leading-[1.5] text-gray-700">
                             <FormField
-                              control={form.control}
+                              control={control}
                               name={`expense_items.${index}.price`}
                               render={({ field }) => (
                                 <FormItem>
@@ -760,6 +724,7 @@ export default function ExpenseRegister() {
                                   </div>
                                   <FormControl>
                                     <Input
+                                      {...field}
                                       inputMode="numeric"
                                       placeholder="금액"
                                       value={field.value ? formatAmount(field.value) : ''}
@@ -779,14 +744,13 @@ export default function ExpenseRegister() {
                                       }}
                                     />
                                   </FormControl>
-                                  <FormMessage />
                                 </FormItem>
                               )}
                             />
                           </div>
                           <div className="text-base leading-[1.5] text-gray-700">
                             <FormField
-                              control={form.control}
+                              control={control}
                               name={`expense_items.${index}.tax`}
                               render={({ field }) => (
                                 <FormItem>
@@ -815,14 +779,13 @@ export default function ExpenseRegister() {
                                       }}
                                     />
                                   </FormControl>
-                                  <FormMessage />
                                 </FormItem>
                               )}
                             />
                           </div>
                           <div className="text-base leading-[1.5] text-gray-700">
                             <FormField
-                              control={form.control}
+                              control={control}
                               name={`expense_items.${index}.total`}
                               render={({ field }) => (
                                 <FormItem>
@@ -839,34 +802,56 @@ export default function ExpenseRegister() {
                                       className="focus-visible:border-input cursor-default bg-gray-100 text-gray-600"
                                     />
                                   </FormControl>
-                                  <FormMessage />
                                 </FormItem>
                               )}
                             />
                           </div>
                         </div>
                         <div className="w-[32%] pl-2">
-                          <AttachmentField
-                            name={`expense_attachment${index}`}
+                          <AttachmentFieldEdit
                             rowIndex={index + 1}
-                            onDropFiles={handleDropFiles}
-                            onUploadFiles={handleAttachUpload}
-                            activeFile={activeFile}
-                            setActiveFile={setActiveFile}
-                            files={files}
+                            serverFiles={[
+                              ...(rowAttachments[index + 1]?.map((att) => ({
+                                seq: att.seq,
+                                name: att.fname,
+                                type: 'image',
+                                preview: `${import.meta.env.VITE_API_BASE_URL}/uploads/nexpense/${att.sname}`,
+                              })) ?? []),
+                              ...(newAttachments[index + 1] ?? []),
+                            ]}
+                            onUploadNew={(newFiles, rowIdx) => {
+                              console.log('📤 업로드된 새 파일:', newFiles, '→ row', rowIdx);
+
+                              setNewAttachments((prev) => ({
+                                ...prev,
+                                [rowIdx]: [...(prev[rowIdx] || []), ...newFiles],
+                              }));
+                            }}
+                            onDeleteServerFile={(file, rowIdx) => {
+                              if ('seq' in file && typeof file.seq === 'number') {
+                                console.log(`🗑 삭제 요청: file #${file.seq} (row ${rowIdx})`);
+                                handleDeleteServerFile(file.seq, rowIdx);
+                                setRowAttachments((prev) => {
+                                  const updated = { ...prev };
+                                  updated[rowIdx] = (updated[rowIdx] || []).filter((f) => f.seq !== file.seq);
+                                  return updated;
+                                });
+                              } else {
+                                // 새로 올린 파일을 삭제했을 때 newAttachments에서도 제거
+                                setNewAttachments((prev) => {
+                                  const updated = { ...prev };
+                                  updated[rowIdx] = (updated[rowIdx] || []).filter((f) => f.name !== file.name);
+                                  return updated;
+                                });
+                              }
+                            }}
                           />
                         </div>
                       </div>
                     </article>
                   );
                 })}
-
-                <div className="flex justify-end">
-                  <Button type="button" size="sm" onClick={handleAddArticle}>
-                    비용 항목 추가
-                  </Button>
-                </div>
-                <div className="bg-primary-blue-100 mt-2 flex justify-between px-4 py-4 text-base font-medium">
+                <div className="bg-primary-blue-100 flex justify-between px-4 py-4 text-base font-medium">
                   <div className="flex w-[66%] justify-between">
                     <span>총 비용</span>
                     <span>{formattedTotal ? formattedTotal : 0} 원</span>
@@ -874,44 +859,45 @@ export default function ExpenseRegister() {
                 </div>
               </div>
             </div>
-            <div className="relative col-span-2">
-              <div className="sticky top-20 left-0 flex h-[calc(100vh-var(--spacing)*22)] flex-col justify-center gap-3 rounded-xl bg-gray-300 p-5">
-                <div className="flex flex-none items-center justify-between">
-                  <Link to="" className="text-primary-blue-500 flex gap-0.5 text-sm font-medium">
-                    <TooltipNoti className="size-5" />
-                    비용 관리 증빙자료 업로드 가이드
-                  </Link>
-                  {hasFiles && (
-                    <Button type="button" size="sm" onClick={handleAddUploadClick}>
-                      추가 업로드
-                    </Button>
-                  )}
-                </div>
-                <UploadArea
-                  ref={uploadRef}
-                  files={files}
-                  setFiles={setFiles}
-                  onFilesChange={handleFilesChange}
-                  linkedRows={linkedRows}
-                  activeFile={activeFile}
-                  setActiveFile={setActiveFile}
-                />
-                <div className="flex flex-none justify-between">
-                  <div className="flex gap-1.5">
-                    <Button type="button" variant="outline" size="sm" onClick={() => uploadRef.current?.deleteSelectedFiles()}>
-                      선택 삭제
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => uploadRef.current?.deleteAllFiles()}>
-                      전체 삭제
-                    </Button>
+
+            <div className="w-[24%] px-4">
+              <h2 className="mb-2 text-lg font-bold text-gray-800">로그</h2>
+              <div className="flex flex-col gap-8">
+                {logs.map((log: any) => (
+                  <div
+                    key={`${log.idx}-${log.exp_status}`}
+                    className="relative before:absolute before:bottom-[100%] before:left-[15.5px] before:mb-1 before:h-6 before:w-[1px] before:bg-gray-400/80 first:before:hidden">
+                    <div className="flex items-center gap-4">
+                      <span className="flex size-8 items-center justify-center rounded-full bg-white ring-1 ring-gray-300">
+                        {statusIconMap[log.exp_status as keyof typeof statusIconMap]}
+                      </span>
+                      <dl className="text-base leading-[1.3] text-gray-800">
+                        <dt>{getLogMessage(log)}</dt>
+                        {log.exp_status === 'Rejected' ? (
+                          <dd className="text-destructive text-[.88em]">반려 사유: {header.rej_reason}</dd>
+                        ) : (
+                          <dd className="text-[.88em] text-gray-500">
+                            {formatKST(
+                              log.exp_status === 'Approved'
+                                ? (header.ddate ?? log.log_date)
+                                : log.exp_status === 'Completed'
+                                  ? (header.edate ?? log.log_date)
+                                  : log.log_date
+                            ) || '-'}
+                          </dd>
+                        )}
+                      </dl>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
+
+          {/* ---------------------- 하단 버튼 ---------------------- */}
           <div className="my-10 flex justify-center gap-2">
             <Button type="submit" className="min-w-[120px]">
-              등록
+              수정
             </Button>
             <Button type="button" variant="outline" className="min-w-[120px]" asChild>
               <Link to="/expense">취소</Link>
@@ -920,20 +906,16 @@ export default function ExpenseRegister() {
         </form>
       </Form>
 
+      {/* ---------------------- Alert Dialog ---------------------- */}
       <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{alertTitle}</AlertDialogTitle>
-            <AlertDialogDescription
-              className="whitespace-pre-line text-gray-700"
-              dangerouslySetInnerHTML={{
-                __html: alertDescription || '', // HTML 태그 포함 허용
-              }}
-            />
+            <AlertDialogDescription>{alertDescription}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             {successState ? (
-              <AlertDialogAction className="h-8 px-3.5 text-sm" onClick={() => navigate('/expense')}>
+              <AlertDialogAction className="h-8 px-3.5 text-sm" onClick={() => navigate(`/expense/${expId}`)}>
                 확인
               </AlertDialogAction>
             ) : (
