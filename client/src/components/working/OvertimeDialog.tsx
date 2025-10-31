@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface WorkData {
   date: string;
-  workType: "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가";
+  workType: "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가" | "공휴일";
   startTime: string;
   endTime: string;
   basicHours: number;
@@ -35,12 +35,15 @@ interface WorkData {
     clientName: string;
     workDescription: string;
   };
+  overtimeId?: number; // 초과근무 ID
+  isHoliday?: boolean; // 공휴일 여부
 }
 
 interface OvertimeDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: OvertimeData) => void;
+  onCancel?: () => void; // 초과근무 취소 콜백
   selectedDay?: WorkData;
   selectedIndex?: number;
 }
@@ -57,7 +60,7 @@ interface OvertimeData {
   transportationAllowance: string;
 }
 
-export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, selectedIndex }: OvertimeDialogProps) {
+export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, selectedDay, selectedIndex }: OvertimeDialogProps) {
   const [formData, setFormData] = useState<OvertimeData>({
     overtimeHours: "",
     overtimeReason: "",
@@ -107,7 +110,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
     }
     
     // 평일인 경우 예상 퇴근 시간 검증
-    if (selectedDay && !isWeekend(selectedDay.dayOfWeek)) {
+    if (selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType)) {
       if (!formData.expectedEndTime) {
         newErrors.expectedEndTime = "예상 퇴근 시간을 선택해주세요.";
       }
@@ -122,8 +125,8 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
       }
     }
     
-    // 주말인 경우 초과근무 시간 및 보상 지급방식 검증
-    if (selectedDay && isWeekend(selectedDay.dayOfWeek)) {
+    // 주말 또는 공휴일인 경우 초과근무 시간 및 보상 지급방식 검증
+    if (selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType)) {
       if (!formData.overtimeHours) {
         newErrors.overtimeHours = "초과근무 시간을 선택해주세요.";
       }
@@ -182,6 +185,11 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
     return dayOfWeek === '토' || dayOfWeek === '일';
   };
 
+  // 주말 또는 공휴일 여부 확인 함수 (폼 표시 제어용)
+  const isWeekendOrHoliday = (dayOfWeek: string, workType: string) => {
+    return dayOfWeek === '토' || dayOfWeek === '일' || workType === '공휴일';
+  };
+
   // 토요일 여부 확인 함수
   const isSaturday = (dayOfWeek: string) => {
     return dayOfWeek === '토';
@@ -192,24 +200,40 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
     return dayOfWeek === '일' || workType === '공휴일';
   };
 
-  // 다이얼로그가 열릴 때 상태 초기화
+  // 다이얼로그가 열릴 때 상태 초기화 또는 기존 데이터 로드
   React.useEffect(() => {
     if (isOpen) {
-      setFormData({
-        overtimeHours: "",
-        overtimeReason: "",
-        clientName: "",
-        workDescription: "",
-        overtimeType: "",
-        expectedEndTime: "",
-        expectedEndMinute: "",
-        mealAllowance: "",
-        transportationAllowance: ""
-      });
+      // 기존 초과근무 데이터가 있는 경우 (승인대기, 승인완료 등)
+      if (selectedDay?.overtimeData) {
+        setFormData({
+          overtimeHours: selectedDay.overtimeData.overtimeHours || "",
+          overtimeReason: "",
+          clientName: selectedDay.overtimeData.clientName || "",
+          workDescription: selectedDay.overtimeData.workDescription || "",
+          overtimeType: selectedDay.overtimeData.overtimeType || "",
+          expectedEndTime: selectedDay.overtimeData.expectedEndTime || "",
+          expectedEndMinute: selectedDay.overtimeData.expectedEndMinute || "",
+          mealAllowance: selectedDay.overtimeData.mealAllowance || "",
+          transportationAllowance: selectedDay.overtimeData.transportationAllowance || ""
+        });
+      } else {
+        // 새로운 신청인 경우 초기화
+        setFormData({
+          overtimeHours: "",
+          overtimeReason: "",
+          clientName: "",
+          workDescription: "",
+          overtimeType: "",
+          expectedEndTime: "",
+          expectedEndMinute: "",
+          mealAllowance: "",
+          transportationAllowance: ""
+        });
+      }
       setHasUserInteracted(false); // 사용자 상호작용 상태 초기화
       setErrors({}); // 에러 상태 초기화
     }
-  }, [isOpen]);
+  }, [isOpen, selectedDay]);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -226,7 +250,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
         </DialogHeader>
         <div className="space-y-4 py-4">
           {/* 평일 (월-금) 신청 시 표시되는 내용 */}
-          {selectedDay && !isWeekend(selectedDay.dayOfWeek) && (
+          {selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
             <>
               <div className="space-y-3">
                 <Label htmlFor="expected-end-time">예상 퇴근 시간을 선택해주세요.</Label>
@@ -342,11 +366,11 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
             </>
           )}
 
-          {/* 주말 (토, 일) 신청 시 표시되는 내용 */}
-          {selectedDay && isWeekend(selectedDay.dayOfWeek) && (
+          {/* 주말 (토, 일) 또는 공휴일 신청 시 표시되는 내용 */}
+          {selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
             <>
               <div className="space-y-3">
-                <Label htmlFor="overtime-hours">주말 예상 근무 시간을 선택해주세요.</Label>
+                <Label htmlFor="overtime-hours">예상 근무 시간을 선택해주세요.</Label>
                 <Select
                   key="overtime-hours"
                   value={formData.overtimeHours || undefined}
@@ -446,8 +470,17 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, selectedDay, s
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSave}>신청하기</Button>
-          <Button variant="outline" onClick={handleClose}>닫기</Button>
+          {selectedDay?.overtimeStatus === '승인대기' ? (
+            <>
+              <Button variant="destructive" onClick={onCancel}>신청 취소하기</Button>
+              <Button variant="outline" onClick={handleClose}>닫기</Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={handleSave}>신청하기</Button>
+              <Button variant="outline" onClick={handleClose}>닫기</Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

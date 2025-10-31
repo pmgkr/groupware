@@ -14,7 +14,7 @@ const isToday = (date: string) => {
 // 근무 데이터 타입 정의
 interface WorkData {
   date: string;
-  workType: "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가";
+  workType: "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가" | "공휴일";
   startTime: string;
   endTime: string;
   basicHours: number;
@@ -38,6 +38,8 @@ interface WorkData {
     clientName: string;
     workDescription: string;
   };
+  overtimeId?: number; // 초과근무 ID
+  isHoliday?: boolean; // 공휴일 여부
 }
 
 interface TableProps {
@@ -64,6 +66,7 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
       case "외부근무": return "bg-primary-yellow-150 text-primary-orange-600";
       case "재택근무": return "bg-primary-blue-100 text-primary-blue-600";
       case "공가": return "bg-red-100 text-red-600";
+      case "공휴일": return "bg-red-200 text-red-700";
       default: return "bg-primary-gray-100 text-primary-gray";
     }
   };
@@ -260,6 +263,12 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
         isOpen={dialogOpen}
         onClose={handleDialogClose}
         onSave={handleOvertimeSave}
+        onCancel={() => {
+          if (selectedIndex !== null && onOvertimeCancel) {
+            onOvertimeCancel(selectedIndex);
+            handleDialogClose();
+          }
+        }}
         selectedDay={selectedIndex !== null ? data[selectedIndex] : undefined}
         selectedIndex={selectedIndex || undefined}
       />

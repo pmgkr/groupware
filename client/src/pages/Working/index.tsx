@@ -8,11 +8,12 @@ import { Badge } from "@components/ui/badge";
 import Overview from "@components/working/Overview";
 import { workingApi } from "@/api/working";
 import { useAuth } from "@/contexts/AuthContext";
+import { isHolidayCached } from "@/services/holidayApi";
 
 // 근무 데이터 타입 정의
 interface WorkData {
   date: string;
-  workType: "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가";
+  workType: "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가" | "공휴일";
   startTime: string;
   endTime: string;
   basicHours: number;
@@ -36,6 +37,8 @@ interface WorkData {
     clientName: string;
     workDescription: string;
   };
+  overtimeId?: number; // 초과근무 ID
+  isHoliday?: boolean; // 공휴일 여부
 }
 
 // 주차 계산 함수
@@ -175,7 +178,8 @@ const generateWeekData = (startDate: Date): WorkData[] => {
     const workData: WorkData = {
       date: dateString,
       dayOfWeek: dayOfWeek,
-      ...sampleData
+      ...sampleData,
+      isHoliday: false, // 샘플 데이터에서는 기본값 false
     };
     
     weekData.push(workData);
@@ -208,33 +212,116 @@ export default function WorkHoursTable() {
   // 헤더용 셀렉트 설정 (현재는 사용하지 않음)
   const selectConfigs: any[] = [];
 
-  const handleOvertimeRequest = (index: number, overtimeData?: any) => {
+  const handleOvertimeRequest = async (index: number, overtimeData?: any) => {
     const newData = [...data];
     const currentStatus = newData[index].overtimeStatus;
+    const selectedDay = newData[index];
     
     if (currentStatus === "신청하기" || currentStatus === "반려됨") {
-      newData[index].overtimeStatus = "승인대기";
-      // 신청 데이터 저장
-      if (overtimeData) {
-        newData[index].overtimeData = overtimeData;
-      }
-      // 재신청인 경우 반려 정보 초기화
-      if (currentStatus === "반려됨") {
-        newData[index].rejectionDate = undefined;
-        newData[index].rejectionReason = undefined;
+      try {
+        // ot_type 결정
+        let otType = 'weekday';
+        if (selectedDay.dayOfWeek === '토') {
+          otType = 'saturday';
+        } else if (selectedDay.dayOfWeek === '일') {
+          otType = 'sunday';
+        } else if (selectedDay.isHoliday || selectedDay.workType === '공휴일') {
+          // 공휴일 근무인 경우
+          otType = 'holiday';
+        }
+        
+        // 주말/공휴일 여부 확인
+        const isWeekend = selectedDay.dayOfWeek === '토' || selectedDay.dayOfWeek === '일';
+        const isHoliday = selectedDay.isHoliday || selectedDay.workType === '공휴일';
+        
+        // API 파라미터 구성
+        const apiParams: any = {
+          ot_type: otType,
+          ot_date: selectedDay.date,
+          ot_client: overtimeData.clientName,
+          ot_description: overtimeData.workDescription,
+        };
+        
+        // 평일인 경우: 예상 퇴근 시간, 식대, 교통비
+        if (!isWeekend && !isHoliday) {
+          // 예상 퇴근 시간 조합 (HH:mm:ss 형식)
+          const hour = overtimeData.expectedEndTime.padStart(2, '0');
+          const minute = overtimeData.expectedEndMinute.padStart(2, '0');
+          apiParams.ot_etime = `${hour}:${minute}:00`;
+          apiParams.ot_food = overtimeData.mealAllowance === 'yes' ? 'Y' : 'N';
+          apiParams.ot_trans = overtimeData.transportationAllowance === 'yes' ? 'Y' : 'N';
+          
+          // 평일인 경우 주말 필드는 기본값 설정 (API가 요구할 수 있음)
+          apiParams.ot_hours = '0';
+          apiParams.ot_reward = '';
+        }
+        
+        // 주말 또는 공휴일인 경우: 초과근무 시간, 보상 지급방식
+        if (isWeekend || isHoliday) {
+          apiParams.ot_hours = overtimeData.overtimeHours;
+          
+          // 보상 타입 변환
+          let rewardType = '';
+          if (overtimeData.overtimeType === 'special_vacation') {
+            rewardType = 'special';  // 특별대휴
+          } else if (overtimeData.overtimeType === 'compensation_vacation') {
+            rewardType = 'annual';  // 보상휴가
+          } else if (overtimeData.overtimeType === 'event') {
+            rewardType = 'pay';  // 수당지급
+          }
+          apiParams.ot_reward = rewardType;
+          
+          // 주말/공휴일인 경우 평일 필드는 기본값 설정 (API가 요구할 수 있음)
+          apiParams.ot_etime = '00:00:00';
+          apiParams.ot_food = 'N';
+          apiParams.ot_trans = 'N';
+        }
+        
+        // API 호출 전 파라미터 로깅
+        console.log('초과근무 신청 파라미터:', apiParams);
+        
+        // API 호출
+        await workingApi.requestOvertime(apiParams);
+        
+        console.log('초과근무 신청 성공');
+        
+        // 성공 시 데이터 다시 로드하여 최신 상태 반영
+        await loadWorkLogs();
+      } catch (error: any) {
+        console.error('초과근무 신청 실패:', error);
+        const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
+        alert(`초과근무 신청에 실패했습니다.\n오류: ${errorMessage}`);
       }
     }
-    setData(newData);
   };
 
-  const handleOvertimeCancel = (index: number) => {
-    const newData = [...data];
-    if (newData[index].overtimeStatus === "승인대기") {
-      newData[index].overtimeStatus = "신청하기";
-      newData[index].overtimeHours = 0;
-      newData[index].totalHours = newData[index].basicHours;
+  const handleOvertimeCancel = async (index: number) => {
+    const selectedDay = data[index];
+    
+    if (!selectedDay.overtimeId) {
+      alert('초과근무 ID를 찾을 수 없습니다.');
+      return;
     }
-    setData(newData);
+    
+    if (selectedDay.overtimeStatus !== "승인대기") {
+      alert('승인대기 상태의 초과근무만 취소할 수 있습니다.');
+      return;
+    }
+    
+    if (!confirm('초과근무 신청을 취소하시겠습니까?')) {
+      return;
+    }
+    
+    try {
+      await workingApi.cancelOvertime(selectedDay.overtimeId);
+      console.log('초과근무 취소 성공');
+      
+      // 성공 시 데이터 다시 로드하여 최신 상태 반영
+      await loadWorkLogs();
+    } catch (error) {
+      console.error('초과근무 취소 실패:', error);
+      alert('초과근무 취소에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   const handleOvertimeReapply = (index: number) => {
@@ -309,24 +396,37 @@ export default function WorkHoursTable() {
       const sdate = dayjs(startDate).format('YYYY-MM-DD');
       const edate = dayjs(endDate).format('YYYY-MM-DD');
       
-      const response = await workingApi.getWorkLogs({
-        search_id: user.user_id,
-        sdate,
-        edate,
-      });
+      // 근태 로그와 초과근무 목록 병렬로 가져오기
+      const [workLogResponse, overtimeResponse] = await Promise.all([
+        workingApi.getWorkLogs({
+          search_id: user.user_id,
+          sdate,
+          edate,
+        }),
+        workingApi.getOvertimeList({
+          page: 1,
+          size: 100, // 충분히 큰 숫자로 설정하여 모든 데이터 가져오기
+        })
+      ]);
       
-      console.log('근태 로그 응답:', response);
-      console.log('wlog 데이터:', response.wlog);
-      console.log('vacation 데이터:', response.vacation);
+      console.log('근태 로그 응답:', workLogResponse);
+      console.log('wlog 데이터:', workLogResponse.wlog);
+      console.log('vacation 데이터:', workLogResponse.vacation);
+      console.log('초과근무 목록:', overtimeResponse);
       
       // vacation 배열의 첫 번째 항목 상세 확인
-      if (response.vacation && response.vacation.length > 0) {
-        console.log('vacation[0] 상세:', response.vacation[0]);
-        console.log('vacation[0] 모든 키:', Object.keys(response.vacation[0]));
+      if (workLogResponse.vacation && workLogResponse.vacation.length > 0) {
+        console.log('vacation[0] 상세:', workLogResponse.vacation[0]);
+        console.log('vacation[0] 모든 키:', Object.keys(workLogResponse.vacation[0]));
       }
       
-      // API 데이터를 WorkData 형식으로 변환 (wlog와 vacation 모두 전달)
-      const apiData = convertApiDataToWorkData(response.wlog, response.vacation, weekStartDate);
+      // API 데이터를 WorkData 형식으로 변환 (wlog, vacation, overtime 모두 전달)
+      const apiData = await convertApiDataToWorkData(
+        workLogResponse.wlog, 
+        workLogResponse.vacation, 
+        overtimeResponse.items,
+        weekStartDate
+      );
       setData(apiData);
     } catch (error) {
       console.error('근태 로그 로드 실패:', error);
@@ -338,12 +438,35 @@ export default function WorkHoursTable() {
   };
   
   // API 데이터를 WorkData 형식으로 변환하는 함수
-  const convertApiDataToWorkData = (wlogs: any[], vacations: any[], startDate: Date): WorkData[] => {
+  const convertApiDataToWorkData = async (wlogs: any[], vacations: any[], overtimes: any[], startDate: Date): Promise<WorkData[]> => {
     const daysOfWeek = ['월', '화', '수', '목', '금', '토', '일'];
     const weekData: WorkData[] = [];
     
     console.log('변환 시작 - wlogs:', wlogs);
     console.log('변환 시작 - vacations:', vacations);
+    console.log('변환 시작 - overtimes:', overtimes);
+    
+    // ot_status를 overtimeStatus로 변환하는 헬퍼 함수
+    const getOvertimeStatus = (status: string): WorkData['overtimeStatus'] => {
+      switch (status) {
+        case 'H': return '승인대기';
+        case 'T': return '승인완료';
+        case 'N': return '반려됨';
+        default: return '신청하기';
+      }
+    };
+    
+    // ISO 시간 문자열에서 시간/분 추출 헬퍼 함수
+    const extractTimeFromISO = (isoString: string): { hour: string; minute: string } => {
+      const match = isoString.match(/T(\d{2}):(\d{2})/);
+      if (match) {
+        return {
+          hour: String(parseInt(match[1])),
+          minute: String(parseInt(match[2]))
+        };
+      }
+      return { hour: '', minute: '' };
+    };
     
     // vacation 타입을 workType으로 변환하는 헬퍼 함수
     const getWorkTypeFromVacation = (vacation: any, hasWlog: boolean): WorkData['workType'] => {
@@ -401,13 +524,23 @@ export default function WorkHoursTable() {
       const dateString = dayjs(currentDate).format('YYYY-MM-DD');
       const dayOfWeek = daysOfWeek[i];
       
+      // 공휴일 여부 확인
+      const isHoliday = await isHolidayCached(currentDate);
+      
       // 해당 날짜의 wlog와 vacation 찾기 (API 실제 필드명 사용)
       const wlog = wlogs.find((log: any) => log.tdate === dateString);
       
       // 해당 날짜의 모든 vacation 찾기 (같은 날에 여러 개 있을 수 있음)
       const vacationsForDate = vacations.filter((vac: any) => vac.tdate === dateString);
       
-      console.log(`${dateString} - wlog:`, wlog, ', vacations:', vacationsForDate);
+      // 해당 날짜의 초과근무 데이터 찾기 (user_id가 일치하는 것 중, 취소된 것은 제외)
+      const overtime = overtimes.find((ot: any) => {
+        const otDate = dayjs(ot.ot_date).format('YYYY-MM-DD');
+        // ot_status가 "N"(취소됨)인 경우 제외
+        return otDate === dateString && ot.user_id === user?.user_id && ot.ot_status !== 'N';
+      });
+      
+      console.log(`${dateString} - wlog:`, wlog, ', vacations:', vacationsForDate, ', overtime:', overtime, ', isHoliday:', isHoliday);
       
       // 우선순위가 가장 높은 vacation 선택
       // 우선순위: day > half > quarter > field > remote > official
@@ -435,8 +568,17 @@ export default function WorkHoursTable() {
       if (vacation) {
         workType = getWorkTypeFromVacation(vacation, hasWlog);
       } else {
-        // vacation이 없는 경우: wlog가 있으면 일반근무, 없으면 "-"
-        workType = hasWlog ? '일반근무' : '-';
+        // vacation이 없는 경우
+        if (hasWlog && isHoliday) {
+          // 공휴일에 근무한 경우
+          workType = '공휴일';
+        } else if (hasWlog) {
+          // 일반 근무
+          workType = '일반근무';
+        } else {
+          // 근무 기록이 없는 경우
+          workType = '-';
+        }
       }
       
       // 출근/퇴근 시간 (HH:mm:ss -> HH:mm 형식으로 변환)
@@ -448,6 +590,26 @@ export default function WorkHoursTable() {
       
       const startTime = formatTime(wlog?.stime || null);
       const endTime = formatTime(wlog?.etime || null);
+      
+      // 초과근무 상태 결정
+      const overtimeStatus = overtime ? getOvertimeStatus(overtime.ot_status) : '신청하기';
+      
+      // 초과근무 신청 데이터 추출
+      const overtimeData = overtime ? (() => {
+        const time = overtime.ot_etime ? extractTimeFromISO(overtime.ot_etime.toString()) : { hour: '', minute: '' };
+        return {
+          expectedEndTime: time.hour,
+          expectedEndMinute: time.minute,
+          mealAllowance: overtime.ot_food === 'Y' ? 'yes' : overtime.ot_food === 'N' ? 'no' : '',
+          transportationAllowance: overtime.ot_trans === 'Y' ? 'yes' : overtime.ot_trans === 'N' ? 'no' : '',
+          overtimeHours: overtime.ot_hours || '',
+          overtimeType: overtime.ot_reward === 'special' ? 'special_vacation' : 
+                        overtime.ot_reward === 'annual' ? 'compensation_vacation' : 
+                        overtime.ot_reward === 'pay' ? 'event' : '',
+          clientName: overtime.ot_client || '',
+          workDescription: overtime.ot_description || '',
+        };
+      })() : undefined;
       
       if (wlog && wlog.stime && wlog.etime) {
         // 실제 wlog 데이터가 있고 출퇴근 기록이 모두 있는 경우
@@ -465,8 +627,11 @@ export default function WorkHoursTable() {
         let overtimeMinutes = hours >= 8 ? minutes : 0;
         
         // 연장근무 신청이 있고 식대를 사용한 경우 저녁시간 1시간(60분) 추가 차감
-        // TODO: API에서 연장근무 신청 정보 및 식대 사용 여부 확인 필요
-        // 예: if (overtimeData && overtimeData.mealAllowance === 'Y') { ... }
+        if (overtime && overtime.ot_food === 'Y' && overtimeHours > 0) {
+          const totalOvertimeMinutes = (overtimeHours * 60) + overtimeMinutes - 60;
+          overtimeHours = Math.max(0, Math.floor(totalOvertimeMinutes / 60));
+          overtimeMinutes = Math.max(0, totalOvertimeMinutes % 60);
+        }
         
         weekData.push({
           date: dateString,
@@ -480,7 +645,10 @@ export default function WorkHoursTable() {
           overtimeMinutes,
           totalHours: hours,
           totalMinutes: minutes,
-          overtimeStatus: "신청하기",
+          overtimeStatus,
+          overtimeData,
+          overtimeId: overtime?.id,
+          isHoliday,
         });
       } else if (wlog && wlog.stime && !wlog.etime) {
         // 출근만 하고 퇴근 안한 경우
@@ -496,7 +664,10 @@ export default function WorkHoursTable() {
           overtimeMinutes: 0,
           totalHours: 0,
           totalMinutes: 0,
-          overtimeStatus: "신청하기",
+          overtimeStatus,
+          overtimeData,
+          overtimeId: overtime?.id,
+          isHoliday,
         });
       } else {
         // wlog 데이터가 없는 경우
@@ -512,7 +683,10 @@ export default function WorkHoursTable() {
           overtimeMinutes: 0,
           totalHours: 0,
           totalMinutes: 0,
-          overtimeStatus: "신청하기",
+          overtimeStatus,
+          overtimeData,
+          overtimeId: overtime?.id,
+          isHoliday,
         });
       }
     }
