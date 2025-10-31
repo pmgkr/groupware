@@ -214,6 +214,13 @@ export async function getExpenseLists(params: ExpenseListParams = {}): Promise<{
   }>(url, { method: 'GET' });
 }
 
+// 임시저장 비용 청구
+export async function claimTempExpense(payload: { seqs: number[] }): Promise<{ ok: boolean }> {
+  const res = http<{ ok: boolean }>(`/user/nexpense/claim/`, { method: 'POST', body: JSON.stringify(payload) });
+
+  return res;
+}
+
 // 임시저장 비용 삭제처리
 export async function deleteTempExpense(payload: { seqs: number[] }): Promise<{ ok: boolean }> {
   const res = http<{ ok: boolean }>(`/user/nexpense/delete/`, { method: 'POST', body: JSON.stringify(payload) });

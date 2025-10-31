@@ -184,7 +184,7 @@ export default function ExpenseView() {
                     <TableColumnHeaderCell className="h-full">비고</TableColumnHeaderCell>
                   </TableColumnHeader>
                   <TableColumnBody className="h-full text-[13px]">
-                    <TableColumnCell className="h-full">{header.remark}</TableColumnCell>
+                    <TableColumnCell className="h-full whitespace-pre">{header.remark}</TableColumnCell>
                   </TableColumnBody>
                 </TableColumn>
               </div>
