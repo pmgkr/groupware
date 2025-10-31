@@ -3,6 +3,9 @@ import dayjs from 'dayjs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { OctagonAlert } from 'lucide-react';
 
 interface WorkData {
   date: string;
@@ -64,19 +67,69 @@ const isSundayOrHoliday = (dayOfWeek: string, workType: string) => {
 };
 
 export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReapply, selectedDay, selectedIndex }: OvertimeViewDialogProps) {
+  // Hook 호출
+  const { addDialog } = useAppDialog();
+  const { addAlert } = useAppAlert();
+  
   // selectedDay에서 상태 가져오기
   const status = selectedDay?.overtimeStatus || "신청하기";
   
-  // 실제 신청 데이터 사용 (없으면 기본값)
+  // 신청 취소하기 확인 다이얼로그
+  const handleCancelClick = () => {
+    addDialog({
+      title: '<span class="text-primary-blue-500 font-semibold">삭제 확인</span>',
+      message: '이 초과근무 신청을 정말 취소하시겠습니까?',
+      confirmText: '신청 취소하기',
+      cancelText: '닫기',
+      onConfirm: async () => {
+        console.log('=== OvertimeViewDialog onConfirm 호출됨 ===');
+        try {
+          // 취소 콜백 호출
+          console.log('onCancel 호출 시작');
+          await onCancel();
+          console.log('onCancel 호출 성공');
+          
+          // 성공 알림 먼저 표시
+          console.log('알림 표시 시도...');
+          addAlert({
+            title: '삭제 완료',
+            message: '초과근무 신청이 성공적으로 취소되었습니다.',
+            icon: <OctagonAlert />,
+            duration: 3000,
+          });
+          console.log('알림 표시 완료');
+          
+          // 알림 표시 후 다이얼로그 닫기
+          setTimeout(() => {
+            console.log('다이얼로그 닫기');
+            onClose();
+          }, 300);
+          
+        } catch (error) {
+          console.error('취소 실패:', error);
+          // 실패 알림 표시
+          const errorMessage = error instanceof Error ? error.message : '신청 취소에 실패했습니다. 다시 시도해주세요.';
+          addAlert({
+            title: '삭제 실패',
+            message: errorMessage,
+            icon: <OctagonAlert />,
+            duration: 3000,
+          });
+        }
+      },
+    });
+  };
+  
+  // 신청 데이터
   const overtimeData = selectedDay?.overtimeData || {
-    expectedEndTime: "22",
-    expectedEndMinute: "30",
-    mealAllowance: "yes",
-    transportationAllowance: "no",
-    overtimeHours: "4",
-    overtimeType: "special_vacation",
-    clientName: "BAT",
-    workDescription: "집에 가고싶다"
+    expectedEndTime: "",
+    expectedEndMinute: "",
+    mealAllowance: "",
+    transportationAllowance: "",
+    overtimeHours: "",
+    overtimeType: "",
+    clientName: "",
+    workDescription: ""
   };
 
   return (
@@ -231,11 +284,7 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
                   }`}>
                     {status}
                   </span>
-                  {status === "승인완료" && (
-                    <p className="text-sm text-gray-800 mt-1">
-                      승인일: 2025년 10월 11일
-                    </p>
-                  )}
+                  {/* 승인완료 시 승인일 표시는 백엔드 데이터 연동 시 추가 예정 */}
                   {status === "반려됨" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
                     <>
                     <p className="text-sm text-gray-800 mt-1">
@@ -268,7 +317,7 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
               <Button variant="default" onClick={onReapply}>재신청하기</Button>
             )}
             {status !== "반려됨" && (
-              <Button variant="destructive" onClick={onCancel}>신청 취소하기</Button>
+              <Button variant="destructive" onClick={handleCancelClick}>신청 취소하기</Button>
             )}
             <Button variant="outline" onClick={onClose}>닫기</Button>
           </DialogFooter>

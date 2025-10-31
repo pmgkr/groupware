@@ -77,7 +77,6 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   const handleInputChange = (field: keyof OvertimeData, value: string) => {
-    console.log('Select value changed:', field, value); // 디버깅용 로그
     setFormData(prev => ({
       ...prev,
       [field]: value
