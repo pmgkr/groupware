@@ -168,10 +168,8 @@ export interface Attachment {
   type: string;
   createdAt: string;
 }
-/**
- * 공지사항 첨부파일 목록 조회
- * GET /user/office/notice/attachment/{n_seq}
- */
+
+//공지사항 첨부파일 목록 조회
 export async function getNoticeAttachments(n_seq: number): Promise<Attachment[]> {
   const dto = await http<any>(`/user/office/notice/attachment/${n_seq}`, { method: 'GET' });
   //console.log('📎 첨부파일 API 응답:', dto);
@@ -193,4 +191,16 @@ export async function deleteNoticeAttachment(id: number) {
   return await http(`/user/office/notice/attachment/remove/${id}`, {
     method: 'DELETE',
   });
+}
+
+//에디터 내 이미지 처리
+export async function uploadEditorImage(file: File, subdir = 'notice'): Promise<string> {
+  const uploaded = await uploadFilesToServer([file], subdir);
+
+  if (uploaded.length === 0) {
+    throw new Error('이미지 업로드 실패');
+  }
+
+  // 업로드된 이미지 URL 반환
+  return uploaded[0].url;
 }

@@ -14,3 +14,9 @@ export function formatKST(dateString: string | Date, withOutTime = false): strin
   /* return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`; */
   return withOutTime ? `${year}-${month}-${day}` : `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
+
+/* 
+<사용 예시 - true>
+const [selectDate, setSelectDate] = useState(formatKST(new Date(), true));
+
+*/
