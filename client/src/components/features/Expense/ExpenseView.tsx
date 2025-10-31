@@ -260,7 +260,7 @@ export default function ExpenseView() {
             </Table>
           </div>
           <div className="mt-8 flex w-full items-center justify-between">
-            <Button type="button" variant="outline" size="sm" onClick={() => navigate(-1)}>
+            <Button type="button" variant="outline" size="sm" onClick={() => navigate('/expense')}>
               목록
             </Button>
 
