@@ -159,7 +159,7 @@ export async function registerBook(data: BookRegisterPayload): Promise<{ success
 // 신청도서 완료처리
 export async function completeBook(bw_seq: number): Promise<{ ok: boolean }> {
   const res = await http<{ ok: boolean }>(`/user/office/book/complete/${bw_seq}`, {
-    method: 'PATCH',
+    method: 'POST',
   });
   return res;
 }

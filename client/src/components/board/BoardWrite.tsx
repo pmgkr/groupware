@@ -6,9 +6,6 @@ import { useLocation, useNavigate } from 'react-router';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
-import ReactQuill from 'react-quill-new';
-import 'react-quill-new/dist/quill.snow.css';
-
 import { useAuth } from '@/contexts/AuthContext';
 import {
   deleteNoticeAttachment,
@@ -19,6 +16,7 @@ import {
   uploadNoticeAttachments,
 } from '@/api/office/notice';
 import { BoardAttachFile, type PreviewFile } from './BoardAttachFile';
+import ReactQuillEditor from './ReactQuillEditor';
 
 export default function BoardWrite() {
   const [files, setFiles] = useState<PreviewFile[]>([]);
@@ -176,16 +174,7 @@ export default function BoardWrite() {
       </div>
 
       {/* 본문 에디터 */}
-      <div className="mb-4" style={{ height: '58vh' }}>
-        <ReactQuill
-          theme="snow"
-          value={content}
-          onChange={setContent}
-          placeholder="내용을 입력하세요..."
-          className="rounded-lg bg-white"
-          style={{ height: 'calc(100% - 50px)' }}
-        />
-      </div>
+      <ReactQuillEditor value={content} onChange={setContent} />
 
       <div className="mt-2 flex justify-between">
         {/* 첨부파일 업로더 컴포넌트 */}

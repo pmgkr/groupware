@@ -306,7 +306,7 @@ export default function itDeviceDetail() {
                         handleNewFormChange('team_id', Number(value));
                         handleNewFormChange('team_name', team?.team_name || '');
                       }}>
-                      <SelectTrigger className="w-full border-0 bg-transparent">
+                      <SelectTrigger className="w-full border-0 bg-transparent shadow-none">
                         <SelectValue placeholder="팀선택" />
                       </SelectTrigger>
                       <SelectContent>

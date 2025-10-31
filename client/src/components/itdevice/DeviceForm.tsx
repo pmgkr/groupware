@@ -57,7 +57,7 @@ export function DeviceForm({ form, onChange, mode = 'create' }: DeviceFormProps)
             form.device
           ) : (
             <Select value={form.device} onValueChange={(value) => onChange('device', value)}>
-              <SelectTrigger className="w-full border-0 bg-transparent pl-4 [&]:hover:bg-transparent">
+              <SelectTrigger className="w-full border-0 bg-transparent pl-4 shadow-none [&]:hover:bg-transparent">
                 <SelectValue placeholder="선택" />
               </SelectTrigger>
               <SelectContent>
