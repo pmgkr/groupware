@@ -60,7 +60,7 @@ export type ExpenseListItem = {
 export interface ExpenseAttachment {
   filename: string;
   original: string;
-  url: string;
+  url?: string;
 }
 
 // (2) ExpenseView에서 Response로 받는 증빙자료 타입 정의
@@ -169,6 +169,10 @@ export interface ExpenseViewDTO {
   logs: ExpenseLogDTO[];
 }
 
+// ------------------------------
+// 수정하기 (Update)
+// ------------------------------
+
 // 은행리스트 가져오기
 export async function getBankList(): Promise<BankList[]> {
   return http<BankList[]>(`/user/common/codeList?ctype=bank`, { method: 'GET' });
@@ -210,21 +214,42 @@ export async function getExpenseLists(params: ExpenseListParams = {}): Promise<{
   }>(url, { method: 'GET' });
 }
 
+// 임시저장 비용 삭제처리
+export async function deleteTempExpense(payload: { seqs: number[] }): Promise<{ ok: boolean }> {
+  const res = http<{ ok: boolean }>(`/user/nexpense/delete/`, { method: 'POST', body: JSON.stringify(payload) });
+
+  return res;
+}
+
 // 일반비용 상세보기
 export async function getExpenseView(expid: string | undefined): Promise<ExpenseViewDTO> {
   if (!expid) throw new Error('expid가 필요합니다.');
   const url = `/user/nexpense/${expid}`;
-  console.log('📡 GET:', url);
-  return http<ExpenseViewDTO>(url, { method: 'GET' });
+  const res = http<ExpenseViewDTO>(url, { method: 'GET' });
+
+  return res;
 }
 
 // 일반비용 작성하기
 export async function expenseRegister(payload: ExpenseRegisterPayload) {
   return http<ExpenseRegisterResponse>(`/user/nexpense/register`, {
     method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+// 일반비용 수정하기
+export async function expenseUpdate(expid: string, payload: ExpenseRegisterPayload) {
+  return http<ExpenseRegisterResponse>(`/user/nexpense/update/${expid}`, {
+    method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
   });
+}
+
+// 일반비용 증빙자료 삭제
+export async function delExpenseAttachment(seq: number): Promise<void> {
+  return http<void>(`/user/nexpense/update/attachment/delete/${seq}`, { method: 'DELETE' });
 }

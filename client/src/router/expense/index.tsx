@@ -18,10 +18,20 @@ export const expenseRoutes: RouteObject = {
     { path: 'proposal', element: <Proposal /> },
     {
       path: 'register',
-      element: <Register />,
+      element: <Register mode="new" />,
       handle: {
         // hideNav 시 Layout에서 2차 메뉴 숨김처리
         hideNav: true,
+        hideTitle: true,
+      },
+    },
+    {
+      path: 'edit/:expId',
+      element: <Register mode="edit" />,
+      handle: {
+        // hideNav 시 Layout에서 2차 메뉴 숨김처리
+        hideNav: true,
+        hideTitle: true,
       },
     },
     {
