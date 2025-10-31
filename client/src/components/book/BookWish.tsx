@@ -307,7 +307,7 @@ export default function BookWish() {
               <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
               <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
               <TableCell className="max-w-[130px] truncate">{post.publish}</TableCell>
-              <TableCell>{post.team_id}</TableCell>
+              <TableCell>{post.team_name}</TableCell>
               <TableCell>{post.user_name}</TableCell>
               <TableCell>
                 {post.status !== '완료' && post.user === user?.user_id && (
