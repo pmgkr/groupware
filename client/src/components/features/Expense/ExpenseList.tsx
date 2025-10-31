@@ -146,7 +146,7 @@ export default function ExpenseList() {
 
           if (res.ok) {
             addAlert({
-              title: '청구 완료되었습니다.',
+              title: '비용 청구가 완료되었습니다.',
               message: `<p><span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 임시저장 비용이 청구되었습니다.</p>`,
               icon: <OctagonAlert />,
               duration: 2000,
@@ -160,7 +160,7 @@ export default function ExpenseList() {
           console.error('❌ 청구 실패:', err);
 
           addAlert({
-            title: '청구 실패',
+            title: '비용 청구 실패',
             message: `청구 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
             icon: <OctagonAlert />,
             duration: 2000,
