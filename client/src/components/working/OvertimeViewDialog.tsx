@@ -6,7 +6,7 @@ import { Label } from '@components/ui/label';
 
 interface WorkData {
   date: string;
-  workType: "일반근무" | "외부근무" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차";
+  workType: "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가" | "공휴일";
   startTime: string;
   endTime: string;
   basicHours: number;
@@ -30,6 +30,8 @@ interface WorkData {
     clientName: string;
     workDescription: string;
   };
+  overtimeId?: number; // 초과근무 ID
+  isHoliday?: boolean; // 공휴일 여부
 }
 
 interface OvertimeViewDialogProps {
@@ -44,6 +46,21 @@ interface OvertimeViewDialogProps {
 // 주말 여부 확인 함수
 const isWeekend = (dayOfWeek: string) => {
   return dayOfWeek === '토' || dayOfWeek === '일';
+};
+
+// 주말 또는 공휴일 여부 확인 함수 (폼 표시 제어용)
+const isWeekendOrHoliday = (dayOfWeek: string, workType: string) => {
+  return dayOfWeek === '토' || dayOfWeek === '일' || workType === '공휴일';
+};
+
+// 토요일 여부 확인 함수
+const isSaturday = (dayOfWeek: string) => {
+  return dayOfWeek === '토';
+};
+
+// 일요일 또는 공휴일 여부 확인 함수
+const isSundayOrHoliday = (dayOfWeek: string, workType: string) => {
+  return dayOfWeek === '일' || workType === '공휴일';
 };
 
 export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReapply, selectedDay, selectedIndex }: OvertimeViewDialogProps) {
@@ -77,7 +94,7 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
         </DialogHeader>
         <div className="space-y-4 py-4">
           {/* 평일 (월-금) 신청 내역 */}
-          {selectedDay && !isWeekend(selectedDay.dayOfWeek) && (
+          {selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="expected-end-time">예상 퇴근 시간</Label>
@@ -137,8 +154,8 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
             </>
           )}
 
-          {/* 주말 (토, 일) 신청 내역 */}
-          {selectedDay && isWeekend(selectedDay.dayOfWeek) && (
+          {/* 주말 (토, 일) 또는 공휴일 신청 내역 */}
+          {selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="overtime-hours">초과근무 시간</Label>
@@ -150,27 +167,36 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
               <div className="space-y-3 mb-8">
                 <Label>보상 지급방식</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className={`px-4 py-2 rounded-md border ${
-                    overtimeData.overtimeType === 'special_vacation' 
-                      ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
-                      : 'bg-gray-100 border-gray-300 text-gray-600'
-                  }`}>
-                    <span className="text-base font-medium">특별대휴</span>
-                  </div>
-                  <div className={`px-4 py-2 rounded-md border ${
-                    overtimeData.overtimeType === 'compensation_vacation' 
-                      ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
-                      : 'bg-gray-100 border-gray-300 text-gray-600'
-                  }`}>
-                    <span className="text-base font-medium">보상휴가</span>
-                  </div>
-                  <div className={`px-4 py-2 rounded-md border ${
-                    overtimeData.overtimeType === 'event' 
-                      ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
-                      : 'bg-gray-100 border-gray-300 text-gray-600'
-                  }`}>
-                    <span className="text-base font-medium">수당지급</span>
-                  </div>
+                  {/* 토요일인 경우: 특별대휴만 표시 */}
+                  {isSaturday(selectedDay.dayOfWeek) && (
+                    <div className={`px-4 py-2 rounded-md border ${
+                      overtimeData.overtimeType === 'special_vacation' 
+                        ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
+                        : 'bg-gray-100 border-gray-300 text-gray-600'
+                    }`}>
+                      <span className="text-base font-medium">특별대휴</span>
+                    </div>
+                  )}
+                  
+                  {/* 일요일 또는 공휴일인 경우: 보상휴가, 수당지급 표시 */}
+                  {isSundayOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
+                    <>
+                      <div className={`px-4 py-2 rounded-md border ${
+                        overtimeData.overtimeType === 'compensation_vacation' 
+                          ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
+                          : 'bg-gray-100 border-gray-300 text-gray-600'
+                      }`}>
+                        <span className="text-base font-medium">보상휴가</span>
+                      </div>
+                      <div className={`px-4 py-2 rounded-md border ${
+                        overtimeData.overtimeType === 'event' 
+                          ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
+                          : 'bg-gray-100 border-gray-300 text-gray-600'
+                      }`}>
+                        <span className="text-base font-medium">수당지급</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </>
