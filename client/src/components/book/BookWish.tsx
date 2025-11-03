@@ -12,10 +12,13 @@ import { BookForm, type BookFormData } from './BookForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
-import { completeBook, getBookWishList, type Book } from '@/api';
+import { completeBook, deleteBook, getBookWishList, updateBook, type Book } from '@/api';
 import { registerBook, type BookRegisterPayload } from '@/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatKST } from '@/utils';
+import { useAppAlert } from '../common/ui/AppAlert/AppAlert';
+import { useAppDialog } from '../common/ui/AppDialog/AppDialog';
+import { OctagonAlert } from 'lucide-react';
 
 export default function BookWish() {
   const { user } = useAuth();
@@ -65,22 +68,52 @@ export default function BookWish() {
     setSelected((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
   };
 
+  const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
+  const confirmAction = (label: string, message: string, action: () => Promise<void> | void) => {
+    addDialog({
+      title: `<span class=" font-semibold">${label} 확인</span>`,
+      message: `${message}`,
+      confirmText: '확인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          await action();
+          addAlert({
+            title: `${label} 완료`,
+            message: `${label}이(가) 성공적으로 처리되었습니다.`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        } catch (err) {
+          console.error('❌ 오류:', err);
+          addAlert({
+            title: `${label} 실패`,
+            message: '작업 중 오류가 발생했습니다.',
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        }
+      },
+    });
+  };
+
   //  완료 처리
   const Administrator = 'test@test.com';
   const handleCompleteClick = async () => {
     if (selected.length === 0) {
-      openConfirm('완료처리할 도서를 선택해주세요', () => {});
-      return;
+      addAlert({
+        title: '선택 오류',
+        message: '완료처리할 도서를 선택해주세요',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+      return; // 0개 선택 시 함수 종료
     }
-    openConfirm(`${selected.length}개 완료처리 하시겠습니까?`, async () => {
-      try {
-        await Promise.all(selected.map((id) => completeBook(id)));
-        setPosts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, status: '완료', purchaseAt: formatKST(new Date()) } : p)));
-        setSelected([]);
-      } catch (err) {
-        console.error('❌ 완료처리 오류:', err);
-        alert('서버 오류로 인해 완료처리에 실패했습니다.');
-      }
+    confirmAction('완료처리', `${selected.length}개 완료처리 하시겠습니까?`, async () => {
+      await Promise.all(selected.map((id) => completeBook(id))); // ❌ 에러 나면 바로 throw
+      setPosts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, status: '완료', purchaseAt: formatKST(new Date()) } : p)));
+      setSelected([]);
     });
   };
 
@@ -101,10 +134,15 @@ export default function BookWish() {
   //도서 신청 등록 유효성 검증
   const handleRegisterClick = () => {
     if (!form.category || !form.title || !form.author || !form.publish || !form.buylink) {
-      alert('카테고리, 도서명, 저자, 출판사, 링크는 반드시 입력해야 합니다.');
+      addAlert({
+        title: '입력 오류',
+        message: '카테고리, 도서명, 저자, 출판사, 링크는 반드시 입력해야 합니다.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
       return;
     }
-    openConfirm('도서를 신청하시겠습니까?', () => handleRegister());
+    confirmAction('도서 신청', '도서를 신청하시겠습니까?', () => handleRegister());
   };
 
   // 도서 신청 등록
@@ -115,7 +153,6 @@ export default function BookWish() {
     }
 
     try {
-      const today = formatKST(new Date());
       const payload = {
         b_user_id: user.user_id,
         b_user_name: user.user_name,
@@ -159,11 +196,21 @@ export default function BookWish() {
         });
         setOpen(false);
       } else {
-        alert('도서 신청에 실패했습니다.');
+        addAlert({
+          title: '오류',
+          message: '도서 신청에 실패했습니다',
+          icon: <OctagonAlert />,
+          duration: 2000,
+        });
       }
     } catch (err) {
       console.error('❌ 도서 신청 오류:', err);
-      alert('서버 오류로 인해 도서 신청에 실패했습니다.');
+      addAlert({
+        title: '오류',
+        message: '서버 오류로 인해 도서 신청에 실패했습니다.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
     }
   };
 
@@ -187,22 +234,47 @@ export default function BookWish() {
   //수정 유효성 검사
   const handleEditUpdateClick = () => {
     if (!editPost) return;
+
     if (!editPost.category || !editPost.title || !editPost.author || !editPost.publish) {
-      alert('카테고리, 도서명, 저자, 출판사는 반드시 입력해야 합니다.');
-      return;
+      addAlert({
+        title: '입력 오류',
+        message: '카테고리, 도서명, 저자, 출판사는 반드시 입력해야 합니다.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+      return; // ✅ 유효성 실패 시 중단
     }
-    openConfirm('신청 도서를 수정하시겠습니까?', () => handleEditUpdate());
+
+    confirmAction('신청도서 수정', '신청 도서를 수정하시겠습니까?', handleEditUpdate);
   };
-  const handleEditUpdate = () => {
-    setPosts((prev) => prev.map((p) => (p.id === editPost!.id ? { ...p, ...editPost } : p)));
+
+  // 수정
+  const handleEditUpdate = async () => {
+    if (!editPost) return;
+
+    await updateBook(editPost.id!, {
+      b_title: editPost.title,
+      b_category: editPost.category,
+      b_author: editPost.author,
+      b_publish: editPost.publish,
+      b_buylink: editPost.buylink,
+    });
+
+    setPosts((prev) => prev.map((p) => (p.id === editPost.id ? { ...p, ...editPost } : p)));
     setOpenEdit(false);
   };
 
-  const handleDelete = (id: number) => {
-    setPosts((prev) => prev.filter((p) => p.id !== id));
+  // 삭제
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteBook(id);
+      setPosts((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error('❌ 도서 삭제 실패:', err);
+    }
   };
 
-  // 컨펌 다이얼로그상태
+  /*   // 컨펌 다이얼로그상태
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
     action?: () => void;
@@ -212,7 +284,7 @@ export default function BookWish() {
   // 열기 함수
   const openConfirm = (title: string, action: () => void) => {
     setConfirmState({ open: true, title, action });
-  };
+  }; */
 
   return (
     <div className="relative">
@@ -330,7 +402,7 @@ export default function BookWish() {
                       aria-label="삭제"
                       onClick={(e) => {
                         e.stopPropagation();
-                        openConfirm('신청도서를 삭제하시겠습니까?', () => handleDelete(post.id));
+                        confirmAction('신청 도서 삭제', '신청도서를 삭제하시겠습니까?', () => handleDelete(post.id));
                       }}>
                       <Delete className="size-4" />
                     </Button>
@@ -386,12 +458,12 @@ export default function BookWish() {
       )}
 
       {/* 공통 다이얼로그 */}
-      <ConfirmDialog
+      {/* <ConfirmDialog
         open={confirmState.open}
         onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
         title={confirmState.title}
         onConfirm={() => confirmState.action?.()}
-      />
+      /> */}
 
       {posts.length > 0 && total > 1 && (
         <div className="mt-5">

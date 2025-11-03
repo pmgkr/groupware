@@ -103,6 +103,7 @@ export default function BookList() {
           totalPages: refreshed.pages,
           total: refreshed.total,
         });
+        setTotal(refreshed.total);
 
         // ✅ 폼 초기화 + 다이얼로그 닫기
         setForm({

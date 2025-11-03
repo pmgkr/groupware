@@ -11,6 +11,9 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { getItDevice, registerItDevice, type Device } from '@/api/office/itdevice';
 import { useAuth } from '@/contexts/AuthContext';
 import { createPortal } from 'react-dom';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { OctagonAlert } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export default function ItDevice() {
   const navigate = useNavigate();
@@ -65,9 +68,14 @@ export default function ItDevice() {
   };
 
   // 등록 유효성 검사
+  const { addAlert } = useAppAlert();
   const handleRegisterClick = () => {
     if (!form.device || !form.brand || !form.model || !form.serial || !form.p_date) {
-      alert('디바이스, 브랜드, 모델, 시리얼넘버, 구매일자는 반드시 입력해야 합니다.');
+      addAlert({
+        message: '디바이스, 브랜드, 모델, 시리얼넘버, 구매일자는 반드시 입력해야 합니다.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
       return;
     }
     openConfirm('장비 정보를 등록하시겠습니까?', handleRegister);
@@ -86,8 +94,8 @@ export default function ItDevice() {
         gpu: form.gpu,
         storage: form.storage,
         it_date: form.p_date,
+        it_status: '재고',
       });
-      console.log(form.p_date);
       setOpenRegister(false);
       setForm({
         device: '',
@@ -186,7 +194,13 @@ export default function ItDevice() {
                 <TableCell>{post.model}</TableCell>
                 <TableCell>{post.serial}</TableCell>
                 <TableCell>
-                  {post.user && post.user.trim() !== '' ? post.user : <span className="text-gray-500 italic">재고</span>}
+                  {post.it_status === '재고' ? (
+                    <Badge variant="secondary" className="bg-gray-200 text-gray-700">
+                      재고
+                    </Badge>
+                  ) : (
+                    post.user || <span className="text-gray-500 italic">-</span>
+                  )}
                 </TableCell>
                 <TableCell>{post.p_date}</TableCell>
                 {/* <TableCell>{post.createdAt}</TableCell> */}

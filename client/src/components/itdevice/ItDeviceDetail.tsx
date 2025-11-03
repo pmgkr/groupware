@@ -12,6 +12,7 @@ import {
   getMemberList,
   getTeamList,
   registerItDeviceUser,
+  returnItDevice,
   updateItDevice,
   updateItDeviceStatus,
   type Device,
@@ -23,6 +24,9 @@ import { formatKST } from '@/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/assets/images/icons';
 import { DayPicker } from '../daypicker';
+import { useAppAlert } from '../common/ui/AppAlert/AppAlert';
+import { OctagonAlert } from 'lucide-react';
+import { useAppDialog } from '../common/ui/AppDialog/AppDialog';
 
 export default function itDeviceDetail() {
   const { id } = useParams<{ id: string }>(); // /itdevice/:id
@@ -33,6 +37,35 @@ export default function itDeviceDetail() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [selectDate, setSelectDate] = useState(formatKST(new Date(), true));
+  const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
+
+  const confirmAction = (label: string, message: string, action: () => Promise<void> | void) => {
+    addDialog({
+      title: `<span class= "font-semibold">${label}</span>`,
+      message: `${label} ${message}`,
+      confirmText: '확인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          await action();
+          addAlert({
+            title: `${label} 완료`,
+            message: `${label}이 성공적으로 ${message.replace('하시겠습니까?', '되었습니다.')}`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        } catch (err) {
+          addAlert({
+            title: `${label} 실패`,
+            message: `${label} ${message.replace('하시겠습니까?', ' 중 오류가 발생했습니다.')}`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        }
+      },
+    });
+  };
 
   const date = new Date(selectDate);
 
@@ -60,16 +93,15 @@ export default function itDeviceDetail() {
 
   //반납하기
   const handleReturn = async (historyId: number) => {
-    const now = new Date().toISOString();
-
-    setHistory((prev) => prev.map((h) => (h.id === historyId ? { ...h, returnedAt: now } : h)));
     try {
+      await returnItDevice(Number(id), historyId);
       await updateItDeviceStatus(Number(id), '재고');
-      setPosts((prev) => (prev ? { ...prev, it_status: '재고' } : prev));
 
-      //console.log('✅ 반납 완료 → 재고 상태로 변경');
+      setHistory((prev) => prev.map((h) => (h.id === historyId ? { ...h, returnedAt: new Date().toISOString() } : h)));
+      setPosts((prev) => (prev ? { ...prev, it_status: '재고' } : prev));
     } catch (err) {
-      //console.error('❌ 반납 후 상태 변경 실패:', err);
+      console.error('❌ 반납 처리 실패:', err);
+      throw err; // ✅ 추가: 실패 시 예외 다시 던짐 (confirmAction이 catch함)
     }
   };
 
@@ -199,12 +231,18 @@ export default function itDeviceDetail() {
         ih_created_at: finalDate,
       });
       // 사용자 등록 시 it_status = '사용'으로 변경
-      /* await updateItDeviceStatus(Number(id), '사용');
-      setPosts((prev) => (prev ? { ...prev, it_status: '사용' } : prev)); */
+      await updateItDeviceStatus(Number(id), '사용');
+      setPosts((prev) => (prev ? { ...prev, it_status: '사용' } : prev));
       //console.log(newForm);
       const updated = await getItDeviceDetail(Number(id));
       setHistory(updated.history);
       setOpenAddUser(false);
+      addAlert({
+        title: `사용자 등록`,
+        message: `사용자 등록이 완료 되었습니다.`,
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
     } catch (err) {
       console.error('❌ 사용자 등록 실패:', err);
       alert('등록 중 오류가 발생했습니다.');
@@ -399,7 +437,7 @@ export default function itDeviceDetail() {
             variant="secondary"
             className="mr-3"
             onClick={() => {
-              openConfirm('반납처리 하시겠습니까?', () => handleReturn(currentUser.id));
+              confirmAction('장비 반납', '처리 하시겠습니까?', () => handleReturn(currentUser.id));
             }}>
             반납 처리
           </Button>

@@ -120,7 +120,9 @@ export async function registerItDevice(data: {
   ram?: string;
   gpu?: string;
   storage?: string;
+  it_status: string;
 }): Promise<void> {
+  console.log('🚀 [registerItDevice] 전송 데이터:', data);
   await http('/user/office/device/register', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -180,5 +182,14 @@ export async function updateItDeviceStatus(it_seq: number, status: string) {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ it_status: status }),
+  });
+}
+
+//it 디바이스 반납처리
+export async function returnItDevice(it_seq: number, ih_seq: number): Promise<void> {
+  await http('/user/office/device/return', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ it_seq, ih_seq }),
   });
 }

@@ -17,6 +17,9 @@ import {
 } from '@/api/office/notice';
 import { BoardAttachFile, type PreviewFile } from './BoardAttachFile';
 import ReactQuillEditor from './ReactQuillEditor';
+import { useAppDialog } from '../common/ui/AppDialog/AppDialog';
+import { useAppAlert } from '../common/ui/AppAlert/AppAlert';
+import { OctagonAlert } from 'lucide-react';
 
 export default function BoardWrite() {
   const [files, setFiles] = useState<PreviewFile[]>([]);
@@ -31,17 +34,34 @@ export default function BoardWrite() {
   const post = location.state?.post;
   const { user } = useAuth();
 
-  // 컨펌 다이얼로그 상태
-  const [confirmState, setConfirmState] = useState<{
-    open: boolean;
-    title: string;
-    confirmText?: string;
-    action?: () => void;
-  }>({ open: false, title: '' });
+  const { addDialog } = useAppDialog();
+  const { addAlert } = useAppAlert();
 
-  // 컨펌 다이얼로그 열기 함수
-  const openConfirm = (title: string, action: () => void, confirmText = '확인') => {
-    setConfirmState({ open: true, title, action, confirmText });
+  const confirmAction = (label: string, message: string, action: () => Promise<void> | void) => {
+    addDialog({
+      title: `<span class= "font-semibold">${label} 확인</span>`,
+      message: `${label}을 ${message}`,
+      confirmText: '확인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          await action();
+          addAlert({
+            title: `${label} 완료`,
+            message: `${label}이 성공적으로 ${message.replace('하시겠습니까?', '되었습니다.')}`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        } catch (err) {
+          addAlert({
+            title: `${label} 실패`,
+            message: `${label} ${message.replace('하시겠습니까?', ' 중 오류가 발생했습니다.')}`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        }
+      },
+    });
   };
 
   // 수정 모드일 때 초기 데이터 설정
@@ -82,13 +102,6 @@ export default function BoardWrite() {
   const handleSubmit = async () => {
     if (!user) {
       alert('로그인 후 이용해주세요.');
-      return;
-    }
-
-    const isEmptyContent = !content || content.trim() === '' || content === '<p><br></p>' || content === '<p></p>';
-
-    if (!category.trim() || !title.trim() || isEmptyContent) {
-      alert('카테고리, 제목, 내용을 모두 입력해주세요.');
       return;
     }
 
@@ -181,7 +194,21 @@ export default function BoardWrite() {
         <BoardAttachFile files={files} setFiles={setFiles} onRemoveExisting={(id) => setDeletedFileIds((prev) => [...prev, id])} />
 
         <div className="flex justify-end gap-1.5">
-          <Button onClick={() => openConfirm(editMode ? '게시글을 수정하시겠습니까?' : '게시글을 등록하시겠습니까?', handleSubmit)}>
+          <Button
+            onClick={() => {
+              const isEmptyContent = !content || content.trim() === '' || content === '<p><br></p>' || content === '<p></p>';
+
+              if (!category.trim() || !title.trim() || isEmptyContent) {
+                addAlert({
+                  title: '입력오류',
+                  message: '카테고리, 제목, 내용을 모두 입력해주세요.',
+                  icon: <OctagonAlert />,
+                  duration: 2000,
+                });
+                return;
+              }
+              confirmAction('게시글', editMode ? '수정하시겠습니까?' : '등록하시겠습니까?', handleSubmit);
+            }}>
             {editMode ? '수정완료' : '등록'}
           </Button>
           <Button onClick={() => navigate('..')} variant="secondary">
@@ -189,14 +216,6 @@ export default function BoardWrite() {
           </Button>
         </div>
       </div>
-
-      {/* 공통 컨펌 다이얼로그 */}
-      <ConfirmDialog
-        open={confirmState.open}
-        onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
-        title={confirmState.title}
-        onConfirm={() => confirmState.action?.()}
-      />
     </div>
   );
 }

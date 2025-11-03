@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/board';
 import { Badge } from '@components/ui/badge';
@@ -13,14 +13,25 @@ import type { BoardDTO } from '@/api/office/notice';
 
 export default function BoardList() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<BoardDTO[]>([]);
   const [loading, setLoading] = useState(true);
-  //const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
+  //const [total, setTotal] = useState(0);\
   const [searchQuery, setSearchQuery] = useState('');
   const [activeQuery, setActiveQuery] = useState('');
 
   const pageSize = 10; // 한 페이지에 보여줄 개수
+
+  // ✅ URL에서 page 읽기 (없으면 1)
+  const currentPage = Number(searchParams.get('page')) || 1;
+  const [page, setPage] = useState(currentPage);
+
+  // ✅ page 변경 시 URL 반영
+  useEffect(() => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('page', String(page));
+    setSearchParams(newParams);
+  }, [page]);
 
   const fetchBoardList = async () => {
     setLoading(true);
@@ -62,13 +73,6 @@ export default function BoardList() {
   const total = filteredNormals.length;
   const startNo = (page - 1) * normalLimit;
   const paginatedNormals = normals.slice(startNo, startNo + normalLimit);
-
-  /*  // posts에서 공지/일반 분리
-  const notices = posts.filter((p) => p.pinned === 'Y');
-  // 일반글: 최신순 정렬
-  const normals = posts.filter((p) => p.pinned !== 'Y').sort((a, b) => b.n_seq - a.n_seq);
-  // 화면에서 보여줄 번호 (페이지 기준 연속 번호)
-  const startNo = (page - 1) * pageSize; */
 
   return (
     <div>
