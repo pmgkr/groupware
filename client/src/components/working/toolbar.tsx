@@ -82,7 +82,7 @@ export default function Toolbar({
       </div>
 
       {/* 오른쪽: 뷰 변경 버튼들 */}
-      <div className="flex items-center align-self-end gap-1">
+      <div className="flex items-center ml-auto gap-1">
         <Button
           onClick={() => handleNavigate('TODAY')}
           variant="outline"
