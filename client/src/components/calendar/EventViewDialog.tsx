@@ -7,6 +7,9 @@ dayjs.locale('ko');
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
 import { useUser } from '@/hooks/useUser';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { OctagonAlert } from 'lucide-react';
 
 interface EventData {
   id?: string;
@@ -41,6 +44,8 @@ export default function EventViewDialog({
   selectedEvent 
 }: EventViewDialogProps) {
   const { user_id, user_level, team_id } = useUser();
+  const { addDialog } = useAppDialog();
+  const { addAlert } = useAppAlert();
   
   // 본인의 일정인지 확인 (user_id로 비교)
   const isMyEvent = user_id && selectedEvent?.userId === user_id;
@@ -65,6 +70,88 @@ export default function EventViewDialog({
     
     return baseStatus;
   })();
+
+  // 취소 신청하기 확인 다이얼로그
+  const handleCancelRequest = () => {
+    addDialog({
+      title: '<span class="text-primary-blue-500 font-semibold">취소 신청 확인</span>',
+      message: '이 일정을 정말 취소 신청하시겠습니까?',
+      confirmText: '취소 신청하기',
+      cancelText: '닫기',
+      onConfirm: async () => {
+        try {
+          // 취소 신청 API 호출
+          if (onRequestCancel) {
+            await onRequestCancel();
+          }
+          
+          // 성공 알림 먼저 표시
+          addAlert({
+            title: '취소 신청 완료',
+            message: '일정 취소 신청이 성공적으로 완료되었습니다.',
+            icon: <OctagonAlert />,
+            duration: 3000,
+          });
+          
+          // 알림 표시 후 다이얼로그 닫기
+          setTimeout(() => {
+            onClose();
+          }, 300);
+          
+        } catch (error) {
+          // 실패 알림 표시
+          const errorMessage = error instanceof Error ? error.message : '취소 신청에 실패했습니다. 다시 시도해주세요.';
+          addAlert({
+            title: '취소 신청 실패',
+            message: errorMessage,
+            icon: <OctagonAlert />,
+            duration: 3000,
+          });
+        }
+      },
+    });
+  };
+
+  // 취소 요청 승인 확인 다이얼로그
+  const handleApproveCancel = () => {
+    addDialog({
+      title: '<span class="text-primary-blue-500 font-semibold">취소 승인 확인</span>',
+      message: '이 일정의 취소 요청을 승인하시겠습니까?',
+      confirmText: '승인하기',
+      cancelText: '닫기',
+      onConfirm: async () => {
+        try {
+          // 취소 승인 API 호출
+          if (onRequestCancel) {
+            await onRequestCancel();
+          }
+          
+          // 성공 알림 먼저 표시
+          addAlert({
+            title: '승인 완료',
+            message: '일정 취소가 승인되었습니다.',
+            icon: <OctagonAlert />,
+            duration: 3000,
+          });
+          
+          // 알림 표시 후 다이얼로그 닫기
+          setTimeout(() => {
+            onClose();
+          }, 300);
+          
+        } catch (error) {
+          // 실패 알림 표시
+          const errorMessage = error instanceof Error ? error.message : '승인 처리에 실패했습니다. 다시 시도해주세요.';
+          addAlert({
+            title: '승인 실패',
+            message: errorMessage,
+            icon: <OctagonAlert />,
+            duration: 3000,
+          });
+        }
+      },
+    });
+  };
 
   // 날짜 범위 포맷팅
   const getDateRangeText = () => {
@@ -173,11 +260,11 @@ export default function EventViewDialog({
         </div>
         <DialogFooter>
           {isManager && isSameTeam && status === "취소 요청됨" && onRequestCancel && (
-            <Button variant="destructive" onClick={onRequestCancel}>취소 요청 승인</Button>
+            <Button variant="destructive" onClick={handleApproveCancel}>취소 요청 승인</Button>
           )}
           {/* 액션 버튼들 - 본인의 일정일 때만 표시 */}
           {isMyEvent && status === "등록 완료" && onRequestCancel && (
-            <Button variant="destructive" onClick={onRequestCancel}>취소 신청하기</Button>
+            <Button variant="destructive" onClick={handleCancelRequest}>취소 신청하기</Button>
           )}
           <Button variant="outline" onClick={onClose}>닫기</Button>
         </DialogFooter>

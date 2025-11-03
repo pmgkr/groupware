@@ -4,52 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipIcon } from "@/components/ui/tooltip";
 import OvertimeDialog from "./OvertimeDialog";
 import OvertimeViewDialog from "./OvertimeViewDialog";
+import type { WorkData } from "@/types/working";
+import { workingApi } from "@/api/working";
+import { buildOvertimeApiParams } from "@/utils/overtimeHelper";
 
 // 오늘 날짜 확인 함수
 const isToday = (date: string) => {
   return dayjs(date).isSame(dayjs(), 'day');
 };
 
-
-// 근무 데이터 타입 정의
-interface WorkData {
-  date: string;
-  workType: "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가" | "공휴일";
-  startTime: string;
-  endTime: string;
-  basicHours: number;
-  basicMinutes: number;
-  overtimeHours: number;
-  overtimeMinutes: number;
-  totalHours: number;
-  totalMinutes: number;
-  overtimeStatus: "신청하기" | "승인대기" | "승인완료" | "반려됨";
-  dayOfWeek: string;
-  rejectionDate?: string;
-  rejectionReason?: string;
-  // 신청 데이터 추가
-  overtimeData?: {
-    expectedEndTime: string;
-    expectedEndMinute: string;
-    mealAllowance: string;
-    transportationAllowance: string;
-    overtimeHours: string;
-    overtimeType: string;
-    clientName: string;
-    workDescription: string;
-  };
-  overtimeId?: number; // 초과근무 ID
-  isHoliday?: boolean; // 공휴일 여부
-}
-
 interface TableProps {
   data: WorkData[];
-  onOvertimeRequest: (index: number, overtimeData?: any) => void;
-  onOvertimeCancel?: (index: number) => void;
-  onOvertimeReapply?: (index: number) => void;
+  onDataRefresh: () => Promise<void>;
 }
 
-export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOvertimeReapply }: TableProps) {
+export default function Table({ data, onDataRefresh }: TableProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -57,7 +26,7 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
   const getWorkTypeColor = (workType: string) => {
     switch (workType) {
       case "-": return "bg-gray-50 text-gray-400";
-      case "일반근무": return "font-semibold text-gray-900";
+      case "일반근무": return "bg-gray-300 text-gray-900";
       case "연차": return "bg-primary-blue-150 text-primary-blue";
       case "오전반차": return "bg-primary-pink-300 text-primary-pink-500";
       case "오전반반차": return "bg-primary-purple-150 text-primary-purple-500";
@@ -92,12 +61,31 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
     }
   };
 
-  const handleOvertimeSave = (overtimeData: any) => {
-    if (selectedIndex !== null) {
-      onOvertimeRequest(selectedIndex, overtimeData);
+  const handleOvertimeSave = async (overtimeData: any) => {
+    if (selectedIndex === null) return;
+    
+    const selectedDay = data[selectedIndex];
+    const currentStatus = selectedDay.overtimeStatus;
+    
+    if (currentStatus === "신청하기" || currentStatus === "반려됨") {
+      try {
+        // 초과근무 API 파라미터 구성
+        const apiParams = buildOvertimeApiParams(selectedDay, overtimeData);
+        
+        // API 호출
+        await workingApi.requestOvertime(apiParams);
+        
+        // 성공 시 데이터 다시 로드
+        await onDataRefresh();
+        
+        setDialogOpen(false);
+        setSelectedIndex(null);
+      } catch (error: any) {
+        console.error('초과근무 신청 실패:', error);
+        const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
+        alert(`초과근무 신청에 실패했습니다.\n오류: ${errorMessage}`);
+      }
     }
-    setDialogOpen(false);
-    setSelectedIndex(null);
   };
 
   const handleDialogClose = () => {
@@ -110,20 +98,37 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
     setSelectedIndex(null);
   };
 
-  const handleOvertimeCancel = () => {
-    if (selectedIndex !== null && onOvertimeCancel) {
-      onOvertimeCancel(selectedIndex);
+  const handleOvertimeCancel = async () => {
+    if (selectedIndex === null) return;
+    
+    const selectedDay = data[selectedIndex];
+    
+    if (!selectedDay.overtimeId) {
+      throw new Error('초과근무 ID를 찾을 수 없습니다.');
     }
-    setViewDialogOpen(false);
-    setSelectedIndex(null);
+    
+    if (selectedDay.overtimeStatus !== "승인대기") {
+      throw new Error('승인대기 상태의 초과근무만 취소할 수 있습니다.');
+    }
+    
+    try {
+      await workingApi.cancelOvertime(selectedDay.overtimeId);
+      
+      // 성공 시 데이터 다시 로드
+      await onDataRefresh();
+      
+      setViewDialogOpen(false);
+      setSelectedIndex(null);
+    } catch (error: any) {
+      console.error('초과근무 취소 실패:', error);
+      throw error;
+    }
   };
 
   const handleOvertimeReapply = () => {
-    if (selectedIndex !== null && onOvertimeReapply) {
-      onOvertimeReapply(selectedIndex);
-    }
+    // 재신청하기: ViewDialog 닫고 신청 Dialog 열기
     setViewDialogOpen(false);
-    setDialogOpen(true); // 재신청을 위해 신청 다이얼로그 열기
+    setDialogOpen(true);
   };
 
   return (
@@ -263,12 +268,6 @@ export default function Table({ data, onOvertimeRequest, onOvertimeCancel, onOve
         isOpen={dialogOpen}
         onClose={handleDialogClose}
         onSave={handleOvertimeSave}
-        onCancel={() => {
-          if (selectedIndex !== null && onOvertimeCancel) {
-            onOvertimeCancel(selectedIndex);
-            handleDialogClose();
-          }
-        }}
         selectedDay={selectedIndex !== null ? data[selectedIndex] : undefined}
         selectedIndex={selectedIndex || undefined}
       />

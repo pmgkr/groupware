@@ -288,59 +288,39 @@ export default function CustomCalendar({
   // 이벤트 취소 신청 핸들러
   const handleRequestCancelEvent = async () => {
     if (!selectedEvent) {
-      console.error('selectedEvent가 없습니다.');
-      return;
+      throw new Error('선택된 일정이 없습니다.');
     }
     
-    try {
-      console.log('취소 신청 - selectedEvent:', selectedEvent);
-      console.log('취소 신청 - resource:', selectedEvent.resource);
-      console.log('취소 신청 - resource.id:', selectedEvent.resource?.id);
-      console.log('취소 신청 - resource.seq:', selectedEvent.resource?.seq);
-      
-      // resource가 없으면 에러
-      if (!selectedEvent.resource) {
-        console.error('selectedEvent.resource가 없습니다.');
-        alert('일정 정보를 찾을 수 없습니다.');
-        return;
-      }
-      
-      // id로만 이벤트를 찾음 (seq는 사용하지 않음)
-      const eventId = selectedEvent.resource.id;
-      console.log('취소 신청 - eventId:', eventId);
-      
-      if (!eventId) {
-        console.error('일정 ID를 찾을 수 없습니다. resource 객체:', selectedEvent.resource);
-        alert('일정 정보를 찾을 수 없습니다. (ID 없음)');
-        return;
-      }
+    // resource가 없으면 에러
+    if (!selectedEvent.resource) {
+      throw new Error('일정 정보를 찾을 수 없습니다.');
+    }
+    
+    // id로만 이벤트를 찾음 (seq는 사용하지 않음)
+    const eventId = selectedEvent.resource.id;
+    
+    if (!eventId) {
+      throw new Error('일정 ID를 찾을 수 없습니다.');
+    }
 
-      const { scheduleApi } = await import('@/api/calendar');
-      const currentStatus = selectedEvent.resource.schStatus;
-      
-      // 현재 상태에 따라 다른 처리
-      if (currentStatus === 'Y') {
-        // 등록 완료 상태 → 취소 신청 (H로 변경)
-        console.log('API 호출 - 취소 신청 (Y → H)');
-        await scheduleApi.updateScheduleStatus(eventId, 'H');
-        alert('취소 신청이 완료되었습니다.');
-      } else if (currentStatus === 'H') {
-        // 취소 요청됨 상태 → 취소 완료 (N으로 변경)
-        console.log('API 호출 - 취소 완료 (H → N)');
-        await scheduleApi.updateScheduleStatus(eventId, 'N');
-        alert('일정 취소가 완료되었습니다.');
-      }
-      
-      // 다이얼로그 닫기
-      handleCloseEventViewDialog();
-      
-      // 부모 컴포넌트에 날짜 변경 알림하여 데이터 새로고침
-      if (onDateChange) {
-        onDateChange(currentDate);
-      }
-    } catch (error) {
-      console.error('취소 처리 실패:', error);
-      alert('취소 처리에 실패했습니다. 다시 시도해주세요.');
+    const { scheduleApi } = await import('@/api/calendar');
+    const currentStatus = selectedEvent.resource.schStatus;
+    
+    // 현재 상태에 따라 다른 처리
+    if (currentStatus === 'Y') {
+      // 등록 완료 상태 → 취소 신청 (H로 변경)
+      await scheduleApi.updateScheduleStatus(eventId, 'H');
+    } else if (currentStatus === 'H') {
+      // 취소 요청됨 상태 → 취소 완료 (N으로 변경)
+      await scheduleApi.updateScheduleStatus(eventId, 'N');
+    }
+    
+    // 다이얼로그 닫기
+    handleCloseEventViewDialog();
+    
+    // 부모 컴포넌트에 날짜 변경 알림하여 데이터 새로고침
+    if (onDateChange) {
+      onDateChange(currentDate);
     }
   };
 
