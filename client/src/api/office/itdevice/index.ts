@@ -13,6 +13,7 @@ export interface DeviceDTO {
   user_id: string | null;
   user_name: string | null;
   team_id: number | null;
+  it_status: string;
 }
 export interface DeviceHistoryDTO {
   seq: number;
@@ -28,8 +29,13 @@ export interface Device {
   brand: string;
   model: string;
   serial: string;
+  os?: string;
+  ram?: string;
+  gpu?: string;
+  storage?: string;
   p_date: string;
   createdAt: string;
+  it_status: string;
 }
 export interface DeviceHistory {
   id: number;
@@ -50,20 +56,25 @@ export function toItDevice(dto: any): Device {
     brand: dto.it_brand ?? dto.brand ?? '-',
     model: dto.it_model ?? dto.model ?? '-',
     serial: dto.it_serial ?? dto.serial ?? '-',
+    os: dto.os ?? '-',
+    ram: dto.ram ?? '-',
+    gpu: dto.gpu ?? '-',
+    storage: dto.storage ?? '-',
     p_date: date(dto.it_date ?? dto.p_date),
     createdAt: date(dto.it_reg_date ?? dto.reg_date),
+    it_status: dto.it_status,
   };
 }
 
 export function toDeviceHistory(dto: any): DeviceHistory {
-  //console.log('🔍 [toDeviceHistory] dto:', dto);
+  const date = (v?: string | null) => v?.split('T')[0] ?? '-';
 
   return {
     id: dto.seq ?? dto.history_id ?? 0,
     user: dto.user_name ?? dto.user ?? '-',
     team: dto.team_name ?? dto.team ?? '-',
-    createdAt: dto.created_at ? dto.created_at.split('T')[0] : '-',
-    returnedAt: dto.returned_at ? dto.returned_at.split('T')[0] : null,
+    createdAt: date(dto.ih_created_at),
+    returnedAt: dto.ih_returned_at ? date(dto.ih_returned_at) : null,
   };
 }
 
@@ -105,9 +116,69 @@ export async function registerItDevice(data: {
   it_model: string;
   it_serial: string;
   it_date: string;
+  os?: string;
+  ram?: string;
+  gpu?: string;
+  storage?: string;
 }): Promise<void> {
   await http('/user/office/device/register', {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+}
+
+//it디바이스 사용자 등록
+export async function registerItDeviceUser(data: {
+  it_seq: number;
+  ih_user_id: string;
+  ih_user_name: string;
+  ih_team_id: string;
+  ih_created_at: string;
+}): Promise<void> {
+  await http('/user/office/device/application', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+// 장비 정보 수정
+export async function updateItDevice(data: {
+  it_seq: number;
+  device: string;
+  brand: string;
+  model: string;
+  serial: string;
+  p_date: string;
+  os?: string;
+  ram?: string;
+  gpu?: string;
+  storage?: string;
+}): Promise<void> {
+  const renamed = {
+    it_device: data.device,
+    it_brand: data.brand,
+    it_model: data.model,
+    it_serial: data.serial,
+    it_date: data.p_date,
+    os: data.os ?? '',
+    ram: data.ram ?? '',
+    gpu: data.gpu ?? '',
+    storage: data.storage ?? '',
+  };
+
+  await http(`/user/office/device/update/${data.it_seq}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(renamed),
+  });
+}
+
+// it디바이스 사용 상태 변경
+export async function updateItDeviceStatus(it_seq: number, status: string) {
+  await http(`/user/office/device/status/${it_seq}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ it_status: status }),
   });
 }

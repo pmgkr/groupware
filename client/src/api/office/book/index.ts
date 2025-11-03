@@ -1,5 +1,7 @@
 // src/api/office/book/index.ts
 import { http } from '@/lib/http';
+import type { TeamDto } from '@/api/teams';
+import { getTeams } from '@/api/teams';
 
 // 타입정의 :  API가 주는 원래 구조
 export interface BookDTO {
@@ -33,6 +35,7 @@ export interface Book {
   comment: string;
   status: string;
   purchaseAt: string;
+  team_name?: string;
 }
 
 //변환기 DTO -> 도메인
@@ -68,14 +71,23 @@ export async function getBookList(
     { method: 'GET' }
   );
 
+  const teams = await getTeams();
+
   // "완료" 상태만 필터링
   const filtered = dto.items.filter((item) => item.b_status?.trim() === '완료');
   //  클라이언트에서 페이지 나누기
   const startIdx = (page - 1) * size;
   const pagedItems = filtered.slice(startIdx, startIdx + size);
 
-  // DTO → 내부 모델 매핑
-  const items = pagedItems.map(toItBook);
+  const items = pagedItems.map((dto) => {
+    const book = toItBook(dto);
+    const matchedTeam = teams.find((t) => Number(t.team_id) === Number(book.team_id));
+
+    return {
+      ...book,
+      team_name: matchedTeam ? matchedTeam.team_name : '소속없음',
+    };
+  });
 
   return {
     items,
@@ -102,8 +114,16 @@ export async function getBookWishList(
   const startIdx = (page - 1) * size;
   const pagedItems = filtered.slice(startIdx, startIdx + size);
 
-  // DTO → 내부 모델 매핑
-  const items = pagedItems.map(toItBook);
+  const teams = await getTeams();
+  const items = pagedItems.map((item) => {
+    const book = toItBook(item);
+    const matchedTeam = teams.find((t) => Number(t.team_id) === Number(book.team_id));
+
+    return {
+      ...book,
+      team_name: matchedTeam ? matchedTeam.team_name : '소속없음',
+    };
+  });
 
   return {
     items,
@@ -139,7 +159,7 @@ export async function registerBook(data: BookRegisterPayload): Promise<{ success
 // 신청도서 완료처리
 export async function completeBook(bw_seq: number): Promise<{ ok: boolean }> {
   const res = await http<{ ok: boolean }>(`/user/office/book/complete/${bw_seq}`, {
-    method: 'PATCH',
+    method: 'POST',
   });
   return res;
 }

@@ -5,7 +5,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const textareaVariants = cva(
-  "w-full text-gray-900 bg-white border placeholder:text-muted-foreground flex field-sizing-content inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-base font-regular transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none shadow-gray-400 focus:border-primary-blue-500 disabled:bg-gray-300 disabled:placeholder:text-gray-800 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive cursor-pointer text-base resize-none",
+  "w-full text-gray-900 bg-white border placeholder:text-muted-foreground flex field-sizing-content inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-base font-regular transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none shadow-gray-400 focus:border-primary-blue-300 disabled:bg-gray-300 disabled:placeholder:text-gray-800 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive cursor-pointer text-base resize-none",
   {
     variants: {
       variant: {

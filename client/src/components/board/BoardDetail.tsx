@@ -234,7 +234,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       )}
 
       {/* 댓글 영역 */}
-      <div className="bg-gray-100 p-7">
+      <div className="bg-gray-100 p-7 pr-10">
         {/* 댓글 작성 */}
         <div className="mb-5 flex items-start justify-between gap-5">
           <h2 className="w-[100px] text-base font-bold">댓글</h2>
@@ -265,73 +265,26 @@ export default function BoardDetail({ id }: BoardDetailProps) {
         {/* 댓글 목록 */}
         <div className="flex flex-col">
           {comments.map((c) => (
-            <div className="mb-3 flex items-start justify-between gap-4" key={c.bc_seq}>
+            <div className="mb-3 flex items-start justify-between gap-5" key={c.bc_seq}>
               <div className="w-[100px] pt-1.5 text-base text-gray-700">{c.user_name}</div>
               {/* 댓글 내용 / 수정 */}
-              <div className="flex w-full flex-1 items-start justify-between text-base">
+              <div className="flex w-[1200px] justify-start">
                 {editCommentModeId === c.bc_seq ? (
                   //수정중
-                  <Textarea
-                    size="sm"
-                    className="w-[1212px] flex-1"
-                    value={editCommentText[c.bc_seq] ?? ''}
-                    onChange={(e) => setEditCommentText((prev) => ({ ...prev, [c.bc_seq]: e.target.value }))}
-                  />
+                  <div className="flex w-full flex-1 items-start justify-between text-base">
+                    <Textarea
+                      size="sm"
+                      className="w-[1212px] flex-1"
+                      value={editCommentText[c.bc_seq] ?? ''}
+                      onChange={(e) => setEditCommentText((prev) => ({ ...prev, [c.bc_seq]: e.target.value }))}
+                    />
+                  </div>
                 ) : (
                   //일반 댓글 목록
-                  <p className="w-[1050px] pt-1 text-base whitespace-pre-line text-gray-700">{c.comment}</p>
-                )}
-              </div>
-
-              {/* 수정모드일때 일시 숨기기 */}
-              {!(editCommentMode && editCommentModeId === c.bc_seq) && (
-                <div className="w-[120px] pt-1.5 text-sm text-gray-600">{formatKST(c.created_at)}</div>
-              )}
-              {/* 수정 모드일 때 "댓글작성으로 돌아가기" 버튼 */}
-
-              <div className="flex w-[64px]">
-                {user?.user_id === c.user_id && (
-                  <div className="flex">
-                    {editCommentModeId === c.bc_seq ? (
-                      <>
-                        {/* 수정완료 버튼 */}
-                        <Button
-                          variant="svgIcon"
-                          size="icon"
-                          aria-label="댓글 수정완료"
-                          onClick={async () => {
-                            try {
-                              const updatedText = editCommentText[c.bc_seq] ?? '';
-                              await editComment(c.bc_seq, { comment: updatedText });
-                              setEditCommentMode(false);
-                              setEditCommentModeId(null);
-                              setEditCommentText((prev) => ({ ...prev, [c.bc_seq]: '' }));
-                              const updated = await getComment(Number(postId));
-                              setComments(updated);
-                            } catch (err) {
-                              console.error('댓글 수정 실패:', err);
-                              alert('댓글 수정 중 오류가 발생했습니다.');
-                            }
-                          }}>
-                          <Check />
-                        </Button>
-
-                        {/* 나가기(수정 취소) 버튼 */}
-                        <Button
-                          variant="svgIcon"
-                          size="icon"
-                          aria-label="수정 취소"
-                          onClick={() => {
-                            setEditCommentMode(false);
-                            setEditCommentModeId(null);
-                            setNewComment('');
-                          }}>
-                          <CircleX />
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        {/* 댓글 수정  */}
+                  <div className="flex justify-start">
+                    <p className="max-w-[1050px] pt-1 text-base whitespace-pre-line text-gray-700">{c.comment}</p>
+                    {user?.user_id === c.user_id && (
+                      <div className="pl-6 text-gray-600">
                         <Button
                           variant="svgIcon"
                           size="icon"
@@ -344,7 +297,6 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                           <Edit />
                         </Button>
 
-                        {/* 삭제 */}
                         <Button
                           variant="svgIcon"
                           size="icon"
@@ -354,11 +306,60 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                           }>
                           <Delete />
                         </Button>
-                      </>
+                      </div>
                     )}
                   </div>
                 )}
               </div>
+
+              {/* 수정모드일때 일시 숨기기 */}
+              {!(editCommentMode && editCommentModeId === c.bc_seq) && (
+                <div className="w-[123px] pt-1.5 text-sm text-gray-600">{formatKST(c.created_at)}</div>
+              )}
+              {/* 수정 모드일 때 "댓글작성으로 돌아가기" 버튼 */}
+
+              {editCommentModeId === c.bc_seq && (
+                <div className="flex w-[64px]">
+                  {user?.user_id === c.user_id && (
+                    <div className="flex text-gray-600">
+                      {/* 수정완료 버튼 */}
+                      <Button
+                        variant="svgIcon"
+                        size="icon"
+                        aria-label="댓글 수정완료"
+                        onClick={async () => {
+                          try {
+                            const updatedText = editCommentText[c.bc_seq] ?? '';
+                            await editComment(c.bc_seq, { comment: updatedText });
+                            setEditCommentMode(false);
+                            setEditCommentModeId(null);
+                            setEditCommentText((prev) => ({ ...prev, [c.bc_seq]: '' }));
+                            const updated = await getComment(Number(postId));
+                            setComments(updated);
+                          } catch (err) {
+                            console.error('댓글 수정 실패:', err);
+                            alert('댓글 수정 중 오류가 발생했습니다.');
+                          }
+                        }}>
+                        <Check />
+                      </Button>
+
+                      {/* 나가기(수정 취소) 버튼 */}
+                      <Button
+                        variant="svgIcon"
+                        size="icon"
+                        aria-label="수정 취소"
+                        onClick={() => {
+                          setEditCommentMode(false);
+                          setEditCommentModeId(null);
+                          setNewComment('');
+                        }}>
+                        <CircleX />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
           {/* 공통 다이얼로그 */}

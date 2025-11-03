@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@components/ui/button';
 import { Close } from '@/assets/images/icons';
@@ -14,12 +14,22 @@ type Props = {
   setActiveFile?: (name: string | null) => void;
 };
 
-export function AttachmentField({ name, rowIndex, files = [], onDropFiles, onUploadFiles, activeFile, setActiveFile }: Props) {
+/** ✅ 성능 최적화 버전 AttachmentField */
+export const AttachmentField = React.memo(function AttachmentField({
+  name,
+  rowIndex,
+  files = [],
+  onDropFiles,
+  onUploadFiles,
+  activeFile,
+  setActiveFile,
+}: Props) {
   const [attachments, setAttachments] = useState<PreviewFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fieldRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // 🔹 외부 클릭 감지
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (fieldRef.current && !fieldRef.current.contains(e.target as Node)) {
@@ -30,61 +40,74 @@ export function AttachmentField({ name, rowIndex, files = [], onDropFiles, onUpl
     return () => document.removeEventListener('click', handleClickOutside);
   }, [setActiveFile]);
 
-  /** 파일 드롭 (UploadArea 또는 로컬 파일 직접 드롭 모두 지원) */
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(false);
+  /** ✅ 공통 파일 추가 함수 */
+  const addAttachments = useCallback((newFiles: PreviewFile[]) => {
+    setAttachments((prev) => {
+      const unique = newFiles.filter((nf) => !prev.some((pf) => pf.name === nf.name));
+      return [...prev, ...unique];
+    });
+  }, []);
 
-    const data = e.dataTransfer.getData('application/json');
+  /** ✅ UploadArea → 드롭 시 처리 */
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDragOver(false);
 
-    // CASE 1: UploadArea → 기존 JSON 기반 드롭
-    if (data) {
-      const droppedFiles = JSON.parse(data) as PreviewFile[];
-      setAttachments((prev) => {
-        const uniqueFiles = droppedFiles.filter((file) => !prev.some((f) => f.name === file.name));
-        const newFiles = [...prev, ...uniqueFiles];
-        setTimeout(() => onDropFiles?.(newFiles, name, rowIndex), 0);
-        return newFiles;
-      });
-      return;
-    }
+      const data = e.dataTransfer.getData('application/json');
 
-    // CASE 2: 사용자가 로컬 파일을 직접 드롭한 경우 (NEW)
-    const droppedFileList = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'));
-    if (droppedFileList.length === 0) return;
+      // CASE 1: UploadArea → JSON 기반 드롭
+      if (data) {
+        const droppedFiles = JSON.parse(data) as PreviewFile[];
+        addAttachments(droppedFiles);
+        requestIdleCallback(() => onDropFiles?.(droppedFiles, name, rowIndex));
+        return;
+      }
 
-    const newFiles: PreviewFile[] = droppedFileList.map((file) => ({
-      name: file.name,
-      type: file.type,
-      preview: URL.createObjectURL(file),
-    }));
+      // CASE 2: 로컬 파일 직접 드롭
+      const droppedFileList = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'));
+      if (droppedFileList.length === 0) return;
 
-    setAttachments((prev) => [...prev, ...newFiles]);
-    onUploadFiles?.(newFiles, rowIndex);
-  };
+      const newFiles: PreviewFile[] = droppedFileList.map((file) => ({
+        name: file.name,
+        type: file.type,
+        preview: URL.createObjectURL(file),
+      }));
 
-  /** input으로 직접 업로드 */
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const uploaded = Array.from(e.target.files || []).map((file) => ({
-      name: file.name,
-      type: file.type,
-      preview: URL.createObjectURL(file),
-    })) as PreviewFile[];
+      addAttachments(newFiles);
+      requestIdleCallback(() => onUploadFiles?.(newFiles, rowIndex));
+    },
+    [addAttachments, name, rowIndex, onDropFiles, onUploadFiles]
+  );
 
-    setAttachments((prev) => [...prev, ...uploaded]);
-    onUploadFiles?.(uploaded, rowIndex);
-  };
+  /** ✅ input으로 업로드 */
+  const handleFileUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const uploaded = Array.from(e.target.files || []).map((file) => ({
+        name: file.name,
+        type: file.type,
+        preview: URL.createObjectURL(file),
+      })) as PreviewFile[];
 
-  const handleAdditionalUpload = () => {
+      addAttachments(uploaded);
+      requestIdleCallback(() => onUploadFiles?.(uploaded, rowIndex));
+    },
+    [addAttachments, onUploadFiles, rowIndex]
+  );
+
+  /** ✅ 추가 업로드 버튼 클릭 */
+  const handleAdditionalUpload = useCallback(() => {
     fileInputRef.current?.click();
-  };
+  }, []);
 
-  /** 개별 삭제 */
-  const handleRemove = (fileName: string) => {
-    const updated = attachments.filter((f) => f.name !== fileName);
-    setAttachments(updated);
-    setTimeout(() => onDropFiles?.([{ name: fileName, type: '', preview: '' }], name, null), 0);
-  };
+  /** ✅ 개별 삭제 (linkedRows 해제 포함) */
+  const handleRemove = useCallback(
+    (fileName: string) => {
+      setAttachments((prev) => prev.filter((f) => f.name !== fileName));
+      requestIdleCallback(() => onDropFiles?.([{ name: fileName, type: '', preview: '' }], name, null));
+    },
+    [name, onDropFiles]
+  );
 
   return (
     <div className="flex h-full flex-col">
@@ -122,11 +145,11 @@ export function AttachmentField({ name, rowIndex, files = [], onDropFiles, onUpl
                     setActiveFile?.(file.name);
                   }}
                   className={cn(
-                    'relative aspect-[1/1.4] w-[calc(33.33%-var(--spacing)*1)] cursor-pointer rounded-xs ring ring-gray-300',
-                    isActive && 'ring-primary-blue-300'
+                    'relative aspect-[1/1.4] w-[calc(33.33%-var(--spacing)*1)] cursor-pointer rounded-xs ring ring-gray-300 transition-transform duration-150',
+                    isActive && 'ring-primary-blue-300 scale-[1.02]'
                   )}>
                   <div className="relative h-full w-full overflow-hidden rounded-xs">
-                    <img src={file.preview} alt={file.name} className="absolute top-0 left-0 h-full w-full object-cover" />
+                    <img src={file.preview} alt={file.name} loading="lazy" className="absolute top-0 left-0 h-full w-full object-cover" />
                   </div>
                   <Button
                     variant="svgIcon"
@@ -159,4 +182,4 @@ export function AttachmentField({ name, rowIndex, files = [], onDropFiles, onUpl
       </div>
     </div>
   );
-}
+});

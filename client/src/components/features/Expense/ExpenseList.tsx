@@ -1,37 +1,27 @@
 import { useRef, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import * as XLSX from 'xlsx';
+import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
-import { formatKST, formatAmount } from '@/utils';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { Button } from '@components/ui/button';
-import { Badge } from '@components/ui/badge';
 import { Checkbox } from '@components/ui/checkbox';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
-import {
-  AlertDialog,
-  AlertDialogDescription,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogFooter,
-  AlertDialogCancel,
-} from '@/components/ui/alert-dialog';
 import { Dialog, DialogClose, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { MultiSelect, type MultiSelectOption } from '@components/multiselect/multi-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Excel } from '@/assets/images/icons';
 import { RefreshCw, OctagonAlert } from 'lucide-react';
 
-import { getExpenseLists, type ExpenseListItem, getExpenseType, deleteTempExpense } from '@/api';
-import { AlertDialogAction } from '@radix-ui/react-alert-dialog';
+import { getExpenseLists, type ExpenseListItem, getExpenseType, deleteTempExpense, claimTempExpense } from '@/api';
+import { ExpenseRow } from './_components/ExpenseListRow';
 
 export default function ExpenseList() {
   const navigate = useNavigate();
-  const { user_id, user_level } = useUser();
+  const { user_level } = useUser();
 
   // 상단 필터용 state
   const [activeTab, setActiveTab] = useState<'all' | 'saved'>('all');
@@ -46,12 +36,10 @@ export default function ExpenseList() {
   const [checkedItems, setCheckedItems] = useState<number[]>([]); // 선택된 seq 목록
   const [checkAll, setCheckAll] = useState(false); // 전체 선택 상태
 
+  // Alert & Dialog hooks
   const { addAlert } = useAppAlert();
   const { addDialog } = useAppDialog();
 
-  const [alertDialogOpen, setAlertDialogOpen] = useState(false); // Alert Dialog 오픈용 State
-  const [dialogTitle, setDialogTitle] = useState(''); // Alert Dialog 제목
-  const [dialogMsg, setDialogMsg] = useState(''); // Alert Dialog 메시지
   const [pendingDelete, setPendingDelete] = useState<number[]>([]); // 삭제 대상 seq Array
 
   // API 데이터 state
@@ -111,12 +99,7 @@ export default function ExpenseList() {
   // 전체 선택 체크박스 핸들러
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
-    if (checked) {
-      const allSeq = expenseList.map((item) => item.seq);
-      setCheckedItems(allSeq);
-    } else {
-      setCheckedItems([]);
-    }
+    setCheckedItems(checked ? expenseList.map((item) => item.seq) : []);
   };
 
   // 개별 체크박스 핸들러
@@ -124,36 +107,90 @@ export default function ExpenseList() {
     setCheckedItems((prev) => (checked ? [...prev, seq] : prev.filter((id) => id !== seq)));
   };
 
-  // 선택 삭제 이벤트 핸들러
-  const handleDeleteSelected = () => {
+  // 선택 청구 이벤트 핸들러
+  const handleClaimSelected = () => {
     if (checkedItems.length === 0) {
-      addDialog({
-        title: '삭제 확인',
-        message: '이 항목을 정말 삭제하시겠습니까?',
-        confirmText: '삭제',
-        cancelText: '취소',
-        onConfirm: () => {
+      addAlert({
+        title: '선택된 비용 항목이 없습니다.',
+        message: '청구할 비용 항목을 선택해주세요.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+      return;
+    }
+
+    const selectedRows = expenseList.filter((item) => checkedItems.includes(item.seq));
+    const nonSaved = selectedRows.filter((item) => item.status !== 'Saved');
+
+    if (nonSaved.length > 0) {
+      const invalidIds = nonSaved.map((i) => i.exp_id).join(', ');
+
+      addAlert({
+        title: '청구 불가한 비용 항목이 포함되어 있습니다.',
+        message: `임시저장 상태가 아닌 항목(${invalidIds})은 청구할 수 없습니다.`,
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+      return;
+    }
+
+    addDialog({
+      title: '선택한 비용 항목을 청구합니다.',
+      message: `<span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 임시저장 비용을 청구하시겠습니까?`,
+      confirmText: '청구',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          const payload = { seqs: checkedItems };
+          const res = await claimTempExpense(payload);
+
+          if (res.ok) {
+            addAlert({
+              title: '비용 청구가 완료되었습니다.',
+              message: `<p><span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 임시저장 비용이 청구되었습니다.</p>`,
+              icon: <OctagonAlert />,
+              duration: 2000,
+            });
+          }
+
+          // UI 갱신
+          setExpenseList((prev) => prev.filter((item) => !checkedItems.includes(item.seq)));
+          setCheckedItems([]);
+        } catch (err) {
+          console.error('❌ 청구 실패:', err);
+
           addAlert({
-            title: '삭제 완료',
-            message: '항목이 성공적으로 삭제되었습니다.',
+            title: '비용 청구 실패',
+            message: `청구 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
             icon: <OctagonAlert />,
             duration: 2000,
           });
-        },
-      });
+        } finally {
+          setCheckAll(false);
+          setPendingDelete([]);
+        }
+      },
+    });
+  };
 
-      // addAlert({
-      //   title: '삭제할 비용 항목을 선택해주세요.',
-      //   message: '삭제할 비용 항목을 선택해주세요.',
-      //   icon: <OctagonAlert />,
-      //   duration: 2000,
-      // });
+  // 선택 삭제 이벤트 핸들러
+  const handleDeleteSelected = () => {
+    if (checkedItems.length === 0) {
+      addAlert({
+        title: '선택된 비용 항목이 없습니다.',
+        message: '삭제할 비용 항목을 선택해주세요.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
       return;
     }
 
     // 선택된 항목들의 실제 데이터 조회
     const selectedRows = expenseList.filter((item) => checkedItems.includes(item.seq));
     const nonSaved = selectedRows.filter((item) => item.status !== 'Saved');
+
+    console.log(checkedItems);
+    setPendingDelete(checkedItems);
 
     if (nonSaved.length > 0) {
       const invalidIds = nonSaved.map((i) => i.exp_id).join(', ');
@@ -167,51 +204,43 @@ export default function ExpenseList() {
       return;
     }
 
-    // ✅ confirm 다이얼로그 띄우기
-    setDialogTitle('선택 항목 삭제');
-    setDialogMsg(`<span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 임시저장 비용을 삭제하시겠습니까?`);
-    setPendingDelete(checkedItems);
-    setAlertDialogOpen(true);
-  };
+    addDialog({
+      title: '선택한 비용 항목을 삭제합니다.',
+      message: `<span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 임시저장 비용을 삭제하시겠습니까?`,
+      confirmText: '삭제',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          const payload = { seqs: checkedItems };
+          const res = await deleteTempExpense(payload);
 
-  const handleConfirmDelete = async () => {
-    try {
-      console.log('🗑️ 삭제 요청 seq:', pendingDelete);
+          if (res.ok) {
+            addAlert({
+              title: '삭제 완료되었습니다.',
+              message: `<p><span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 임시저장 비용이 삭제되었습니다.</p>`,
+              icon: <OctagonAlert />,
+              duration: 2000,
+            });
+          }
 
-      const payload = {
-        seqs: pendingDelete,
-      };
+          // UI 갱신
+          setExpenseList((prev) => prev.filter((item) => !checkedItems.includes(item.seq)));
+          setCheckedItems([]);
+        } catch (err) {
+          console.error('❌ 삭제 실패:', err);
 
-      const res = await deleteTempExpense(payload);
-
-      console.log('✅ 삭제 응답:', res);
-
-      if (res.ok) {
-        addAlert({
-          title: '삭제 완료되었습니다.',
-          message: `<span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 임시저장 비용이 삭제되었습니다.`,
-          icon: <OctagonAlert />,
-          duration: 2000,
-        });
-      }
-
-      // UI 갱신
-      setExpenseList((prev) => prev.filter((item) => !checkedItems.includes(item.seq)));
-      setCheckedItems([]);
-    } catch (err) {
-      console.error('❌ 삭제 실패:', err);
-
-      addAlert({
-        title: '삭제 실패',
-        message: `삭제 처리 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
-        icon: <OctagonAlert />,
-        duration: 2000,
-      });
-    } finally {
-      setCheckAll(false);
-      setAlertDialogOpen(false);
-      setPendingDelete([]);
-    }
+          addAlert({
+            title: '삭제 실패',
+            message: `삭제 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        } finally {
+          setCheckAll(false);
+          setPendingDelete([]);
+        }
+      },
+    });
   };
 
   // 필터 옵션 정의
@@ -262,8 +291,6 @@ export default function ExpenseList() {
     (async () => {
       try {
         setLoading(true);
-
-        // 필터 파라미터 구성
         const params: Record<string, any> = {
           type: selectedType.join(',') || undefined,
           method: selectedProof.join(',') || undefined,
@@ -287,6 +314,7 @@ export default function ExpenseList() {
     })();
   }, [activeTab, selectedYear, selectedType, selectedProof, selectedProofStatus, selectedStatus, page]);
 
+  // 전체 선택 상태 반영
   useEffect(() => {
     if (expenseList.length === 0) return;
     const allSeq = expenseList.map((item) => item.seq);
@@ -396,7 +424,12 @@ export default function ExpenseList() {
               simpleSelect={true}
             />
 
-            <Button type="button" variant="svgIcon" size="icon" className="hover:text-primary-blue-500 size-6 text-gray-600">
+            <Button
+              type="button"
+              variant="svgIcon"
+              size="icon"
+              className="hover:text-primary-blue-500 size-6 text-gray-600 transition-transform hover:rotate-45"
+              onClick={() => handleTabChange(activeTab)}>
               <RefreshCw />
             </Button>
           </div>
@@ -411,24 +444,27 @@ export default function ExpenseList() {
         </Button>
       </div>
 
-      <Table variant="primary" align="center" className="teble-fixed">
+      <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            {activeTab === 'saved' && (
-              <TableHead className="w-[3%] px-0">
-                <Checkbox id="chk_all" className="align-center bg-white" checked={checkAll} onCheckedChange={(v) => handleCheckAll(!!v)} />
-              </TableHead>
-            )}
-            <TableHead className="w-[6%] text-left">EXP#</TableHead>
+            <TableHead className={cn('w-[3%] px-0 transition-all duration-150', activeTab !== 'saved' && 'hidden')}>
+              <Checkbox
+                id="chk_all"
+                className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
+                checked={checkAll}
+                onCheckedChange={(v) => handleCheckAll(!!v)}
+              />
+            </TableHead>
+            <TableHead className="w-[8%]">EXP#</TableHead>
             <TableHead className="w-[6%]">증빙 수단</TableHead>
             <TableHead className="w-[8%]">비용 용도</TableHead>
             <TableHead>비용 제목</TableHead>
             <TableHead className="w-[6%]">증빙 상태</TableHead>
             <TableHead className="w-[10%]">금액</TableHead>
-            <TableHead className="w-[6%] text-right">세금</TableHead>
+            <TableHead className="w-[6%]">세금</TableHead>
             <TableHead className="w-[10%]">합계</TableHead>
-            <TableHead className="w-[6%]">상태</TableHead>
-            <TableHead className="w-[14%]">작성 일시</TableHead>
+            <TableHead className="w-[7%]">상태</TableHead>
+            <TableHead className="w-[12%]">작성 일시</TableHead>
           </TableRow>
         </TableHeader>
 
@@ -446,54 +482,15 @@ export default function ExpenseList() {
               </TableCell>
             </TableRow>
           ) : (
-            expenseList.map((item) => {
-              // 비용 상태값 매핑
-              const statusMap = {
-                Saved: <Badge variant="grayish">임시저장</Badge>,
-                Claimed: <Badge variant="secondary">승인대기</Badge>,
-                Confirmed: <Badge>승인완료</Badge>,
-                Approved: <Badge className="bg-primary-blue/80">지급대기</Badge>,
-                Completed: <Badge className="bg-primary-blue">지급완료</Badge>,
-                Rejected: <Badge className="bg-destructive">반려됨</Badge>,
-              };
-
-              const status = statusMap[item.status as keyof typeof statusMap];
-
-              return (
-                <TableRow key={item.seq} className="[&_td]:text-[13px]">
-                  {activeTab === 'saved' && (
-                    <TableCell className="px-0">
-                      <Checkbox
-                        id={`chk_${item.seq}`}
-                        className="bg-white"
-                        checked={checkedItems.includes(item.seq)}
-                        onCheckedChange={(v) => handleCheckItem(item.seq, !!v)}
-                      />
-                    </TableCell>
-                  )}
-                  <TableCell>
-                    <Link to={`/expense/${item.exp_id}`} className="rounded-[4px] border-1 bg-white p-1 text-sm">
-                      {item.exp_id}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{item.el_method}</TableCell>
-                  <TableCell>{item.el_type}</TableCell>
-                  <TableCell className="text-left">
-                    <Link to={`/expense/${item.exp_id}`} className="hover:underline">
-                      {item.el_title}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    {item.el_attach === 'Y' ? <Badge variant="secondary">제출</Badge> : <Badge variant="grayish">미제출</Badge>}
-                  </TableCell>
-                  <TableCell className="text-right">{formatAmount(item.el_amount)}원</TableCell>
-                  <TableCell className="text-right">{item.el_tax === 0 ? 0 : `${formatAmount(item.el_tax)}원`}</TableCell>
-                  <TableCell className="text-right">{formatAmount(item.el_total)}원</TableCell>
-                  <TableCell>{status}</TableCell>
-                  <TableCell>{formatKST(item.wdate)}</TableCell>
-                </TableRow>
-              );
-            })
+            expenseList.map((item) => (
+              <ExpenseRow
+                key={item.seq}
+                item={item}
+                activeTab={activeTab}
+                checked={checkedItems.includes(item.seq)}
+                onCheck={handleCheckItem}
+              />
+            ))
           )}
         </TableBody>
       </Table>
@@ -503,7 +500,7 @@ export default function ExpenseList() {
           <Button type="button" size="sm" variant="outline" onClick={handleDeleteSelected}>
             선택 삭제
           </Button>
-          <Button type="button" size="sm" variant="outline">
+          <Button type="button" size="sm" variant="outline" onClick={handleClaimSelected}>
             선택 청구
           </Button>
         </div>
@@ -519,30 +516,6 @@ export default function ExpenseList() {
           />
         )}
       </div>
-
-      <AlertDialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
-        <AlertDialogContent className="sm:max-w-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
-            <AlertDialogDescription
-              dangerouslySetInnerHTML={{
-                __html: dialogMsg || '', // HTML 태그 포함 허용
-              }}></AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction asChild>
-              <Button type="button" className="h-9" onClick={handleConfirmDelete}>
-                확인
-              </Button>
-            </AlertDialogAction>
-            <AlertDialogCancel asChild>
-              <Button type="button" className="h-9" variant="outline">
-                취소
-              </Button>
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <Dialog open={registerDialog} onOpenChange={setRegisterDialog}>
         <DialogContent>

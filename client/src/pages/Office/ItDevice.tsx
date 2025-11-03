@@ -10,6 +10,7 @@ import { DeviceForm } from '@/components/itdevice/DeviceForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { getItDevice, registerItDevice, type Device } from '@/api/office/itdevice';
 import { useAuth } from '@/contexts/AuthContext';
+import { createPortal } from 'react-dom';
 
 export default function ItDevice() {
   const navigate = useNavigate();
@@ -55,7 +56,7 @@ export default function ItDevice() {
     os: '',
     ram: '',
     gpu: '',
-    ssdhdd: '',
+    storage: '',
     p_date: '',
   });
 
@@ -80,10 +81,13 @@ export default function ItDevice() {
         it_brand: form.brand,
         it_model: form.model,
         it_serial: form.serial,
+        os: form.os,
+        ram: form.ram,
+        gpu: form.gpu,
+        storage: form.storage,
         it_date: form.p_date,
       });
       console.log(form.p_date);
-      alert('✅ 장비가 성공적으로 등록되었습니다.');
       setOpenRegister(false);
       setForm({
         device: '',
@@ -93,7 +97,7 @@ export default function ItDevice() {
         os: '',
         ram: '',
         gpu: '',
-        ssdhdd: '',
+        storage: '',
         p_date: '',
       });
       fetchDevices(page); // 목록 새로고침
@@ -126,7 +130,13 @@ export default function ItDevice() {
         </div>
 
         {/* 등록 다이얼로그 */}
-        <Dialog open={openRegister} onOpenChange={setOpenRegister}>
+        <Dialog
+          open={openRegister}
+          onOpenChange={(open) => {
+            if (confirmState.open) return;
+            setOpenRegister(open);
+          }}
+          modal={false}>
           <DialogTrigger asChild>
             <Button size="sm">등록하기</Button>
           </DialogTrigger>
@@ -170,12 +180,14 @@ export default function ItDevice() {
           ) : posts.length > 0 ? (
             posts.map((post, idx) => (
               <TableRow key={post.id} onClick={() => navigate(`${post.id}`)} className="cursor-pointer hover:bg-gray-100">
-                <TableCell>{(page - 1) * pageSize + idx + 1}</TableCell>
+                <TableCell>{total - (page - 1) * pageSize - idx}</TableCell>
                 <TableCell>{post.device}</TableCell>
                 <TableCell>{post.brand}</TableCell>
                 <TableCell>{post.model}</TableCell>
                 <TableCell>{post.serial}</TableCell>
-                <TableCell>{post.user}</TableCell>
+                <TableCell>
+                  {post.user && post.user.trim() !== '' ? post.user : <span className="text-gray-500 italic">재고</span>}
+                </TableCell>
                 <TableCell>{post.p_date}</TableCell>
                 {/* <TableCell>{post.createdAt}</TableCell> */}
               </TableRow>
@@ -201,12 +213,15 @@ export default function ItDevice() {
       </div>
 
       {/* 공통 다이얼로그 */}
-      <ConfirmDialog
-        open={confirmState.open}
-        onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
-        title={confirmState.title}
-        onConfirm={() => confirmState.action?.()}
-      />
+      {createPortal(
+        <ConfirmDialog
+          open={confirmState.open}
+          onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
+          title={confirmState.title}
+          onConfirm={() => confirmState.action?.()}
+        />,
+        document.body
+      )}
 
       <Outlet />
     </div>
