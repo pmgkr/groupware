@@ -12,6 +12,10 @@ interface OverviewProps {
     workMinutes: number;
     remainingHours: number;
     remainingMinutes: number;
+    basicWorkHours: number;
+    basicWorkMinutes: number;
+    overtimeWorkHours: number;
+    overtimeWorkMinutes: number;
   };
 }
 
@@ -37,15 +41,7 @@ export default function Overview({ weeklyStats }: OverviewProps) {
         <span className="text-gray-500 text-base">기본 근무시간</span>
         <div className="flex items-center gap-x-1">
           <span className="text-primary-blue-500 text-lg font-bold">
-            {(() => {
-              // 전체 근무시간을 분으로 변환
-              const totalMinutes = (weeklyStats?.workHours || 0) * 60 + (weeklyStats?.workMinutes || 0);
-              // 40시간(2400분) 기준
-              const basicMinutes = Math.min(totalMinutes, 40 * 60);
-              const hours = Math.floor(basicMinutes / 60);
-              const minutes = basicMinutes % 60;
-              return `${hours}시간 ${String(minutes).padStart(2, '0')}분`;
-            })()}
+            {weeklyStats?.basicWorkHours || 0}시간 {String(weeklyStats?.basicWorkMinutes || 0).padStart(2, '0')}분
           </span>
           <span className="text-gray-500 text-sm font-medium">/ 40시간</span>
         </div>
@@ -54,15 +50,7 @@ export default function Overview({ weeklyStats }: OverviewProps) {
         <span className="text-gray-500 text-base">연장 근로시간</span>
         <div className="flex items-center gap-x-1">
           <span className="text-primary-orange-500 text-lg font-bold">
-            {(() => {
-              // 전체 근무시간을 분으로 변환
-              const totalMinutes = (weeklyStats?.workHours || 0) * 60 + (weeklyStats?.workMinutes || 0);
-              // 40시간 초과분
-              const overtimeMinutes = Math.max(0, totalMinutes - 40 * 60);
-              const hours = Math.floor(overtimeMinutes / 60);
-              const minutes = overtimeMinutes % 60;
-              return `${hours}시간 ${String(minutes).padStart(2, '0')}분`;
-            })()}
+            {weeklyStats?.overtimeWorkHours || 0}시간 {String(weeklyStats?.overtimeWorkMinutes || 0).padStart(2, '0')}분
           </span>
         </div>
       </div>
