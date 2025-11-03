@@ -3,11 +3,6 @@ import WorkHoursBar from "@components/ui/WorkHoursBar";
 
 interface OverviewProps {
   weeklyStats?: {
-    totalWorkHours: number;
-    totalBasicHours: number;
-    totalOvertimeHours: number;
-    vacationHours: number;
-    externalHours: number;
     workHours: number;
     workMinutes: number;
     remainingHours: number;
@@ -33,7 +28,7 @@ export default function Overview({ weeklyStats }: OverviewProps) {
           </p>
         </div>
         <WorkHoursBar 
-          hours={weeklyStats?.totalWorkHours || 0} 
+          hours={(weeklyStats?.workHours || 0) + ((weeklyStats?.workMinutes || 0) / 60)} 
           className="w-[400px]" 
         />
       </div>
