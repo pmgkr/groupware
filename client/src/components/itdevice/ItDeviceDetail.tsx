@@ -25,7 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/assets/images/icons';
 import { DayPicker } from '../daypicker';
 import { useAppAlert } from '../common/ui/AppAlert/AppAlert';
-import { OctagonAlert } from 'lucide-react';
+import { CheckCircle, OctagonAlert } from 'lucide-react';
 import { useAppDialog } from '../common/ui/AppDialog/AppDialog';
 
 export default function itDeviceDetail() {
@@ -90,20 +90,6 @@ export default function itDeviceDetail() {
   const previousUsers = history
     .filter((h) => h.returnedAt) // returnedAt이 존재하면 이전 사용자
     .sort((a, b) => new Date(b.returnedAt!).getTime() - new Date(a.returnedAt!).getTime());
-
-  //반납하기
-  const handleReturn = async (historyId: number) => {
-    try {
-      await returnItDevice(Number(id), historyId);
-      await updateItDeviceStatus(Number(id), '재고');
-
-      setHistory((prev) => prev.map((h) => (h.id === historyId ? { ...h, returnedAt: new Date().toISOString() } : h)));
-      setPosts((prev) => (prev ? { ...prev, it_status: '재고' } : prev));
-    } catch (err) {
-      console.error('❌ 반납 처리 실패:', err);
-      throw err; // ✅ 추가: 실패 시 예외 다시 던짐 (confirmAction이 catch함)
-    }
-  };
 
   //dialog
   const [openEdit, setOpenEdit] = useState(false);
@@ -262,6 +248,45 @@ export default function itDeviceDetail() {
 
   const openConfirm = (title: string, action: () => void) => {
     setConfirmState({ open: true, title, action });
+  };
+
+  const handleReturn = async (it_seq: number, ih_seq: number) => {
+    try {
+      const returnedUser = await returnItDevice(it_seq, ih_seq);
+
+      if (!returnedUser) {
+        throw new Error('반납 데이터가 없습니다.');
+      }
+      setHistory((prev) => {
+        // ① 반납된 사용자 찾아 returnedAt 업데이트
+        const updated = prev.map((h) => (h.id === ih_seq ? { ...h, returnedAt: returnedUser.ih_returned_at } : h));
+
+        // 정렬 유지 (최근 반납일 순)
+        return [...updated].sort((a, b) => {
+          const aTime = a.returnedAt ? new Date(a.returnedAt).getTime() : 0;
+          const bTime = b.returnedAt ? new Date(b.returnedAt).getTime() : 0;
+          return bTime - aTime;
+        });
+      });
+
+      await updateItDeviceStatus(it_seq, '재고');
+      setPosts((prev) => (prev ? { ...prev, it_status: '재고' } : prev));
+
+      addAlert({
+        title: '반납 완료',
+        message: `장비 반납 완료되었습니다.`,
+        icon: <CheckCircle />,
+        duration: 2000,
+      });
+    } catch (err) {
+      console.error('❌ 반납 처리 실패:', err);
+      addAlert({
+        title: '반납 실패',
+        message: '반납 처리 중 오류가 발생했습니다.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+    }
   };
 
   if (!posts) return <div className="p-4">장비를 찾을 수 없습니다.</div>;
@@ -437,7 +462,7 @@ export default function itDeviceDetail() {
             variant="secondary"
             className="mr-3"
             onClick={() => {
-              confirmAction('장비 반납', '처리 하시겠습니까?', () => handleReturn(currentUser.id));
+              confirmAction('장비 반납', '처리 하시겠습니까?', () => handleReturn(Number(id), currentUser.ih_seq));
             }}>
             반납 처리
           </Button>

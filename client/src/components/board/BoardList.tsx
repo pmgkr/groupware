@@ -53,9 +53,7 @@ export default function BoardList() {
     setPage(1);
     setActiveQuery(searchQuery);
   };
-  /* const filteredNormals = activeQuery.trim()
-    ? posts.filter((p) => p.pinned !== 'Y' && p.title.toLowerCase().includes(activeQuery.toLowerCase()))
-    : posts.filter((p) => p.pinned !== 'Y'); */
+
   const filteredNormals = activeQuery.trim()
     ? posts.filter(
         (p) =>
@@ -113,30 +111,29 @@ export default function BoardList() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {posts.length === 0 ? (
+          {/* 공지글: 항상 맨 위 */}
+          {notices.map((post) => (
+            <TableRow key={`notice-${post.n_seq}`} onClick={() => navigate(`${post.n_seq}`)} className="bg-primary-blue-100 cursor-pointer">
+              <TableCell className="font-medium">
+                <Badge>공지</Badge>
+              </TableCell>
+              <TableCell>{post.category}</TableCell>
+              <TableCell className="text-left">{post.title}</TableCell>
+              <TableCell>{post.user_name}</TableCell>
+              <TableCell>{post.reg_date.substring(0, 10)}</TableCell>
+              <TableCell>{post.v_count}</TableCell>
+            </TableRow>
+          ))}
+
+          {/* 일반글이 없을 때 */}
+          {paginatedNormals.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="border-b-0 py-3 text-center text-gray-500">
-                게시글을 찾을 수 없습니다.
+              <TableCell colSpan={6} className="border-b-0 py-6 text-center text-gray-500">
+                {activeQuery ? `‘${activeQuery}’에 대한 검색 결과가 없습니다.` : '게시글이 없습니다.'}
               </TableCell>
             </TableRow>
           ) : (
             <>
-              {/* 공지글: 항상 맨 위 */}
-              {notices.map((post) => (
-                <TableRow
-                  key={`notice-${post.n_seq}`}
-                  onClick={() => navigate(`${post.n_seq}`)}
-                  className="bg-primary-blue-100 cursor-pointer">
-                  <TableCell className="font-medium">
-                    <Badge>공지</Badge>
-                  </TableCell>
-                  <TableCell>{post.category}</TableCell>
-                  <TableCell className="text-left">{post.title}</TableCell>
-                  <TableCell>{post.user_name}</TableCell>
-                  <TableCell>{post.reg_date.substring(0, 10)}</TableCell>
-                  <TableCell>{post.v_count}</TableCell>
-                </TableRow>
-              ))}
               {/* 일반글: 최신순 + 번호 */}
               {paginatedNormals.map((post, index) => (
                 <TableRow key={post.n_seq} onClick={() => navigate(`${post.n_seq}`)} className="cursor-pointer hover:bg-gray-100">

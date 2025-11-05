@@ -156,10 +156,10 @@ export async function registerBook(data: BookRegisterPayload): Promise<{ success
   return { success: res.ok === true, bw_seq: res.bw_seq };
 }
 
-// 신청도서 완료처리 -> 오류 403
-export async function completeBook(bw_seq: number): Promise<{ ok: boolean }> {
-  const res = await http<{ ok: boolean }>(`/user/office/book/complete/${bw_seq}`, {
-    method: 'POST',
+// 신청도서 완료처리
+export async function completeBook(bw_seq: number) {
+  const res = await http<{ ok: boolean; bw_seq: number; old_status: string; new_status: string }>(`/user/office/book/complete/${bw_seq}`, {
+    method: 'PATCH',
   });
   return res;
 }

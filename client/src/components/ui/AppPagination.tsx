@@ -38,11 +38,9 @@ export function AppPagination({ totalPages, initialPage = 1, visibleCount = 5, o
     setPage(newPage);
     onPageChange?.(newPage);
 
-    // ✅ 안전하고 깔끔한 방식
-    setSearchParams({
-      ...Object.fromEntries(searchParams),
-      page: String(newPage),
-    });
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('page', String(newPage));
+    setSearchParams(newParams);
   };
 
   const pages: number[] = React.useMemo(() => {

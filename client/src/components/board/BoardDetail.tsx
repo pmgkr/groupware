@@ -83,14 +83,9 @@ export default function BoardDetail({ id }: BoardDetailProps) {
   // 게시글 상세 API 호출
   useEffect(() => {
     (async () => {
-      if (!postId) {
-        setPost(null);
-        setLoading(false);
-        return;
-      }
       try {
         const data = await getBoardDetail(Number(postId));
-        setPost(data);
+        setPost(data.info);
 
         //첨부파일 목록 불러오기
         const attachList = await getNoticeAttachments(Number(postId));
@@ -160,18 +155,6 @@ export default function BoardDetail({ id }: BoardDetailProps) {
     }
   };
 
-  //댓글 삭제
-  /* const handleDeleteComment = async (bc_seq: number) => {
-    try {
-      await removeComment(bc_seq);
-      const updated = await getComment(Number(postId));
-      setComments(updated);
-    } catch (err) {
-      console.error('댓글 삭제 실패:', err);
-      alert('댓글 삭제 중 오류가 발생했습니다.');
-    }
-  }; */
-
   //게시글 조아요
   const handleLike = () => {
     if (liked) {
@@ -182,7 +165,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
     setLiked((prev) => !prev);
   };
 
-  if (loading) return <div className="p-4">불러오는 중...</div>;
+  //if (loading) return <div className="p-4">불러오는 중...</div>;
   if (!post) return <div className="p-4">게시글을 찾을 수 없습니다.</div>;
 
   return (
@@ -201,7 +184,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
         <div className="flex divide-x divide-gray-300 p-4 text-sm leading-tight text-gray-500">
           <div className="px-3 pl-0">{post.category}</div>
           <div className="px-3">{post.user_name}</div>
-          <div className="px-3">{post.reg_date.substring(0, 10)}</div>
+          <div className="px-3">{post?.reg_date?.substring(0, 10) ?? ''}</div>
           <div className="px-3">조회 {post.v_count}</div>
         </div>
 

@@ -18,7 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatKST } from '@/utils';
 import { useAppAlert } from '../common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '../common/ui/AppDialog/AppDialog';
-import { OctagonAlert } from 'lucide-react';
+import { CheckCircle, OctagonAlert } from 'lucide-react';
 
 export default function BookWish() {
   const { user } = useAuth();
@@ -32,6 +32,7 @@ export default function BookWish() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState(''); // 검색어 상태 추가
+  const [loading, setLoading] = useState(false);
 
   const pageSize = 10;
   const fetchBookWishList = async (pageNum = 1, query = '') => {
@@ -104,16 +105,45 @@ export default function BookWish() {
     if (selected.length === 0) {
       addAlert({
         title: '선택 오류',
-        message: '완료처리할 도서를 선택해주세요',
+        message: '완료처리할 항목을 선택해주세요.',
         icon: <OctagonAlert />,
         duration: 2000,
       });
-      return; // 0개 선택 시 함수 종료
+      return;
     }
-    confirmAction('완료처리', `${selected.length}개 완료처리 하시겠습니까?`, async () => {
-      await Promise.all(selected.map((id) => completeBook(id))); // ❌ 에러 나면 바로 throw
-      setPosts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, status: '완료', purchaseAt: formatKST(new Date()) } : p)));
-      setSelected([]);
+
+    confirmAction('완료처리', `${selected.length}개 항목을 완료처리 하시겠습니까?`, async () => {
+      try {
+        setLoading(true);
+        const results = await Promise.all(
+          selected.map(async (id) => {
+            const data = await completeBook(id);
+            return data;
+          })
+        );
+
+        // UI 업데이트
+        setPosts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, status: '완료', purchaseAt: formatKST(new Date()) } : p)));
+
+        addAlert({
+          title: '완료 처리됨',
+          message: `${results.length}개 항목이 완료되었습니다.`,
+          icon: <CheckCircle />,
+          duration: 2000,
+        });
+
+        setSelected([]);
+      } catch (err) {
+        console.error('❌ 완료처리 오류:', err);
+        addAlert({
+          title: '오류 발생',
+          message: '완료처리 중 오류가 발생했습니다.',
+          icon: <OctagonAlert />,
+          duration: 2000,
+        });
+      } finally {
+        setLoading(false);
+      }
     });
   };
 
@@ -348,69 +378,75 @@ export default function BookWish() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {posts.map((post) => (
-            <TableRow key={post.id} onClick={() => handleRowClick(post)} className="cursor-pointer">
-              {user?.user_id === Administrator && (
-                <TableCell className="[&:has([role=checkbox])]:pr-auto">
-                  <Checkbox
-                    checked={selected.includes(post.id)}
-                    onCheckedChange={() => {
-                      toggleOne(post.id, post.status);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    disabled={post.status !== '신청'}
-                  />{' '}
-                </TableCell>
-              )}
+          {posts.length > 0 ? (
+            posts.map((post) => (
+              <TableRow key={post.id} onClick={() => handleRowClick(post)} className="cursor-pointer">
+                {user?.user_id === Administrator && (
+                  <TableCell className="[&:has([role=checkbox])]:pr-auto">
+                    <Checkbox
+                      checked={selected.includes(post.id)}
+                      onCheckedChange={() => toggleOne(post.id, post.status)}
+                      onClick={(e) => e.stopPropagation()}
+                      disabled={post.status !== '신청'}
+                    />
+                  </TableCell>
+                )}
 
-              <TableCell>
-                {post.status === '신청' ? (
-                  <Badge variant="lightpink" className="px-3">
-                    신청
-                  </Badge>
-                ) : (
-                  <Badge variant="pink" className="px-3">
-                    완료
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell>{formatKST(post.purchaseAt, true)}</TableCell>
-              <TableCell className="max-w-[130px] truncate">{post.category}</TableCell>
-              <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
-              <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
-              <TableCell className="max-w-[130px] truncate">{post.publish}</TableCell>
-              <TableCell>{post.team_name}</TableCell>
-              <TableCell>{post.user_name}</TableCell>
-              <TableCell>
-                {post.status !== '완료' && post.user === user?.user_id && (
-                  <div className="text-gray-700">
-                    <Button
-                      variant="svgIcon"
-                      size="icon"
-                      className="hover:text-primary-blue-500"
-                      aria-label="수정"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEdit(post);
-                      }}>
-                      <Edit className="size-4" />
-                    </Button>
-                    <Button
-                      variant="svgIcon"
-                      size="icon"
-                      className="hover:text-primary-blue-500"
-                      aria-label="삭제"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        confirmAction('신청 도서 삭제', '신청도서를 삭제하시겠습니까?', () => handleDelete(post.id));
-                      }}>
-                      <Delete className="size-4" />
-                    </Button>
-                  </div>
-                )}
+                <TableCell>
+                  {post.status === '신청' ? (
+                    <Badge variant="lightpink" className="px-3">
+                      신청
+                    </Badge>
+                  ) : (
+                    <Badge variant="pink" className="px-3">
+                      완료
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>{formatKST(post.purchaseAt, true)}</TableCell>
+                <TableCell className="max-w-[130px] truncate">{post.category}</TableCell>
+                <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
+                <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
+                <TableCell className="max-w-[130px] truncate">{post.publish}</TableCell>
+                <TableCell>{post.team_name}</TableCell>
+                <TableCell>{post.user_name}</TableCell>
+                <TableCell>
+                  {post.status !== '완료' && post.user === user?.user_id && (
+                    <div className="text-gray-700">
+                      <Button
+                        variant="svgIcon"
+                        size="icon"
+                        className="hover:text-primary-blue-500"
+                        aria-label="수정"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(post);
+                        }}>
+                        <Edit className="size-4" />
+                      </Button>
+                      <Button
+                        variant="svgIcon"
+                        size="icon"
+                        className="hover:text-primary-blue-500"
+                        aria-label="삭제"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          confirmAction('신청 도서 삭제', '신청도서를 삭제하시겠습니까?', () => handleDelete(post.id));
+                        }}>
+                        <Delete className="size-4" />
+                      </Button>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={10} className="py-10 text-center text-gray-500">
+                {searchQuery ? `‘${searchQuery}’에 대한 검색 결과가 없습니다.` : '등록된 도서가 없습니다.'}
               </TableCell>
             </TableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
 

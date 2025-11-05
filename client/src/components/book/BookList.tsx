@@ -200,20 +200,28 @@ export default function BookList() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {posts.map((post, index) => {
-            return (
-              <TableRow key={post.id}>
-                <TableCell>{total - startNo - index}</TableCell>
-                <TableCell className="max-w-[130px] truncate">{post.category}</TableCell>
-                <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
-                <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
-                <TableCell className="max-w-[150px] truncate">{post.publish}</TableCell>
-                <TableCell>{post.team_name}</TableCell>
-                <TableCell>{post.user_name}</TableCell>
-                <TableCell>{formatKST(post.purchaseAt, true)}</TableCell>
-              </TableRow>
-            );
-          })}
+          {posts.length > 0 ? (
+            posts.map((post, index) => {
+              return (
+                <TableRow key={post.id}>
+                  <TableCell>{total - startNo - index}</TableCell>
+                  <TableCell className="max-w-[130px] truncate">{post.category}</TableCell>
+                  <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
+                  <TableCell className="max-w-[150px] truncate">{post.publish}</TableCell>
+                  <TableCell>{post.team_name}</TableCell>
+                  <TableCell>{post.user_name}</TableCell>
+                  <TableCell>{formatKST(post.purchaseAt, true)}</TableCell>
+                </TableRow>
+              );
+            })
+          ) : (
+            <TableRow>
+              <TableCell colSpan={10} className="py-10 text-center text-gray-500">
+                {searchQuery ? `‘${searchQuery}’에 대한 검색 결과가 없습니다.` : '등록된 도서가 없습니다.'}
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
       {/* 공통 다이얼로그 */}
