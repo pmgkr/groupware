@@ -143,6 +143,7 @@ export default function ManagerWorking() {
       <WorkingList
         data={workingList}
         loading={loading}
+        weekStartDate={weekStartDate}
       />
     </div>
   );

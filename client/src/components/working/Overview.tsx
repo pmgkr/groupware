@@ -16,7 +16,7 @@ interface OverviewProps {
 
 export default function Overview({ weeklyStats }: OverviewProps) {
   return (
-    <div className="mt-15 flex align-center justify-center border border-gray-300 p-7.5">
+    <div className="flex align-center justify-center border border-gray-300 p-7.5">
       <div className="flex flex-col gap-2 border-r border-gray-300 pr-10 mr-10">
         <div className="flex flex-col gap-0">
           <div className="flex items-center gap-1 ">

@@ -4,6 +4,7 @@ import { Button } from '@components/ui/button';
 import { Checkbox } from '@components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import WorkHoursBar from '@components/ui/WorkHoursBar';
+import WorkingDetailDialog from './WorkingDetailDialog';
 
 export interface DayWorkInfo {
   workType: string;
@@ -42,6 +43,10 @@ export default function WorkingList({
   // 체크박스 state
   const [checkedItems, setCheckedItems] = useState<string[]>([]);
   const [checkAll, setCheckAll] = useState(false);
+  
+  // 상세보기 다이얼로그 state
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
 
   // 각 요일의 날짜 계산
   const getDayDate = (dayIndex: number) => {
@@ -58,6 +63,18 @@ export default function WorkingList({
   // 개별 선택
   const handleCheckItem = (id: string, checked: boolean) => {
     setCheckedItems((prev) => (checked ? [...prev, id] : prev.filter((i) => i !== id)));
+  };
+
+  // 상세보기 버튼 클릭
+  const handleViewDetail = (userId: string, userName: string) => {
+    setSelectedUser({ id: userId, name: userName });
+    setIsDetailDialogOpen(true);
+  };
+
+  // 다이얼로그 닫기
+  const handleCloseDetailDialog = () => {
+    setIsDetailDialogOpen(false);
+    setSelectedUser(null);
   };
 
   // 주간 누적 시간을 숫자로 변환 (예: "40h 30m" → 40.5)
@@ -130,44 +147,37 @@ export default function WorkingList({
             <TableHead className="w-[15%]">주간 누적시간</TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(0)}</span>
-                <span className="text-sm font-semibold">월요일</span>
+                <span className="text-sm text-gray-800">{getDayDate(0)}(월)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(1)}</span>
-                <span className="text-sm font-semibold">화요일</span>
+                <span className="text-sm text-gray-800">{getDayDate(1)}(화)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(2)}</span>
-                <span className="text-sm font-semibold">수요일</span>
+                <span className="text-sm text-gray-800">{getDayDate(2)}(수)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(3)}</span>
-                <span className="text-sm font-semibold">목요일</span>
+                <span className="text-sm text-gray-800">{getDayDate(3)}(목)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(4)}</span>
-                <span className="text-sm font-semibold">금요일</span>
+                <span className="text-sm text-gray-800">{getDayDate(4)}(금)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(5)}</span>
-                <span className="text-sm font-semibold">토요일</span>
+                <span className="text-sm text-gray-800">{getDayDate(5)}(토)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(6)}</span>
-                <span className="text-sm font-semibold">일요일</span>
+                <span className="text-sm text-gray-800">{getDayDate(6)}(일)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">자세히 보기</TableHead>
@@ -213,7 +223,11 @@ export default function WorkingList({
                 <TableCell>{formatDayWork(item.saturday)}</TableCell>
                 <TableCell>{formatDayWork(item.sunday)}</TableCell>
                 <TableCell>
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleViewDetail(item.id, item.name)}
+                  >
                     보기
                   </Button>
                 </TableCell>
@@ -222,6 +236,17 @@ export default function WorkingList({
           )}
         </TableBody>
       </Table>
+      
+      {/* 상세보기 다이얼로그 */}
+      {selectedUser && weekStartDate && (
+        <WorkingDetailDialog
+          isOpen={isDetailDialogOpen}
+          onClose={handleCloseDetailDialog}
+          userId={selectedUser.id}
+          userName={selectedUser.name}
+          weekStartDate={weekStartDate}
+        />
+      )}
     </>
   );
 }
