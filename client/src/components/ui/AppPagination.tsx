@@ -9,6 +9,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@components/ui/pagination';
+import { useNavigate, useSearchParams } from 'react-router';
 
 type AppPaginationProps = {
   totalPages: number; // 총 페이지 수
@@ -18,7 +19,12 @@ type AppPaginationProps = {
 };
 
 export function AppPagination({ totalPages, initialPage = 1, visibleCount = 5, onPageChange }: AppPaginationProps) {
-  const [page, setPage] = React.useState(initialPage);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ✅ URL에서 현재 page 읽기 (없으면 1)
+  const currentPage = Number(searchParams.get('page')) || initialPage;
+  const [page, setPage] = React.useState(currentPage);
 
   React.useEffect(() => {
     setPage(initialPage);
@@ -30,7 +36,11 @@ export function AppPagination({ totalPages, initialPage = 1, visibleCount = 5, o
   const go = (p: number) => {
     const newPage = Math.min(Math.max(1, p), totalPages);
     setPage(newPage);
-    onPageChange?.(newPage); // ✅ 부모에게 알림
+    onPageChange?.(newPage);
+
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('page', String(newPage));
+    setSearchParams(newParams);
   };
 
   const pages: number[] = React.useMemo(() => {

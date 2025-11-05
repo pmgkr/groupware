@@ -11,6 +11,9 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { getItDevice, registerItDevice, type Device } from '@/api/office/itdevice';
 import { useAuth } from '@/contexts/AuthContext';
 import { createPortal } from 'react-dom';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { OctagonAlert } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export default function ItDevice() {
   const navigate = useNavigate();
@@ -22,27 +25,32 @@ export default function ItDevice() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeQuery, setActiveQuery] = useState('');
+
   const [posts, setPosts] = useState<Device[]>([]);
-  const [loading, setLoading] = useState(true);
 
   //   리스트 불러오기 (페이지 변경 시 실행)
-  const fetchDevices = async (pageNum: number) => {
-    setLoading(true);
+  const fetchDevices = async (pageNum: number, query = '') => {
     try {
-      const res = await getItDevice(pageNum, pageSize);
+      const res = await getItDevice(pageNum, pageSize, query);
       setPosts(res.items);
       setTotal(res.total);
       setTotalPages(res.pages);
     } catch (err) {
       console.error('❌ IT Device 불러오기 실패:', err);
     } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDevices(page);
-  }, [page]);
+    fetchDevices(page, activeQuery);
+  }, [page, activeQuery]);
+
+  const handleSearch = () => {
+    setPage(1);
+    setActiveQuery(searchQuery.trim());
+  };
 
   // 등록 다이얼로그 열기/닫기
   const [openRegister, setOpenRegister] = useState(false);
@@ -65,9 +73,14 @@ export default function ItDevice() {
   };
 
   // 등록 유효성 검사
+  const { addAlert } = useAppAlert();
   const handleRegisterClick = () => {
     if (!form.device || !form.brand || !form.model || !form.serial || !form.p_date) {
-      alert('디바이스, 브랜드, 모델, 시리얼넘버, 구매일자는 반드시 입력해야 합니다.');
+      addAlert({
+        message: '디바이스, 브랜드, 모델, 시리얼넘버, 구매일자는 반드시 입력해야 합니다.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
       return;
     }
     openConfirm('장비 정보를 등록하시겠습니까?', handleRegister);
@@ -86,8 +99,8 @@ export default function ItDevice() {
         gpu: form.gpu,
         storage: form.storage,
         it_date: form.p_date,
+        it_status: '재고',
       });
-      console.log(form.p_date);
       setOpenRegister(false);
       setForm({
         device: '',
@@ -123,8 +136,19 @@ export default function ItDevice() {
       {/* 검색 + 등록 */}
       <div className="flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
-          <Input className="h-[32px] px-4 [&]:bg-white" placeholder="검색어 입력" />
-          <Button variant="svgIcon" size="icon" className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2" aria-label="검색">
+          <Input
+            className="h-[32px] px-4 [&]:bg-white"
+            placeholder="검색어 입력"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <Button
+            variant="svgIcon"
+            size="icon"
+            className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2"
+            aria-label="검색"
+            onClick={handleSearch}>
             <SearchGray className="text-gray-400" />
           </Button>
         </div>
@@ -171,13 +195,7 @@ export default function ItDevice() {
         </TableHeader>
 
         <TableBody>
-          {loading ? (
-            <TableRow>
-              <TableCell colSpan={8} className="py-10 text-center text-gray-400">
-                불러오는 중...
-              </TableCell>
-            </TableRow>
-          ) : posts.length > 0 ? (
+          {posts.length > 0 ? (
             posts.map((post, idx) => (
               <TableRow key={post.id} onClick={() => navigate(`${post.id}`)} className="cursor-pointer hover:bg-gray-100">
                 <TableCell>{total - (page - 1) * pageSize - idx}</TableCell>
@@ -186,7 +204,13 @@ export default function ItDevice() {
                 <TableCell>{post.model}</TableCell>
                 <TableCell>{post.serial}</TableCell>
                 <TableCell>
-                  {post.user && post.user.trim() !== '' ? post.user : <span className="text-gray-500 italic">재고</span>}
+                  {post.it_status === '재고' ? (
+                    <Badge variant="secondary" className="bg-gray-200 text-gray-700">
+                      재고
+                    </Badge>
+                  ) : (
+                    post.user || <span className="text-gray-500 italic">-</span>
+                  )}
                 </TableCell>
                 <TableCell>{post.p_date}</TableCell>
                 {/* <TableCell>{post.createdAt}</TableCell> */}
@@ -195,7 +219,7 @@ export default function ItDevice() {
           ) : (
             <TableRow>
               <TableCell colSpan={8} className="py-10 text-center text-gray-400">
-                등록된 장비가 없습니다.
+                {activeQuery ? `‘${activeQuery}’에 대한 검색 결과가 없습니다.` : '등록된 장비가 없습니다.'}
               </TableCell>
             </TableRow>
           )}
@@ -203,14 +227,11 @@ export default function ItDevice() {
       </Table>
 
       {/* 페이지네이션 */}
-      <div className="mt-5">
-        <AppPagination
-          totalPages={totalPages}
-          initialPage={page}
-          visibleCount={5}
-          onPageChange={(newPage) => setPage(newPage)} //   클릭 시 page 상태 업데이트
-        />
-      </div>
+      {posts.length > 0 && (
+        <div className="mt-5">
+          <AppPagination totalPages={totalPages} initialPage={page} visibleCount={5} onPageChange={(newPage) => setPage(newPage)} />
+        </div>
+      )}
 
       {/* 공통 다이얼로그 */}
       {createPortal(

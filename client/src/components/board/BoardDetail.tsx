@@ -20,7 +20,9 @@ import type { Attachment, BoardDTO, CommentDTO } from '@/api/office/notice';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatKST } from '@/utils';
 import { Textarea } from '../ui/textarea';
-import { Heart } from 'lucide-react';
+import { Heart, OctagonAlert } from 'lucide-react';
+import { useAppAlert } from '../common/ui/AppAlert/AppAlert';
+import { useAppDialog } from '../common/ui/AppDialog/AppDialog';
 
 interface BoardDetailProps {
   id?: string;
@@ -48,36 +50,42 @@ export default function BoardDetail({ id }: BoardDetailProps) {
   //첨부파일
   const [attachments, setAttachments] = useState<Attachment[]>([]);
 
-  //컨펌 다이얼로그 상태
-  const [confirmState, setConfirmState] = useState<{
-    open: boolean;
-    title: string;
-    confirmText?: string;
-    confirmVariant?: 'default' | 'destructive' | 'secondary';
-    action?: () => void;
-  }>({ open: false, title: '' });
-
-  // 컨펌 다이얼로그 열기
-  const openConfirm = (
-    title: string,
-    action: () => void,
-    confirmText = '확인',
-    confirmVariant: 'default' | 'destructive' | 'secondary' = 'default'
-  ) => {
-    setConfirmState({ open: true, title, action, confirmText, confirmVariant });
+  const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
+  /** 공용 삭제 확인 함수 */
+  const confirmDelete = async (label: string, onConfirmAction: () => Promise<void> | void) => {
+    addDialog({
+      title: `<span class=" font-semibold">삭제 확인</span>`,
+      message: `이 ${label}을(를) 정말 삭제하시겠습니까?`,
+      confirmText: '삭제',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          await onConfirmAction();
+          addAlert({
+            title: '삭제 완료',
+            message: `${label}이(가) 성공적으로 삭제되었습니다.`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        } catch (err) {
+          addAlert({
+            title: '삭제 실패',
+            message: `${label} 삭제 중 오류가 발생했습니다.`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        }
+      },
+    });
   };
 
   // 게시글 상세 API 호출
   useEffect(() => {
     (async () => {
-      if (!postId) {
-        setPost(null);
-        setLoading(false);
-        return;
-      }
       try {
         const data = await getBoardDetail(Number(postId));
-        setPost(data);
+        setPost(data.info);
 
         //첨부파일 목록 불러오기
         const attachList = await getNoticeAttachments(Number(postId));
@@ -147,18 +155,6 @@ export default function BoardDetail({ id }: BoardDetailProps) {
     }
   };
 
-  //댓글 삭제
-  const handleDeleteComment = async (bc_seq: number) => {
-    try {
-      await removeComment(bc_seq);
-      const updated = await getComment(Number(postId));
-      setComments(updated);
-    } catch (err) {
-      console.error('댓글 삭제 실패:', err);
-      alert('댓글 삭제 중 오류가 발생했습니다.');
-    }
-  };
-
   //게시글 조아요
   const handleLike = () => {
     if (liked) {
@@ -169,7 +165,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
     setLiked((prev) => !prev);
   };
 
-  if (loading) return <div className="p-4">불러오는 중...</div>;
+  //if (loading) return <div className="p-4">불러오는 중...</div>;
   if (!post) return <div className="p-4">게시글을 찾을 수 없습니다.</div>;
 
   return (
@@ -188,7 +184,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
         <div className="flex divide-x divide-gray-300 p-4 text-sm leading-tight text-gray-500">
           <div className="px-3 pl-0">{post.category}</div>
           <div className="px-3">{post.user_name}</div>
-          <div className="px-3">{post.reg_date.substring(0, 10)}</div>
+          <div className="px-3">{post?.reg_date?.substring(0, 10) ?? ''}</div>
           <div className="px-3">조회 {post.v_count}</div>
         </div>
 
@@ -202,7 +198,13 @@ export default function BoardDetail({ id }: BoardDetailProps) {
               size="icon"
               className="hover:text-primary-blue-500"
               aria-label="삭제"
-              onClick={() => openConfirm('게시글을 삭제하시겠습니까?', handleDelete, '삭제', 'destructive')}>
+              /* onClick={() => openConfirm('게시글을 삭제하시겠습니까?', handleDelete, '삭제', 'destructive')} */
+              onClick={() =>
+                confirmDelete('게시글', async () => {
+                  await deactivateBoard(Number(routeId));
+                  navigate('/notice');
+                })
+              }>
               <Delete className="size-4" />
             </Button>
           </div>
@@ -301,8 +303,15 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                           variant="svgIcon"
                           size="icon"
                           aria-label="댓글 삭제"
-                          onClick={() =>
+                          /* onClick={() =>
                             openConfirm('댓글을 삭제하시겠습니까?', () => handleDeleteComment(c.bc_seq), '삭제', 'destructive')
+                          } */
+                          onClick={() =>
+                            confirmDelete('댓글', async () => {
+                              await removeComment(c.bc_seq);
+                              const updated = await getComment(Number(postId));
+                              setComments(updated);
+                            })
                           }>
                           <Delete />
                         </Button>
@@ -363,14 +372,14 @@ export default function BoardDetail({ id }: BoardDetailProps) {
             </div>
           ))}
           {/* 공통 다이얼로그 */}
-          <ConfirmDialog
+          {/* <ConfirmDialog
             open={confirmState.open}
             onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
             title={confirmState.title}
             confirmText={confirmState.confirmText ?? '확인'}
             confirmVariant={confirmState.confirmVariant ?? 'default'}
             onConfirm={() => confirmState.action?.()}
-          />
+          /> */}
         </div>
       </div>
 

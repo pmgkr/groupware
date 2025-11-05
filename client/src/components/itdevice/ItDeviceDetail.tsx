@@ -12,6 +12,7 @@ import {
   getMemberList,
   getTeamList,
   registerItDeviceUser,
+  returnItDevice,
   updateItDevice,
   updateItDeviceStatus,
   type Device,
@@ -23,6 +24,9 @@ import { formatKST } from '@/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/assets/images/icons';
 import { DayPicker } from '../daypicker';
+import { useAppAlert } from '../common/ui/AppAlert/AppAlert';
+import { CheckCircle, OctagonAlert } from 'lucide-react';
+import { useAppDialog } from '../common/ui/AppDialog/AppDialog';
 
 export default function itDeviceDetail() {
   const { id } = useParams<{ id: string }>(); // /itdevice/:id
@@ -33,6 +37,35 @@ export default function itDeviceDetail() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [selectDate, setSelectDate] = useState(formatKST(new Date(), true));
+  const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
+
+  const confirmAction = (label: string, message: string, action: () => Promise<void> | void) => {
+    addDialog({
+      title: `<span class= "font-semibold">${label}</span>`,
+      message: `${label} ${message}`,
+      confirmText: '확인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          await action();
+          addAlert({
+            title: `${label} 완료`,
+            message: `${label}이 성공적으로 ${message.replace('하시겠습니까?', '되었습니다.')}`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        } catch (err) {
+          addAlert({
+            title: `${label} 실패`,
+            message: `${label} ${message.replace('하시겠습니까?', ' 중 오류가 발생했습니다.')}`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        }
+      },
+    });
+  };
 
   const date = new Date(selectDate);
 
@@ -57,21 +90,6 @@ export default function itDeviceDetail() {
   const previousUsers = history
     .filter((h) => h.returnedAt) // returnedAt이 존재하면 이전 사용자
     .sort((a, b) => new Date(b.returnedAt!).getTime() - new Date(a.returnedAt!).getTime());
-
-  //반납하기
-  const handleReturn = async (historyId: number) => {
-    const now = new Date().toISOString();
-
-    setHistory((prev) => prev.map((h) => (h.id === historyId ? { ...h, returnedAt: now } : h)));
-    try {
-      await updateItDeviceStatus(Number(id), '재고');
-      setPosts((prev) => (prev ? { ...prev, it_status: '재고' } : prev));
-
-      //console.log('✅ 반납 완료 → 재고 상태로 변경');
-    } catch (err) {
-      //console.error('❌ 반납 후 상태 변경 실패:', err);
-    }
-  };
 
   //dialog
   const [openEdit, setOpenEdit] = useState(false);
@@ -199,12 +217,18 @@ export default function itDeviceDetail() {
         ih_created_at: finalDate,
       });
       // 사용자 등록 시 it_status = '사용'으로 변경
-      /* await updateItDeviceStatus(Number(id), '사용');
-      setPosts((prev) => (prev ? { ...prev, it_status: '사용' } : prev)); */
+      await updateItDeviceStatus(Number(id), '사용');
+      setPosts((prev) => (prev ? { ...prev, it_status: '사용' } : prev));
       //console.log(newForm);
       const updated = await getItDeviceDetail(Number(id));
       setHistory(updated.history);
       setOpenAddUser(false);
+      addAlert({
+        title: `사용자 등록`,
+        message: `사용자 등록이 완료 되었습니다.`,
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
     } catch (err) {
       console.error('❌ 사용자 등록 실패:', err);
       alert('등록 중 오류가 발생했습니다.');
@@ -224,6 +248,45 @@ export default function itDeviceDetail() {
 
   const openConfirm = (title: string, action: () => void) => {
     setConfirmState({ open: true, title, action });
+  };
+
+  const handleReturn = async (it_seq: number, ih_seq: number) => {
+    try {
+      const returnedUser = await returnItDevice(it_seq, ih_seq);
+
+      if (!returnedUser) {
+        throw new Error('반납 데이터가 없습니다.');
+      }
+      setHistory((prev) => {
+        // ① 반납된 사용자 찾아 returnedAt 업데이트
+        const updated = prev.map((h) => (h.id === ih_seq ? { ...h, returnedAt: returnedUser.ih_returned_at } : h));
+
+        // 정렬 유지 (최근 반납일 순)
+        return [...updated].sort((a, b) => {
+          const aTime = a.returnedAt ? new Date(a.returnedAt).getTime() : 0;
+          const bTime = b.returnedAt ? new Date(b.returnedAt).getTime() : 0;
+          return bTime - aTime;
+        });
+      });
+
+      await updateItDeviceStatus(it_seq, '재고');
+      setPosts((prev) => (prev ? { ...prev, it_status: '재고' } : prev));
+
+      addAlert({
+        title: '반납 완료',
+        message: `장비 반납 완료되었습니다.`,
+        icon: <CheckCircle />,
+        duration: 2000,
+      });
+    } catch (err) {
+      console.error('❌ 반납 처리 실패:', err);
+      addAlert({
+        title: '반납 실패',
+        message: '반납 처리 중 오류가 발생했습니다.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+    }
   };
 
   if (!posts) return <div className="p-4">장비를 찾을 수 없습니다.</div>;
@@ -399,7 +462,7 @@ export default function itDeviceDetail() {
             variant="secondary"
             className="mr-3"
             onClick={() => {
-              openConfirm('반납처리 하시겠습니까?', () => handleReturn(currentUser.id));
+              confirmAction('장비 반납', '처리 하시겠습니까?', () => handleReturn(Number(id), currentUser.ih_seq));
             }}>
             반납 처리
           </Button>

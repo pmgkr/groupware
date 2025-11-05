@@ -39,6 +39,7 @@ export interface Device {
 }
 export interface DeviceHistory {
   id: number;
+  ih_seq: number;
   user: string;
   team: string;
   createdAt: string;
@@ -71,6 +72,7 @@ export function toDeviceHistory(dto: any): DeviceHistory {
 
   return {
     id: dto.seq ?? dto.history_id ?? 0,
+    ih_seq: dto.ih_seq ?? dto.seq ?? 0,
     user: dto.user_name ?? dto.user ?? '-',
     team: dto.team_name ?? dto.team ?? '-',
     createdAt: date(dto.ih_created_at),
@@ -91,7 +93,6 @@ export async function getItDevice(
       method: 'GET',
     }
   );
-  //console.log('📦 [getItDevice] 응답 원본:', dto.items);
 
   const items = dto.items.map(toItDevice);
   return { items, total: dto.total, page: dto.page, size: dto.size, pages: dto.pages };
@@ -120,7 +121,9 @@ export async function registerItDevice(data: {
   ram?: string;
   gpu?: string;
   storage?: string;
+  it_status: string;
 }): Promise<void> {
+  console.log('🚀 [registerItDevice] 전송 데이터:', data);
   await http('/user/office/device/register', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -174,11 +177,32 @@ export async function updateItDevice(data: {
   });
 }
 
-// it디바이스 사용 상태 변경
+type ReturnDeviceResponse = {
+  it_seq: string;
+  ih_seq: string;
+  effected_count: number;
+  device_users: {
+    seq: number;
+    user_name: string;
+    team_name: string;
+    ih_created_at: string;
+    ih_returned_at: string;
+  }[];
+};
+
+// 반납일자 등록
+export async function returnItDevice(it_seq: number, ih_seq: number) {
+  const url = `/user/office/device/return?it_seq=${it_seq}&ih_seq=${ih_seq}`;
+  const res = await http<ReturnDeviceResponse>(url, { method: 'PATCH' });
+
+  // device_users[0]만 반환
+  return res.device_users?.[0];
+}
+
+//상태 변경 (ex. 재고, 사용중 등)
 export async function updateItDeviceStatus(it_seq: number, status: string) {
-  await http(`/user/office/device/status/${it_seq}`, {
+  return await http<{ ok: boolean }>(`/user/office/device/status/${it_seq}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ it_status: status }),
   });
 }

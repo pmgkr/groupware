@@ -157,9 +157,39 @@ export async function registerBook(data: BookRegisterPayload): Promise<{ success
 }
 
 // 신청도서 완료처리
-export async function completeBook(bw_seq: number): Promise<{ ok: boolean }> {
-  const res = await http<{ ok: boolean }>(`/user/office/book/complete/${bw_seq}`, {
-    method: 'POST',
+export async function completeBook(bw_seq: number) {
+  const res = await http<{ ok: boolean; bw_seq: number; old_status: string; new_status: string }>(`/user/office/book/complete/${bw_seq}`, {
+    method: 'PATCH',
+  });
+  return res;
+}
+
+// 도서 수정용 타입
+export interface BookUpdatePayload {
+  b_title: string;
+  b_category: string;
+  b_author: string;
+  b_publish: string;
+  b_buylink?: string;
+  b_date?: string;
+}
+
+//신청도서 수정
+export async function updateBook(bw_seq: number, data: BookUpdatePayload): Promise<{ ok: boolean }> {
+  const res = await http<{ ok: boolean }>(`/user/office/book/update/${bw_seq}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res;
+}
+
+// 신청 도서 삭제
+export async function deleteBook(bw_seq: number): Promise<{ ok: boolean }> {
+  const res = await http<{ ok: boolean }>('/user/office/book/delete', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bw_seq }),
   });
   return res;
 }

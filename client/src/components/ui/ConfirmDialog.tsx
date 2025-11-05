@@ -73,3 +73,31 @@ export function ConfirmDialog({
     </AlertDialogPrimitive.Root>
   );
 }
+
+/* 
+사용법
+
+ // 컨펌 다이얼로그 상태
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    title: string;
+    confirmText?: string;
+    action?: () => void;
+  }>({ open: false, title: '' });
+
+  // 컨펌 다이얼로그 열기 함수
+  const openConfirm = (title: string, action: () => void, confirmText = '확인') => {
+    setConfirmState({ open: true, title, action, confirmText });
+  };
+
+  <ConfirmDialog
+        open={confirmState.open}
+        onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, open }))}
+        title={confirmState.title}
+        onConfirm={() => confirmState.action?.()}
+  />
+  
+  onClick={() => {
+                    openConfirm('장비 정보를 수정하시겠습니까?', () => handleSave());
+                  }}>
+*/
