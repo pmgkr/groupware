@@ -38,10 +38,16 @@ export default function ManagerWorking() {
       
       console.log('👥 같은 팀 멤버:', teamMembers.length, teamMembers);
 
-      // 2. 초과근무 목록 가져오기 (모든 팀원의 것)
-      const overtimeResponse = await workingApi.getOvertimeList({ 
-        page: 1, 
-        size: 1000 
+      // 2. 먼저 전체 초과근무 목록을 가져와보기 (user_id 파라미터 없이)
+      console.log('🔥 전체 초과근무 목록 조회 시도 (파라미터 없이)');
+      const allOvertimeResponse = await workingApi.getOvertimeList({
+        page: 1,
+        size: 1000
+      });
+      console.log('🔥 전체 초과근무 응답:', {
+        total: allOvertimeResponse?.total || 0,
+        items_count: allOvertimeResponse?.items?.length || 0,
+        items: allOvertimeResponse?.items
       });
 
       // 3. 각 팀원별로 근태 데이터 조회
@@ -56,11 +62,18 @@ export default function ManagerWorking() {
             edate,
           });
 
+          // 전체 초과근무 목록에서 해당 팀원의 것만 필터링
+          const memberOvertimes = allOvertimeResponse.items?.filter(
+            ot => ot.user_id === member.user_id
+          ) || [];
+          
+          console.log(`🎯 ${member.user_name}(${member.user_id})의 초과근무:`, memberOvertimes.length, '건', memberOvertimes);
+          
           // convertApiDataToWorkData로 주간 데이터 생성
           const userWorkData = await convertApiDataToWorkData(
             workLogResponse.wlog || [],
             workLogResponse.vacation || [],
-            overtimeResponse.items?.filter(ot => ot.user_id === member.user_id) || [],
+            memberOvertimes,
             weekStartDate,
             member.user_id
           );
@@ -70,11 +83,31 @@ export default function ManagerWorking() {
 
         // 요일별 근무시간 추출
         const formatDayTime = (dayData: WorkData): DayWorkInfo => {
+          // 추가근무 신청 여부 확인 (모든 경우에 체크)
+          const hasOvertime = dayData.overtimeStatus !== '신청하기';
+          const overtimeId = dayData.overtimeId?.toString();
+          const overtimeStatus = dayData.overtimeStatus;
+          
+          // 디버깅: 추가근무 데이터 확인
+          if (hasOvertime) {
+            console.log('📋 추가근무 발견:', {
+              date: dayData.date,
+              dayOfWeek: dayData.dayOfWeek,
+              overtimeStatus,
+              overtimeId,
+              workType: dayData.workType,
+              startTime: dayData.startTime
+            });
+          }
+          
           // 근무 타입이 없으면 데이터 없음
           if (dayData.workType === '-') {
             return { 
               workType: dayData.workType,
-              totalTime: '-' 
+              totalTime: '-',
+              hasOvertime,
+              overtimeId,
+              overtimeStatus,
             };
           }
           
@@ -82,7 +115,10 @@ export default function ManagerWorking() {
           if (dayData.startTime === '-') {
             return {
               workType: dayData.workType,
-              totalTime: '-'
+              totalTime: '-',
+              hasOvertime,
+              overtimeId,
+              overtimeStatus,
             };
           }
           
@@ -97,6 +133,9 @@ export default function ManagerWorking() {
             startTime: dayData.startTime,
             endTime: dayData.endTime !== '-' ? dayData.endTime : undefined,
             totalTime,
+            hasOvertime,
+            overtimeId,
+            overtimeStatus,
           };
         };
 

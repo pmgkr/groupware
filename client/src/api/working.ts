@@ -48,6 +48,7 @@ export interface OvertimeListParams {
   page?: number;
   size?: number;
   q?: string;
+  user_id?: string;
 }
 
 // 초과근무 항목
@@ -109,6 +110,7 @@ export const workingApi = {
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.size) queryParams.append('size', params.size.toString());
     if (params?.q) queryParams.append('q', params.q);
+    if (params?.user_id) queryParams.append('user_id', params.user_id);
 
     const response = await http<OvertimeListResponse>(`/user/overtime/list?${queryParams.toString()}`);
     return response;
@@ -117,6 +119,29 @@ export const workingApi = {
   // 초과근무 취소 (본인 취소)
   cancelOvertime: async (id: number): Promise<any> => {
     const response = await http(`/user/overtime/cancel/${id}?id=${id}`);
+    return response;
+  },
+
+  // 초과근무 승인 (관리자)
+  approveOvertime: async (id: number): Promise<any> => {
+    const response = await http(`/user/overtime/approve/${id}`, {
+      method: 'POST',
+    });
+    return response;
+  },
+
+  // 초과근무 반려 (관리자)
+  rejectOvertime: async (id: number, reason: string): Promise<any> => {
+    const response = await http(`/user/overtime/reject/${id}`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+    return response;
+  },
+
+  // 초과근무 상세 조회
+  getOvertimeDetail: async (id: number): Promise<OvertimeItem> => {
+    const response = await http<OvertimeItem>(`/user/overtime/${id}`);
     return response;
   },
 };
