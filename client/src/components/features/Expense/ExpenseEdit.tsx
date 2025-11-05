@@ -5,8 +5,8 @@ import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToggleState } from '@/hooks/useToggleState';
-import { UploadArea, type UploadAreaHandle, type PreviewFile } from './UploadArea';
-import { AttachmentFieldEdit } from './AttachmentFieldEdit';
+import { UploadArea, type UploadAreaHandle, type PreviewFile } from './_components/UploadArea';
+import { AttachmentFieldEdit } from './_components/AttachmentFieldEdit';
 import { useUser } from '@/hooks/useUser';
 import { formatKST, formatAmount } from '@/utils';
 import {

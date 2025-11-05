@@ -1,46 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
-
-interface WorkData {
-  date: string;
-  workType: "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가" | "공휴일";
-  startTime: string;
-  endTime: string;
-  basicHours: number;
-  basicMinutes: number;
-  overtimeHours: number;
-  overtimeMinutes: number;
-  totalHours: number;
-  totalMinutes: number;
-  overtimeStatus: "신청하기" | "승인대기" | "승인완료" | "반려됨";
-  dayOfWeek: string;
-  rejectionDate?: string;
-  rejectionReason?: string;
-  // 신청 데이터 추가
-  overtimeData?: {
-    expectedEndTime: string;
-    expectedEndMinute: string;
-    mealAllowance: string;
-    transportationAllowance: string;
-    overtimeHours: string;
-    overtimeType: string;
-    clientName: string;
-    workDescription: string;
-  };
-  overtimeId?: number; // 초과근무 ID
-  isHoliday?: boolean; // 공휴일 여부
-}
+import { Textarea } from '@components/ui/textarea';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { OctagonAlert, CheckCircle } from 'lucide-react';
+import type { WorkData } from '@/types/working';
 
 interface OvertimeViewDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onCancel: () => void;
   onReapply?: () => void;
+  onApprove?: () => void;
+  onReject?: (reason: string) => void;
   selectedDay?: WorkData;
   selectedIndex?: number;
+  isManager?: boolean;
+  isOwnRequest?: boolean;
 }
 
 // 주말 여부 확인 함수
@@ -63,20 +42,159 @@ const isSundayOrHoliday = (dayOfWeek: string, workType: string) => {
   return dayOfWeek === '일' || workType === '공휴일';
 };
 
-export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReapply, selectedDay, selectedIndex }: OvertimeViewDialogProps) {
+export default function OvertimeViewDialog({ 
+  isOpen, 
+  onClose, 
+  onCancel, 
+  onReapply, 
+  onApprove,
+  onReject,
+  selectedDay, 
+  selectedIndex,
+  isManager = false,
+  isOwnRequest = false
+}: OvertimeViewDialogProps) {
+  // Hook 호출
+  const { addDialog } = useAppDialog();
+  const { addAlert } = useAppAlert();
+  
+  // 반려 사유 state
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectInput, setShowRejectInput] = useState(false);
+  
   // selectedDay에서 상태 가져오기
   const status = selectedDay?.overtimeStatus || "신청하기";
   
-  // 실제 신청 데이터 사용 (없으면 기본값)
+  // 신청 취소하기 확인 다이얼로그
+  const handleCancelClick = () => {
+    addDialog({
+      title: '<span class="text-primary-blue-500 font-semibold">삭제 확인</span>',
+      message: '이 초과근무 신청을 정말 취소하시겠습니까?',
+      confirmText: '신청 취소하기',
+      cancelText: '닫기',
+      onConfirm: async () => {
+        console.log('=== OvertimeViewDialog onConfirm 호출됨 ===');
+        try {
+          // 취소 콜백 호출
+          console.log('onCancel 호출 시작');
+          await onCancel();
+          console.log('onCancel 호출 성공');
+          
+          // 성공 알림 먼저 표시
+          console.log('알림 표시 시도...');
+          addAlert({
+            title: '삭제 완료',
+            message: '초과근무 신청이 성공적으로 취소되었습니다.',
+            icon: <OctagonAlert />,
+            duration: 3000,
+          });
+          console.log('알림 표시 완료');
+          
+          // 알림 표시 후 다이얼로그 닫기
+          setTimeout(() => {
+            console.log('다이얼로그 닫기');
+            onClose();
+          }, 300);
+          
+        } catch (error) {
+          console.error('취소 실패:', error);
+          // 실패 알림 표시
+          const errorMessage = error instanceof Error ? error.message : '신청 취소에 실패했습니다. 다시 시도해주세요.';
+          addAlert({
+            title: '삭제 실패',
+            message: errorMessage,
+            icon: <OctagonAlert />,
+            duration: 3000,
+          });
+        }
+      },
+    });
+  };
+
+  // 승인 확인 다이얼로그
+  const handleApproveClick = () => {
+    addDialog({
+      title: '<span class="text-green-600 font-semibold">승인 확인</span>',
+      message: '이 초과근무 신청을 승인하시겠습니까?',
+      confirmText: '승인하기',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          if (onApprove) {
+            await onApprove();
+            addAlert({
+              title: '승인 완료',
+              message: '초과근무 신청이 승인되었습니다.',
+              icon: <CheckCircle />,
+              duration: 3000,
+            });
+            setTimeout(() => {
+              onClose();
+            }, 300);
+          }
+        } catch (error) {
+          console.error('승인 실패:', error);
+          const errorMessage = error instanceof Error ? error.message : '승인에 실패했습니다. 다시 시도해주세요.';
+          addAlert({
+            title: '승인 실패',
+            message: errorMessage,
+            icon: <OctagonAlert />,
+            duration: 3000,
+          });
+        }
+      },
+    });
+  };
+
+  // 반려 처리
+  const handleRejectSubmit = async () => {
+    if (!rejectReason.trim()) {
+      addAlert({
+        title: '입력 오류',
+        message: '반려 사유를 입력해주세요.',
+        icon: <OctagonAlert />,
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      if (onReject) {
+        await onReject(rejectReason);
+        addAlert({
+          title: '반려 완료',
+          message: '초과근무 신청이 반려되었습니다.',
+          icon: <OctagonAlert />,
+          duration: 3000,
+        });
+        setShowRejectInput(false);
+        setRejectReason('');
+        setTimeout(() => {
+          onClose();
+        }, 300);
+      }
+    } catch (error) {
+      console.error('반려 실패:', error);
+      const errorMessage = error instanceof Error ? error.message : '반려에 실패했습니다. 다시 시도해주세요.';
+      addAlert({
+        title: '반려 실패',
+        message: errorMessage,
+        icon: <OctagonAlert />,
+        duration: 3000,
+      });
+    }
+  };
+  
+  // 신청 데이터
   const overtimeData = selectedDay?.overtimeData || {
-    expectedEndTime: "22",
-    expectedEndMinute: "30",
-    mealAllowance: "yes",
-    transportationAllowance: "no",
-    overtimeHours: "4",
-    overtimeType: "special_vacation",
-    clientName: "BAT",
-    workDescription: "집에 가고싶다"
+    expectedEndTime: "",
+    expectedEndMinute: "",
+    mealAllowance: "",
+    transportationAllowance: "",
+    overtimeHours: "",
+    overtimeType: "",
+    clientName: "",
+    workDescription: ""
   };
 
   return (
@@ -231,11 +349,7 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
                   }`}>
                     {status}
                   </span>
-                  {status === "승인완료" && (
-                    <p className="text-sm text-gray-800 mt-1">
-                      승인일: 2025년 10월 11일
-                    </p>
-                  )}
+                  {/* 승인완료 시 승인일 표시는 백엔드 데이터 연동 시 추가 예정 */}
                   {status === "반려됨" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
                     <>
                     <p className="text-sm text-gray-800 mt-1">
@@ -263,14 +377,66 @@ export default function OvertimeViewDialog({ isOpen, onClose, onCancel, onReappl
             </>
           )} */}
         </div>
-          <DialogFooter>
-            {status === "반려됨" && onReapply && (
-              <Button variant="default" onClick={onReapply}>재신청하기</Button>
+
+          {/* 반려 사유 입력 */}
+          {showRejectInput && (
+            <div className="space-y-2 pt-4 border-t">
+              <Label htmlFor="reject-reason">반려 사유</Label>
+              <Textarea
+                id="reject-reason"
+                placeholder="반려 사유를 입력해주세요"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            {/* 관리자 모드 - 승인대기 상태일 때 승인/반려 버튼 */}
+            {isManager && !isOwnRequest && status === "승인대기" && (
+              <>
+                {!showRejectInput ? (
+                  <>
+                    <Button variant="default" onClick={handleApproveClick} className="bg-green-600 hover:bg-green-700">
+                      승인하기
+                    </Button>
+                    <Button variant="destructive" onClick={() => setShowRejectInput(true)}>
+                      반려하기
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="default" onClick={handleRejectSubmit}>
+                      반려 확정
+                    </Button>
+                    <Button variant="outline" onClick={() => {
+                      setShowRejectInput(false);
+                      setRejectReason('');
+                    }}>
+                      취소
+                    </Button>
+                  </>
+                )}
+              </>
             )}
-            {status !== "반려됨" && (
-              <Button variant="destructive" onClick={onCancel}>신청 취소하기</Button>
+
+            {/* 본인 신청이거나 일반 사용자 모드 */}
+            {(isOwnRequest || !isManager) && (
+              <>
+                {status === "반려됨" && onReapply && (
+                  <Button variant="default" onClick={onReapply}>재신청하기</Button>
+                )}
+                {status === "승인대기" && (
+                  <Button variant="destructive" onClick={handleCancelClick}>신청 취소하기</Button>
+                )}
+              </>
             )}
-            <Button variant="outline" onClick={onClose}>닫기</Button>
+
+            {/* 닫기 버튼 (항상 표시) */}
+            {!showRejectInput && (
+              <Button variant="outline" onClick={onClose}>닫기</Button>
+            )}
           </DialogFooter>
       </DialogContent>
     </Dialog>

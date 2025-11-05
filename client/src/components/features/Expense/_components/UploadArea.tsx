@@ -1,10 +1,15 @@
 import { useCallback, forwardRef, useImperativeHandle, useState, memo } from 'react';
+import ReactDOM from 'react-dom';
 import { cn } from '@/lib/utils';
 import { useDropzone } from 'react-dropzone';
-import { getDocument, type PDFDocumentProxy } from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist';
 import 'pdfjs-dist/legacy/build/pdf.worker.min.mjs';
 import { Button } from '@components/ui/button';
-import { Upload, Delete, Zoom } from '@/assets/images/icons';
+import { Upload, Delete } from '@/assets/images/icons';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+
+import { getDocument, type PDFDocumentProxy } from 'pdfjs-dist';
 
 export type PreviewFile = {
   name: string;
@@ -27,7 +32,7 @@ type UploadAreaProps = {
   setActiveFile?: (name: string | null) => void;
 };
 
-/* ✅ 개별 썸네일 카드 컴포넌트 */
+/* ✅ 썸네일 카드 (메모이제이션) */
 const FileCard = memo(
   ({
     file,
@@ -62,6 +67,7 @@ const FileCard = memo(
             src={file.preview}
             alt={file.name}
             draggable={isSelected}
+            loading="lazy"
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
             className="absolute top-0 left-0 w-[350%] max-w-none translate-x-[-12.5%] translate-y-[-2.5%]"
@@ -88,14 +94,14 @@ const FileCard = memo(
     );
   }
 );
-
 FileCard.displayName = 'FileCard';
 
+/* ✅ UploadArea 메인 */
 export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
   ({ files, setFiles, onFilesChange, linkedRows, activeFile, setActiveFile }, ref) => {
     const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
-    // PDF 이미지 분할
+    // ✅ PDF → Blob URL 로 변환 (비동기 + 메모리 절약)
     const splitPdfToImages = async (file: File): Promise<PreviewFile[]> => {
       const arrayBuffer = await file.arrayBuffer();
       const pdf: PDFDocumentProxy = await getDocument({ data: arrayBuffer }).promise;
@@ -103,7 +109,7 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
 
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         const page = await pdf.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 2.0 });
+        const viewport = page.getViewport({ scale: 1.6 });
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d')!;
         canvas.width = viewport.width;
@@ -111,17 +117,21 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
         await page.render({ canvasContext: ctx, viewport, canvas }).promise;
 
         const halfWidth = canvas.width / 2;
-        const crop = (x: number) => {
+        const crop = async (x: number) => {
           const temp = document.createElement('canvas');
           const tctx = temp.getContext('2d')!;
           temp.width = halfWidth;
           temp.height = canvas.height;
           tctx.drawImage(canvas, x, 0, halfWidth, canvas.height, 0, 0, halfWidth, canvas.height);
-          return temp.toDataURL('image/png');
+          return new Promise<string>((resolve) => {
+            temp.toBlob((blob) => {
+              if (blob) resolve(URL.createObjectURL(blob));
+            }, 'image/png');
+          });
         };
 
-        allImages.push({ name: `${file.name}_${pageNum}_l.png`, type: 'image/png', preview: crop(0) });
-        allImages.push({ name: `${file.name}_${pageNum}_r.png`, type: 'image/png', preview: crop(halfWidth) });
+        allImages.push({ name: `${file.name}_${pageNum}_l.png`, type: 'image/png', preview: await crop(0) });
+        allImages.push({ name: `${file.name}_${pageNum}_r.png`, type: 'image/png', preview: await crop(halfWidth) });
       }
 
       return allImages;
@@ -147,8 +157,10 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
         }
 
         const updated = [...files, ...newFiles];
-        setFiles(updated);
-        onFilesChange?.(updated);
+        ReactDOM.unstable_batchedUpdates(() => {
+          setFiles(updated);
+          onFilesChange?.(updated);
+        });
       },
       [files, setFiles, onFilesChange]
     );
@@ -164,28 +176,40 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
       openFileDialog: open,
       deleteSelectedFiles: () => {
         const updated = files.filter((f) => !selectedFiles.includes(f.name));
-        setFiles(updated);
-        onFilesChange?.(updated);
-        setSelectedFiles([]);
+        ReactDOM.unstable_batchedUpdates(() => {
+          setFiles(updated);
+          onFilesChange?.(updated);
+          setSelectedFiles([]);
+        });
       },
       deleteAllFiles: () => {
-        setFiles([]);
-        onFilesChange?.([]);
-        setSelectedFiles([]);
+        ReactDOM.unstable_batchedUpdates(() => {
+          setFiles([]);
+          onFilesChange?.([]);
+          setSelectedFiles([]);
+        });
       },
     }));
 
-    const toggleSelect = (name: string) => {
-      setSelectedFiles((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
-      setActiveFile?.(name);
-    };
+    const toggleSelect = useCallback(
+      (name: string) => {
+        setSelectedFiles((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
+        setActiveFile?.(name);
+      },
+      [setActiveFile]
+    );
 
-    const removeFile = (name: string) => {
-      const updated = files.filter((f) => f.name !== name);
-      setFiles(updated);
-      onFilesChange?.(updated);
-      setSelectedFiles((prev) => prev.filter((n) => n !== name));
-    };
+    const removeFile = useCallback(
+      (name: string) => {
+        const updated = files.filter((f) => f.name !== name);
+        ReactDOM.unstable_batchedUpdates(() => {
+          setFiles(updated);
+          onFilesChange?.(updated);
+          setSelectedFiles((prev) => prev.filter((n) => n !== name));
+        });
+      },
+      [files, setFiles, onFilesChange]
+    );
 
     return (
       <div

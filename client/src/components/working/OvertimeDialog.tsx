@@ -8,36 +8,7 @@ import { Textarea } from '@components/ui/textarea';
 import { RadioGroup } from '@components/ui/radio-group';
 import { RadioButton } from '@components/ui/radioButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
-
-interface WorkData {
-  date: string;
-  workType: "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가" | "공휴일";
-  startTime: string;
-  endTime: string;
-  basicHours: number;
-  basicMinutes: number;
-  overtimeHours: number;
-  overtimeMinutes: number;
-  totalHours: number;
-  totalMinutes: number;
-  overtimeStatus: "신청하기" | "승인대기" | "승인완료" | "반려됨";
-  dayOfWeek: string;
-  rejectionDate?: string;
-  rejectionReason?: string;
-  // 신청 데이터 추가
-  overtimeData?: {
-    expectedEndTime: string;
-    expectedEndMinute: string;
-    mealAllowance: string;
-    transportationAllowance: string;
-    overtimeHours: string;
-    overtimeType: string;
-    clientName: string;
-    workDescription: string;
-  };
-  overtimeId?: number; // 초과근무 ID
-  isHoliday?: boolean; // 공휴일 여부
-}
+import type { WorkData } from '@/types/working';
 
 interface OvertimeDialogProps {
   isOpen: boolean;
@@ -77,7 +48,6 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   const handleInputChange = (field: keyof OvertimeData, value: string) => {
-    console.log('Select value changed:', field, value); // 디버깅용 로그
     setFormData(prev => ({
       ...prev,
       [field]: value

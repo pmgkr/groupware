@@ -4,22 +4,14 @@ import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { useToggleState } from '@/hooks/useToggleState';
-import { UploadArea, type UploadAreaHandle, type PreviewFile } from './UploadArea';
-import { AttachmentField } from './AttachmentField';
 import { useUser } from '@/hooks/useUser';
-import { formatAmount, mapExcelToExpenseItems } from '@/utils';
+import { mapExcelToExpenseItems } from '@/utils';
 import { uploadFilesToServer, expenseRegister, getBankList, type BankList, getExpenseType, type ExpenseType } from '@/api';
+import { ExpenseRow } from './_components/ExpenseRegisterRow';
+import { UploadArea, type UploadAreaHandle, type PreviewFile } from './_components/UploadArea';
 
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@components/ui/alert-dialog';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
@@ -32,7 +24,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
 
 import { Add, Calendar, TooltipNoti, Delete, Close } from '@/assets/images/icons';
-import { UserRound, FileText } from 'lucide-react';
+import { UserRound, FileText, OctagonAlert } from 'lucide-react';
 
 import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -69,6 +61,10 @@ export default function ExpenseRegister() {
   const { user_id, user_name, user_level } = useUser();
   const uploadRef = useRef<UploadAreaHandle>(null);
 
+  // Alert & Dialog hooks
+  const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
+
   const { state } = useLocation(); // Excel 업로드 시 state.excelData 로 전달
   // 비용 항목 기본 세팅값 : Excel 업로드 시 0으로 세팅, 수기 작성 시 5개로 세팅
   const [articleCount, setArticleCount] = useState(state?.excelData ? 0 : 5);
@@ -79,11 +75,6 @@ export default function ExpenseRegister() {
   const [hasFiles, setHasFiles] = useState(false); // 추가 업로드 버튼 활성화 State
   const [linkedRows, setLinkedRows] = useState<Record<string, number | null>>({}); // 업로드된 이미지와 연결된 행 번호 저장용
   const [activeFile, setActiveFile] = useState<string | null>(null); // UploadArea & Attachment 연결상태 공유용
-
-  const [successState, setSuccessState] = useState(false);
-  const [alertOpen, setAlertOpen] = useState(false); // Alert 오픈 On/Off
-  const [alertTitle, setAlertTitle] = useState<string | null>(null); // Alert 타이틀 State
-  const [alertDescription, setAlertDescription] = useState<string | null>(null); // Alert 내용 State
 
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : ''); // YYYY-MM-DD Date 포맷 변경
 
@@ -117,17 +108,15 @@ export default function ExpenseRegister() {
     name: 'expense_items',
   });
 
+  // 합계 계산: debounce 적용
   const watchedItems = useWatch({
-    control,
+    control: form.control,
     name: 'expense_items',
   });
 
   const totalSum = useMemo(() => {
     if (!Array.isArray(watchedItems)) return 0;
-    return watchedItems.reduce((sum, item) => {
-      const value = Number(item?.total || 0);
-      return sum + (isNaN(value) ? 0 : value);
-    }, 0);
+    return watchedItems.reduce((sum, item) => sum + (Number(item?.total) || 0), 0);
   }, [watchedItems]);
 
   const formattedTotal = totalSum.toLocaleString();
@@ -193,24 +182,29 @@ export default function ExpenseRegister() {
   }, [state]);
 
   // 항목 추가 버튼 클릭 시
-  const handleAddArticle = () => {
+  const handleAddArticle = useCallback(() => {
     setArticleCount((prev) => prev + 1);
     append({ type: '', title: '', number: '', date: '', price: '', tax: '', total: '', pro_id: '' });
-  };
+  }, [append]);
 
   // 항목 삭제 버튼 클릭 시
-  const handleRemoveArticle = (index: number) => {
-    if (fields.length === 1) {
-      setAlertTitle('알림');
-      setAlertDescription('최소 1개의 비용 항목이 등록되어야 합니다.');
-      setAlertOpen(true);
-      return;
-    }
-
-    remove(index); // 해당 인덱스 행 삭제
-    form.clearErrors('expense_items');
-    setArticleCount((prev) => Math.max(prev - 1, 1)); // 상태 동기화
-  };
+  const handleRemoveArticle = useCallback(
+    (index: number) => {
+      if (fields.length === 1) {
+        addAlert({
+          title: '비용 항목을 삭제할 수 없습니다.',
+          message: '최소 1개의 비용 항목이 등록되어야 합니다.',
+          icon: <OctagonAlert />,
+          duration: 2000,
+        });
+        return;
+      }
+      remove(index);
+      form.clearErrors('expense_items');
+      setArticleCount((prev) => Math.max(prev - 1, 1));
+    },
+    [fields.length, form, remove]
+  );
 
   // 증빙자료 추가 업로드 버튼 클릭 시 업로드 창 노출
   const handleAddUploadClick = () => {
@@ -230,35 +224,34 @@ export default function ExpenseRegister() {
     });
   };
 
-  // AttachmentField에 개별 업로드 시
-  const handleAttachUpload = (newFiles: PreviewFile[], rowIndex: number | null) => {
-    setFiles((prev) => {
-      const unique = newFiles.filter((nf) => !prev.some((pf) => pf.name === nf.name));
-      return [...prev, ...unique];
-    });
-    handleDropFiles(newFiles, '', rowIndex);
-  };
-
   // UploadArea → AttachmentField 드롭 시
-  const handleDropFiles = (files: PreviewFile[], fieldName: string, rowIndex: number | null) => {
+  const handleDropFiles = useCallback((files: PreviewFile[], fieldName: string, rowIndex: number | null) => {
     setLinkedRows((prev) => {
       const updated = { ...prev };
-
       if (rowIndex === null) {
         files.forEach((file) => {
-          if (updated[file.name] !== undefined) {
-            updated[file.name] = null;
-          }
+          if (updated[file.name] !== undefined) updated[file.name] = null;
         });
       } else {
         files.forEach((file) => {
           updated[file.name] = rowIndex;
         });
       }
-
       return updated;
     });
-  };
+  }, []);
+
+  // AttachmentField에 개별 업로드 시
+  const handleAttachUpload = useCallback(
+    (newFiles: PreviewFile[], rowIndex: number | null) => {
+      setFiles((prev) => {
+        const unique = newFiles.filter((nf) => !prev.some((pf) => pf.name === nf.name));
+        return [...prev, ...unique];
+      });
+      handleDropFiles(newFiles, '', rowIndex);
+    },
+    [handleDropFiles]
+  );
 
   // 등록 버튼 클릭 시
   const onSubmit = async (values: any) => {
@@ -266,157 +259,177 @@ export default function ExpenseRegister() {
       const items = values.expense_items.filter((v: any) => v.title || v.price || v.total);
 
       if (items.length === 0) {
-        setAlertTitle('알림');
-        setAlertDescription('최소 1개의 비용 항목이 등록되어야 합니다.');
-        setAlertOpen(true);
+        addAlert({
+          title: '작성된 비용 항목이 없습니다.',
+          message: '최소 1개의 비용 항목이 작성되어야 합니다.',
+          icon: <OctagonAlert />,
+          duration: 2000,
+        });
         return;
       }
 
-      // [1] 연결된 파일 업로드
-      const linkedFiles = files.filter((f) => linkedRows[f.name] !== null);
-      let uploadedFiles: any[] = [];
+      addDialog({
+        title: '작성한 비용 항목을 등록합니다.',
+        message: `<span class="text-primary-blue-500 font-semibold">${items.length}</span>건의 비용을 등록록하시겠습니까?`,
+        confirmText: '확인',
+        cancelText: '취소',
+        onConfirm: async () => {
+          // [1] 연결된 파일 업로드
+          const linkedFiles = files.filter((f) => linkedRows[f.name] !== null);
+          let uploadedFiles: any[] = [];
 
-      if (linkedFiles.length > 0) {
-        // 🔹 행별 그룹화
-        const filesByRow = linkedFiles.reduce<Record<number, PreviewFile[]>>((acc, f) => {
-          const rowIdx = linkedRows[f.name];
-          if (rowIdx !== null) {
-            if (!acc[rowIdx]) acc[rowIdx] = [];
-            acc[rowIdx].push(f);
-          }
-          return acc;
-        }, {});
-
-        // 🔹 업로드 대상 파일 변환
-        const allNewFiles = linkedFiles.map((f) => ({
-          ...f,
-          rowIdx: linkedRows[f.name]!,
-        }));
-
-        const uploadable = await Promise.all(
-          allNewFiles.map(async (f) => {
-            const res = await fetch(f.preview);
-            const blob = await res.blob();
-
-            const ext = f.name.split('.').pop() || 'jpg';
-
-            const item = values.expense_items?.[f.rowIdx - 1];
-            const purchaseDate = item?.date ? format(new Date(item.date), 'yyyyMMdd') : format(new Date(), 'yyyyMMdd');
-
-            // ✅ 사용자명, 증빙수단 정제
-            const safeUserNm = (user_name || 'unknown').replace(/[^\w가-힣]/g, '');
-            const safeElType = (item.type || '기타').replace(/[^\w가-힣]/g, '');
-
-            // ✅ 기존 파일 중 가장 큰 인덱스
-            const existingFiles = filesByRow[f.rowIdx] ?? [];
-            let maxIndex = -1;
-
-            existingFiles.forEach((att) => {
-              const match = att.name.match(/_(\d+)\.[^.]+$/);
-              if (match) {
-                const num = parseInt(match[1], 10);
-                if (!isNaN(num) && num > maxIndex) maxIndex = num;
+          if (linkedFiles.length > 0) {
+            // 🔹 행별 그룹화
+            const filesByRow = linkedFiles.reduce<Record<number, PreviewFile[]>>((acc, f) => {
+              const rowIdx = linkedRows[f.name];
+              if (rowIdx !== null) {
+                if (!acc[rowIdx]) acc[rowIdx] = [];
+                acc[rowIdx].push(f);
               }
+              return acc;
+            }, {});
+
+            // 🔹 업로드 대상 파일 변환
+            const allNewFiles = linkedFiles.map((f) => ({
+              ...f,
+              rowIdx: linkedRows[f.name]!,
+            }));
+
+            const uploadable = await Promise.all(
+              allNewFiles.map(async (f) => {
+                const res = await fetch(f.preview);
+                const blob = await res.blob();
+
+                const ext = f.name.split('.').pop() || 'jpg';
+
+                const item = values.expense_items?.[f.rowIdx - 1];
+                const purchaseDate = item?.date ? format(new Date(item.date), 'yyyyMMdd') : format(new Date(), 'yyyyMMdd');
+
+                // ✅ 사용자명, 증빙수단 정제
+                const safeUserNm = (user_name || 'unknown').replace(/[^\w가-힣]/g, '');
+                const safeElType = (item.type || '기타').replace(/[^\w가-힣]/g, '');
+
+                // ✅ 기존 파일 중 가장 큰 인덱스
+                const existingFiles = filesByRow[f.rowIdx] ?? [];
+                let maxIndex = -1;
+
+                existingFiles.forEach((att) => {
+                  const match = att.name.match(/_(\d+)\.[^.]+$/);
+                  if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (!isNaN(num) && num > maxIndex) maxIndex = num;
+                  }
+                });
+
+                // ✅ 같은 rowIdx 내 새 파일 순서
+                const newFilesInRow = allNewFiles.filter((nf) => nf.rowIdx === f.rowIdx);
+                const localIndex = newFilesInRow.indexOf(f);
+
+                // ✅ 최종 인덱스
+                const nextIndex = maxIndex + 1 + localIndex;
+
+                // ✅ 최종 파일명 포맷
+                const newFileName = `${safeUserNm}_${safeElType}_${purchaseDate}_${nextIndex}.${ext}`;
+
+                return new File([blob], newFileName, { type: f.type || 'image/png' });
+              })
+            );
+
+            // 서버 업로드
+            uploadedFiles = await uploadFilesToServer(uploadable, 'nexpense');
+            uploadedFiles = uploadedFiles.map((file, i) => ({
+              ...file,
+              rowIdx: allNewFiles[i]?.rowIdx ?? 0,
+            }));
+
+            console.log('✅ 업로드 완료:', uploadedFiles);
+          }
+
+          // [3] 파일을 항목별로 매핑
+          const fileMap = uploadedFiles.reduce(
+            (acc, file) => {
+              if (!acc[file.rowIdx]) acc[file.rowIdx] = [];
+              acc[file.rowIdx].push(file);
+              return acc;
+            },
+            {} as Record<number, any[]>
+          );
+
+          // [4] expense_items에 파일 연결
+          const enrichedItems = items.map((item: any, idx: number) => ({
+            ...item,
+            attachments: fileMap[idx + 1] || [], // rowIndex는 1부터 시작해서 +1
+          }));
+
+          console.log('enrichedItems:', enrichedItems);
+
+          // [5] 단일 객체로 데이터 전송
+          const payload = {
+            header: {
+              user_id: user_id!,
+              el_method: values.el_method,
+              el_attach: files.length > 0 ? 'Y' : 'N',
+              el_deposit: values.el_deposit || '',
+              bank_account: values.bank_account.replace(/-/g, ''),
+              bank_name: values.bank_name,
+              bank_code: values.bank_code,
+              account_name: values.account_name,
+              remark: values.remark || '',
+            },
+            items: enrichedItems.map((i: any) => ({
+              el_type: i.type,
+              ei_title: i.title,
+              ei_pdate: i.date,
+              ei_number: i.number || null,
+              ei_amount: Number(i.price),
+              ei_tax: Number(i.tax || 0),
+              ei_total: Number(i.total),
+              pro_id: !i.pro_id || i.pro_id === '0' || isNaN(Number(i.pro_id)) ? null : Number(i.pro_id),
+              attachments: (i.attachments || []).map((att: any) => ({
+                filename: att.fname,
+                savename: att.sname,
+                url: att.url,
+              })),
+            })),
+          };
+
+          console.log('📦 최종 payload:', payload);
+
+          // 모든 리스트 병렬 API 호출 (성공/실패 결과 각각 수집)
+          const result = await expenseRegister(payload);
+
+          console.log('✅ 등록 성공:', result);
+
+          if (result.ok && result.docs?.inserted) {
+            const { list_count, item_count } = result.docs.inserted;
+
+            addAlert({
+              title: '비용 등록이 완료되었습니다.',
+              message: `<p>총 <span class="text-primary-blue-500">${item_count}개</span> 비용 항목이 <span class="text-primary-blue-500">${list_count}개</span>의 리스트로 등록 되었습니다.</p>`,
+              icon: <OctagonAlert />,
+              duration: 2000,
             });
 
-            // ✅ 같은 rowIdx 내 새 파일 순서
-            const newFilesInRow = allNewFiles.filter((nf) => nf.rowIdx === f.rowIdx);
-            const localIndex = newFilesInRow.indexOf(f);
-
-            // ✅ 최종 인덱스
-            const nextIndex = maxIndex + 1 + localIndex;
-
-            // ✅ 최종 파일명 포맷
-            const newFileName = `${safeUserNm}_${safeElType}_${purchaseDate}_${nextIndex}.${ext}`;
-
-            return new File([blob], newFileName, { type: f.type || 'image/png' });
-          })
-        );
-
-        // 🔹 서버 업로드
-        uploadedFiles = await uploadFilesToServer(uploadable, 'nexpense');
-        uploadedFiles = uploadedFiles.map((file, i) => ({
-          ...file,
-          rowIdx: allNewFiles[i]?.rowIdx ?? 0,
-        }));
-
-        console.log('✅ 업로드 완료:', uploadedFiles);
-      }
-
-      // [3] 파일을 항목별로 매핑
-      const fileMap = uploadedFiles.reduce(
-        (acc, file) => {
-          if (!acc[file.rowIdx]) acc[file.rowIdx] = [];
-          acc[file.rowIdx].push(file);
-          return acc;
+            navigate('/expense');
+          } else {
+            addAlert({
+              title: '비용 등록 실패',
+              message: `비용 등록 중 오류가 발생했습니다. \n 다시 시도해주세요.`,
+              icon: <OctagonAlert />,
+              duration: 2000,
+            });
+          }
         },
-        {} as Record<number, any[]>
-      );
-
-      // [4] expense_items에 파일 연결
-      const enrichedItems = items.map((item: any, idx: number) => ({
-        ...item,
-        attachments: fileMap[idx + 1] || [], // rowIndex는 1부터 시작해서 +1
-      }));
-
-      console.log('enrichedItems:', enrichedItems);
-
-      // [5] 단일 객체로 데이터 전송
-      const payload = {
-        header: {
-          user_id: user_id!,
-          el_method: values.el_method,
-          el_attach: files.length > 0 ? 'Y' : 'N',
-          el_deposit: values.el_deposit || '',
-          bank_account: values.bank_account.replace(/-/g, ''),
-          bank_name: values.bank_name,
-          bank_code: values.bank_code,
-          account_name: values.account_name,
-          remark: values.remark || '',
-        },
-        items: enrichedItems.map((i: any) => ({
-          el_type: i.type,
-          ei_title: i.title,
-          ei_pdate: i.date,
-          ei_number: i.number || null,
-          ei_amount: Number(i.price),
-          ei_tax: Number(i.tax || 0),
-          ei_total: Number(i.total),
-          pro_id: !i.pro_id || i.pro_id === '0' || isNaN(Number(i.pro_id)) ? null : Number(i.pro_id),
-          attachments: (i.attachments || []).map((att: any) => ({
-            filename: att.fname,
-            savename: att.sname,
-            url: att.url,
-          })),
-        })),
-      };
-
-      console.log('📦 최종 payload:', payload);
-
-      // 모든 리스트 병렬 API 호출 (성공/실패 결과 각각 수집)
-      const result = await expenseRegister(payload);
-
-      console.log('✅ 등록 성공:', result);
-
-      if (result.ok && result.docs?.inserted) {
-        const { list_count, item_count } = result.docs.inserted;
-        setAlertTitle('비용 등록');
-        setAlertDescription(
-          `총 <span class="text-primary-blue-500">${item_count}개</span> 비용 항목이 <span class="text-primary-blue-500">${list_count}개</span>의 리스트로 등록 되었습니다.`
-        );
-        setSuccessState(true);
-        setAlertOpen(true);
-      } else {
-        setAlertTitle('등록 실패');
-        setAlertDescription('등록 결과를 가져오지 못했습니다.');
-        setAlertOpen(true);
-      }
+      });
     } catch (err) {
       console.error('❌ 등록 실패:', err);
 
-      setAlertTitle('등록 실패');
-      setAlertDescription(`등록 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.`);
-      setAlertOpen(true);
+      addAlert({
+        title: '비용 등록 실패',
+        message: `비용 등록 중 오류가 발생했습니다. \n 다시 시도해주세요.`,
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
       return;
     }
   };
@@ -575,8 +588,9 @@ export default function ExpenseRegister() {
                                   <Button
                                     variant={'outline'}
                                     className={cn(
-                                      'border-input h-11 w-full px-3 text-left text-base font-normal text-gray-700 hover:bg-[none]',
-                                      !field.value && 'text-muted-foreground hover:text-muted-foreground'
+                                      'border-input focus-visible:border-primary-blue-300 h-11 w-full px-3 text-left text-base font-normal text-gray-700 hover:bg-[none]',
+                                      !field.value && 'text-muted-foreground hover:text-muted-foreground',
+                                      isOpen && 'border-primary-blue-300'
                                     )}>
                                     {field.value ? String(field.value) : <span>YYYY-MM-DD</span>}
                                     <Calendar className="ml-auto size-4.5 opacity-50" />
@@ -627,239 +641,21 @@ export default function ExpenseRegister() {
               {/* 비용항목 입력 폼 */}
               <SectionHeader title="비용 항목" className="mb-0" />
               <div>
-                {fields.map((field, index) => {
-                  return (
-                    <article key={field.id} className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0">
-                      <div className="absolute top-1 left-0 flex w-full items-center justify-between gap-2 pl-[68%]">
-                        {/* <FormField
-                            control={form.control}
-                            name={`expense_items.${index}.pro_id`}
-                            render={({ field }) => (
-                              <FormItem className="flex items-center gap-x-2">
-                                <FormControl></FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          /> */}
-                        <button
-                          type="button"
-                          className="text-primary-blue-500 flex cursor-pointer items-center gap-1 text-sm hover:underline"
-                          onClick={() => setActiveFile(field.id)}>
-                          <FileText className="size-3.5" /> 기안서 매칭
-                        </button>
-
-                        <Button type="button" variant="svgIcon" size="icon" onClick={() => handleRemoveArticle(index)}>
-                          <Close className="size-4" />
-                        </Button>
-                      </div>
-                      <div className="flex justify-between">
-                        {/* Excel로 로드 시 승인번호 숨김처리로 노출 */}
-                        <input type="hidden" name={`expense_items.${index}.number`} value="" />
-                        <div className="grid w-[66%] grid-cols-3 gap-4 tracking-tight">
-                          <div className="text-base leading-[1.5] text-gray-700">
-                            <FormField
-                              control={control}
-                              name={`expense_items.${index}.type`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <div className="flex h-6 justify-between">
-                                    <FormLabel className="gap-.5 font-bold text-gray-950">비용 유형</FormLabel>
-                                  </div>
-                                  <FormControl>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
-                                      <FormControl>
-                                        <SelectTrigger className="aria-[invalid=true]:border-destructive w-full">
-                                          <SelectValue placeholder={expenseTypes.length ? '비용 유형 선택' : '불러오는 중...'} />
-                                        </SelectTrigger>
-                                      </FormControl>
-                                      <SelectContent className="max-h-80 w-full">
-                                        {expenseTypes.map((item, i) => (
-                                          <SelectItem key={i} value={item.code}>
-                                            {item.code}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          <div className="text-base leading-[1.5] text-gray-700">
-                            <FormField
-                              control={form.control}
-                              name={`expense_items.${index}.title`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <div className="flex h-6 justify-between">
-                                    <FormLabel className="gap-.5 font-bold text-gray-950">가맹점명</FormLabel>
-                                  </div>
-                                  <FormControl>
-                                    <Input placeholder="가맹점명" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          <div className="text-base leading-[1.5] text-gray-700">
-                            <FormField
-                              control={form.control}
-                              name={`expense_items.${index}.date`}
-                              render={({ field }) => {
-                                const { isOpen, setIsOpen, close } = useToggleState();
-                                return (
-                                  <FormItem>
-                                    <div className="flex h-6 justify-between">
-                                      <FormLabel className="gap-.5 font-bold text-gray-950">매입 일자</FormLabel>
-                                    </div>
-                                    <Popover open={isOpen} onOpenChange={setIsOpen}>
-                                      <div className="relative w-full">
-                                        <PopoverTrigger asChild>
-                                          <FormControl>
-                                            <Button
-                                              variant={'outline'}
-                                              className={cn(
-                                                'border-input focus-visible:border-primary-blue-300 h-11 w-full px-3 text-left text-base font-normal text-gray-700 hover:bg-[none]',
-                                                !field.value && 'text-muted-foreground hover:text-muted-foreground'
-                                              )}>
-                                              {field.value || 'YYYY-MM-DD'}
-                                              <Calendar className="ml-auto size-4.5 opacity-50" />
-                                            </Button>
-                                          </FormControl>
-                                        </PopoverTrigger>
-                                      </div>
-
-                                      <PopoverContent className="w-auto p-0" align="start">
-                                        <DayPicker
-                                          mode="single"
-                                          selected={field.value ? new Date(field.value) : undefined}
-                                          onSelect={(date) => {
-                                            const formatted = date ? formatDate(date) : '';
-                                            field.onChange(formatted);
-                                            if (date) close();
-                                          }}
-                                        />
-                                      </PopoverContent>
-                                    </Popover>
-                                    <FormMessage />
-                                  </FormItem>
-                                );
-                              }}
-                            />
-                          </div>
-                          <div className="text-base leading-[1.5] text-gray-700">
-                            <FormField
-                              control={form.control}
-                              name={`expense_items.${index}.price`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <div className="flex h-6 justify-between">
-                                    <FormLabel className="gap-.5 font-bold text-gray-950">금액</FormLabel>
-                                  </div>
-                                  <FormControl>
-                                    <Input
-                                      inputMode="numeric"
-                                      placeholder="금액"
-                                      value={field.value ? formatAmount(field.value) : ''}
-                                      onChange={(e) => {
-                                        const raw = e.target.value.replace(/[^0-9]/g, '');
-                                        field.onChange(raw);
-
-                                        // ✅ 세금 필드와 합산하여 total 자동 계산
-                                        const taxValue =
-                                          Number(String(form.getValues(`expense_items.${index}.tax`) || '').replace(/,/g, '')) || 0;
-                                        const total = Number(raw || 0) + taxValue;
-
-                                        form.setValue(`expense_items.${index}.total`, total.toString(), {
-                                          shouldValidate: false,
-                                          shouldDirty: true,
-                                        });
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          <div className="text-base leading-[1.5] text-gray-700">
-                            <FormField
-                              control={form.control}
-                              name={`expense_items.${index}.tax`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <div className="flex h-6 justify-between">
-                                    <FormLabel className="gap-.5 font-bold text-gray-950">세금</FormLabel>
-                                  </div>
-                                  <FormControl>
-                                    <Input
-                                      {...field}
-                                      inputMode="numeric"
-                                      placeholder="세금"
-                                      value={field.value ? formatAmount(field.value) : ''}
-                                      onChange={(e) => {
-                                        const raw = e.target.value.replace(/[^0-9]/g, '');
-                                        field.onChange(raw);
-
-                                        // ✅ 금액 필드와 합산하여 total 자동 계산
-                                        const priceValue =
-                                          Number(String(form.getValues(`expense_items.${index}.price`) || '').replace(/,/g, '')) || 0;
-                                        const total = priceValue + Number(raw || 0);
-
-                                        form.setValue(`expense_items.${index}.total`, total.toString(), {
-                                          shouldValidate: false,
-                                          shouldDirty: true,
-                                        });
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          <div className="text-base leading-[1.5] text-gray-700">
-                            <FormField
-                              control={form.control}
-                              name={`expense_items.${index}.total`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <div className="flex h-6 justify-between">
-                                    <FormLabel className="gap-.5 font-bold text-gray-950">합계</FormLabel>
-                                  </div>
-                                  <FormControl>
-                                    <Input
-                                      {...field}
-                                      readOnly
-                                      inputMode="numeric"
-                                      placeholder="합계"
-                                      value={field.value ? formatAmount(field.value) : ''}
-                                      className="focus-visible:border-input cursor-default bg-gray-100 text-gray-600"
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                        </div>
-                        <div className="w-[32%] pl-2">
-                          <AttachmentField
-                            name={`expense_attachment${index}`}
-                            rowIndex={index + 1}
-                            onDropFiles={handleDropFiles}
-                            onUploadFiles={handleAttachUpload}
-                            activeFile={activeFile}
-                            setActiveFile={setActiveFile}
-                            files={files}
-                          />
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
+                {fields.map((field, index) => (
+                  <ExpenseRow
+                    key={field.id}
+                    index={index}
+                    control={control}
+                    expenseTypes={expenseTypes}
+                    form={form}
+                    onRemove={handleRemoveArticle}
+                    handleDropFiles={handleDropFiles}
+                    handleAttachUpload={handleAttachUpload}
+                    files={files}
+                    activeFile={activeFile}
+                    setActiveFile={setActiveFile}
+                  />
+                ))}
 
                 <div className="flex justify-end">
                   <Button type="button" size="sm" onClick={handleAddArticle}>
@@ -919,31 +715,6 @@ export default function ExpenseRegister() {
           </div>
         </form>
       </Form>
-
-      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{alertTitle}</AlertDialogTitle>
-            <AlertDialogDescription
-              className="whitespace-pre-line text-gray-700"
-              dangerouslySetInnerHTML={{
-                __html: alertDescription || '', // HTML 태그 포함 허용
-              }}
-            />
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            {successState ? (
-              <AlertDialogAction className="h-8 px-3.5 text-sm" onClick={() => navigate('/expense')}>
-                확인
-              </AlertDialogAction>
-            ) : (
-              <AlertDialogCancel className="h-8 px-3.5 text-sm" onClick={() => setAlertOpen(false)}>
-                닫기
-              </AlertDialogCancel>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

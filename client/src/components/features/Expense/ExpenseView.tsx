@@ -184,7 +184,7 @@ export default function ExpenseView() {
                     <TableColumnHeaderCell className="h-full">비고</TableColumnHeaderCell>
                   </TableColumnHeader>
                   <TableColumnBody className="h-full text-[13px]">
-                    <TableColumnCell className="h-full">{header.remark}</TableColumnCell>
+                    <TableColumnCell className="h-full whitespace-pre">{header.remark}</TableColumnCell>
                   </TableColumnBody>
                 </TableColumn>
               </div>
@@ -208,13 +208,13 @@ export default function ExpenseView() {
                 {items.map((item) => {
                   return (
                     <TableRow key={item.seq} className="[&_td]:text-[13px]">
-                      <TableCell className="text-left">{item.ei_title}</TableCell>
-                      <TableCell className="px-4 text-left">{formatDate(item.ei_pdate)}</TableCell>
+                      <TableCell>{item.ei_title}</TableCell>
+                      <TableCell className="px-4">{formatDate(item.ei_pdate)}</TableCell>
                       <TableCell className="text-right">{formatAmount(item.ei_amount)}원</TableCell>
                       <TableCell className="text-right">{item.ei_tax === 0 ? 0 : `${formatAmount(item.ei_tax)}원`}</TableCell>
                       <TableCell className="text-right">{formatAmount(item.ei_total)}원</TableCell>
                       {item.attachments && item.attachments.length > 0 ? (
-                        <TableCell className="text-left">
+                        <TableCell>
                           <ul>
                             {item.attachments.map((att, idx) => (
                               <li key={idx} className="overflow-hidden text-sm text-gray-800">
@@ -222,9 +222,9 @@ export default function ExpenseView() {
                                   href={`https://gbend.cafe24.com/uploads/nexpense/${att.ea_sname}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center gap-1">
+                                  className="flex items-center justify-center gap-1">
                                   <File className="size-3.5 shrink-0" />
-                                  <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap hover:underline">
+                                  <span className="overflow-hidden text-left text-ellipsis whitespace-nowrap hover:underline">
                                     {att.ea_fname}
                                   </span>
                                 </a>
@@ -233,9 +233,9 @@ export default function ExpenseView() {
                           </ul>
                         </TableCell>
                       ) : (
-                        <TableCell className="text-center">-</TableCell>
+                        <TableCell>-</TableCell>
                       )}
-                      <TableCell className="text-center">
+                      <TableCell>
                         {item.pro_id ? (
                           <Link to={`/expense/proposal/${item.pro_id}`} target="_blank" rel="noopener noreferrer">
                             <LinkIcon className="mx-auto size-4" />
@@ -260,7 +260,7 @@ export default function ExpenseView() {
             </Table>
           </div>
           <div className="mt-8 flex w-full items-center justify-between">
-            <Button type="button" variant="outline" size="sm" onClick={() => navigate(-1)}>
+            <Button type="button" variant="outline" size="sm" onClick={() => navigate('/expense')}>
               목록
             </Button>
 

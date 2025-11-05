@@ -66,14 +66,14 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
             <AlertDialogFooter>
               {dialog?.confirmText && (
                 <AlertDialogAction asChild>
-                  <Button onClick={handleConfirm} className="min-w-[80px]">
+                  <Button onClick={handleConfirm} className="h-9 min-w-[80px]">
                     {dialog.confirmText}
                   </Button>
                 </AlertDialogAction>
               )}
               {dialog?.cancelText && (
                 <AlertDialogCancel asChild>
-                  <Button variant="outline" onClick={handleCancel} className="min-w-[80px]">
+                  <Button variant="outline" onClick={handleCancel} className="h-9 min-w-[80px]">
                     {dialog.cancelText}
                   </Button>
                 </AlertDialogCancel>

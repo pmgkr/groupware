@@ -1,55 +1,53 @@
 import React from 'react';
 import { Button } from "@components/ui/button";
-import { MultiSelect } from "@components/multiselect/multi-select";
-import { Badge } from "@components/ui/badge";
-
-
-// 셀렉트 옵션 타입 정의
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
-interface SelectConfig {
-  id: string;
-  placeholder: string;
-  options: SelectOption[];
-  value?: string[];
-  autoSize?: boolean;
-  maxCount?: number;
-  searchable?: boolean;
-  hideSelectAll?: boolean;
-}
 
 interface ToolbarProps {
-  onNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
-  onView: (view: string) => void;
-  currentView: string;
   currentDate: Date;
-  selectConfigs: SelectConfig[];
-  onSelectChange: (selectId: string, value: string[]) => void;
-  onAddEvent: () => void;
-  formatWeekDisplay?: (date: Date) => string;
+  onDateChange: (newDate: Date) => void;
 }
 
 export default function Toolbar({ 
-  onNavigate, 
-  onView, 
-  currentView, 
   currentDate, 
-  selectConfigs, 
-  onSelectChange, 
-  onAddEvent,
-  formatWeekDisplay
+  onDateChange
 }: ToolbarProps) {
-  const formatDate = (date: Date) => {
-    if (formatWeekDisplay) {
-      return formatWeekDisplay(date);
+  // 날짜 네비게이션 핸들러
+  const handleNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
+    const newDate = new Date(currentDate);
+    switch (action) {
+      case 'PREV':
+        newDate.setDate(newDate.getDate() - 7); // 일주일 전으로
+        break;
+      case 'NEXT':
+        newDate.setDate(newDate.getDate() + 7); // 일주일 후로
+        break;
+      case 'TODAY':
+        newDate.setTime(Date.now());
+        break;
     }
-    return new Intl.DateTimeFormat('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-    }).format(date);
+    onDateChange(newDate);
+  };
+
+  // 주간 날짜 범위 표시 형식 (월요일 ~ 일요일)
+  const formatWeekDisplay = (date: Date) => {
+    // 해당 주의 월요일 구하기
+    const dayOfWeek = date.getDay();
+    const monday = new Date(date);
+    // 일요일(0)인 경우 -6일, 나머지는 -(dayOfWeek-1)일
+    const daysToMonday = dayOfWeek === 0 ? -6 : -(dayOfWeek - 1);
+    monday.setDate(date.getDate() + daysToMonday);
+    
+    // 해당 주의 일요일 구하기 (월요일 + 6일)
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    
+    const formatDate = (d: Date) => {
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      return `${year}년 ${month}월 ${day}일`;
+    };
+    
+    return `${formatDate(monday)} - ${formatDate(sunday)}`;
   };
 
   return (
@@ -57,7 +55,7 @@ export default function Toolbar({
       {/* 중앙: 현재 날짜 표시 */}
       <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5">
         <Button
-          onClick={() => onNavigate('PREV')}
+          onClick={() => handleNavigate('PREV')}
           variant="ghost"
           size="icon"
           className="p-2"
@@ -68,11 +66,11 @@ export default function Toolbar({
         </Button>
 
         <div className="text-xl font-semibold text-gray-950 px-2">
-          {formatDate(currentDate)}
+          {formatWeekDisplay(currentDate)}
         </div>
 
         <Button
-          onClick={() => onNavigate('NEXT')}
+          onClick={() => handleNavigate('NEXT')}
           variant="ghost"
           size="icon"
           className="p-2"
@@ -84,9 +82,9 @@ export default function Toolbar({
       </div>
 
       {/* 오른쪽: 뷰 변경 버튼들 */}
-      <div className="flex items-center align-self-end gap-1">
+      <div className="flex items-center ml-auto gap-1">
         <Button
-          onClick={() => onNavigate('TODAY')}
+          onClick={() => handleNavigate('TODAY')}
           variant="outline"
           size="sm"
         >
