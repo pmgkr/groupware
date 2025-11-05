@@ -7,7 +7,7 @@ export const managerRoutes: RouteObject = {
   handle: {
     title: '관리자',
     nav: [
-      { to: '/manager', label: '대시보드' },
+      { to: '/manager', label: '대시보드', end: true },
       { to: '/manager/working', label: '근태 관리' },
       { to: '/manager/expense', label: '비용 관리' },
       { to: '/manager/vacation', label: '휴가 관리' },
@@ -18,3 +18,5 @@ export const managerRoutes: RouteObject = {
     { path: 'working', element: <Working /> },
   ],
 };
+
+
