@@ -16,9 +16,10 @@ const isToday = (date: string) => {
 interface TableProps {
   data: WorkData[];
   onDataRefresh: () => Promise<void>;
+  readOnly?: boolean;
 }
 
-export default function Table({ data, onDataRefresh }: TableProps) {
+export default function Table({ data, onDataRefresh, readOnly = false }: TableProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -28,12 +29,12 @@ export default function Table({ data, onDataRefresh }: TableProps) {
       case "-": return "bg-gray-50 text-gray-400";
       case "일반근무": return "bg-gray-300 text-gray-900";
       case "연차": return "bg-primary-blue-150 text-primary-blue";
-      case "오전반차": return "bg-primary-pink-300 text-primary-pink-500";
-      case "오전반반차": return "bg-primary-purple-150 text-primary-purple-500";
-      case "오후반차": return "bg-primary-pink-300 text-primary-pink-500";
-      case "오후반반차": return "bg-primary-purple-150 text-primary-purple-500";
+      case "오전반차": return "bg-primary-purple-100 text-primary-pink-500";
+      case "오전반반차": return "bg-primary-purple-100 text-primary-purple-500";
+      case "오후반차": return "bg-primary-purple-100 text-primary-pink-500";
+      case "오후반반차": return "bg-primary-purple-100 text-primary-purple-500";
       case "외부근무": return "bg-primary-yellow-150 text-primary-orange-600";
-      case "재택근무": return "bg-primary-blue-100 text-primary-blue-600";
+      case "재택근무": return "bg-gray-300 text-gray-900";
       case "공가": return "bg-red-100 text-red-600";
       case "공휴일": return "bg-red-200 text-red-700";
       default: return "bg-primary-gray-100 text-primary-gray";
@@ -244,23 +245,25 @@ export default function Table({ data, onDataRefresh }: TableProps) {
               </td>
             ))}
           </tr>
-          <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
-              추가근무 신청
-            </td>
-            {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                <Button
-                  onClick={() => handleOvertimeClick(index)}
-                  disabled={false}
-                  variant={getOvertimeButtonVariant(row.overtimeStatus)}
-                  size="sm"
-                  className="text-base w-[80px]">
-                  {row.overtimeStatus}
-                </Button>
+          {!readOnly && (
+            <tr className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
+                추가근무 신청
               </td>
-            ))}
-          </tr>
+              {data.map((row, index) => (
+                <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                  <Button
+                    onClick={() => handleOvertimeClick(index)}
+                    disabled={false}
+                    variant={getOvertimeButtonVariant(row.overtimeStatus)}
+                    size="sm"
+                    className="text-base w-[80px]">
+                    {row.overtimeStatus}
+                  </Button>
+                </td>
+              ))}
+            </tr>
+          )}
         </tbody>
       </table>
       

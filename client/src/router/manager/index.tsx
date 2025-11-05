@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router';
 import Manager from '@/pages/Manager';
+import Working from '@/pages/Manager/working';
 
 export const managerRoutes: RouteObject = {
   path: 'manager', // → /manager
@@ -13,5 +14,7 @@ export const managerRoutes: RouteObject = {
       { to: '/manager/member', label: '구성원 관리' },
     ],
   },
-  children: [{ index: true, element: <Manager /> }],
+  children: [{ index: true, element: <Manager /> },
+    { path: 'working', element: <Working /> },
+  ],
 };
