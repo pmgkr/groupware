@@ -69,7 +69,7 @@ export default function OvertimeViewDialog({
   const handleCancelClick = () => {
     addDialog({
       title: '<span class="text-primary-blue-500 font-semibold">삭제 확인</span>',
-      message: '이 초과근무 신청을 정말 취소하시겠습니까?',
+      message: '이 추가근무 신청을 정말 취소하시겠습니까?',
       confirmText: '신청 취소하기',
       cancelText: '닫기',
       onConfirm: async () => {
@@ -84,7 +84,7 @@ export default function OvertimeViewDialog({
           console.log('알림 표시 시도...');
           addAlert({
             title: '삭제 완료',
-            message: '초과근무 신청이 성공적으로 취소되었습니다.',
+            message: '추가근무 신청이 성공적으로 취소되었습니다.',
             icon: <OctagonAlert />,
             duration: 3000,
           });
@@ -115,7 +115,7 @@ export default function OvertimeViewDialog({
   const handleApproveClick = () => {
     addDialog({
       title: '<span class="text-green-600 font-semibold">승인 확인</span>',
-      message: '이 초과근무 신청을 승인하시겠습니까?',
+      message: '이 추가근무 신청을 승인하시겠습니까?',
       confirmText: '승인하기',
       cancelText: '취소',
       onConfirm: async () => {
@@ -124,7 +124,7 @@ export default function OvertimeViewDialog({
             await onApprove();
             addAlert({
               title: '승인 완료',
-              message: '초과근무 신청이 승인되었습니다.',
+              message: '추가근무 신청이 승인되었습니다.',
               icon: <CheckCircle />,
               duration: 3000,
             });
@@ -163,7 +163,7 @@ export default function OvertimeViewDialog({
         await onReject(rejectReason);
         addAlert({
           title: '반려 완료',
-          message: '초과근무 신청이 반려되었습니다.',
+          message: '추가근무 신청이 반려되었습니다.',
           icon: <OctagonAlert />,
           duration: 3000,
         });
@@ -201,11 +201,11 @@ export default function OvertimeViewDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>초과근무 신청 내역</DialogTitle>
+          <DialogTitle>추가근무 신청 내역</DialogTitle>
           <DialogDescription>
             {selectedDay && (
               <>
-                {dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} {selectedDay.dayOfWeek}요일의 초과근무 신청 내역입니다.
+                {dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} {selectedDay.dayOfWeek}요일의 추가근무 신청 내역입니다.
               </>
             )}
           </DialogDescription>
@@ -276,7 +276,7 @@ export default function OvertimeViewDialog({
           {selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="overtime-hours">초과근무 시간</Label>
+                <Label htmlFor="overtime-hours">추가근무 시간</Label>
                 <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
                   <span className="text-base">{overtimeData.overtimeHours}시간</span>
                 </div>

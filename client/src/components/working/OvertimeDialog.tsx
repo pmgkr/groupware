@@ -14,7 +14,7 @@ interface OvertimeDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: OvertimeData) => void;
-  onCancel?: () => void; // 초과근무 취소 콜백
+  onCancel?: () => void; // 추가근무 취소 콜백
   selectedDay?: WorkData;
   selectedIndex?: number;
 }
@@ -95,10 +95,10 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
       }
     }
     
-    // 주말 또는 공휴일인 경우 초과근무 시간 및 보상 지급방식 검증
+    // 주말 또는 공휴일인 경우 추가근무 시간 및 보상 지급방식 검증
     if (selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType)) {
       if (!formData.overtimeHours) {
-        newErrors.overtimeHours = "초과근무 시간을 선택해주세요.";
+        newErrors.overtimeHours = "추가근무 시간을 선택해주세요.";
       }
       if (!formData.overtimeType) {
         newErrors.overtimeType = "보상 지급방식을 선택해주세요.";
@@ -173,7 +173,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
   // 다이얼로그가 열릴 때 상태 초기화 또는 기존 데이터 로드
   React.useEffect(() => {
     if (isOpen) {
-      // 기존 초과근무 데이터가 있는 경우 (승인대기, 승인완료 등)
+      // 기존 추가근무 데이터가 있는 경우 (승인대기, 승인완료 등)
       if (selectedDay?.overtimeData) {
         setFormData({
           overtimeHours: selectedDay.overtimeData.overtimeHours || "",
@@ -209,11 +209,11 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>초과근무 신청</DialogTitle>
+          <DialogTitle>추가근무 신청</DialogTitle>
           <DialogDescription>
             {selectedDay && (
               <>
-                {dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} {selectedDay.dayOfWeek}요일의 초과근무를 신청합니다.
+                {dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} {selectedDay.dayOfWeek}요일의 추가근무를 신청합니다.
               </>
             )}
           </DialogDescription>
