@@ -58,6 +58,7 @@ export interface OvertimeFormData {
   mealAllowance: string;
   transportationAllowance: string;
   overtimeHours: string;
+  overtimeMinutes: string;
   overtimeType: string;
   clientName: string;
   workDescription: string;
@@ -116,7 +117,11 @@ export const buildOvertimeApiParams = (
 
   // 주말 또는 공휴일인 경우: 초과근무 시간, 보상 지급방식
   if (isWeekendOrHol) {
-    apiParams.ot_hours = formData.overtimeHours;
+    // 시간과 분을 소수점 형태로 변환 (예: 2시간 30분 = "2.5")
+    const hours = parseInt(formData.overtimeHours) || 0;
+    const minutes = parseInt(formData.overtimeMinutes) || 0;
+    const totalHours = hours + (minutes / 60);
+    apiParams.ot_hours = totalHours.toString();
     apiParams.ot_reward = convertRewardType(formData.overtimeType);
     apiParams.ot_etime = '00:00:00';
     apiParams.ot_food = 'N';
