@@ -1,14 +1,37 @@
 import React from 'react';
 import { Button } from "@components/ui/button";
+import { MultiSelect } from "@components/multiselect/multi-select";
+
+
+// 셀렉트 옵션 타입 정의
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
+export interface SelectConfig {
+  id: string;
+  placeholder: string;
+  options: SelectOption[];
+  value?: string[];
+  autoSize?: boolean;
+  maxCount?: number;
+  searchable?: boolean;
+  hideSelectAll?: boolean;
+}
 
 interface ToolbarProps {
   currentDate: Date;
   onDateChange: (newDate: Date) => void;
+  selectConfigs?: SelectConfig[];
+  onSelectChange?: (id: string, value: string[]) => void;
 }
 
 export default function Toolbar({ 
   currentDate, 
-  onDateChange
+  onDateChange,
+  selectConfigs = [],
+  onSelectChange = () => {}
 }: ToolbarProps) {
   // 날짜 네비게이션 핸들러
   const handleNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
@@ -52,6 +75,28 @@ export default function Toolbar({
 
   return (
     <div className="w-full flex items-center justify-between mb-5 relative">
+      
+      {/* 왼쪽: 네비게이션 버튼들 */}
+      <div className="flex items-center gap-2">
+
+        {/* 동적 셀렉트 렌더링 */}
+        {selectConfigs.map((config) => (
+          <MultiSelect
+            key={config.id}
+            options={config.options}
+            onValueChange={(value) => onSelectChange(config.id, value)}
+            defaultValue={config.value || []}
+            placeholder={config.placeholder}
+            size="sm"
+            maxCount={config.maxCount}
+            searchable={config.searchable}
+            hideSelectAll={config.hideSelectAll}
+            autoSize={config.autoSize}
+            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+          />
+        ))}
+      </div>
+
       {/* 중앙: 현재 날짜 표시 */}
       <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5">
         <Button

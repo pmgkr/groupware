@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
 import WorkingList, { type WorkingListItem, type DayWorkInfo } from '@components/working/list';
-import Toolbar from '@components/working/toolbar';
+import Toolbar, { type SelectConfig } from '@components/working/toolbar';
 import { workingApi } from '@/api/working';
 import { getMemberList } from '@/api/common/team';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,6 +9,7 @@ import type { WorkData } from '@/types/working';
 import { getWeekStartDate, getWeekEndDate } from '@/utils/dateHelper';
 import { calculateWeeklyStats } from '@/utils/workingStatsHelper';
 import { convertApiDataToWorkData } from '@/services/workingDataConverter';
+import { getTeams, type TeamDto } from '@/api/teams';
 
 export default function ManagerWorking() {
   const { user } = useAuth();
@@ -16,15 +17,61 @@ export default function ManagerWorking() {
   const [workingList, setWorkingList] = useState<WorkingListItem[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // 필터 상태
+  const [departments, setDepartments] = useState<TeamDto[]>([]); // 국 목록
+  const [selectedDepartment, setSelectedDepartment] = useState<string[]>([]); // 선택된 국
+  const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]); // 선택된 국+하위 팀들의 ID 목록
+
   // 현재 주의 시작일 계산
   const weekStartDate = useMemo(() => getWeekStartDate(currentDate), [currentDate]);
 
+  // 국 목록 로드 (tlevel=1)
+  const loadDepartments = async () => {
+    try {
+      const depts = await getTeams({ tlevel: 1 });
+      setDepartments(depts);
+    } catch (error) {
+      console.error('국 목록 로드 실패:', error);
+      setDepartments([]);
+    }
+  };
+
+  // 국 선택 시 해당 국 + 하위 팀 목록 로드
+  const loadDepartmentWithTeams = async (departmentId: number) => {
+    try {
+      const teamList = await getTeams({ parent_id: departmentId });
+      // 국 ID + 하위 팀 ID들을 모두 배열에 담기
+      const teamIds = [departmentId, ...teamList.map(team => team.team_id)];
+      setSelectedTeamIds(teamIds);
+      console.log(`📋 국 ${departmentId} 선택 → 조회할 팀 ID 목록:`, teamIds);
+    } catch (error) {
+      console.error('팀 목록 로드 실패:', error);
+      setSelectedTeamIds([departmentId]); // 실패해도 국 ID는 포함
+    }
+  };
+
+  // 셀렉트 변경 핸들러
+  const handleSelectChange = (id: string, value: string[]) => {
+    if (id === 'department') {
+      setSelectedDepartment(value);
+      
+      // 국이 선택된 경우 해당 국 + 하위 팀 목록 로드
+      if (value.length > 0) {
+        const deptId = parseInt(value[0]);
+        loadDepartmentWithTeams(deptId);
+      } else {
+        setSelectedTeamIds([]);
+      }
+    }
+  };
+
+  // 초기 국 목록 로드
+  useEffect(() => {
+    loadDepartments();
+  }, []);
+
   // 팀원들의 근태 데이터 가져오기
   const loadTeamWorkLogs = async () => {
-    if (!user?.team_id) {
-      return;
-    }
-
     setLoading(true);
     try {
       const startDate = weekStartDate;
@@ -33,8 +80,31 @@ export default function ManagerWorking() {
       const sdate = dayjs(startDate).format('YYYY-MM-DD');
       const edate = dayjs(endDate).format('YYYY-MM-DD');
 
-      // 1. 같은 팀 멤버 목록 가져오기 (team_id로 필터링)
-      const teamMembers = await getMemberList(user.team_id);
+      // 1. 멤버 목록 가져오기
+      let allTeamMembers: any[] = [];
+      
+      if (selectedTeamIds.length > 0) {
+        // 국이 선택된 경우: 국 + 하위 팀들의 모든 멤버 가져오기
+        console.log('📋 선택된 팀 ID 목록으로 멤버 조회:', selectedTeamIds);
+        const memberPromises = selectedTeamIds.map(teamId => getMemberList(teamId));
+        const memberResults = await Promise.all(memberPromises);
+        allTeamMembers = memberResults.flat();
+        
+        // 중복 제거 (user_id 기준)
+        const uniqueMembers = allTeamMembers.filter((member, index, self) =>
+          index === self.findIndex(m => m.user_id === member.user_id)
+        );
+        allTeamMembers = uniqueMembers;
+      } else if (user?.team_id) {
+        // 필터 미선택: 사용자의 팀 데이터
+        allTeamMembers = await getMemberList(user.team_id);
+      } else {
+        setWorkingList([]);
+        setLoading(false);
+        return;
+      }
+      
+      const teamMembers = allTeamMembers;
       
       console.log('👥 같은 팀 멤버:', teamMembers.length, teamMembers);
 
@@ -169,16 +239,43 @@ export default function ManagerWorking() {
     }
   };
 
-  // currentDate가 변경될 때 데이터 로드
+  // currentDate 또는 필터가 변경될 때 데이터 로드
   useEffect(() => {
-    if (user?.team_id) {
+    if (user?.team_id || selectedTeamIds.length > 0) {
       loadTeamWorkLogs();
     }
-  }, [currentDate, weekStartDate, user?.team_id]);
+  }, [currentDate, weekStartDate, user?.team_id, selectedTeamIds]);
+
+  // 셀렉트 옵션 설정
+  const selectConfigs: SelectConfig[] = useMemo(() => {
+    const configs: SelectConfig[] = [];
+
+    // 국 필터만 표시
+    configs.push({
+      id: 'department',
+      placeholder: '국 선택',
+      options: departments.map(dept => ({
+        value: String(dept.team_id),
+        label: dept.team_name
+      })),
+      value: selectedDepartment,
+      maxCount: 1,
+      searchable: true,
+      hideSelectAll: true,
+      autoSize: true,
+    });
+
+    return configs;
+  }, [departments, selectedDepartment]);
 
   return (
     <div>
-      <Toolbar currentDate={currentDate} onDateChange={setCurrentDate} />
+      <Toolbar 
+        currentDate={currentDate} 
+        onDateChange={setCurrentDate} 
+        selectConfigs={selectConfigs}
+        onSelectChange={handleSelectChange}
+      />
       <WorkingList
         data={workingList}
         loading={loading}
