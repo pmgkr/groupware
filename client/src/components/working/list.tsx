@@ -369,16 +369,7 @@ export default function WorkingList({
               totalHours: 0,
               totalMinutes: 0,
               overtimeStatus: (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "반려됨",
-              overtimeData: {
-                expectedEndTime: "19",
-                expectedEndMinute: "00",
-                mealAllowance: "yes",
-                transportationAllowance: "yes",
-                overtimeHours: "2",
-                overtimeType: "special_vacation",
-                clientName: "클라이언트명",
-                workDescription: "작업 내용"
-              }
+              overtimeData: undefined
             }}
           />
         );
