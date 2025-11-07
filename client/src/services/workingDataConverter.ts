@@ -85,12 +85,25 @@ const formatTime = (time: string | null): string => {
  */
 const extractOvertimeData = (overtime: any) => {
   const time = overtime.ot_etime ? extractTimeFromISO(overtime.ot_etime.toString()) : { hour: '', minute: '' };
+  
+  // ot_hours가 소수점 형태(예: "2.5")인 경우 시간과 분으로 분리
+  let overtimeHours = '';
+  let overtimeMinutes = '';
+  if (overtime.ot_hours) {
+    const totalHours = parseFloat(overtime.ot_hours);
+    if (!isNaN(totalHours)) {
+      overtimeHours = Math.floor(totalHours).toString();
+      overtimeMinutes = Math.round((totalHours - Math.floor(totalHours)) * 60).toString();
+    }
+  }
+  
   return {
     expectedEndTime: time.hour,
     expectedEndMinute: time.minute,
     mealAllowance: overtime.ot_food === 'Y' ? 'yes' : overtime.ot_food === 'N' ? 'no' : '',
     transportationAllowance: overtime.ot_trans === 'Y' ? 'yes' : overtime.ot_trans === 'N' ? 'no' : '',
-    overtimeHours: overtime.ot_hours || '',
+    overtimeHours: overtimeHours,
+    overtimeMinutes: overtimeMinutes,
     overtimeType: overtime.ot_reward === 'special' ? 'special_vacation' : 
                   overtime.ot_reward === 'annual' ? 'compensation_vacation' : 
                   overtime.ot_reward === 'pay' ? 'event' : '',
@@ -118,7 +131,47 @@ const selectPriorityVacation = (vacationsForDate: any[]): any | null => {
  * 근무시간 계산
  */
 const calculateWorkHours = (wlog: any, overtime: any) => {
-  const totalWorkMinutes = (wlog.wmin || 0) - 60; // 점심시간 1시간 제외
+  // 출근 시간과 퇴근 시간 파싱
+  const startTime = wlog.stime; // "HH:mm:ss" 형식
+  const endTime = wlog.etime;   // "HH:mm:ss" 형식
+  
+  // 시간을 분 단위로 변환하는 함수
+  const timeToMinutes = (timeStr: string): number => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+  
+  let startMinutes = timeToMinutes(startTime);
+  const endMinutes = timeToMinutes(endTime);
+  
+  // 9시 30분 기준 (570분)
+  const workStartThreshold = 9 * 60 + 30; // 570분
+  
+  // 출근 시간이 9시 30분 이전이면 9시 30분으로 조정
+  if (startMinutes < workStartThreshold) {
+    startMinutes = workStartThreshold;
+  }
+  
+  // 점심시간 정의 (12시 ~ 13시)
+  const lunchStart = 12 * 60; // 720분 (12:00)
+  const lunchEnd = 13 * 60;   // 780분 (13:00)
+  
+  // 총 근무 시간 계산 (분 단위)
+  let totalWorkMinutes = endMinutes - startMinutes;
+  
+  // 점심시간 제외 계산
+  // 근무 시간이 점심시간(12시-13시)과 겹치는 경우 해당 시간을 제외
+  let lunchMinutesToDeduct = 0;
+  
+  if (startMinutes < lunchEnd && endMinutes > lunchStart) {
+    // 근무 시간과 점심시간이 겹치는 경우
+    const overlapStart = Math.max(startMinutes, lunchStart);
+    const overlapEnd = Math.min(endMinutes, lunchEnd);
+    lunchMinutesToDeduct = overlapEnd - overlapStart;
+  }
+  
+  totalWorkMinutes = Math.max(0, totalWorkMinutes - lunchMinutesToDeduct);
+  
   const hours = Math.floor(totalWorkMinutes / 60);
   const minutes = totalWorkMinutes % 60;
   

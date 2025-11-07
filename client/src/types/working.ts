@@ -21,6 +21,7 @@ export interface WorkData {
     mealAllowance: string;
     transportationAllowance: string;
     overtimeHours: string;
+    overtimeMinutes: string;
     overtimeType: string;
     clientName: string;
     workDescription: string;

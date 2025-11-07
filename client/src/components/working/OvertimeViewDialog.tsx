@@ -192,6 +192,7 @@ export default function OvertimeViewDialog({
     mealAllowance: "",
     transportationAllowance: "",
     overtimeHours: "",
+    overtimeMinutes: "",
     overtimeType: "",
     clientName: "",
     workDescription: ""
@@ -278,7 +279,7 @@ export default function OvertimeViewDialog({
               <div className="space-y-2">
                 <Label htmlFor="overtime-hours">추가근무 시간</Label>
                 <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
-                  <span className="text-base">{overtimeData.overtimeHours}시간</span>
+                  <span className="text-base">{overtimeData.overtimeHours}시간 {overtimeData.overtimeMinutes}분</span>
                 </div>
               </div>
 
