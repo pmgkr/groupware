@@ -1,5 +1,5 @@
 // src/utils/date.ts
-export function formatKST(dateString: string | Date, withOutTime = false): string {
+export function formatKST(dateString?: string | Date | null, withOutTime = false): string {
   if (!dateString) return '';
 
   const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
@@ -17,6 +17,7 @@ export function formatKST(dateString: string | Date, withOutTime = false): strin
 
 /* 
 <사용 예시 - true>
-const [selectDate, setSelectDate] = useState(formatKST(new Date(), true));
+const [selectDate, setSelectDate] = useState(formatKST(new Date(), true)); -> 2025-11-15 12:22:30
+ <span>{formatKST(user?.birth_date)}</span> -> 2025-11-15
 
 */

@@ -40,6 +40,7 @@ function PaginationLink({ className, isActive, size = 'icon', ...props }: Pagina
           variant: isActive ? 'outline' : 'ghost',
           size,
         }),
+        'flex items-center justify-center',
         // 커스텀 스타일 추가
         isActive
           ? '[&]:border-primary-blue-500 [&]:bg-primary-blue-500 [&]:hover:text-primary-blue-500 text-white hover:bg-white'
@@ -75,7 +76,7 @@ function PaginationNext({ className, ...props }: React.ComponentProps<typeof Pag
       className={cn('gap-1 px-2.5 text-gray-950 sm:pr-2.5', className)}
       {...props}>
       <span className="hidden sm:block"></span>
-      <ChevronRightIcon />
+      <ChevronRightIcon className="align-middle" />
     </PaginationLink>
   );
 }
@@ -99,7 +100,7 @@ function PaginationLast({ className, ...props }: React.ComponentProps<typeof Pag
   return (
     <PaginationLink aria-label="Go to last page" size="default" className={cn('gap-1 px-2.5 text-gray-950', className)} {...props}>
       <span className="hidden sm:block"></span>
-      <ChevronsRightIcon />
+      <ChevronsRightIcon className="align-middle" />
     </PaginationLink>
   );
 }
