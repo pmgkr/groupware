@@ -88,6 +88,21 @@ export interface OvertimeListResponse {
   pages: number;
 }
 
+// 관리자의 팀 목록 조회 응답
+export interface MyTeamItem {
+  seq: number;
+  manager_id: string;
+  manager_name: string;
+  team_id: number;
+  team_name: string;
+  parent_id?: number;
+  level?: number;
+}
+
+export interface MyTeamListResponse {
+  items: MyTeamItem[];
+}
+
 // 근태 로그 API
 export const workingApi = {
   // 근태 로그 조회
@@ -170,6 +185,12 @@ export const workingApi = {
   // 관리자 - 초과근무 상세 조회 (로그 포함)
   getManagerOvertimeDetail: async (id: number): Promise<any> => {
     const response = await http<any>(`/manager/overtime/info/${id}`);
+    return response;
+  },
+
+  // 관리자 - 나의 팀 목록 조회
+  getMyTeamList: async (): Promise<MyTeamListResponse> => {
+    const response = await http<MyTeamListResponse>('/manager/myteam');
     return response;
   },
 };
