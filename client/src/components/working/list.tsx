@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { Button } from '@components/ui/button';
 import { Checkbox } from '@components/ui/checkbox';
@@ -59,6 +59,7 @@ export default function WorkingList({
   // 추가근무 다이얼로그 state
   const [isOvertimeDialogOpen, setIsOvertimeDialogOpen] = useState(false);
   const [selectedOvertime, setSelectedOvertime] = useState<{ userId: string; dayKey: string; overtimeId: string } | null>(null);
+  const [overtimeDetailData, setOvertimeDetailData] = useState<any>(null);
   
   // 관리자 여부
   const isManager = user?.user_level === 'manager' || user?.user_level === 'admin';
@@ -93,15 +94,24 @@ export default function WorkingList({
   };
 
   // 추가근무 클릭 핸들러
-  const handleOvertimeClick = (userId: string, dayKey: string, overtimeId: string) => {
+  const handleOvertimeClick = async (userId: string, dayKey: string, overtimeId: string) => {
     setSelectedOvertime({ userId, dayKey, overtimeId });
     setIsOvertimeDialogOpen(true);
+    
+    // 초과근무 상세 정보 조회
+    try {
+      const detail = await workingApi.getManagerOvertimeDetail(parseInt(overtimeId));
+      setOvertimeDetailData(detail);
+    } catch (error) {
+      console.error('초과근무 상세 조회 실패:', error);
+    }
   };
 
   // 추가근무 다이얼로그 닫기
   const handleCloseOvertimeDialog = () => {
     setIsOvertimeDialogOpen(false);
     setSelectedOvertime(null);
+    setOvertimeDetailData(null);
   };
 
   // 추가근무 승인 핸들러
@@ -341,15 +351,54 @@ export default function WorkingList({
         const selectedDayInfo = selectedItem?.[selectedOvertime.dayKey as keyof Pick<WorkingListItem, 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'>] as DayWorkInfo | undefined;
         const isOwnRequest = selectedOvertime.userId === user?.user_id;
         
+        // API 응답 데이터를 모달 형식으로 변환
+        const convertOvertimeData = () => {
+          if (!overtimeDetailData?.info) return undefined;
+          
+          const info = overtimeDetailData.info;
+          
+          // ot_etime에서 시/분 추출 (타임존 변환 없이)
+          let expectedHour = "";
+          let expectedMinute = "";
+          if (info.ot_etime) {
+            const timeStr = info.ot_etime.includes('T') ? info.ot_etime.split('T')[1] : info.ot_etime;
+            const timeParts = timeStr.split(':');
+            expectedHour = timeParts[0];
+            expectedMinute = timeParts[1];
+          }
+          
+          const hours = info.ot_hours ? parseFloat(info.ot_hours) : 0;
+          
+          return {
+            expectedEndTime: expectedHour,
+            expectedEndMinute: expectedMinute,
+            mealAllowance: info.ot_food === 'Y' ? 'yes' : 'no',
+            transportationAllowance: info.ot_trans === 'Y' ? 'yes' : 'no',
+            overtimeHours: String(Math.floor(hours)),
+            overtimeMinutes: String(Math.round((hours % 1) * 60)),
+            overtimeType: info.ot_reward === 'special' ? 'special_vacation' : 
+                         info.ot_reward === 'annual' ? 'compensation_vacation' : 'event',
+            clientName: info.ot_client || "",
+            workDescription: info.ot_description || ""
+          };
+        };
+        
+        // 상태 매핑
+        const mapStatus = (status: string) => {
+          if (status === 'H') return '승인대기';
+          if (status === 'T') return '승인완료';
+          if (status === 'N') return '반려됨';
+          return '신청하기';
+        };
+        
         return (
           <OvertimeViewDialog
             isOpen={isOvertimeDialogOpen}
             onClose={handleCloseOvertimeDialog}
             onCancel={async () => {
-              // TODO: 추가근무 취소 API 호출
               if (selectedOvertime.overtimeId) {
                 await workingApi.cancelOvertime(parseInt(selectedOvertime.overtimeId));
-                window.location.reload(); // 임시로 새로고침
+                window.location.reload();
               }
             }}
             onApprove={isManager && !isOwnRequest ? handleApproveOvertime : undefined}
@@ -368,8 +417,9 @@ export default function WorkingList({
               overtimeMinutes: 0,
               totalHours: 0,
               totalMinutes: 0,
-              overtimeStatus: (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "반려됨",
-              overtimeData: undefined
+              overtimeStatus: overtimeDetailData?.info ? mapStatus(overtimeDetailData.info.ot_status) : 
+                            (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "반려됨",
+              overtimeData: convertOvertimeData()
             }}
           />
         );

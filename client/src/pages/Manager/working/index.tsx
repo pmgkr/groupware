@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
 import WorkingList, { type WorkingListItem, type DayWorkInfo } from '@components/working/list';
 import Toolbar, { type SelectConfig } from '@components/working/toolbar';
-import { workingApi } from '@/api/working';
+import { workingApi, type OvertimeListResponse } from '@/api/working';
 import { getMemberList } from '@/api/common/team';
 import { useAuth } from '@/contexts/AuthContext';
 import type { WorkData } from '@/types/working';
@@ -43,7 +43,6 @@ export default function ManagerWorking() {
       // 국 ID + 하위 팀 ID들을 모두 배열에 담기
       const teamIds = [departmentId, ...teamList.map(team => team.team_id)];
       setSelectedTeamIds(teamIds);
-      console.log(`📋 국 ${departmentId} 선택 → 조회할 팀 ID 목록:`, teamIds);
     } catch (error) {
       console.error('팀 목록 로드 실패:', error);
       setSelectedTeamIds([departmentId]); // 실패해도 국 ID는 포함
@@ -80,45 +79,48 @@ export default function ManagerWorking() {
       const sdate = dayjs(startDate).format('YYYY-MM-DD');
       const edate = dayjs(endDate).format('YYYY-MM-DD');
 
-      // 1. 멤버 목록 가져오기
-      let allTeamMembers: any[] = [];
+      // 1. 멤버 목록 가져오기 (team_id 포함)
+      const teamIdsToQuery = selectedTeamIds.length > 0 ? selectedTeamIds : (user?.team_id ? [user.team_id] : []);
       
-      if (selectedTeamIds.length > 0) {
-        // 국이 선택된 경우: 국 + 하위 팀들의 모든 멤버 가져오기
-        console.log('📋 선택된 팀 ID 목록으로 멤버 조회:', selectedTeamIds);
-        const memberPromises = selectedTeamIds.map(teamId => getMemberList(teamId));
-        const memberResults = await Promise.all(memberPromises);
-        allTeamMembers = memberResults.flat();
-        
-        // 중복 제거 (user_id 기준)
-        const uniqueMembers = allTeamMembers.filter((member, index, self) =>
-          index === self.findIndex(m => m.user_id === member.user_id)
-        );
-        allTeamMembers = uniqueMembers;
-      } else if (user?.team_id) {
-        // 필터 미선택: 사용자의 팀 데이터
-        allTeamMembers = await getMemberList(user.team_id);
-      } else {
+      if (teamIdsToQuery.length === 0) {
         setWorkingList([]);
         setLoading(false);
         return;
       }
-      
-      const teamMembers = allTeamMembers;
-      
-      console.log('👥 같은 팀 멤버:', teamMembers.length, teamMembers);
 
-      // 2. 먼저 전체 초과근무 목록을 가져와보기 (user_id 파라미터 없이)
-      console.log('🔥 전체 초과근무 목록 조회 시도 (파라미터 없이)');
-      const allOvertimeResponse = await workingApi.getOvertimeList({
-        page: 1,
-        size: 1000
+      const memberPromises = teamIdsToQuery.map(async (teamId) => {
+        const members = await getMemberList(teamId);
+        return members.map(member => ({ ...member, team_id: member.team_id || teamId }));
       });
-      console.log('🔥 전체 초과근무 응답:', {
-        total: allOvertimeResponse?.total || 0,
-        items_count: allOvertimeResponse?.items?.length || 0,
-        items: allOvertimeResponse?.items
-      });
+      const memberResults = await Promise.all(memberPromises);
+      const allTeamMembers = memberResults.flat();
+      
+      // 중복 제거
+      const teamMembers = allTeamMembers.filter((member, index, self) =>
+        index === self.findIndex(m => m.user_id === member.user_id)
+      );
+
+      // 2. 초과근무 목록 조회 (team_id로)
+      let allOvertimeResponse: OvertimeListResponse = { items: [], total: 0, page: 1, size: 1000, pages: 0 };
+      
+      try {
+        const overtimePromises = teamIdsToQuery.map(teamId => 
+          workingApi.getManagerOvertimeList({ team_id: teamId, page: 1, size: 1000 })
+            .catch(() => ({ items: [], total: 0, page: 1, size: 1000, pages: 0 }))
+        );
+        const overtimeResults = await Promise.all(overtimePromises);
+        const allItems = overtimeResults.flatMap(result => result.items || []);
+        
+        allOvertimeResponse = {
+          items: allItems,
+          total: allItems.length,
+          page: 1,
+          size: 1000,
+          pages: 1
+        };
+      } catch (error) {
+        console.error('초과근무 조회 실패:', error);
+      }
 
       // 3. 각 팀원별로 근태 데이터 조회
       const transformedData: WorkingListItem[] = [];
@@ -137,8 +139,6 @@ export default function ManagerWorking() {
             ot => ot.user_id === member.user_id
           ) || [];
           
-          console.log(`🎯 ${member.user_name}(${member.user_id})의 초과근무:`, memberOvertimes.length, '건', memberOvertimes);
-          
           // convertApiDataToWorkData로 주간 데이터 생성
           const userWorkData = await convertApiDataToWorkData(
             workLogResponse.wlog || [],
@@ -153,22 +153,9 @@ export default function ManagerWorking() {
 
         // 요일별 근무시간 추출
         const formatDayTime = (dayData: WorkData): DayWorkInfo => {
-          // 추가근무 신청 여부 확인 (모든 경우에 체크)
           const hasOvertime = dayData.overtimeStatus !== '신청하기';
           const overtimeId = dayData.overtimeId?.toString();
           const overtimeStatus = dayData.overtimeStatus;
-          
-          // 디버깅: 추가근무 데이터 확인
-          if (hasOvertime) {
-            console.log('📋 추가근무 발견:', {
-              date: dayData.date,
-              dayOfWeek: dayData.dayOfWeek,
-              overtimeStatus,
-              overtimeId,
-              workType: dayData.workType,
-              startTime: dayData.startTime
-            });
-          }
           
           // 근무 타입이 없으면 데이터 없음
           if (dayData.workType === '-') {
@@ -229,7 +216,6 @@ export default function ManagerWorking() {
         }
       }
 
-      console.log('✅ 최종 데이터:', transformedData);
       setWorkingList(transformedData);
     } catch (error) {
       console.error('❌ 팀원 근태 로그 로드 실패:', error);

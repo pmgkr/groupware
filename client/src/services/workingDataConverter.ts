@@ -227,25 +227,7 @@ export const convertApiDataToWorkData = async (
     const vacationsForDate = vacations.filter((vac: any) => vac.tdate === dateString);
     const overtime = overtimes.find((ot: any) => {
       const otDate = dayjs(ot.ot_date).format('YYYY-MM-DD');
-      const match = otDate === dateString && ot.user_id === userId && ot.ot_status !== 'N';
-      
-      if (overtimes.length > 0 && i === 0) {
-        console.log('🔍 초과근무 매칭 디버깅:', {
-          dateString,
-          userId,
-          totalOvertimes: overtimes.length,
-          overtimes: overtimes.map((o: any) => ({
-            id: o.id,
-            user_id: o.user_id,
-            ot_date: o.ot_date,
-            formatted_ot_date: dayjs(o.ot_date).format('YYYY-MM-DD'),
-            ot_status: o.ot_status,
-            match: dayjs(o.ot_date).format('YYYY-MM-DD') === dateString && o.user_id === userId
-          }))
-        });
-      }
-      
-      return match;
+      return otDate === dateString && ot.user_id === userId && ot.ot_status !== 'N';
     });
     
     // 우선순위 vacation 선택

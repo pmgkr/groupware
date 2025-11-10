@@ -132,17 +132,18 @@ export const workingApi = {
 
   // 초과근무 승인 (관리자)
   approveOvertime: async (id: number): Promise<any> => {
-    const response = await http(`/user/overtime/approve/${id}`, {
+    const response = await http('/manager/overtime/confirm', {
       method: 'POST',
+      body: JSON.stringify({ ot_seq: id }),
     });
     return response;
   },
 
   // 초과근무 반려 (관리자)
   rejectOvertime: async (id: number, reason: string): Promise<any> => {
-    const response = await http(`/user/overtime/reject/${id}`, {
+    const response = await http('/manager/overtime/reject', {
       method: 'POST',
-      body: JSON.stringify({ reason }),
+      body: JSON.stringify({ ot_seq: id, reason }),
     });
     return response;
   },
@@ -153,7 +154,7 @@ export const workingApi = {
     return response;
   },
 
-  // 관리자용 팀원 초과근무 목록 조회
+  // 관리자 - 팀원 초과근무 목록 조회
   getManagerOvertimeList: async (params?: ManagerOvertimeListParams): Promise<OvertimeListResponse> => {
     const queryParams = new URLSearchParams();
     
@@ -163,6 +164,12 @@ export const workingApi = {
     if (params?.flag) queryParams.append('flag', params.flag);
 
     const response = await http<OvertimeListResponse>(`/manager/overtime/list?${queryParams.toString()}`);
+    return response;
+  },
+
+  // 관리자 - 초과근무 상세 조회 (로그 포함)
+  getManagerOvertimeDetail: async (id: number): Promise<any> => {
+    const response = await http<any>(`/manager/overtime/info/${id}`);
     return response;
   },
 };
