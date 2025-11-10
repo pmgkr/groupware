@@ -51,6 +51,14 @@ export interface OvertimeListParams {
   user_id?: string;
 }
 
+// 관리자 초과근무 목록 조회 파라미터
+export interface ManagerOvertimeListParams {
+  team_id?: number;
+  page?: number;
+  size?: number;
+  flag?: string;  // ot_status (H: 승인대기, T: 승인완료, N: 반려됨)
+}
+
 // 초과근무 항목
 export interface OvertimeItem {
   id: number;
@@ -142,6 +150,19 @@ export const workingApi = {
   // 초과근무 상세 조회
   getOvertimeDetail: async (id: number): Promise<OvertimeItem> => {
     const response = await http<OvertimeItem>(`/user/overtime/${id}`);
+    return response;
+  },
+
+  // 관리자용 팀원 초과근무 목록 조회
+  getManagerOvertimeList: async (params?: ManagerOvertimeListParams): Promise<OvertimeListResponse> => {
+    const queryParams = new URLSearchParams();
+    
+    if (params?.team_id) queryParams.append('team_id', params.team_id.toString());
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.size) queryParams.append('size', params.size.toString());
+    if (params?.flag) queryParams.append('flag', params.flag);
+
+    const response = await http<OvertimeListResponse>(`/manager/overtime/list?${queryParams.toString()}`);
     return response;
   },
 };
