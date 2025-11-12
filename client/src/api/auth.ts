@@ -20,6 +20,7 @@ export type UserDTO = {
   user_name?: string;
   user_name_en?: string;
   team_id?: number | null;
+  team_name?: number | null;
   phone?: string | null;
   job_role?: string | null;
   birth_date?: string | null;
@@ -27,6 +28,9 @@ export type UserDTO = {
   profile_image?: string | null;
   user_level?: 'staff' | 'user' | 'manager' | 'admin';
   user_status?: 'active' | 'inactive' | 'suspended';
+  branch?: string | null;
+  address?: string | null;
+  emergency_phone?: string | null;
 };
 
 // Login 테이블 조회 API

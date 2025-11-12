@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useEffect, useState } from 'react';
 import { Edit, Delete, Download } from '@/assets/images/icons';
 import { BookForm, type BookFormData } from './BookForm';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 import { completeBook, deleteBook, getBookWishList, updateBook, type Book } from '@/api';
@@ -345,7 +345,38 @@ export default function BookWish() {
           <DialogContent aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle className="mb-3">도서 신청</DialogTitle>
+              <DialogDescription>중복으로 구매가 되지 않도록 도서목록 검색 후 신청 부탁드립니다.</DialogDescription>
             </DialogHeader>
+            <div className="text-sm text-gray-800">
+              <div className="">
+                <div className="mb-2 w-[43%]">
+                  <h2 className="mb-1 font-bold">▶ 온라인 도서 신청 </h2>
+                  <p>
+                    - 신청기간 : 매월 말일 까지 <br />- 제공기간 : 익월 5일 이내
+                  </p>
+                </div>
+                <div className="mb-2 w-[57%]">
+                  <h2 className="mb-1 font-bold">▶ 오프라인 도서 신청 </h2>
+                  <p>
+                    1. 오프라인에서 도서 구매
+                    <br />
+                    2. 구매한 도서를 총무에게 제출 후 PMG 도서 도장 받기
+                    <br />
+                    3. 개별적으로 그룹웨어 일반 비용 청구
+                    <br />
+                    4. 도서 비용 지급
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="mb-1 font-bold">※ 주의사항 </h2>
+                <p>
+                  - 온라인, 오프라인 중 1인 3만원 이내 도서 구매 가능
+                  <br />- 구매 전, 온라인 도서 신청 페이지에서 중복 체크 필수
+                </p>
+              </div>
+            </div>
             <BookForm form={form} onChange={handleChange} mode="apply" />
             <DialogFooter className="mt-5">
               <Button variant="outline" onClick={() => setOpen(false)}>
