@@ -73,26 +73,17 @@ export default function OvertimeViewDialog({
       confirmText: '신청 취소하기',
       cancelText: '닫기',
       onConfirm: async () => {
-        console.log('=== OvertimeViewDialog onConfirm 호출됨 ===');
         try {
-          // 취소 콜백 호출
-          console.log('onCancel 호출 시작');
           await onCancel();
-          console.log('onCancel 호출 성공');
           
-          // 성공 알림 먼저 표시
-          console.log('알림 표시 시도...');
           addAlert({
             title: '삭제 완료',
             message: '추가근무 신청이 성공적으로 취소되었습니다.',
             icon: <OctagonAlert />,
             duration: 3000,
           });
-          console.log('알림 표시 완료');
           
-          // 알림 표시 후 다이얼로그 닫기
           setTimeout(() => {
-            console.log('다이얼로그 닫기');
             onClose();
           }, 300);
           
@@ -114,7 +105,7 @@ export default function OvertimeViewDialog({
   // 승인 확인 다이얼로그
   const handleApproveClick = () => {
     addDialog({
-      title: '<span class="text-green-600 font-semibold">승인 확인</span>',
+      title: '<span class="text-primary-blue font-semibold">승인 확인</span>',
       message: '이 추가근무 신청을 승인하시겠습니까?',
       confirmText: '승인하기',
       cancelText: '취소',
@@ -217,17 +208,13 @@ export default function OvertimeViewDialog({
             <>
               <div className="space-y-2">
                 <Label htmlFor="expected-end-time">예상 퇴근 시간</Label>
-                <div className="flex gap-2">
-                  <div className="flex-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
-                    <span className="text-base">
-                      {overtimeData.expectedEndTime}시
-                    </span>
-                  </div>
-                  <div className="flex-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
-                    <span className="text-base">
-                      {overtimeData.expectedEndMinute}분
-                    </span>
-                  </div>
+                <div className="flex-1 flex gap-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
+                  <span className="text-base">
+                    {overtimeData.expectedEndTime}시
+                  </span>
+                  <span className="text-base">
+                    {overtimeData.expectedEndMinute}분
+                  </span>
                 </div>
               </div>
 
@@ -399,10 +386,10 @@ export default function OvertimeViewDialog({
               <>
                 {!showRejectInput ? (
                   <>
-                    <Button variant="default" onClick={handleApproveClick} className="bg-green-600 hover:bg-green-700">
+                    <Button variant="default" onClick={handleApproveClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue">
                       승인하기
                     </Button>
-                    <Button variant="destructive" onClick={() => setShowRejectInput(true)}>
+                    <Button variant="destructive" onClick={() => setShowRejectInput(true)} className="bg-destructive hover:bg-destructive">
                       반려하기
                     </Button>
                   </>
