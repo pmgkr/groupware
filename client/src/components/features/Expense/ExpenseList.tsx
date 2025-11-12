@@ -346,7 +346,7 @@ export default function ExpenseList() {
             </Button>
           </div>
 
-          <div className="flex items-center gap-x-2 before:mx-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
+          <div className="flex items-center gap-x-2 before:mr-3 before:ml-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
             {/* 연도 단일 선택 */}
             <Select value={selectedYear} onValueChange={(v) => handleFilterChange(setSelectedYear, v)}>
               <SelectTrigger size="sm">

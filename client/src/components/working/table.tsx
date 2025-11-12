@@ -173,7 +173,19 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
           </tr>
           <tr className="hover:bg-gray-50">
             <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
-              출근시간
+              <div className="flex items-center gap-1">
+                <span>출근시간</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="inline-flex items-center">
+                      <TooltipIcon />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>09:30부터 근무 시간 인정</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </td>
             {data.map((row, index) => (
               <td key={index} className={`px-6 py-4 whitespace-nowrap text-base ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
@@ -202,7 +214,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>휴게시간 1시간 제외</p>
+                    <p>휴게시간은 근무시간에서 제외 (12:00-13:00)</p>
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -224,7 +236,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>휴게시간 1시간 제외</p>
+                    <p>식대 사용시 휴게시간 1시간 제외</p>
                   </TooltipContent>
                 </Tooltip>
               </div>

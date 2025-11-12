@@ -219,7 +219,7 @@ export default function ExpenseView() {
                             {item.attachments.map((att, idx) => (
                               <li key={idx} className="overflow-hidden text-sm text-gray-800">
                                 <a
-                                  href={`https://gbend.cafe24.com/uploads/nexpense/${att.ea_sname}`}
+                                  href={`${import.meta.env.VITE_API_ORIGIN}/uploads/nexpense/${att.ea_sname}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="flex items-center justify-center gap-1">
