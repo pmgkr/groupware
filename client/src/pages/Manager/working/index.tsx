@@ -398,6 +398,7 @@ export default function ManagerWorking() {
       const edate = dayjs(endDate).format('YYYY-MM-DD');
 
       console.log('📊 근태 데이터 로드 시작...');
+      console.log('   조회 기간:', { sdate, edate, startDate, endDate });
       console.log('   selectedTeamIds:', selectedTeamIds);
       console.log('   user.team_id:', user?.team_id);
 
@@ -468,6 +469,15 @@ export default function ManagerWorking() {
             sdate,
             edate,
           });
+          
+          // API 응답 데이터 형식 확인 (디버깅용)
+          if (member.user_id === 'yeonsang.lee@pmgasia.com') {
+            console.log('📋 yeonsang.lee 근태 로그 전체 응답:', {
+              totalCount: workLogResponse.wlog?.length,
+              wlogs: workLogResponse.wlog,
+              dates: workLogResponse.wlog?.map((w: any) => w.tdate)
+            });
+          }
 
           // 전체 초과근무 목록에서 해당 팀원의 것만 필터링
           const memberOvertimes = allOvertimeResponse.items?.filter(

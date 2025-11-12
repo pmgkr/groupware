@@ -194,15 +194,24 @@ export const workingApi = {
     return response;
   },
 
-  // 출퇴근 시간 수정 (관리자)
+  // 출퇴근 시간 수정/등록 (관리자)
   updateWorkTime: async (userId: string, date: string, startTime: string, endTime: string): Promise<any> => {
+    // 시간 형식 변환: "HH:mm" -> "HH:mm:ss"
+    const formatTime = (time: string) => {
+      if (!time) return '';
+      // 이미 초가 포함되어 있으면 그대로 반환
+      if (time.length === 8) return time;
+      // "HH:mm" 형식이면 ":00" 추가
+      return `${time}:00`;
+    };
+
     const response = await http('/manager/wlog/update', {
       method: 'POST',
       body: JSON.stringify({ 
         user_id: userId, 
-        date, 
-        start_time: startTime, 
-        end_time: endTime 
+        tdate: date,
+        stime: formatTime(startTime), 
+        etime: formatTime(endTime)
       }),
     });
     return response;

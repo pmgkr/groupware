@@ -181,11 +181,11 @@ export default function WorkingList({
     if (!selectedWorkTime) return;
     
     try {
-      console.log('출퇴근 시간 수정 요청:', {
-        userId: selectedWorkTime.userId,
-        date: selectedWorkTime.date,
-        startTime,
-        endTime,
+      console.log('✅ 출퇴근 시간 수정 요청:', {
+        user_id: selectedWorkTime.userId,
+        tdate: selectedWorkTime.date,
+        stime: startTime ? `${startTime}:00` : '',
+        etime: endTime ? `${endTime}:00` : '',
         endpoint: '/manager/wlog/update'
       });
       
@@ -196,11 +196,11 @@ export default function WorkingList({
         endTime
       );
       
-      console.log('출퇴근 시간 수정 성공');
-      // 데이터 새로고침을 위해 부모 컴포넌트에 알림 (나중에 구현)
-      window.location.reload(); // 임시로 새로고침
+      console.log('✅ 출퇴근 시간 수정 성공!');
+      // 데이터 새로고침
+      window.location.reload();
     } catch (error: any) {
-      console.error('출퇴근 시간 수정 실패:', error);
+      console.error('❌ 출퇴근 시간 수정 실패:', error);
       console.error('에러 상세:', {
         message: error?.message,
         status: error?.status,

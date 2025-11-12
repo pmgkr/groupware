@@ -49,7 +49,7 @@ export default function WorkTimeEditDialog({
     } catch (error: any) {
       console.error('출퇴근 시간 수정 실패:', error);
       const errorMessage = error?.message || error?.toString() || '알 수 없는 오류';
-      alert(`출퇴근 시간 수정에 실패했습니다.\n에러: ${errorMessage}\n\n백엔드 API 엔드포인트를 확인해주세요.`);
+      alert(`출퇴근 시간 수정에 실패했습니다.\n\n에러: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }
