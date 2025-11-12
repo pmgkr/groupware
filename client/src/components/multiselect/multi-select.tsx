@@ -371,6 +371,24 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
     }, [defaultValue, onValueChange]);
 
     const buttonRef = React.useRef<HTMLButtonElement>(null);
+    const [triggerWidth, setTriggerWidth] = React.useState<number>(0); // Trigger의 width 추적용
+
+    React.useEffect(() => {
+      if (!buttonRef.current) return;
+      const el = buttonRef.current;
+
+      // 초기 너비 설정
+      setTriggerWidth(el.offsetWidth);
+
+      // ResizeObserver로 trigger 크기 추적
+      const resizeObserver = new ResizeObserver(() => {
+        setTriggerWidth(el.offsetWidth);
+      });
+
+      resizeObserver.observe(el);
+
+      return () => resizeObserver.disconnect();
+    }, []);
 
     React.useImperativeHandle(
       ref,
@@ -679,11 +697,11 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
     const getSizeClasses = () => {
       switch (size) {
         case 'sm':
-          return 'h-8 rounded-md text-sm gap-1.25 pl-3.5 pr-1 py-0';
+          return 'h-8 rounded-md text-sm gap-1.25 px-1 py-0';
         case 'lg':
-          return 'w-full max-w-[280px] h-12 text-lg rounded-md pl-6 pr-3 py-0';
+          return 'w-full max-w-[280px] h-12 text-lg rounded-md px-4 py-0';
         default:
-          return 'h-10 pl-6 pr-3 py-0';
+          return 'h-11 px-2 py-0';
       }
     };
 
@@ -944,7 +962,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 ) : (
                   // simpleSelect : true 일 때
                   <div className="mx-auto flex w-full items-center justify-between">
-                    <span className="text-muted-foreground text-sm">{placeholder}</span>
+                    <span className={cn(size === 'sm' ? 'text-sm' : 'text-base', 'text-muted-foreground')}>{placeholder}</span>
 
                     {selectedValues.length > 0 && (
                       <span
@@ -964,7 +982,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 )
               ) : (
                 <div className="mx-auto flex w-full items-center justify-between">
-                  <span className="text-muted-foreground text-sm">{placeholder}</span>
+                  <span className={cn(size === 'sm' ? 'text-sm' : 'text-base', 'text-muted-foreground')}>{placeholder}</span>
                   <ChevronDown className="text-muted-foreground mx-2 h-4 cursor-pointer" />
                 </div>
               )}
@@ -992,7 +1010,6 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                     getPopoverAnimationClass(),
                     screenSize === 'mobile' && 'w-[85vw] max-w-[280px]',
                     screenSize === 'tablet' && 'w-[70vw] max-w-md',
-                    screenSize === 'desktop' && 'min-w-[300px]',
                   ],
               popoverClassName
             )}
@@ -1002,6 +1019,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               maxWidth: `min(${widthConstraints.maxWidth}, 85vw)`,
               maxHeight: screenSize === 'mobile' ? '70vh' : '60vh',
               touchAction: 'manipulation',
+              width: triggerWidth ? `${triggerWidth}px` : 'auto',
             }}
             align="start"
             onEscapeKeyDown={() => setIsPopoverOpen(false)}>
@@ -1048,8 +1066,8 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                         <CheckIcon className="h-4 w-4" />
                       </div>
                       <span>
-                        (전체선택
-                        {getAllOptions().length > 20 ? ` - ${getAllOptions().length} options` : ''})
+                        전체선택
+                        {getAllOptions().length > 20 ? ` - ${getAllOptions().length} options` : ''}
                       </span>
                     </CommandItem>
                   </CommandGroup>

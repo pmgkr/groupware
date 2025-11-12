@@ -13,6 +13,7 @@ const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Onboarding = lazy(() => import('@/pages/Onboarding'));
 const ErrorPage = lazy(() => import('@/pages/ErrorPage'));
 
+import { projectRoutes } from './project';
 import { expenseRoutes } from './expense';
 import { calendarRoutes } from './calendar';
 import { workingRoutes } from './working';
@@ -23,10 +24,11 @@ import { managerRoutes } from './manager';
 // 인증 후 Layout 하위의 자식 라우트들
 const authedChildren: RouteObject[] = [
   // 필요 순서대로
+  projectRoutes,
+  expenseRoutes,
   calendarRoutes,
   workingRoutes,
   officeRoutes,
-  expenseRoutes,
   mypageRoutes,
   managerRoutes,
 ];
