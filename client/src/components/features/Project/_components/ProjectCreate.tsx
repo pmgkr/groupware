@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -6,13 +6,16 @@ import { cn } from '@/lib/utils';
 import { useToggleState } from '@/hooks/useToggleState';
 import { useUser } from '@/hooks/useUser';
 
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { MemberSelect, type Member } from '@components/common/MemberSelect';
-import { getClientList, type ClientList } from '@/api';
+import { getClientList, projectCreate } from '@/api';
 
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
-import { SearchableSelect, type SingleSelectOption } from '@components/ui/SearchableSelect';
 import { Badge } from '@components/ui/badge';
+import { Textarea } from '@components/ui/textarea';
+import { SearchableSelect, type SingleSelectOption } from '@components/ui/SearchableSelect';
 import { Avatar, AvatarFallback, AvatarImage } from '@components/ui/avatar';
 import { Select, SelectTriggerFull, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
@@ -21,26 +24,33 @@ import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover'
 import { DayPicker } from '@components/daypicker';
 import { format } from 'date-fns';
 
-import { CalendarIcon, Plus } from 'lucide-react';
+import { CalendarIcon, Plus, OctagonAlert } from 'lucide-react';
+import { MultiSelect, type MultiSelectOption } from '@/components/multiselect/multi-select';
 
 const projectSchema = z.object({
-  year: z.string(),
-  brand: z.string(),
-  category: z.string(),
-  client: z.string(),
-  projectName: z.string().min(2, '프로젝트 이름을 입력하세요.'),
+  year: z.string().min(1, '생성년도를 선택하세요.'),
+  brand: z.string().min(1, 'ICG 브랜드를 선택하세요.'),
+  category: z.array(z.string()).min(1, '카테고리를 선택하세요.'),
+  client: z.string().min(1, '클라이언트를 선택하세요.'),
+  project_title: z.string().min(2, '프로젝트 이름을 입력하세요.'),
   members: z.array(z.string()).min(1, '멤버를 선택하세요.'),
-  project_sdate: z.date(),
-  project_edate: z.date(),
+  project_sdate: z.string().nullable(),
+  project_edate: z.string().nullable(),
+  remark: z.string().optional(),
 });
 
 type ProjectFormValues = z.infer<typeof projectSchema>;
 
 type Props = {
   onClose?: () => void;
+  onSuccess?: () => void;
 };
 
-export function ProjectCreateForm({ onClose }: Props) {
+export function ProjectCreateForm({ onClose, onSuccess }: Props) {
+  // Alert & Dialog hooks
+  const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
+
   const { user_id, user_name, profile_image } = useUser();
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
 
@@ -48,72 +58,120 @@ export function ProjectCreateForm({ onClose }: Props) {
   const [clientOptions, setClientOptions] = useState<SingleSelectOption[]>([]);
 
   const form = useForm<ProjectFormValues>({
+    mode: 'onSubmit',
     resolver: zodResolver(projectSchema),
     defaultValues: {
       year: '2026',
       brand: '',
-      category: '',
+      category: [],
       client: '',
-      projectName: '',
+      project_title: '',
       members: [],
+      remark: '',
     },
   });
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await getClientList();
-        console.log('📦 클라이언트 API 응답:', res);
+  const categoryOptions: MultiSelectOption[] = [
+    { label: 'CAMPAIGN', value: 'CAMPAIGN' },
+    { label: 'Event', value: 'Event' },
+    { label: 'Web', value: 'Web' },
+  ];
 
-        const mapped = res.map((t: any) => ({
-          label: t.cl_name,
-          value: String(t.cl_seq),
-        }));
-
-        setClientOptions(mapped);
-      } catch (err) {
-        console.error('❌ 클라이언트 불러오기 오류 :', err);
-      }
-    })();
+  const fetchClients = useCallback(async () => {
+    try {
+      const res = await getClientList();
+      const mapped = res.map((t: any) => ({
+        label: t.cl_name,
+        value: String(t.cl_seq),
+      }));
+      setClientOptions(mapped);
+    } catch (err) {
+      console.error('❌ 클라이언트 불러오기 오류 :', err);
+    }
   }, []);
 
-  const [members, setMembers] = useState<Member[]>(() =>
-    user_id && user_name
-      ? [
-          {
-            user_id,
-            user_name,
-            profile_image: profile_image ?? undefined,
-            user_type: 'owner',
-          },
-        ]
-      : []
-  );
+  useEffect(() => {
+    fetchClients();
+  }, [fetchClients]);
 
-  const handleSubmit = async (values: ProjectFormValues) => {};
+  // 멤버에 접속중인 ID 기본값 설정
+  const getDefaultMembers = useCallback((): Member[] => {
+    if (!user_id || !user_name) return [];
+    return [
+      {
+        user_id,
+        user_name,
+        profile_image: profile_image ?? undefined,
+        user_type: 'owner',
+      },
+    ];
+  }, [user_id, user_name, profile_image]);
+
+  const [members, setMembers] = useState<Member[]>(getDefaultMembers);
+
+  useEffect(() => {
+    form.setValue(
+      'members',
+      members.map((m) => m.user_id)
+    ); // string[]만 저장
+  }, [members, form]);
 
   const handleCancel = () => {
+    // Dialog 하위 취소 버튼 클릭 시 폼 리셋 & 멤버 선택 초기화
     form.reset();
-    setMembers(
-      user_id && user_name
-        ? [
-            {
-              user_id,
-              user_name,
-              profile: profile_image ?? undefined,
-              user_type: 'owner',
-            } as Member,
-          ]
-        : []
-    );
+    setMembers(getDefaultMembers());
     onClose?.();
+  };
+
+  const onSubmit = (v: ProjectFormValues) => {
+    addDialog({
+      title: '프로젝트를 생성하시겠습니까?',
+      message: `<span class="text-primary-blue-500 font-semibold">${v.project_title}</span> 프로젝트를 생성합니다.`,
+      confirmText: '확인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        const payload = {
+          project_year: v.year,
+          project_brand: v.brand,
+          project_cate: v.category,
+          client_id: Number(v.client),
+          project_title: v.project_title,
+          members: members.map((m) => ({
+            user_id: m.user_id,
+            user_nm: m.user_name,
+            user_type: m.user_type,
+          })),
+          project_sdate: v.project_sdate,
+          project_edate: v.project_edate,
+          remark: v.remark,
+        };
+
+        const result = await projectCreate(payload);
+
+        console.log('✅ 등록 성공:', result);
+        if (result.ok) {
+          addAlert({
+            title: '프로젝트 생성이 완료되었습니다.',
+            message: `<p>프로젝트 아이디 <span class="text-primary-blue-500">${result.project_id}</span>로 생성되었습니다.</p>`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+
+          onSuccess?.();
+        }
+      },
+    });
+  };
+
+  const onError = (errors: any) => {
+    console.error('폼 검증 에러:', errors);
   };
 
   return (
     <Form {...form}>
       <Dialog>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5 pt-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-5 pt-4">
+          <div className="grid grid-cols-2 items-start gap-4">
             {/* 생성년도 */}
             <FormField
               control={form.control}
@@ -140,20 +198,20 @@ export function ProjectCreateForm({ onClose }: Props) {
             <FormField
               control={form.control}
               name="brand"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>ICG 브랜드</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTriggerFull>
+                  <FormControl>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <SelectTriggerFull className={cn('w-full', fieldState.invalid && 'border-destructive ring-destructive/20')}>
                         <SelectValue placeholder="브랜드 선택" />
                       </SelectTriggerFull>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="PMG">PMG</SelectItem>
-                      <SelectItem value="MCS">MCS</SelectItem>
-                    </SelectContent>
-                  </Select>
+                      <SelectContent>
+                        <SelectItem value="PMG">PMG</SelectItem>
+                        <SelectItem value="MCS">MCS</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
                 </FormItem>
               )}
             />
@@ -162,19 +220,19 @@ export function ProjectCreateForm({ onClose }: Props) {
             <FormField
               control={form.control}
               name="category"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>카테고리</FormLabel>
                   <FormControl>
-                    <SearchableSelect
+                    <MultiSelect
                       placeholder="카테고리 선택"
-                      options={[
-                        { label: 'Event', value: 'Event' },
-                        { label: 'Campaign', value: 'Campaign' },
-                        { label: 'Web', value: 'Web' },
-                      ]}
+                      options={categoryOptions}
                       value={field.value}
-                      onChange={(v) => field.onChange(v)}
+                      onValueChange={(v) => field.onChange(v)}
+                      invalid={fieldState.invalid}
+                      modalPopover={true}
+                      maxCount={0}
+                      hideSelectAll={true}
                     />
                   </FormControl>
                 </FormItem>
@@ -185,7 +243,7 @@ export function ProjectCreateForm({ onClose }: Props) {
             <FormField
               control={form.control}
               name="client"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>클라이언트</FormLabel>
                   <FormControl>
@@ -194,6 +252,7 @@ export function ProjectCreateForm({ onClose }: Props) {
                       options={clientOptions}
                       value={field.value}
                       onChange={(v) => field.onChange(v)}
+                      invalid={fieldState.invalid}
                     />
                   </FormControl>
                 </FormItem>
@@ -204,14 +263,13 @@ export function ProjectCreateForm({ onClose }: Props) {
           {/* 프로젝트 이름 */}
           <FormField
             control={form.control}
-            name="projectName"
+            name="project_title"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>프로젝트 이름</FormLabel>
                 <FormControl>
                   <Input placeholder="프로젝트 이름을 입력해 주세요" {...field} />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
@@ -237,7 +295,7 @@ export function ProjectCreateForm({ onClose }: Props) {
                               !field.value && 'text-muted-foreground hover:text-muted-foreground',
                               isOpen && 'border-primary-blue-300'
                             )}>
-                            {field.value ? formatDate(field.value) : <span>날짜 선택</span>}
+                            {field.value ? String(field.value) : <span>날짜 선택</span>}
                             <CalendarIcon className="ml-auto size-4.5 opacity-50" />
                           </Button>
                         </FormControl>
@@ -280,7 +338,7 @@ export function ProjectCreateForm({ onClose }: Props) {
                               !field.value && 'text-muted-foreground hover:text-muted-foreground',
                               isOpen && 'border-primary-blue-300'
                             )}>
-                            {field.value ? formatDate(field.value) : <span>날짜 선택</span>}
+                            {field.value ? String(field.value) : <span>날짜 선택</span>}
                             <CalendarIcon className="ml-auto size-4.5 opacity-50" />
                           </Button>
                         </FormControl>
@@ -304,6 +362,21 @@ export function ProjectCreateForm({ onClose }: Props) {
               }}
             />
           </div>
+
+          <FormField
+            control={form.control}
+            name="remark"
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormLabel>비고</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="추가 기입할 정보가 있으면 입력해 주세요." className="h-16 min-h-16" {...field} />
+                  </FormControl>
+                </FormItem>
+              );
+            }}
+          />
 
           {/* 프로젝트 멤버 */}
           <FormItem>

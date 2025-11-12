@@ -263,6 +263,11 @@ interface MultiSelectProps
    * Trigger의 placeholder 고정 & 뱃지 커스텀 & 화살표 숨김처리
    */
   simpleSelect?: boolean;
+
+  /**
+   * 값 검증 옵션
+   */
+  invalid?: boolean;
 }
 
 /**
@@ -320,6 +325,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
       resetOnDefaultValueChange = true,
       closeOnSelect = false,
       simpleSelect = false,
+      invalid = false,
       ...props
     },
     ref
@@ -816,6 +822,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 responsiveSettings.compactMode && 'min-h-8 text-sm',
                 screenSize === 'mobile' && 'min-h-12 text-base',
                 disabled && 'cursor-not-allowed opacity-50',
+                invalid && 'border-destructive ring-destructive/20',
                 className
               )}
               style={{
