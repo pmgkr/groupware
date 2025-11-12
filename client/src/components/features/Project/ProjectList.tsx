@@ -1,31 +1,53 @@
-import { useRef, useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router';
-import * as XLSX from 'xlsx';
-import { cn } from '@/lib/utils';
-import { useUser } from '@/hooks/useUser';
-import { format } from 'date-fns';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { getProjectList, type ProjectListItem, getClientList, getTeamList } from '@/api';
 
-import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
-import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@components/ui/button';
-import { Checkbox } from '@components/ui/checkbox';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
-import { Dialog, DialogClose, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { MultiSelect, type MultiSelectOption } from '@components/multiselect/multi-select';
+import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Excel } from '@/assets/images/icons';
-import { Star, RefreshCw, OctagonAlert } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ProjectRow } from './_components/ProjectListRow';
+
+import { Star, RefreshCw } from 'lucide-react';
 
 import { ProjectCreateForm } from './_components/ProjectCreate';
+import { useUser } from '@/hooks/useUser';
 
 export default function ProjectList() {
-  // 상단 필터용 state
-  const [typeOptions, setTypeOptions] = useState<MultiSelectOption[]>([]);
   const [registerDialog, setRegisterDialog] = useState(false);
+  const [projects, setProjects] = useState<ProjectListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const pageSize = 15;
+
+  // 상단 필터용 state
+  const [activeTab, setActiveTab] = useState<'mine' | 'others'>('mine');
+  const [selectedBrand, setSelectedBrand] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string[]>([]);
+  const [selectedClient, setSelectedClient] = useState<string[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [favorites, setFavorites] = useState<string[]>([]);
+
+  // ✅ MultiSelect refs
+  const categoryRef = useRef<MultiSelectRef>(null);
+  const clientRef = useRef<MultiSelectRef>(null);
+  const teamRef = useRef<MultiSelectRef>(null);
+  const statusRef = useRef<MultiSelectRef>(null);
+
+  /** ✅ 프로젝트 생성 후 새로고침 */
+  const handleCreateSuccess = () => {
+    fetchProjects();
+    setRegisterDialog(false);
+  };
+
+  /** ✅ 상단 필터용 옵션 */
+  const [clientOptions, setClientOptions] = useState<MultiSelectOption[]>([]);
+  const [teamOptions, setTeamOptions] = useState<MultiSelectOption[]>([]);
 
   const categoryOptions: MultiSelectOption[] = [
     { label: 'CAMPAIGN', value: 'CAMPAIGN' },
@@ -33,37 +55,125 @@ export default function ProjectList() {
     { label: 'Web', value: 'Web' },
   ];
 
-  const clientOptions: MultiSelectOption[] = [
-    { label: '골든구스 유한회사', value: '골든구스 유한회사' },
-    { label: 'HERMES', value: 'HERMES' },
-    { label: '3M', value: '3M' },
-  ];
-
-  const teamOptions: MultiSelectOption[] = [
-    { label: 'CC', value: 'CC' },
-    { label: 'CCP', value: 'CCP' },
-  ];
-
   const statusOptions: MultiSelectOption[] = [
-    { label: '진행중', value: 'In-Progress' },
-    { label: '종료됨', value: 'Closed' },
+    { label: '진행중', value: 'in-progress' },
+    { label: '종료됨', value: 'completed' },
+    { label: '정산완료', value: 'done' },
+    { label: '취소됨', value: 'cancelled' },
   ];
+
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const [clients, teams] = await Promise.all([getClientList(), getTeamList()]);
+        setClientOptions(clients.map((c) => ({ label: c.cl_name, value: String(c.cl_seq) })));
+        setTeamOptions(teams.map((t) => ({ label: t.team_name, value: String(t.team_id) })));
+      } catch (err) {
+        console.error('❌ 필터 옵션 불러오기 실패:', err);
+      }
+    };
+    fetchFilterOptions();
+  }, []);
+
+  // 필터 변경 시 page 초기화
+  const handleFilterChange = (setter: any, value: any) => {
+    setter(value);
+    setPage(1);
+  };
+
+  // 탭 변경 시 필터 초기화
+  const resetAllFilters = () => {
+    setSelectedBrand('');
+    setSelectedCategory([]);
+    setSelectedClient([]);
+    setSelectedTeam([]);
+    setSelectedStatus([]);
+    setSearchQuery('');
+
+    // MultiSelect 내부 상태 초기화
+    categoryRef.current?.clear();
+    clientRef.current?.clear();
+    teamRef.current?.clear();
+    statusRef.current?.clear();
+  };
+
+  const handleTabChange = (tab: 'mine' | 'others') => {
+    setActiveTab(tab);
+    setPage(1);
+    resetAllFilters();
+  };
+
+  // 즐겨찾기 토글
+  const toggleFavorite = (projectId: string) => {
+    setFavorites((prev) => (prev.includes(projectId) ? prev.filter((id) => id !== projectId) : [...prev, projectId]));
+  };
+
+  // 프로젝트 리스트 가져오기
+  const fetchProjects = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      console.log('selectedTeam', selectedTeam);
+      const params: Record<string, any> = {
+        page,
+        size: pageSize,
+        type: activeTab,
+        team_id: selectedTeam.join(','),
+        client_id: selectedClient.join(','),
+        project_brand: selectedBrand,
+        project_category: selectedCategory.join(','),
+        project_status: selectedStatus.join(','),
+        s: searchQuery,
+      };
+
+      console.log(params);
+
+      const res = await getProjectList(params);
+
+      console.log(res);
+
+      setProjects(res.items);
+      setTotal(res.total);
+    } catch (err) {
+      console.error('❌ 프로젝트 불러오기 실패:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, selectedBrand, selectedCategory, selectedClient, selectedTeam, selectedStatus, searchQuery, activeTab]);
+
+  // 마운트 시 호출
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   return (
     <>
+      {/* ---------------- 상단 필터 ---------------- */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center">
           <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
-            <Button className={`h-8 w-19 rounded-sm p-0 text-sm ${'bg-primary hover:bg-primary active:bg-primary text-white'}`}>
+            <Button
+              onClick={() => handleTabChange('mine')}
+              className={`h-8 w-18 rounded-sm p-0 text-sm ${
+                activeTab === 'mine'
+                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+              }`}>
               내 프로젝트
             </Button>
             <Button
-              className={`h-8 w-19 rounded-sm p-0 text-sm ${'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'}`}>
+              onClick={() => handleTabChange('others')}
+              className={`h-8 w-18 rounded-sm p-0 text-sm ${
+                activeTab === 'others'
+                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+              }`}>
               전체 프로젝트
             </Button>
           </div>
+
           <div className="flex items-center gap-x-2 before:mr-3 before:ml-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
-            <Select>
+            <Select value={selectedBrand} onValueChange={(v) => handleFilterChange(setSelectedBrand, v)}>
               <SelectTrigger size="sm">
                 <SelectValue placeholder="소속 선택" />
               </SelectTrigger>
@@ -80,413 +190,129 @@ export default function ProjectList() {
             </Select>
 
             <MultiSelect
-              className="max-w-[80px] min-w-auto!"
               size="sm"
-              placeholder="비용 용도"
-              options={categoryOptions}
-              onValueChange={() => {}}
+              ref={categoryRef}
+              className="max-w-[80px] min-w-auto!"
               maxCount={0}
-              hideSelectAll={true}
               autoSize={true}
-              closeOnSelect={false}
+              placeholder="카테고리"
+              options={categoryOptions}
+              onValueChange={(v) => handleFilterChange(setSelectedCategory, v)}
               simpleSelect={true}
+              hideSelectAll={true}
             />
 
             <MultiSelect
-              className="max-w-[80px] min-w-auto!"
               size="sm"
+              ref={clientRef}
+              className="max-w-[80px] min-w-auto!"
+              maxCount={0}
+              autoSize={true}
               placeholder="클라이언트"
               options={clientOptions}
-              onValueChange={() => {}}
-              maxCount={0}
-              hideSelectAll={true}
-              autoSize={true}
-              closeOnSelect={false}
+              onValueChange={(v) => handleFilterChange(setSelectedClient, v)}
               simpleSelect={true}
+              hideSelectAll={true}
             />
 
             <MultiSelect
-              className="max-w-[80px] min-w-auto!"
               size="sm"
+              ref={teamRef}
+              className="max-w-[80px] min-w-auto!"
+              maxCount={0}
+              autoSize={true}
               placeholder="팀 선택"
               options={teamOptions}
-              onValueChange={() => {}}
-              maxCount={0}
-              hideSelectAll={true}
-              autoSize={true}
-              closeOnSelect={false}
+              onValueChange={(v) => handleFilterChange(setSelectedTeam, v)}
               simpleSelect={true}
+              hideSelectAll={true}
             />
 
             <MultiSelect
-              className="max-w-[80px] min-w-auto!"
               size="sm"
+              ref={statusRef}
+              className="max-w-[80px] min-w-auto!"
+              maxCount={0}
+              autoSize={true}
               placeholder="상태 선택"
               options={statusOptions}
-              onValueChange={() => {}}
-              maxCount={0}
-              hideSelectAll={true}
-              autoSize={true}
-              closeOnSelect={false}
+              onValueChange={(v) => handleFilterChange(setSelectedStatus, v)}
               simpleSelect={true}
+              hideSelectAll={true}
             />
 
-            <Button
-              type="button"
-              variant="svgIcon"
-              size="icon"
-              className="hover:[&_svg]:fill-primary-yellow-500 hover:[&_svg]:text-primary-yellow-500 size-6 text-gray-600 transition-transform"
-              onClick={() => {}}>
+            <Button type="button" variant="svgIcon" size="icon" className="hover:text-primary-yellow-500 size-6 text-gray-600">
               <Star />
             </Button>
             <Button
               type="button"
               variant="svgIcon"
               size="icon"
-              className="hover:text-primary-blue-500 size-6 text-gray-600 transition-transform hover:rotate-45"
-              onClick={() => {}}>
+              className="hover:text-primary-blue-500 size-6 text-gray-600"
+              onClick={() => handleTabChange(activeTab)}>
               <RefreshCw />
             </Button>
           </div>
         </div>
 
         <div className="flex gap-x-2">
-          <Input className="max-w-45" size="sm" placeholder="검색어 입력" value="" onChange={() => {}} />
-          <Button
+          <Input
+            className="max-w-45"
             size="sm"
-            onClick={() => {
-              setRegisterDialog(true);
-            }}>
+            placeholder="검색어 입력"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Button size="sm" onClick={() => setRegisterDialog(true)}>
             프로젝트 생성
           </Button>
         </div>
       </div>
+
+      {/* ---------------- 테이블 ---------------- */}
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
           <TableRow className="[&_th]:px-4 [&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className="w-12 px-0"></TableHead>
-            <TableHead className="w-20 px-0">프로젝트#</TableHead>
+            <TableHead className="w-22 px-0">프로젝트#</TableHead>
             <TableHead className="w-[6%]">소속</TableHead>
             <TableHead className="w-[10%]">카테고리</TableHead>
             <TableHead>프로젝트 이름</TableHead>
-            <TableHead className="w-[8%]">클라이언트</TableHead>
-            <TableHead className="w-[6%]">오너</TableHead>
+            <TableHead className="w-[14%]">클라이언트</TableHead>
+            <TableHead className="w-[8%]">오너</TableHead>
             <TableHead className="w-[8%]">팀</TableHead>
             <TableHead className="w-[8%]">상태</TableHead>
-            <TableHead className="w-[14%]">작성일</TableHead>
+            <TableHead className="w-[10%]">시작일</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow className="[&_td]:px-4 [&_td]:text-[13px]">
-            <TableCell className="px-0!">
-              <Button
-                type="button"
-                variant="svgIcon"
-                className="hover:[&_svg]:fill-primary-yellow-500 hover:[&_svg]:text-primary-yellow-500 inline-block h-8 cursor-pointer p-2 text-gray-600">
-                <Star />
-              </Button>
-            </TableCell>
-            <TableCell className="px-0!">
-              <Link to={'/'} className="rounded-[4px] border-1 bg-white p-1 text-sm">
-                K25-12345
-              </Link>
-            </TableCell>
-            <TableCell>PMG</TableCell>
-            <TableCell>Campaign, Event</TableCell>
-            <TableCell className="text-left">
-              <Link to={'/'} className="hover:underline">
-                [3M] 오피스채널 연말 행사_POP 3종 및 1동 덤빈
-              </Link>
-            </TableCell>
-            <TableCell>3M</TableCell>
-            <TableCell>홍길동</TableCell>
-            <TableCell>PM1</TableCell>
-            <TableCell>
-              <Badge variant="secondary">진행중</Badge>
-            </TableCell>
-            <TableCell>2025-11-07</TableCell>
-          </TableRow>
-          <TableRow className="[&_td]:px-4 [&_td]:text-[13px]">
-            <TableCell className="px-0!">
-              <Button
-                type="button"
-                variant="svgIcon"
-                className="hover:[&_svg]:fill-primary-yellow-500 hover:[&_svg]:text-primary-yellow-500 inline-block h-8 cursor-pointer p-2 text-gray-600">
-                <Star />
-              </Button>
-            </TableCell>
-            <TableCell className="px-0!">
-              <Link to={'/'} className="rounded-[4px] border-1 bg-white p-1 text-sm">
-                K25-12345
-              </Link>
-            </TableCell>
-            <TableCell>PMG</TableCell>
-            <TableCell>Campaign, Event</TableCell>
-            <TableCell className="text-left">
-              <Link to={'/'} className="hover:underline">
-                [3M] 오피스채널 연말 행사_POP 3종 및 1동 덤빈
-              </Link>
-            </TableCell>
-            <TableCell>3M</TableCell>
-            <TableCell>홍길동</TableCell>
-            <TableCell>PM1</TableCell>
-            <TableCell>
-              <Badge variant="secondary">진행중</Badge>
-            </TableCell>
-            <TableCell>2025-11-07</TableCell>
-          </TableRow>
-          <TableRow className="[&_td]:px-4 [&_td]:text-[13px]">
-            <TableCell className="px-0!">
-              <Button
-                type="button"
-                variant="svgIcon"
-                className="hover:[&_svg]:fill-primary-yellow-500 hover:[&_svg]:text-primary-yellow-500 inline-block h-8 cursor-pointer p-2 text-gray-600">
-                <Star />
-              </Button>
-            </TableCell>
-            <TableCell className="px-0!">
-              <Link to={'/'} className="rounded-[4px] border-1 bg-white p-1 text-sm">
-                K25-12345
-              </Link>
-            </TableCell>
-            <TableCell>PMG</TableCell>
-            <TableCell>Campaign, Event</TableCell>
-            <TableCell className="text-left">
-              <Link to={'/'} className="hover:underline">
-                [3M] 오피스채널 연말 행사_POP 3종 및 1동 덤빈
-              </Link>
-            </TableCell>
-            <TableCell>3M</TableCell>
-            <TableCell>홍길동</TableCell>
-            <TableCell>PM1</TableCell>
-            <TableCell>
-              <Badge variant="secondary">진행중</Badge>
-            </TableCell>
-            <TableCell>2025-11-07</TableCell>
-          </TableRow>
-          <TableRow className="[&_td]:px-4 [&_td]:text-[13px]">
-            <TableCell className="px-0!">
-              <Button
-                type="button"
-                variant="svgIcon"
-                className="hover:[&_svg]:fill-primary-yellow-500 hover:[&_svg]:text-primary-yellow-500 inline-block h-8 cursor-pointer p-2 text-gray-600">
-                <Star />
-              </Button>
-            </TableCell>
-            <TableCell className="px-0!">
-              <Link to={'/'} className="rounded-[4px] border-1 bg-white p-1 text-sm">
-                K25-12345
-              </Link>
-            </TableCell>
-            <TableCell>PMG</TableCell>
-            <TableCell>Campaign, Event</TableCell>
-            <TableCell className="text-left">
-              <Link to={'/'} className="hover:underline">
-                [3M] 오피스채널 연말 행사_POP 3종 및 1동 덤빈
-              </Link>
-            </TableCell>
-            <TableCell>3M</TableCell>
-            <TableCell>홍길동</TableCell>
-            <TableCell>PM1</TableCell>
-            <TableCell>
-              <Badge variant="secondary">진행중</Badge>
-            </TableCell>
-            <TableCell>2025-11-07</TableCell>
-          </TableRow>
-          <TableRow className="[&_td]:px-4 [&_td]:text-[13px]">
-            <TableCell className="px-0!">
-              <Button
-                type="button"
-                variant="svgIcon"
-                className="hover:[&_svg]:fill-primary-yellow-500 hover:[&_svg]:text-primary-yellow-500 inline-block h-8 cursor-pointer p-2 text-gray-600">
-                <Star />
-              </Button>
-            </TableCell>
-            <TableCell className="px-0!">
-              <Link to={'/'} className="rounded-[4px] border-1 bg-white p-1 text-sm">
-                K25-12345
-              </Link>
-            </TableCell>
-            <TableCell>PMG</TableCell>
-            <TableCell>Campaign, Event</TableCell>
-            <TableCell className="text-left">
-              <Link to={'/'} className="hover:underline">
-                [3M] 오피스채널 연말 행사_POP 3종 및 1동 덤빈
-              </Link>
-            </TableCell>
-            <TableCell>3M</TableCell>
-            <TableCell>홍길동</TableCell>
-            <TableCell>PM1</TableCell>
-            <TableCell>
-              <Badge className="bg-primary-blue">종료됨</Badge>
-            </TableCell>
-            <TableCell>2025-11-07</TableCell>
-          </TableRow>
-          <TableRow className="[&_td]:px-4 [&_td]:text-[13px]">
-            <TableCell className="px-0!">
-              <Button
-                type="button"
-                variant="svgIcon"
-                className="hover:[&_svg]:fill-primary-yellow-500 hover:[&_svg]:text-primary-yellow-500 inline-block h-8 cursor-pointer p-2 text-gray-600">
-                <Star />
-              </Button>
-            </TableCell>
-            <TableCell className="px-0!">
-              <Link to={'/'} className="rounded-[4px] border-1 bg-white p-1 text-sm">
-                K25-12345
-              </Link>
-            </TableCell>
-            <TableCell>PMG</TableCell>
-            <TableCell>Campaign, Event</TableCell>
-            <TableCell className="text-left">
-              <Link to={'/'} className="hover:underline">
-                [3M] 오피스채널 연말 행사_POP 3종 및 1동 덤빈
-              </Link>
-            </TableCell>
-            <TableCell>3M</TableCell>
-            <TableCell>홍길동</TableCell>
-            <TableCell>PM1</TableCell>
-            <TableCell>
-              <Badge className="bg-primary-blue">종료됨</Badge>
-            </TableCell>
-            <TableCell>2025-11-07</TableCell>
-          </TableRow>
-          <TableRow className="[&_td]:px-4 [&_td]:text-[13px]">
-            <TableCell className="px-0!">
-              <Button
-                type="button"
-                variant="svgIcon"
-                className="hover:[&_svg]:fill-primary-yellow-500 hover:[&_svg]:text-primary-yellow-500 inline-block h-8 cursor-pointer p-2 text-gray-600">
-                <Star />
-              </Button>
-            </TableCell>
-            <TableCell className="px-0!">
-              <Link to={'/'} className="rounded-[4px] border-1 bg-white p-1 text-sm">
-                K25-12345
-              </Link>
-            </TableCell>
-            <TableCell>PMG</TableCell>
-            <TableCell>Campaign, Event</TableCell>
-            <TableCell className="text-left">
-              <Link to={'/'} className="hover:underline">
-                [3M] 오피스채널 연말 행사_POP 3종 및 1동 덤빈
-              </Link>
-            </TableCell>
-            <TableCell>3M</TableCell>
-            <TableCell>홍길동</TableCell>
-            <TableCell>PM1</TableCell>
-            <TableCell>
-              <Badge className="bg-primary-blue">종료됨</Badge>
-            </TableCell>
-            <TableCell>2025-11-07</TableCell>
-          </TableRow>
-          <TableRow className="[&_td]:px-4 [&_td]:text-[13px]">
-            <TableCell className="px-0!">
-              <Button
-                type="button"
-                variant="svgIcon"
-                className="hover:[&_svg]:fill-primary-yellow-500 hover:[&_svg]:text-primary-yellow-500 inline-block h-8 cursor-pointer p-2 text-gray-600">
-                <Star />
-              </Button>
-            </TableCell>
-            <TableCell className="px-0!">
-              <Link to={'/'} className="rounded-[4px] border-1 bg-white p-1 text-sm">
-                K25-12345
-              </Link>
-            </TableCell>
-            <TableCell>PMG</TableCell>
-            <TableCell>Campaign, Event</TableCell>
-            <TableCell className="text-left">
-              <Link to={'/'} className="hover:underline">
-                [3M] 오피스채널 연말 행사_POP 3종 및 1동 덤빈
-              </Link>
-            </TableCell>
-            <TableCell>3M</TableCell>
-            <TableCell>홍길동</TableCell>
-            <TableCell>PM1</TableCell>
-            <TableCell>
-              <Badge variant="grayish">정산완료</Badge>
-            </TableCell>
-            <TableCell>2025-11-07</TableCell>
-          </TableRow>
-          <TableRow className="[&_td]:px-4 [&_td]:text-[13px]">
-            <TableCell className="px-0!">
-              <Button
-                type="button"
-                variant="svgIcon"
-                className="hover:[&_svg]:fill-primary-yellow-500 hover:[&_svg]:text-primary-yellow-500 inline-block h-8 cursor-pointer p-2 text-gray-600">
-                <Star />
-              </Button>
-            </TableCell>
-            <TableCell className="px-0!">
-              <Link to={'/'} className="rounded-[4px] border-1 bg-white p-1 text-sm">
-                K25-12345
-              </Link>
-            </TableCell>
-            <TableCell>PMG</TableCell>
-            <TableCell>Campaign, Event</TableCell>
-            <TableCell className="text-left">
-              <Link to={'/'} className="hover:underline">
-                [3M] 오피스채널 연말 행사_POP 3종 및 1동 덤빈
-              </Link>
-            </TableCell>
-            <TableCell>3M</TableCell>
-            <TableCell>홍길동</TableCell>
-            <TableCell>PM1</TableCell>
-            <TableCell>
-              <Badge className="bg-primary-blue">종료됨</Badge>
-            </TableCell>
-            <TableCell>2025-11-07</TableCell>
-          </TableRow>
-          <TableRow className="[&_td]:px-4 [&_td]:text-[13px]">
-            <TableCell className="px-0!">
-              <Button
-                type="button"
-                variant="svgIcon"
-                className="hover:[&_svg]:fill-primary-yellow-500 hover:[&_svg]:text-primary-yellow-500 inline-block h-8 cursor-pointer p-2 text-gray-600">
-                <Star />
-              </Button>
-            </TableCell>
-            <TableCell className="px-0!">
-              <Link to={'/'} className="rounded-[4px] border-1 bg-white p-1 text-sm">
-                K25-12345
-              </Link>
-            </TableCell>
-            <TableCell>PMG</TableCell>
-            <TableCell>Campaign, Event</TableCell>
-            <TableCell className="text-left">
-              <Link to={'/'} className="hover:underline">
-                [Dell] FY26Q3_Product Enablement (10~12)
-              </Link>
-            </TableCell>
-            <TableCell>3M</TableCell>
-            <TableCell>홍길동</TableCell>
-            <TableCell>PM1</TableCell>
-            <TableCell>
-              <Badge className="bg-destructive">취소됨</Badge>
-            </TableCell>
-            <TableCell>2025-11-07</TableCell>
-          </TableRow>
+          {projects.length > 0 ? (
+            projects.map((p) => (
+              <ProjectRow key={p.project_id} item={p} isFavorite={favorites.includes(p.project_id)} onToggleFavorite={toggleFavorite} />
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={10} className="py-8 text-center text-gray-500">
+                등록된 프로젝트가 없습니다.
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
 
+      {/* ---------------- 페이지네이션 ---------------- */}
       <div className="mt-5">
-        <AppPagination
-          totalPages={Math.ceil(10 / 5)}
-          initialPage={1}
-          visibleCount={5}
-          onPageChange={(p) => {}} //부모 state 업데이트
-        />
+        <AppPagination totalPages={Math.ceil(total / pageSize)} initialPage={page} visibleCount={5} onPageChange={(p) => setPage(p)} />
       </div>
 
+      {/* ---------------- 프로젝트 생성 다이얼로그 ---------------- */}
       <Dialog open={registerDialog} onOpenChange={setRegisterDialog}>
         <DialogContent onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>프로젝트 생성하기</DialogTitle>
             <DialogDescription>새 프로젝트 생성을 위한 정보를 입력해 주세요.</DialogDescription>
           </DialogHeader>
-
-          <ProjectCreateForm onClose={() => setRegisterDialog(false)} />
+          <ProjectCreateForm onClose={() => setRegisterDialog(false)} onSuccess={handleCreateSuccess} />
         </DialogContent>
       </Dialog>
     </>

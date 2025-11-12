@@ -27,6 +27,7 @@ export interface SearchableSelectProps {
   popoverClassName?: string;
   emptyIndicator?: React.ReactNode;
   size?: 'sm' | 'default' | 'lg';
+  invalid?: boolean;
 }
 
 export function SearchableSelect({
@@ -40,6 +41,7 @@ export function SearchableSelect({
   popoverClassName,
   emptyIndicator,
   size = 'default',
+  invalid = false,
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
@@ -91,6 +93,7 @@ export function SearchableSelect({
           className={cn(
             'flex w-full items-center justify-between rounded-md border bg-inherit hover:bg-inherit',
             getSizeClasses(),
+            invalid && 'border-destructive ring-destructive/20',
             className
           )}
           onClick={() => setOpen((prev) => !prev)}>

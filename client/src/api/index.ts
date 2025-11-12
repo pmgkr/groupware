@@ -4,6 +4,7 @@
 
 export * from './auth';
 export * from './common';
+export * from './project/';
 export * from './expense/';
 export * from './teams';
 export * from './office';
