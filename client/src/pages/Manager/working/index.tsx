@@ -427,20 +427,28 @@ export default function ManagerWorking() {
       
       console.log(`   ✅ 조회된 팀원: ${teamMembers.length}명`);
 
-      // 2. 초과근무 목록 조회 (team_id로)
+      // 2. 초과근무 목록 조회 (team_id로) - 모든 상태 포함 (H: 승인대기, T: 승인완료, N: 반려됨)
       let allOvertimeResponse: OvertimeListResponse = { items: [], total: 0, page: 1, size: 1000, pages: 0 };
       
       try {
-        const overtimePromises = teamIdsToQuery.map(teamId => 
-          workingApi.getManagerOvertimeList({ team_id: teamId, page: 1, size: 1000 })
-            .catch(() => ({ items: [], total: 0, page: 1, size: 1000, pages: 0 }))
+        const flags = ['H', 'T', 'N']; // 승인대기, 승인완료, 반려됨 모두 조회
+        const overtimePromises = teamIdsToQuery.flatMap(teamId => 
+          flags.map(flag => 
+            workingApi.getManagerOvertimeList({ team_id: teamId, page: 1, size: 1000, flag })
+              .catch(() => ({ items: [], total: 0, page: 1, size: 1000, pages: 0 }))
+          )
         );
         const overtimeResults = await Promise.all(overtimePromises);
         const allItems = overtimeResults.flatMap(result => result.items || []);
         
+        // 중복 제거 (같은 id가 여러 번 조회될 수 있음)
+        const uniqueItems = allItems.filter((item, index, self) =>
+          index === self.findIndex(t => t.id === item.id)
+        );
+        
         allOvertimeResponse = {
-          items: allItems,
-          total: allItems.length,
+          items: uniqueItems,
+          total: uniqueItems.length,
           page: 1,
           size: 1000,
           pages: 1

@@ -193,5 +193,19 @@ export const workingApi = {
     const response = await http<MyTeamListResponse>('/manager/myteam');
     return response;
   },
+
+  // 출퇴근 시간 수정 (관리자)
+  updateWorkTime: async (userId: string, date: string, startTime: string, endTime: string): Promise<any> => {
+    const response = await http('/manager/wlog/update', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        user_id: userId, 
+        date, 
+        start_time: startTime, 
+        end_time: endTime 
+      }),
+    });
+    return response;
+  },
 };
 

@@ -88,7 +88,7 @@ export default function Toolbar({
             defaultValue={config.value || []}
             placeholder={config.placeholder}
             size="sm"
-            maxCount={config.maxCount}
+            maxCount={0}
             searchable={config.searchable}
             hideSelectAll={config.hideSelectAll}
             autoSize={config.autoSize}

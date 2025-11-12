@@ -227,7 +227,7 @@ export const convertApiDataToWorkData = async (
     const vacationsForDate = vacations.filter((vac: any) => vac.tdate === dateString);
     const overtime = overtimes.find((ot: any) => {
       const otDate = dayjs(ot.ot_date).format('YYYY-MM-DD');
-      return otDate === dateString && ot.user_id === userId && ot.ot_status !== 'N';
+      return otDate === dateString && ot.user_id === userId;
     });
     
     // 우선순위 vacation 선택
