@@ -1,6 +1,6 @@
 import ProjectList from '@components/features/Project/ProjectList';
 
-export default function Project() {
+export default function List() {
   return (
     <>
       <ProjectList />

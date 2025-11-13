@@ -5,19 +5,8 @@ import { cn } from '@/lib/utils';
 import { formatKST, formatAmount } from '@/utils';
 import { getExpenseView, type ExpenseViewDTO } from '@/api';
 
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@components/ui/alert-dialog';
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
-import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import { Download, Edit } from '@/assets/images/icons';

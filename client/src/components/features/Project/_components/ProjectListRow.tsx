@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Star, Ellipsis } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { type ProjectListItem } from '@/api';
 
-// ✅ 상태 라벨/색상 매핑
+// 상태 라벨/색상 매핑
 const statusMap: Record<string, { label: string; variant?: 'secondary' | 'grayish' | 'default' }> = {
   'in-progress': { label: '진행중', variant: 'secondary' },
   completed: { label: '종료됨', variant: 'secondary' },
@@ -16,7 +17,7 @@ const statusMap: Record<string, { label: string; variant?: 'secondary' | 'grayis
   done: { label: '정산완료', variant: 'grayish' },
 };
 
-// ✅ 카테고리 분리 유틸
+// 카테고리 분리 유틸
 const parseCategories = (cate: string) => cate?.split('|').filter(Boolean) ?? [];
 
 type Props = {
@@ -25,7 +26,7 @@ type Props = {
   onToggleFavorite?: (id: string) => void;
 };
 
-export function ProjectRow({ item, isFavorite = false, onToggleFavorite }: Props) {
+export const ProjectRow = memo(({ item, isFavorite = false, onToggleFavorite }: Props) => {
   const categories = parseCategories(item.project_cate);
   const status = statusMap[item.project_status] ?? { label: item.project_status, variant: 'grayish' };
 
@@ -89,4 +90,4 @@ export function ProjectRow({ item, isFavorite = false, onToggleFavorite }: Props
       <TableCell>{format(new Date(item.project_sdate), 'yyyy-MM-dd')}</TableCell>
     </TableRow>
   );
-}
+});

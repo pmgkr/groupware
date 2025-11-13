@@ -32,6 +32,7 @@ export type ProjectListParams = {
   project_category?: string;
   project_status?: string;
   s?: string; // 제목 검색 키워드
+  tagged?: 'Y' | 'N' | string;
 };
 
 // 프로젝트 생성 데이터타입
@@ -55,6 +56,22 @@ export interface projectCreateResponse {
   ok: boolean;
   project_id: string;
 }
+
+// 즐겨찾기 리스트
+export const getBookmarkList = async () => {
+  const res = await http<{ project_id: string }[]>('/user/project/bookmark/list', { method: 'GET' });
+  return res;
+};
+
+// 즐겨찾기 추가
+export const addBookmark = async (projectId: string) => {
+  return await http(`/user/project/bookmark/add/${projectId}`, { method: 'GET' });
+};
+
+// 즐겨찾기 삭제
+export const removeBookmark = async (projectId: string) => {
+  return await http(`/user/project/bookmark/remove/${projectId}`, { method: 'GET' });
+};
 
 // 프로젝트 리스트 가져오기
 export async function getProjectList(params: ProjectListParams) {
