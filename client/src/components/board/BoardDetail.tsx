@@ -5,6 +5,7 @@ import { Edit, CircleX, Download, Delete, Send, HeartFull, Check } from '@/asset
 import { Textbox } from '../ui/textbox';
 import { useEffect, useState } from 'react';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import 'quill/dist/quill.snow.css';
 
 import {
   deactivateBoard,
@@ -212,10 +213,13 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       </div>
 
       {/* 본문 */}
-      <div
-        className="border-b border-gray-900 p-4 pb-10 leading-relaxed whitespace-pre-line"
-        dangerouslySetInnerHTML={{ __html: post.content }}
-      />
+      <div className="ql-snow">
+        <div
+          className="ql-editor border-b border-gray-900 p-4 !py-10 leading-relaxed whitespace-pre-line"
+          dangerouslySetInnerHTML={{ __html: post.content }}
+        />
+      </div>
+
       {/* 첨부파일 목록 */}
       {attachments.length > 0 && (
         <div className="border-b border-gray-300 bg-gray-50 p-4">
