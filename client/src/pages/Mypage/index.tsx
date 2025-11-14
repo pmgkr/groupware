@@ -15,6 +15,7 @@ import {
   getMyProfile,
   registerAccount,
   updateAccount,
+  uploadProfileImage,
   type BankAccount,
   type BankCode,
   type UserDTO,
@@ -29,10 +30,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
-import { BookUser, CheckCircle, Crown, CrownIcon, DeleteIcon, FlagTriangleRight, OctagonAlert } from 'lucide-react';
+import { Camera, CheckCircle, Crown, CrownIcon, DeleteIcon, OctagonAlert } from 'lucide-react';
 import { CheckboxButton } from '@/components/ui/checkboxButton';
 import { DayPicker } from '@components/daypicker';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function Mypage() {
   const [user, setUser] = useState<UserDTO | null>(null);
@@ -98,6 +100,37 @@ export default function Mypage() {
   const handleCancel = () => {
     setEditedUser(user); // 원래 값 복원
     setIsEditing(false);
+  };
+
+  //프로필 이미지 수정
+  const handleProfileImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const result = await uploadProfileImage(file, 'mypage');
+      const updatedUser = await getMyProfile();
+      setUser(updatedUser);
+
+      window.dispatchEvent(new Event('profile_update')); // 같은 탭
+      localStorage.setItem('profile_update', Date.now().toString()); // 다른 탭
+      console.log('📸 업로드 성공:', result);
+
+      addAlert({
+        title: '프로필 이미지 변경',
+        message: `<p>프로필 이미지가 성공적으로 변경되었습니다.</p>`,
+        icon: <CheckCircle className="text-green-500" />,
+        duration: 2000,
+      });
+    } catch (err) {
+      console.error('❌ 프로필 이미지 업로드 실패:', err);
+      addAlert({
+        title: '오류',
+        message: `<p>이미지 업로드 중 오류가 발생했습니다.</p>`,
+        icon: <OctagonAlert className="text-red-500" />,
+        duration: 2500,
+      });
+    }
   };
 
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -260,9 +293,21 @@ export default function Mypage() {
     <>
       <section className="flex flex-col gap-y-5">
         <div className="flex items-center gap-x-14 rounded-md border border-gray-300 px-20 py-6">
-          <div className="relative aspect-square w-36 overflow-hidden rounded-[50%]">
-            <img src={getImageUrl('dummy/profile')} alt="프로필 이미지" className="h-full w-full object-cover" />
+          <div className="group relative aspect-square w-36 overflow-hidden rounded-[50%]">
+            <img
+              src={user?.profile_image ? `https://gbend.cafe24.com/uploads/mypage/${user.profile_image}` : getImageUrl('dummy/profile')}
+              alt="프로필 이미지"
+              className="h-full w-full object-cover"
+            />
+            {/* hover */}
+            <label
+              htmlFor="profileUpload"
+              className="absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <Camera className="size-10 text-white/80" />
+            </label>
+            <input id="profileUpload" type="file" accept="image/*" className="hidden" onChange={handleProfileImage} />
           </div>
+
           <div className="text-base font-medium tracking-tight text-gray-950">
             <div className="flex items-center gap-x-1.5 text-[.875em] text-gray-500">
               {user?.branch}
@@ -320,7 +365,7 @@ export default function Mypage() {
                       <Button
                         variant="outline"
                         className={cn(
-                          'border-input focus-visible:border-primary-blue-300 h-9 w-full px-3 text-left text-sm font-normal text-gray-700 hover:bg-[none]',
+                          'border-input focus-visible:border-primary-blue-300 h-10 w-full px-3 text-left text-base font-normal text-gray-700 hover:bg-[none]',
                           !editedUser?.birth_date && 'text-muted-foreground hover:text-muted-foreground',
                           isBirthOpen && 'border-primary-blue-300'
                         )}>
@@ -356,7 +401,7 @@ export default function Mypage() {
                       <Button
                         variant="outline"
                         className={cn(
-                          'border-input focus-visible:border-primary-blue-300 h-9 w-full px-3 text-left text-sm font-normal text-gray-700 hover:bg-[none]',
+                          'border-input focus-visible:border-primary-blue-300 h-10 w-full px-3 text-left text-base font-normal text-gray-700 hover:bg-[none]',
                           !editedUser?.birth_date && 'text-muted-foreground hover:text-muted-foreground',
                           isHireOpen && 'border-primary-blue-300'
                         )}>
@@ -394,7 +439,7 @@ export default function Mypage() {
               <strong className="mb-1 block text-[1.14em] font-bold text-gray-950">주소</strong>
               {isEditing ? (
                 <Input
-                  className="h-9"
+                  className="h-10"
                   value={editedUser?.address || ''}
                   onChange={(e) => setEditedUser({ ...editedUser!, address: e.target.value })}
                 />
@@ -406,7 +451,7 @@ export default function Mypage() {
               <strong className="mb-1 block text-[1.14em] font-bold text-gray-950">비상 연락망</strong>
               {isEditing ? (
                 <Input
-                  className="h-9"
+                  className="h-10"
                   value={editedUser?.emergency_phone || ''}
                   onChange={(e) => setEditedUser({ ...editedUser!, emergency_phone: e.target.value })}
                 />
@@ -533,18 +578,16 @@ export default function Mypage() {
                     />
                   </div>
 
-                  <div className="flex">
+                  <div className="flex items-center">
                     <FormField
                       control={form.control}
                       name="flag"
                       render={({ field }) => (
                         <FormItem>
-                          <CheckboxButton
+                          <Checkbox
                             id="flag"
-                            label="내 계좌 설정"
+                            label="대표 설정"
                             size="md"
-                            variant="dynamic"
-                            className="mt-2.5 flex-1 text-gray-500"
                             checked={field.value === 'mine'} // ✅ 체크 상태 → mine
                             onCheckedChange={(checked) => field.onChange(checked ? 'mine' : 'exp')}
                           />
