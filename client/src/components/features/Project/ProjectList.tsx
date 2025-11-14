@@ -110,7 +110,6 @@ export default function ProjectList() {
   const fetchFavorites = useCallback(async () => {
     try {
       const res = await getBookmarkList();
-      // 응답이 [{ project_id: string }, ...] 형태라면
       setFavorites(res.map((item) => String(item.project_id)));
     } catch (err) {
       console.error('❌ 즐겨찾기 목록 불러오기 실패:', err);
@@ -158,11 +157,7 @@ export default function ProjectList() {
         params.tagged = 'Y';
       }
 
-      console.log('params:', params);
-
       const res = await getProjectList(params);
-
-      console.log(res);
 
       setProjects(res.items);
       setTotal(res.total);

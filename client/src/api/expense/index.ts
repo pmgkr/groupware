@@ -1,17 +1,6 @@
 // 📦 일반비용 (Non-Expense) API
 import { http } from '@/lib/http';
-
-// ------------------------------
-// 공통 코드 타입
-// ------------------------------
-export type ExpenseType = {
-  code: string;
-};
-
-export type BankList = {
-  code: string;
-  name: string;
-};
+import type { ExpenseType, BankList } from '@/api/common/types';
 
 // ------------------------------
 // 리스트 조회용 타입
@@ -50,6 +39,7 @@ export type ExpenseListItem = {
   wdate: string;
   ddate?: string | null;
   edate?: string | null;
+  cdate?: string | null;
   remark: string;
 };
 
@@ -231,10 +221,7 @@ export async function deleteTempExpense(payload: { seqs: number[] }): Promise<{ 
 // 일반비용 상세보기
 export async function getExpenseView(expid: string | undefined): Promise<ExpenseViewDTO> {
   if (!expid) throw new Error('expid가 필요합니다.');
-  const url = `/user/nexpense/${expid}`;
-  const res = http<ExpenseViewDTO>(url, { method: 'GET' });
-
-  return res;
+  return http<ExpenseViewDTO>(`/user/nexpense/${expid}`, { method: 'GET' });
 }
 
 // 일반비용 작성하기

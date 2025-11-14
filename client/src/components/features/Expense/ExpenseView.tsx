@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
-import { useForm, useFieldArray, useWatch } from 'react-hook-form';
-import { cn } from '@/lib/utils';
 import { formatKST, formatAmount } from '@/utils';
 import { getExpenseView, type ExpenseViewDTO } from '@/api';
 
@@ -10,7 +8,7 @@ import { Badge } from '@components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import { Download, Edit } from '@/assets/images/icons';
-import { File, FileUp, FilePlus, FileCheck, FileX, Banknote, BanknoteArrowDown, Link as LinkIcon } from 'lucide-react';
+import { File, Link as LinkIcon } from 'lucide-react';
 
 import { format } from 'date-fns';
 import { statusIconMap, getLogMessage } from './utils/statusUtils';

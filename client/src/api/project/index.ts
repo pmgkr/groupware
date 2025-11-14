@@ -1,5 +1,38 @@
 import { http } from '@/lib/http';
 import { cleanParams } from '@/utils';
+import type { ExpenseType, BankList } from '@/api/common/types';
+
+// ------------------------------
+// 프로젝트 비용 조회용 타입
+// ------------------------------
+export type pExpenseListItem = {
+  seq: number;
+  exp_id: string;
+  project_id: string;
+  user_id: string;
+  user_nm: string;
+  manager_id: string;
+  manager_nm: string;
+  el_type: string;
+  el_title: string;
+  el_method: string;
+  el_attach: string;
+  el_deposit?: string | null;
+  bank_account: string;
+  bank_name: string;
+  bank_code: string;
+  account_name: string;
+  el_amount: number;
+  el_tax: number;
+  el_total: number;
+  status: string;
+  rej_reason?: string | null;
+  wdate: string;
+  ddate?: string | null; // 지급 예정일자 (Finance)
+  edate?: string | null; // 지급 완료일자 (Finance)
+  cdate?: string | null; // 승인일자 (Manager)
+  remark: string;
+};
 
 // 프로젝트 리스트 조회용 타입
 export type ProjectListItem = {
@@ -35,7 +68,7 @@ export type ProjectListParams = {
   tagged?: 'Y' | 'N' | string;
 };
 
-// 프로젝트 생성 데이터타입
+// 프로젝트 생성 전송용 데이터타입
 export interface projectCreatePayload {
   project_year: string;
   project_brand: string;
@@ -52,10 +85,58 @@ export interface projectCreatePayload {
   remark?: string | null;
 }
 
+// 프로젝트 생성 응답 타입
 export interface projectCreateResponse {
   ok: boolean;
   project_id: string;
 }
+
+// 프로젝트 상세 응답 타입
+export interface ProjectViewDTO {
+  project_id: string;
+  project_title: string;
+  project_year: string;
+  project_brand: string;
+  project_cate: string[];
+  project_sdate: string;
+  project_edate: string;
+  client_id: number;
+  client_nm: string;
+  owner_id: string;
+  owner_nm: string;
+  team_id: number;
+  team_name: string;
+  project_status: string;
+}
+
+// 프로젝트 멤버 타입
+export type projectMemberDTO = {
+  seq: number;
+  user_id: string;
+  user_nm: string;
+  user_type: 'owner' | 'member' | string;
+  profile_image?: string;
+};
+
+export type projectExpenseParams = {
+  project_id?: string;
+  year?: string;
+  type?: string;
+  method?: string;
+  attach?: string;
+  status?: string;
+  page?: number;
+  size?: number;
+};
+
+// 프로젝트 비용 리스트 Reponse
+export type projectExpenseResponse = {
+  items: pExpenseListItem[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+};
 
 // 즐겨찾기 리스트
 export const getBookmarkList = async () => {
@@ -90,4 +171,34 @@ export async function projectCreate(payload: projectCreatePayload) {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+// 프로젝트 상세보기 (오버뷰)
+export async function getProjectView(projectId: string | undefined) {
+  if (!projectId) throw new Error('projectId가 필요합니다.');
+
+  return http<ProjectViewDTO>(`/user/project/info/${projectId}`, { method: 'GET' });
+}
+
+// 프로젝트 멤버 리스트
+export async function getProjectMember(projectId: string | undefined) {
+  if (!projectId) throw new Error('projectId가 필요합니다.');
+
+  return http<projectMemberDTO[]>(`/user/project/member/${projectId}`, { method: 'GET' });
+}
+
+// 프로젝트비용 유형 가져오기
+export async function getProjectExpenseType(type: string): Promise<ExpenseType[]> {
+  return http<ExpenseType[]>(`/user/common/codeList?ctype=${type}`, { method: 'GET' });
+}
+
+// 프로젝트비용 리스트
+export async function getProjectExpense(params: projectExpenseParams) {
+  const clean = cleanParams(params);
+
+  // 쿼리스트링으로 변환
+  const query = new URLSearchParams(clean as Record<string, string>).toString();
+  const res = await http<projectExpenseResponse>(`/user/pexpense/list?${query}`, { method: 'GET' });
+
+  return res;
 }

@@ -1,4 +1,5 @@
 // src/utils/index.ts
+export * from './userUtils';
 export * from './number';
 export * from './imageMap';
 export * from './date';
