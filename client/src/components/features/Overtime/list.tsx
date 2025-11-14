@@ -22,6 +22,7 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
+import { AppPagination } from '@/components/ui/AppPagination';
 
 dayjs.locale('ko');
 
@@ -67,6 +68,10 @@ export default function OvertimeList({
   // 데이터 state
   const [allData, setAllData] = useState<OvertimeItem[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // 페이지네이션 state
+  const [page, setPage] = useState(1);
+  const pageSize = 15;
   
   // 팀 목록 state
   const [teams, setTeams] = useState<{ team_id: number; team_name: string }[]>([]);
@@ -232,18 +237,30 @@ export default function OvertimeList({
     return result;
   }, [allData, activeTab, filters]);
 
-  // 필터 변경 시 체크박스 초기화
+  // 페이지네이션 적용된 데이터
+  const paginatedData = useMemo(() => {
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, page, pageSize]);
+
+  // 전체 데이터 개수 및 페이지 수
+  const total = filteredData.length;
+  const totalPages = Math.ceil(total / pageSize);
+
+  // 필터 변경 시 체크박스 초기화 및 첫 페이지로 이동
   useEffect(() => {
     setCheckedItems([]);
     setCheckAll(false);
     onCheckedItemsChange([]);
+    setPage(1);
   }, [activeTab, filters]);
 
-  // 전체 선택 (반려됨, 승인완료 제외)
+  // 전체 선택 (현재 페이지의 반려됨, 승인완료 제외)
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
     const newCheckedItems = checked 
-      ? filteredData.filter(item => item.ot_status !== 'N' && item.ot_status !== 'T').map((item) => item.id) 
+      ? paginatedData.filter(item => item.ot_status !== 'N' && item.ot_status !== 'T').map((item) => item.id) 
       : [];
     setCheckedItems(newCheckedItems);
     onCheckedItemsChange(newCheckedItems);
@@ -448,14 +465,14 @@ export default function OvertimeList({
               초과근무 신청 데이터 불러오는 중
             </TableCell>
           </TableRow>
-        ) : filteredData.length === 0 ? (
+        ) : paginatedData.length === 0 ? (
           <TableRow>
             <TableCell className="h-100 text-gray-500" colSpan={10}>
               초과근무 신청 데이터가 없습니다.
             </TableCell>
           </TableRow>
         ) : (
-          filteredData.map((item) => (
+          paginatedData.map((item) => (
             <TableRow 
               key={item.id}
               className="cursor-pointer hover:bg-gray-50"
@@ -514,6 +531,11 @@ export default function OvertimeList({
         )}
         </TableBody>
       </Table>
+      {total > 0 && (
+        <div className="mt-5">
+          <AppPagination totalPages={totalPages} initialPage={page} visibleCount={5} onPageChange={(p) => setPage(p)} />
+        </div>
+      )}
 
       {/* 추가근무 다이얼로그 */}
       {selectedOvertime && (() => {
@@ -604,10 +626,10 @@ export default function OvertimeList({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>닫기</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmApprove}>
               승인하기
             </AlertDialogAction>
+            <AlertDialogCancel>닫기</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
