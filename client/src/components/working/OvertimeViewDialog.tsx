@@ -311,14 +311,14 @@ export default function OvertimeViewDialog({
           {/* 공통 필드 */}
           <div className="space-y-2">
             <Label htmlFor="client-name">클라이언트명</Label>
-            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
+            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100 break-all">
               <span className="text-base">{overtimeData.clientName}</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="work-description">작업 내용</Label>
-            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100 min-h-[80px]">
+            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100 min-h-[80px] break-all whitespace-pre-wrap">
               <span className="text-base">{overtimeData.workDescription}</span>
             </div>
           </div>
@@ -386,10 +386,10 @@ export default function OvertimeViewDialog({
               <>
                 {!showRejectInput ? (
                   <>
-                    <Button variant="default" onClick={handleApproveClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue">
+                    <Button variant="default" onClick={handleApproveClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
                       승인하기
                     </Button>
-                    <Button variant="destructive" onClick={() => setShowRejectInput(true)} className="bg-destructive hover:bg-destructive">
+                    <Button variant="destructive" onClick={() => setShowRejectInput(true)} className="bg-destructive hover:bg-destructive mr-0">
                       반려하기
                     </Button>
                   </>
@@ -413,10 +413,10 @@ export default function OvertimeViewDialog({
             {(isOwnRequest || !isManager) && (
               <>
                 {status === "반려됨" && onReapply && (
-                  <Button variant="default" onClick={onReapply}>재신청하기</Button>
+                  <Button variant="default" onClick={onReapply} className="mr-0">재신청하기</Button>
                 )}
                 {status === "승인대기" && (
-                  <Button variant="destructive" onClick={handleCancelClick}>신청 취소하기</Button>
+                  <Button variant="destructive" onClick={handleCancelClick} className="mr-0">신청 취소하기</Button>
                 )}
               </>
             )}

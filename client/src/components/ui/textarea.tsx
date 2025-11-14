@@ -5,7 +5,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const textareaVariants = cva(
-  "w-full text-gray-900 bg-white border placeholder:text-muted-foreground flex field-sizing-content inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-base font-regular transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none shadow-gray-400 focus:border-primary-blue-300 disabled:bg-gray-300 disabled:placeholder:text-gray-800 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive cursor-pointer text-base resize-none",
+  "w-full max-w-full text-gray-900 bg-white border placeholder:text-muted-foreground items-start gap-2 whitespace-pre-wrap break-all rounded-md text-base font-regular transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none shadow-gray-400 focus:border-primary-blue-300 disabled:bg-gray-300 disabled:placeholder:text-gray-800 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive cursor-pointer text-base resize-none box-border",
   {
     variants: {
       variant: {
@@ -16,7 +16,7 @@ const textareaVariants = cva(
         error: 'text-[var(--negative-base)] border-[var(--negative-base)]',
       },
       size: {
-        default: 'min-h-24 h-24 px-4 py-2 has-[>svg]:px-3',
+        default: 'min-h-24 max-w-full h-24 px-4 py-2 has-[>svg]:px-3',
         sm: 'min-h-16 h-16 rounded-md text-sm gap-1.5 px-3.5 has-[>svg]:px-2.5 py-2.5',
         lg: 'min-h-32 h-32 text-lg rounded-md px-5 has-[>svg]:px-4 py-3',
         board: 'min-h-120 h-120 px-4 py-2 has-[>svg]:px-3',

@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router';
 import Manager from '@/pages/Manager';
 import Working from '@/pages/Manager/working';
+import Overtime from '@/pages/Manager/Overtime';
 
 export const managerRoutes: RouteObject = {
   path: 'manager', // → /manager
@@ -9,13 +10,16 @@ export const managerRoutes: RouteObject = {
     nav: [
       { to: '/manager', label: '대시보드', end: true },
       { to: '/manager/working', label: '근태 관리' },
+      { to: '/manager/overtime', label: '추가근무 관리' },
       { to: '/manager/expense', label: '비용 관리' },
       { to: '/manager/vacation', label: '휴가 관리' },
       { to: '/manager/member', label: '구성원 관리' },
     ],
   },
-  children: [{ index: true, element: <Manager /> },
+  children: [
+    { index: true, element: <Manager /> },
     { path: 'working', element: <Working /> },
+    { path: 'overtime', element: <Overtime /> },
   ],
 };
 
