@@ -27,12 +27,14 @@ interface ToolbarProps {
   currentDate: Date;
   onDateChange: (newDate: Date) => void;
   onTeamSelect?: (teamIds: number[]) => void;
+  showTeamSelect?: boolean; // 팀 선택 셀렉터 표시 여부
 }
 
 export default function Toolbar({ 
   currentDate, 
   onDateChange,
-  onTeamSelect = () => {}
+  onTeamSelect = () => {},
+  showTeamSelect = true
 }: ToolbarProps) {
   const { user } = useAuth();
   
@@ -213,29 +215,31 @@ export default function Toolbar({
     <div className="w-full flex items-center justify-between mb-5 relative">
       
       {/* 왼쪽: 팀 필터 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          {/* 동적 셀렉트 렌더링 */}
-          <div className="flex items-center gap-2">
-            {selectConfigs.map((config) => (
-              <MultiSelect
-                simpleSelect={true}
-                key={config.id}
-                options={config.options}
-                onValueChange={(value) => handleSelectChange(config.id, value)}
-                defaultValue={config.value || []}
-                placeholder={config.placeholder}
-                size="sm"
-                maxCount={2}
-                searchable={config.searchable}
-                hideSelectAll={config.hideSelectAll}
-                autoSize={config.autoSize}
-                className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
-              />
-            ))}
+      {showTeamSelect && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            {/* 동적 셀렉트 렌더링 */}
+            <div className="flex items-center gap-2">
+              {selectConfigs.map((config) => (
+                <MultiSelect
+                  simpleSelect={true}
+                  key={config.id}
+                  options={config.options}
+                  onValueChange={(value) => handleSelectChange(config.id, value)}
+                  defaultValue={config.value || []}
+                  placeholder={config.placeholder}
+                  size="sm"
+                  maxCount={2}
+                  searchable={config.searchable}
+                  hideSelectAll={config.hideSelectAll}
+                  autoSize={config.autoSize}
+                  className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+                />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 중앙: 현재 날짜 표시 */}
       <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5">
@@ -267,7 +271,7 @@ export default function Toolbar({
       </div>
 
       {/* 오른쪽: 뷰 변경 버튼들 */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 float-right ml-auto">
         <Button
           onClick={() => handleNavigate('TODAY')}
           variant="outline"
