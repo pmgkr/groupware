@@ -4,6 +4,7 @@ import { MultiSelect } from "@components/multiselect/multi-select";
 import { useAuth } from '@/contexts/AuthContext';
 import { getTeams } from '@/api/teams';
 import { type MyTeamItem } from '@/api/working';
+import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // 셀렉트 옵션 타입 정의
 export interface SelectOption {
@@ -24,13 +25,17 @@ interface OvertimeToolbarProps {
   onTabChange?: (tab: 'weekday' | 'weekend') => void;
   onTeamSelect?: (teamIds: number[]) => void;
   onFilterChange?: (filters: OvertimeFilters) => void;
+  checkedItems?: number[];
+  onApproveAll?: () => void;
 }
 
 export default function OvertimeToolbar({ 
   activeTab = 'weekday',
   onTabChange = () => {},
   onTeamSelect = () => {},
-  onFilterChange = () => {}
+  onFilterChange = () => {},
+  checkedItems = [],
+  onApproveAll = () => {}
 }: OvertimeToolbarProps) {
   const { user } = useAuth();
   
@@ -174,6 +179,18 @@ export default function OvertimeToolbar({
     loadTeams();
   }, [user]);
 
+  // 팀 목록이 로드되면 모든 팀 선택
+  useEffect(() => {
+    if (teams.length > 0 && selectedTeams.length === 0) {
+      const allTeamIds = teams.map(team => String(team.team_id));
+      setSelectedTeams(allTeamIds);
+      
+      // 부모 컴포넌트에 알림
+      const teamIds = allTeamIds.map(id => parseInt(id));
+      onTeamSelect(teamIds);
+    }
+  }, [teams]);
+
   // 팀 옵션 (알파벳순 정렬)
   const teamOptions = useMemo(() => {
     const sortedTeams = [...teams].sort((a, b) => 
@@ -186,7 +203,7 @@ export default function OvertimeToolbar({
   }, [teams]);
 
   return (
-    <div className="w-full flex items-center mb-5">
+    <div className="w-full flex items-center justify-between mb-5">
       <div className="flex items-center">
         {/* 탭 버튼 */}
         <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
@@ -213,26 +230,26 @@ export default function OvertimeToolbar({
         {/* 필터 셀렉트들 */}
         <div className="flex items-center gap-2 before:mx-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
           
-          {/* 연도 선택 */}
-          <MultiSelect
-            options={[
-              { value: '2025', label: '2025' },
-              { value: '2024', label: '2024' },
-              { value: '2023', label: '2023' },
-            ]}
-            onValueChange={(value) => handleSelectChange('year', value)}
-            defaultValue={filters.year ? [filters.year] : []}
-            placeholder="연도"
-            size="sm"
-            maxCount={0}
-            searchable={false}
-            hideSelectAll={true}
-            autoSize={true}
-            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
-          />
+          {/* 연도 단일 선택 */}
+          <Select value={filters.year} onValueChange={(v) => handleSelectChange('year', v)}>
+              <SelectTrigger size="sm">
+                <SelectValue placeholder="연도 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem size="sm" value="2025">
+                    2025
+                  </SelectItem>
+                  <SelectItem size="sm" value="2024">
+                    2024
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           
           {/* 팀 선택 */}
           <MultiSelect
+            simpleSelect={true}
             options={teamOptions}
             onValueChange={(value) => handleSelectChange('teams', value)}
             defaultValue={selectedTeams}
@@ -247,10 +264,11 @@ export default function OvertimeToolbar({
 
           {/* 상태 선택 */}
           <MultiSelect
+            simpleSelect={true}
             options={[
-              { value: 'pending', label: '대기' },
-              { value: 'approved', label: '승인' },
-              { value: 'rejected', label: '반려' },
+              { value: 'pending', label: '승인대기' },
+              { value: 'approved', label: '승인완료' },
+              { value: 'rejected', label: '반려됨' },
             ]}
             onValueChange={(value) => handleSelectChange('status', value)}
             defaultValue={filters.status}
@@ -267,9 +285,10 @@ export default function OvertimeToolbar({
             <>
             {/* 식대 선택 */}
             <MultiSelect
+              simpleSelect={true}
               options={[
-                { value: 'used', label: '사용함' },
-                { value: 'notUsed', label: '사용안함' },
+                { value: 'used', label: '사용' },
+                { value: 'notUsed', label: '미사용' },
               ]}
               onValueChange={(value) => handleSelectChange('mealAllowance', value)}
               defaultValue={filters.mealAllowance}
@@ -284,9 +303,10 @@ export default function OvertimeToolbar({
 
             {/* 교통비 선택 */}
             <MultiSelect
+              simpleSelect={true}
               options={[
-                { value: 'used', label: '사용함' },
-                { value: 'notUsed', label: '사용안함' },
+                { value: 'used', label: '사용' },
+                { value: 'notUsed', label: '미사용' },
               ]}
               onValueChange={(value) => handleSelectChange('transportAllowance', value)}
               defaultValue={filters.transportAllowance}
@@ -305,8 +325,8 @@ export default function OvertimeToolbar({
             <>
             {/* 보상 선택 */}
             <MultiSelect
+              simpleSelect={true}
               options={[
-                { value: 'none', label: '해당없음' },
                 { value: 'special', label: '특별대휴' },
                 { value: 'compensatory', label: '보상휴가' },
                 { value: 'allowance', label: '수당지급' },
@@ -326,6 +346,8 @@ export default function OvertimeToolbar({
 
         </div>
       </div>
+      
+      <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>승인하기</Button>
     </div>
   );
 }

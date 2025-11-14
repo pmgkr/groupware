@@ -448,6 +448,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
               value={formData.clientName}
               onChange={(e) => handleInputChange('clientName', e.target.value)}
               className="w-full"
+              maxLength={45}
               errorMessage={errors.clientName}
             />
           </div>
@@ -457,6 +458,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
             <Textarea
               id="work-description"
               placeholder="작업 내용을 입력하세요"
+              maxLength={500}
               value={formData.workDescription}
               onChange={(e) => handleInputChange('workDescription', e.target.value)}
               className="w-full"

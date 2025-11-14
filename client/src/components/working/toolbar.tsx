@@ -219,13 +219,14 @@ export default function Toolbar({
           <div className="flex items-center gap-2">
             {selectConfigs.map((config) => (
               <MultiSelect
+                simpleSelect={true}
                 key={config.id}
                 options={config.options}
                 onValueChange={(value) => handleSelectChange(config.id, value)}
                 defaultValue={config.value || []}
                 placeholder={config.placeholder}
                 size="sm"
-                maxCount={0}
+                maxCount={2}
                 searchable={config.searchable}
                 hideSelectAll={config.hideSelectAll}
                 autoSize={config.autoSize}

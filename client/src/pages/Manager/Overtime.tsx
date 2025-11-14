@@ -6,8 +6,9 @@ export default function ManagerOvertime() {
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState<'weekday' | 'weekend'>('weekday');
   const [overtimeFilters, setOvertimeFilters] = useState<OvertimeFilters>({});
+  const [checkedItems, setCheckedItems] = useState<number[]>([]);
 
-  // 탭 변경 핸들러 (필터로 작동)
+  // 평일 추가근무/휴일 근무 탭 변경 핸들러
   const handleTabChange = (tab: 'weekday' | 'weekend') => {
     setActiveTab(tab);
   };
@@ -20,7 +21,19 @@ export default function ManagerOvertime() {
   // 추가근무 필터 변경 핸들러
   const handleFilterChange = (filters: OvertimeFilters) => {
     setOvertimeFilters(filters);
-    console.log('추가근무 필터 변경:', filters);
+  };
+
+  // 체크된 항목 변경 핸들러
+  const handleCheckedItemsChange = (items: number[]) => {
+    setCheckedItems(items);
+  };
+
+  // 일괄 승인 핸들러
+  const handleApproveAll = () => {
+    // window 객체를 통해 list 컴포넌트의 함수 호출
+    if ((window as any).__overtimeApproveAll) {
+      (window as any).__overtimeApproveAll();
+    }
   };
 
   return (
@@ -30,12 +43,15 @@ export default function ManagerOvertime() {
         onTabChange={handleTabChange}
         onTeamSelect={handleTeamSelect}
         onFilterChange={handleFilterChange}
+        checkedItems={checkedItems}
+        onApproveAll={handleApproveAll}
       />
       
       <OvertimeList
         teamIds={selectedTeamIds}
         activeTab={activeTab}
         filters={overtimeFilters}
+        onCheckedItemsChange={handleCheckedItemsChange}
       />
     </div>
   );

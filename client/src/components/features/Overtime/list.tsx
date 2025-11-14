@@ -5,10 +5,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import OvertimeViewDialog from '@/components/working/OvertimeViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { workingApi } from '@/api/working';
+import { getTeams } from '@/api/teams';
 import type { OvertimeItem } from '@/api/working';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import type { OvertimeFilters } from '@/components/features/Overtime/toolbar';
+import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/components/ui/use-toast';
 
 dayjs.locale('ko');
 
@@ -39,18 +52,24 @@ export interface OvertimeListProps {
   teamIds?: number[];
   activeTab?: 'weekday' | 'weekend';
   filters?: OvertimeFilters;
+  onCheckedItemsChange?: (items: number[]) => void;
 }
 
 export default function OvertimeList({ 
   teamIds = [],
   activeTab = 'weekday',
-  filters = {}
+  filters = {},
+  onCheckedItemsChange = () => {}
 }: OvertimeListProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   
   // 데이터 state
   const [allData, setAllData] = useState<OvertimeItem[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // 팀 목록 state
+  const [teams, setTeams] = useState<{ team_id: number; team_name: string }[]>([]);
   
   // 체크박스 state
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
@@ -61,8 +80,25 @@ export default function OvertimeList({
   const [selectedOvertime, setSelectedOvertime] = useState<OvertimeItem | null>(null);
   const [overtimeDetailData, setOvertimeDetailData] = useState<any>(null);
   
+  // 일괄 승인 확인 모달 state
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [approveCount, setApproveCount] = useState(0);
+  
   // 관리자 여부
   const isManager = user?.user_level === 'manager' || user?.user_level === 'admin';
+
+  // 팀 목록 로드
+  useEffect(() => {
+    const loadTeams = async () => {
+      try {
+        const teamList = await getTeams({});
+        setTeams(teamList.map(t => ({ team_id: t.team_id, team_name: t.team_name })));
+      } catch (error) {
+        console.error('팀 목록 조회 실패:', error);
+      }
+    };
+    loadTeams();
+  }, []);
 
   // 데이터 조회
   useEffect(() => {
@@ -181,6 +217,18 @@ export default function OvertimeList({
       });
     }
     
+    // 정렬: 1) 승인대기 최우선, 2) 신청일 최근순
+    result.sort((a, b) => {
+      // 1. 승인대기(H)를 최우선으로
+      if (a.ot_status === 'H' && b.ot_status !== 'H') return -1;
+      if (a.ot_status !== 'H' && b.ot_status === 'H') return 1;
+      
+      // 2. 신청일(ot_created_at) 최근순 (내림차순)
+      const dateA = a.ot_created_at ? new Date(a.ot_created_at).getTime() : 0;
+      const dateB = b.ot_created_at ? new Date(b.ot_created_at).getTime() : 0;
+      return dateB - dateA;
+    });
+    
     return result;
   }, [allData, activeTab, filters]);
 
@@ -188,17 +236,26 @@ export default function OvertimeList({
   useEffect(() => {
     setCheckedItems([]);
     setCheckAll(false);
+    onCheckedItemsChange([]);
   }, [activeTab, filters]);
 
-  // 전체 선택
+  // 전체 선택 (반려됨, 승인완료 제외)
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
-    setCheckedItems(checked ? filteredData.map((item) => item.id) : []);
+    const newCheckedItems = checked 
+      ? filteredData.filter(item => item.ot_status !== 'N' && item.ot_status !== 'T').map((item) => item.id) 
+      : [];
+    setCheckedItems(newCheckedItems);
+    onCheckedItemsChange(newCheckedItems);
   };
 
   // 개별 선택
   const handleCheckItem = (id: number, checked: boolean) => {
-    setCheckedItems((prev) => (checked ? [...prev, id] : prev.filter((i) => i !== id)));
+    setCheckedItems((prev) => {
+      const newItems = checked ? [...prev, id] : prev.filter((i) => i !== id);
+      onCheckedItemsChange(newItems);
+      return newItems;
+    });
   };
 
   // 추가근무 클릭 핸들러
@@ -250,6 +307,55 @@ export default function OvertimeList({
     }
   };
 
+  // 일괄 승인 확인 모달 열기
+  const handleApproveAllOvertime = () => {
+    if (checkedItems.length === 0) return;
+    setApproveCount(checkedItems.length);
+    setIsConfirmDialogOpen(true);
+  };
+
+  // 실제 일괄 승인 처리
+  const handleConfirmApprove = async () => {
+    const count = approveCount;
+    try {
+      // 모든 체크된 항목에 대해 승인 요청
+      await Promise.all(
+        checkedItems.map(id => workingApi.approveOvertime(id))
+      );
+      
+      // 확인 모달 닫기
+      setIsConfirmDialogOpen(false);
+      
+      // Toast로 성공 메시지 표시
+      toast({
+        title: "승인 완료",
+        description: `${count}개의 추가근무 신청이 승인 완료되었습니다.`,
+      });
+      
+      // 체크박스 초기화 및 데이터 새로고침
+      setCheckedItems([]);
+      setCheckAll(false);
+      onCheckedItemsChange([]);
+      fetchOvertimeData();
+    } catch (error) {
+      console.error('일괄 승인 실패:', error);
+      toast({
+        title: "승인 실패",
+        description: "일괄 승인 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+      setIsConfirmDialogOpen(false);
+    }
+  };
+
+  // 일괄 승인 함수를 외부에 노출 (toolbar 버튼에서 호출)
+  useEffect(() => {
+    (window as any).__overtimeApproveAll = handleApproveAllOvertime;
+    return () => {
+      delete (window as any).__overtimeApproveAll;
+    };
+  }, [checkedItems]);
+
   // 상태 텍스트 변환
   const getStatusText = (status: string) => {
     switch (status) {
@@ -263,9 +369,9 @@ export default function OvertimeList({
   // 상태 색상 클래스
   const getStatusColorClass = (status: string) => {
     switch (status) {
-      case 'H': return 'text-orange-600 font-semibold';
-      case 'T': return 'text-green-600 font-semibold';
-      case 'N': return 'text-red-600 font-semibold';
+      case 'H': return 'text-orange-600 font-semibold'; // 승인대기
+      case 'T': return 'text-green-600 font-semibold'; // 승인완료
+      case 'N': return 'text-red-600 font-semibold'; // 반려됨
       default: return 'text-gray-600';
     }
   };
@@ -294,19 +400,18 @@ export default function OvertimeList({
     return `${hourPart}시간 ${minutePart}분`;
   };
 
+  // 부서명 조회 (동기 함수)
+  const getTeamName = (teamId: number) => {
+    const team = teams.find(t => t.team_id === teamId);
+    return team?.team_name || '-';
+  };
+
   return (
     <>
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[5%] text-center p-2">
-              <Checkbox 
-                id="chk_all" 
-                className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkAll && 'bg-primary-blue-150')} 
-                checked={checkAll} 
-                onCheckedChange={handleCheckAll} 
-              />
-            </TableHead>
+            <TableHead className="w-[7%] text-center p-2">부서</TableHead>
             <TableHead className="w-[7%] text-center p-2">이름</TableHead>
             <TableHead className="w-[10%] text-center p-2">초과근무날짜</TableHead>
             {activeTab === 'weekday' ?
@@ -325,6 +430,14 @@ export default function OvertimeList({
             <TableHead className="w-[20%] text-center p-2">작업내용</TableHead>
             <TableHead className="w-[10%] text-center p-2">신청일</TableHead>
             <TableHead className="w-[10%] text-center p-2">상태</TableHead>
+            <TableHead className="w-[5%] text-center p-2">
+              <Checkbox 
+                id="chk_all" 
+                className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkAll && 'bg-primary-blue-150')} 
+                checked={checkAll} 
+                onCheckedChange={handleCheckAll} 
+              />
+            </TableHead>
           </TableRow>
         </TableHeader>
 
@@ -348,14 +461,7 @@ export default function OvertimeList({
               className="cursor-pointer hover:bg-gray-50"
               onClick={() => handleOvertimeClick(item)}
             >
-              <TableCell className="text-center p-2" onClick={(e) => e.stopPropagation()}>
-                <Checkbox 
-                  id={`chk_${item.id}`} 
-                  className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkedItems.includes(item.id) && 'bg-primary-blue-150')} 
-                  checked={checkedItems.includes(item.id)} 
-                  onCheckedChange={(checked) => handleCheckItem(item.id, checked as boolean)} 
-                />
-              </TableCell>
+              <TableCell className="text-center p-2">{getTeamName(item.team_id)}</TableCell>
               <TableCell className="text-center p-2">{item.user_name}</TableCell>
               <TableCell className="text-center p-2">
                 {item.ot_date ? dayjs(item.ot_date).format('YYYY-MM-DD (ddd)') : '-'}
@@ -372,17 +478,36 @@ export default function OvertimeList({
                 <TableCell className="w-[10%] text-center p-2">{getRewardText(item.ot_reward)}</TableCell>
                 </>
               }
-              <TableCell className="text-center p-2">{item.ot_client || '-'}</TableCell>
-              <TableCell className="text-left p-2">
-                <div className="truncate" title={item.ot_description}>
-                  {item.ot_description || '-'}
-                </div>
-              </TableCell>
+              <TableCell className="text-center p-2 whitespace-nowrap text-ellipsis overflow-hidden">{item.ot_client || '-'}</TableCell>
+              <TableCell className="text-left p-2 whitespace-nowrap text-ellipsis overflow-hidden">{item.ot_description || '-'}</TableCell>
               <TableCell className="text-center p-2">
                 {item.ot_created_at ? dayjs(item.ot_created_at).format('YYYY-MM-DD HH:mm:ss') : '-'}
               </TableCell>
-              <TableCell className={cn("text-center p-2", getStatusColorClass(item.ot_status))}>
-                {getStatusText(item.ot_status)}
+              <TableCell className="text-center p-2">
+                {item.ot_status === 'H' && (
+                  <Badge variant="outline" size="md" title="승인대기">
+                    {getStatusText(item.ot_status)}
+                  </Badge>
+                )}
+                {item.ot_status === 'T' && (
+                  <Badge variant="default" size="md" title="승인완료">
+                    {getStatusText(item.ot_status)}
+                  </Badge>
+                )}
+                {item.ot_status === 'N' && (
+                  <Badge variant="grayish" size="md" title="반려됨">
+                    {getStatusText(item.ot_status)}
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell className="text-center p-2" onClick={(e) => e.stopPropagation()}>
+                <Checkbox 
+                  id={`chk_${item.id}`} 
+                  className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkedItems.includes(item.id) && 'bg-primary-blue-150')} 
+                  checked={checkedItems.includes(item.id)} 
+                  disabled={item.ot_status === 'N' || item.ot_status === 'T'}
+                  onCheckedChange={(checked) => handleCheckItem(item.id, checked as boolean)} 
+                />
               </TableCell>
             </TableRow>
           ))
@@ -468,6 +593,24 @@ export default function OvertimeList({
           />
         );
       })()}
+
+      {/* 일괄 승인 확인 모달 */}
+      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>승인 확인</AlertDialogTitle>
+            <AlertDialogDescription>
+              {approveCount}개의 추가근무 신청을 승인하시겠습니까?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>닫기</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmApprove}>
+              승인하기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
