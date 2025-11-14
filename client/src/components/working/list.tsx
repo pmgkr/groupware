@@ -259,20 +259,25 @@ export default function WorkingList({
       if (dayInfo.hasOvertime) {
         return (
           <div className="flex flex-col gap-1">
+            {/* 메인 배지 컨테이너 */}
             <span 
-              className="inline-flex self-center px-2 py-0.5 text-xs font-semibold rounded-full relative bg-gray-50 text-gray-400 cursor-pointer hover:shadow-md transition-shadow"
+              className="h-[20px] inline-flex self-center px-2 py-0.5 text-xs font-semibold rounded-full relative bg-gray-50 text-gray-400 cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => dayInfo.overtimeId && handleOvertimeClick(userId, dayKey, dayInfo.overtimeId)}
             >
-              -
+              - {/* 첫 번째 "-" 텍스트 */}
+              
+              {/* 추가근무 알림 도트 */}
               <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                {/* 애니메이션 */}
                 {isPending && (
                   <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor.ping} opacity-75`}></span>
                 )}
+                {/* 도트 */}
                 <span className={`relative inline-flex rounded-full h-3 w-3 ${dotColor.bg} border border-white`}></span>
               </span>
-            </span>
-            <span className="text-gray-400">-</span>
-            <span className="text-gray-400">-</span>
+            </span>              
+            <span className="text-gray-400 h-[20px]">-</span>
+            <span className="text-gray-400 h-[16px]">-</span>
           </div>
         );
       }
