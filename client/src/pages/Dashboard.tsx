@@ -31,7 +31,15 @@ export default function Dashboard() {
             <div className="px-8">
               <Link to="/mypage">
                 <div className="relative mx-auto mb-2.5 aspect-square w-32 overflow-hidden rounded-[50%]">
-                  <img src={getImageUrl('dummy/profile')} alt="프로필 이미지" className="h-full w-full object-cover" />
+                  <img
+                    src={
+                      profile_image
+                        ? `https://gbend.cafe24.com/uploads/mypage/${profile_image}?t=${Date.now()}`
+                        : getImageUrl('dummy/profile')
+                    }
+                    alt="프로필 이미지"
+                    className="h-full w-full object-cover"
+                  />
                 </div>
               </Link>
               <div className="mt-4 text-center text-base text-gray-700">

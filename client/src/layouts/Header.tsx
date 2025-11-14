@@ -56,7 +56,13 @@ export default function Header() {
         <div className="my-8.5 px-8">
           <Link to="/mypage">
             <div className="relative mx-auto mb-2.5 aspect-square w-25 overflow-hidden rounded-[50%]">
-              <img src={getImageUrl('dummy/profile')} alt="프로필 이미지" className="h-full w-full object-cover" />
+              <img
+                src={
+                  profile_image ? `https://gbend.cafe24.com/uploads/mypage/${profile_image}?t=${Date.now()}` : getImageUrl('dummy/profile')
+                }
+                alt="프로필 이미지"
+                className="h-full w-full object-cover"
+              />
             </div>
           </Link>
           <div className="my-2.5 text-center text-sm text-gray-700">

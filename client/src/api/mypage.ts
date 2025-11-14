@@ -1,6 +1,7 @@
 // src/api/mypage.ts
 import { http } from '@/lib/http';
 import type { StringFormatParams } from 'zod/v4/core';
+import { uploadFilesToServer } from './common';
 
 /* mypage */
 export type UserDTO = {
@@ -43,6 +44,21 @@ export async function editMyProfile(data: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
+}
+
+//프로필 이미지 수정
+export async function uploadProfileImage(file: File, subdir = 'mypage') {
+  const uploaded = await uploadFilesToServer([file], subdir);
+  const f = uploaded[0];
+
+  await http('/mypage/profile/image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      image_name: f.sname,
+    }),
+  });
+  return f;
 }
 
 // 계좌 목록

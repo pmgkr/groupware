@@ -1,7 +1,8 @@
 // ReactQuillEditor.tsx
 import { useEffect, useMemo, useRef } from 'react';
 import ReactQuill, { Quill } from 'react-quill-new';
-//import 'react-quill-new/dist/quill.snow.css';
+import 'react-quill-new/dist/quill.snow.css';
+import 'quill/dist/quill.snow.css';
 import ImageResize from 'quill-image-resize-module-react';
 import { uploadEditorImage } from '@/api/office/notice';
 
