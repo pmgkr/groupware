@@ -121,10 +121,10 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     selectedDateRange: undefined,
   });
 
-  // 연차 정보 로드
+  // 연차 정보 로드 (휴가 카테고리일 때만)
   useEffect(() => {
     const loadVacationInfo = async () => {
-      if (user?.user_id && isOpen) {
+      if (user?.user_id && isOpen && formData.category === 'vacation') {
         try {
           const currentYear = new Date().getFullYear();
           const vacationInfo = await scheduleApi.getUserVacations(user.user_id, currentYear);
@@ -137,7 +137,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     };
 
     loadVacationInfo();
-  }, [user, isOpen]);
+  }, [user, isOpen, formData.category]);
 
   const handleInputChange = (field: keyof EventData, value: string | boolean) => {
     setFormData(prev => {

@@ -1,5 +1,5 @@
 // client/src/components/calendar/calendar.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { View } from "react-big-calendar";
 import { parse } from "date-fns/parse";
 import CustomToolbar from "./toolbar";
@@ -206,14 +206,29 @@ export default function CustomCalendar({
   
   // 셀렉트 옵션 설정 => 툴바에 반영됨
   const [selectConfigsState, setSelectConfigsState] = useState<SelectConfig[]>(selectConfigs);
+  
+  // 팀 필터링 state
+  const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
 
   // initialEvents가 변경되면 myEvents 업데이트
   useEffect(() => {
     setMyEvents(initialEvents);
   }, [initialEvents]);
 
-  // 이벤트 필터링 로직
-  const filteredEvents = eventFilter(myEvents, selectConfigsState);
+  // 이벤트 필터링 로직 (기존 필터 + 팀 필터)
+  const filteredEvents = useMemo(() => {
+    // 기존 필터 적용
+    let filtered = eventFilter(myEvents, selectConfigsState);
+    
+    // 팀 필터 적용
+    if (selectedTeamIds.length > 0) {
+      filtered = filtered.filter(event => 
+        selectedTeamIds.includes(event.resource.teamId)
+      );
+    }
+    
+    return filtered;
+  }, [myEvents, selectConfigsState, selectedTeamIds, eventFilter]);
 
   const handleNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
     let newDate = new Date(currentDate);
@@ -264,6 +279,11 @@ export default function CustomCalendar({
     );
   };
 
+  // 팀 선택 핸들러
+  const handleTeamSelect = (teamIds: number[]) => {
+    setSelectedTeamIds(teamIds);
+  };
+
   // 일정 등록 Dialog 핸들러
   const handleAddEvent = () => {
     setIsEventDialogOpen(true);
@@ -285,7 +305,7 @@ export default function CustomCalendar({
     setSelectedEvent(null);
   };
 
-  // 이벤트 취소 신청 핸들러
+  // 사용자가 취소 신청하는 핸들러
   const handleRequestCancelEvent = async () => {
     if (!selectedEvent) {
       throw new Error('선택된 일정이 없습니다.');
@@ -304,16 +324,41 @@ export default function CustomCalendar({
     }
 
     const { scheduleApi } = await import('@/api/calendar');
-    const currentStatus = selectedEvent.resource.schStatus;
     
-    // 현재 상태에 따라 다른 처리
-    if (currentStatus === 'Y') {
-      // 등록 완료 상태 → 취소 신청 (H로 변경)
-      await scheduleApi.updateScheduleStatus(eventId, 'H');
-    } else if (currentStatus === 'H') {
-      // 취소 요청됨 상태 → 취소 완료 (N으로 변경)
-      await scheduleApi.updateScheduleStatus(eventId, 'N');
+    // 등록 완료 상태 → 취소 신청 (H로 변경)
+    await scheduleApi.updateScheduleStatus(eventId, 'H');
+    
+    // 다이얼로그 닫기
+    handleCloseEventViewDialog();
+    
+    // 부모 컴포넌트에 날짜 변경 알림하여 데이터 새로고침
+    if (onDateChange) {
+      onDateChange(currentDate);
     }
+  };
+
+  // 매니저가 취소 승인하는 핸들러
+  const handleApproveCancelEvent = async () => {
+    if (!selectedEvent) {
+      throw new Error('선택된 일정이 없습니다.');
+    }
+    
+    // resource가 없으면 에러
+    if (!selectedEvent.resource) {
+      throw new Error('일정 정보를 찾을 수 없습니다.');
+    }
+    
+    // id로만 이벤트를 찾음 (seq는 사용하지 않음)
+    const eventId = selectedEvent.resource.id;
+    
+    if (!eventId) {
+      throw new Error('일정 ID를 찾을 수 없습니다.');
+    }
+
+    const { scheduleApi } = await import('@/api/calendar');
+    
+    // 취소 요청됨 상태 → 취소 완료 (관리자 API 사용)
+    await scheduleApi.approveScheduleCancel(eventId);
     
     // 다이얼로그 닫기
     handleCloseEventViewDialog();
@@ -421,6 +466,7 @@ export default function CustomCalendar({
         selectConfigs={selectConfigsState}
         onSelectChange={handleSelectChange}
         onAddEvent={handleAddEvent}
+        onTeamSelect={handleTeamSelect}
       />
       <CalendarView
         events={filteredEvents}
@@ -447,6 +493,7 @@ export default function CustomCalendar({
         isOpen={isEventViewDialogOpen}
         onClose={handleCloseEventViewDialog}
         onRequestCancel={handleRequestCancelEvent}
+        onApproveCancel={handleApproveCancelEvent}
         selectedEvent={selectedEvent ? {
           id: selectedEvent.resource.id?.toString() || selectedEvent.resource.seq?.toString() || '0',
           title: selectedEvent.title,

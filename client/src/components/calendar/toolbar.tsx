@@ -1,8 +1,9 @@
 // client/src/components/calendar/toolbar.tsx
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { View } from "react-big-calendar";
 import { Button } from "../ui/button";
 import { MultiSelect } from "../multiselect/multi-select";
+import { getTeams } from '@/api/teams';
 
 // 셀렉트 옵션 타입 정의
 interface SelectOption {
@@ -29,9 +30,53 @@ interface ToolbarProps {
   selectConfigs: SelectConfig[];
   onSelectChange: (selectId: string, value: string[]) => void;
   onAddEvent: () => void;
+  onTeamSelect?: (teamIds: number[]) => void;
 }
 
-export default function CustomToolbar({ onNavigate, onView, currentView, currentDate, selectConfigs, onSelectChange, onAddEvent }: ToolbarProps) {
+export default function CustomToolbar({ onNavigate, onView, currentView, currentDate, selectConfigs, onSelectChange, onAddEvent, onTeamSelect = () => {} }: ToolbarProps) {
+  // 팀 목록 state
+  const [teams, setTeams] = useState<{ team_id: number; team_name: string; }[]>([]);
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+
+  // 전체 팀 목록 로드 (권한 체크 없이)
+  const loadTeams = async () => {
+    try {
+      const allTeams = await getTeams({});
+      setTeams(allTeams.map(t => ({ team_id: t.team_id, team_name: t.team_name })));
+    } catch (error) {
+      console.error('팀 목록 로드 실패:', error);
+      setTeams([]);
+    }
+  };
+
+  // 초기 팀 목록 로드
+  useEffect(() => {
+    loadTeams();
+  }, []);
+
+  // 팀 선택 핸들러
+  const handleTeamSelectChange = (value: string[]) => {
+    setSelectedTeams(value);
+    
+    if (value.length > 0) {
+      const teamIds = value.map(v => parseInt(v));
+      onTeamSelect(teamIds);
+    } else {
+      onTeamSelect([]);
+    }
+  };
+
+  // 팀 옵션 (알파벳순 정렬)
+  const teamOptions = useMemo(() => {
+    const sortedTeams = [...teams].sort((a, b) => 
+      a.team_name.localeCompare(b.team_name, 'ko')
+    );
+    return sortedTeams.map(team => ({
+      value: String(team.team_id),
+      label: team.team_name
+    }));
+  }, [teams]);
+
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('ko-KR', {
       year: 'numeric',
@@ -44,6 +89,21 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
 
       {/* 왼쪽: 네비게이션 버튼들 */}
       <div className="flex items-center gap-2">
+
+        {/* 팀 선택 */}
+        <MultiSelect
+          simpleSelect={true}
+          options={teamOptions}
+          onValueChange={handleTeamSelectChange}
+          defaultValue={selectedTeams}
+          placeholder="팀 선택"
+          size="sm"
+          maxCount={0}
+          searchable={true}
+          hideSelectAll={false}
+          autoSize={true}
+          className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+        />
 
         {/* 동적 셀렉트 렌더링 */}
         {selectConfigs.map((config) => (

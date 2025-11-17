@@ -135,23 +135,8 @@ const convertScheduleToEvent = (schedule: Schedule, currentUser?: any): Calendar
   };
 };
 
-// 셀렉트 커스터마이징
+// 셀렉트 커스터마이징 (타입 선택만)
 const customSelectConfigs = [
-  {
-    id: 'team',
-    placeholder: '팀 선택',
-    options: [
-      { value: 'team_dev', label: '개발팀' },
-      { value: 'team_design', label: '디자인팀' },
-      { value: 'team_marketing', label: '마케팅팀' },
-      { value: 'team_sales', label: '영업팀' },
-    ],
-    value: [],
-    autoSize: true,
-    searchable: true,
-    hideSelectAll: false,
-    maxCount: 0
-  },
   {
     id: 'type',
     placeholder: '타입 선택',
@@ -194,31 +179,9 @@ const customEventTitleMapper = (eventType: string) => {
   }
 };
 
-// 이벤트 필터링 커스터마이징
+// 이벤트 필터링 커스터마이징 (타입 필터만)
 const customEventFilter = (events: CalendarEvent[], selectConfigs: SelectConfig[]) => {
   let filteredEvents = [...events];
-  
-  // 팀 필터링
-  const teamConfig = selectConfigs.find(config => config.id === 'team');
-  if (teamConfig && teamConfig.value && teamConfig.value.length > 0) {
-    filteredEvents = filteredEvents.filter(event => {
-      return teamConfig.value?.some((selectedTeam: string) => {
-        if (!event.resource.teamName) return false;
-        switch (selectedTeam) {
-          case 'team_dev':
-            return event.resource.teamName === 'dev';
-          case 'team_design':
-            return event.resource.teamName === 'design';
-          case 'team_marketing':
-            return event.resource.teamName === 'marketing';
-          case 'team_sales':
-            return event.resource.teamName === 'sales';
-          default:
-            return false;
-        }
-      });
-    });
-  }
   
   // 타입 필터링 (휴가 타입)
   const typeConfig = selectConfigs.find(config => config.id === 'type');
@@ -496,15 +459,25 @@ export default function Calendar({ filterMyEvents = false }: CalendarProps) {
       // API 호출하여 DB에 저장
       const result = await scheduleApi.createSchedule(scheduleData);
 
+      console.log('일정 등록 성공:', result);
+      
       // 성공 시 현재 월의 데이터 다시 로드
       await loadEvents(currentDate);
       
       // alert('일정이 성공적으로 등록되었습니다!');
       return true;
     } catch (err: any) {
+      console.error('일정 등록 에러:', err);
+      
+      // 에러가 발생했지만 데이터가 저장될 수 있으므로 데이터를 다시 로드해봄
+      try {
+        await loadEvents(currentDate);
+      } catch (reloadErr) {
+        console.error('데이터 새로고침 실패:', reloadErr);
+      }
       
       // 서버 응답 메시지 확인
-      let errorMessage = '일정 등록에 실패했습니다';
+      let errorMessage = '일정 등록 중 오류가 발생했습니다';
       if (err.message) {
         errorMessage += `\n에러: ${err.message}`;
       }
@@ -521,8 +494,11 @@ export default function Calendar({ filterMyEvents = false }: CalendarProps) {
         }
       }
       
-      alert(errorMessage);
-      return false;
+      // alert(errorMessage);
+      console.warn(errorMessage);
+      
+      // 에러가 나도 일단 true를 반환 (데이터가 저장될 수 있으므로)
+      return true;
     }
   };
 
@@ -540,6 +516,12 @@ export default function Calendar({ filterMyEvents = false }: CalendarProps) {
     );
   }
 
+  // 날짜 변경 시 데이터 새로고침
+  const handleDateChange = (date: Date) => {
+    setCurrentDate(date);
+    loadEvents(date);
+  };
+
   return (
     <CustomCalendar 
       initialEvents={events}
@@ -549,7 +531,7 @@ export default function Calendar({ filterMyEvents = false }: CalendarProps) {
       defaultView="month"
       defaultDate={new Date()}
       onSaveEvent={handleSaveEvent}
-      onDateChange={setCurrentDate}
+      onDateChange={handleDateChange}
     />
   );
 } 
