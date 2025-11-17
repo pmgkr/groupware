@@ -1,6 +1,6 @@
 // src/components/features/Project/_components/ExpensListeRow.tsx
 import { memo } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link } from 'react-router';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -16,7 +16,6 @@ type ExpenseRowProps = {
 };
 
 export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRowProps) => {
-  const { projectId } = useParams();
   const statusMap = {
     Saved: <Badge variant="grayish">임시저장</Badge>,
     Claimed: <Badge variant="secondary">승인대기</Badge>,
@@ -39,7 +38,7 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
       <TableCell>{item.el_method}</TableCell>
       <TableCell>{item.el_type}</TableCell>
       <TableCell className="text-left">
-        <Link to={`/project/${projectId}/expense/${item.seq}`} className="hover:underline">
+        <Link to={`/expense/${item.exp_id}`} className="hover:underline">
           {item.el_title}
         </Link>
       </TableCell>
