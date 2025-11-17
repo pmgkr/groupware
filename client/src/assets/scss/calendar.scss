@@ -114,12 +114,24 @@
 
   }
   
+  &.event-official {
+    @apply bg-red-100; 
+
+    .event-title {
+      @apply text-red-600;
+    }
+  }
+
   &.event-external {
     @apply bg-[var(--color-primary-yellow-150)];
     
     .event-title {
       @apply text-[var(--color-primary-orange-600)];
     }
+  }
+
+  &.event-remote {
+
   }
 }
 
