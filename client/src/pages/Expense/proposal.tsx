@@ -1,3 +1,10 @@
+import ProposalList from '@/components/features/proposal/ProposalList';
+import { Outlet } from 'react-router';
+
 export default function Proposal() {
-  return <>비용 관리 - 지출 기안 페이지</>;
+  return (
+    <>
+      <Outlet />
+    </>
+  );
 }

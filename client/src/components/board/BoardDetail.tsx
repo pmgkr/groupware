@@ -215,7 +215,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       {/* 본문 */}
       <div className="ql-snow">
         <div
-          className="ql-editor border-b border-gray-900 p-4 !py-10 leading-relaxed whitespace-pre-line"
+          className="ql-editor border-b border-gray-400 p-4 !py-10 leading-relaxed whitespace-pre-line"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
       </div>
