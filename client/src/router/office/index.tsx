@@ -20,7 +20,7 @@ export const officeRoutes: RouteObject = {
       { to: '/meetingroom', label: '미팅룸' },
       { to: '/itdevice', label: 'IT디바이스' },
       { to: '/book', label: '도서' },
-      { to: '/report', label: '기안서' },
+      //{ to: '/report', label: '기안서' },
     ],
   },
   children: [
@@ -47,10 +47,10 @@ export const officeRoutes: RouteObject = {
         { path: 'wish', element: <BookWish /> }, // /book/wish
       ],
     },
-    { path: 'report', element: <Report /> },
+    /* { path: 'report', element: <Report /> },
     {
       path: 'report/:id',
       element: <ReportDetail />,
-    },
+    }, */
   ],
 };
