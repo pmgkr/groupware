@@ -111,15 +111,74 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
               });
             }
 
+            // 스케줄 API를 통해 이벤트 가져오기 (해당 팀원)
+            let scheduleEvents: any[] = [];
+            try {
+              const { scheduleApi } = await import('@/api/calendar');
+              const year = startDate.getFullYear();
+              const month = startDate.getMonth() + 1;
+              
+              const response = await scheduleApi.getSchedules({ 
+                year, 
+                month, 
+                user_id: member.user_id,
+                sch_status: 'Y' // 승인된 일정만
+              }) as any;
+              
+              const schedules = Array.isArray(response?.items) ? response.items : (response?.items?.items || []);
+              
+              // 이벤트만 필터링하여 vacation 형식으로 변환
+              schedules
+                .filter((sch: any) => {
+                  // 이벤트만 + 취소된 일정 제외 + 해당 팀원 일정만
+                  return sch.sch_type === 'event' 
+                    && sch.sch_status !== 'N' 
+                    && sch.user_id === member.user_id;
+                })
+                .forEach((sch: any) => {
+                  // 시작일부터 종료일까지 각 날짜에 대해 vacation 항목 생성
+                  const schStartDate = new Date(sch.sch_sdate);
+                  const schEndDate = new Date(sch.sch_edate);
+                  
+                  const currentDate = new Date(schStartDate);
+                  
+                  // 시작일부터 종료일까지 반복
+                  while (currentDate <= schEndDate) {
+                    // 해당 주간 범위 내에 있는 날짜만 추가
+                    if (currentDate >= startDate && currentDate <= endDate) {
+                      const dateStr = dayjs(currentDate).format('YYYY-MM-DD');
+                      scheduleEvents.push({
+                        user_id: member.user_id,
+                        user_nm: member.user_name || '',
+                        tdate: dateStr,
+                        stime: sch.sch_stime,
+                        etime: sch.sch_etime,
+                        wmin: 0,
+                        kind: sch.sch_event_type, // remote, field, etc
+                        type: '-'
+                      });
+                    }
+                    
+                    // 다음 날로 이동
+                  currentDate.setDate(currentDate.getDate() + 1);
+                }
+              });
+            } catch (err) {
+              console.error(`${member.user_id} 스케줄 조회 실패:`, err);
+            }
+
             // 전체 초과근무 목록에서 해당 팀원의 것만 필터링
             const memberOvertimes = allOvertimeResponse.items?.filter(
               ot => ot.user_id === member.user_id
             ) || [];
             
+            // vacation 배열과 schedule 이벤트 합치기
+            const combinedVacations = [...(workLogResponse.vacation || []), ...scheduleEvents];
+            
             // convertApiDataToWorkData로 주간 데이터 생성
             const userWorkData = await convertApiDataToWorkData(
               workLogResponse.wlog || [],
-              workLogResponse.vacation || [],
+              combinedVacations,
               memberOvertimes,
               weekStartDate,
               member.user_id
