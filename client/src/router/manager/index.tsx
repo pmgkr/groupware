@@ -1,7 +1,8 @@
 import type { RouteObject } from 'react-router';
 import Manager from '@/pages/Manager';
-import Working from '@/pages/Manager/working';
+import Working from '@/pages/Manager/Working';
 import Overtime from '@/pages/Manager/Overtime';
+import Vacation from '@/pages/Manager/Vacation';
 
 export const managerRoutes: RouteObject = {
   path: 'manager', // → /manager
@@ -20,6 +21,7 @@ export const managerRoutes: RouteObject = {
     { index: true, element: <Manager /> },
     { path: 'working', element: <Working /> },
     { path: 'overtime', element: <Overtime /> },
+    { path: 'vacation', element: <Vacation /> },
   ],
 };
 
