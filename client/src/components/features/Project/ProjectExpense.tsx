@@ -31,7 +31,8 @@ export default function Expense() {
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [selectedProof, setSelectedProof] = useState<string[]>([]);
   const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>([]);
-  const [registerDialog, setRegisterDialog] = useState(false);
+  const [registerDialog, setRegisterDialog] = useState(false); // Dialog용 State
+  const [registerType, setRegisterType] = useState<'est' | 'pro' | null>(null); // Dialog Type용 State
 
   // 리스트 내 체크박스 state
   const [checkedItems, setCheckedItems] = useState<number[]>([]); // 선택된 seq 목록
@@ -65,7 +66,7 @@ export default function Expense() {
     console.log('✅ 업로드된 Excel 데이터:', jsonData);
 
     // 업로드 완료 후 register 페이지로 이동
-    navigate('/project/exp_register', { state: { excelData: jsonData } });
+    navigate('register', { state: { registerType, excelData: jsonData } });
   };
 
   // 엑셀 업로드 버튼 클릭 시 input 트리거
@@ -525,19 +526,31 @@ export default function Expense() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>신규 비용 등록</DialogTitle>
-            <DialogDescription>매입 내역 Excel 파일을 업로드해 데이터를 불러오거나 수기로 입력할 수 있습니다.</DialogDescription>
+            <DialogDescription>견적서 비용 혹은 견적서 외 비용을 등록할 수 있습니다.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4">
             <p className="text-base">등록하실 비용 유형을 선택해주세요.</p>
             <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" onClick={openFileDialog}>
-                <Excel className="size-4.5" /> Excel 업로드
+              <Button variant="outline" onClick={() => setRegisterType('est')}>
+                견적서 비용
               </Button>
-              <Button variant="outline" asChild>
-                <Link to="/expense/register">수기 입력</Link>
+              <Button variant="outline" onClick={() => setRegisterType('pro')}>
+                견적서 외 비용
               </Button>
             </div>
-            <input ref={fileInputRef} type="file" accept=".xlsx, .xls" className="h-0 w-0 text-[0]" onChange={handleExcelUpload} />
+            {registerType && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <Button variant="outline" onClick={openFileDialog}>
+                    <Excel className="size-4.5" /> Excel 업로드
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate('register', { state: { registerType } })}>
+                    수기 입력
+                  </Button>
+                </div>
+                <input ref={fileInputRef} type="file" accept=".xlsx, .xls" className="h-0 w-0 text-[0]" onChange={handleExcelUpload} />
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>

@@ -138,6 +138,71 @@ export type projectExpenseResponse = {
   pages: number;
 };
 
+// ------------------------------
+// 공통 Header / Item 구조
+// ------------------------------
+// (1) ExpenseRegister에서 사용하는 증빙자료 타입 정의
+export interface ExpenseAttachment {
+  filename: string;
+  original: string;
+  url?: string;
+}
+
+// (2) ExpenseView에서 Response로 받는 증빙자료 타입 정의
+export interface ExpenseAttachmentDTO {
+  seq: number; // 첨부파일 PK
+  ei_seq: number; // 연결된 item의 seq
+  ea_fname: string; // 원본 파일명
+  ea_sname: string; // 서버 저장 파일명
+  uploaded_at: string; // 업로드 일시 (ISO)
+}
+
+export interface ExpenseItemBase {
+  ei_title: string;
+  ei_type: string;
+  ei_pdate: string;
+  ei_number?: string | null;
+  ei_amount: number;
+  ei_tax: number;
+  ei_total: number;
+  pro_id?: number | null;
+  attachments?: ExpenseAttachment[];
+}
+
+export interface ExpenseHeaderBase {
+  user_id: string;
+  project_id: string;
+  el_type: string[] | string | null;
+  el_method: string;
+  el_attach: string;
+  el_deposit?: string | null;
+  bank_account: string;
+  bank_name: string;
+  bank_code: string;
+  account_name: string;
+  remark?: string | null;
+}
+
+// ------------------------------
+// 등록용 (Register)
+// ------------------------------
+export interface ExpenseRegisterPayload {
+  header: ExpenseHeaderBase;
+  items: ExpenseItemBase[];
+}
+
+export interface ExpenseRegisterResponse {
+  ok: boolean;
+  exp_id: string;
+  list_seq: number;
+  totals: {
+    amount: number;
+    tax: number;
+    total: number;
+  };
+  count_items: number;
+}
+
 // 즐겨찾기 리스트
 export const getBookmarkList = async () => {
   const res = await http<{ project_id: string }[]>('/user/project/bookmark/list', { method: 'GET' });
@@ -201,4 +266,12 @@ export async function getProjectExpense(params: projectExpenseParams) {
   const res = await http<projectExpenseResponse>(`/user/pexpense/list?${query}`, { method: 'GET' });
 
   return res;
+}
+
+// 프로젝트비용 작성하기
+export async function projectExpenseRegister(payload: ExpenseRegisterPayload) {
+  return http<ExpenseRegisterResponse>(`/user/pexpense/register`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
