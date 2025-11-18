@@ -75,20 +75,20 @@ export default function EventViewDialog({
 
   // 취소 신청하기 확인 다이얼로그
   const handleCancelRequest = () => {
-    // manager/admin은 바로 취소, staff는 취소 신청
-    const isStaff = user_level === 'staff';
+    // manager/admin은 바로 취소, user는 취소 신청
+    const isUser = user_level === 'user';
     
     addDialog({
-      title: `<span class="text-primary-blue-500 font-semibold">${isStaff ? '취소 신청 확인' : '취소 확인'}</span>`,
-      message: isStaff 
+      title: `<span class="text-primary-blue-500 font-semibold">${isUser ? '취소 신청 확인' : '취소 확인'}</span>`,
+      message: isUser 
         ? '이 일정을 정말 취소 신청하시겠습니까?' 
         : '이 일정을 정말 취소하시겠습니까?',
-      confirmText: isStaff ? '취소 신청하기' : '취소하기',
+      confirmText: isUser ? '취소 신청하기' : '취소하기',
       cancelText: '닫기',
       onConfirm: async () => {
         try {
-          // staff: 취소 신청 (H 상태), manager/admin: 바로 취소 완료
-          if (isStaff) {
+          // user: 취소 신청 (H 상태), manager/admin: 바로 취소 완료
+          if (isUser) {
             if (onRequestCancel) {
               await onRequestCancel();
             }
@@ -100,8 +100,8 @@ export default function EventViewDialog({
           
           // 성공 알림 먼저 표시
           addAlert({
-            title: isStaff ? '취소 신청 완료' : '취소 완료',
-            message: isStaff 
+            title: isUser ? '취소 신청 완료' : '취소 완료',
+            message: isUser 
               ? '일정 취소 신청이 성공적으로 완료되었습니다.' 
               : '일정이 취소되었습니다.',
             icon: <OctagonAlert />,
@@ -117,7 +117,7 @@ export default function EventViewDialog({
           // 실패 알림 표시
           const errorMessage = error instanceof Error ? error.message : '취소에 실패했습니다. 다시 시도해주세요.';
           addAlert({
-            title: isStaff ? '취소 신청 실패' : '취소 실패',
+            title: isUser ? '취소 신청 실패' : '취소 실패',
             message: errorMessage,
             icon: <OctagonAlert />,
             duration: 3000,
@@ -278,10 +278,19 @@ export default function EventViewDialog({
             <Button variant="destructive" onClick={handleApproveCancel}>취소 요청 승인</Button>
           )}
           {/* 액션 버튼들 - 본인의 일정일 때만 표시 */}
-          {isMyEvent && status === "등록 완료" && (onRequestCancel || onApproveCancel) && (
-            <Button variant="destructive" onClick={handleCancelRequest}>
-              {user_level === 'staff' ? '취소 신청하기' : '취소하기'}
-            </Button>
+          {isMyEvent && status === "등록 완료" && (
+            <>
+              {user_level === 'user' && onRequestCancel && (
+                <Button variant="destructive" onClick={handleCancelRequest}>
+                  취소 신청하기
+                </Button>
+              )}
+              {(user_level === 'manager' || user_level === 'admin') && onApproveCancel && (
+                <Button variant="destructive" onClick={handleCancelRequest}>
+                  취소하기
+                </Button>
+              )}
+            </>
           )}
           <Button variant="outline" onClick={onClose}>닫기</Button>
         </DialogFooter>
