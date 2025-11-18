@@ -4,7 +4,7 @@ import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import type { View } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import "../../assets/scss/calendar.scss";
+import "@/assets/scss/calendar.scss";
 import { ko } from "date-fns/locale/ko";
 import { getCachedHolidays } from "@/services/holidayApi";
 import type { Holiday } from "@/types/holiday";
@@ -54,7 +54,9 @@ const getEventStyleClass = (title: string) => {
   if (title.includes("오전 반차") || title.includes("오후 반차")) return "event-half-day";
   if (title.includes("오전 반반차") || title.includes("오후 반반차"))
     return "event-half-half-day";
+  if (title.includes("공가")) return "event-official";
   if (title.includes("외부 일정")) return "event-external";
+  // if (title.includes("재택")) return "event-remote";
   return "event-default";
 };
 

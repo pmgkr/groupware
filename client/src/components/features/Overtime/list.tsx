@@ -475,7 +475,7 @@ export default function OvertimeList({
           paginatedData.map((item) => (
             <TableRow 
               key={item.id}
-              className="cursor-pointer hover:bg-gray-50"
+              className="[&_td]:text-[13px] cursor-pointer hover:bg-gray-50"
               onClick={() => handleOvertimeClick(item)}
             >
               <TableCell className="text-center p-2">{getTeamName(item.team_id)}</TableCell>

@@ -432,7 +432,7 @@ export default function WorkingList({
           </TableRow>
         ) : (
             data.map((item) => (
-              <TableRow key={item.id}>
+              <TableRow key={item.id} className="[&_td]:text-[13px]">
                 <TableCell className="text-center p-0">{item.department}</TableCell>
                 <TableCell>{item.name}</TableCell>
                 <TableCell>

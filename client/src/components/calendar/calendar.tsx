@@ -1,65 +1,14 @@
 // client/src/components/calendar/calendar.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { View } from "react-big-calendar";
 import { parse } from "date-fns/parse";
 import CustomToolbar from "./toolbar";
 import CalendarView from "./view";
 import EventDialog from "./EventDialog";
 import EventViewDialog from "./EventViewDialog";
-
-// 셀렉트 옵션 타입 정의
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
-interface SelectConfig {
-  id: string;
-  placeholder: string;
-  options: SelectOption[];
-  value?: string[];
-  autoSize?: boolean;
-  maxCount?: number;
-  searchable?: boolean;
-  hideSelectAll?: boolean;
-}
-
-// 이벤트 타입 정의
-interface CalendarEvent {
-  title: string;
-  start: Date;
-  end: Date;
-  allDay: boolean;
-  author: string;
-  description: string;
-  resource: {
-    id?: number;
-    seq: number;
-    userId: string;
-    teamId: number;
-    teamName?: string;
-    schTitle: string;
-    schType: string;
-    schVacationType: string | null;
-    schEventType: string | null;
-    schSdate: string;
-    schStime: string;
-    schEdate: string;
-    schEtime: string;
-    schIsAllday: string;
-    schIsHoliday: string;
-    schDescription: string;
-    schStatus: string;
-    schCreatedAt: Date;
-    schModifiedAt: Date;
-  };
-}
-
-// 이벤트 제목 매핑 함수 타입
-type EventTitleMapper = (eventType: string) => string;
-
-// 이벤트 필터링 함수 타입
-type EventFilter = (events: CalendarEvent[], selectConfigs: SelectConfig[]) => CalendarEvent[];
+import type { CalendarEvent } from '@/utils/calendarHelper';
+import type { SelectConfig, EventTitleMapper, EventFilter } from './config';
+import { defaultSelectConfigs, defaultEventTitleMapper, defaultEventFilter } from './config';
 
 // 캘린더 컴포넌트 Props 타입
 interface CustomCalendarProps {
@@ -72,120 +21,6 @@ interface CustomCalendarProps {
   onSaveEvent?: (eventData: any) => Promise<boolean>;
   onDateChange?: (date: Date) => void;
 }
-
-// 기본 이벤트 제목 매핑 함수
-const defaultEventTitleMapper: EventTitleMapper = (eventType: string) => {
-  switch (eventType) {
-    case 'vacationDay':
-      return '연차';
-    case 'vacationHalfMorning':
-      return '오전 반차';
-    case 'vacationHalfAfternoon':
-      return '오후 반차';
-    case 'vacationQuarterMorning':
-      return '오전 반반차';
-    case 'vacationQuarterAfternoon':
-      return '오후 반반차';
-    case 'vacationOfficial':
-      return '공가';
-    case 'eventRemote':
-      return '재택';
-    case 'eventField':
-      return '외부 일정';
-    default:
-      return '일정';
-  }
-};
-
-// 기본 셀렉트 설정
-const defaultSelectConfigs: SelectConfig[] = [
-  {
-    id: 'team',
-    placeholder: '팀 선택',
-    options: [
-      { value: 'team_dev', label: '개발팀' },
-      { value: 'team_design', label: '디자인팀' },
-      { value: 'team_marketing', label: '마케팅팀' },
-      { value: 'team_sales', label: '영업팀' },
-    ],
-    value: [],
-    autoSize: true,
-    searchable: true,
-    hideSelectAll: false,
-    maxCount: 0
-  },
-  {
-    id: 'type',
-    placeholder: '타입 선택',
-    options: [
-      { value: 'type_vacation', label: '연차' },
-      { value: 'type_halfday', label: '반차' },
-      { value: 'type_quarter', label: '반반차' },
-      { value: 'type_remote', label: '재택' },
-      { value: 'type_field', label: '외부 일정' },
-    ],
-    value: [],
-    autoSize: true,
-    searchable: true,
-    hideSelectAll: false,
-    maxCount: 0,
-  }
-];
-
-// 기본 이벤트 필터링 함수
-const defaultEventFilter: EventFilter = (events, selectConfigs) => {
-  let filteredEvents = [...events];
-  
-  // 팀 필터링
-  const teamConfig = selectConfigs.find(config => config.id === 'team');
-  if (teamConfig && teamConfig.value && teamConfig.value.length > 0) {
-    filteredEvents = filteredEvents.filter(event => {
-      return teamConfig.value?.some(selectedTeam => {
-        if (!event.resource.teamName) return false;
-        switch (selectedTeam) {
-          case 'team_dev':
-            return event.resource.teamName === 'dev';
-          case 'team_design':
-            return event.resource.teamName === 'design';
-          case 'team_marketing':
-            return event.resource.teamName === 'marketing';
-          case 'team_sales':
-            return event.resource.teamName === 'sales';
-          default:
-            return false;
-        }
-      });
-    });
-  }
-  
-  // 타입 필터링 (휴가 타입)
-  const typeConfig = selectConfigs.find(config => config.id === 'type');
-  if (typeConfig && typeConfig.value && typeConfig.value.length > 0) {
-    filteredEvents = filteredEvents.filter(event => {
-      const eventType = event.resource.schType;
-      const vacationType = event.resource.schVacationType;
-      
-      return typeConfig.value?.some(selectedType => {
-        switch (selectedType) {
-          case 'type_vacation':
-            return eventType === 'vacation' && vacationType === 'day';
-          case 'type_halfday':
-            return eventType === 'vacation' && vacationType === 'half';
-          case 'type_quarter':
-            return eventType === 'vacation' && vacationType === 'quarter';
-          case 'type_remote':
-            return eventType === 'event' && event.resource.schEventType === 'remote';
-          case 'type_field':
-            return eventType === 'event' && event.resource.schEventType === 'field';
-          default:
-            return false;
-        }
-      });
-    });
-  }
-  
-  return filteredEvents;
-};
 
 export default function CustomCalendar({
   initialEvents = [],
@@ -206,14 +41,29 @@ export default function CustomCalendar({
   
   // 셀렉트 옵션 설정 => 툴바에 반영됨
   const [selectConfigsState, setSelectConfigsState] = useState<SelectConfig[]>(selectConfigs);
+  
+  // 팀 필터링 state
+  const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
 
   // initialEvents가 변경되면 myEvents 업데이트
   useEffect(() => {
     setMyEvents(initialEvents);
   }, [initialEvents]);
 
-  // 이벤트 필터링 로직
-  const filteredEvents = eventFilter(myEvents, selectConfigsState);
+  // 이벤트 필터링 로직 (기존 필터 + 팀 필터)
+  const filteredEvents = useMemo(() => {
+    // 기존 필터 적용
+    let filtered = eventFilter(myEvents, selectConfigsState);
+    
+    // 팀 필터 적용
+    if (selectedTeamIds.length > 0) {
+      filtered = filtered.filter(event => 
+        selectedTeamIds.includes(event.resource.teamId)
+      );
+    }
+    
+    return filtered;
+  }, [myEvents, selectConfigsState, selectedTeamIds, eventFilter]);
 
   const handleNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
     let newDate = new Date(currentDate);
@@ -264,6 +114,11 @@ export default function CustomCalendar({
     );
   };
 
+  // 팀 선택 핸들러
+  const handleTeamSelect = (teamIds: number[]) => {
+    setSelectedTeamIds(teamIds);
+  };
+
   // 일정 등록 Dialog 핸들러
   const handleAddEvent = () => {
     setIsEventDialogOpen(true);
@@ -285,7 +140,7 @@ export default function CustomCalendar({
     setSelectedEvent(null);
   };
 
-  // 이벤트 취소 신청 핸들러
+  // 사용자가 취소 신청하는 핸들러
   const handleRequestCancelEvent = async () => {
     if (!selectedEvent) {
       throw new Error('선택된 일정이 없습니다.');
@@ -304,16 +159,41 @@ export default function CustomCalendar({
     }
 
     const { scheduleApi } = await import('@/api/calendar');
-    const currentStatus = selectedEvent.resource.schStatus;
     
-    // 현재 상태에 따라 다른 처리
-    if (currentStatus === 'Y') {
-      // 등록 완료 상태 → 취소 신청 (H로 변경)
-      await scheduleApi.updateScheduleStatus(eventId, 'H');
-    } else if (currentStatus === 'H') {
-      // 취소 요청됨 상태 → 취소 완료 (N으로 변경)
-      await scheduleApi.updateScheduleStatus(eventId, 'N');
+    // 등록 완료 상태 → 취소 신청 (H로 변경)
+    await scheduleApi.updateScheduleStatus(eventId, 'H');
+    
+    // 다이얼로그 닫기
+    handleCloseEventViewDialog();
+    
+    // 부모 컴포넌트에 날짜 변경 알림하여 데이터 새로고침
+    if (onDateChange) {
+      onDateChange(currentDate);
     }
+  };
+
+  // 매니저가 취소 승인하는 핸들러
+  const handleApproveCancelEvent = async () => {
+    if (!selectedEvent) {
+      throw new Error('선택된 일정이 없습니다.');
+    }
+    
+    // resource가 없으면 에러
+    if (!selectedEvent.resource) {
+      throw new Error('일정 정보를 찾을 수 없습니다.');
+    }
+    
+    // id로만 이벤트를 찾음 (seq는 사용하지 않음)
+    const eventId = selectedEvent.resource.id;
+    
+    if (!eventId) {
+      throw new Error('일정 ID를 찾을 수 없습니다.');
+    }
+
+    const { scheduleApi } = await import('@/api/calendar');
+    
+    // 취소 요청됨 상태 → 취소 완료 (관리자 API 사용)
+    await scheduleApi.approveScheduleCancel(eventId);
     
     // 다이얼로그 닫기
     handleCloseEventViewDialog();
@@ -421,6 +301,7 @@ export default function CustomCalendar({
         selectConfigs={selectConfigsState}
         onSelectChange={handleSelectChange}
         onAddEvent={handleAddEvent}
+        onTeamSelect={handleTeamSelect}
       />
       <CalendarView
         events={filteredEvents}
@@ -447,6 +328,7 @@ export default function CustomCalendar({
         isOpen={isEventViewDialogOpen}
         onClose={handleCloseEventViewDialog}
         onRequestCancel={handleRequestCancelEvent}
+        onApproveCancel={handleApproveCancelEvent}
         selectedEvent={selectedEvent ? {
           id: selectedEvent.resource.id?.toString() || selectedEvent.resource.seq?.toString() || '0',
           title: selectedEvent.title,
