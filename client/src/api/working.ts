@@ -59,6 +59,14 @@ export interface ManagerOvertimeListParams {
   flag?: string;  // ot_status (H: 승인대기, T: 승인완료, N: 반려됨)
 }
 
+// 관리자 근태 로그 주간 조회 파라미터
+export interface ManagerWorkLogWeekParams {
+  sdate: string;
+  edate: string;
+  team_id?: number;
+  user_id?: string;
+}
+
 // 초과근무 항목
 export interface OvertimeItem {
   id: number;
@@ -214,6 +222,19 @@ export const workingApi = {
         etime: formatTime(endTime)
       }),
     });
+    return response;
+  },
+
+  // 관리자 - 근태 로그 주간 조회
+  getManagerWorkLogsWeek: async (params: ManagerWorkLogWeekParams): Promise<WorkLogResponse> => {
+    const queryParams = new URLSearchParams();
+    
+    queryParams.append('sdate', params.sdate);
+    queryParams.append('edate', params.edate);
+    if (params.team_id) queryParams.append('team_id', params.team_id.toString());
+    if (params.user_id) queryParams.append('user_id', params.user_id);
+
+    const response = await http<WorkLogResponse>(`/manager/wlog/week?${queryParams.toString()}`);
     return response;
   },
 };

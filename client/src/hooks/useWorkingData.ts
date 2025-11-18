@@ -95,11 +95,12 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
 
         for (const member of teamMembers) {
           try {
-            // 각 팀원의 근태 로그 조회
-            const workLogResponse = await workingApi.getWorkLogs({
-              search_id: member.user_id,
+            // 각 팀원의 근태 로그 조회 (관리자 API 사용)
+            const workLogResponse = await workingApi.getManagerWorkLogsWeek({
+              user_id: member.user_id,
               sdate,
               edate,
+              team_id: member.team_id
             });
             
             // API 응답 데이터 형식 확인 (디버깅용)
