@@ -61,10 +61,9 @@ export interface ManagerOvertimeListParams {
 
 // 관리자 근태 로그 주간 조회 파라미터
 export interface ManagerWorkLogWeekParams {
-  sdate: string;
-  edate: string;
-  team_id?: number;
-  user_id?: string;
+  team_id: number;
+  weekno: number;
+  yearno: number;
 }
 
 // 초과근무 항목
@@ -229,13 +228,32 @@ export const workingApi = {
   getManagerWorkLogsWeek: async (params: ManagerWorkLogWeekParams): Promise<WorkLogResponse> => {
     const queryParams = new URLSearchParams();
     
-    queryParams.append('sdate', params.sdate);
-    queryParams.append('edate', params.edate);
-    if (params.team_id) queryParams.append('team_id', params.team_id.toString());
-    if (params.user_id) queryParams.append('user_id', params.user_id);
+    queryParams.append('team_id', params.team_id.toString());
+    queryParams.append('weekno', params.weekno.toString());
+    queryParams.append('yearno', params.yearno.toString());
 
-    const response = await http<WorkLogResponse>(`/manager/wlog/week?${queryParams.toString()}`);
-    return response;
+    const url = `/manager/wlog/week?${queryParams.toString()}`;
+    
+    try {
+      const response = await http<any>(url);
+      
+      // 응답 형식 확인 및 변환
+      if (response && typeof response === 'object') {
+        // 이미 WorkLogResponse 형식인 경우
+        if (response.wlog !== undefined) {
+          return {
+            wlog: Array.isArray(response.wlog) ? response.wlog : [],
+            vacation: Array.isArray(response.vacation) ? response.vacation : []
+          };
+        }
+        // 다른 형식일 수 있으므로 그대로 반환 (호환성 유지)
+        return response as WorkLogResponse;
+      }
+      
+      return { wlog: [], vacation: [] };
+    } catch (error) {
+      throw error;
+    }
   },
 };
 
