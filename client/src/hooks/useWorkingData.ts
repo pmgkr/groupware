@@ -118,35 +118,39 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
               const year = startDate.getFullYear();
               const month = startDate.getMonth() + 1;
               
+              // 승인완료(Y)와 승인대기(H) 모두 가져오기 위해 sch_status 파라미터 제거
+              // (API가 배열을 받지 않을 수 있으므로 클라이언트에서 필터링)
               const response = await scheduleApi.getSchedules({ 
                 year, 
                 month, 
-                user_id: member.user_id,
-                sch_status: 'Y' // 승인된 일정만
+                user_id: member.user_id
               }) as any;
               
               const schedules = Array.isArray(response?.items) ? response.items : (response?.items?.items || []);
               
-              // 이벤트만 필터링하여 vacation 형식으로 변환
+              // 모든 일정(이벤트 + 휴가)을 vacation 형식으로 변환
               schedules
                 .filter((sch: any) => {
-                  // 이벤트만 + 취소된 일정 제외 + 해당 팀원 일정만
-                  return sch.sch_type === 'event' 
-                    && sch.sch_status !== 'N' 
+                  // 승인완료(Y) 또는 승인대기(H)만 + 해당 팀원 일정만
+                  return (sch.sch_status === 'Y' || sch.sch_status === 'H')
                     && sch.user_id === member.user_id;
                 })
                 .forEach((sch: any) => {
                   // 시작일부터 종료일까지 각 날짜에 대해 vacation 항목 생성
-                  const schStartDate = new Date(sch.sch_sdate);
-                  const schEndDate = new Date(sch.sch_edate);
-                  
-                  const currentDate = new Date(schStartDate);
+                  // dayjs를 사용하여 날짜 문자열을 파싱 (한국 시간대 고려)
+                  const schStartDate = dayjs(sch.sch_sdate).startOf('day');
+                  const schEndDate = dayjs(sch.sch_edate).startOf('day');
+                  const weekStart = dayjs(startDate).startOf('day');
+                  const weekEnd = dayjs(endDate).startOf('day');
                   
                   // 시작일부터 종료일까지 반복
-                  while (currentDate <= schEndDate) {
+                  let currentDate = schStartDate;
+                  while (currentDate.isBefore(schEndDate, 'day') || currentDate.isSame(schEndDate, 'day')) {
+                    const dateStr = currentDate.format('YYYY-MM-DD');
+                    
                     // 해당 주간 범위 내에 있는 날짜만 추가
-                    if (currentDate >= startDate && currentDate <= endDate) {
-                      const dateStr = dayjs(currentDate).format('YYYY-MM-DD');
+                    if ((currentDate.isAfter(weekStart, 'day') || currentDate.isSame(weekStart, 'day')) 
+                        && (currentDate.isBefore(weekEnd, 'day') || currentDate.isSame(weekEnd, 'day'))) {
                       scheduleEvents.push({
                         user_id: member.user_id,
                         user_nm: member.user_name || '',
@@ -154,15 +158,20 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
                         stime: sch.sch_stime,
                         etime: sch.sch_etime,
                         wmin: 0,
-                        kind: sch.sch_event_type, // remote, field, etc
-                        type: '-'
+                        kind: sch.sch_type === 'event' 
+                          ? sch.sch_event_type  // 이벤트: remote, field, etc
+                          : sch.sch_vacation_type, // 휴가: day, half, quarter, official
+                        type: sch.sch_type === 'vacation' 
+                          ? sch.sch_vacation_time  // 휴가: morning, afternoon
+                          : '-', // 이벤트는 type 없음
+                        sch_created_at: sch.sch_created_at // created_at 추가
                       });
                     }
                     
                     // 다음 날로 이동
-                  currentDate.setDate(currentDate.getDate() + 1);
-                }
-              });
+                    currentDate = currentDate.add(1, 'day');
+                  }
+                });
             } catch (err) {
               console.error(`${member.user_id} 스케줄 조회 실패:`, err);
             }
@@ -172,8 +181,9 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
               ot => ot.user_id === member.user_id
             ) || [];
             
-            // vacation 배열과 schedule 이벤트 합치기
-            const combinedVacations = [...(workLogResponse.vacation || []), ...scheduleEvents];
+            // schedule API에서 모든 일정(휴가 + 이벤트)을 가져오므로 workLogResponse.vacation은 제외
+            // (중복 방지를 위해 schedule API 데이터만 사용)
+            const combinedVacations = scheduleEvents;
             
             // convertApiDataToWorkData로 주간 데이터 생성
             const userWorkData = await convertApiDataToWorkData(

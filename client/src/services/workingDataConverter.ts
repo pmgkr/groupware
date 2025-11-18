@@ -32,8 +32,9 @@ const extractTimeFromISO = (isoString: string): { hour: string; minute: string }
  * vacation 타입을 workType으로 변환
  */
 const getWorkTypeFromVacation = (vacation: any, hasWlog: boolean): WorkData['workType'] => {
-  const kind = vacation.kind;
-  const type = vacation.type;
+  // kind 필드 확인 (API 응답에 따라 다를 수 있음)
+  const kind = vacation.kind || vacation.sch_vacation_type || vacation.sch_event_type;
+  const type = vacation.type || vacation.sch_vacation_time;
   
   // kind가 없거나 "-"인 경우
   if (!kind || kind === '-') {
@@ -66,6 +67,8 @@ const getWorkTypeFromVacation = (vacation: any, hasWlog: boolean): WorkData['wor
     return '외부근무';
   } else if (kind === 'remote') {
     return '재택근무';
+  } else if (kind === 'etc') {
+    return '외부근무'; // etc도 외부근무로 처리
   }
   
   // wlog가 있으면 일반근무, 없으면 "-"
@@ -230,13 +233,64 @@ export const convertApiDataToWorkData = async (
       return otDate === dateString && ot.user_id === userId;
     });
     
-    // 우선순위 vacation 선택
-    const vacation = selectPriorityVacation(vacationsForDate);
-    
     // wlog 유무 확인
     const hasWlog = !!(wlog && wlog.stime);
     
-    // 근무 구분 결정
+    // 모든 vacations를 workType으로 변환하여 배열로 저장
+    const workTypesArray: Array<{ type: WorkData['workType']; createdAt: string }> = [];
+    
+    // vacations를 created_at 기준으로 정렬 (최신순)
+    const sortedVacations = [...vacationsForDate].sort((a, b) => {
+      // sch_created_at, created_at, 또는 기타 날짜 필드 확인
+      const dateA = a.sch_created_at 
+        ? new Date(a.sch_created_at).getTime() 
+        : (a.created_at ? new Date(a.created_at).getTime() : (a.va_created_at ? new Date(a.va_created_at).getTime() : 0));
+      const dateB = b.sch_created_at 
+        ? new Date(b.sch_created_at).getTime() 
+        : (b.created_at ? new Date(b.created_at).getTime() : (b.va_created_at ? new Date(b.va_created_at).getTime() : 0));
+      return dateB - dateA; // 내림차순 (최신이 먼저)
+    });
+    
+    // 각 vacation을 workType으로 변환
+    sortedVacations.forEach((vacation) => {
+      const workType = getWorkTypeFromVacation(vacation, hasWlog);
+      // sch_created_at, created_at, 또는 기타 날짜 필드 확인
+      const createdAt = vacation.sch_created_at 
+        || vacation.created_at 
+        || vacation.va_created_at
+        || new Date().toISOString();
+      workTypesArray.push({ type: workType, createdAt });
+    });
+    
+    // 실제 이벤트가 있는지 확인 (kind가 있고 '-'가 아닌 경우)
+    const hasRealEvent = sortedVacations.some((vacation) => {
+      const kind = vacation.kind || vacation.sch_vacation_type || vacation.sch_event_type;
+      return kind && kind !== '-';
+    });
+    
+    // 다른 이벤트가 없을 때만 일반근무 또는 공휴일 추가
+    if (!hasRealEvent && hasWlog) {
+      const baseWorkType = isHoliday ? '공휴일' : '일반근무';
+      const wlogCreatedAt = wlog?.wlog_created_at || new Date().toISOString();
+      workTypesArray.push({ type: baseWorkType, createdAt: wlogCreatedAt });
+    }
+    
+    // wlog도 없고 vacation도 없는 경우 "-" 추가
+    if (vacationsForDate.length === 0 && !hasWlog) {
+      workTypesArray.push({ type: '-', createdAt: new Date().toISOString() });
+    }
+    
+    // 최종적으로 created_at 기준으로 다시 정렬 (최신순)
+    workTypesArray.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA; // 내림차순 (최신이 먼저)
+    });
+    
+    // 우선순위 vacation 선택 (기존 로직 유지)
+    const vacation = selectPriorityVacation(vacationsForDate);
+    
+    // 근무 구분 결정 (기존 로직 유지, 호환성 위해)
     let workType: WorkData['workType'];
     if (vacation) {
       workType = getWorkTypeFromVacation(vacation, hasWlog);
@@ -263,6 +317,7 @@ export const convertApiDataToWorkData = async (
         date: dateString,
         dayOfWeek,
         workType,
+        workTypes: workTypesArray.length > 0 ? workTypesArray : undefined,
         startTime,
         endTime,
         ...workHours,
@@ -277,6 +332,7 @@ export const convertApiDataToWorkData = async (
         date: dateString,
         dayOfWeek,
         workType,
+        workTypes: workTypesArray.length > 0 ? workTypesArray : undefined,
         startTime,
         endTime: "-",
         basicHours: 0,
@@ -296,6 +352,7 @@ export const convertApiDataToWorkData = async (
         date: dateString,
         dayOfWeek,
         workType,
+        workTypes: workTypesArray.length > 0 ? workTypesArray : undefined,
         startTime: "-",
         endTime: "-",
         basicHours: 0,
