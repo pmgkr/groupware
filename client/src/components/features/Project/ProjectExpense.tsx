@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Excel } from '@/assets/images/icons';
 import { RefreshCw, OctagonAlert } from 'lucide-react';
 
-import { getProjectExpense, type pExpenseListItem, getProjectExpenseType, deleteTempExpense, claimTempExpense } from '@/api';
+import { getProjectExpense, type pExpenseListItem, getProjectExpenseType, deleteProjectTempExpense, claimProjectTempExpense } from '@/api';
 import { ExpenseRow } from './_components/ExpenseListRow';
 
 export default function Expense() {
@@ -144,7 +144,7 @@ export default function Expense() {
       onConfirm: async () => {
         try {
           const payload = { seqs: checkedItems };
-          const res = await claimTempExpense(payload);
+          const res = await claimProjectTempExpense(payload);
 
           if (res.ok) {
             addAlert({
@@ -214,7 +214,7 @@ export default function Expense() {
       onConfirm: async () => {
         try {
           const payload = { seqs: checkedItems };
-          const res = await deleteTempExpense(payload);
+          const res = await deleteProjectTempExpense(payload);
 
           if (res.ok) {
             addAlert({

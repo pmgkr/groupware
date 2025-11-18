@@ -71,7 +71,6 @@ export default function ProjectExpenseRegister() {
 
   // 비용 항목 기본 세팅값 : Excel 업로드 시 0으로 세팅, 수기 작성 시 5개로 세팅
   const [articleCount, setArticleCount] = useState(state?.excelData ? 0 : 5);
-  const [expenseTypes, setExpenseTypes] = useState<ExpenseType[]>([]); // 비용 유형 API State
   const [bankList, setBankList] = useState<BankList[]>([]);
 
   const [files, setFiles] = useState<PreviewFile[]>([]);
@@ -129,11 +128,8 @@ export default function ProjectExpenseRegister() {
   useEffect(() => {
     (async () => {
       try {
-        // 유저레벨이 staff나 user인 경우 nexp_type2 : manager나 admin인 경우 nexp_type1 호출
-        const expenseTypeParam = user_level === 'staff' || user_level === 'user' ? 'exp_type1' : 'exp_type2';
-
         // 페이지 렌더 시 API 병렬 호출
-        const [bankResult, expResult] = await Promise.allSettled([getBankList(), getExpenseType(expenseTypeParam)]);
+        const [bankResult] = await Promise.allSettled([getBankList()]);
 
         // API 개별 결과 관리
         if (bankResult.status === 'fulfilled') {
@@ -141,12 +137,6 @@ export default function ProjectExpenseRegister() {
           setBankList(formattedBanks);
         } else {
           console.error('은행 목록 불러오기 실패:', bankResult.reason);
-        }
-
-        if (expResult.status === 'fulfilled') {
-          setExpenseTypes(expResult.value);
-        } else {
-          console.error('비용 유형 불러오기 실패:', expResult.reason);
         }
       } catch (error) {
         // Promise.allSettled 자체는 에러를 던지지 않지만, 안전하게 감싸줌
@@ -275,7 +265,7 @@ export default function ProjectExpenseRegister() {
 
       addDialog({
         title: '작성한 비용 항목을 등록합니다.',
-        message: `<span class="text-primary-blue-500 font-semibold">${items.length}</span>건의 비용을 등록록하시겠습니까?`,
+        message: `<span class="text-primary-blue-500 font-semibold">${items.length}</span>건의 비용을 등록하시겠습니까?`,
         confirmText: '확인',
         cancelText: '취소',
         onConfirm: async () => {
@@ -365,7 +355,7 @@ export default function ProjectExpenseRegister() {
             ...item,
             attachments: fileMap[idx + 1] || [], // rowIndex는 1부터 시작해서 +1
           }));
-          const elTypeList = Array.from(new Set(enrichedItems.map((item: any) => item.type ?? '')));
+          const elTypeList = enrichedItems.map((item: any) => String(item.type ?? ''));
 
           console.log('enrichedItems:', enrichedItems);
 
@@ -411,21 +401,28 @@ export default function ProjectExpenseRegister() {
           if (result.ok) {
             const item_count = result.count_items;
 
-            addAlert({
-              title: '비용 등록이 완료되었습니다.',
-              message: `<p>총 <span class="text-primary-blue-500">${item_count}개</span> 비용 항목이 등록 되었습니다.</p>`,
-              icon: <OctagonAlert />,
-              duration: 2000,
-            });
-
             // 견적서 체크 비용을 작성했다면 매칭 페이지로 이동
             if (projectType === 'est') {
-              navigate(`/project/${projectId}/expense/matching`, {
+              addAlert({
+                title: '비용 등록이 완료되었습니다.',
+                message: `<p>총 <span class="text-primary-blue-500">${item_count}개</span> 비용 항목이 등록 되었습니다.\n견적서 매칭으로 이동합니다.</p>`,
+                icon: <OctagonAlert />,
+                duration: 2000,
+              });
+
+              navigate(`/project/${projectId}/expense/match`, {
                 state: {
                   exp_id: result.list_seq,
                 },
               });
             } else {
+              addAlert({
+                title: '비용 등록이 완료되었습니다.',
+                message: `<p>총 <span class="text-primary-blue-500">${item_count}개</span> 비용 항목이 등록 되었습니다.</p>`,
+                icon: <OctagonAlert />,
+                duration: 2000,
+              });
+
               // 일반 프로젝트 입력
               navigate(`/project/${projectId}/expense`);
             }
@@ -665,7 +662,6 @@ export default function ProjectExpenseRegister() {
                     index={index}
                     control={control}
                     projectType={projectType}
-                    expenseTypes={expenseTypes}
                     form={form}
                     onRemove={handleRemoveArticle}
                     handleDropFiles={handleDropFiles}

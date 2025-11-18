@@ -149,7 +149,7 @@ export default function ProjectLayout() {
       </div>
 
       {/* ⭐ 탭 메뉴: URL 이동 기반 */}
-      <nav className="mt-2 flex gap-4">
+      <nav className="flex gap-4">
         {tabs.map((tab) => {
           const basePath = tab.path === '' ? `/project/${projectId}` : `/project/${projectId}/${tab.path}`;
 
@@ -175,7 +175,7 @@ export default function ProjectLayout() {
       </nav>
 
       {/* ⭐ 하위 페이지 Outlet + context 전달 */}
-      <div className="pt-6">
+      <div className="pt-8">
         <Outlet
           context={
             {

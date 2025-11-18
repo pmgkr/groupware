@@ -1,9 +1,14 @@
 // src/components/features/Expense/_components/ExpenseRegisterRow.tsx
-import React from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
+import { useForm } from 'react-hook-form';
+import { useUser } from '@/hooks/useUser';
+import { getExpenseType } from '@/api';
+
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
 import { Button } from '@components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
+import { SearchableSelect, type SingleSelectOption } from '@components/ui/SearchableSelect';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
 import { DayPicker } from '@components/daypicker';
 import { cn } from '@/lib/utils';
@@ -19,7 +24,6 @@ type ExpenseRowProps = {
   index: number;
   projectType: string;
   control: any;
-  expenseTypes: { code: string }[];
   form: any;
   onRemove: (index: number) => void;
   handleDropFiles: (files: PreviewFile[], fieldName: string, rowIndex: number | null) => void;
@@ -33,7 +37,6 @@ function ExpenseRowComponent({
   index,
   control,
   projectType,
-  expenseTypes,
   form,
   onRemove,
   handleDropFiles,
@@ -42,7 +45,28 @@ function ExpenseRowComponent({
   activeFile,
   setActiveFile,
 }: ExpenseRowProps) {
+  const { user_level } = useUser();
+  const [expenseTypes, setExpenseTypes] = useState<SingleSelectOption[]>([]);
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
+
+  const fetchClients = useCallback(async () => {
+    try {
+      const expenseTypeParam = user_level === 'staff' || user_level === 'user' ? 'exp_type1' : 'exp_type2';
+
+      const res = await getExpenseType(expenseTypeParam);
+      const mapped = res.map((t: any) => ({
+        label: t.code,
+        value: t.code,
+      }));
+      setExpenseTypes(mapped);
+    } catch (err) {
+      console.error('❌ 클라이언트 불러오기 오류 :', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchClients();
+  }, [fetchClients]);
 
   return (
     <article className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0">
@@ -68,22 +92,17 @@ function ExpenseRowComponent({
           <FormField
             control={control}
             name={`expense_items.${index}.type`}
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel className="font-bold text-gray-950">비용 유형</FormLabel>
                 <FormControl>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <SelectTrigger className="aria-[invalid=true]:border-destructive w-full">
-                      <SelectValue placeholder={expenseTypes.length ? '비용 유형 선택' : '불러오는 중...'} />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-80 w-full">
-                      {expenseTypes.map((item, i) => (
-                        <SelectItem key={i} value={item.code}>
-                          {item.code}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    placeholder="비용 유형 선택"
+                    options={expenseTypes}
+                    value={field.value}
+                    onChange={(v) => field.onChange(v)}
+                    invalid={fieldState.invalid}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -244,4 +263,4 @@ function ExpenseRowComponent({
 }
 
 /** 메모이제이션 적용 */
-export const ExpenseRow = React.memo(ExpenseRowComponent);
+export const ExpenseRow = memo(ExpenseRowComponent);

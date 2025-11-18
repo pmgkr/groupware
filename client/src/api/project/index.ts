@@ -203,6 +203,52 @@ export interface ExpenseRegisterResponse {
   count_items: number;
 }
 
+// ------------------------------
+// 상세보기용 (View)
+// ------------------------------
+export interface ExpenseHeaderDTO extends ExpenseHeaderBase {
+  seq: number;
+  project_id: string;
+  exp_id: string;
+  user_nm: string;
+  manager_id: string;
+  manager_nm: string;
+  el_type: string;
+  el_title: string;
+  el_amount: number;
+  el_tax: number;
+  el_total: number;
+  status: string;
+  rej_reason?: string | null;
+  wdate: string;
+  ddate?: string | null;
+  edate?: string | null;
+  cdate?: string | null;
+  rejected_by?: string | null;
+}
+
+export interface ExpenseItemDTO extends Omit<ExpenseItemBase, 'attachments'> {
+  seq: number;
+  exp_id: string;
+  attachments: ExpenseAttachmentDTO[];
+}
+
+export interface ExpenseLogDTO {
+  idx: number;
+  seq: number;
+  user_nm: string;
+  exp_status: string;
+  remark?: string | null;
+  url: string;
+  log_date: string;
+}
+
+export interface ExpenseViewDTO {
+  header: ExpenseHeaderDTO;
+  items: ExpenseItemDTO[];
+  logs: ExpenseLogDTO[];
+}
+
 // 즐겨찾기 리스트
 export const getBookmarkList = async () => {
   const res = await http<{ project_id: string }[]>('/user/project/bookmark/list', { method: 'GET' });
@@ -268,10 +314,30 @@ export async function getProjectExpense(params: projectExpenseParams) {
   return res;
 }
 
+// 프로젝트비비용 상세보기
+export async function getProjectExpenseView(expid: string | undefined): Promise<ExpenseViewDTO> {
+  if (!expid) throw new Error('expid가 필요합니다.');
+  return http<ExpenseViewDTO>(`/user/pexpense/info/${expid}`, { method: 'GET' });
+}
+
 // 프로젝트비용 작성하기
 export async function projectExpenseRegister(payload: ExpenseRegisterPayload) {
   return http<ExpenseRegisterResponse>(`/user/pexpense/register`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+// 프로젝트비용 삭제처리
+export async function deleteProjectTempExpense(payload: { seqs: number[] }): Promise<{ ok: boolean }> {
+  const res = http<{ ok: boolean }>(`/user/pexpense/delete/`, { method: 'POST', body: JSON.stringify(payload) });
+
+  return res;
+}
+
+// 프로젝트비용 청구처리
+export async function claimProjectTempExpense(payload: { seqs: number[] }): Promise<{ ok: boolean }> {
+  const res = http<{ ok: boolean }>(`/user/pexpense/claim/`, { method: 'POST', body: JSON.stringify(payload) });
+
+  return res;
 }

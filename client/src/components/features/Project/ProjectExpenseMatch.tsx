@@ -14,8 +14,9 @@ import { format } from 'date-fns';
 import { statusIconMap, getLogMessage } from '../Expense/utils/statusUtils';
 import EstimateMatching from './_components/EstimateMatching';
 
-export default function projectExpenseView() {
-  const { expId, projectId } = useParams();
+export default function ProjectExpenseMatch() {
+  const { projectId } = useParams(); // 프로젝트 ID
+  const { state } = useLocation(); // 저장된 비용 Seq
   const navigate = useNavigate();
 
   const [data, setData] = useState<ExpenseViewDTO | null>(null);
@@ -30,7 +31,7 @@ export default function projectExpenseView() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await getProjectExpenseView(expId);
+        const res = await getProjectExpenseView(state.exp_id);
         setData(res);
       } catch (err) {
         console.error('❌ 비용 상세 조회 실패:', err);
@@ -38,7 +39,7 @@ export default function projectExpenseView() {
         setLoading(false);
       }
     })();
-  }, [expId]);
+  }, []);
 
   console.log(data);
 
