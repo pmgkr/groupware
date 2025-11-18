@@ -314,7 +314,7 @@ export async function getProjectExpense(params: projectExpenseParams) {
   return res;
 }
 
-// 프로젝트비비용 상세보기
+// 프로젝트비용 상세보기
 export async function getProjectExpenseView(expid: string | undefined): Promise<ExpenseViewDTO> {
   if (!expid) throw new Error('expid가 필요합니다.');
   return http<ExpenseViewDTO>(`/user/pexpense/info/${expid}`, { method: 'GET' });

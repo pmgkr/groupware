@@ -1,8 +1,6 @@
 // src/components/features/Project/ProjectOverview
-import { useOutletContext } from 'react-router';
 import { getAvatarFallback } from '@/utils';
 import { type projectMemberDTO, type ProjectViewDTO } from '@/api';
-import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 
 import { Button } from '@components/ui/button';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
@@ -14,9 +12,7 @@ import { format } from 'date-fns';
 
 type Props = { data: ProjectViewDTO; members: projectMemberDTO[] };
 
-export default function Overview() {
-  const { data, members } = useOutletContext<ProjectLayoutContext>();
-
+export default function Overview({ data, members }: Props) {
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
     const date = typeof d === 'string' ? new Date(d) : d;
