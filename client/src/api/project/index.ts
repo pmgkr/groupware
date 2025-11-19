@@ -138,6 +138,117 @@ export type projectExpenseResponse = {
   pages: number;
 };
 
+// ------------------------------
+// 공통 Header / Item 구조
+// ------------------------------
+// (1) ExpenseRegister에서 사용하는 증빙자료 타입 정의
+export interface ExpenseAttachment {
+  filename: string;
+  original: string;
+  url?: string;
+}
+
+// (2) ExpenseView에서 Response로 받는 증빙자료 타입 정의
+export interface ExpenseAttachmentDTO {
+  seq: number; // 첨부파일 PK
+  ei_seq: number; // 연결된 item의 seq
+  ea_fname: string; // 원본 파일명
+  ea_sname: string; // 서버 저장 파일명
+  uploaded_at: string; // 업로드 일시 (ISO)
+}
+
+export interface ExpenseItemBase {
+  ei_title: string;
+  ei_type: string;
+  ei_pdate: string;
+  ei_number?: string | null;
+  ei_amount: number;
+  ei_tax: number;
+  ei_total: number;
+  pro_id?: number | null;
+  attachments?: ExpenseAttachment[];
+}
+
+export interface ExpenseHeaderBase {
+  user_id: string;
+  project_id: string;
+  el_type: string[] | string | null;
+  el_method: string;
+  el_attach: string;
+  el_deposit?: string | null;
+  bank_account: string;
+  bank_name: string;
+  bank_code: string;
+  account_name: string;
+  remark?: string | null;
+}
+
+// ------------------------------
+// 등록용 (Register)
+// ------------------------------
+export interface ExpenseRegisterPayload {
+  header: ExpenseHeaderBase;
+  items: ExpenseItemBase[];
+}
+
+export interface ExpenseRegisterResponse {
+  ok: boolean;
+  exp_id: string;
+  list_seq: number;
+  totals: {
+    amount: number;
+    tax: number;
+    total: number;
+  };
+  count_items: number;
+}
+
+// ------------------------------
+// 상세보기용 (View)
+// ------------------------------
+export interface ExpenseHeaderDTO extends ExpenseHeaderBase {
+  seq: number;
+  project_id: string;
+  exp_id: string;
+  user_nm: string;
+  manager_id: string;
+  manager_nm: string;
+  el_type: string;
+  el_title: string;
+  el_amount: number;
+  el_tax: number;
+  el_total: number;
+  status: string;
+  rej_reason?: string | null;
+  wdate: string;
+  ddate?: string | null;
+  edate?: string | null;
+  cdate?: string | null;
+  rejected_by?: string | null;
+}
+
+export interface ExpenseItemDTO extends Omit<ExpenseItemBase, 'attachments'> {
+  seq: number;
+  exp_id: string;
+  attachments: ExpenseAttachmentDTO[];
+}
+
+export interface ExpenseLogDTO {
+  idx: number;
+  seq: number;
+  user_nm: string;
+  exp_status: string;
+  remark?: string | null;
+  url: string;
+  log_date: string;
+}
+
+export interface ExpenseViewDTO {
+  header: ExpenseHeaderDTO;
+  items: ExpenseItemDTO[];
+  logs: ExpenseLogDTO[];
+}
+
 // 즐겨찾기 리스트
 export const getBookmarkList = async () => {
   const res = await http<{ project_id: string }[]>('/user/project/bookmark/list', { method: 'GET' });
@@ -199,6 +310,34 @@ export async function getProjectExpense(params: projectExpenseParams) {
   // 쿼리스트링으로 변환
   const query = new URLSearchParams(clean as Record<string, string>).toString();
   const res = await http<projectExpenseResponse>(`/user/pexpense/list?${query}`, { method: 'GET' });
+
+  return res;
+}
+
+// 프로젝트비용 상세보기
+export async function getProjectExpenseView(expid: string | undefined): Promise<ExpenseViewDTO> {
+  if (!expid) throw new Error('expid가 필요합니다.');
+  return http<ExpenseViewDTO>(`/user/pexpense/info/${expid}`, { method: 'GET' });
+}
+
+// 프로젝트비용 작성하기
+export async function projectExpenseRegister(payload: ExpenseRegisterPayload) {
+  return http<ExpenseRegisterResponse>(`/user/pexpense/register`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+// 프로젝트비용 삭제처리
+export async function deleteProjectTempExpense(payload: { seqs: number[] }): Promise<{ ok: boolean }> {
+  const res = http<{ ok: boolean }>(`/user/pexpense/delete/`, { method: 'POST', body: JSON.stringify(payload) });
+
+  return res;
+}
+
+// 프로젝트비용 청구처리
+export async function claimProjectTempExpense(payload: { seqs: number[] }): Promise<{ ok: boolean }> {
+  const res = http<{ ok: boolean }>(`/user/pexpense/claim/`, { method: 'POST', body: JSON.stringify(payload) });
 
   return res;
 }
