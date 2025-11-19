@@ -416,7 +416,7 @@ export default function VacationList({
     
     if ((vacationType === 'half' || vacationType === 'quarter') && vacationTime) {
       const timeText = vacationTime === 'morning' ? '오전' : '오후';
-      return `${baseType} (${timeText})`;
+      return `${baseType}(${timeText})`;
     }
     
     return baseType;
@@ -448,16 +448,17 @@ export default function VacationList({
       if (startDate.isSame(endDate, 'day')) {
         return startDate.format('YYYY-MM-DD (ddd)');
       } else {
-        return `${startDate.format('YYYY-MM-DD')} ~ ${endDate.format('YYYY-MM-DD')}`;
+        return `${startDate.format('YYYY-MM-DD (ddd)')} - ${endDate.format('YYYY-MM-DD (ddd)')} `;
       }
     } else {
       const startTime = formatTime(item.sch_stime);
       const endTime = formatTime(item.sch_etime);
       
       if (startDate.isSame(endDate, 'day')) {
-        return `${startDate.format('YYYY-MM-DD (ddd)')} ${startTime} ~ ${endTime}`;
+        return `${startDate.format('YYYY-MM-DD (ddd)')}`;
+        // return `${startDate.format('YYYY-MM-DD(ddd)')} ${startTime} - ${endTime}`;
       } else {
-        return `${startDate.format('YYYY-MM-DD')} ${startTime} ~ ${endDate.format('YYYY-MM-DD')} ${endTime}`;
+        return `${startDate.format('YYYY-MM-DD (ddd)')} ${startTime} - ${endDate.format('YYYY-MM-DD (ddd)')} ${endTime}`;
       }
     }
   };
