@@ -157,7 +157,7 @@ export interface pExpenseAttachmentDTO {
   uploaded_at: string; // 업로드 일시 (ISO)
 }
 
-export interface ExpenseItemBase {
+export interface pExpenseItemBase {
   ei_title: string;
   ei_type: string;
   ei_pdate: string;
@@ -169,7 +169,7 @@ export interface ExpenseItemBase {
   attachments?: pExpenseAttachment[];
 }
 
-export interface ExpenseHeaderBase {
+export interface pExpenseHeaderBase {
   user_id: string;
   project_id: string;
   el_type: string[] | string | null;
@@ -186,12 +186,12 @@ export interface ExpenseHeaderBase {
 // ------------------------------
 // 등록용 (Register)
 // ------------------------------
-export interface ExpenseRegisterPayload {
-  header: ExpenseHeaderBase;
-  items: ExpenseItemBase[];
+export interface pExpenseRegisterPayload {
+  header: pExpenseHeaderBase;
+  items: pExpenseItemBase[];
 }
 
-export interface ExpenseRegisterResponse {
+export interface pExpenseRegisterResponse {
   ok: boolean;
   exp_id: string;
   list_seq: number;
@@ -206,7 +206,7 @@ export interface ExpenseRegisterResponse {
 // ------------------------------
 // 상세보기용 (View)
 // ------------------------------
-export interface pExpenseHeaderDTO extends ExpenseHeaderBase {
+export interface pExpenseHeaderDTO extends pExpenseHeaderBase {
   seq: number;
   project_id: string;
   exp_id: string;
@@ -227,7 +227,7 @@ export interface pExpenseHeaderDTO extends ExpenseHeaderBase {
   rejected_by?: string | null;
 }
 
-export interface pExpenseItemDTO extends Omit<ExpenseItemBase, 'attachments'> {
+export interface pExpenseItemDTO extends Omit<pExpenseItemBase, 'attachments'> {
   seq: number;
   exp_id: string;
   attachments: pExpenseAttachmentDTO[];
@@ -321,8 +321,8 @@ export async function getProjectExpenseView(expid: string | undefined): Promise<
 }
 
 // 프로젝트비용 작성하기
-export async function projectExpenseRegister(payload: ExpenseRegisterPayload) {
-  return http<ExpenseRegisterResponse>(`/user/pexpense/register`, {
+export async function projectExpenseRegister(payload: pExpenseRegisterPayload) {
+  return http<pExpenseRegisterResponse>(`/user/pexpense/register`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });

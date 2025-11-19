@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { formatKST, formatAmount } from '@/utils';
-import { getProjectExpenseView, type ExpenseViewDTO } from '@/api';
+import { getProjectExpenseView, type pExpenseViewDTO } from '@/api';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
@@ -19,7 +19,7 @@ export default function ProjectExpenseMatch() {
   const { state } = useLocation(); // 저장된 비용 Seq
   const navigate = useNavigate();
 
-  const [data, setData] = useState<ExpenseViewDTO | null>(null);
+  const [data, setData] = useState<pExpenseViewDTO | null>(null);
   const [loading, setLoading] = useState(true);
 
   const formatDate = (d?: string | Date | null) => {
