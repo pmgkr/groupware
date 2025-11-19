@@ -59,6 +59,13 @@ export interface ManagerOvertimeListParams {
   flag?: string;  // ot_status (H: 승인대기, T: 승인완료, N: 반려됨)
 }
 
+// 관리자 근태 로그 주간 조회 파라미터
+export interface ManagerWorkLogWeekParams {
+  team_id: number;
+  weekno: number;
+  yearno: number;
+}
+
 // 초과근무 항목
 export interface OvertimeItem {
   id: number;
@@ -215,6 +222,38 @@ export const workingApi = {
       }),
     });
     return response;
+  },
+
+  // 관리자 - 근태 로그 주간 조회
+  getManagerWorkLogsWeek: async (params: ManagerWorkLogWeekParams): Promise<WorkLogResponse> => {
+    const queryParams = new URLSearchParams();
+    
+    queryParams.append('team_id', params.team_id.toString());
+    queryParams.append('weekno', params.weekno.toString());
+    queryParams.append('yearno', params.yearno.toString());
+
+    const url = `/manager/wlog/week?${queryParams.toString()}`;
+    
+    try {
+      const response = await http<any>(url);
+      
+      // 응답 형식 확인 및 변환
+      if (response && typeof response === 'object') {
+        // 이미 WorkLogResponse 형식인 경우
+        if (response.wlog !== undefined) {
+          return {
+            wlog: Array.isArray(response.wlog) ? response.wlog : [],
+            vacation: Array.isArray(response.vacation) ? response.vacation : []
+          };
+        }
+        // 다른 형식일 수 있으므로 그대로 반환 (호환성 유지)
+        return response as WorkLogResponse;
+      }
+      
+      return { wlog: [], vacation: [] };
+    } catch (error) {
+      throw error;
+    }
   },
 };
 

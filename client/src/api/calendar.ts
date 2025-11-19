@@ -36,9 +36,20 @@ export interface ScheduleQueryParams {
   sch_status?: 'Y' | 'H' | 'N';
 }
 
+// 사용자 연차 정보 타입
+export interface UserVacation {
+  user_id: string;
+  va_year: number;
+  va_total: string;
+  va_used: string;
+  va_remaining: string;
+}
+
+
 // Schedule API 함수들
 export const scheduleApi = {
-  // 모든 스케줄 조회
+
+  // 유저-모든 스케줄 조회
   getSchedules: async (params?: ScheduleQueryParams): Promise<Schedule[]> => {
     const queryParams = new URLSearchParams();
     
@@ -57,13 +68,13 @@ export const scheduleApi = {
     return response;
   },
 
-  // 특정 스케줄 조회
+  // 유저-특정 스케줄 조회
   getSchedule: async (id: number): Promise<Schedule> => {
     const response = await http<Schedule>(`/user/schedule/content/${id}`);
     return response;
   },
 
-  // 스케줄 생성 (id, seq, user_id, created_at, modified_at은 서버에서 자동 생성)
+  // 유저-스케줄 생성 (id, seq, user_id, created_at, modified_at은 서버에서 자동 생성)
   createSchedule: async (schedule: Omit<Schedule, 'id' | 'seq' | 'user_id' | 'sch_created_at' | 'sch_modified_at' | 'google_calendar_idx'>): Promise<{ ok: boolean; id: number }> => {
     const response = await http<{ ok: boolean; id: number }>('/user/schedule/register', {
       method: 'POST',
@@ -90,18 +101,37 @@ export const scheduleApi = {
     return response;
   },
 
-  // 매니저-취소 요청 승인 (기존 API 사용)
-  approveScheduleCancel: async (id: number): Promise<{ ok: boolean; message?: string }> => {
-    // 백엔드 API 준비 전까지 기존 API로 상태를 N(취소완료)으로 변경
-    return await scheduleApi.updateScheduleStatus(id, 'N');
-  },
-
+  
   // 유저-스케줄 삭제
   deleteSchedule: async (id: number): Promise<void> => {
     await http(`/user/schedule/remove/${id}`, {
       method: 'DELETE'
     });
   },
+
+  // 매니저-취소 요청 승인 (휴가 취소 승인 처리, sch_status를 N으로 변경)
+  // 취소 요청한 휴가 → 승인 (sch_status='N')
+  // - google_calendar_idx 값이 있을 경우 캘린더 삭제
+  // - sch_vacation_used 값이 있을 경우, users_vacations 복원
+  approveScheduleCancel: async (id: number): Promise<{
+    result: {
+      updatedId: number;
+      old: Schedule;
+      refunded: boolean; // users_vacations 복원 여부
+    };
+  }> => {
+    const response = await http<{
+      result: {
+        updatedId: number;
+        old: Schedule;
+        refunded: boolean;
+      };
+    }>(`/manager/schedule/cancel/${id}`, {
+      method: 'POST'
+    });
+    return response;
+  },
+
 
   // 월별 스케줄 조회 (캘린더용)
   getMonthlySchedules: async (year: number, month: number, teamId?: number): Promise<Schedule[]> => {
@@ -118,18 +148,10 @@ export const scheduleApi = {
     return await scheduleApi.getSchedules(params);
   },
 
-  // 사용자 연차 정보 조회
+  // 유저-사용자 연차 정보 조회
   getUserVacations: async (userId: string, year: number): Promise<UserVacation> => {
     const response = await http<UserVacation>(`/user/vacations/${userId}/${year}`);
     return response;
   }
 };
 
-// 사용자 연차 정보 타입
-export interface UserVacation {
-  user_id: string;
-  va_year: number;
-  va_total: string;
-  va_used: string;
-  va_remaining: string;
-}
