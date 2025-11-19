@@ -5,7 +5,7 @@ import { getMemberList } from '@/api/common/team';
 import { useAuth } from '@/contexts/AuthContext';
 import type { WorkData } from '@/types/working';
 import type { WorkingListItem, DayWorkInfo } from '@/components/working/list';
-import { getWeekEndDate } from '@/utils/dateHelper';
+import { getWeekEndDate, getWeekNumber } from '@/utils/dateHelper';
 import { calculateWeeklyStats } from '@/utils/workingStatsHelper';
 import { convertApiDataToWorkData } from '@/services/workingDataConverter';
 
@@ -29,18 +29,10 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
         const sdate = dayjs(startDate).format('YYYY-MM-DD');
         const edate = dayjs(endDate).format('YYYY-MM-DD');
 
-        console.log('📊 근태 데이터 로드 시작...');
-        console.log('   조회 기간:', { sdate, edate, startDate, endDate });
-        console.log('   selectedTeamIds:', selectedTeamIds);
-        console.log('   user.team_id:', user?.team_id);
-
         // 1. 멤버 목록 가져오기 (team_id 포함)
         const teamIdsToQuery = selectedTeamIds.length > 0 ? selectedTeamIds : (user?.team_id ? [user.team_id] : []);
         
-        console.log('   → 조회할 팀 ID:', teamIdsToQuery);
-        
         if (teamIdsToQuery.length === 0) {
-          console.warn('   ⚠️ 조회할 팀이 없습니다.');
           setWorkingList([]);
           setLoading(false);
           return;
@@ -57,8 +49,6 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
         const teamMembers = allTeamMembers.filter((member, index, self) =>
           index === self.findIndex(m => m.user_id === member.user_id)
         );
-        
-        console.log(`   ✅ 조회된 팀원: ${teamMembers.length}명`);
 
         // 2. 초과근무 목록 조회 (team_id로) - 모든 상태 포함 (H: 승인대기, T: 승인완료, N: 반려됨)
         let allOvertimeResponse: OvertimeListResponse = { items: [], total: 0, page: 1, size: 1000, pages: 0 };
@@ -87,29 +77,44 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
             pages: 1
           };
         } catch (error) {
-          console.error('초과근무 조회 실패:', error);
+          // 초과근무 조회 실패 시 무시
         }
 
-        // 3. 각 팀원별로 근태 데이터 조회
+        // 3. 팀별로 근태 데이터 조회
         const transformedData: any[] = []; // 정렬을 위해 임시로 any 사용
 
-        for (const member of teamMembers) {
+        // 주차 번호 계산
+        const { year, week } = getWeekNumber(startDate);
+        
+        // 팀별로 그룹화
+        const teamGroups = new Map<number, typeof teamMembers>();
+        teamMembers.forEach(member => {
+          if (!teamGroups.has(member.team_id)) {
+            teamGroups.set(member.team_id, []);
+          }
+          teamGroups.get(member.team_id)!.push(member);
+        });
+        
+        // 각 팀별로 API 호출
+        for (const [teamId, members] of teamGroups) {
           try {
-            // 각 팀원의 근태 로그 조회
-            const workLogResponse = await workingApi.getWorkLogs({
-              search_id: member.user_id,
-              sdate,
-              edate,
+            // 관리자 - 근태 로그 주간 조회 (팀별로 조회)
+            const workLogResponse = await workingApi.getManagerWorkLogsWeek({
+              team_id: teamId,
+              weekno: week,
+              yearno: year
             });
             
-            // API 응답 데이터 형식 확인 (디버깅용)
-            if (member.user_id === 'yeonsang.lee@pmgasia.com') {
-              console.log('📋 yeonsang.lee 근태 로그 전체 응답:', {
-                totalCount: workLogResponse.wlog?.length,
-                wlogs: workLogResponse.wlog,
-                dates: workLogResponse.wlog?.map((w: any) => w.tdate)
-              });
-            }
+            // 각 팀원별로 데이터 처리
+            for (const member of members) {
+              try {
+                // 해당 팀원의 데이터만 필터링
+                const memberWlogs = (workLogResponse.wlog || []).filter((w: any) => 
+                  w.user_id === member.user_id
+                );
+                const memberVacations = (workLogResponse.vacation || []).filter((v: any) => 
+                  v.user_id === member.user_id
+                );
 
             // 스케줄 API를 통해 이벤트 가져오기 (해당 팀원)
             let scheduleEvents: any[] = [];
@@ -173,7 +178,7 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
                   }
                 });
             } catch (err) {
-              console.error(`${member.user_id} 스케줄 조회 실패:`, err);
+              // 스케줄 조회 실패 시 무시
             }
 
             // 전체 초과근무 목록에서 해당 팀원의 것만 필터링
@@ -185,9 +190,9 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
             // (중복 방지를 위해 schedule API 데이터만 사용)
             const combinedVacations = scheduleEvents;
             
-            // convertApiDataToWorkData로 주간 데이터 생성
+            // convertApiDataToWorkData로 주간 데이터 생성 (필터링된 데이터 사용)
             const userWorkData = await convertApiDataToWorkData(
-              workLogResponse.wlog || [],
+              memberWlogs,
               combinedVacations,
               memberOvertimes,
               weekStartDate,
@@ -258,8 +263,12 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
             note: '',
             _teamId: member.team_id, // 정렬용 (임시)
           });
+              } catch (error) {
+                // 근태 로그 로드 실패 시 무시
+              }
+            }
           } catch (error) {
-            console.error(`${member.user_id} 근태 로그 로드 실패:`, error);
+            // 팀 근태 로그 조회 실패 시 무시
           }
         }
 
@@ -268,7 +277,6 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
 
         setWorkingList(cleanedData);
       } catch (error) {
-        console.error('❌ 팀원 근태 로그 로드 실패:', error);
         setWorkingList([]);
       } finally {
         setLoading(false);

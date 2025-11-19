@@ -39,7 +39,13 @@ export function useCalendar({ filterMyEvents = false }: UseCalendarProps) {
     try {
       const userValidation = validateUser(user);
       if (!userValidation.valid) {
-        alert(userValidation.error);
+        navigate('/404', {
+          state: {
+            code: '401',
+            title: '인증 실패',
+            message: userValidation.error || '사용자 정보를 불러올 수 없습니다.'
+          }
+        });
         return false;
       }
 
@@ -54,15 +60,23 @@ export function useCalendar({ filterMyEvents = false }: UseCalendarProps) {
       await loadEvents(currentDate, filterMyEvents);
       return true;
     } catch (err: any) {
+      const errorMessage = formatErrorMessage(err);
+      navigate('/404', {
+        state: {
+          code: '500',
+          title: '일정 등록 실패',
+          message: errorMessage
+        }
+      });
+      
       try {
         await loadEvents(currentDate, filterMyEvents);
       } catch (reloadErr) {
         // Silent fail
       }
-      formatErrorMessage(err);
       return true;
     }
-  }, [user, currentDate, filterMyEvents, loadEvents]);
+  }, [user, currentDate, filterMyEvents, loadEvents, navigate]);
 
   const handleDateChange = useCallback((date: Date) => {
     setCurrentDate(date);

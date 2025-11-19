@@ -135,11 +135,11 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
   };
 
   return (
-    <div className="overflow-x-auto mt-15">
+    <div className="overflow-x-auto mt-10">
       <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-6 py-3 text-left text-base font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-[13px] font-medium text-gray-500 uppercase tracking-wider">
               {/* 항목 */}
             </th>
             {data.map((row, index) => {
@@ -150,10 +150,10 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               };
               
               return (
-                <th key={index} className={`w-[185px] px-6 py-3 text-center text-base font-medium text-gray-500 uppercase tracking-wider ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                <th key={index} className={`w-[185px] px-6 py-3 text-center text-[13px] font-medium text-gray-500 uppercase tracking-wider ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                   <div className="flex flex-col">
-                    <span className="text-base text-gray-800">{dayjs(row.date).format("MM/DD")}</span>
-                    <span className={`text-base font-semibold ${getDayColor(row.dayOfWeek)}`}>{row.dayOfWeek}요일</span>
+                    <span className="text-[13px] text-gray-800">{dayjs(row.date).format("MM/DD")}</span>
+                    <span className={`text-[13px] font-semibold ${getDayColor(row.dayOfWeek)}`}>{row.dayOfWeek}요일</span>
                   </div>
                 </th>
               );
@@ -162,7 +162,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
               구분
             </td>
             {data.map((row, index) => {
@@ -174,7 +174,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               return (
                 <td key={index} className={`h-[65px] px-6 py-4 whitespace-nowrap text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                   <div className="inline-flex items-center gap-1">
-                    <span className={`inline-flex px-3 py-1 text-base font-semibold rounded-full ${getWorkTypeColor(hasMultipleWorkTypes ? latestWorkType!.type : row.workType)}`}>
+                    <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getWorkTypeColor(hasMultipleWorkTypes ? latestWorkType!.type : row.workType)}`}>
                       {hasMultipleWorkTypes ? latestWorkType!.type : row.workType}
                     </span>
                     {/* 이벤트가 여러개일 때 이벤트 목록 툴팁 노출 */}
@@ -204,7 +204,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
             })}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
               <div className="flex items-center gap-1">
                 <span>출근시간</span>
                 <Tooltip>
@@ -220,23 +220,23 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               </div>
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                 {row.workType === '-' ? '-' : row.startTime}
               </td>
             ))}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
               퇴근시간
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                 {row.workType === '-' ? '-' : row.endTime}
               </td>
             ))}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
               <div className="flex items-center gap-1">
                 <span>기본근무시간</span>
                 <Tooltip>
@@ -252,13 +252,13 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               </div>
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                 {row.workType === '-' ? '-' : `${row.basicHours}시간 ${String(row.basicMinutes || 0).padStart(2, '0')}분`}
               </td>
             ))}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
               <div className="flex items-center gap-1">
                 <span>연장근무시간</span>
                 <Tooltip>
@@ -274,34 +274,34 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               </div>
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                 {row.workType === '-' ? '-' : `${row.overtimeHours}시간 ${String(row.overtimeMinutes || 0).padStart(2, '0')}분`}
               </td>
             ))}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-base font-bold text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-bold text-gray-900 bg-gray-50">
               총 근무시간
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-base ${row.workType === '-' ? 'text-gray-400 font-normal' : 'text-gray-900 font-bold'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400 font-normal' : 'text-gray-900 font-bold'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                 {row.workType === '-' ? '-' : `${row.totalHours}시간 ${String(row.totalMinutes || 0).padStart(2, '0')}분`}
               </td>
             ))}
           </tr>
           {!readOnly && (
             <tr className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
                 추가근무 신청
               </td>
               {data.map((row, index) => (
-                <td key={index} className={`px-6 py-4 whitespace-nowrap text-base text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                   <Button
                     onClick={() => handleOvertimeClick(index)}
                     disabled={false}
                     variant={getOvertimeButtonVariant(row.overtimeStatus)}
                     size="sm"
-                    className="text-base w-[80px]">
+                    className="text-[13px] w-[80px]">
                     {row.overtimeStatus}
                   </Button>
                 </td>

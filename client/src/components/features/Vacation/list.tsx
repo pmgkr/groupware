@@ -416,7 +416,7 @@ export default function VacationList({
     
     if ((vacationType === 'half' || vacationType === 'quarter') && vacationTime) {
       const timeText = vacationTime === 'morning' ? '오전' : '오후';
-      return `${baseType} (${timeText})`;
+      return `${baseType}(${timeText})`;
     }
     
     return baseType;
@@ -448,16 +448,17 @@ export default function VacationList({
       if (startDate.isSame(endDate, 'day')) {
         return startDate.format('YYYY-MM-DD (ddd)');
       } else {
-        return `${startDate.format('YYYY-MM-DD')} ~ ${endDate.format('YYYY-MM-DD')}`;
+        return `${startDate.format('YYYY-MM-DD (ddd)')} - ${endDate.format('YYYY-MM-DD (ddd)')} `;
       }
     } else {
       const startTime = formatTime(item.sch_stime);
       const endTime = formatTime(item.sch_etime);
       
       if (startDate.isSame(endDate, 'day')) {
-        return `${startDate.format('YYYY-MM-DD (ddd)')} ${startTime} ~ ${endTime}`;
+        return `${startDate.format('YYYY-MM-DD (ddd)')}`;
+        // return `${startDate.format('YYYY-MM-DD(ddd)')} ${startTime} - ${endTime}`;
       } else {
-        return `${startDate.format('YYYY-MM-DD')} ${startTime} ~ ${endDate.format('YYYY-MM-DD')} ${endTime}`;
+        return `${startDate.format('YYYY-MM-DD (ddd)')} ${startTime} - ${endDate.format('YYYY-MM-DD (ddd)')} ${endTime}`;
       }
     }
   };
@@ -473,6 +474,7 @@ export default function VacationList({
               {activeTab === 'vacation' ? '휴가 유형' : '이벤트 유형'}
             </TableHead>
             <TableHead className="w-[20%] text-center p-2">기간</TableHead>
+            <TableHead className="w-[20%] text-center p-2">사용휴가일수</TableHead>
             <TableHead className="w-[10%] text-center p-2">등록일</TableHead>
             <TableHead className="w-[8%] text-center p-2">상태</TableHead>
             <TableHead className="w-[5%] text-center p-2">
@@ -515,22 +517,23 @@ export default function VacationList({
                 }
               </TableCell>
               <TableCell className="text-center p-2">{getDateRangeText(item)}</TableCell>
+              <TableCell className="text-center p-2">{item.sch_vacation_used}</TableCell>
               <TableCell className="text-center p-2">
                 {item.sch_created_at ? dayjs(item.sch_created_at).format('YYYY-MM-DD') : '-'}
               </TableCell>
               <TableCell className="text-center p-2">
                 {item.sch_status === 'H' && (
-                  <Badge variant="outline" size="md" title="취소요청됨">
+                  <Badge variant="default" size="table" title="취소요청됨">
                     {getStatusText(item.sch_status)}
                   </Badge>
                 )}
                 {item.sch_status === 'Y' && (
-                  <Badge variant="default" size="md" title="승인완료">
+                  <Badge variant="outline" size="table" title="승인완료">
                     {getStatusText(item.sch_status)}
                   </Badge>
                 )}
                 {item.sch_status === 'N' && (
-                  <Badge variant="grayish" size="md" title="취소완료">
+                  <Badge variant="grayish" size="table" title="취소완료">
                     {getStatusText(item.sch_status)}
                   </Badge>
                 )}
