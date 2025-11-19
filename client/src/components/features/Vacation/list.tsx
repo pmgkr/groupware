@@ -103,10 +103,10 @@ export default function VacationList({
     loadTeams();
   }, []);
 
-  // 데이터 조회
+  // 데이터 조회 (연도 변경 시에만 API 호출)
   useEffect(() => {
     fetchScheduleData();
-  }, [teamIds, filters.year]);
+  }, [filters.year]);
 
   const fetchScheduleData = async () => {
     setLoading(true);
@@ -151,7 +151,6 @@ export default function VacationList({
       }
       
       console.log('📅 전체 일정 데이터:', allSchedules.length, '건');
-      console.log('📋 선택된 팀 ID:', teamIds);
       
       // 상태별 개수 확인
       const statusCount = {
@@ -161,27 +160,8 @@ export default function VacationList({
       };
       console.log('📊 상태별 개수:', statusCount);
       
-      // 팀별 필터링은 클라이언트에서 처리
-      let filteredByTeam = allSchedules;
-      if (teamIds.length > 0) {
-        filteredByTeam = allSchedules.filter(item => teamIds.includes(item.team_id));
-        console.log('✅ 팀 필터 적용 후:', filteredByTeam.length, '건');
-        
-        // 팀 필터 후 상태별 개수
-        const teamStatusCount = {
-          Y: filteredByTeam.filter(s => s.sch_status === 'Y').length,
-          H: filteredByTeam.filter(s => s.sch_status === 'H').length,
-          N: filteredByTeam.filter(s => s.sch_status === 'N').length,
-        };
-        console.log('📊 팀 필터 후 상태별 개수:', teamStatusCount);
-      }
-      
-      // 데이터 샘플 출력 (처음 3개)
-      if (filteredByTeam.length > 0) {
-        console.log('📝 데이터 샘플:', filteredByTeam.slice(0, 3));
-      }
-      
-      setAllData(filteredByTeam);
+      // 전체 데이터 저장 (모든 필터링은 filteredData useMemo에서 처리)
+      setAllData(allSchedules);
     } catch (error) {
       console.error('❌ 일정 데이터 조회 실패:', error);
       setAllData([]);
@@ -193,7 +173,16 @@ export default function VacationList({
   // 필터링된 데이터
   const filteredData = useMemo(() => {
     console.log('🔍 필터링 시작 - 원본 데이터:', allData.length, '건');
+    console.log('📋 선택된 팀 ID:', teamIds);
+    console.log('📋 필터 상태:', filters);
     let result = [...allData];
+    
+    // 팀 필터 (가장 먼저 적용)
+    const beforeTeam = result.length;
+    if (teamIds.length > 0) {
+      result = result.filter(item => teamIds.includes(item.team_id));
+      console.log(`   팀 필터:`, beforeTeam, '→', result.length, '건');
+    }
     
     // 탭 필터 (휴가 vs 이벤트)
     const beforeTab = result.length;
@@ -208,7 +197,16 @@ export default function VacationList({
     const beforeYear = result.length;
     if (filters.year) {
       result = result.filter(item => {
-        return item.sch_year === parseInt(filters.year!);
+        // sch_sdate에서 연도 추출 (YYYY-MM-DD 형식)
+        if (item.sch_sdate) {
+          const year = dayjs(item.sch_sdate).format('YYYY');
+          return year === filters.year;
+        }
+        // sch_year 필드가 있으면 그것도 확인
+        if (item.sch_year) {
+          return String(item.sch_year) === filters.year;
+        }
+        return false;
       });
       console.log(`   연도 필터 (${filters.year}):`, beforeYear, '→', result.length, '건');
     }
@@ -218,7 +216,7 @@ export default function VacationList({
       const beforeStatus = result.length;
       // toolbar에서 직접 'H', 'Y', 'N' 값을 사용하므로 매핑 불필요
       result = result.filter(item => filters.status!.includes(item.sch_status));
-      console.log(`   상태 필터:`, beforeStatus, '→', result.length, '건');
+      console.log(`   상태 필터 (${filters.status.join(',')}):`, beforeStatus, '→', result.length, '건');
     }
     
     // 휴가 유형 필터
@@ -228,7 +226,7 @@ export default function VacationList({
         if (!item.sch_vacation_type) return false;
         return filters.vacationType!.includes(item.sch_vacation_type);
       });
-      console.log(`   휴가 유형 필터:`, beforeVacType, '→', result.length, '건');
+      console.log(`   휴가 유형 필터 (${filters.vacationType.join(',')}):`, beforeVacType, '→', result.length, '건');
     }
     
     // 이벤트 유형 필터
@@ -238,7 +236,7 @@ export default function VacationList({
         if (!item.sch_event_type) return false;
         return filters.eventType!.includes(item.sch_event_type);
       });
-      console.log(`   이벤트 유형 필터:`, beforeEvtType, '→', result.length, '건');
+      console.log(`   이벤트 유형 필터 (${filters.eventType.join(',')}):`, beforeEvtType, '→', result.length, '건');
     }
     
     // 정렬: 1) 승인대기 최우선, 2) 시작일 최근순
@@ -255,7 +253,7 @@ export default function VacationList({
     
     console.log('✅ 최종 필터링 결과:', result.length, '건');
     return result;
-  }, [allData, activeTab, filters]);
+  }, [allData, teamIds, activeTab, filters]);
 
   // 페이지네이션 적용된 데이터
   const paginatedData = useMemo(() => {
@@ -474,7 +472,9 @@ export default function VacationList({
               {activeTab === 'vacation' ? '휴가 유형' : '이벤트 유형'}
             </TableHead>
             <TableHead className="w-[20%] text-center p-2">기간</TableHead>
-            <TableHead className="w-[20%] text-center p-2">사용휴가일수</TableHead>
+            {activeTab === 'vacation' && (
+              <TableHead className="w-[20%] text-center p-2">사용휴가일수</TableHead>
+            )}
             <TableHead className="w-[10%] text-center p-2">등록일</TableHead>
             <TableHead className="w-[8%] text-center p-2">상태</TableHead>
             <TableHead className="w-[5%] text-center p-2">
@@ -517,7 +517,9 @@ export default function VacationList({
                 }
               </TableCell>
               <TableCell className="text-center p-2">{getDateRangeText(item)}</TableCell>
-              <TableCell className="text-center p-2">{item.sch_vacation_used}</TableCell>
+              {activeTab === 'vacation' && item.sch_vacation_used && (
+                <TableCell className="text-center p-2">{item.sch_vacation_used}</TableCell>
+              )}
               <TableCell className="text-center p-2">
                 {item.sch_created_at ? dayjs(item.sch_created_at).format('YYYY-MM-DD') : '-'}
               </TableCell>
