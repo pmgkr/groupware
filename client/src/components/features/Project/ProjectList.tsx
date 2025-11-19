@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getProjectList, type ProjectListItem, getClientList, getTeamList } from '@/api';
+import { getProjectList, type ProjectListItem, getClientList, getTeamList, getBookmarkList, addBookmark, removeBookmark } from '@/api';
+import { cn } from '@/lib/utils';
+import { ProjectCreateForm } from './_components/ProjectCreate';
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@components/ui/button';
@@ -9,14 +11,13 @@ import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@compo
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ProjectRow } from './_components/ProjectListRow';
-
 import { Star, RefreshCw } from 'lucide-react';
-
-import { ProjectCreateForm } from './_components/ProjectCreate';
-import { useUser } from '@/hooks/useUser';
 
 export default function ProjectList() {
   const [registerDialog, setRegisterDialog] = useState(false);
+
+  // 프로젝트 리스트 API 조회용 State
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -30,8 +31,9 @@ export default function ProjectList() {
   const [selectedClient, setSelectedClient] = useState<string[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [favorites, setFavorites] = useState<string[]>([]);
+  const [searchInput, setSearchInput] = useState(''); // 사용자가 입력중인 Input 저장값
+  const [searchQuery, setSearchQuery] = useState(''); // 실제 검색 Input 저장값
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   // ✅ MultiSelect refs
   const categoryRef = useRef<MultiSelectRef>(null);
@@ -89,6 +91,7 @@ export default function ProjectList() {
     setSelectedTeam([]);
     setSelectedStatus([]);
     setSearchQuery('');
+    setShowFavoritesOnly(false);
 
     // MultiSelect 내부 상태 초기화
     categoryRef.current?.clear();
@@ -103,17 +106,40 @@ export default function ProjectList() {
     resetAllFilters();
   };
 
+  // 즐겨찾기 리스트 불러오기
+  const fetchFavorites = useCallback(async () => {
+    try {
+      const res = await getBookmarkList();
+      setFavorites(res.map((item) => String(item.project_id)));
+    } catch (err) {
+      console.error('❌ 즐겨찾기 목록 불러오기 실패:', err);
+    }
+  }, []);
+
   // 즐겨찾기 토글
-  const toggleFavorite = (projectId: string) => {
-    setFavorites((prev) => (prev.includes(projectId) ? prev.filter((id) => id !== projectId) : [...prev, projectId]));
-  };
+  const toggleFavorite = useCallback(
+    async (projectId: string) => {
+      const isFav = favorites.includes(projectId);
+      try {
+        if (isFav) {
+          await removeBookmark(projectId);
+          setFavorites((prev) => prev.filter((id) => id !== projectId));
+        } else {
+          await addBookmark(projectId);
+          setFavorites((prev) => [...prev, projectId]);
+        }
+      } catch (err) {
+        console.error(`❌ 즐겨찾기 ${isFav ? '삭제' : '추가'} 실패:`, err);
+      }
+    },
+    [favorites]
+  );
 
   // 프로젝트 리스트 가져오기
   const fetchProjects = useCallback(async () => {
     try {
       setLoading(true);
 
-      console.log('selectedTeam', selectedTeam);
       const params: Record<string, any> = {
         page,
         size: pageSize,
@@ -126,11 +152,12 @@ export default function ProjectList() {
         s: searchQuery,
       };
 
-      console.log(params);
+      // 북마크를 클릭한 경우 추가 파라미터 전달
+      if (showFavoritesOnly) {
+        params.tagged = 'Y';
+      }
 
       const res = await getProjectList(params);
-
-      console.log(res);
 
       setProjects(res.items);
       setTotal(res.total);
@@ -139,12 +166,19 @@ export default function ProjectList() {
     } finally {
       setLoading(false);
     }
-  }, [page, selectedBrand, selectedCategory, selectedClient, selectedTeam, selectedStatus, searchQuery, activeTab]);
+  }, [page, selectedBrand, selectedCategory, selectedClient, selectedTeam, selectedStatus, searchQuery, activeTab, showFavoritesOnly]);
 
   // 마운트 시 호출
   useEffect(() => {
     fetchProjects();
-  }, [fetchProjects]);
+    fetchFavorites();
+  }, [fetchProjects, fetchFavorites]);
+
+  // 북마크 토글 버튼
+  const handleToggleFavorites = () => {
+    setShowFavoritesOnly((prev) => !prev);
+    setPage(1);
+  };
 
   return (
     <>
@@ -174,7 +208,7 @@ export default function ProjectList() {
 
           <div className="flex items-center gap-x-2 before:mr-3 before:ml-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
             <Select value={selectedBrand} onValueChange={(v) => handleFilterChange(setSelectedBrand, v)}>
-              <SelectTrigger size="sm">
+              <SelectTrigger size="sm" className="px-2">
                 <SelectValue placeholder="소속 선택" />
               </SelectTrigger>
               <SelectContent>
@@ -241,8 +275,18 @@ export default function ProjectList() {
               hideSelectAll={true}
             />
 
-            <Button type="button" variant="svgIcon" size="icon" className="hover:text-primary-yellow-500 size-6 text-gray-600">
-              <Star />
+            <Button
+              type="button"
+              variant="svgIcon"
+              size="icon"
+              className={cn(
+                'size-6 text-gray-600 transition-colors',
+                showFavoritesOnly
+                  ? 'text-primary-yellow-500 [&_svg]:fill-current'
+                  : 'hover:text-primary-yellow-500 hover:[&_svg]:fill-current'
+              )}
+              onClick={handleToggleFavorites}>
+              <Star fill={showFavoritesOnly ? 'currentColor' : 'none'} />
             </Button>
             <Button
               type="button"
@@ -257,12 +301,18 @@ export default function ProjectList() {
 
         <div className="flex gap-x-2">
           <Input
-            className="max-w-45"
+            className="max-w-42"
             size="sm"
             placeholder="검색어 입력"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setSearchQuery(searchInput);
+              }
+            }}
           />
+
           <Button size="sm" onClick={() => setRegisterDialog(true)}>
             프로젝트 생성
           </Button>

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { formatKST, formatAmount } from '@/utils';
-import { getExpenseView } from '@/api/expense';
-import type { ExpenseViewDTO } from '@/api/expense';
+import { getProjectExpenseView, type pExpenseViewDTO } from '@/api';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
@@ -12,13 +11,15 @@ import { Download, Edit } from '@/assets/images/icons';
 import { File, Link as LinkIcon } from 'lucide-react';
 
 import { format } from 'date-fns';
-import { statusIconMap, getLogMessage } from './utils/statusUtils';
+import { statusIconMap, getLogMessage } from '../Expense/utils/statusUtils';
+import EstimateMatching from './_components/EstimateMatching';
 
-export default function ExpenseView() {
-  const { expId } = useParams();
+export default function ProjectExpenseMatch() {
+  const { projectId } = useParams(); // 프로젝트 ID
+  const { state } = useLocation(); // 저장된 비용 Seq
   const navigate = useNavigate();
 
-  const [data, setData] = useState<ExpenseViewDTO | null>(null);
+  const [data, setData] = useState<pExpenseViewDTO | null>(null);
   const [loading, setLoading] = useState(true);
 
   const formatDate = (d?: string | Date | null) => {
@@ -30,7 +31,7 @@ export default function ExpenseView() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await getExpenseView(expId);
+        const res = await getProjectExpenseView(state.exp_id);
         setData(res);
       } catch (err) {
         console.error('❌ 비용 상세 조회 실패:', err);
@@ -38,7 +39,7 @@ export default function ExpenseView() {
         setLoading(false);
       }
     })();
-  }, [expId]);
+  }, []);
 
   console.log(data);
 
@@ -56,7 +57,7 @@ export default function ExpenseView() {
       </div>
     );
 
-  const { header, items, logs } = data;
+  const { header, items } = data;
 
   // .총 비용 계산
   const totals = items.reduce(
@@ -105,17 +106,11 @@ export default function ExpenseView() {
     <>
       <div className="flex items-end justify-between border-b border-b-gray-300 pb-2">
         <div>
-          <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-950">
-            [{header.el_method}] {header.el_title} {status}
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-950">
+            {header.el_title} {status}
           </h1>
           <ul className="itmes-center flex gap-2 text-base text-gray-500">
-            <li className="text-gray-700">{header.exp_id}</li>
-            <li className="before:mr-2 before:inline-flex before:h-[3px] before:w-[3px] before:rounded-[50%] before:bg-gray-400 before:align-middle">
-              {header.user_nm}
-            </li>
-            <li className="before:mr-2 before:inline-flex before:h-[3px] before:w-[3px] before:rounded-[50%] before:bg-gray-400 before:align-middle">
-              {formatKST(header.wdate)}
-            </li>
+            <li>{formatKST(header.wdate)}</li>
           </ul>
         </div>
         <div className="flex gap-2">
@@ -135,12 +130,12 @@ export default function ExpenseView() {
               <h3 className="mb-2 text-lg font-bold text-gray-800">일반 정보</h3>
               <TableColumn>
                 <TableColumnHeader className="text-[13px]">
-                  <TableColumnHeaderCell>비용 유형</TableColumnHeaderCell>
+                  <TableColumnHeaderCell>작성자</TableColumnHeaderCell>
                   <TableColumnHeaderCell>증빙 수단</TableColumnHeaderCell>
                   <TableColumnHeaderCell>입금희망일</TableColumnHeaderCell>
                 </TableColumnHeader>
                 <TableColumnBody className="text-[13px]">
-                  <TableColumnCell>{header.el_type}</TableColumnCell>
+                  <TableColumnCell>{header.user_nm}</TableColumnCell>
                   <TableColumnCell>{header.el_method}</TableColumnCell>
                   <TableColumnCell>{header.el_deposit ? formatDate(header.el_deposit) : <span>-</span>}</TableColumnCell>
                 </TableColumnBody>
@@ -178,17 +173,18 @@ export default function ExpenseView() {
               </div>
             )}
           </div>
-          <div className="mt-12">
+          <div className="mt-6">
             <h3 className="mb-2 text-lg font-bold text-gray-800">비용 항목</h3>
             <Table variant="primary" align="center" className="table-fixed">
               <TableHeader>
                 <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+                  <TableHead className="w-[10%]">비용유형</TableHead>
                   <TableHead className="w-[20%]">가맹점명</TableHead>
                   <TableHead className="w-[10%] px-4">매입일자</TableHead>
                   <TableHead className="w-[14%]">금액</TableHead>
                   <TableHead className="w-[10%]">세금</TableHead>
                   <TableHead className="w-[14%]">합계</TableHead>
-                  <TableHead className="w-[24%]">증빙자료</TableHead>
+                  <TableHead className="w-[20%]">증빙자료</TableHead>
                   <TableHead className="w-[8%]">기안서</TableHead>
                 </TableRow>
               </TableHeader>
@@ -196,6 +192,7 @@ export default function ExpenseView() {
                 {items.map((item) => {
                   return (
                     <TableRow key={item.seq} className="[&_td]:text-[13px]">
+                      <TableCell>{item.ei_type}</TableCell>
                       <TableCell>{item.ei_title}</TableCell>
                       <TableCell className="px-4">{formatDate(item.ei_pdate)}</TableCell>
                       <TableCell className="text-right">{formatAmount(item.ei_amount)}원</TableCell>
@@ -236,7 +233,8 @@ export default function ExpenseView() {
                   );
                 })}
                 <TableRow className="bg-primary-blue-50">
-                  <TableCell className="font-semibold">총 비용</TableCell>
+                  <TableCell className="font-semibold">총 비용 (A)</TableCell>
+                  <TableCell className="text-left"></TableCell>
                   <TableCell className="text-left"></TableCell>
                   <TableCell className="text-right font-semibold">{formatAmount(totals.amount)}원</TableCell>
                   <TableCell className="text-right font-semibold">{formatAmount(totals.tax)}원</TableCell>
@@ -248,7 +246,7 @@ export default function ExpenseView() {
             </Table>
           </div>
           <div className="mt-8 flex w-full items-center justify-between">
-            <Button type="button" variant="outline" size="sm" onClick={() => navigate('/expense')}>
+            <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/project/${projectId}/expense`)}>
               목록
             </Button>
 
@@ -257,37 +255,9 @@ export default function ExpenseView() {
             </Button>
           </div>
         </div>
-        <div className="w-[24%] px-4">
-          <h2 className="mb-2 text-lg font-bold text-gray-800">로그</h2>
-          <div className="flex flex-col gap-8">
-            {logs.map((log) => (
-              <div
-                key={`${log.idx}-${log.exp_status}`}
-                className="relative before:absolute before:bottom-[100%] before:left-[15.5px] before:mb-1 before:h-6 before:w-[1px] before:bg-gray-400/80 first:before:hidden">
-                <div className="flex items-center gap-4">
-                  <span className="flex size-8 items-center justify-center rounded-full bg-white ring-1 ring-gray-300">
-                    {statusIconMap[log.exp_status as keyof typeof statusIconMap]}
-                  </span>
-                  <dl className="text-base leading-[1.3] text-gray-800">
-                    <dt>{getLogMessage(log)}</dt>
-                    {log.exp_status === 'Rejected' ? (
-                      <dd className="text-destructive text-[.88em]">반려 사유: {header.rej_reason}</dd>
-                    ) : (
-                      <dd className="text-[.88em] text-gray-500">
-                        {formatKST(
-                          log.exp_status === 'Approved'
-                            ? (header.ddate ?? log.log_date)
-                            : log.exp_status === 'Completed'
-                              ? (header.edate ?? log.log_date)
-                              : log.log_date
-                        ) || '-'}
-                      </dd>
-                    )}
-                  </dl>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="w-[24%]">
+          <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
+          <EstimateMatching />
         </div>
       </div>
     </>

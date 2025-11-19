@@ -703,7 +703,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
     const getSizeClasses = () => {
       switch (size) {
         case 'sm':
-          return 'h-8 rounded-md text-sm gap-1.25 px-1 py-0';
+          return 'h-8 rounded-md text-sm gap-1.25 px-2 py-0';
         case 'lg':
           return 'w-full max-w-[280px] h-12 text-lg rounded-md px-4 py-0';
         default:
@@ -959,11 +959,11 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                           }
                         }}
                         aria-label={`Clear all ${selectedValues.length} selected options`}
-                        className="text-muted-foreground hover:text-foreground focus:ring-ring mx-2 flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm focus:ring-2 focus:ring-offset-1 focus:outline-none">
+                        className="text-muted-foreground hover:text-foreground focus:ring-ring ml-2 flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm focus:ring-2 focus:ring-offset-1 focus:outline-none">
                         <XIcon className="h-4 w-4" />
                       </div>
                       <Separator orientation="vertical" className="flex h-full min-h-6" />
-                      <ChevronDown className="text-muted-foreground mx-2 h-4 cursor-pointer" aria-hidden="true" />
+                      <ChevronDown className="text-muted-foreground ml-2 h-4 cursor-pointer" aria-hidden="true" />
                     </div>
                   </div>
                 ) : (
@@ -990,7 +990,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               ) : (
                 <div className="mx-auto flex w-full items-center justify-between">
                   <span className={cn(size === 'sm' ? 'text-sm' : 'text-base', 'text-muted-foreground')}>{placeholder}</span>
-                  <ChevronDown className="text-muted-foreground mx-2 h-4 cursor-pointer" />
+                  <ChevronDown className="text-muted-foreground ml-2 h-4 cursor-pointer" />
                 </div>
               )}
             </Button>
