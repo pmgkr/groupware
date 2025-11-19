@@ -267,7 +267,7 @@ export default function VacationToolbar({
               { value: 'N', label: '취소완료' },
             ]}
             onValueChange={(value) => handleSelectChange('status', value)}
-            value={filters.status}
+            defaultValue={filters.status}
             placeholder="상태"
             size="sm"
             maxCount={0}
@@ -289,7 +289,7 @@ export default function VacationToolbar({
                 { value: 'official', label: '공가' },
               ]}
               onValueChange={(value) => handleSelectChange('vacationType', value)}
-              value={filters.vacationType}
+              defaultValue={filters.vacationType}
               placeholder="휴가 유형"
               size="sm"
               maxCount={0}
@@ -312,7 +312,7 @@ export default function VacationToolbar({
                 { value: 'etc', label: '기타' },
               ]}
               onValueChange={(value) => handleSelectChange('eventType', value)}
-              value={filters.eventType}
+              defaultValue={filters.eventType}
               placeholder="이벤트 유형"
               size="sm"
               maxCount={0}
