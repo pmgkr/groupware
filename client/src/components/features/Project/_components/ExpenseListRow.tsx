@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { formatAmount, formatKST } from '@/utils';
 import type { ExpenseListItem } from '@/api';
 
@@ -27,6 +28,12 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
     Rejected: <Badge className="bg-destructive">반려됨</Badge>,
   } as const;
 
+  // 비용 용도 슬라이드 유틸함수
+  const parseCategories = (cate: string) => cate?.split('|').filter(Boolean) ?? [];
+  const categories = parseCategories(item.el_type);
+
+  console.log(item.el_type);
+
   return (
     <TableRow className="[&_td]:text-[13px]">
       <TableCell className={cn('px-0', activeTab !== 'saved' && 'hidden')}>
@@ -38,7 +45,27 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
         />
       </TableCell>
       <TableCell>{item.el_method}</TableCell>
-      <TableCell>{item.el_type}</TableCell>
+      <TableCell>
+        <TooltipProvider>
+          <Tooltip>
+            <div className="flex cursor-default items-center justify-center gap-1">
+              {categories.length === 1 ? (
+                <span>{categories[0]}</span>
+              ) : (
+                <>
+                  <span>{categories[0]}</span>
+                  <TooltipTrigger asChild>
+                    <Badge variant="grayish" className="px-1 py-0 text-xs">
+                      +{categories.length - 1}
+                    </Badge>
+                  </TooltipTrigger>
+                </>
+              )}
+            </div>
+            {categories.length > 1 && <TooltipContent>{categories.join(', ')}</TooltipContent>}
+          </Tooltip>
+        </TooltipProvider>
+      </TableCell>
       <TableCell className="text-left">
         <Link to={`/project/${projectId}/expense/${item.seq}`} className="hover:underline">
           {item.el_title}
