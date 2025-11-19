@@ -80,65 +80,82 @@ export function mapExcelToExpenseItems(excelData: any[]): any[] {
 }
 
 /**
- * Excel JSON → 견적서 아이템 매핑
- * Sub Total / Grand Total은 별도 타입으로 분리
+ * Excel JSON → 견적서 아이템 매핑 (완전체 + Title Row 처리)
  */
 export function mapExcelToQuotationItems(excelData: any[]): any[] {
-  if (!Array.isArray(excelData)) return [];
+  if (!Array.isArray(excelData) || excelData.length === 0) return [];
 
-  const headerRow = excelData[0] ?? {};
-  const headerMap: Record<string, string> = {};
-  // 헤더 정규화를 위한 함수
+  // ----------------------------------------
+  // 1) 모든 Row의 key를 모아 Header 후보 만들기
+  // ----------------------------------------
+  const allKeys = new Set<string>();
+  for (const row of excelData) {
+    Object.keys(row).forEach((k) => !k.startsWith('__') && allKeys.add(k));
+  }
+
+  // ----------------------------------------
+  // 2) normalize 함수
+  // ----------------------------------------
   const normalize = (label: any) =>
     String(label)
       .trim()
       .toLowerCase()
-      .replace(/\s+/g, '') // 모든 공백 제거
-      .replace(/[()]/g, '') // 괄호 제거
-      .replace(/[^a-z0-9]/g, ''); // 특수문자 제거
+      .replace(/\s+/g, '')
+      .replace(/[()]/g, '')
+      .replace(/[^a-z0-9]/g, '');
 
-  for (const [key, value] of Object.entries(headerRow)) {
-    const norm = normalize(value);
+  // ----------------------------------------
+  // 3) headerMap 자동 매핑
+  // ----------------------------------------
+  const headerMap: Record<string, string> = {};
+
+  for (const key of allKeys) {
+    const norm = normalize(key);
 
     if (norm === 'item') headerMap.item = key;
-    else if (norm === 'unitprice')
-      headerMap.unit = key; // Unit price
+    else if (norm === 'unitprice') headerMap.unit = key;
     else if (norm === 'qty' || norm === 'quantity') headerMap.qty = key;
     else if (norm === 'amountkrw' || norm === 'amount') headerMap.amount = key;
     else if (norm === 'remarks' || norm === 'remark') headerMap.remarks = key;
   }
 
-  if (!headerMap.item) headerMap.item = 'Item';
-  if (!headerMap.amount) {
-    headerMap.amount = Object.keys(headerRow).find((k) => k.toLowerCase().includes('amount')) ?? '';
+  if (!headerMap.item) {
+    const maybeItem = [...allKeys].find((k) => normalize(k) === 'item');
+    if (maybeItem) headerMap.item = maybeItem;
   }
 
-  const rows = excelData;
+  if (!headerMap.item) {
+    console.warn('❌ Item 컬럼이 없어 매핑할 수 없습니다.');
+    return [];
+  }
 
+  // ----------------------------------------
+  // 4) Row 변환
+  // ----------------------------------------
   const result: any[] = [];
 
-  for (const row of rows) {
+  for (const row of excelData) {
     const itemRaw = row[headerMap.item];
     if (!itemRaw) continue;
 
     const item = String(itemRaw).trim();
 
-    // indent 기반 depth 계산
-    const depth = (itemRaw.match(/^\s+/)?.[0].length || 0) / 2;
+    const depth = (String(itemRaw).match(/^\s+/)?.[0].length || 0) / 2;
 
-    const unitRaw = row[headerMap.unit];
-    const qtyRaw = row[headerMap.qty];
-    const amountRaw = row[headerMap.amount];
-    const remarksRaw = row[headerMap.remarks];
+    const unitRaw = headerMap.unit ? row[headerMap.unit] : undefined;
+    const qtyRaw = headerMap.qty ? row[headerMap.qty] : undefined;
+    const amountRaw = headerMap.amount ? row[headerMap.amount] : undefined;
+    const remarksRaw = headerMap.remarks ? row[headerMap.remarks] : undefined;
 
-    const unit_price = unitRaw ? Number(String(unitRaw).replace(/,/g, '')) : 0;
-    const qty = qtyRaw ? Number(String(qtyRaw).replace(/,/g, '')) : 0;
-    const amount = amountRaw ? Number(String(amountRaw).replace(/,/g, '')) : 0;
+    const unit_price = unitRaw !== undefined ? Number(String(unitRaw).replace(/,/g, '')) : 0;
+    const qty = qtyRaw !== undefined ? Number(String(qtyRaw).replace(/,/g, '')) : 0;
+    const rawAmount = amountRaw !== undefined ? Number(String(amountRaw).replace(/,/g, '')) : 0; // 금액 반올림 적용
+    const amount = Math.round(rawAmount);
     const remarks = remarksRaw ? String(remarksRaw).trim() : '';
 
-    // ---------------------------
-    // ① Sub Total 처리
-    // ---------------------------
+    // ----------------------------------------
+    // 5) Sub Total
+    // ----------------------------------------
     if (/^sub\s*total/i.test(item)) {
       result.push({
         type: 'subtotal',
@@ -148,9 +165,9 @@ export function mapExcelToQuotationItems(excelData: any[]): any[] {
       continue;
     }
 
-    // ---------------------------
-    // ② Grand Total 처리
-    // ---------------------------
+    // ----------------------------------------
+    // 6) Grand Total
+    // ----------------------------------------
     if (/grand\s*total/i.test(item)) {
       result.push({
         type: 'grandtotal',
@@ -160,9 +177,27 @@ export function mapExcelToQuotationItems(excelData: any[]): any[] {
       continue;
     }
 
-    // ---------------------------
-    // ③ 일반 Item 처리
-    // ---------------------------
+    // ----------------------------------------
+    // 7) Title Row 조건
+    //    (item만 있고 숫자값 없음)
+    // ----------------------------------------
+    const noUnit = unitRaw === undefined || unit_price === 0;
+    const noQty = qtyRaw === undefined || qty === 0;
+    const noAmount = amountRaw === undefined || amount === 0;
+    const hasOnlyItem = noUnit && noQty && noAmount;
+
+    if (hasOnlyItem) {
+      result.push({
+        type: 'title',
+        item,
+        depth,
+      });
+      continue;
+    }
+
+    // ----------------------------------------
+    // 8) 일반 Item Row
+    // ----------------------------------------
     result.push({
       type: 'item',
       item,

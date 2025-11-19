@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useOutletContext } from 'react-router';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { mapExcelToQuotationItems } from '@/utils';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
+import { formatAmount } from '@/utils';
 
 import { Input } from '@components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -18,6 +19,12 @@ type QuotationNormalItem = {
   depth: number;
 };
 
+type QuotationTitle = {
+  type: 'title';
+  item: string;
+  depth: number;
+};
+
 type QuotationSubtotal = {
   type: 'subtotal';
   label: string;
@@ -30,7 +37,7 @@ type QuotationGrandTotal = {
   amount: number;
 };
 
-export type QuotationMappedItem = QuotationNormalItem | QuotationSubtotal | QuotationGrandTotal;
+export type QuotationMappedItem = QuotationNormalItem | QuotationTitle | QuotationSubtotal | QuotationGrandTotal;
 
 type EstimateForm = {
   estimate_items: QuotationMappedItem[];
@@ -56,6 +63,8 @@ export default function EstimatePreview() {
     control,
     name: 'estimate_items',
   });
+
+  console.log(fields);
 
   // --------------------------
   // 2) Excel 매핑하여 row 생성
@@ -123,12 +132,12 @@ export default function EstimatePreview() {
           <TableHeader>
             <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
               <TableHead className="text-left">항목명</TableHead>
-              <TableHead className="w-[11%]">단가</TableHead>
-              <TableHead className="w-[8%]">수량</TableHead>
-              <TableHead className="w-[11%]">금액</TableHead>
-              <TableHead className="w-[11%]">예상 지출 금액</TableHead>
-              <TableHead className="w-[11%]">가용 금액</TableHead>
-              <TableHead className="w-[18%]">비고</TableHead>
+              <TableHead className="w-[10%]">단가</TableHead>
+              <TableHead className="w-[6%]">수량</TableHead>
+              <TableHead className="w-[10%]">금액</TableHead>
+              <TableHead className="w-[10%]">예상 지출 금액</TableHead>
+              <TableHead className="w-[10%]">가용 금액</TableHead>
+              <TableHead className="w-[24%]">비고</TableHead>
             </TableRow>
           </TableHeader>
 
@@ -138,15 +147,26 @@ export default function EstimatePreview() {
                 {/* ------------------------ */}
                 {/* 일반 Item Row */}
                 {/* ------------------------ */}
+                {row.type === 'title' && (
+                  <>
+                    <TableCell className="text-left font-bold" colSpan={7}>
+                      {row.item}
+                    </TableCell>
+                  </>
+                )}
+
+                {/* ------------------------ */}
+                {/* 일반 Item Row */}
+                {/* ------------------------ */}
                 {row.type === 'item' && (
                   <>
                     <TableCell className="text-left">{row.item}</TableCell>
-                    <TableCell>{row.unit_price}</TableCell>
-                    <TableCell>{row.qty}</TableCell>
-                    <TableCell>{row.amount}</TableCell>
+                    <TableCell className="text-right">{formatAmount(row.unit_price)}</TableCell>
+                    <TableCell className="text-right">{row.qty}</TableCell>
+                    <TableCell className="text-right">{formatAmount(row.amount)}</TableCell>
                     <TableCell>-</TableCell>
                     <TableCell>-</TableCell>
-                    <TableCell>{row.remarks}</TableCell>
+                    <TableCell className="whitespace-break-spaces">{row.remarks}</TableCell>
                   </>
                 )}
 
@@ -155,11 +175,11 @@ export default function EstimatePreview() {
                 {/* ------------------------ */}
                 {row.type === 'subtotal' && (
                   <>
-                    <TableCell colSpan={3} className="bg-gray-50 font-semibold">
+                    <TableCell colSpan={3} className="bg-gray-100 font-semibold">
                       {row.label}
                     </TableCell>
-                    <TableCell className="bg-gray-50 font-semibold">{row.amount}</TableCell>
-                    <TableCell colSpan={3} className="bg-gray-50"></TableCell>
+                    <TableCell className="bg-gray-100 font-semibold">{formatAmount(row.amount)}</TableCell>
+                    <TableCell colSpan={3} className="bg-gray-100"></TableCell>
                   </>
                 )}
 
@@ -171,7 +191,7 @@ export default function EstimatePreview() {
                     <TableCell colSpan={3} className="bg-primary-blue-150 font-bold text-gray-900">
                       {row.label}
                     </TableCell>
-                    <TableCell className="bg-primary-blue-150 font-bold text-gray-900">{row.amount}</TableCell>
+                    <TableCell className="bg-primary-blue-150 font-bold text-gray-900">{formatAmount(row.amount)}</TableCell>
                     <TableCell colSpan={3} className="bg-primary-blue-150"></TableCell>
                   </>
                 )}

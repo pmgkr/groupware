@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { formatKST, formatAmount } from '@/utils';
-import { getExpenseView, type ExpenseViewDTO } from '@/api';
+import { getExpenseView } from '@/api/expense';
+import type { ExpenseViewDTO } from '@/api/expense';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';

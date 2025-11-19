@@ -20,7 +20,7 @@ export const projectRoutes: RouteObject = {
     { index: true, element: <List /> },
     {
       path: ':projectId',
-      element: (<ProjectLayout />) as React.ReactElement,
+      element: <ProjectLayout />,
       children: [
         { index: true, element: <ProjectOverview />, handle: { hideNav: true, hideTitle: true } },
         { path: 'expense', element: <ProjectExpense />, handle: { hideNav: true, hideTitle: true } },
