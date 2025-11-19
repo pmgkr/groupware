@@ -473,6 +473,7 @@ export default function VacationList({
               {activeTab === 'vacation' ? '휴가 유형' : '이벤트 유형'}
             </TableHead>
             <TableHead className="w-[20%] text-center p-2">기간</TableHead>
+            <TableHead className="w-[20%] text-center p-2">사용휴가일수</TableHead>
             <TableHead className="w-[10%] text-center p-2">등록일</TableHead>
             <TableHead className="w-[8%] text-center p-2">상태</TableHead>
             <TableHead className="w-[5%] text-center p-2">
@@ -515,17 +516,18 @@ export default function VacationList({
                 }
               </TableCell>
               <TableCell className="text-center p-2">{getDateRangeText(item)}</TableCell>
+              <TableCell className="text-center p-2">{item.sch_vacation_used}</TableCell>
               <TableCell className="text-center p-2">
                 {item.sch_created_at ? dayjs(item.sch_created_at).format('YYYY-MM-DD') : '-'}
               </TableCell>
               <TableCell className="text-center p-2">
                 {item.sch_status === 'H' && (
-                  <Badge variant="outline" size="table" title="취소요청됨">
+                  <Badge variant="default" size="table" title="취소요청됨">
                     {getStatusText(item.sch_status)}
                   </Badge>
                 )}
                 {item.sch_status === 'Y' && (
-                  <Badge variant="default" size="table" title="승인완료">
+                  <Badge variant="outline" size="table" title="승인완료">
                     {getStatusText(item.sch_status)}
                   </Badge>
                 )}

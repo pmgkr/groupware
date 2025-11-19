@@ -502,12 +502,12 @@ export default function OvertimeList({
               </TableCell>
               <TableCell className="text-center p-2">
                 {item.ot_status === 'H' && (
-                  <Badge variant="outline" size="table" title="승인대기">
+                  <Badge variant="default" size="table" title="승인대기">
                     {getStatusText(item.ot_status)}
                   </Badge>
                 )}
                 {item.ot_status === 'T' && (
-                  <Badge variant="default" size="table" title="승인완료">
+                  <Badge variant="outline" size="table" title="승인완료">
                     {getStatusText(item.ot_status)}
                   </Badge>
                 )}
