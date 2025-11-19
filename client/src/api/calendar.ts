@@ -53,7 +53,6 @@ export const scheduleApi = {
     const yearMonth = `${params?.year || new Date().getFullYear()}-${String(params?.month || new Date().getMonth() + 1).padStart(2, '0')}`;
     const endpoint = `/user/schedule/${yearMonth}`;
     
-    console.log(`Using endpoint: ${endpoint}`);
     const response = await http<Schedule[]>(endpoint);
     return response;
   },
@@ -73,7 +72,7 @@ export const scheduleApi = {
     return response;
   },
 
-  // 스케줄 수정
+  // 유저-스케줄 수정
   updateSchedule: async (id: number, schedule: Partial<Schedule>): Promise<Schedule> => {
     const response = await http<Schedule>(`/user/schedule/patch/${id}`, {
       method: 'PATCH',
@@ -82,7 +81,7 @@ export const scheduleApi = {
     return response;
   },
 
-  // 스케줄 상태 변경 (취소 요청 등)
+  // 유저-스케줄 상태 변경 요청
   updateScheduleStatus: async (id: number, status: 'Y' | 'H' | 'N'): Promise<{ ok: boolean; message?: string }> => {
     const response = await http<{ ok: boolean; message?: string }>(`/user/schedule/status/${id}`, {
       method: 'PATCH',
@@ -91,7 +90,13 @@ export const scheduleApi = {
     return response;
   },
 
-  // 스케줄 삭제
+  // 매니저-취소 요청 승인 (기존 API 사용)
+  approveScheduleCancel: async (id: number): Promise<{ ok: boolean; message?: string }> => {
+    // 백엔드 API 준비 전까지 기존 API로 상태를 N(취소완료)으로 변경
+    return await scheduleApi.updateScheduleStatus(id, 'N');
+  },
+
+  // 유저-스케줄 삭제
   deleteSchedule: async (id: number): Promise<void> => {
     await http(`/user/schedule/remove/${id}`, {
       method: 'DELETE'

@@ -7,6 +7,8 @@ import OvertimeViewDialog from "./OvertimeViewDialog";
 import type { WorkData } from "@/types/working";
 import { workingApi } from "@/api/working";
 import { buildOvertimeApiParams } from "@/utils/overtimeHelper";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
 // 오늘 날짜 확인 함수
 const isToday = (date: string) => {
@@ -163,13 +165,43 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
             <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">
               구분
             </td>
-            {data.map((row, index) => (
-              <td key={index} className={`h-[65px] px-6 py-4 whitespace-nowrap text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                <span className={`inline-flex px-3 py-1 text-base font-semibold rounded-full ${getWorkTypeColor(row.workType)}`}>
-                  {row.workType}
-                </span>
-              </td>
-            ))}
+            {data.map((row, index) => {
+              // workTypes 배열이 있고 여러 개인 경우
+              const hasMultipleWorkTypes = row.workTypes && row.workTypes.length > 1;
+              const latestWorkType = hasMultipleWorkTypes ? row.workTypes![0] : null;
+              const otherWorkTypes = hasMultipleWorkTypes ? row.workTypes!.slice(1) : [];
+              
+              return (
+                <td key={index} className={`h-[65px] px-6 py-4 whitespace-nowrap text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                  <div className="inline-flex items-center gap-1">
+                    <span className={`inline-flex px-3 py-1 text-base font-semibold rounded-full ${getWorkTypeColor(hasMultipleWorkTypes ? latestWorkType!.type : row.workType)}`}>
+                      {hasMultipleWorkTypes ? latestWorkType!.type : row.workType}
+                    </span>
+                    {/* 이벤트가 여러개일 때 이벤트 목록 툴팁 노출 */}
+                    {hasMultipleWorkTypes && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge variant="grayish" className="px-1 py-0 text-xs cursor-pointer">
+                              +{otherWorkTypes.length}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="flex flex-col gap-1">
+                              {row.workTypes!.map((wt, idx) => (
+                                <div key={idx} className="text-sm">                                 
+                                  {wt.type}
+                                </div>
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
+                </td>
+              );
+            })}
           </tr>
           <tr className="hover:bg-gray-50">
             <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900 bg-gray-50">

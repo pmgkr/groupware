@@ -1,6 +1,9 @@
-import React from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from "@components/ui/button";
 import { MultiSelect } from "@components/multiselect/multi-select";
+import { useAuth } from '@/contexts/AuthContext';
+import { getTeams } from '@/api/teams';
+import { type MyTeamItem } from '@/api/working';
 
 
 // 셀렉트 옵션 타입 정의
@@ -23,16 +26,151 @@ export interface SelectConfig {
 interface ToolbarProps {
   currentDate: Date;
   onDateChange: (newDate: Date) => void;
-  selectConfigs?: SelectConfig[];
-  onSelectChange?: (id: string, value: string[]) => void;
+  onTeamSelect?: (teamIds: number[]) => void;
+  showTeamSelect?: boolean; // 팀 선택 셀렉터 표시 여부
 }
 
 export default function Toolbar({ 
   currentDate, 
   onDateChange,
-  selectConfigs = [],
-  onSelectChange = () => {}
+  onTeamSelect = () => {},
+  showTeamSelect = true
 }: ToolbarProps) {
+  const { user } = useAuth();
+  
+  // 팀 관련 state
+  const [teams, setTeams] = useState<MyTeamItem[]>([]);
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+
+  // 팀 목록 로드
+  const loadTeams = async () => {
+    try {
+      if (!user?.user_id) {
+        return;
+      }
+      
+      // 전체 팀 목록 조회
+      const allTeamDetails = await getTeams({});
+      
+      let teamItems: MyTeamItem[] = [];
+      
+      // admin 권한 체크
+      if (user.user_level === 'admin') {
+        // 모든 팀 표시
+        teamItems = allTeamDetails.map(team => ({
+          seq: 0,
+          manager_id: user.user_id,
+          manager_name: user.user_name || '',
+          team_id: team.team_id,
+          team_name: team.team_name,
+          parent_id: team.parent_id || undefined,
+          level: team.level,
+        }));
+        
+        setTeams(teamItems);
+        return;
+      }
+      
+      // 일반 사용자 (manager)
+      if (!user?.team_id) {
+        return;
+      }
+      
+      // 사용자의 팀 정보 찾기
+      const myTeam = allTeamDetails.find(t => t.team_id === user.team_id);
+      if (!myTeam) {
+        return;
+      }
+      
+      if (myTeam.level === 0) {
+        // 국장인 경우: 본인의 국과 모든 하위 팀 표시
+        // 본인의 국 추가
+        teamItems.push({
+          seq: 0,
+          manager_id: user.user_id,
+          manager_name: user.user_name || '',
+          team_id: myTeam.team_id,
+          team_name: myTeam.team_name,
+          parent_id: myTeam.parent_id || undefined,
+          level: myTeam.level,
+        });
+        
+        // 하위 팀들 추가
+        const subTeams = allTeamDetails.filter(t => t.parent_id === myTeam.team_id);
+        subTeams.forEach(sub => {
+          teamItems.push({
+            seq: 0,
+            manager_id: user.user_id,
+            manager_name: user.user_name || '',
+            team_id: sub.team_id,
+            team_name: sub.team_name,
+            parent_id: sub.parent_id || undefined,
+            level: sub.level,
+          });
+        });
+      } else if (myTeam.level === 1) {
+        // 팀장인 경우: 본인의 팀만 표시
+        teamItems = [{
+          seq: 0,
+          manager_id: user.user_id,
+          manager_name: user.user_name || '',
+          team_id: myTeam.team_id,
+          team_name: myTeam.team_name,
+          parent_id: myTeam.parent_id || undefined,
+          level: myTeam.level,
+        }];
+      } else {
+        return;
+      }
+      
+      setTeams(teamItems);
+      
+    } catch (error) {
+      console.error('팀 목록 로드 실패:', error);
+      setTeams([]);
+    }
+  };
+
+  // 셀렉트 변경 핸들러
+  const handleSelectChange = (id: string, value: string[]) => {
+    if (id === 'teams') {
+      setSelectedTeams(value);
+      
+      if (value.length > 0) {
+        const teamIds = value.map(v => parseInt(v));
+        onTeamSelect(teamIds);
+      } else {
+        onTeamSelect([]);
+      }
+    }
+  };
+
+  // 셀렉트 옵션 설정
+  const selectConfigs: SelectConfig[] = useMemo(() => {
+    // 팀 선택 (다중 선택 가능, 알파벳순 정렬)
+    const sortedTeams = [...teams].sort((a, b) => 
+      a.team_name.localeCompare(b.team_name, 'ko')
+    );
+
+    return [{
+      id: 'teams',
+      placeholder: '팀 선택',
+      options: sortedTeams.map(team => ({
+        value: String(team.team_id),
+        label: team.team_name
+      })),
+      value: selectedTeams,
+      searchable: true,
+      hideSelectAll: false,
+      autoSize: true,
+    }];
+  }, [teams, selectedTeams]);
+
+  // 초기 팀 목록 로드
+  useEffect(() => {
+    loadTeams();
+  }, [user]);
+
   // 날짜 네비게이션 핸들러
   const handleNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
     const newDate = new Date(currentDate);
@@ -76,26 +214,32 @@ export default function Toolbar({
   return (
     <div className="w-full flex items-center justify-between mb-5 relative">
       
-      {/* 왼쪽: 네비게이션 버튼들 */}
-      <div className="flex items-center gap-2">
-
-        {/* 동적 셀렉트 렌더링 */}
-        {selectConfigs.map((config) => (
-          <MultiSelect
-            key={config.id}
-            options={config.options}
-            onValueChange={(value) => onSelectChange(config.id, value)}
-            defaultValue={config.value || []}
-            placeholder={config.placeholder}
-            size="sm"
-            maxCount={0}
-            searchable={config.searchable}
-            hideSelectAll={config.hideSelectAll}
-            autoSize={config.autoSize}
-            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
-          />
-        ))}
-      </div>
+      {/* 왼쪽: 팀 필터 */}
+      {showTeamSelect && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            {/* 동적 셀렉트 렌더링 */}
+            <div className="flex items-center gap-2">
+              {selectConfigs.map((config) => (
+                <MultiSelect
+                  simpleSelect={true}
+                  key={config.id}
+                  options={config.options}
+                  onValueChange={(value) => handleSelectChange(config.id, value)}
+                  defaultValue={config.value || []}
+                  placeholder={config.placeholder}
+                  size="sm"
+                  maxCount={2}
+                  searchable={config.searchable}
+                  hideSelectAll={config.hideSelectAll}
+                  autoSize={config.autoSize}
+                  className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 중앙: 현재 날짜 표시 */}
       <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5">
@@ -127,7 +271,7 @@ export default function Toolbar({
       </div>
 
       {/* 오른쪽: 뷰 변경 버튼들 */}
-      <div className="flex items-center ml-auto gap-1">
+      <div className="flex items-center gap-1 float-right ml-auto">
         <Button
           onClick={() => handleNavigate('TODAY')}
           variant="outline"

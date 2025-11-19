@@ -3,6 +3,9 @@ import Expense from '@/pages/Expense';
 import Proposal from '@/pages/Expense/proposal';
 import Register from '@/pages/Expense/register';
 import ExpenseView from '@/pages/Expense/view';
+import ProposalList from '@/components/features/proposal/ProposalList';
+import ProposalView from '@/components/features/proposal/ProposalView';
+import ProposalRegister from '@/components/features/proposal/ProposalRegister';
 
 export const expenseRoutes: RouteObject = {
   path: 'expense', // 상위 Layout 기준 → /expense
@@ -15,7 +18,15 @@ export const expenseRoutes: RouteObject = {
   },
   children: [
     { index: true, element: <Expense /> },
-    { path: 'proposal', element: <Proposal /> },
+    {
+      path: 'proposal',
+      element: <Proposal />,
+      children: [
+        { index: true, element: <ProposalList /> },
+        { path: 'view/:id', element: <ProposalView /> },
+        { path: 'register', element: <ProposalRegister /> },
+      ],
+    },
     {
       path: 'register',
       element: <Register mode="new" />,
