@@ -10,7 +10,7 @@ import ProposalRegister from '@/components/features/proposal/ProposalRegister';
 export const expenseRoutes: RouteObject = {
   path: 'expense', // 상위 Layout 기준 → /expense
   handle: {
-    title: '비용 관리',
+    title: '일반 비용',
     nav: [
       { to: '/expense', label: '비용 내역', end: true },
       { to: '/expense/proposal', label: '지출 기안' },

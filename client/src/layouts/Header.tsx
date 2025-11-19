@@ -30,7 +30,7 @@ export default function Header() {
     <>
       <header className="fixed top-0 left-0 z-9 flex h-18 w-full items-center justify-between border-b-1 border-b-gray-300 bg-white px-7">
         <h1 className="w-42">
-          <Link to="/">
+          <Link to="/dashboard">
             <Logo className="w-full" />
           </Link>
         </h1>
@@ -58,7 +58,9 @@ export default function Header() {
             <div className="relative mx-auto mb-2.5 aspect-square w-25 overflow-hidden rounded-[50%]">
               <img
                 src={
-                  profile_image ? `https://gbend.cafe24.com/uploads/mypage/${profile_image}?t=${Date.now()}` : getImageUrl('dummy/profile')
+                  profile_image
+                    ? `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${profile_image}?t=${Date.now()}`
+                    : getImageUrl('dummy/profile')
                 }
                 alt="프로필 이미지"
                 className="h-full w-full object-cover"
@@ -109,7 +111,7 @@ export default function Header() {
                 )
               }>
               <Expense />
-              <span>비용관리</span>
+              <span>일반비용</span>
             </NavLink>
           </li>
           <li>
@@ -162,7 +164,7 @@ export default function Header() {
               <span>관리자</span>
             </NavLink>
           </li>
-          <li>
+          {/* <li>
             <NavLink
               to="/admin"
               className={({ isActive }) =>
@@ -174,7 +176,7 @@ export default function Header() {
               <Admin />
               <span>어드민</span>
             </NavLink>
-          </li>
+          </li> */}
         </ul>
       </div>
     </>
