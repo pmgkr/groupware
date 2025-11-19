@@ -142,14 +142,14 @@ export type projectExpenseResponse = {
 // 공통 Header / Item 구조
 // ------------------------------
 // (1) ExpenseRegister에서 사용하는 증빙자료 타입 정의
-export interface ExpenseAttachment {
+export interface pExpenseAttachment {
   filename: string;
   original: string;
   url?: string;
 }
 
 // (2) ExpenseView에서 Response로 받는 증빙자료 타입 정의
-export interface ExpenseAttachmentDTO {
+export interface pExpenseAttachmentDTO {
   seq: number; // 첨부파일 PK
   ei_seq: number; // 연결된 item의 seq
   ea_fname: string; // 원본 파일명
@@ -166,7 +166,7 @@ export interface ExpenseItemBase {
   ei_tax: number;
   ei_total: number;
   pro_id?: number | null;
-  attachments?: ExpenseAttachment[];
+  attachments?: pExpenseAttachment[];
 }
 
 export interface ExpenseHeaderBase {
@@ -206,7 +206,7 @@ export interface ExpenseRegisterResponse {
 // ------------------------------
 // 상세보기용 (View)
 // ------------------------------
-export interface ExpenseHeaderDTO extends ExpenseHeaderBase {
+export interface pExpenseHeaderDTO extends ExpenseHeaderBase {
   seq: number;
   project_id: string;
   exp_id: string;
@@ -227,13 +227,13 @@ export interface ExpenseHeaderDTO extends ExpenseHeaderBase {
   rejected_by?: string | null;
 }
 
-export interface ExpenseItemDTO extends Omit<ExpenseItemBase, 'attachments'> {
+export interface pExpenseItemDTO extends Omit<ExpenseItemBase, 'attachments'> {
   seq: number;
   exp_id: string;
-  attachments: ExpenseAttachmentDTO[];
+  attachments: pExpenseAttachmentDTO[];
 }
 
-export interface ExpenseLogDTO {
+export interface pExpenseLogDTO {
   idx: number;
   seq: number;
   user_nm: string;
@@ -243,10 +243,10 @@ export interface ExpenseLogDTO {
   log_date: string;
 }
 
-export interface ExpenseViewDTO {
-  header: ExpenseHeaderDTO;
-  items: ExpenseItemDTO[];
-  logs: ExpenseLogDTO[];
+export interface pExpenseViewDTO {
+  header: pExpenseHeaderDTO;
+  items: pExpenseItemDTO[];
+  logs: pExpenseLogDTO[];
 }
 
 // 즐겨찾기 리스트
@@ -315,9 +315,9 @@ export async function getProjectExpense(params: projectExpenseParams) {
 }
 
 // 프로젝트비용 상세보기
-export async function getProjectExpenseView(expid: string | undefined): Promise<ExpenseViewDTO> {
+export async function getProjectExpenseView(expid: string | undefined): Promise<pExpenseViewDTO> {
   if (!expid) throw new Error('expid가 필요합니다.');
-  return http<ExpenseViewDTO>(`/user/pexpense/info/${expid}`, { method: 'GET' });
+  return http<pExpenseViewDTO>(`/user/pexpense/info/${expid}`, { method: 'GET' });
 }
 
 // 프로젝트비용 작성하기
