@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate, useOutletContext } from 'react-router';
+import { useState, useRef, useEffect } from 'react';
+import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { mapExcelToQuotationItems } from '@/utils';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { formatAmount } from '@/utils';
 
 import { Input } from '@components/ui/input';
+import { Button } from '@components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 
@@ -45,8 +46,12 @@ type EstimateForm = {
 
 export default function EstimatePreview() {
   const location = useLocation();
+  const { projectId } = useParams();
   const { registerType, excelData, estName } = location.state;
   const { data } = useOutletContext<ProjectLayoutContext>();
+
+  const [estimateName, setEstimateName] = useState(estName ?? '');
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
 
   // --------------------------
   // 1) react-hook-form 세팅
@@ -84,6 +89,10 @@ export default function EstimatePreview() {
     }
   }, [excelData]);
 
+  useEffect(() => {
+    nameInputRef.current?.focus();
+  }, []);
+
   return (
     <>
       <div className="flex flex-wrap justify-between">
@@ -110,7 +119,12 @@ export default function EstimatePreview() {
             </TableColumnHeader>
             <TableColumnBody>
               <TableColumnCell className="h-full">
-                <Input value={estName} className="h-full border-0 p-0 shadow-none" />
+                <Input
+                  ref={nameInputRef}
+                  value={estimateName}
+                  onChange={(e) => setEstimateName(e.target.value)}
+                  className="h-full border-0 p-0 shadow-none"
+                />
               </TableColumnCell>
             </TableColumnBody>
           </TableColumn>
@@ -164,9 +178,11 @@ export default function EstimatePreview() {
                     <TableCell className="text-right">{formatAmount(row.unit_price)}</TableCell>
                     <TableCell className="text-right">{row.qty}</TableCell>
                     <TableCell className="text-right">{formatAmount(row.amount)}</TableCell>
+                    <TableCell>
+                      <Input type="text" size="sm" className="h-7 rounded-sm text-right" />
+                    </TableCell>
                     <TableCell>-</TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell className="whitespace-break-spaces">{row.remarks}</TableCell>
+                    <TableCell className="text-left leading-[1.1] break-keep whitespace-break-spaces">{row.remarks}</TableCell>
                   </>
                 )}
 
@@ -199,6 +215,14 @@ export default function EstimatePreview() {
             ))}
           </TableBody>
         </Table>
+        <div className="my-10 flex justify-center gap-2">
+          <Button type="submit" className="min-w-[120px]">
+            등록
+          </Button>
+          <Button type="button" variant="outline" className="min-w-[120px]" asChild>
+            <Link to={`/project/${projectId}/estimate`}>취소</Link>
+          </Button>
+        </div>
       </div>
     </>
   );

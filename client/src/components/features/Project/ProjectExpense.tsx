@@ -529,7 +529,7 @@ export default function Expense() {
             <DialogDescription>견적서 비용 혹은 견적서 외 비용을 등록할 수 있습니다.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4">
-            <p className="text-base">등록하실 비용 유형을 선택해주세요.</p>
+            <p className="text-base">등록하실 비용의 유형을 선택해주세요.</p>
             <div className="grid grid-cols-2 gap-4">
               <Button variant="outline" onClick={() => setRegisterType('est')}>
                 견적서 비용

@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
+import { getAvatarFallback } from '@/utils';
 import { useToggleState } from '@/hooks/useToggleState';
 import { useUser } from '@/hooks/useUser';
 
@@ -393,8 +394,8 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
               {members.map((m) => (
                 <Badge key={m.user_id} variant="grayish" className="flex items-center gap-1 px-1.5 py-1 not-has-[>button]:px-2">
                   <Avatar className="size-5">
-                    <AvatarImage src={`${import.meta.env.VITE_API_ORIGIN}/uploads/users/${m.profile_image}`} />
-                    <AvatarFallback className="text-xs">{m.user_name[0]}</AvatarFallback>
+                    <AvatarImage src={`${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${m.profile_image}`} />
+                    <AvatarFallback className="text-xs">{getAvatarFallback(m.user_id)}</AvatarFallback>
                   </Avatar>
                   {m.user_name}
                   {user_id !== m.user_id && (
@@ -440,8 +441,8 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
               <li key={m.user_id}>
                 <Badge key={m.user_id} variant="grayish" className="flex items-center gap-1 px-1.5 py-1 not-has-[>button]:px-2">
                   <Avatar className="size-5">
-                    <AvatarImage src={`${import.meta.env.VITE_API_ORIGIN}/uploads/users/${m.profile_image}`} />
-                    <AvatarFallback className="text-xs">{m.user_name[0]}</AvatarFallback>
+                    <AvatarImage src={`${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${m.profile_image}`} />
+                    <AvatarFallback className="text-xs">{getAvatarFallback(m.user_id)}</AvatarFallback>
                   </Avatar>
                   {m.user_name}
                   {user_id !== m.user_id && (
