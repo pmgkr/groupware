@@ -344,3 +344,26 @@ export const calculateTimes = (
   };
 };
 
+
+// 대시보드 내 캘린더 컬러 매핑
+export const getBadgeColor = (schLabel: string): string => {
+  const label = schLabel.toLowerCase();
+  
+  if (label.includes('반반차')) {
+    return 'before:bg-[color:var(--color-primary-purple-500)]';
+  }
+  if (label.includes('연차')) {
+    return 'before:bg-[color:var(--color-primary-blue-500)]';
+  }
+  if (label.includes('반차')) {
+    return 'before:bg-[color:var(--color-primary-pink-500)]';
+  }
+  if (label.includes('공가')) {
+    return 'before:bg-[color:var(--color-red-600)]';
+  }
+  if (label.includes('외부일정')) {
+    return 'before:bg-[color:var(--color-primary-orange-500)]';
+  }
+  // 기타 (기본값)
+  return 'before:bg-[color:var(--color-gray-500)]';
+};

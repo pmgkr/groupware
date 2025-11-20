@@ -8,6 +8,9 @@ interface SectionHeaderProps {
   /** 좌측 타이틀 */
   title: string;
 
+  /** 설명 텍스트 */
+  description?: string;
+
   /** 버튼 라벨 (없으면 버튼 미출력) */
   buttonText?: string;
 

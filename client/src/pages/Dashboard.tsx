@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useUser } from '@/hooks/useUser';
+import { useDashboard } from '@/hooks/useDashboard';
 import { getImageUrl } from '@/utils';
 
 import Header from '@/layouts/Header';
@@ -13,19 +14,15 @@ import getWelcomeMessage from '@components/features/Dashboard/welcome';
 import WorkHoursBar from '@/components/ui/WorkHoursBar';
 import { Icons } from '@components/icons';
 
-import type { WeeklyStats as WeeklyStatsType } from '@/utils/workingStatsHelper';
+import { type Calendar, type Meetingroom, type Wlog } from '@/api/dashboard';
+import { getBadgeColor } from '@/utils/calendarHelper';
+
+// 캘린더 배지 목록
+const calendarBadges = ['연차', '반차', '반반차', '공가', '외부일정', '기타'];
 
 export default function Dashboard() {
-  const [weeklyStats, setWeeklyStats] = useState<WeeklyStatsType>({
-    workHours: 0,
-    workMinutes: 0,
-    remainingHours: 0,
-    remainingMinutes: 0,
-    basicWorkHours: 0,
-    basicWorkMinutes: 0,
-    overtimeWorkHours: 0,
-    overtimeWorkMinutes: 0,
-  });
+  const [wlog, setWlog] = useState<Wlog[]>([]);
+  const { vacation, notification, calendar: calendarData, meetingroom } = useDashboard();
   const { user_name, job_role, profile_image } = useUser();
 
   // Daypicker 선택된 날짜 관리 (Default : Today)
@@ -65,14 +62,14 @@ export default function Dashboard() {
               <div className="flex flex-col gap-0">
                 <div className="flex items-center gap-1 ">
                   <span className="text-gray-800 text-xl font-black">주간누적</span>
-                  <span className="text-primary-blue-500 text-lg font-bold">{weeklyStats?.workHours || 0}시간 {String(weeklyStats?.workMinutes || 0).padStart(2, '0')}분</span>
+                  <span className="text-primary-blue-500 text-lg font-bold">{wlog[0]?.total_minutes || 0}시간 {String(wlog[0]?.total_minutes || 0).padStart(2, '0')}분</span>
                 </div>
                 <p className="flex items-center gap-x-1 text-sm text-gray-700">
-                  이번 주 근무 시간이 {weeklyStats?.remainingHours || 0}시간 {String(weeklyStats?.remainingMinutes || 0).padStart(2, '0')}분 남았어요.
+                  이번 주 근무 시간이 {wlog[0]?.remainingHours || 0}시간 {String(wlog[0]?.remainingMinutes || 0).padStart(2, '0')}분 남았어요.
                 </p>
               </div>
               <WorkHoursBar 
-                hours={(weeklyStats?.workHours || 0) + ((weeklyStats?.workMinutes || 0) / 60)} 
+                hours={(wlog[0]?.total_minutes || 0) + ((wlog[0]?.total_minutes || 0) / 60)} 
                 className="mt-4" 
               />
             </div>
@@ -89,33 +86,17 @@ export default function Dashboard() {
               <ul className="grid grid-cols-3">
                 <li className="flex flex-col text-center text-base">
                   <span>지급휴가</span>
-                  <strong className="text-[1.4em]">20</strong>
+                  <strong className="text-[1.4em]">{vacation?.given || 0}</strong>
                 </li>
                 <li className="short-v-divider flex flex-col text-center text-base">
                   <span>사용휴가</span>
-                  <strong className="text-[1.4em]">11</strong>
+                  <strong className="text-[1.4em]">{vacation?.used || 0}</strong>
                 </li>
                 <li className="short-v-divider flex flex-col text-center text-base">
                   <span>잔여휴가</span>
-                  <strong className="text-[1.4em]">9</strong>
+                  <strong className="text-[1.4em]">{vacation?.lefts || 0}</strong>
                 </li>
               </ul>
-            {/* <div>
-              <ul className="grid grid-cols-3">
-                <li className="flex flex-col text-base">
-                  <span>이번 주 출근시간</span>
-                  <strong className="text-[1.2em]">09:30</strong>
-                </li>
-                <li className="flex flex-col text-base">
-                  <span>이번 주 퇴근시간</span>
-                  <strong className="text-[1.2em]">18:42</strong>
-                </li>
-                <li className="flex flex-col text-base">
-                  <span>일 평균 근무시간</span>
-                  <strong className="text-[1.2em]">8시간 12분</strong>
-                </li>
-              </ul>
-            </div> */}
           </div>
           <div className="row-span-4 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
@@ -130,129 +111,41 @@ export default function Dashboard() {
               <DayPicker mode="single" variant="dashboard" selected={selected} onSelect={setSelected} />
             </div>
             <ul className="flex items-center justify-end gap-x-1.5 px-4 py-2">
-              <li>
-                <Badge variant="dot" className="before:bg-[#FF6B6B]">
-                  연차휴가
-                </Badge>
-              </li>
-              <li>
-                <Badge variant="dot" className="before:bg-[#6BADFF]">
-                  반차휴가
-                </Badge>
-              </li>
-              <li>
-                <Badge variant="dot" className="before:bg-[#FFA46B]">
-                  반반차휴가
-                </Badge>
-              </li>
-              <li>
-                <Badge variant="dot" className="before:bg-[#2FC05D]">
-                  외부일정
-                </Badge>
-              </li>
-              <li>
-                <Badge variant="dot" className="before:bg-[#5E6BFF]">
-                  휴일근무
-                </Badge>
-              </li>
-              <li>
-                <Badge variant="dot" className="before:bg-[#DA6BFF]">
-                  기타
-                </Badge>
-              </li>
+              {calendarBadges.map((label) => (
+                <li key={label}>
+                  <Badge variant="dot" className={getBadgeColor(label)}>
+                    {label}
+                  </Badge>
+                </li>
+              ))}
             </ul>
             <div className="overflow-y-auto rounded-xl p-4">
               <ul className="grid grid-cols-3 gap-2 gap-y-4">
-                <li className="flex items-center gap-x-2">
-                  <Avatar>
-                    <AvatarImage src={getImageUrl('dummy/profile')} alt="@shadcn" />
-                    <AvatarFallback>CN</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col text-base">
-                    <strong className="leading-[1.2]">김예지</strong>
-                    <Badge variant="dot" className="p-0 before:bg-[#FF6B6B]">
-                      연차휴가
-                    </Badge>
-                  </div>
-                </li>
-                <li className="flex items-center gap-x-2">
-                  <Avatar>
-                    <AvatarImage src={getImageUrl('dummy/profile')} alt="@shadcn" />
-                    <AvatarFallback>CN</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col text-base">
-                    <strong className="leading-[1.2]">이연상</strong>
-                    <Badge variant="dot" className="before:bg-[#FF6B6B]">
-                      연차휴가
-                    </Badge>
-                  </div>
-                </li>
-                <li className="flex items-center gap-x-2">
-                  <Avatar>
-                    <AvatarFallback>HC</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col text-base">
-                    <strong className="leading-[1.2]">차혜리</strong>
-                    <Badge variant="dot" className="before:bg-[#FFA46B]">
-                      오후반반차
-                    </Badge>
-                  </div>
-                </li>
-                <li className="flex items-center gap-x-2">
-                  <Avatar className="flex-none">
-                    <AvatarFallback>JJ</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-1 flex-col text-base">
-                    <strong className="leading-[1.2]">박박박</strong>
-                    <Badge variant="dot" className="before:bg-[#2FC05D]">
-                      외부일정
-                    </Badge>
-                  </div>
-                </li>
-                <li className="flex items-center gap-x-2">
-                  <Avatar className="flex-none">
-                    <AvatarFallback>JJ</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-1 flex-col text-base">
-                    <strong className="leading-[1.2]">이이이</strong>
-                    <Badge variant="dot" className="before:bg-[#6BADFF]">
-                      오전반차
-                    </Badge>
-                  </div>
-                </li>
-                <li className="flex items-center gap-x-2">
-                  <Avatar>
-                    <AvatarFallback>KH</AvatarFallback>
-                  </Avatar>
-                  <div className="flex w-[calc(100%-(var(--spacing)*10))] flex-col text-base">
-                    <strong className="leading-[1.2]">홍길동</strong>
-                    <Badge variant="dot" className="before:bg-[#DA6BFF]">
-                      공가사용 1/3 공가사용 1/3공가사용 1/3
-                    </Badge>
-                  </div>
-                </li>
-                <li className="flex items-center gap-x-2">
-                  <Avatar>
-                    <AvatarFallback>KH</AvatarFallback>
-                  </Avatar>
-                  <div className="flex w-[calc(100%-(var(--spacing)*10))] flex-col text-base">
-                    <strong className="leading-[1.2]">홍길동</strong>
-                    <Badge variant="dot" className="before:bg-[#DA6BFF]">
-                      공가사용 1/3 공가사용 1/3공가사용 1/3
-                    </Badge>
-                  </div>
-                </li>
-                <li className="flex items-center gap-x-2">
-                  <Avatar>
-                    <AvatarFallback>KH</AvatarFallback>
-                  </Avatar>
-                  <div className="flex w-[calc(100%-(var(--spacing)*10))] flex-col text-base">
-                    <strong className="leading-[1.2]">홍길동</strong>
-                    <Badge variant="dot" className="before:bg-[#DA6BFF]">
-                      생일 🎂
-                    </Badge>
-                  </div>
-                </li>
+
+                {calendarData.map((calendar) => (
+                  <li key={calendar.user_name} className="flex items-center gap-x-2">
+                    <Avatar>
+                      <AvatarImage 
+                        src={
+                          calendar.profile_image
+                            ? `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${calendar.profile_image}?t=${Date.now()}`
+                            : getImageUrl('dummy/profile')
+                        } 
+                        alt={calendar.user_name} 
+                      />
+                      <AvatarFallback>
+                        {calendar.user_name?.slice(0, 2).toUpperCase() || 'CN'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col text-base">
+                      <strong className="leading-[1.2]">{calendar.user_name}</strong>
+                      <Badge variant="dot" className={`p-0 ${getBadgeColor(calendar.sch_label)}`}>
+                        {calendar.sch_label}
+                      </Badge>
+                    </div>
+                  </li>
+                ))}
+
               </ul>
             </div>
           </div>
