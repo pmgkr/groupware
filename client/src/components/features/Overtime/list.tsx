@@ -6,6 +6,7 @@ import OvertimeViewDialog from '@/components/working/OvertimeViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { workingApi } from '@/api/working';
 import { getTeams } from '@/api/teams';
+import { getMemberList } from '@/api/common/team';
 import type { OvertimeItem } from '@/api/working';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -108,31 +109,57 @@ export default function OvertimeList({
   // 데이터 조회
   useEffect(() => {
     fetchOvertimeData();
-  }, [teamIds]);
+  }, [teamIds, user?.team_id, user?.user_level]);
 
   const fetchOvertimeData = async () => {
     setLoading(true);
     try {
-      // 팀이 선택된 경우 각 팀별로 데이터 조회
+      // teamIds가 있으면 사용, 없으면 user.team_id 사용
+      let teamIdsToQuery: number[] = [];
+      
       if (teamIds.length > 0) {
-        const promises = teamIds.map(teamId => 
-          workingApi.getManagerOvertimeList({
-            team_id: teamId,
-            page: 1,
-            size: 1000
-          })
-        );
-        const responses = await Promise.all(promises);
-        const allItems = responses.flatMap(response => response.items || []);
-        setAllData(allItems);
-      } else {
-        // 팀이 선택되지 않은 경우 전체 조회
-        const response = await workingApi.getManagerOvertimeList({
+        // 팀이 선택된 경우
+        teamIdsToQuery = teamIds;
+      } else if (user?.user_level === 'manager') {
+        // manager인 경우: /manager/myteam으로 관리하는 모든 팀 조회
+        try {
+          const myTeamResponse = await workingApi.getMyTeamList();
+          teamIdsToQuery = (myTeamResponse.items || []).map(team => team.team_id);
+        } catch (error) {
+          console.error('관리 팀 목록 조회 실패:', error);
+          // 실패 시 user.team_id 사용
+          if (user?.team_id) {
+            teamIdsToQuery = [user.team_id];
+          }
+        }
+      } else if (user?.team_id) {
+        // 일반 사용자 또는 admin인 경우
+        teamIdsToQuery = [user.team_id];
+      }
+      
+      if (teamIdsToQuery.length === 0) {
+        setAllData([]);
+        setLoading(false);
+        return;
+      }
+      
+      // 각 팀별로 데이터 조회
+      const promises = teamIdsToQuery.map(teamId => 
+        workingApi.getManagerOvertimeList({
+          team_id: teamId,
           page: 1,
           size: 1000
-        });
-        setAllData(response.items || []);
-      }
+        })
+      );
+      const responses = await Promise.all(promises);
+      const allItems = responses.flatMap(response => response.items || []);
+      
+      // 중복 제거 (같은 id가 여러 번 조회될 수 있음)
+      const uniqueItems = allItems.filter((item, index, self) =>
+        index === self.findIndex(t => t.id === item.id)
+      );
+      
+      setAllData(uniqueItems);
     } catch (error) {
       console.error('초과근무 데이터 조회 실패:', error);
       setAllData([]);

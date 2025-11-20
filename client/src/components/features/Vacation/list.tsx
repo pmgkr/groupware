@@ -6,6 +6,7 @@ import EventViewDialog from '@/components/calendar/EventViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { scheduleApi, type Schedule } from '@/api/calendar';
 import { getTeams } from '@/api/teams';
+import { getMemberList } from '@/api/common/team';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
@@ -106,45 +107,87 @@ export default function VacationList({
   // 데이터 조회 (연도 변경 시에만 API 호출)
   useEffect(() => {
     fetchScheduleData();
-  }, [filters.year]);
+  }, [filters.year, teamIds, user?.team_id, user?.user_level]);
 
   const fetchScheduleData = async () => {
     setLoading(true);
     try {
       const year = filters.year ? parseInt(filters.year) : new Date().getFullYear();
       
-      // 모든 팀의 데이터를 한 번에 가져오기 (1월부터 12월까지)
+      // 근태 관리와 동일한 로직: teamIds가 있으면 사용, 없으면 user.team_id 사용
+      let teamIdsToQuery: number[] = [];
+      
+      if (teamIds.length > 0) {
+        // 팀이 선택된 경우
+        teamIdsToQuery = teamIds;
+      } else if (user?.user_level === 'manager') {
+        // manager인 경우: /manager/myteam으로 관리하는 모든 팀 조회
+        try {
+          const { workingApi } = await import('@/api/working');
+          const myTeamResponse = await workingApi.getMyTeamList();
+          teamIdsToQuery = (myTeamResponse.items || []).map(team => team.team_id);
+        } catch (error) {
+          console.error('관리 팀 목록 조회 실패:', error);
+          // 실패 시 user.team_id 사용
+          if (user?.team_id) {
+            teamIdsToQuery = [user.team_id];
+          }
+        }
+      } else if (user?.team_id) {
+        // 일반 사용자 또는 admin인 경우
+        teamIdsToQuery = [user.team_id];
+      }
+      
+      if (teamIdsToQuery.length === 0) {
+        setAllData([]);
+        setLoading(false);
+        return;
+      }
+      
+      // 각 팀의 멤버 목록 가져오기
+      const memberPromises = teamIdsToQuery.map(async (teamId) => {
+        const members = await getMemberList(teamId);
+        return members.map(member => ({ ...member, team_id: member.team_id || teamId }));
+      });
+      const memberResults = await Promise.all(memberPromises);
+      const allTeamMembers = memberResults.flat();
+      
+      // 중복 제거
+      const teamMembers = allTeamMembers.filter((member, index, self) =>
+        index === self.findIndex(m => m.user_id === member.user_id)
+      );
+      
+      // 각 팀원의 user_id로 스케줄 조회
       const allSchedules: Schedule[] = [];
       
       // 1월부터 12월까지 순차적으로 조회
       for (let month = 1; month <= 12; month++) {
         try {
-          const apiResponse = await scheduleApi.getSchedules({
-            year,
-            month
-          }) as any;
+          // 각 팀원별로 스케줄 조회
+          const schedulePromises = teamMembers.map(member =>
+            scheduleApi.getSchedules({
+              year,
+              month,
+              user_id: member.user_id
+            }).catch(() => null)
+          );
           
-          // API 응답에서 실제 스케줄 배열 추출
-          const schedules = Array.isArray(apiResponse?.items) ? apiResponse.items : (apiResponse?.items?.items || []);
+          const scheduleResponses = await Promise.all(schedulePromises);
           
-          if (Array.isArray(schedules) && schedules.length > 0) {
-            // 이번 달 데이터의 상태별 개수 로깅
-            const monthStatus = {
-              total: schedules.length,
-              Y: schedules.filter((s: any) => s?.sch_status === 'Y').length,
-              H: schedules.filter((s: any) => s?.sch_status === 'H').length,
-              N: schedules.filter((s: any) => s?.sch_status === 'N').length,
-            };
-            if (monthStatus.total > 0) {
-              console.log(`  ${year}-${month} API 응답:`, monthStatus);
-            }
+          scheduleResponses.forEach((apiResponse: any) => {
+            if (!apiResponse) return;
             
-            // null이 아니고 날짜가 있는 항목만 추가
-            const validSchedules = schedules.filter((schedule: any) => 
-              schedule !== null && schedule.sch_sdate
-            );
-            allSchedules.push(...validSchedules);
-          }
+            // API 응답에서 실제 스케줄 배열 추출
+            const schedules = Array.isArray(apiResponse?.items) ? apiResponse.items : (apiResponse?.items?.items || []);
+            
+            if (Array.isArray(schedules) && schedules.length > 0) {
+              // null이 아니고 날짜가 있는 항목만 추가
+              const validSchedules = schedules.filter((schedule: any) => 
+                schedule !== null && schedule.sch_sdate
+              );
+              allSchedules.push(...validSchedules);
+            }
+          });
         } catch (error) {
           // 해당 월 데이터가 없으면 무시
         }
