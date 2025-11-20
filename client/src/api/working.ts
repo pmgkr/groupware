@@ -30,12 +30,12 @@ export interface WorkLogQueryParams {
   edate: string;
 }
 
-// 초과근무 신청 파라미터
+// 추가근무 신청 파라미터
 export interface OvertimeRequestParams {
-  ot_type: string;          // 초과근무 타입 ("weekday" - 평일, "saturday" - 토요일, "sunday" - 일요일, "holiday" - 공휴일)
+  ot_type: string;          // 추가근무 타입 ("weekday" - 평일, "saturday" - 토요일, "sunday" - 일요일, "holiday" - 공휴일)
   ot_date: string;          // 근무 날짜 (YYYY-MM-DD)
   ot_etime?: string;        // 예상 퇴근 시간 (HH:mm:ss) - 평일인 경우
-  ot_hours?: string;        // 초과근무 시간 - 주말/공휴일인 경우
+  ot_hours?: string;        // 추가근무 시간 - 주말/공휴일인 경우
   ot_food?: string;         // 식대 사용 여부 (Y/N)
   ot_trans?: string;        // 교통비 사용 여부 (Y/N)
   ot_reward?: string;       // 보상 지급 방식 (special - 특별대휴, annual - 보상휴가, pay - 수당지급) - 주말/공휴일인 경우
@@ -43,7 +43,7 @@ export interface OvertimeRequestParams {
   ot_description: string;   // 작업 내용
 }
 
-// 초과근무 목록 조회 파라미터
+// 추가근무 목록 조회 파라미터
 export interface OvertimeListParams {
   page?: number;
   size?: number;
@@ -51,12 +51,17 @@ export interface OvertimeListParams {
   user_id?: string;
 }
 
-// 관리자 초과근무 목록 조회 파라미터
+// 관리자 추가근무 목록 조회 파라미터
 export interface ManagerOvertimeListParams {
   team_id?: number;
   page?: number;
   size?: number;
-  flag?: string;  // ot_status (H: 승인대기, T: 승인완료, N: 반려됨)
+  flag?: string;  // ot_status (H: 승인대기, T: 승인완료, Y: 리워드지급(최종승인), N: 반려됨)
+}
+
+// 관리자 추가근무 최종승인(리워드지급0 파라미터
+export interface ManagerOvertimeConfirmParams {
+  ot_seq: number;
 }
 
 // 관리자 근태 로그 주간 조회 파라미터
@@ -66,7 +71,7 @@ export interface ManagerWorkLogWeekParams {
   yearno: number;
 }
 
-// 초과근무 항목
+// 추가근무 항목
 export interface OvertimeItem {
   id: number;
   user_id: string;
@@ -86,7 +91,7 @@ export interface OvertimeItem {
   ot_modified_at: string;
 }
 
-// 초과근무 목록 응답
+// 추가근무 목록 응답
 export interface OvertimeListResponse {
   items: OvertimeItem[];
   total: number;
@@ -124,7 +129,7 @@ export const workingApi = {
     return response;
   },
 
-  // 초과근무 신청
+  // 추가근무 신청
   requestOvertime: async (params: OvertimeRequestParams): Promise<any> => {
     const response = await http('/user/overtime/request', {
       method: 'POST',
@@ -133,7 +138,7 @@ export const workingApi = {
     return response;
   },
 
-  // 초과근무 목록 조회
+  // 추가근무 목록 조회
   getOvertimeList: async (params?: OvertimeListParams): Promise<OvertimeListResponse> => {
     const queryParams = new URLSearchParams();
     
@@ -146,13 +151,13 @@ export const workingApi = {
     return response;
   },
 
-  // 초과근무 취소 (본인 취소)
+  // 추가근무 취소 (본인 취소)
   cancelOvertime: async (id: number): Promise<any> => {
     const response = await http(`/user/overtime/cancel/${id}?id=${id}`);
     return response;
   },
 
-  // 초과근무 승인 (관리자)
+  // 추가근무 승인 (관리자)
   approveOvertime: async (id: number): Promise<any> => {
     const response = await http('/manager/overtime/confirm', {
       method: 'POST',
@@ -161,7 +166,7 @@ export const workingApi = {
     return response;
   },
 
-  // 초과근무 반려 (관리자)
+  // 추가근무 반려 (관리자)
   rejectOvertime: async (id: number, reason: string): Promise<any> => {
     const response = await http('/manager/overtime/reject', {
       method: 'POST',
@@ -170,13 +175,13 @@ export const workingApi = {
     return response;
   },
 
-  // 초과근무 상세 조회
+  // 추가근무 상세 조회
   getOvertimeDetail: async (id: number): Promise<OvertimeItem> => {
     const response = await http<OvertimeItem>(`/user/overtime/${id}`);
     return response;
   },
 
-  // 관리자 - 팀원 초과근무 목록 조회
+  // 관리자 - 팀원 추가근무 목록 조회
   getManagerOvertimeList: async (params?: ManagerOvertimeListParams): Promise<OvertimeListResponse> => {
     const queryParams = new URLSearchParams();
     
@@ -189,7 +194,16 @@ export const workingApi = {
     return response;
   },
 
-  // 관리자 - 초과근무 상세 조회 (로그 포함)
+  // 관리자 - 추가근무 리워드 지급(최종승인)
+  grantOvertimeReward: async (otSeq: number): Promise<any> => {
+    const response = await http('/manager/overtime/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ ot_seq: otSeq }),
+    });
+    return response;
+  },
+
+  // 관리자 - 추가근무 상세 조회 (로그 포함)
   getManagerOvertimeDetail: async (id: number): Promise<any> => {
     const response = await http<any>(`/manager/overtime/info/${id}`);
     return response;

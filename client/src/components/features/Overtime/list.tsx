@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -88,7 +88,7 @@ export default function OvertimeList({
   
   // 일괄 승인 확인 모달 state
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [approveCount, setApproveCount] = useState(0);
+  const [approveCounts, setApproveCounts] = useState({ overtime: 0, compensation: 0 });
   
   // 관리자 여부
   const isManager = user?.user_level === 'manager' || user?.user_level === 'admin';
@@ -189,11 +189,12 @@ export default function OvertimeList({
       });
     }
     
-    // 상태 필터 (pending=H, approved=T, rejected=N)
+    // 상태 필터 (pending=H, approved=T, confirmed=Y, rejected=N)
     if (filters.status && filters.status.length > 0) {
       const statusMap: Record<string, string> = {
         'pending': 'H',
         'approved': 'T',
+        'confirmed': 'Y',
         'rejected': 'N'
       };
       const mappedStatuses = filters.status.map(s => statusMap[s]).filter(Boolean);
@@ -283,11 +284,28 @@ export default function OvertimeList({
     setPage(1);
   }, [activeTab, filters]);
 
-  // 전체 선택 (현재 페이지의 반려됨, 승인완료 제외)
+  // HR팀 또는 Finance팀 관리자/관리자 권한 확인 함수
+  const isHrOrFinanceTeam = useCallback(() => {
+    return (user?.user_level === 'manager' || user?.user_level === 'admin') && 
+           (user?.team_id === 1 || user?.team_id === 5);
+  }, [user]);
+
+  // 선택 가능한 상태 확인 헬퍼 함수
+  const isSelectableStatus = useCallback((status: string) => {
+    if (isHrOrFinanceTeam() && activeTab === 'weekend') {
+      // HR/Finance팀 관리자의 휴일 근무: H 또는 T
+      return status === 'H' || status === 'T';
+    } else {
+      // 나머지: H만
+      return status === 'H';
+    }
+  }, [isHrOrFinanceTeam, activeTab]);
+
+  // 전체 선택
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
     const newCheckedItems = checked 
-      ? paginatedData.filter(item => item.ot_status !== 'N' && item.ot_status !== 'T').map((item) => item.id) 
+      ? paginatedData.filter(item => isSelectableStatus(item.ot_status)).map((item) => item.id) 
       : [];
     setCheckedItems(newCheckedItems);
     onCheckedItemsChange(newCheckedItems);
@@ -301,6 +319,14 @@ export default function OvertimeList({
       return newItems;
     });
   };
+
+  // checkAll 상태 자동 업데이트
+  useEffect(() => {
+    const selectableItems = paginatedData.filter(item => isSelectableStatus(item.ot_status));
+    const selectableIds = selectableItems.map(item => item.id);
+    const allSelected = selectableIds.length > 0 && selectableIds.every(id => checkedItems.includes(id));
+    setCheckAll(allSelected);
+  }, [checkedItems, paginatedData, isSelectableStatus]);
 
   // 추가근무 클릭 핸들러
   const handleOvertimeClick = async (item: OvertimeItem) => {
@@ -354,13 +380,25 @@ export default function OvertimeList({
   // 일괄 승인 확인 모달 열기
   const handleApproveAllOvertime = () => {
     if (checkedItems.length === 0) return;
-    setApproveCount(checkedItems.length);
+    
+    // 체크된 항목들을 상태별로 분류
+    const checkedOvertimeItems = allData.filter(item => 
+      checkedItems.includes(item.id) && item.ot_status === 'H'
+    );
+    const checkedCompensationItems = allData.filter(item => 
+      checkedItems.includes(item.id) && item.ot_status === 'T'
+    );
+    
+    setApproveCounts({
+      overtime: checkedOvertimeItems.length,
+      compensation: checkedCompensationItems.length
+    });
     setIsConfirmDialogOpen(true);
   };
 
   // 실제 일괄 승인 처리
   const handleConfirmApprove = async () => {
-    const count = approveCount;
+    const { overtime, compensation } = approveCounts;
     try {
       // 모든 체크된 항목에 대해 승인 요청
       await Promise.all(
@@ -371,9 +409,21 @@ export default function OvertimeList({
       setIsConfirmDialogOpen(false);
       
       // Toast로 성공 메시지 표시
+      const canShowCompensation = isHrOrFinanceTeam() && activeTab === 'weekend';
+      
+      let description = '';
+      if (canShowCompensation && overtime > 0 && compensation > 0) {
+        description = `${overtime}개의 추가근무 요청과 ${compensation}개의 보상지급 요청이 승인 완료되었습니다.`;
+      } else if (canShowCompensation && compensation > 0) {
+        description = `${compensation}개의 보상지급 요청이 승인 완료되었습니다.`;
+      } else {
+        const totalCount = overtime + compensation;
+        description = `${totalCount}개의 추가근무 요청이 승인 완료되었습니다.`;
+      }
+      
       toast({
         title: "승인 완료",
-        description: `${count}개의 추가근무 신청이 승인 완료되었습니다.`,
+        description,
       });
       
       // 체크박스 초기화 및 데이터 새로고침
@@ -404,7 +454,8 @@ export default function OvertimeList({
   const getStatusText = (status: string) => {
     switch (status) {
       case 'H': return '승인대기';
-      case 'T': return '승인완료';
+      case 'T': return activeTab === 'weekday' ? '승인완료' : '보상요청';
+      case 'Y': return '보상완료';
       case 'N': return '반려됨';
       default: return status;
     }
@@ -534,7 +585,16 @@ export default function OvertimeList({
                   </Badge>
                 )}
                 {item.ot_status === 'T' && (
-                  <Badge variant="outline" size="table" title="승인완료">
+                  <Badge 
+                    variant={activeTab === 'weekday' ? 'outline' : 'secondary'} 
+                    size="table" 
+                    title={activeTab === 'weekday' ? '승인완료' : '보상요청'}
+                  >
+                    {getStatusText(item.ot_status)}
+                  </Badge>
+                )}
+                {item.ot_status === 'Y' && (
+                  <Badge variant="outline" size="table" title="보상완료">
                     {getStatusText(item.ot_status)}
                   </Badge>
                 )}
@@ -549,7 +609,7 @@ export default function OvertimeList({
                   id={`chk_${item.id}`} 
                   className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkedItems.includes(item.id) && 'bg-primary-blue-150')} 
                   checked={checkedItems.includes(item.id)} 
-                  disabled={item.ot_status === 'N' || item.ot_status === 'T'}
+                  disabled={!isSelectableStatus(item.ot_status)}
                   onCheckedChange={(checked) => handleCheckItem(item.id, checked as boolean)} 
                 />
               </TableCell>
@@ -649,7 +709,30 @@ export default function OvertimeList({
           <AlertDialogHeader>
             <AlertDialogTitle>승인 확인</AlertDialogTitle>
             <AlertDialogDescription>
-              {approveCount}개의 추가근무 신청을 승인하시겠습니까?
+              {(() => {
+                const canShowCompensation = isHrOrFinanceTeam() && activeTab === 'weekend';
+                
+                if (canShowCompensation && approveCounts.overtime > 0 && approveCounts.compensation > 0) {
+                  return (
+                    <>
+                      {approveCounts.overtime}개의 추가근무 요청과 {approveCounts.compensation}개의 보상지급 요청을 승인하시겠습니까?
+                    </>
+                  );
+                } else if (canShowCompensation && approveCounts.compensation > 0) {
+                  return (
+                    <>
+                      {approveCounts.compensation}개의 보상지급 요청을 승인하시겠습니까?
+                    </>
+                  );
+                } else {
+                  const totalCount = approveCounts.overtime + approveCounts.compensation;
+                  return (
+                    <>
+                      {totalCount}개의 추가근무 요청을 승인하시겠습니까?
+                    </>
+                  );
+                }
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

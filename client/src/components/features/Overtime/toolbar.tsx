@@ -150,6 +150,47 @@ export default function OvertimeToolbar({
     }));
   }, [teams]);
 
+  // 상태 옵션 (탭에 따라 다름)
+  const statusOptions = useMemo(() => {
+    if (activeTab === 'weekday') {
+      // 평일 추가근무: 승인대기, 승인완료, 반려됨
+      return [
+        { value: 'pending', label: '승인대기' },
+        { value: 'approved', label: '승인완료' },
+        { value: 'rejected', label: '반려됨' },
+      ];
+    } else {
+      // 휴일 근무: 승인대기, 보상요청, 보상완료, 반려됨
+      return [
+        { value: 'pending', label: '승인대기' },
+        { value: 'approved', label: '보상요청' },
+        { value: 'confirmed', label: '보상완료' },
+        { value: 'rejected', label: '반려됨' },
+      ];
+    }
+  }, [activeTab]);
+
+  // 탭 변경 시 상태 필터 기본값 설정
+  useEffect(() => {
+    if (activeTab === 'weekday') {
+      // 평일: 승인대기만 기본 선택
+      const newFilters = {
+        ...filters,
+        status: ['pending']
+      };
+      setFilters(newFilters);
+      onFilterChange(newFilters);
+    } else {
+      // 휴일: 승인대기, 보상요청 기본 선택
+      const newFilters = {
+        ...filters,
+        status: ['pending', 'approved']
+      };
+      setFilters(newFilters);
+      onFilterChange(newFilters);
+    }
+  }, [activeTab]);
+
   return (
     <div className="w-full flex items-center justify-between mb-5">
       <div className="flex items-center">
@@ -213,11 +254,7 @@ export default function OvertimeToolbar({
           {/* 상태 선택 */}
           <MultiSelect
             simpleSelect={true}
-            options={[
-              { value: 'pending', label: '승인대기' },
-              { value: 'approved', label: '승인완료' },
-              { value: 'rejected', label: '반려됨' },
-            ]}
+            options={statusOptions}
             onValueChange={(value) => handleSelectChange('status', value)}
             defaultValue={filters.status}
             placeholder="상태"
