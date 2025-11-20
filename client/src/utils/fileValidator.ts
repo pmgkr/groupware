@@ -1,24 +1,23 @@
 // src/utils/fileValidator.ts
-
 export function validateFiles(
   files: File[],
   options?: {
-    maxSizeMB?: number; // 기본 10MB, 필요 시 30MB로 변경 가능
+    maxSizeMB?: number; // 기본 10MB
+    allow?: string; // allow=".pdf,.docx" 같은 문자열로 확장자 전달
   }
 ) {
   const maxSizeMB = options?.maxSizeMB ?? 10;
 
-  // 확장자별 MIME 타입 매핑 (참고용)
+  // ---------------------------------------------
+  // 1) 기본 허용 확장자
+  // ---------------------------------------------
   const mimeMap: Record<string, string> = {
-    // 이미지
     jpg: 'image/jpeg',
     jpeg: 'image/jpeg',
     png: 'image/png',
     gif: 'image/gif',
     bmp: 'image/bmp',
     webp: 'image/webp',
-
-    // 문서
     pdf: 'application/pdf',
     doc: 'application/msword',
     docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -28,16 +27,35 @@ export function validateFiles(
     pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     txt: 'text/plain',
     hwp: 'application/x-hwp',
-
-    // 압축
     zip: 'application/zip',
     rar: 'application/x-rar-compressed',
     '7z': 'application/x-7z-compressed',
   };
 
-  const allowedExts = Object.keys(mimeMap);
+  const defaultExts = Object.keys(mimeMap);
+
+  // ---------------------------------------------
+  // 2) allow 옵션이 들어온 경우 → 확장자 추출
+  // ---------------------------------------------
+  let allowedExts = defaultExts; // 기본값
+
+  if (options?.allow) {
+    // ".pdf", ".zip", ".docx" 형태만 추출
+    const extRegex = /\.([a-zA-Z0-9]+)\b/g;
+
+    const extracted = Array.from(options.allow.matchAll(extRegex)).map((m) => m[1].toLowerCase());
+
+    if (extracted.length > 0) {
+      allowedExts = Array.from(new Set(extracted));
+    }
+  }
+
+  // ---------------------------------------------
+  // 3) 파일 검증
+  // ---------------------------------------------
   const invalidFiles: string[] = [];
-  const filtered: (File & { mimetype: string; ext: string })[] = [];
+  const filtered: (File & { ext: string })[] = [];
+  let msg = '';
 
   for (const file of files) {
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
@@ -46,51 +64,27 @@ export function validateFiles(
     // 확장자 검사
     if (!ext || !allowedExts.includes(ext)) {
       invalidFiles.push(`${file.name} (허용되지 않은 확장자)`);
+      msg = `해당 파일은 허용되지 않은 확장자입니다.`;
       continue;
     }
 
     // 용량 검사
     if (sizeMB > maxSizeMB) {
       invalidFiles.push(`${file.name} (${sizeMB.toFixed(1)}MB > ${maxSizeMB}MB)`);
+      msg = `${maxSizeMB}MB 이하의 파일만 업로드 가능합니다.`;
       continue;
     }
 
-    // MIME 타입 및 확장자 세팅
-    const mimetype = mimeMap[ext] ?? 'application/octet-stream';
-    const fileWithInfo = Object.assign(file, { mimetype, ext });
-
-    filtered.push(fileWithInfo);
+    filtered.push(Object.assign(file, { ext }));
   }
 
   if (invalidFiles.length > 0) {
     return {
       valid: false,
-      message: `다음 파일은 업로드할 수 없습니다:\n${invalidFiles.join('\n')}`,
+      message: msg,
       filtered,
     };
   }
 
   return { valid: true, filtered };
 }
-
-/* 
-**
-<예시>
-async function handleUpload(selectedFiles: File[]) {
-  //기본
-  const { valid, message, filtered } = validateFiles(selectedFiles);
-
- //특정 페이지에서 30MB까지 허용
-const res = validateFiles(selectedFiles, { maxSizeMB: 30 });
-
-  if (!valid) {
-    alert(message); // 에러메시지 출력
-    return;
-  }
-
-  // 업로드 진행 (filtered 파일만 전송)
-  const uploaded = await uploadFilesToServer(filtered, 'notice');
-
-}
-
-*/

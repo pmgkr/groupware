@@ -74,14 +74,12 @@ export const ProjectRow = memo(({ item, isFavorite = false, onToggleFavorite }: 
           </Tooltip>
         </TooltipProvider>
       </TableCell>
-
-      <TableCell className="text-left">
+      <TableCell className="text-left leading-[1.2] break-all whitespace-normal">
         <Link to={`/project/${item.project_id}`} className="hover:underline">
           {item.project_title}
         </Link>
       </TableCell>
-
-      <TableCell>{item.client_nm}</TableCell>
+      <TableCell className="leading-[1.2] break-all whitespace-normal">{item.client_nm}</TableCell>
       <TableCell>{item.owner_nm}</TableCell>
       <TableCell>{item.team_name}</TableCell>
       <TableCell>
