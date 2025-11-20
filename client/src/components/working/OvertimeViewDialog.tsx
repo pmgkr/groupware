@@ -16,10 +16,13 @@ interface OvertimeViewDialogProps {
   onReapply?: () => void;
   onApprove?: () => void;
   onReject?: (reason: string) => void;
+  onCompensation?: () => void;
   selectedDay?: WorkData;
   selectedIndex?: number;
   isManager?: boolean;
   isOwnRequest?: boolean;
+  activeTab?: 'weekday' | 'weekend';
+  user?: { user_level?: string; team_id?: number };
 }
 
 // 주말 여부 확인 함수
@@ -49,10 +52,13 @@ export default function OvertimeViewDialog({
   onReapply, 
   onApprove,
   onReject,
+  onCompensation,
   selectedDay, 
   selectedIndex,
   isManager = false,
-  isOwnRequest = false
+  isOwnRequest = false,
+  activeTab = 'weekday',
+  user
 }: OvertimeViewDialogProps) {
   // Hook 호출
   const { addDialog } = useAppDialog();
@@ -64,6 +70,15 @@ export default function OvertimeViewDialog({
   
   // selectedDay에서 상태 가져오기
   const status = selectedDay?.overtimeStatus || "신청하기";
+  
+  // HR팀 또는 Finance팀 관리자/관리자 권한 확인 함수
+  const isHrOrFinanceTeam = () => {
+    return (user?.user_level === 'manager' || user?.user_level === 'admin') && 
+           (user?.team_id === 1 || user?.team_id === 5);
+  };
+  
+  // 보상 지급 가능 여부 확인 (HR/Finance팀이고 휴일 근무 탭이며 보상요청 상태일 때)
+  const canShowCompensation = isHrOrFinanceTeam() && activeTab === 'weekend' && status === '보상요청';
   
   // 신청 취소하기 확인 다이얼로그
   const handleCancelClick = () => {
@@ -174,6 +189,41 @@ export default function OvertimeViewDialog({
         duration: 3000,
       });
     }
+  };
+
+  // 보상 지급 확인 다이얼로그
+  const handleCompensationClick = () => {
+    addDialog({
+      title: '<span class="text-primary-blue font-semibold">보상 지급 확인</span>',
+      message: '이 보상지급 요청을 승인하시겠습니까?',
+      confirmText: '보상 지급하기',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          if (onCompensation) {
+            await onCompensation();
+            addAlert({
+              title: '보상 지급 완료',
+              message: '보상지급 요청이 승인되었습니다.',
+              icon: <CheckCircle />,
+              duration: 3000,
+            });
+            setTimeout(() => {
+              onClose();
+            }, 300);
+          }
+        } catch (error) {
+          console.error('보상 지급 실패:', error);
+          const errorMessage = error instanceof Error ? error.message : '보상 지급에 실패했습니다. 다시 시도해주세요.';
+          addAlert({
+            title: '보상 지급 실패',
+            message: errorMessage,
+            icon: <OctagonAlert />,
+            duration: 3000,
+          });
+        }
+      },
+    });
   };
   
   // 신청 데이터
@@ -407,6 +457,13 @@ export default function OvertimeViewDialog({
                   </>
                 )}
               </>
+            )}
+
+            {/* HR/Finance팀 관리자 모드 - 보상요청 상태일 때 보상 지급하기 버튼 */}
+            {canShowCompensation && isManager && !isOwnRequest && (
+              <Button variant="default" onClick={handleCompensationClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
+                보상 지급하기
+              </Button>
             )}
 
             {/* 본인 신청이거나 일반 사용자 모드 */}
