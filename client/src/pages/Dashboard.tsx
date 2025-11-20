@@ -11,8 +11,21 @@ import { DayPicker } from '@components/daypicker';
 import { Avatar, AvatarImage, AvatarFallback } from '@components/ui/avatar';
 import getWelcomeMessage from '@components/features/Dashboard/welcome';
 import WorkHoursBar from '@/components/ui/WorkHoursBar';
+import { Icons } from '@components/icons';
+
+import type { WeeklyStats as WeeklyStatsType } from '@/utils/workingStatsHelper';
 
 export default function Dashboard() {
+  const [weeklyStats, setWeeklyStats] = useState<WeeklyStatsType>({
+    workHours: 0,
+    workMinutes: 0,
+    remainingHours: 0,
+    remainingMinutes: 0,
+    basicWorkHours: 0,
+    basicWorkMinutes: 0,
+    overtimeWorkHours: 0,
+    overtimeWorkMinutes: 0,
+  });
   const { user_name, job_role, profile_image } = useUser();
 
   // Daypicker 선택된 날짜 관리 (Default : Today)
@@ -27,30 +40,45 @@ export default function Dashboard() {
           <div className="flex">서울 날씨 ☀️ 25°C, 맑음</div>
         </div>
         <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6">
-          <div className="row-span-2 flex flex-col justify-center gap-y-6 rounded-md border border-gray-300 bg-white p-6">
-            <div className="px-8">
-              <Link to="/mypage">
-                <div className="relative mx-auto mb-2.5 aspect-square w-32 overflow-hidden rounded-[50%]">
-                  <img
-                    src={
-                      profile_image
-                        ? `https://gbend.cafe24.com/uploads/mypage/${profile_image}?t=${Date.now()}`
-                        : getImageUrl('dummy/profile')
-                    }
-                    alt="프로필 이미지"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              </Link>
-              <div className="mt-4 text-center text-base text-gray-700">
-                <Link to="/mypage">
-                  <strong className="block text-xl leading-none font-bold text-gray-950">{user_name}</strong>
-                  {job_role}
-                </Link>
+          <div className="row-span-2 flex flex-col justify-start rounded-md border border-gray-300 bg-white p-6">
+            <SectionHeader
+              title="근무 시간" 
+              description="2025년 11월 13일 (목) 10:01:30" 
+              buttonText="전체보기" 
+              buttonVariant="outline" 
+              buttonSize="sm" 
+              buttonHref="/working" 
+              className="items-start"
+            />
+            <div className="flex items-center justify-center gap-x-10 bg-gray-200 rounded-md p-5 mb-6">
+              <div className="flex flex-col align-center justify-center text-center">
+                <p className="text-gray-500 text-base">출근시간</p>
+                <p className="text-gray-800 text-xl font-medium">10:01:30</p>
+              </div>
+              <Icons.arrowRightCustom />
+              <div className="flex flex-col align-center justify-center text-center">
+                <p className="text-gray-500 text-base">퇴근시간</p>
+                <p className="text-gray-800 text-xl font-medium">18:00:00</p>
               </div>
             </div>
             <div>
-              <SectionHeader
+              <div className="flex flex-col gap-0">
+                <div className="flex items-center gap-1 ">
+                  <span className="text-gray-800 text-xl font-black">주간누적</span>
+                  <span className="text-primary-blue-500 text-lg font-bold">{weeklyStats?.workHours || 0}시간 {String(weeklyStats?.workMinutes || 0).padStart(2, '0')}분</span>
+                </div>
+                <p className="flex items-center gap-x-1 text-sm text-gray-700">
+                  이번 주 근무 시간이 {weeklyStats?.remainingHours || 0}시간 {String(weeklyStats?.remainingMinutes || 0).padStart(2, '0')}분 남았어요.
+                </p>
+              </div>
+              <WorkHoursBar 
+                hours={(weeklyStats?.workHours || 0) + ((weeklyStats?.workMinutes || 0) / 60)} 
+                className="mt-4" 
+              />
+            </div>
+          </div>
+          <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
+            <SectionHeader
                 title="휴가 현황 ⛱️"
                 buttonText="전체보기"
                 buttonVariant="outline"
@@ -72,23 +100,6 @@ export default function Dashboard() {
                   <strong className="text-[1.4em]">9</strong>
                 </li>
               </ul>
-            </div>
-          </div>
-          <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
-            <SectionHeader title="근무 시간" buttonText="전체보기" buttonVariant="outline" buttonSize="sm" buttonHref="/working" />
-            <div>
-              <div className="flex gap-x-4">
-                <div className="before:bg-primary flex items-center gap-x-1 text-sm text-gray-700 before:h-1.5 before:w-1.5 before:rounded-[50%]">
-                  <span>이번 주 근무시간</span>
-                  <strong className="text-gray-950">35시간 00분</strong>
-                </div>
-                <div className="flex items-center gap-x-1 text-sm text-gray-700 before:h-1.5 before:w-1.5 before:rounded-[50%] before:bg-gray-400">
-                  <span>잔여 근무시간</span>
-                  <strong className="text-gray-950">17시간 00분</strong>
-                </div>
-              </div>
-              <WorkHoursBar hours={35} className="mt-4" />
-            </div>
             {/* <div>
               <ul className="grid grid-cols-3">
                 <li className="flex flex-col text-base">
@@ -247,28 +258,28 @@ export default function Dashboard() {
           </div>
           <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
-              title="알림"
+              title="공지사항"
               buttonText="전체보기"
               buttonVariant="outline"
               buttonSize="sm"
-              buttonHref="/alarm"
+              buttonHref="/notice"
               className="mb-4"
             />
             <div>
               <ul className="flex flex-col gap-y-2 px-2 text-base tracking-tight text-gray-700">
                 <li className="flex items-center gap-x-1.5 before:h-1 before:w-1 before:rounded-[50%] before:bg-gray-700">
                   <p className="overflow-hidden text-ellipsis whitespace-nowrap">
-                    5월 30일 금요일 연장근무 신청 <span className="text-primary-blue-500">승인</span> 되었습니다.
+                    [중요공지] 사내 공지 관련 안내
                   </p>
                 </li>
                 <li className="flex items-center gap-x-1.5 before:h-1 before:w-1 before:rounded-[50%] before:bg-gray-700">
                   <p className="overflow-hidden text-ellipsis whitespace-nowrap">
-                    5월 30일 금요일 연장근무 신청 <span className="text-destructive">반려</span> 되었습니다.
+                    [공지] 보안 인식 교육(Security Awareness Training) 2단계 안내
                   </p>
                 </li>
                 <li className="flex items-center gap-x-1.5 before:h-1 before:w-1 before:rounded-[50%] before:bg-gray-700">
                   <p className="overflow-hidden text-ellipsis whitespace-nowrap">
-                    5월 30일 금요일 연장근무 신청 <span className="text-primary-blue-500">승인</span> 되었습니다.
+                    [주요공지] 개인법인카드 및 개인카드 비용청구서 가이드라인 업데이트 안내
                   </p>
                 </li>
               </ul>
