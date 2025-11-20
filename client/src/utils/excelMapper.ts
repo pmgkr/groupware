@@ -1,4 +1,4 @@
-/**
+/** (1) Expense Mapping
  * Excel JSON 데이터를 ExpenseRegister 폼 구조로 변환 (가맹점명 자동 인식 버전)
  * @param excelData XLSX.utils.sheet_to_json() 결과
  * @returns ExpenseRegister용 items 배열
@@ -79,23 +79,23 @@ export function mapExcelToExpenseItems(excelData: any[]): any[] {
   return mapped;
 }
 
-/**
- * Excel JSON → 견적서 아이템 매핑 (완전체 + Title Row 처리)
+/** (2) Estimate Mapping
+ * Excel JSON → 견적서 아이템 매핑 (최종 완성본)
+ * - Title / Item / Sub total / Discount / Grand Total / Agency Fee
+ * - Amount는 반올림 처리
  */
 export function mapExcelToQuotationItems(excelData: any[]): any[] {
   if (!Array.isArray(excelData) || excelData.length === 0) return [];
 
   // ----------------------------------------
-  // 1) 모든 Row의 key를 모아 Header 후보 만들기
+  // 1) Header Key 자동 수집
   // ----------------------------------------
   const allKeys = new Set<string>();
   for (const row of excelData) {
     Object.keys(row).forEach((k) => !k.startsWith('__') && allKeys.add(k));
   }
 
-  // ----------------------------------------
-  // 2) normalize 함수
-  // ----------------------------------------
+  // normalize
   const normalize = (label: any) =>
     String(label)
       .trim()
@@ -105,23 +105,22 @@ export function mapExcelToQuotationItems(excelData: any[]): any[] {
       .replace(/[^a-z0-9]/g, '');
 
   // ----------------------------------------
-  // 3) headerMap 자동 매핑
+  // 2) HeaderMap 자동 매핑
   // ----------------------------------------
   const headerMap: Record<string, string> = {};
 
   for (const key of allKeys) {
     const norm = normalize(key);
-
     if (norm === 'item') headerMap.item = key;
     else if (norm === 'unitprice') headerMap.unit = key;
     else if (norm === 'qty' || norm === 'quantity') headerMap.qty = key;
-    else if (norm === 'amountkrw' || norm === 'amount') headerMap.amount = key;
+    else if (norm === 'amount' || norm === 'amountkrw') headerMap.amount = key;
     else if (norm === 'remarks' || norm === 'remark') headerMap.remarks = key;
   }
 
   if (!headerMap.item) {
-    const maybeItem = [...allKeys].find((k) => normalize(k) === 'item');
-    if (maybeItem) headerMap.item = maybeItem;
+    const fallbackItem = [...allKeys].find((k) => normalize(k) === 'item');
+    if (fallbackItem) headerMap.item = fallbackItem;
   }
 
   if (!headerMap.item) {
@@ -129,17 +128,16 @@ export function mapExcelToQuotationItems(excelData: any[]): any[] {
     return [];
   }
 
-  // ----------------------------------------
-  // 4) Row 변환
-  // ----------------------------------------
   const result: any[] = [];
 
+  // ----------------------------------------
+  // 3) Row 변환 시작
+  // ----------------------------------------
   for (const row of excelData) {
     const itemRaw = row[headerMap.item];
     if (!itemRaw) continue;
 
     const item = String(itemRaw).trim();
-
     const depth = (String(itemRaw).match(/^\s+/)?.[0].length || 0) / 2;
 
     const unitRaw = headerMap.unit ? row[headerMap.unit] : undefined;
@@ -147,14 +145,22 @@ export function mapExcelToQuotationItems(excelData: any[]): any[] {
     const amountRaw = headerMap.amount ? row[headerMap.amount] : undefined;
     const remarksRaw = headerMap.remarks ? row[headerMap.remarks] : undefined;
 
-    const unit_price = unitRaw !== undefined ? Number(String(unitRaw).replace(/,/g, '')) : 0;
+    // ----------------------------------------
+    // 4) parsedUnit: 단가 원본
+    // ----------------------------------------
+    const parsedUnit = unitRaw !== undefined ? Number(String(unitRaw).replace(/,/g, '')) : undefined;
+
+    // qty
     const qty = qtyRaw !== undefined ? Number(String(qtyRaw).replace(/,/g, '')) : 0;
-    const rawAmount = amountRaw !== undefined ? Number(String(amountRaw).replace(/,/g, '')) : 0; // 금액 반올림 적용
+
+    // amount
+    const rawAmount = amountRaw !== undefined ? Number(String(amountRaw).replace(/,/g, '')) : 0;
+
     const amount = Math.round(rawAmount);
     const remarks = remarksRaw ? String(remarksRaw).trim() : '';
 
     // ----------------------------------------
-    // 5) Sub Total
+    // Sub Total
     // ----------------------------------------
     if (/^sub\s*total/i.test(item)) {
       result.push({
@@ -166,11 +172,73 @@ export function mapExcelToQuotationItems(excelData: any[]): any[] {
     }
 
     // ----------------------------------------
-    // 6) Grand Total
+    // Grand Total
     // ----------------------------------------
-    if (/grand\s*total/i.test(item)) {
+    const isLastRow = row === excelData[excelData.length - 1]; // 배열의 마지막 항목인 지
+    const isExplicitGrand = /grand\s*total/i.test(item); // 항목값이 grand total을 포함하고 있는 지
+    const isImplicitGrand = /^total$/i.test(item) && isLastRow; // grand total이 아닌 'total'을 포함하며 마지막 항목인 경우 grand total 타입으로 인정
+
+    if (isExplicitGrand || isImplicitGrand) {
       result.push({
         type: 'grandtotal',
+        label: 'Grand Total',
+        amount,
+      });
+      continue;
+    }
+
+    // ----------------------------------------
+    // ⭐ Agency Fee 판정
+    // ----------------------------------------
+    const hasFeeKeyword = /fee/i.test(item) || /agency\s*fee/i.test(item); // 항목값이 fee 혹은 agency fee를 포함하고 있는 지
+    const hasRealValue = (parsedUnit !== undefined && parsedUnit !== 0) || (amountRaw !== undefined && rawAmount !== 0);
+    const isAgencyFee = hasFeeKeyword && hasRealValue && !/^sub\s*total/i.test(item) && !/grand\s*total/i.test(item);
+
+    // ----------------------------------------
+    // ⭐ 5) unit_price 확정 (agency_fee인지 여부에 따라 분기)
+    // ----------------------------------------
+    let unit_price = 0;
+
+    if (isAgencyFee) {
+      // 🔥 단가가 0~1 사이면 → 퍼센트형 → 소수 그대로
+      if (parsedUnit !== undefined && parsedUnit > 0 && parsedUnit < 1) {
+        unit_price = parsedUnit;
+      } else {
+        // 🔥 1 이상이면 → KRW → 반올림
+        unit_price = parsedUnit !== undefined ? Math.round(parsedUnit) : 0;
+      }
+    } else {
+      // 일반 item → 반올림
+      unit_price = parsedUnit !== undefined ? Math.round(parsedUnit) : 0;
+    }
+
+    // ----------------------------------------
+    // Agency Fee Row 생성
+    // ----------------------------------------
+    if (isAgencyFee) {
+      result.push({
+        type: 'agency_fee',
+        label: item,
+        unit_price,
+        amount,
+        remarks,
+        depth,
+      });
+      continue;
+    }
+
+    // ----------------------------------------
+    // Discount (Item + Amount만 있음)
+    // ----------------------------------------
+    const hasAmount = amountRaw !== undefined && rawAmount !== 0;
+    const hasNoUnit = parsedUnit === undefined || parsedUnit === 0;
+    const hasNoQty = qty === 0;
+
+    const isDiscount = hasAmount && hasNoUnit && hasNoQty && !/^sub\s*total/i.test(item) && !/grand\s*total/i.test(item);
+
+    if (isDiscount) {
+      result.push({
+        type: 'discount',
         label: item,
         amount,
       });
@@ -178,15 +246,12 @@ export function mapExcelToQuotationItems(excelData: any[]): any[] {
     }
 
     // ----------------------------------------
-    // 7) Title Row 조건
-    //    (item만 있고 숫자값 없음)
+    // Title
     // ----------------------------------------
-    const noUnit = unitRaw === undefined || unit_price === 0;
-    const noQty = qtyRaw === undefined || qty === 0;
-    const noAmount = amountRaw === undefined || amount === 0;
-    const hasOnlyItem = noUnit && noQty && noAmount;
+    const noAmount = rawAmount === 0;
+    const isTitle = (parsedUnit === undefined || parsedUnit === 0) && qty === 0 && noAmount;
 
-    if (hasOnlyItem) {
+    if (isTitle) {
       result.push({
         type: 'title',
         item,
@@ -196,7 +261,7 @@ export function mapExcelToQuotationItems(excelData: any[]): any[] {
     }
 
     // ----------------------------------------
-    // 8) 일반 Item Row
+    // 일반 Item
     // ----------------------------------------
     result.push({
       type: 'item',

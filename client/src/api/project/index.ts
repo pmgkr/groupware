@@ -249,6 +249,38 @@ export interface pExpenseViewDTO {
   logs: pExpenseLogDTO[];
 }
 
+// ------------------------------
+// 견적서
+// ------------------------------
+export type projectEstimateParams = {
+  project_id?: string;
+  page?: number;
+  size?: number;
+};
+
+export type EstimateListItem = {
+  est_id: number;
+  project_id: string;
+  user_id: string;
+  user_nm: string;
+  est_title: string;
+  est_amount: number;
+  est_budget: number;
+  est_valid: string;
+  wdate: string;
+  items_count?: number; // 해당 견적서에 등록된 항목 갯수
+  evidences_count?: number; // 해당 견적서에 등록된 증빙자료 갯수
+};
+
+// 프로젝트 견적서 리스트 Reponse
+export type projectEstimateResponse = {
+  items: EstimateListItem[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+};
+
 // 즐겨찾기 리스트
 export const getBookmarkList = async () => {
   const res = await http<{ project_id: string }[]>('/user/project/bookmark/list', { method: 'GET' });
@@ -338,6 +370,17 @@ export async function deleteProjectTempExpense(payload: { seqs: number[] }): Pro
 // 프로젝트비용 청구처리
 export async function claimProjectTempExpense(payload: { seqs: number[] }): Promise<{ ok: boolean }> {
   const res = http<{ ok: boolean }>(`/user/pexpense/claim/`, { method: 'POST', body: JSON.stringify(payload) });
+
+  return res;
+}
+
+// 견적서 리스트 조회
+export async function getEstimateList(params: projectEstimateParams) {
+  const clean = cleanParams(params);
+
+  // 쿼리스트링으로 변환
+  const query = new URLSearchParams(clean as Record<string, string>).toString();
+  const res = await http<projectEstimateResponse>(`/user/estimate/list?${query}`, { method: 'GET' });
 
   return res;
 }

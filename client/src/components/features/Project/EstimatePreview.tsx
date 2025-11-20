@@ -3,42 +3,14 @@ import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'rea
 import { useForm, useFieldArray } from 'react-hook-form';
 import { mapExcelToQuotationItems } from '@/utils';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
-import { formatAmount } from '@/utils';
+import { formatAmount, displayUnitPrice } from '@/utils';
+import { type QuotationMappedItem } from '@/types/estimate';
+import EstimateEvidence from './_components/EstimateEvidence';
 
 import { Input } from '@components/ui/input';
 import { Button } from '@components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
-
-type QuotationNormalItem = {
-  type: 'item';
-  item: string;
-  unit_price: number;
-  qty: number;
-  amount: number;
-  remarks: string;
-  depth: number;
-};
-
-type QuotationTitle = {
-  type: 'title';
-  item: string;
-  depth: number;
-};
-
-type QuotationSubtotal = {
-  type: 'subtotal';
-  label: string;
-  amount: number;
-};
-
-type QuotationGrandTotal = {
-  type: 'grandtotal';
-  label: string;
-  amount: number;
-};
-
-export type QuotationMappedItem = QuotationNormalItem | QuotationTitle | QuotationSubtotal | QuotationGrandTotal;
 
 type EstimateForm = {
   estimate_items: QuotationMappedItem[];
@@ -47,8 +19,10 @@ type EstimateForm = {
 export default function EstimatePreview() {
   const location = useLocation();
   const { projectId } = useParams();
-  const { registerType, excelData, estName } = location.state;
+  const { registerType, excelData, estName, excelFile } = location.state;
   const { data } = useOutletContext<ProjectLayoutContext>();
+
+  console.log('excelData', excelData);
 
   const [estimateName, setEstimateName] = useState(estName ?? '');
   const nameInputRef = useRef<HTMLInputElement | null>(null);
@@ -132,7 +106,7 @@ export default function EstimatePreview() {
 
         <div className="flex w-[24%] flex-col">
           <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 증빙</h2>
-          <div className="h-full rounded-sm border-1 border-dashed"></div>
+          <EstimateEvidence />
         </div>
       </div>
 
@@ -149,9 +123,8 @@ export default function EstimatePreview() {
               <TableHead className="w-[10%]">단가</TableHead>
               <TableHead className="w-[6%]">수량</TableHead>
               <TableHead className="w-[10%]">금액</TableHead>
-              <TableHead className="w-[10%]">예상 지출 금액</TableHead>
-              <TableHead className="w-[10%]">가용 금액</TableHead>
-              <TableHead className="w-[24%]">비고</TableHead>
+              <TableHead className="w-[12%]">예상 지출 금액</TableHead>
+              <TableHead className="w-[28%]">비고</TableHead>
             </TableRow>
           </TableHeader>
 
@@ -163,7 +136,7 @@ export default function EstimatePreview() {
                 {/* ------------------------ */}
                 {row.type === 'title' && (
                   <>
-                    <TableCell className="text-left font-bold" colSpan={7}>
+                    <TableCell className="text-left font-bold" colSpan={6}>
                       {row.item}
                     </TableCell>
                   </>
@@ -181,7 +154,6 @@ export default function EstimatePreview() {
                     <TableCell>
                       <Input type="text" size="sm" className="h-7 rounded-sm text-right" />
                     </TableCell>
-                    <TableCell>-</TableCell>
                     <TableCell className="text-left leading-[1.1] break-keep whitespace-break-spaces">{row.remarks}</TableCell>
                   </>
                 )}
@@ -194,8 +166,23 @@ export default function EstimatePreview() {
                     <TableCell colSpan={3} className="bg-gray-100 font-semibold">
                       {row.label}
                     </TableCell>
-                    <TableCell className="bg-gray-100 font-semibold">{formatAmount(row.amount)}</TableCell>
-                    <TableCell colSpan={3} className="bg-gray-100"></TableCell>
+                    <TableCell className="bg-gray-100 text-right font-semibold">{formatAmount(row.amount)}</TableCell>
+                    <TableCell colSpan={2} className="bg-gray-100"></TableCell>
+                  </>
+                )}
+
+                {/* ------------------------ */}
+                {/* Agency Fee Row */}
+                {/* ------------------------ */}
+                {row.type === 'agency_fee' && (
+                  <>
+                    <TableCell className="text-left font-medium">{row.label}</TableCell>
+
+                    <TableCell className="text-right">{displayUnitPrice(row.unit_price)}</TableCell>
+                    <TableCell></TableCell>
+                    <TableCell className="text-right font-semibold">{row.amount.toLocaleString()}</TableCell>
+                    <TableCell></TableCell>
+                    <TableCell className="text-left">{row.remarks}</TableCell>
                   </>
                 )}
 
@@ -207,8 +194,8 @@ export default function EstimatePreview() {
                     <TableCell colSpan={3} className="bg-primary-blue-150 font-bold text-gray-900">
                       {row.label}
                     </TableCell>
-                    <TableCell className="bg-primary-blue-150 font-bold text-gray-900">{formatAmount(row.amount)}</TableCell>
-                    <TableCell colSpan={3} className="bg-primary-blue-150"></TableCell>
+                    <TableCell className="bg-primary-blue-150 text-right font-bold text-gray-900">{formatAmount(row.amount)}</TableCell>
+                    <TableCell colSpan={2} className="bg-primary-blue-150"></TableCell>
                   </>
                 )}
               </TableRow>

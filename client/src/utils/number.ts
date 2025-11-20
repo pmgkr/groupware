@@ -3,6 +3,16 @@ export function isNum(obj: string | number): boolean {
   return !isNaN(Number(obj));
 }
 
+// val이 소수면 %로 보여주는 함수
+export function displayUnitPrice(val: number | string): string {
+  val = typeof val === 'string' ? parseFloat(val) : val; // String이면 Number로 타입 변환
+
+  if (typeof val === 'number' && val > 0 && val < 1) {
+    return `${Math.round(val * 100)}%`; // 0.11 → "11%"
+  }
+  return val.toLocaleString(); // 일반 금액
+}
+
 export function formatAmount(amount: number | string): string {
   // 원화일 때 1000원 단위로 콤마 추가
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;

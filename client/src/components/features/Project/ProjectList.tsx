@@ -342,7 +342,7 @@ export default function ProjectList() {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={10} className="py-8 text-center text-gray-500">
+              <TableCell colSpan={10} className="py-50 text-center text-gray-500">
                 등록된 프로젝트가 없습니다.
               </TableCell>
             </TableRow>

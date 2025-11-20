@@ -17,6 +17,8 @@ type Props = { data: ProjectViewDTO; members: projectMemberDTO[] };
 export default function Overview() {
   const { data, members } = useOutletContext<ProjectLayoutContext>();
 
+  console.log(data);
+
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
     const date = typeof d === 'string' ? new Date(d) : d;
