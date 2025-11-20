@@ -129,13 +129,8 @@ export const buildOvertimeApiParams = (
     apiParams.ot_stime = '00:00:00';
     apiParams.ot_etime = '00:00:00';
     
-    // 보상 타입 변환 (빈 문자열이 아닌 경우에만 설정)
-    const rewardType = convertRewardType(formData.overtimeType);
-    if (rewardType) {
-    } else {
-      // 빈 문자열인 경우 에러 발생 (유효성 검사를 통과했어야 하므로)
-      throw new Error('보상 지급방식을 선택해주세요.');
-    }
+    // 보상 지급방식
+    apiParams.ot_reward = convertRewardType(formData.overtimeType);
   }
 
   return apiParams;
