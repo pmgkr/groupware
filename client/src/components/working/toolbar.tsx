@@ -119,6 +119,17 @@ export default function Toolbar({
     loadTeams();
   }, [user]);
 
+  // 팀 목록이 로드되면 기본적으로 모든 팀 선택
+  useEffect(() => {
+    if (teams.length > 0 && selectedTeams.length === 0) {
+      const allTeamIds = teams.map(team => String(team.team_id));
+      setSelectedTeams(allTeamIds);
+      // 부모 컴포넌트에도 알림
+      const teamIds = allTeamIds.map(id => parseInt(id));
+      onTeamSelect(teamIds);
+    }
+  }, [teams]);
+
   // 날짜 네비게이션 핸들러
   const handleNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
     const newDate = new Date(currentDate);
