@@ -65,7 +65,7 @@ export default function Dashboard() {
                   <span className="text-primary-blue-500 text-lg font-bold">{wlog[0]?.total_minutes || 0}시간 {String(wlog[0]?.total_minutes || 0).padStart(2, '0')}분</span>
                 </div>
                 <p className="flex items-center gap-x-1 text-sm text-gray-700">
-                  이번 주 근무 시간이 {wlog[0]?.remainingHours || 0}시간 {String(wlog[0]?.remainingMinutes || 0).padStart(2, '0')}분 남았어요.
+                  이번 주 근무 시간이 5시간 5분 남았어요.
                 </p>
               </div>
               <WorkHoursBar 
@@ -122,8 +122,8 @@ export default function Dashboard() {
             <div className="overflow-y-auto rounded-xl p-4">
               <ul className="grid grid-cols-3 gap-2 gap-y-4">
 
-                {calendarData.map((calendar) => (
-                  <li key={calendar.user_name} className="flex items-center gap-x-2">
+                {calendarData.map((calendar, index) => (
+                  <li key={`${calendar.user_name}-${calendar.sch_label}-${index}`} className="flex items-center gap-x-2">
                     <Avatar>
                       <AvatarImage 
                         src={
