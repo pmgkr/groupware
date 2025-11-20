@@ -69,6 +69,7 @@ export interface OvertimeApiParams {
   ot_date: string;
   ot_client: string;
   ot_description: string;
+  ot_stime?: string;
   ot_etime?: string;
   ot_food?: string;
   ot_trans?: string;
@@ -104,6 +105,7 @@ export const buildOvertimeApiParams = (
   if (!isWeekendOrHol) {
     const hour = formData.expectedEndTime.padStart(2, '0');
     const minute = formData.expectedEndMinute.padStart(2, '0');
+    apiParams.ot_stime = `${hour}:${minute}:00`;
     apiParams.ot_etime = `${hour}:${minute}:00`;
     apiParams.ot_food = formData.mealAllowance === 'yes' ? 'Y' : 'N';
     apiParams.ot_trans = formData.transportationAllowance === 'yes' ? 'Y' : 'N';
@@ -115,8 +117,25 @@ export const buildOvertimeApiParams = (
     const hours = parseInt(formData.overtimeHours) || 0;
     const minutes = parseInt(formData.overtimeMinutes) || 0;
     const totalHours = hours + (minutes / 60);
+    
+    // 근무 시간이 0인 경우 에러 발생
+    if (totalHours <= 0) {
+      throw new Error('추가근무 시간을 입력해주세요.');
+    }
+    
     apiParams.ot_hours = totalHours.toString();
-    apiParams.ot_reward = convertRewardType(formData.overtimeType);
+    
+    // 토요일, 일요일, 공휴일인 경우 ot_stime, ot_etime을 00:00:00으로 설정
+    apiParams.ot_stime = '00:00:00';
+    apiParams.ot_etime = '00:00:00';
+    
+    // 보상 타입 변환 (빈 문자열이 아닌 경우에만 설정)
+    const rewardType = convertRewardType(formData.overtimeType);
+    if (rewardType) {
+    } else {
+      // 빈 문자열인 경우 에러 발생 (유효성 검사를 통과했어야 하므로)
+      throw new Error('보상 지급방식을 선택해주세요.');
+    }
   }
 
   return apiParams;
