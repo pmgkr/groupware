@@ -59,8 +59,8 @@ export interface ManagerOvertimeListParams {
   flag?: string;  // ot_status (H: 승인대기, T: 승인완료, Y: 리워드지급(최종승인), N: 반려됨)
 }
 
-// 관리자 추가근무 최종승인(리워드지급0 파라미터
-export interface ManagerOvertimeConfirmParams {
+// 관리자 추가근무 최종승인(리워드지급) 파라미터
+export interface ManagerOvertimeRewardParams {
   ot_seq: number;
 }
 
@@ -199,6 +199,15 @@ export const workingApi = {
     const response = await http('/manager/overtime/confirm', {
       method: 'POST',
       body: JSON.stringify({ ot_seq: otSeq }),
+    });
+    return response;
+  },
+
+  // 관리자 - 보상요청 상태 승인(리워드 지급)
+  confirmOvertimeCompensation: async (params: ManagerOvertimeRewardParams): Promise<any> => {
+    const response = await http('/manager/overtime/confirm', {
+      method: 'POST',
+      body: JSON.stringify(params),
     });
     return response;
   },

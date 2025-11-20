@@ -308,17 +308,19 @@ export default function OvertimeList({
       ? paginatedData.filter(item => isSelectableStatus(item.ot_status)).map((item) => item.id) 
       : [];
     setCheckedItems(newCheckedItems);
-    onCheckedItemsChange(newCheckedItems);
   };
 
   // 개별 선택
   const handleCheckItem = (id: number, checked: boolean) => {
     setCheckedItems((prev) => {
-      const newItems = checked ? [...prev, id] : prev.filter((i) => i !== id);
-      onCheckedItemsChange(newItems);
-      return newItems;
+      return checked ? [...prev, id] : prev.filter((i) => i !== id);
     });
   };
+
+  // checkedItems 변경 시 부모 컴포넌트에 알림
+  useEffect(() => {
+    onCheckedItemsChange(checkedItems);
+  }, [checkedItems, onCheckedItemsChange]);
 
   // checkAll 상태 자동 업데이트
   useEffect(() => {
@@ -373,6 +375,20 @@ export default function OvertimeList({
       handleCloseOvertimeDialog();
     } catch (error) {
       console.error('반려 실패:', error);
+      throw error;
+    }
+  };
+
+  // 보상 지급 핸들러 (보상요청 상태 승인)
+  const handleCompensationOvertime = async () => {
+    if (!selectedOvertime?.id) return;
+    
+    try {
+      await workingApi.confirmOvertimeCompensation({ ot_seq: selectedOvertime.id });
+      fetchOvertimeData(); // 데이터 새로고침
+      handleCloseOvertimeDialog();
+    } catch (error) {
+      console.error('보상 지급 실패:', error);
       throw error;
     }
   };
@@ -663,7 +679,10 @@ export default function OvertimeList({
         // 상태 매핑
         const mapStatus = (status: string) => {
           if (status === 'H') return '승인대기';
-          if (status === 'T') return '승인완료';
+          if (status === 'T') {
+            // 평일 추가근무는 승인완료, 휴일 근무는 보상요청
+            return activeTab === 'weekday' ? '승인완료' : '보상요청';
+          }
           if (status === 'N') return '반려됨';
           return '신청하기';
         };
@@ -681,8 +700,11 @@ export default function OvertimeList({
             }}
             onApprove={isManager && !isOwnRequest ? handleApproveOvertime : undefined}
             onReject={isManager && !isOwnRequest ? handleRejectOvertime : undefined}
+            onCompensation={isManager && !isOwnRequest ? handleCompensationOvertime : undefined}
             isManager={isManager}
             isOwnRequest={isOwnRequest}
+            activeTab={activeTab}
+            user={user ? { user_level: user.user_level, team_id: user.team_id ?? undefined } : undefined}
             selectedDay={{
               date: dayjs(selectedOvertime.ot_date).format('YYYY-MM-DD'),
               dayOfWeek: dayjs(selectedOvertime.ot_date).format('ddd') as '월' | '화' | '수' | '목' | '금' | '토' | '일',
@@ -696,7 +718,7 @@ export default function OvertimeList({
               totalHours: 0,
               totalMinutes: 0,
               overtimeStatus: overtimeDetailData?.info ? mapStatus(overtimeDetailData.info.ot_status) : 
-                            getStatusText(selectedOvertime.ot_status) as "신청하기" | "승인대기" | "승인완료" | "반려됨",
+                            getStatusText(selectedOvertime.ot_status) as "신청하기" | "승인대기" | "승인완료" | "반려됨" | "보상요청",
               overtimeData: convertOvertimeData()
             }}
           />
