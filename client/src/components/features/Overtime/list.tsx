@@ -560,7 +560,7 @@ export default function OvertimeList({
       </Table>
       {total > 0 && (
         <div className="mt-5">
-          <AppPagination totalPages={totalPages} initialPage={page} visibleCount={5} onPageChange={(p) => setPage(p)} />
+          <AppPagination totalPages={totalPages} initialPage={page} visibleCount={10} onPageChange={(p) => setPage(p)} />
         </div>
       )}
 

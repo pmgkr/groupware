@@ -136,8 +136,6 @@ export default function VacationList({
     currentRequestRef.current = requestId;
     
     setLoading(true);
-    // 기존 데이터 초기화 (탭 변경 시 이전 데이터가 남지 않도록)
-    setAllData([]);
     
     try {
       const year = filters.year ? parseInt(filters.year) : new Date().getFullYear();
@@ -165,12 +163,22 @@ export default function VacationList({
         teamIdsToQuery = [user.team_id];
       }
       
+      // 요청이 취소되었는지 확인
+      if (currentRequestRef.current !== requestId) {
+        // 요청이 취소된 경우 아무것도 하지 않음 (새 요청이 이미 시작되었을 수 있음)
+        return;
+      }
+      
       if (teamIdsToQuery.length === 0) {
-        // 요청이 취소되었는지 확인
-        if (currentRequestRef.current !== requestId) return;
         setAllData([]);
         setLoading(false);
         return;
+      }
+      
+      // 데이터 조회 시작 전에 기존 데이터 초기화 (팀이 있고 요청이 취소되지 않은 경우에만)
+      // 이 시점에서 요청이 취소되지 않았는지 다시 확인
+      if (currentRequestRef.current === requestId) {
+        setAllData([]);
       }
       
       // 각 팀의 멤버 목록 가져오기
@@ -244,39 +252,40 @@ export default function VacationList({
       
       // 요청이 취소되었는지 최종 확인 (데이터 저장 직전에만 확인)
       if (currentRequestRef.current !== requestId) {
-        setLoading(false);
+        // 요청이 취소된 경우 아무것도 하지 않음 (새 요청이 이미 시작되었을 수 있음)
         return;
       }
       
       // 현재 활성 탭과 일치하는지 최종 확인
       if (activeTab !== currentTab) {
-        setLoading(false);
+        // 탭이 변경된 경우 아무것도 하지 않음 (새 요청이 이미 시작되었을 수 있음)
         return;
       }
       
-      // 최종 확인: 현재 활성 탭과 일치하는 데이터만 저장
-      const finalSchedules = allSchedules.filter(schedule => 
+      // 최종 확인: 현재 활성 탭과 일치하는 데이터만 필터링
+      const filteredByType = allSchedules.filter(schedule => 
         schedule.sch_type === (activeTab === 'vacation' ? 'vacation' : 'event')
       );
       
+      // 중복 제거: 같은 id를 가진 항목은 하나만 유지
+      const uniqueSchedules = filteredByType.filter((schedule, index, self) =>
+        index === self.findIndex(s => s.id === schedule.id)
+      );
+      
       // 전체 데이터 저장 (모든 필터링은 filteredData useMemo에서 처리)
-      setAllData(finalSchedules);
+      // 요청이 취소되지 않았는지 다시 한 번 확인
+      if (currentRequestRef.current === requestId) {
+        setAllData(uniqueSchedules);
+        setLoading(false);
+      }
     } catch (error) {
       // 요청이 취소되었는지 확인
       if (currentRequestRef.current !== requestId) {
-        setLoading(false);
+        // 요청이 취소된 경우 로딩 상태를 유지하지 않음
         return;
       }
       setAllData([]);
       setLoading(false);
-    } finally {
-      // 요청이 취소되었는지 확인하고 로딩 상태 해제
-      if (currentRequestRef.current === requestId) {
-        setLoading(false);
-      } else {
-        // 요청이 취소된 경우에도 로딩 상태 해제
-        setLoading(false);
-      }
     }
   }, [activeTab, filters.year, teamIds, user?.team_id, user?.user_level]);
 
@@ -607,13 +616,13 @@ export default function VacationList({
         {loading ? (
           <TableRow>
             <TableCell className="h-100 text-gray-500" colSpan={8}>
-              일정 데이터 불러오는 중
+              데이터 불러오는 중
             </TableCell>
           </TableRow>
-        ) : paginatedData.length === 0 ? (
+        ) : !loading && paginatedData.length === 0 ? (
           <TableRow>
             <TableCell className="h-100 text-gray-500" colSpan={8}>
-              일정 데이터가 없습니다.
+              데이터가 없습니다.
             </TableCell>
           </TableRow>
         ) : (
@@ -676,7 +685,7 @@ export default function VacationList({
             key={`pagination-${page}-${activeTab}`}
             totalPages={totalPages} 
             initialPage={page} 
-            visibleCount={5} 
+            visibleCount={10} 
             onPageChange={(p) => {
               setPage(p);
             }} 
