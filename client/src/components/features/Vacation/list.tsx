@@ -586,8 +586,8 @@ export default function VacationList({
 
   return (
     <>
-      <div ref={tableRef}>
-      <Table key={`table-${page}-${activeTab}`} variant="primary" align="center" className="table-fixed">
+      <div ref={tableRef} className="w-full">
+      <Table key={`table-${page}-${activeTab}`} variant="primary" align="center" className="table-fixed w-full">
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className="w-[7%] text-center p-2">부서</TableHead>
@@ -615,13 +615,13 @@ export default function VacationList({
         <TableBody key={`tbody-${page}-${activeTab}`}>
         {loading ? (
           <TableRow>
-            <TableCell className="h-100 text-gray-500" colSpan={8}>
+            <TableCell className="h-100 text-gray-500 w-full" colSpan={activeTab === 'vacation' ? 8 : 7}>
               데이터 불러오는 중
             </TableCell>
           </TableRow>
         ) : !loading && paginatedData.length === 0 ? (
           <TableRow>
-            <TableCell className="h-100 text-gray-500" colSpan={8}>
+            <TableCell className="h-100 text-gray-500 w-full" colSpan={activeTab === 'vacation' ? 8 : 7}>
               데이터가 없습니다.
             </TableCell>
           </TableRow>
