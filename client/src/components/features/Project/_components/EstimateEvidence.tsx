@@ -8,23 +8,26 @@ import { Button } from '@components/ui/button';
 import { Close } from '@/assets/images/icons';
 import { OctagonAlert } from 'lucide-react';
 
-type PreviewFile = {
+export type PreviewFile = {
+  file: File; // 원본 파일
   name: string;
   type: string;
-  preview: string;
-  uploaded_at: string;
+  size: number;
 };
 
-export default function EstimateEvidence() {
-  const [attachments, setAttachments] = useState<PreviewFile[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
-
+export default function EstimateEvidence({ onChangeFiles }: { onChangeFiles?: (files: PreviewFile[]) => void }) {
   const { addAlert } = useAppAlert();
 
+  const [isDragging, setIsDragging] = useState(false);
+  const [attachments, setAttachments] = useState<PreviewFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const addAttachments = (files: PreviewFile[]) => {
-    setAttachments((prev) => [...prev, ...files]);
+    setAttachments((prev) => {
+      const updated = [...prev, ...files];
+      onChangeFiles?.(updated); // 🔥 부모에게 전달
+      return updated;
+    });
   };
 
   /** 📌 파일 업로드 */
@@ -44,6 +47,7 @@ export default function EstimateEvidence() {
     }
 
     const uploaded = Array.from(e.target.files || []).map((file) => ({
+      file,
       name: file.name,
       type: file.type,
     })) as PreviewFile[];
@@ -73,14 +77,23 @@ export default function EstimateEvidence() {
     e.preventDefault();
     setIsDragging(false);
 
-    const now = new Date();
     const files = Array.from(e.dataTransfer.files || []);
+    const { valid, message } = validateFiles(files, { allow: FILE_ACCEPT_ALL });
+
+    if (!valid) {
+      addAlert({
+        title: '업로드 실패',
+        message: `<p>${message?.replace(/\n/g, '<br/>')}</p>`,
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+      return;
+    }
 
     const uploaded = files.map((file) => ({
+      file,
       name: file.name,
       type: file.type,
-      preview: URL.createObjectURL(file),
-      uploaded_at: now.toISOString(),
     })) as PreviewFile[];
 
     addAttachments(uploaded);
@@ -88,6 +101,8 @@ export default function EstimateEvidence() {
 
   return (
     <div className="flex h-full flex-col rounded-sm border border-gray-300">
+      <input type="file" multiple ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept={FILE_ACCEPT_ALL} />
+
       {/* 업로드 영역 */}
       {attachments.length ? (
         <div className="overflow-y-auto p-3">
@@ -117,8 +132,6 @@ export default function EstimateEvidence() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={`hover:bg-primary-blue-50 flex flex-1 cursor-pointer items-center justify-center rounded-sm transition-colors ${isDragging ? 'bg-primary-blue-50' : 'bg-gray-50'} `}>
-          <input type="file" multiple ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept={FILE_ACCEPT_ALL} />
-
           <p className="text-sm text-gray-500">증빙자료 업로드 영역</p>
         </div>
       )}

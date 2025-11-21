@@ -21,7 +21,7 @@ export default function ProjectEstimate() {
 
   // 상단 필터용 state
   const [registerDialog, setRegisterDialog] = useState(false); // Dialog용 State
-  const [registerType, setRegisterType] = useState<'new' | 'sub' | null>(null); // Dialog Type용 State
+  const [registerType, setRegisterType] = useState<'Y' | 'S' | null>(null); // Dialog Type용 State
 
   // API 데이터 state
   const [estimateList, setEstimateList] = useState<EstimateListItem[]>([]);
@@ -158,7 +158,7 @@ export default function ProjectEstimate() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>신규 견적서 등록</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="leading-[1.3]">
               견적서 비용 혹은 견적서 외 비용을 등록할 수 있습니다.
               <br />
               등록된 견적서가 있는데 신규 견적서를 등록하는 경우 매칭된 비용이 리셋됩니다.
@@ -166,10 +166,10 @@ export default function ProjectEstimate() {
           </DialogHeader>
           <div className="space-y-3 py-4">
             <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" onClick={() => setRegisterType('new')}>
+              <Button variant="outline" onClick={() => setRegisterType('Y')}>
                 신규 견적서 등록
               </Button>
-              <Button variant="outline" onClick={() => setRegisterType('sub')}>
+              <Button variant="outline" onClick={() => setRegisterType('S')}>
                 추가 견적서 등록
               </Button>
             </div>
