@@ -1,13 +1,28 @@
 import { useState, useEffect } from 'react';
-import { dashboardApi, type Vacation, type Calendar, type Meetingroom, type Notification } from '@/api/dashboard';
+import { dashboardApi, type Vacation, type Calendar, type Meetingroom, type Notification, type Wlog, type Notice } from '@/api/dashboard';
 
 export function useDashboard() {
+  const [wlog, setWlog] = useState<Wlog>({
+    wlogWeek: [],
+    wlogToday: []
+  });
   const [vacation, setVacation] = useState<Vacation | null>(null);
   const [notification, setNotification] = useState<Notification[]>([]);
   const [calendar, setCalendar] = useState<Calendar[]>([]);
   const [meetingroom, setMeetingroom] = useState<Meetingroom[]>([]);
-
+  const [notice, setNotice] = useState<Notice[]>([]);
   useEffect(() => {
+
+    const fetchWlog = async () => {
+        try {
+            const data = await dashboardApi.getWlog();
+            console.log('근무시간 정보:', data);
+            setWlog(data);
+        } catch (error) {
+            console.error('근무시간 정보 조회 실패:', error);
+        }
+    };
+    
     const fetchVacation = async () => {
       try {
         const currentYear = new Date().getFullYear();
@@ -18,6 +33,15 @@ export function useDashboard() {
       }
     };
 
+    const fetchNotice = async () => {
+        try {
+            const data = await dashboardApi.getNotice(4);
+            setNotice(data);
+            console.log('공지사항 정보:', data);
+        } catch (error) {
+            console.error('공지사항 정보 조회 실패:', error);
+        }
+    };
     const fetchCalendar = async () => {
         try {
             const data = await dashboardApi.getCalendar();
@@ -45,12 +69,14 @@ export function useDashboard() {
         }
     };
 
+    fetchWlog();
     fetchVacation();
     fetchNotification();
     fetchCalendar();
     fetchMeetingroom();
+    fetchNotice();
   }, []);
 
-  return { vacation, notification, calendar, meetingroom };
+  return { wlog, vacation, notification, calendar, meetingroom, notice };
 }
 
