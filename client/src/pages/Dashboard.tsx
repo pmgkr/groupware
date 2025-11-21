@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { useDashboard } from '@/hooks/useDashboard';
@@ -18,40 +18,30 @@ import EventViewDialog from '@/components/calendar/EventViewDialog';
 import type { Calendar, Meetingroom, Wlog, Vacation, Notice } from '@/api/dashboard';
 
 import { getBadgeColor } from '@/utils/calendarHelper';
-import { formatTime, formatMinutes, formatKST, timeToMinutes } from '@/utils/date';
+import { formatTime, formatMinutes, formatKST } from '@/utils/date';
 import dayjs from 'dayjs';
+import 'dayjs/locale/ko';
+
+dayjs.locale('ko');
 
 // 캘린더 배지 목록
 const calendarBadges = ['연차', '반차', '반반차', '공가', '외부 일정', '재택'];
-
-// 미팅룸 관련 함수
-const getMeetingroomKoreanName = (mrName: string): string => {
-  const nameMap: Record<string, string> = {
-    'Beijing Room': '베이징룸',
-    'Tokyo Room': '도쿄룸',
-    'Singapore Room': '싱가폴룸',
-    'Sydney Room': '시드니룸',
-    'Manila Room': '마닐라룸',
-    'Bangkok Room': '방콕룸',
-  };
-  return nameMap[mrName] || mrName;
-};
-const getMeetingroomBadgeColor = (mrName: string): string => {
-  const colorMap: Record<string, string> = {
-    'Beijing Room': 'bg-[#FF6B6B]',
-    'Tokyo Room': 'bg-[#FFA46B]',
-    'Singapore Room': 'bg-[#2FC05D]',
-    'Sydney Room': 'bg-[#6BADFF]',
-    'Manila Room': 'bg-[#5E6BFF]',
-    'Bangkok Room': 'bg-[#DA6BFF]',
-  };
-  return colorMap[mrName] || 'bg-gray-500';
-};
 
 
 export default function Dashboard() {
   // Daypicker 선택된 날짜 관리 (Default : Today)
   const [selected, setSelected] = useState<Date | undefined>(new Date());
+  
+  // 현재 시간을 실시간으로 업데이트 (초 단위)
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000); // 1초마다 업데이트
+    
+    return () => clearInterval(timer);
+  }, []);
   
   // 선택된 날짜에 따라 캘린더 데이터만 가져오기
   const { 
@@ -63,7 +53,9 @@ export default function Dashboard() {
     isEventDialogOpen,
     selectedEventData,
     handleCalendarClick,
-    handleCloseDialog
+    handleCloseDialog,
+    getMeetingroomKoreanName,
+    getMeetingroomBadgeColor
   } = useDashboard(selected);
 
   // 사용자 정보 가져오기 (Hook은 최상위 레벨에서 호출)
@@ -85,7 +77,7 @@ export default function Dashboard() {
           <div className="row-span-2 flex flex-col justify-start rounded-md border border-gray-300 bg-white p-6">
             <SectionHeader
               title="근무 시간" 
-              description={`${formatKST(new Date(), true)} ${dayjs(new Date()).format('dddd')}`} 
+              description={dayjs(currentTime).format('YYYY년 MM월 DD일 (ddd) HH:mm:ss')} 
               buttonText="전체보기" 
               buttonVariant="outline" 
               buttonSize="sm" 
@@ -251,21 +243,7 @@ export default function Dashboard() {
             />
               <div className="overflow-y-auto">
                 <ul className="flex flex-col gap-y-2 text-base tracking-tight text-gray-700">
-                 {[...meetingroom]
-                   .sort((a, b) => {
-                     const startA = timeToMinutes(a.stime);
-                     const startB = timeToMinutes(b.stime);
-                     
-                     if (startA !== startB) {
-                       return startA - startB;
-                     }
-                     
-                     // 같은 stime일 경우 etime으로 정렬
-                     const endA = timeToMinutes(a.etime);
-                     const endB = timeToMinutes(b.etime);
-                     return endA - endB;
-                   })
-                   .map((meetingroom) => (
+                 {meetingroom.map((meetingroom) => (
                    <li key={`${meetingroom.mr_name}-${meetingroom.stime}-${meetingroom.etime}`} className="flex items-center gap-x-1.5">
                      <Badge className={getMeetingroomBadgeColor(meetingroom.mr_name)}>
                        {getMeetingroomKoreanName(meetingroom.mr_name)}

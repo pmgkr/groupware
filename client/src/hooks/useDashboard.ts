@@ -1,7 +1,32 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { dashboardApi, type Vacation, type Calendar, type Meetingroom, type Notification, type Wlog, type Notice } from '@/api/dashboard';
-import { formatKST } from '@/utils/date';
+import { formatKST, timeToMinutes } from '@/utils/date';
 import dayjs from 'dayjs';
+
+// 미팅룸 관련 함수
+const getMeetingroomKoreanName = (mrName: string): string => {
+  const nameMap: Record<string, string> = {
+    'Beijing Room': '베이징룸',
+    'Tokyo Room': '도쿄룸',
+    'Singapore Room': '싱가폴룸',
+    'Sydney Room': '시드니룸',
+    'Manila Room': '마닐라룸',
+    'Bangkok Room': '방콕룸',
+  };
+  return nameMap[mrName] || mrName;
+};
+
+const getMeetingroomBadgeColor = (mrName: string): string => {
+  const colorMap: Record<string, string> = {
+    'Beijing Room': 'bg-[#FF6B6B]',
+    'Tokyo Room': 'bg-[#FFA46B]',
+    'Singapore Room': 'bg-[#2FC05D]',
+    'Sydney Room': 'bg-[#6BADFF]',
+    'Manila Room': 'bg-[#5E6BFF]',
+    'Bangkok Room': 'bg-[#DA6BFF]',
+  };
+  return colorMap[mrName] || 'bg-gray-500';
+};
 
 export function useDashboard(selectedDate?: Date) {
   const [wlog, setWlog] = useState<Wlog>({
@@ -154,19 +179,39 @@ export function useDashboard(selectedDate?: Date) {
     return selectedCalendar ? convertCalendarToEventData(selectedCalendar) : undefined;
   }, [selectedCalendar, convertCalendarToEventData]);
 
+  // 정렬된 미팅룸 데이터 (useMemo로 메모이제이션)
+  const sortedMeetingroom = useMemo(() => {
+    return [...meetingroom].sort((a, b) => {
+      const startA = timeToMinutes(a.stime);
+      const startB = timeToMinutes(b.stime);
+      
+      if (startA !== startB) {
+        return startA - startB;
+      }
+      
+      // 같은 stime일 경우 etime으로 정렬
+      const endA = timeToMinutes(a.etime);
+      const endB = timeToMinutes(b.etime);
+      return endA - endB;
+    });
+  }, [meetingroom]);
+
   return { 
     wlog, 
     vacation, 
     notification, 
     calendar: sortedCalendar, // 정렬된 캘린더 반환
-    meetingroom, 
+    meetingroom: sortedMeetingroom, // 정렬된 미팅룸 반환
     notice,
     // EventViewDialog 관련
     isEventDialogOpen,
     selectedCalendar,
     selectedEventData, // 메모이제이션된 이벤트 데이터
     handleCalendarClick,
-    handleCloseDialog
+    handleCloseDialog,
+    // 미팅룸 관련 함수
+    getMeetingroomKoreanName,
+    getMeetingroomBadgeColor
   };
 }
 
