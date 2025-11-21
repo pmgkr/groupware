@@ -113,17 +113,15 @@ export default function ReactQuillEditor({ value, onChange }: ReactQuillEditorPr
   ];
 
   return (
-    <div style={{ height: '58vh' }}>
-      <ReactQuill
-        ref={quillRef}
-        theme="snow"
-        value={value}
-        onChange={onChange}
-        modules={modules}
-        formats={formats}
-        style={{ height: '460px' }}
-        placeholder="여기에 입력하세요..."
-      />
-    </div>
+    <ReactQuill
+      ref={quillRef}
+      theme="snow"
+      value={value}
+      onChange={onChange}
+      modules={modules}
+      formats={formats}
+      style={{ height: '460px' }}
+      placeholder="여기에 입력하세요..."
+    />
   );
 }

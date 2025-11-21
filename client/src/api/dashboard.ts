@@ -3,8 +3,14 @@ import { http } from '@/lib/http';
 
 // 근무시간
 export interface Wlog {
-    user_id?: string;
-    total_minutes: number;
+    wlogWeek: {
+       user_id: string,
+       total_minutes:number // 총 근무시간 
+    }[];
+    wlogToday: {
+        stime: string | null,
+        etime: string | null
+    }[];
 }
 
 // 휴가정보
@@ -18,10 +24,25 @@ export interface Vacation {
     lefts: number;
 }
 
-// 알림
+// 알림, 사용X
 export interface Notification {
     noti_id: number;
     message: string;
+}
+
+// 공지사항
+export interface Notice {
+    n_seq: number;
+    category: string;
+    title: string;
+    content: string;
+    user_name: string;
+    user_id: string;
+    v_count: number;
+    reg_date: string;
+    pinned?: string;
+    like_count: number;
+    board_id: number;
 }
 
 // 캘린더
@@ -29,6 +50,11 @@ export interface Calendar {
     sch_label: string;
     user_name: string;
     profile_image: string | null;
+    sch_sdate?: string; // 시작일 (YYYY-MM-DD)
+    sch_edate?: string; // 종료일 (YYYY-MM-DD)
+    sch_stime?: string; // 시작시간 (HH:mm:ss)
+    sch_etime?: string; // 종료시간 (HH:mm:ss)
+    sch_isAllday?: 'Y' | 'N'; // 종일 여부
 }
 
 // 회의실
@@ -36,6 +62,7 @@ export interface Meetingroom {
     mr_name: string;
     stime: string;
     etime: string;
+    ml_title?: string;
 }
 
 // 일반비용
@@ -54,8 +81,8 @@ export interface Nonexpense {
 export const dashboardApi = {
 
     // 근무시간
-    getWlog: async (): Promise<Wlog[]> => {
-        const response = await http<Wlog[]>('/dashboard/wlog', {
+    getWlog: async (): Promise<Wlog> => {
+        const response = await http<Wlog>('/dashboard/wlog', {
             method: 'POST',
         });
         return response;
@@ -74,6 +101,15 @@ export const dashboardApi = {
         const response = await http<Notification[]>('/dashboard/notification', {
             method: 'POST',
         });
+        return response;
+    },
+
+    // 공지사항
+    getNotice: async (size?: number): Promise<Notice[]> => {
+        const url = size ? `/dashboard/notice?size=${size}` : '/dashboard/notice';
+        const response = await http<Notice[]>(url, {
+            method: 'GET',
+        });    
         return response;
     },
 
