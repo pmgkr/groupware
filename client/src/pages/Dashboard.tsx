@@ -21,7 +21,7 @@ import { formatTime, formatMinutes, formatKST, timeToMinutes } from '@/utils/dat
 import dayjs from 'dayjs';
 
 // 캘린더 배지 목록
-const calendarBadges = ['연차', '반차', '반반차', '공가', '외부일정', '기타'];
+const calendarBadges = ['연차', '반차', '반반차', '공가', '외부 일정', '재택'];
 
 // 미팅룸 관련 함수
 const getMeetingroomKoreanName = (mrName: string): string => {
@@ -55,8 +55,11 @@ export default function Dashboard() {
   // 선택된 날짜에 따라 캘린더 데이터만 가져오기
   const { wlog, vacation, notice, calendar: calendarData, meetingroom } = useDashboard(selected);
 
+  // 사용자 정보 가져오기 (Hook은 최상위 레벨에서 호출)
+  const { user_name, birth_date } = useUser();
+
   // getWelcomeMessage를 메모이제이션하여 리렌더링 시에도 같은 메시지 유지
-  const welcomeMessage = useMemo(() => getWelcomeMessage(), []);
+  const welcomeMessage = useMemo(() => getWelcomeMessage(user_name, birth_date), [user_name, birth_date]);
 
   return (
     <>
@@ -195,7 +198,17 @@ export default function Dashboard() {
             <div className="overflow-y-auto rounded-xl p-4">
               <ul className="grid grid-cols-3 gap-2 gap-y-4">
 
-                {calendarData.map((calendar, index) => (
+                {[...calendarData]
+                  .sort((a, b) => {
+                    const indexA = calendarBadges.indexOf(a.sch_label);
+                    const indexB = calendarBadges.indexOf(b.sch_label);
+                    // calendarBadges에 없는 경우 맨 뒤로 정렬
+                    if (indexA === -1 && indexB === -1) return 0;
+                    if (indexA === -1) return 1;
+                    if (indexB === -1) return -1;
+                    return indexA - indexB;
+                  })
+                  .map((calendar, index) => (
                   <li key={`${calendar.user_name}-${calendar.sch_label}-${index}`} className="flex items-center gap-x-2">
                     <Avatar>
                       <AvatarImage 

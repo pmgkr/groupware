@@ -123,7 +123,7 @@ export const convertScheduleToEvent = (schedule: Schedule, currentUser?: any): C
       switch (schedule.sch_event_type) {
         case 'remote': return '재택';
         case 'field': return '외부 일정';
-        case 'etc': return '기타 일정';
+        case 'etc': return '기타';
         default: return '일정';
       }
     }
@@ -361,7 +361,7 @@ export const getBadgeColor = (schLabel: string): string => {
   if (label.includes('공가')) {
     return 'before:bg-[color:var(--color-red-600)]';
   }
-  if (label.includes('외부일정')) {
+  if (label.includes('외부 일정')) {
     return 'before:bg-[color:var(--color-primary-orange-500)]';
   }
   // 기타 (기본값)

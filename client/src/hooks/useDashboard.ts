@@ -18,7 +18,6 @@ export function useDashboard(selectedDate?: Date) {
     const fetchWlog = async () => {
         try {
             const data = await dashboardApi.getWlog();
-            console.log('근무시간 정보:', data);
             setWlog(data);
         } catch (error) {
             console.error('근무시간 정보 조회 실패:', error);
@@ -39,7 +38,6 @@ export function useDashboard(selectedDate?: Date) {
         try {
             const data = await dashboardApi.getNotice(4);
             setNotice(data);
-            console.log('공지사항 정보:', data);
         } catch (error) {
             console.error('공지사항 정보 조회 실패:', error);
         }
