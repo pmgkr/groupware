@@ -11,6 +11,10 @@ import { Navigate, useNavigate } from 'react-router';
 import { BoardAttachFile } from '@/components/board/BoardAttachFile';
 import { formatAmount } from '@/utils';
 import { registerReport } from '@/api/expense/proposal';
+import { uploadFilesToServer } from '@/api';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
+import { Check } from 'lucide-react';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 
 // Zod 스키마 정의 (유효성 검사 규칙)
 const formSchema = z.object({
@@ -30,6 +34,10 @@ export default function ProposalRegister() {
   const [deletedFileIds, setDeletedFileIds] = useState<number[]>([]);
   const [formattedPrice, setFormattedPrice] = useState('');
 
+  //다이얼로그
+  const { addDialog } = useAppDialog();
+  const { addAlert } = useAppAlert();
+
   // React Hook Form 초기화
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -40,9 +48,24 @@ export default function ProposalRegister() {
       price: '',
     },
   });
-  // 폼 제출 핸들러
-  const onSubmit = async (data: FormValues) => {
+
+  // 제출(다이얼로그)
+  const onSubmit = (data: FormValues) => {
+    addDialog({
+      title: `<span class="font-semibold">기안서 등록</span>`,
+      message: '이 기안서를 제출하시겠습니까?',
+      confirmText: '확인',
+      cancelText: '취소',
+      onConfirm: () => handleFinalSubmit(data), // ⭐ 중요
+    });
+  };
+
+  //제출 (form)
+  const handleFinalSubmit = async (data: FormValues) => {
     try {
+      const newFiles = files.filter((f) => f instanceof File) as File[];
+      const uploaded = await uploadFilesToServer(newFiles, 'report');
+
       const payload = {
         rp_category: data.category,
         rp_title: data.title,
@@ -50,22 +73,26 @@ export default function ProposalRegister() {
         rp_content: data.content,
         rp_cost: Number(data.price),
         rp_project_type: 'non_project',
-        rp_expense_no: '',
+        rp_expense_no: null,
         references: [],
-
-        // 🔥 파일명만 전달해야 함 (File 객체 X)
-        files: files.map((file) => ({
-          rf_name: file.name,
-          rf_type: file.type?.split('/')[1] ?? '',
+        files: uploaded.map((f) => ({
+          rf_name: f.fname,
+          rf_type: f.ext,
         })),
       };
 
-      console.log('📌 최종 전송 payload:', payload);
+      await registerReport(payload);
 
-      await registerReport(payload); // JSON 방식으로 수정할 것
+      addAlert({
+        title: '기안서 제출 완료',
+        message: `${data.title}이 성공적으로 제출되었습니다.`,
+        icon: <Check />,
+        duration: 2000,
+      });
+
       navigate('..');
     } catch (err) {
-      console.error('❌ 등록 실패:', err);
+      console.error('등록 실패:', err);
     }
   };
 
@@ -97,15 +124,28 @@ export default function ProposalRegister() {
                   </FormItem>
                 )}
               />
-
-              {/* 제목 Input */}
+              {/* 금액 Input */}
               <FormField
                 control={form.control}
-                name="title"
+                name="price"
                 render={({ field }) => (
-                  <FormItem className="w-full">
+                  <FormItem>
                     <FormControl>
-                      <Input placeholder="제목을 입력하세요" {...field} />
+                      <Input
+                        className="w-[300px]"
+                        placeholder="금액을 입력하세요"
+                        inputMode="numeric"
+                        value={formattedPrice}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/,/g, '');
+                          // 숫자 외 입력 방지
+                          if (!/^\d*$/.test(raw)) return;
+                          // RHF 실제 값 업데이트
+                          field.onChange(raw);
+                          // 화면 표시용 formatting
+                          setFormattedPrice(raw ? formatAmount(raw) : '');
+                        }}
+                      />
                     </FormControl>
 
                     <FormMessage />
@@ -113,33 +153,22 @@ export default function ProposalRegister() {
                 )}
               />
             </div>
-            {/* 금액 Input */}
+
+            {/* 제목 Input */}
             <FormField
               control={form.control}
-              name="price"
+              name="title"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full">
                   <FormControl>
-                    <Input
-                      placeholder="금액을 입력하세요"
-                      inputMode="numeric"
-                      value={formattedPrice}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/,/g, '');
-                        // 숫자 외 입력 방지
-                        if (!/^\d*$/.test(raw)) return;
-                        // RHF 실제 값 업데이트
-                        field.onChange(raw);
-                        // 화면 표시용 formatting
-                        setFormattedPrice(raw ? formatAmount(raw) : '');
-                      }}
-                    />
+                    <Input placeholder="제목을 입력하세요" {...field} />
                   </FormControl>
 
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="content"

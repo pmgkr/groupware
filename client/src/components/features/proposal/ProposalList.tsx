@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { formatAmount, formatKST } from '@/utils';
 import { generateReportNumber, getReportList, type ReportCard } from '@/api/expense/proposal';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const tabs = [
   { key: 'draft', label: '기안 문서' },
@@ -20,6 +21,7 @@ export default function ProposalList() {
   const [reports, setReports] = useState<ReportCard[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     (async () => {
@@ -33,19 +35,20 @@ export default function ProposalList() {
   }, []);
 
   //filtering
-  const filteredReports = reports
-    .filter((r) => {
-      if (activeTab === 'draft') return true;
-      if (activeTab === 'receive') return r.state === '대기';
-      if (activeTab === 'complete') {
-        return r.state === '완료' || r.state === '반려';
-      }
-      if (activeTab === 'reference') return r.state === '진행';
-      return true;
-    })
-    .sort((a, b) => b.id - a.id);
+  const tabFiltered = reports.filter((r) => {
+    if (activeTab === 'draft') return true;
+    if (activeTab === 'complete') return r.state === '완료' || r.state === '반려';
+    return true;
+  });
 
-  // 페이지네이션 계산
+  // 카테고리 필터링
+  const categoryFiltered =
+    !selectedCategory || selectedCategory === '전체' ? tabFiltered : tabFiltered.filter((r) => r.category === selectedCategory);
+
+  // 정렬
+  const filteredReports = categoryFiltered.sort((a, b) => b.id - a.id);
+
+  // 페이지네이션
   const totalPages = Math.ceil(filteredReports.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
@@ -55,24 +58,48 @@ export default function ProposalList() {
     setCurrentPage(page);
   };
 
+  const categories = [
+    { value: '전체', label: '전체' },
+    { value: '교육비', label: '교육비' },
+    { value: '구매요청', label: '구매요청' },
+    { value: '일반비용', label: '일반비용' },
+    { value: '프로젝트', label: '프로젝트' },
+  ];
+
   return (
     <>
       <div>
         <div className="mb-4 flex items-end justify-between gap-3">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
-              {tabs.map((tab) => (
-                <Button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`h-8 w-18 rounded-sm p-0 text-sm ${
-                    activeTab === tab.key
-                      ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                      : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-                  } `}>
-                  {tab.label}
-                </Button>
-              ))}
+            <div className="flex items-center">
+              <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
+                {tabs.map((tab) => (
+                  <Button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`h-8 w-18 rounded-sm p-0 text-sm ${
+                      activeTab === tab.key
+                        ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                        : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+                    } `}>
+                    {tab.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex items-center gap-x-2 before:mr-3 before:ml-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger size="sm" className="w-[100px]">
+                    <SelectValue placeholder="구분 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <Button size="sm" onClick={() => navigate('register')}>
@@ -80,16 +107,15 @@ export default function ProposalList() {
           </Button>
         </div>
 
-        {/* 게시판 테이블 */}
         <Table variant="primary" align="center" className="table-fixed">
           <TableHeader>
             <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-              <TableHead className="w-[120px]">번호</TableHead>
-              <TableHead className="w-[150px]">구분</TableHead>
-              <TableHead className="w-[500px]">제목</TableHead>
-              <TableHead>금액</TableHead>
-              <TableHead>일자</TableHead>
-              <TableHead>상태</TableHead>
+              <TableHead className="w-[10%]">번호</TableHead>
+              <TableHead className="w-[10%]">구분</TableHead>
+              <TableHead className="w-[40%]">제목</TableHead>
+              <TableHead className="w-[10%]">금액</TableHead>
+              <TableHead className="w-[12%]">일자</TableHead>
+              <TableHead className="w-[10%]">상태</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -103,27 +129,23 @@ export default function ProposalList() {
                   <TableCell>{generateReportNumber(report.category, report.id)}</TableCell>
                   <TableCell>{report.category}</TableCell>
                   <TableCell className="text-left">{report.title}</TableCell>
-                  <TableCell>{formatAmount(report.price)}</TableCell>
-                  <TableCell>{formatKST(report.date)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(report.price)}원</TableCell>
+                  <TableCell>{formatKST(report.date, true)}</TableCell>
                   <TableCell>
                     {
                       {
-                        대기: <Badge className="w-[45px]">대기</Badge>,
+                        대기: (
+                          <Badge variant="secondary" className="w-[45px]">
+                            대기
+                          </Badge>
+                        ),
                         진행: (
                           <Badge variant="outline" className="w-[45px]">
                             진행
                           </Badge>
                         ),
-                        완료: (
-                          <Badge variant="secondary" className="w-[45px]">
-                            완료
-                          </Badge>
-                        ),
-                        반려: (
-                          <Badge variant="pink" className="w-[45px]">
-                            반려
-                          </Badge>
-                        ),
+                        완료: <Badge className="w-[45px]">완료</Badge>,
+                        반려: <Badge className="w-[45px] bg-[#FF2200]">반려</Badge>,
                       }[report.state]
                     }
                   </TableCell>
