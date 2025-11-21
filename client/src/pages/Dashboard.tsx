@@ -13,6 +13,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@components/ui/avatar';
 import getWelcomeMessage from '@components/features/Dashboard/welcome';
 import WorkHoursBar from '@/components/ui/WorkHoursBar';
 import { Icons } from '@components/icons';
+import EventViewDialog from '@/components/calendar/EventViewDialog';  
 
 import type { Calendar, Meetingroom, Wlog, Vacation, Notice } from '@/api/dashboard';
 
@@ -53,10 +54,20 @@ export default function Dashboard() {
   const [selected, setSelected] = useState<Date | undefined>(new Date());
   
   // 선택된 날짜에 따라 캘린더 데이터만 가져오기
-  const { wlog, vacation, notice, calendar: calendarData, meetingroom } = useDashboard(selected);
+  const { 
+    wlog, 
+    vacation, 
+    notice, 
+    calendar: calendarData, 
+    meetingroom,
+    isEventDialogOpen,
+    selectedEventData,
+    handleCalendarClick,
+    handleCloseDialog
+  } = useDashboard(selected);
 
   // 사용자 정보 가져오기 (Hook은 최상위 레벨에서 호출)
-  const { user_name, birth_date } = useUser();
+  const { user_name, birth_date, user_id } = useUser();
 
   // getWelcomeMessage를 메모이제이션하여 리렌더링 시에도 같은 메시지 유지
   const welcomeMessage = useMemo(() => getWelcomeMessage(user_name, birth_date), [user_name, birth_date]);
@@ -197,24 +208,17 @@ export default function Dashboard() {
             </ul>
             <div className="overflow-y-auto rounded-xl p-4">
               <ul className="grid grid-cols-3 gap-2 gap-y-4">
-
-                {[...calendarData]
-                  .sort((a, b) => {
-                    const indexA = calendarBadges.indexOf(a.sch_label);
-                    const indexB = calendarBadges.indexOf(b.sch_label);
-                    // calendarBadges에 없는 경우 맨 뒤로 정렬
-                    if (indexA === -1 && indexB === -1) return 0;
-                    if (indexA === -1) return 1;
-                    if (indexB === -1) return -1;
-                    return indexA - indexB;
-                  })
-                  .map((calendar, index) => (
-                  <li key={`${calendar.user_name}-${calendar.sch_label}-${index}`} className="flex items-center gap-x-2">
+                {calendarData.map((calendar, index) => (
+                  <li 
+                    key={`${calendar.user_name}-${calendar.sch_label}-${index}`} 
+                    className="flex items-center gap-x-2 cursor-pointer hover:bg-gray-50 rounded-md p-1 transition-colors"
+                    onClick={() => handleCalendarClick(calendar)}
+                  >
                     <Avatar>
                       <AvatarImage 
                         src={
                           calendar.profile_image
-                            ? `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${calendar.profile_image}?t=${Date.now()}`
+                            ? `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${calendar.profile_image}`
                             : getImageUrl('dummy/profile')
                         } 
                         alt={calendar.user_name} 
@@ -267,7 +271,7 @@ export default function Dashboard() {
                        {getMeetingroomKoreanName(meetingroom.mr_name)}
                      </Badge>
                      <p className="overflow-hidden text-ellipsis whitespace-nowrap">
-                        {formatTime(meetingroom.stime)} - {formatTime(meetingroom.etime)}{`${meetingroom.ml_title}`}
+                        {formatTime(meetingroom.stime)} - {formatTime(meetingroom.etime)} {`${meetingroom.ml_title}`}
                       </p>
                    </li>
                  ))}
@@ -308,6 +312,13 @@ export default function Dashboard() {
           </div>
         </div>
       </section>
+      
+      {/* EventViewDialog */}
+      <EventViewDialog
+        isOpen={isEventDialogOpen}
+        onClose={handleCloseDialog}
+        selectedEvent={selectedEventData}
+      />
     </>
   );
 }
