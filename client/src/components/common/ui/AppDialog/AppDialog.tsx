@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 type DialogData = {
   title: string;
   message?: string;
+  content?: string | TrustedHTML;
   confirmText?: string;
   cancelText?: string;
   onConfirm?: () => void;
@@ -57,11 +58,14 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
       {children}
 
       <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogContent className="sm:max-w-sm">
-          <AlertDialogHeader>
+        <AlertDialogContent className="flex flex-col sm:max-w-sm">
+          <AlertDialogHeader className="gap-1">
             {dialog?.title && <AlertDialogTitle dangerouslySetInnerHTML={{ __html: dialog.title }}></AlertDialogTitle>}
-            {dialog?.message && <AlertDialogDescription className="text-gray-700" dangerouslySetInnerHTML={{ __html: dialog.message }} />}
+            {dialog?.message && (
+              <AlertDialogDescription className="leading-[1.2] text-gray-700" dangerouslySetInnerHTML={{ __html: dialog.message }} />
+            )}
           </AlertDialogHeader>
+          {dialog?.content && <div className="w-full max-w-full" dangerouslySetInnerHTML={{ __html: dialog.content }}></div>}
           {(dialog?.confirmText || dialog?.cancelText) && (
             <AlertDialogFooter>
               {dialog?.confirmText && (

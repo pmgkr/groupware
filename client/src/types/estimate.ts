@@ -4,6 +4,7 @@ export type QuotationItemBase = {
   unit_price: number | string; // % 가능
   qty: number;
   amount: number;
+  cost?: number;
   remarks: string;
   depth: number;
 };
