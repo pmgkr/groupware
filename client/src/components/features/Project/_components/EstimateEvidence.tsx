@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { FILE_ACCEPT_ALL } from '@/constants/fileAccept';
 import { validateFiles } from '@/utils/fileValidator';
 
@@ -22,12 +22,15 @@ export default function EstimateEvidence({ onChangeFiles }: { onChangeFiles?: (f
   const [attachments, setAttachments] = useState<PreviewFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // 🔥 attachments 변경될 때만 부모에게 알려주기
+  useEffect(() => {
+    if (onChangeFiles) {
+      onChangeFiles(attachments);
+    }
+  }, [attachments, onChangeFiles]);
+
   const addAttachments = (files: PreviewFile[]) => {
-    setAttachments((prev) => {
-      const updated = [...prev, ...files];
-      onChangeFiles?.(updated); // 🔥 부모에게 전달
-      return updated;
-    });
+    setAttachments((prev) => [...prev, ...files]); // 🔥 부모 호출 제거
   };
 
   /** 📌 파일 업로드 */
@@ -100,41 +103,50 @@ export default function EstimateEvidence({ onChangeFiles }: { onChangeFiles?: (f
   };
 
   return (
-    <div className="flex h-full flex-col rounded-sm border border-gray-300">
+    <>
       <input type="file" multiple ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept={FILE_ACCEPT_ALL} />
-
-      {/* 업로드 영역 */}
-      {attachments.length ? (
-        <div className="overflow-y-auto p-3">
-          {attachments.map((file, idx) => (
-            <div key="{idx}" className="flex w-full items-center justify-between gap-2">
-              <span className="flex-1 truncate overflow-hidden text-sm font-medium text-ellipsis whitespace-nowrap text-gray-800">
-                {file.name}
-              </span>
-              <Button
-                type="button"
-                variant="svgIcon"
-                size="icon"
-                className="size-6 shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemove(file.name);
-                }}>
-                <Close className="size-3" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div
-          onClick={handleClickArea}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          className={`hover:bg-primary-blue-50 flex flex-1 cursor-pointer items-center justify-center rounded-sm transition-colors ${isDragging ? 'bg-primary-blue-50' : 'bg-gray-50'} `}>
-          <p className="text-sm text-gray-500">증빙자료 업로드 영역</p>
-        </div>
-      )}
-    </div>
+      <div className="flex items-center justify-between">
+        <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 증빙</h2>
+        {attachments.length > 0 && (
+          <Button type="button" onClick={handleClickArea} variant="transparent" size="sm" className="text-primary p-0">
+            파일 추가
+          </Button>
+        )}
+      </div>
+      <div className="flex h-full flex-col rounded-sm border border-gray-300">
+        {/* 업로드 영역 */}
+        {attachments.length ? (
+          <div className="overflow-y-auto p-3">
+            {attachments.map((file, idx) => (
+              <div key={idx} className="flex w-full items-center justify-between gap-2">
+                <span className="flex-1 truncate overflow-hidden text-sm font-medium text-ellipsis whitespace-nowrap text-gray-800">
+                  {file.name}
+                </span>
+                <Button
+                  type="button"
+                  variant="svgIcon"
+                  size="icon"
+                  className="size-6 shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemove(file.name);
+                  }}>
+                  <Close className="size-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            onClick={handleClickArea}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`hover:bg-primary-blue-50 flex flex-1 cursor-pointer items-center justify-center rounded-sm transition-colors ${isDragging ? 'bg-primary-blue-50' : 'bg-gray-50'} `}>
+            <p className="text-sm text-gray-500">증빙자료 업로드 영역</p>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

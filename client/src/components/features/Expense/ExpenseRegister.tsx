@@ -270,7 +270,7 @@ export default function ExpenseRegister() {
 
       addDialog({
         title: '작성한 비용 항목을 등록합니다.',
-        message: `<span class="text-primary-blue-500 font-semibold">${items.length}</span>건의 비용을 등록록하시겠습니까?`,
+        message: `<span class="text-primary-blue-500 font-semibold">${items.length}</span>건의 비용을 등록하시겠습니까?`,
         confirmText: '확인',
         cancelText: '취소',
         onConfirm: async () => {
