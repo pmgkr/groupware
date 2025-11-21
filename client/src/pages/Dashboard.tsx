@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { useDashboard } from '@/hooks/useDashboard';
@@ -49,17 +49,21 @@ const getMeetingroomBadgeColor = (mrName: string): string => {
 
 
 export default function Dashboard() {
-  const { wlog, vacation, notice, calendar: calendarData, meetingroom } = useDashboard();
-
   // Daypicker 선택된 날짜 관리 (Default : Today)
   const [selected, setSelected] = useState<Date | undefined>(new Date());
+  
+  // 선택된 날짜에 따라 캘린더 데이터만 가져오기
+  const { wlog, vacation, notice, calendar: calendarData, meetingroom } = useDashboard(selected);
+
+  // getWelcomeMessage를 메모이제이션하여 리렌더링 시에도 같은 메시지 유지
+  const welcomeMessage = useMemo(() => getWelcomeMessage(), []);
 
   return (
     <>
       <Header />
       <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8">
         <div className="flex items-center justify-between text-base text-gray-800">
-          <p>{getWelcomeMessage()}</p>
+          <p>{welcomeMessage}</p>
           <div className="flex">서울 날씨 ☀️ 25°C, 맑음</div>
         </div>
         <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6">
