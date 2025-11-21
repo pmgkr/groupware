@@ -8,6 +8,9 @@ interface SectionHeaderProps {
   /** 좌측 타이틀 */
   title: string;
 
+  /** 설명 텍스트 */
+  description?: string;
+
   /** 버튼 라벨 (없으면 버튼 미출력) */
   buttonText?: string;
 
@@ -30,6 +33,7 @@ interface SectionHeaderProps {
 
 export function SectionHeader({
   title,
+  description,
   buttonText,
   buttonIcon,
   onButtonClick,
@@ -40,8 +44,10 @@ export function SectionHeader({
 }: SectionHeaderProps) {
   return (
     <div className={cn('mb-6 flex items-center justify-between border-b border-b-gray-300 pb-1.5', className)}>
-      <h2 className="text-xl font-bold text-gray-950">{title}</h2>
-
+      <div className="flex flex-col">
+        <h2 className="text-xl font-bold text-gray-950">{title}</h2>
+        {description && <p className="text-sm text-gray-700">{description}</p>}
+      </div>
       {buttonText ? (
         buttonHref ? (
           // 간단 사용: href만 넘기면 내부에서 Link를 생성

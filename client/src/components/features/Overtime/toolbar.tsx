@@ -3,7 +3,7 @@ import { Button } from "@components/ui/button";
 import { MultiSelect } from "@components/multiselect/multi-select";
 import { useAuth } from '@/contexts/AuthContext';
 import { getTeams } from '@/api/teams';
-import { type MyTeamItem } from '@/api/working';
+import { workingApi, type MyTeamItem } from '@/api/working';
 import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // 셀렉트 옵션 타입 정의
@@ -59,15 +59,11 @@ export default function OvertimeToolbar({
         return;
       }
       
-      // 전체 팀 목록 조회
-      const allTeamDetails = await getTeams({});
-      
-      let teamItems: MyTeamItem[] = [];
-      
       // admin 권한 체크
       if (user.user_level === 'admin') {
-        // 모든 팀 표시
-        teamItems = allTeamDetails.map(team => ({
+        // admin인 경우: 모든 팀 표시
+        const allTeamDetails = await getTeams({});
+        const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
           seq: 0,
           manager_id: user.user_id,
           manager_name: user.user_name || '',
@@ -81,57 +77,9 @@ export default function OvertimeToolbar({
         return;
       }
       
-      // 일반 사용자 (manager)
-      if (!user?.team_id) {
-        return;
-      }
-      
-      // 사용자의 팀 정보 찾기
-      const myTeam = allTeamDetails.find(t => t.team_id === user.team_id);
-      if (!myTeam) {
-        return;
-      }
-      
-      if (myTeam.level === 0) {
-        // 국장인 경우: 본인의 국과 모든 하위 팀 표시
-        // 본인의 국 추가
-        teamItems.push({
-          seq: 0,
-          manager_id: user.user_id,
-          manager_name: user.user_name || '',
-          team_id: myTeam.team_id,
-          team_name: myTeam.team_name,
-          parent_id: myTeam.parent_id || undefined,
-          level: myTeam.level,
-        });
-        
-        // 하위 팀들 추가
-        const subTeams = allTeamDetails.filter(t => t.parent_id === myTeam.team_id);
-        subTeams.forEach(sub => {
-          teamItems.push({
-            seq: 0,
-            manager_id: user.user_id,
-            manager_name: user.user_name || '',
-            team_id: sub.team_id,
-            team_name: sub.team_name,
-            parent_id: sub.parent_id || undefined,
-            level: sub.level,
-          });
-        });
-      } else if (myTeam.level === 1) {
-        // 팀장인 경우: 본인의 팀만 표시
-        teamItems = [{
-          seq: 0,
-          manager_id: user.user_id,
-          manager_name: user.user_name || '',
-          team_id: myTeam.team_id,
-          team_name: myTeam.team_name,
-          parent_id: myTeam.parent_id || undefined,
-          level: myTeam.level,
-        }];
-      } else {
-        return;
-      }
+      // manager인 경우: /manager/myteam API로 사용자가 관리하는 모든 팀 조회
+      const myTeamResponse = await workingApi.getMyTeamList();
+      const teamItems: MyTeamItem[] = myTeamResponse.items || [];
       
       setTeams(teamItems);
       
@@ -202,6 +150,47 @@ export default function OvertimeToolbar({
     }));
   }, [teams]);
 
+  // 상태 옵션 (탭에 따라 다름)
+  const statusOptions = useMemo(() => {
+    if (activeTab === 'weekday') {
+      // 평일 추가근무: 승인대기, 승인완료, 반려됨
+      return [
+        { value: 'pending', label: '승인대기' },
+        { value: 'approved', label: '승인완료' },
+        { value: 'rejected', label: '반려됨' },
+      ];
+    } else {
+      // 휴일 근무: 승인대기, 보상요청, 보상완료, 반려됨
+      return [
+        { value: 'pending', label: '승인대기' },
+        { value: 'approved', label: '보상요청' },
+        { value: 'confirmed', label: '보상완료' },
+        { value: 'rejected', label: '반려됨' },
+      ];
+    }
+  }, [activeTab]);
+
+  // 탭 변경 시 상태 필터 기본값 설정
+  useEffect(() => {
+    if (activeTab === 'weekday') {
+      // 평일: 승인대기만 기본 선택
+      const newFilters = {
+        ...filters,
+        status: ['pending']
+      };
+      setFilters(newFilters);
+      onFilterChange(newFilters);
+    } else {
+      // 휴일: 승인대기, 보상요청 기본 선택
+      const newFilters = {
+        ...filters,
+        status: ['pending', 'approved']
+      };
+      setFilters(newFilters);
+      onFilterChange(newFilters);
+    }
+  }, [activeTab]);
+
   return (
     <div className="w-full flex items-center justify-between mb-5">
       <div className="flex items-center">
@@ -265,11 +254,7 @@ export default function OvertimeToolbar({
           {/* 상태 선택 */}
           <MultiSelect
             simpleSelect={true}
-            options={[
-              { value: 'pending', label: '승인대기' },
-              { value: 'approved', label: '승인완료' },
-              { value: 'rejected', label: '반려됨' },
-            ]}
+            options={statusOptions}
             onValueChange={(value) => handleSelectChange('status', value)}
             defaultValue={filters.status}
             placeholder="상태"

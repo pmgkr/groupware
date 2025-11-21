@@ -39,6 +39,8 @@ import {
 	Clock,
 	ChevronUp,
 	ChevronDown,
+	ChevronRight,
+	ArrowRight,
 } from "lucide-react";
 import type { LucideProps } from "lucide-react";
 
@@ -83,6 +85,22 @@ export const Icons = {
 	clock: Clock,
 	chevronUp: ChevronUp,
 	chevronDown: ChevronDown,
+	chevronRight: ChevronRight,
+	arrowRight: ArrowRight,
+	arrowRightCustom: ({ ...props }: LucideProps) => (
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="22"
+			height="8"
+			viewBox="0 0 22 8"
+			fill="none"
+			{...props}>
+			<path
+				d="M21.3536 4.03568C21.5488 3.84042 21.5488 3.52384 21.3536 3.32858L18.1716 0.146595C17.9763 -0.0486672 17.6597 -0.0486672 17.4645 0.146595C17.2692 0.341857 17.2692 0.65844 17.4645 0.853702L20.2929 3.68213L17.4645 6.51056C17.2692 6.70582 17.2692 7.0224 17.4645 7.21766C17.6597 7.41293 17.9763 7.41293 18.1716 7.21766L21.3536 4.03568ZM0 3.68213V4.18213H21V3.68213V3.18213H0V3.68213Z"
+				fill="#797979"
+			/>
+		</svg>
+	),
 	gitHub: ({ ...props }: LucideProps) => (
 		<svg
 			aria-hidden="true"
