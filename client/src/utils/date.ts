@@ -21,3 +21,66 @@ const [selectDate, setSelectDate] = useState(formatKST(new Date(), true)); -> 20
  <span>{formatKST(user?.birth_date)}</span> -> 2025-11-15
 
 */
+
+/**
+ * 시간 문자열에서 HH:mm 추출 (ISO timestamp 또는 HH:mm:ss -> HH:mm)
+ * @param timeStr - ISO 형식 시간 문자열 또는 HH:mm:ss 형식 문자열
+ * @returns HH:mm 형식의 시간 문자열 또는 '-'
+ */
+export function formatTime(timeStr: string | null): string {
+  if (!timeStr) return '-';
+  
+  // ISO 형식 (1970-01-01T09:58:23.000Z)인 경우
+  if (timeStr.includes('T')) {
+    const timePart = timeStr.split('T')[1];
+    const parts = timePart.split(':');
+    if (parts.length >= 2) {
+      return `${parts[0]}:${parts[1]}`;
+    }
+    return timePart.split('.')[0].substring(0, 5);
+  }
+  
+  // HH:mm:ss 형식인 경우
+  const parts = timeStr.split(':');
+  if (parts.length >= 2) {
+    return `${parts[0]}:${parts[1]}`;
+  }
+  
+  return timeStr;
+}
+
+/**
+ * 분을 시간과 분으로 변환
+ * @param totalMinutes - 총 분 수
+ * @returns 시간과 분을 포함한 객체
+ */
+export function formatMinutes(totalMinutes: number): { hours: number; minutes: number } {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return { hours, minutes };
+}
+
+/**
+ * 시간 문자열을 분 단위로 변환 (대시보드 내 미팅룸 정렬용)
+ * @param timeStr - ISO 형식 시간 문자열 또는 HH:mm:ss 형식 문자열
+ * @returns 분 단위 숫자
+ */
+export function timeToMinutes(timeStr: string | null): number {
+  if (!timeStr) return 0;
+  
+  // ISO 형식인 경우 (1970-01-01T09:00:00.000Z)
+  if (timeStr.includes('T')) {
+    const date = new Date(timeStr);
+    return date.getHours() * 60 + date.getMinutes();
+  }
+  
+  // HH:mm:ss 또는 HH:mm 형식인 경우
+  const parts = timeStr.split(':');
+  if (parts.length >= 2) {
+    const hours = parseInt(parts[0], 10) || 0;
+    const minutes = parseInt(parts[1], 10) || 0;
+    return hours * 60 + minutes;
+  }
+  
+  return 0;
+}

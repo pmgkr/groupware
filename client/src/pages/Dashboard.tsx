@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { useDashboard } from '@/hooks/useDashboard';
@@ -13,34 +13,71 @@ import { Avatar, AvatarImage, AvatarFallback } from '@components/ui/avatar';
 import getWelcomeMessage from '@components/features/Dashboard/welcome';
 import WorkHoursBar from '@/components/ui/WorkHoursBar';
 import { Icons } from '@components/icons';
+import EventViewDialog from '@/components/calendar/EventViewDialog';  
 
-import { type Calendar, type Meetingroom, type Wlog } from '@/api/dashboard';
+import type { Calendar, Meetingroom, Wlog, Vacation, Notice } from '@/api/dashboard';
+
 import { getBadgeColor } from '@/utils/calendarHelper';
+import { formatTime, formatMinutes, formatKST } from '@/utils/date';
+import dayjs from 'dayjs';
+import 'dayjs/locale/ko';
+
+dayjs.locale('ko');
 
 // 캘린더 배지 목록
-const calendarBadges = ['연차', '반차', '반반차', '공가', '외부일정', '기타'];
+const calendarBadges = ['연차', '반차', '반반차', '공가', '외부 일정', '재택'];
+
 
 export default function Dashboard() {
-  const [wlog, setWlog] = useState<Wlog[]>([]);
-  const { vacation, notification, calendar: calendarData, meetingroom } = useDashboard();
-  const { user_name, job_role, profile_image } = useUser();
-
   // Daypicker 선택된 날짜 관리 (Default : Today)
   const [selected, setSelected] = useState<Date | undefined>(new Date());
+  
+  // 현재 시간을 실시간으로 업데이트 (초 단위)
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000); // 1초마다 업데이트
+    
+    return () => clearInterval(timer);
+  }, []);
+  
+  // 선택된 날짜에 따라 캘린더 데이터만 가져오기
+  const { 
+    wlog, 
+    vacation, 
+    notice, 
+    calendar: calendarData, 
+    meetingroom,
+    isEventDialogOpen,
+    selectedEventData,
+    handleCalendarClick,
+    handleCloseDialog,
+    getMeetingroomKoreanName,
+    getMeetingroomBadgeColor
+  } = useDashboard(selected);
+
+  // 사용자 정보 가져오기 (Hook은 최상위 레벨에서 호출)
+  const { user_name, birth_date, user_id } = useUser();
+
+  // getWelcomeMessage를 메모이제이션하여 리렌더링 시에도 같은 메시지 유지
+  const welcomeMessage = useMemo(() => getWelcomeMessage(user_name, birth_date), [user_name, birth_date]);
 
   return (
     <>
       <Header />
       <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8">
         <div className="flex items-center justify-between text-base text-gray-800">
-          <p>{getWelcomeMessage()}</p>
+          <p>{welcomeMessage}</p>
           <div className="flex">서울 날씨 ☀️ 25°C, 맑음</div>
         </div>
         <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6">
+
           <div className="row-span-2 flex flex-col justify-start rounded-md border border-gray-300 bg-white p-6">
             <SectionHeader
               title="근무 시간" 
-              description="2025년 11월 13일 (목) 10:01:30" 
+              description={dayjs(currentTime).format('YYYY년 MM월 DD일 (ddd) HH:mm:ss')} 
               buttonText="전체보기" 
               buttonVariant="outline" 
               buttonSize="sm" 
@@ -50,54 +87,96 @@ export default function Dashboard() {
             <div className="flex items-center justify-center gap-x-10 bg-gray-200 rounded-md p-5 mb-6">
               <div className="flex flex-col align-center justify-center text-center">
                 <p className="text-gray-500 text-base">출근시간</p>
-                <p className="text-gray-800 text-xl font-medium">10:01:30</p>
+                <p className="text-gray-800 text-xl font-medium">{formatTime(wlog.wlogToday[0]?.stime || null)}</p>
               </div>
               <Icons.arrowRightCustom />
               <div className="flex flex-col align-center justify-center text-center">
                 <p className="text-gray-500 text-base">퇴근시간</p>
-                <p className="text-gray-800 text-xl font-medium">18:00:00</p>
+                <p className="text-gray-800 text-xl font-medium">{formatTime(wlog.wlogToday[0]?.etime || null)}</p>
               </div>
             </div>
             <div>
               <div className="flex flex-col gap-0">
                 <div className="flex items-center gap-1 ">
                   <span className="text-gray-800 text-xl font-black">주간누적</span>
-                  <span className="text-primary-blue-500 text-lg font-bold">{wlog[0]?.total_minutes || 0}시간 {String(wlog[0]?.total_minutes || 0).padStart(2, '0')}분</span>
+                  {(() => {
+                    const totalMinutes = wlog.wlogWeek[0]?.total_minutes || 0;
+                    const { hours, minutes } = formatMinutes(totalMinutes);
+                    return (
+                      <span className="text-primary-blue-500 text-lg font-bold">
+                        {hours}시간 {String(minutes).padStart(2, '0')}분
+                      </span>
+                    );
+                  })()}
                 </div>
                 <p className="flex items-center gap-x-1 text-sm text-gray-700">
-                  이번 주 근무 시간이 5시간 5분 남았어요.
+                  {(() => {
+                    const totalMinutes = wlog.wlogWeek[0]?.total_minutes || 0;
+                    const remainingMinutes = Math.max(0, (52 * 60) - totalMinutes);
+                    const { hours, minutes } = formatMinutes(remainingMinutes);
+                    return `이번 주 근무 시간이 ${hours}시간 ${String(minutes).padStart(2, '0')}분 남았어요.`;
+                  })()}
                 </p>
               </div>
               <WorkHoursBar 
-                hours={(wlog[0]?.total_minutes || 0) + ((wlog[0]?.total_minutes || 0) / 60)} 
+                hours={(() => {
+                  const totalMinutes = wlog.wlogWeek[0]?.total_minutes || 0;
+                  return totalMinutes / 60;
+                })()} 
                 className="mt-4" 
               />
             </div>
           </div>
-          <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
-            <SectionHeader
-                title="휴가 현황 ⛱️"
+          <div className="row-span-2 flex flex-col gap-4">
+            <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
+              <SectionHeader
+                  title="휴가 현황 ⛱️"
+                  buttonText="전체보기"
+                  buttonVariant="outline"
+                  buttonSize="sm"
+                  buttonHref="/mypage/vacation"
+                  className="mb-4"
+                />
+                <ul className="grid grid-cols-3">
+                  <li className="flex flex-col text-center text-base">
+                    <span>지급휴가</span>
+                    <strong className="text-[1.4em]">{vacation?.given || 0}</strong>
+                  </li>
+                  <li className="short-v-divider flex flex-col text-center text-base">
+                    <span>사용휴가</span>
+                    <strong className="text-[1.4em]">{vacation?.used || 0}</strong>
+                  </li>
+                  <li className="short-v-divider flex flex-col text-center text-base">
+                    <span>잔여휴가</span>
+                    <strong className="text-[1.4em]">{vacation?.lefts || 0}</strong>
+                  </li>
+                </ul>
+            </div>
+            <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
+              <SectionHeader
+                title="공지사항"
                 buttonText="전체보기"
                 buttonVariant="outline"
                 buttonSize="sm"
-                buttonHref="/mypage/vacation"
+                buttonHref="/notice"
                 className="mb-4"
               />
-              <ul className="grid grid-cols-3">
-                <li className="flex flex-col text-center text-base">
-                  <span>지급휴가</span>
-                  <strong className="text-[1.4em]">{vacation?.given || 0}</strong>
-                </li>
-                <li className="short-v-divider flex flex-col text-center text-base">
-                  <span>사용휴가</span>
-                  <strong className="text-[1.4em]">{vacation?.used || 0}</strong>
-                </li>
-                <li className="short-v-divider flex flex-col text-center text-base">
-                  <span>잔여휴가</span>
-                  <strong className="text-[1.4em]">{vacation?.lefts || 0}</strong>
-                </li>
-              </ul>
+              <div>
+                <ul className="flex flex-col gap-y-2 px-2 text-base tracking-tight text-gray-700">
+                  {notice.map((notice) => (
+                    <li key={notice.n_seq} className="flex items-center gap-x-1.5 before:h-1 before:w-1 before:rounded-[50%] before:bg-gray-700">
+                    <Link to={`/notice/${notice.n_seq}`} className="group flex items-center justify-between gap-x-1.5">
+                      <p className="overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline">
+                        [{notice.category}] {notice.title}
+                      </p>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
+
           <div className="row-span-4 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
               title="캘린더"
@@ -121,14 +200,17 @@ export default function Dashboard() {
             </ul>
             <div className="overflow-y-auto rounded-xl p-4">
               <ul className="grid grid-cols-3 gap-2 gap-y-4">
-
                 {calendarData.map((calendar, index) => (
-                  <li key={`${calendar.user_name}-${calendar.sch_label}-${index}`} className="flex items-center gap-x-2">
+                  <li 
+                    key={`${calendar.user_name}-${calendar.sch_label}-${index}`} 
+                    className="flex items-center gap-x-2 cursor-pointer hover:bg-gray-50 rounded-md p-1 transition-colors"
+                    onClick={() => handleCalendarClick(calendar)}
+                  >
                     <Avatar>
                       <AvatarImage 
                         src={
                           calendar.profile_image
-                            ? `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${calendar.profile_image}?t=${Date.now()}`
+                            ? `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${calendar.profile_image}`
                             : getImageUrl('dummy/profile')
                         } 
                         alt={calendar.user_name} 
@@ -149,35 +231,7 @@ export default function Dashboard() {
               </ul>
             </div>
           </div>
-          <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
-            <SectionHeader
-              title="공지사항"
-              buttonText="전체보기"
-              buttonVariant="outline"
-              buttonSize="sm"
-              buttonHref="/notice"
-              className="mb-4"
-            />
-            <div>
-              <ul className="flex flex-col gap-y-2 px-2 text-base tracking-tight text-gray-700">
-                <li className="flex items-center gap-x-1.5 before:h-1 before:w-1 before:rounded-[50%] before:bg-gray-700">
-                  <p className="overflow-hidden text-ellipsis whitespace-nowrap">
-                    [중요공지] 사내 공지 관련 안내
-                  </p>
-                </li>
-                <li className="flex items-center gap-x-1.5 before:h-1 before:w-1 before:rounded-[50%] before:bg-gray-700">
-                  <p className="overflow-hidden text-ellipsis whitespace-nowrap">
-                    [공지] 보안 인식 교육(Security Awareness Training) 2단계 안내
-                  </p>
-                </li>
-                <li className="flex items-center gap-x-1.5 before:h-1 before:w-1 before:rounded-[50%] before:bg-gray-700">
-                  <p className="overflow-hidden text-ellipsis whitespace-nowrap">
-                    [주요공지] 개인법인카드 및 개인카드 비용청구서 가이드라인 업데이트 안내
-                  </p>
-                </li>
-              </ul>
-            </div>
-          </div>
+
           <div className="row-span-2 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
               title="미팅룸"
@@ -187,45 +241,18 @@ export default function Dashboard() {
               buttonHref="/meetingroom"
               className="shrink-0"
             />
-            <div className="overflow-y-auto">
-              <ul className="flex flex-col gap-y-2 text-base tracking-tight text-gray-700">
-                <li className="flex items-center gap-x-1.5">
-                  <Badge className="bg-[#FF6B6B]">베이징룸</Badge>
-                  <p className="overflow-hidden text-ellipsis whitespace-nowrap">10:00 ~ 11:30 PM Team 내부미팅</p>
-                </li>
-                <li className="flex items-center gap-x-1.5">
-                  <Badge className="bg-[#FF6B6B]">베이징룸</Badge>
-                  <p className="overflow-hidden text-ellipsis whitespace-nowrap">13:00 ~ 14:00 록시땅 디자인 미팅</p>
-                </li>
-                <li className="flex items-center gap-x-1.5">
-                  <Badge className="bg-[#FFA46B]">도쿄룸</Badge>
-                  <p className="overflow-hidden text-ellipsis whitespace-nowrap">13:00 ~ 14:00 록시땅 디자인 미팅</p>
-                </li>
-                <li className="flex items-center gap-x-1.5">
-                  <Badge className="bg-[#FFA46B]">도쿄룸</Badge>
-                  <p className="overflow-hidden text-ellipsis whitespace-nowrap">13:00 ~ 14:00 록시땅 디자인 미팅</p>
-                </li>
-
-                <li className="flex items-center gap-x-1.5">
-                  <Badge className="bg-[#2FC05D]">싱가폴룸</Badge>
-                  <p className="overflow-hidden text-ellipsis whitespace-nowrap">14:00 ~ 14:30 CCD</p>
-                </li>
-                <li className="flex items-center gap-x-1.5">
-                  <Badge className="bg-[#2FC05D]">싱가폴룸</Badge>
-                  <p className="overflow-hidden text-ellipsis whitespace-nowrap">14:00 ~ 14:30 CCD</p>
-                </li>
-                <li className="flex items-center gap-x-1.5">
-                  <Badge className="bg-[#6BADFF]">시드니룸</Badge>
-                  <p className="overflow-hidden text-ellipsis whitespace-nowrap">15:00 ~ 16:30 CCP 내부미팅</p>
-                </li>
-                <li className="flex items-center gap-x-1.5">
-                  <Badge className="bg-[#5E6BFF]">마닐라룸</Badge>
-                  <p className="overflow-hidden text-ellipsis whitespace-nowrap">10:00 ~ 16:30 내부</p>
-                </li>
-                <li className="flex items-center gap-x-1.5">
-                  <Badge className="bg-[#DA6BFF]">방콕룸</Badge>
-                  <p className="overflow-hidden text-ellipsis whitespace-nowrap">12:00 ~ 13:30 노사협의회 미팅</p>
-                </li>
+              <div className="overflow-y-auto">
+                <ul className="flex flex-col gap-y-2 text-base tracking-tight text-gray-700">
+                 {meetingroom.map((meetingroom) => (
+                   <li key={`${meetingroom.mr_name}-${meetingroom.stime}-${meetingroom.etime}`} className="flex items-center gap-x-1.5">
+                     <Badge className={getMeetingroomBadgeColor(meetingroom.mr_name)}>
+                       {getMeetingroomKoreanName(meetingroom.mr_name)}
+                     </Badge>
+                     <p className="overflow-hidden text-ellipsis whitespace-nowrap">
+                        {formatTime(meetingroom.stime)} - {formatTime(meetingroom.etime)} {`${meetingroom.ml_title}`}
+                      </p>
+                   </li>
+                 ))}
               </ul>
             </div>
           </div>
@@ -263,6 +290,13 @@ export default function Dashboard() {
           </div>
         </div>
       </section>
+      
+      {/* EventViewDialog */}
+      <EventViewDialog
+        isOpen={isEventDialogOpen}
+        onClose={handleCloseDialog}
+        selectedEvent={selectedEventData}
+      />
     </>
   );
 }
