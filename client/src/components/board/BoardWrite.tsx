@@ -161,7 +161,7 @@ export default function BoardWrite() {
         <Checkbox id="notice" label="공지 설정" checked={isNotice === 'Y'} onCheckedChange={(v) => setIsNotice(v === true ? 'Y' : 'N')} />
       </div>
 
-      <div className="mb-3 flex gap-1.5">
+      <div className="mb-3 flex gap-x-2.5">
         <Select value={category} onValueChange={setCategory}>
           <SelectTrigger className="!h-[50px] w-[180px]">
             <SelectValue placeholder="카테고리" />
@@ -186,7 +186,9 @@ export default function BoardWrite() {
       </div>
 
       {/* 본문 에디터 */}
-      <ReactQuillEditor value={content} onChange={setContent} />
+      <div style={{ height: '58vh' }}>
+        <ReactQuillEditor value={content} onChange={setContent} />
+      </div>
 
       <div className="mt-2 flex justify-between">
         {/* 첨부파일 업로더 컴포넌트 */}
