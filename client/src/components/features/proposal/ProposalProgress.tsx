@@ -1,4 +1,4 @@
-type ApprovalState = 'pending' | 'waiting' | 'approved' | 'rejected';
+export type ApprovalState = '대기' | '진행' | '완료' | '반려';
 
 export interface Step {
   label: string;
@@ -10,94 +10,156 @@ interface ProposalProgressProps {
 }
 
 export default function ProposalProgress({ steps }: ProposalProgressProps) {
-  const waitingIndex = steps.findIndex((s) => s.status === 'waiting');
-  const approvedCount = steps.filter((s) => s.status === 'approved').length;
+  const waitingIndex = steps.findIndex((s) => s.status === '대기');
+  const approvedCount = steps.filter((s) => s.status === '완료').length;
 
-  const getCircleColor = (status: ApprovalState) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-gray-300';
-      case 'approved':
-        return 'bg-primary';
-      case 'waiting':
-        return 'bg-primary-blue-300';
-      case 'rejected':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-300';
+  // 반려 인덱스 먼저 계산
+  const rejectedIndex = steps.findIndex((s) => s.status === '반려');
+
+  // 가장 최근 완료된 스텝의 인덱스 찾기 반려가 있다면 그 이전까지만 완료로 간주
+  const lastApprovedIndex =
+    rejectedIndex !== -1
+      ? -1 // 반려가 있으면 이중원 없음
+      : steps.reduce((lastIndex, step, index) => {
+          return step.status === '완료' ? index : lastIndex;
+        }, -1);
+
+  const getCircleStyle = (status: ApprovalState, index: number) => {
+    // 반려가 없고 가장 최근 완료된 원 - 이중원
+    if (status === '완료' && index === lastApprovedIndex && rejectedIndex === -1) {
+      return {
+        innerColor: 'bg-primary',
+        borderColor: 'border-primary',
+        isDouble: true,
+      };
     }
+
+    // 지난 완료 원
+    if (status === '완료') {
+      return {
+        innerColor: 'bg-primary-blue-300',
+        borderColor: '',
+        isDouble: false,
+      };
+    }
+
+    // 반려 원
+    if (status === '반려') {
+      return {
+        innerColor: 'bg-red-500',
+        borderColor: 'border-red-500',
+        isDouble: true,
+      };
+    }
+
+    // 대기, 진행 등 나머지
+    return {
+      innerColor: 'bg-gray-300',
+      borderColor: '',
+      isDouble: false,
+    };
   };
 
   const getMiddleDotColor = (index: number) => {
-    if (index < approvedCount) return 'bg-primary';
-    if (index === approvedCount && waitingIndex === index + 1) return 'bg-primary-blue-300';
+    const currentStep = steps[index];
+    const nextStep = steps[index + 1];
+
+    // 현재 스텝이 완료이고 다음 스텝이 진행이면 중간점 표시
+    if (currentStep.status === '완료' && nextStep.status === '진행') {
+      return 'bg-primary-blue-300';
+    }
+
+    // 현재 스텝이 완료이고 다음 스텝도 완료면 중간점 표시
+    if (currentStep.status === '완료' && nextStep.status === '완료') {
+      return 'bg-primary-blue-300';
+    }
+    // 현재 스텝이 완료이고 다음 스텝도 반려면 중간점 표시
+    if (currentStep.status === '완료' && nextStep.status === '반려') {
+      return 'bg-primary-blue-300';
+    }
+
+    // 나머지는 회색
     return 'bg-gray-300';
   };
 
   const getProgressRatio = (steps: Step[]): number => {
     const totalSteps = steps.length;
-    const approvedCount = steps.filter((s) => s.status === 'approved').length;
-    const waitingIndex = steps.findIndex((s) => s.status === 'waiting');
-    const rejectedIndex = steps.findIndex((s) => s.status === 'rejected');
+    const approvedCount = steps.filter((s) => s.status === '완료').length;
+    const progressIndex = steps.findIndex((s) => s.status === '진행');
+    const rejectedIndex = steps.findIndex((s) => s.status === '반려');
 
-    // 전체 포인트 수 = 4 (dot, step, dot, step)
+    // 전체 포인트 수 = (스텝 수 - 1) * 2 (각 구간마다 중간점 1개)
     const totalPoints = (totalSteps - 1) * 2;
 
-    // 모두 approved인 경우
+    // 모두 완료인 경우
     if (approvedCount === totalSteps) return 100;
 
-    // rejected가 있는 경우 - rejected 써클까지 도달
-    // approved, rejected → dot + step(2) = 2/4 = 50%
-    // approved, approved, rejected → dot + step + dot + step(4) = 4/4 = 100%
-    if (rejectedIndex !== -1 && approvedCount === rejectedIndex) {
-      const pointsReached = approvedCount + rejectedIndex;
-      return (pointsReached / totalPoints) * 100;
-    }
-
-    // approved가 없는 경우
+    // 완료가 없는 경우
     if (approvedCount === 0) return 0;
 
-    // waiting이 있고 그 직전까지 approved인 경우
-    // approved, waiting → dot(1) = 1/4 = 25%
-    // approved, approved, waiting → dot + step + dot(3) = 3/4 = 75%
-    if (waitingIndex !== -1 && approvedCount === waitingIndex) {
-      const pointsReached = approvedCount + (approvedCount - 1);
+    // 반려가 있는 경우 - 반려 원까지 도달
+    if (rejectedIndex !== -1) {
+      // 완료, 반려 → 중간점(1) = 1/6 ≈ 16.67%
+      // 완료, 완료, 반려 → 중간점 + 원 + 중간점(3) = 3/6 = 50%
+      const pointsReached = rejectedIndex * 2;
       return (pointsReached / totalPoints) * 100;
     }
 
-    // waiting이 없는 경우 (pending만 있음)
-    // approved, pending → dot(1) = 1/4 = 25%
-    // approved, approved, pending → dot + step(2) = 2/4 = 50%
-    const pointsReached = approvedCount;
+    // 진행 중인 스텝이 있는 경우
+    if (progressIndex !== -1) {
+      // 완료, 진행 → 중간점(1) = 1/6 ≈ 16.67%
+      // 완료, 완료, 진행 → 중간점 + 원 + 중간점(3) = 3/6 = 50%
+      const pointsReached = progressIndex * 2 - 1;
+      return (pointsReached / totalPoints) * 100;
+    }
+
+    // 대기만 있는 경우 (완료 다음이 모두 대기)
+    // 완료, 대기 → 중간점(1) = 1/6 ≈ 16.67%
+    // 완료, 완료, 대기 → 중간점 + 원 + 중간점(3) = 3/6 = 50%
+    const pointsReached = approvedCount * 2 - 1;
     return (pointsReached / totalPoints) * 100;
   };
 
   return (
-    <div className="relative w-full">
+    <div className="relative bottom-2.5 w-full">
       {/* --- Progress Bar --- */}
-      <div className="absolute top-[49%] left-0 h-[2px] w-full bg-gray-300">
-        <div className="bg-primary absolute h-[2px] transition-all duration-300" style={{ width: `${getProgressRatio(steps)}%` }} />
+      <div className="absolute top-[44%] right-0 h-[2px] w-[98%] bg-gray-300">
+        <div
+          className="bg-primary-blue-300 absolute h-[2px] transition-all duration-300"
+          style={{ width: `${getProgressRatio(steps)}%` }}
+        />
       </div>
 
-      {/* --- Step Circles + Middle Dots as Flex --- */}
+      {/* ---각 스텝의 스타일 정보 가져오기 --- */}
       <div className="relative z-[10] flex w-full items-center">
-        {steps.map((step, i) => (
-          <>
-            {/* 큰 점 */}
-            <div key={step.label} className="relative flex flex-col items-center">
-              <div className={`${getCircleColor(step.status)} h-4 w-4 rounded-full`} />
-              <span className="absolute top-6 text-[13px] whitespace-nowrap">{step.label}</span>
-            </div>
+        {steps.map((step, i) => {
+          const circleStyle = getCircleStyle(step.status, i);
 
-            {/* 마지막 Step 뒤에는 middle dot 없음 */}
-            {i < steps.length - 1 && (
-              <div className="flex flex-1 justify-center">
-                {/* 항상 정가운데 배치 → 부모 width 변화에도 정확히 25%, 75% */}
-                <div className={`${getMiddleDotColor(i)} h-3 w-3 rounded-full`}></div>
+          return (
+            <>
+              {/* 큰 점 */}
+              <div key={step.label} className="relative flex flex-col items-center">
+                {circleStyle.isDouble ? (
+                  //완료 이중원
+                  <div className={`bg-white ${circleStyle.borderColor} flex h-5 w-5 items-center justify-center rounded-full border-1`}>
+                    <div className={`${circleStyle.innerColor} h-3 w-3 rounded-full`} />
+                  </div>
+                ) : (
+                  // 단일원
+                  <div className={`${circleStyle.innerColor} h-3 w-3 rounded-full`} />
+                )}
+                <span className="absolute top-6 text-[13px] whitespace-nowrap">{step.label}</span>
               </div>
-            )}
-          </>
-        ))}
+
+              {/* 마지막 Step 뒤에는 middle dot 없음 */}
+              {i < steps.length - 1 && (
+                <div className="flex flex-1 justify-center">
+                  <div className={`${getMiddleDotColor(i)} h-2 w-2 rounded-full`}></div>
+                </div>
+              )}
+            </>
+          );
+        })}
       </div>
     </div>
   );

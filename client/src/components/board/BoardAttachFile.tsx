@@ -55,7 +55,7 @@ export function BoardAttachFile({ files, setFiles, onRemoveExisting }: BoardAtta
 
   return (
     <div className="flex gap-1.5">
-      <Button variant="outline" className="[&]:border-primary-blue-500 text-primary-blue-500" onClick={handleAttachFile}>
+      <Button type="button" variant="outline" className="[&]:border-primary-blue-500 text-primary-blue-500" onClick={handleAttachFile}>
         <File className="mr-1 size-6" />
         파일 첨부
       </Button>
