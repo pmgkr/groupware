@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router';
 import Mypage from '@/pages/Mypage';
 import MyExpense from '@/pages/Mypage/Expense';
+import Vacation from '@/pages/Mypage/Vacation';
 
 export const mypageRoutes: RouteObject = {
   path: 'mypage', // 상위 Layout 기준 → /mypage
@@ -15,5 +16,6 @@ export const mypageRoutes: RouteObject = {
   children: [
     { index: true, element: <Mypage /> },
     { path: 'expense', element: <MyExpense /> },
+    { path: 'vacation', element: <Vacation /> },
   ],
 };
