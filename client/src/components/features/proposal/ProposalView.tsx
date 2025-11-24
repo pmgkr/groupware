@@ -36,10 +36,6 @@ export default function ProposalView() {
           status: line.rl_state as ApprovalState,
         }));
 
-        /* const converted = data.lines.map((line) => ({
-          label: line.rl_approver_name,
-          status: line.rl_state as ApprovalState,
-        })); */
         setSteps(converted.slice(1, 4));
       } catch (err) {
         console.error(err);
@@ -93,7 +89,7 @@ export default function ProposalView() {
       </div>
 
       <div className="bg-gray-200 p-5">
-        <p className="mb-6 text-gray-800">{report.rp_content}</p>
+        <div className="mb-6 text-gray-800" dangerouslySetInnerHTML={{ __html: report.rp_content }}></div>
       </div>
       <div className="mb-6 bg-gray-50 py-4">
         <Button
@@ -102,7 +98,6 @@ export default function ProposalView() {
           <div className="flex items-center gap-2">
             <span className="font-normal">파일명.pdf</span>
           </div>
-          <CircleX className="size-4.5" />
         </Button>
       </div>
 

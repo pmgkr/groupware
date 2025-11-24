@@ -28,6 +28,8 @@ import { UserRound, FileText, OctagonAlert } from 'lucide-react';
 
 import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { getMyAccounts, type BankAccount } from '@/api/mypage';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const expenseSchema = z.object({
   el_method: z.string().nonempty('결제 수단을 선택해주세요.'),
@@ -252,6 +254,52 @@ export default function ExpenseRegister() {
     },
     [handleDropFiles]
   );
+
+  //내계좌 불러오기
+  const [accountList, setAccountList] = useState<BankAccount[]>([]);
+  const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getMyAccounts();
+        setAccountList(data);
+      } catch (err) {
+        console.error('❌ 계좌 목록 불러오기 실패:', err);
+      }
+    })();
+  }, []);
+  const handleFillMyMainAccount = () => {
+    const mainAcc = accountList.find((acc) => acc.flag === 'mine');
+
+    if (!mainAcc) {
+      addAlert({
+        title: '계좌 없음',
+        message: '대표 계좌가 등록되어 있지 않습니다.',
+        icon: <OctagonAlert />,
+        duration: 2500,
+      });
+      return;
+    }
+
+    form.setValue('bank_account', mainAcc.bank_account);
+    form.setValue('bank_code', bankList.find((b) => b.name === mainAcc.bank_name)?.code || '');
+    form.setValue('bank_name', mainAcc.bank_name);
+    form.setValue('account_name', mainAcc.account_name);
+  };
+
+  //계좌 선택
+  const handleOpenAccountDialog = () => {
+    setAccountDialogOpen(true);
+  };
+
+  const handleSelectAccount = (acc: BankAccount) => {
+    form.setValue('bank_account', acc.bank_account);
+    form.setValue('bank_code', bankList.find((b) => b.name === acc.bank_name)?.code || '');
+    form.setValue('bank_name', acc.bank_name);
+    form.setValue('account_name', acc.account_name);
+
+    setAccountDialogOpen(false);
+  };
 
   // 등록 버튼 클릭 시
   const onSubmit = async (values: any) => {
@@ -479,15 +527,19 @@ export default function ExpenseRegister() {
                           <div className="flex h-5.5 overflow-hidden rounded-[var(--spacing)] border-1 border-gray-300">
                             <Button
                               variant="svgIcon"
+                              type="button"
                               size="icon"
                               title="내 대표계좌"
+                              onClick={handleFillMyMainAccount}
                               className="bg-primary-blue-500/60 hover:bg-primary-blue-500/80 h-full rounded-none">
                               <UserRound className="size-3.5 text-white" />
                             </Button>
                             <Button
                               variant="svgIcon"
+                              type="button"
                               size="icon"
                               title="내 계좌리스트"
+                              onClick={handleOpenAccountDialog}
                               className="h-full rounded-none bg-gray-400 hover:bg-gray-500/80">
                               <FileText className="size-3.5 text-white" />
                             </Button>
@@ -510,6 +562,31 @@ export default function ExpenseRegister() {
                     )}
                   />
                 </div>
+                {/* 계좌 선택 */}
+                <Dialog open={accountDialogOpen} onOpenChange={setAccountDialogOpen}>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>계좌 선택</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="mt-4 max-h-[300px] overflow-y-auto">
+                      {accountList.map((acc) => (
+                        <Button
+                          key={acc.seq}
+                          variant="ghost"
+                          className="[&]:hover:bg-primary-blue-150 w-full justify-start"
+                          onClick={() => handleSelectAccount(acc)}>
+                          <div className="flex text-left">
+                            <div className="text-primary-blue mr-3 font-semibold">{acc.account_alias || acc.account_name}</div>
+                            <span className="mr-1 font-light text-gray-700">{acc.bank_account}</span>
+                            <span className="font-light text-gray-700">({acc.bank_name})</span>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
                 <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
                   <FormField
                     control={form.control}
