@@ -21,6 +21,9 @@ export type UserDTO = {
   address?: string | null;
   emergency_phone?: string | null;
 };
+
+
+
 // 프로필 조회
 export async function getMyProfile(): Promise<UserDTO> {
   const dto = await http<{ base: any; detail: any }>('/mypage/profile', { method: 'POST', body: JSON.stringify({}) });
@@ -111,6 +114,9 @@ export interface RegisterAccountDTO {
   bank_account: string; // 계좌 번호
   account_name: string; // 예금주
 }
+
+
+
 export async function registerAccount(data: RegisterAccountDTO): Promise<void> {
   await http('/mypage/account/register', {
     method: 'POST',
@@ -133,4 +139,33 @@ export async function deleteAccount(seq: number) {
   return http(`/mypage/account/delete/${seq}`, {
     method: 'DELETE',
   });
+}
+
+
+
+/* 휴가 내역 */
+export type MyVacationSummary = {
+  id: number;
+  va_year: number;
+  va_used: number;
+  va_current: number;
+  va_carryover: number;
+  va_comp: number;
+  va_long: number;
+};
+
+export type MyVacationItem = {
+  sch_id: number;
+  v_year: string;
+  v_type: string;
+  v_count: number;
+  sdate: string;
+  edate: string;
+  remark: string;
+  wdate: string;
+};
+
+export async function MyVacationHistory(vyear: number): Promise<MyVacationItem[]> {
+  const res = await http<{ summary: MyVacationSummary[]; lists: MyVacationItem[] }>(`/mypage/vacation?vyear=${vyear}`, { method: 'GET' });
+  return res.lists || [];
 }
