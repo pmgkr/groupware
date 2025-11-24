@@ -175,7 +175,7 @@ export default function ProjectLayout() {
       </nav>
 
       {/* ⭐ 하위 페이지 Outlet + context 전달 */}
-      <div className="pt-8">
+      <div className="pt-6">
         <Outlet
           context={
             {

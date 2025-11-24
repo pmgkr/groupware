@@ -13,6 +13,9 @@ import type { DateRange } from 'react-day-picker';
 import { scheduleApi } from '@/api/calendar';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCachedHolidays } from '@/services/holidayApi';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@components/ui/tooltip';
+import { TooltipIcon } from '@components/ui/tooltip';
+import { getMyVacation, type MyVacationInfo } from '@/api/common/vacation';
 
 interface EventDialogProps {
   isOpen: boolean;
@@ -55,6 +58,8 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
   const { user } = useAuth();
   const [remainingVacationDays, setRemainingVacationDays] = useState<number>(0);
   const [calculatedVacationDays, setCalculatedVacationDays] = useState<number>(0);
+  const [vacationInfo, setVacationInfo] = useState<MyVacationInfo | null>(null);
+  const [errors, setErrors] = useState<Partial<Record<keyof EventData, string>>>({});
   
   // 실제 근무일 수 계산 함수 (주말 및 공휴일 제외)
   const calculateWorkingDays = async (startDate: Date, endDate: Date): Promise<number> => {
@@ -121,23 +126,59 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     selectedDateRange: undefined,
   });
 
-  // 연차 정보 로드 (휴가 카테고리일 때만)
+  // 연차 정보 로드 (다이얼로그가 열릴 때 미리 로드)
   useEffect(() => {
     const loadVacationInfo = async () => {
-      if (user?.user_id && isOpen && formData.category === 'vacation') {
+      if (user?.user_id && isOpen) {
         try {
           const currentYear = new Date().getFullYear();
-          const vacationInfo = await scheduleApi.getUserVacations(user.user_id, currentYear);
-          setRemainingVacationDays(parseFloat(vacationInfo.va_remaining));
+          const response = await getMyVacation(currentYear);
+          
+          // summary 배열에서 현재 연도 정보 찾기
+          const currentYearInfo = response.summary.find(info => info.va_year === currentYear);
+          
+          if (currentYearInfo) {
+            setVacationInfo(currentYearInfo);
+            // 남은 휴가 일수 계산: 당해연차 + 이월연차 + 특별대휴
+            const totalRemaining = 
+              parseFloat(currentYearInfo.va_current || '0') +
+              parseFloat(currentYearInfo.va_carryover || '0') +
+              parseFloat(currentYearInfo.va_comp || '0');
+            setRemainingVacationDays(totalRemaining);
+            
+            console.log('휴가 정보 로드:', {
+              userId: user.user_id,
+              year: currentYear,
+              va_current: currentYearInfo.va_current,
+              va_carryover: currentYearInfo.va_carryover,
+              va_comp: currentYearInfo.va_comp,
+              totalRemaining
+            });
+          } else {
+            setVacationInfo(null);
+            setRemainingVacationDays(0);
+          }
         } catch (error) {
-          console.error('연차 정보를 불러오는데 실패했습니다:', error);
+          console.error('휴가 정보를 불러오는데 실패했습니다:', error);
+          setVacationInfo(null);
           setRemainingVacationDays(0);
         }
+      } else if (!isOpen) {
+        // 다이얼로그가 닫힐 때 초기화
+        setVacationInfo(null);
+        setRemainingVacationDays(0);
       }
     };
 
     loadVacationInfo();
-  }, [user, isOpen, formData.category]);
+  }, [user, isOpen]);
+
+  // 다이얼로그가 열릴 때 에러 상태 초기화
+  useEffect(() => {
+    if (isOpen) {
+      setErrors({});
+    }
+  }, [isOpen]);
 
   const handleInputChange = (field: keyof EventData, value: string | boolean) => {
     setFormData(prev => {
@@ -171,6 +212,14 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       
       return newData;
     });
+    
+    // 입력 시 해당 필드의 에러 메시지 제거
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: undefined
+      }));
+    }
   };
 
   // 단일 날짜 선택 핸들러
@@ -206,6 +255,14 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
         console.log('업데이트된 formData.startTime:', newData.startTime);
         return newData;
       });
+      
+      // 날짜 선택 시 에러 제거
+      if (errors.selectedDate) {
+        setErrors(prev => ({
+          ...prev,
+          selectedDate: undefined
+        }));
+      }
     } else {
       console.log('date가 undefined입니다');
     }
@@ -240,6 +297,14 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
         endDate: endDateStr,
         vacationDaysUsed: vacationDays > 0 ? vacationDays : undefined,
       }));
+      
+      // 날짜 범위 선택 시 에러 제거
+      if (errors.selectedDateRange) {
+        setErrors(prev => ({
+          ...prev,
+          selectedDateRange: undefined
+        }));
+      }
     }
   };
 
@@ -263,11 +328,44 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     }
   };
 
+  // 유효성 검사 함수
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof EventData, string>> = {};
+    
+    // 일정 유형 검증
+    if (!formData.category) {
+      newErrors.category = "등록하실 일정 유형을 선택해주세요.";
+    }
+    
+    // 세부 유형 검증
+    if (!formData.eventType) {
+      newErrors.eventType = "세부 유형을 선택해주세요.";
+    }
+    
+    // 날짜/기간 검증
+    if (isTimeRequired) {
+      // 반차/반반차인 경우 단일 날짜 선택 필요
+      if (!formData.selectedDate) {
+        newErrors.selectedDate = "시작일 및 시간을 선택해주세요.";
+      }
+    } else {
+      // 연차/공가/이벤트인 경우 날짜 범위 선택 필요
+      if (!formData.selectedDateRange || !formData.selectedDateRange.from || !formData.selectedDateRange.to) {
+        newErrors.selectedDateRange = "기간을 선택해주세요.";
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   // remainingVacationDays는 이제 state로 관리됨
 
 
   const handleSave = () => {
+    if (!validateForm()) {
+      return; // 유효성 검사 실패 시 저장하지 않음
+    }
     // if (!formData.title.trim()) {
     //   alert('제목을 입력해주세요.');
     //   return;
@@ -339,6 +437,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       selectedDateRange: undefined,
     });
     setCalculatedVacationDays(0);
+    setErrors({}); // 에러 상태도 초기화
     
     onClose();
   };
@@ -369,6 +468,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       selectedDateRange: undefined,
     });
     setCalculatedVacationDays(0);
+    setErrors({}); // 에러 상태도 초기화
     onClose();
   };
 
@@ -407,6 +507,9 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
                 className='mb-0'
               />
             </RadioGroup>
+            {errors.category && (
+              <p className="text-sm text-red-500">{errors.category}</p>
+            )}
           </div>
 
           {/* 세부 일정 타입 - 카테고리가 선택된 경우에만 표시 */}
@@ -415,11 +518,25 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
               <Label>
                 세부 유형을 선택해주세요.
                 {formData.category === 'vacation' && (
-                    <small className="text-sm text-gray-600">
-                        (현재 휴가가 <span className="text-[var(--color-primary-blue-500)]">{remainingVacationDays}</span>일 남았습니다)
-                    </small>
-                )}    
-            </Label>
+                <>
+                <p className="text-sm text-gray-600">현재 휴가가 <span className="font-semibold text-[var(--color-primary-blue-500)]">{remainingVacationDays}</span>일 남았습니다</p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="inline-flex items-center">
+                      <TooltipIcon />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="flex flex-col gap-1">
+                      <p>당해연차: <span className="font-semibold text-[var(--color-primary-blue-500)]">{vacationInfo ? parseFloat(vacationInfo.va_current || '0') : 0}</span>일</p>
+                      <p>이월연차: <span className="font-semibold text-[var(--color-primary-blue-500)]">{vacationInfo ? parseFloat(vacationInfo.va_carryover || '0') : 0}</span>일</p>
+                      <p>특별대휴: <span className="font-semibold text-[var(--color-primary-blue-500)]">{vacationInfo ? parseFloat(vacationInfo.va_comp || '0') : 0}</span>일</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+                </>
+              )}
+              </Label>
               <RadioGroup
                 value={formData.eventType}
                 onValueChange={(value) => handleInputChange('eventType', value)}
@@ -436,7 +553,9 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
                   />
                 ))}
               </RadioGroup>
-              
+              {errors.eventType && (
+                <p className="text-sm text-red-500">{errors.eventType}</p>
+              )}
             </div>
           )}
 
@@ -460,6 +579,9 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
                     <div className="text-xs text-gray-600 mt-1">
                       선택된 시간: {formData.startTime || '없음'}
                     </div>
+                    {errors.selectedDate && (
+                      <p className="text-sm text-red-500">{errors.selectedDate}</p>
+                    )}
                   </>
                 ) : (
                   <>
@@ -468,10 +590,13 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
                       onSelect={handleDateRangeSelect}
                       placeholder="기간을 선택해주세요"
                     />
-                    {formData.category === 'vacation' && formData.eventType === 'vacationDay' && calculatedVacationDays > 0 && (
+                    {formData.category === 'vacation' && formData.category === 'vacation' && calculatedVacationDays > 0 && (
                       <div className="text-xs text-gray-600 mt-1">
                         실제 사용 연차: <span className="font-semibold text-[var(--color-primary-blue-500)]">{calculatedVacationDays}일</span> (주말 및 공휴일 제외)
                       </div>
+                    )}
+                    {errors.selectedDateRange && (
+                      <p className="text-sm text-red-500">{errors.selectedDateRange}</p>
                     )}
                   </>
                 )}

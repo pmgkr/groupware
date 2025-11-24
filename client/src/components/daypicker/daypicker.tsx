@@ -63,10 +63,12 @@ function DayPicker({
       )}
       captionLayout={captionLayout}
       numberOfMonths={numberOfMonths}
+      locale={ko}
       formatters={{
         formatMonthDropdown: (date) => date.toLocaleString('default', { month: 'short' }),
         formatYearDropdown: (date) => format(date, 'yyyy년', { locale: ko }),
         formatCaption: (month) => format(month, 'yyyy년 M월', { locale: ko }),
+        formatWeekdayName: (date) => format(date, 'EEE', { locale: ko }),
         ...formatters,
       }}
       classNames={{

@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -6,6 +7,7 @@ import EventViewDialog from '@/components/calendar/EventViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { scheduleApi, type Schedule } from '@/api/calendar';
 import { getTeams } from '@/api/teams';
+import { getMemberList } from '@/api/common/team';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
@@ -29,7 +31,6 @@ dayjs.locale('ko');
 const formatTime = (timeStr: string) => {
   if (!timeStr) return '-';
   
-  // ISO 형식 (1970-01-01T20:15:00 또는 2025-10-28T20:15:00)인 경우
   if (timeStr.includes('T')) {
     const timePart = timeStr.split('T')[1];
     const parts = timePart.split(':');
@@ -39,7 +40,6 @@ const formatTime = (timeStr: string) => {
     return timePart;
   }
   
-  // HH:mm:ss 형식인 경우
   const parts = timeStr.split(':');
   if (parts.length >= 2) {
     return `${parts[0]}:${parts[1]}`;
@@ -68,9 +68,33 @@ export default function VacationList({
   const [allData, setAllData] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 페이지네이션 state
-  const [page, setPage] = useState(1);
+  // 페이지네이션 state (URL 파라미터와 동기화)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlPage = Number(searchParams.get('page')) || 1;
+  const [page, setPage] = useState(urlPage);
   const pageSize = 15;
+
+  // URL 파라미터와 page state 동기화 (초기 로드 시에만)
+  useEffect(() => {
+    const urlPageValue = Number(searchParams.get('page')) || 1;
+    if (urlPageValue !== page) {
+      setPage(urlPageValue);
+    }
+  }, []);
+
+  // page 변경 시 URL 파라미터 업데이트
+  useEffect(() => {
+    const currentUrlPage = Number(searchParams.get('page')) || 1;
+    if (currentUrlPage !== page) {
+      const newParams = new URLSearchParams(searchParams);
+      if (page === 1) {
+        newParams.delete('page');
+      } else {
+        newParams.set('page', String(page));
+      }
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [page, searchParams, setSearchParams]);
   
   // 팀 목록 state
   const [teams, setTeams] = useState<{ team_id: number; team_name: string }[]>([]);
@@ -97,148 +121,230 @@ export default function VacationList({
         const teamList = await getTeams({});
         setTeams(teamList.map(t => ({ team_id: t.team_id, team_name: t.team_name })));
       } catch (error) {
-        console.error('팀 목록 조회 실패:', error);
       }
     };
     loadTeams();
   }, []);
 
-  // 데이터 조회
-  useEffect(() => {
-    fetchScheduleData();
-  }, [teamIds, filters.year]);
+  // 현재 요청 추적을 위한 ref (탭 변경 시 이전 요청 취소용)
+  const currentRequestRef = useRef<string | null>(null);
 
-  const fetchScheduleData = async () => {
+  // 데이터 조회 함수 (useCallback으로 메모이제이션)
+  const fetchScheduleData = useCallback(async () => {
+    // 현재 요청 ID 생성 (탭 + 타임스탬프)
+    const requestId = `${activeTab}-${Date.now()}`;
+    currentRequestRef.current = requestId;
+    
     setLoading(true);
+    
     try {
       const year = filters.year ? parseInt(filters.year) : new Date().getFullYear();
+      const currentTab = activeTab; // 클로저 문제 방지를 위해 로컬 변수에 저장
       
-      // 모든 팀의 데이터를 한 번에 가져오기 (1월부터 12월까지)
+      // 근태 관리와 동일한 로직: teamIds가 있으면 사용, 없으면 user.team_id 사용
+      let teamIdsToQuery: number[] = [];
+      
+      if (teamIds.length > 0) {
+        teamIdsToQuery = teamIds;
+      } else if (user?.user_level === 'manager') {
+        // manager인 경우: /manager/myteam으로 관리하는 모든 팀 조회
+        try {
+          const { workingApi } = await import('@/api/working');
+          const myTeamResponse = await workingApi.getMyTeamList();
+          teamIdsToQuery = (myTeamResponse.items || []).map(team => team.team_id);
+        } catch (error) {
+          // 실패 시 user.team_id 사용
+          if (user?.team_id) {
+            teamIdsToQuery = [user.team_id];
+          }
+        }
+      } else if (user?.team_id) {
+        // 일반 사용자 또는 admin인 경우
+        teamIdsToQuery = [user.team_id];
+      }
+      
+      // 요청이 취소되었는지 확인
+      if (currentRequestRef.current !== requestId) {
+        // 요청이 취소된 경우 아무것도 하지 않음 (새 요청이 이미 시작되었을 수 있음)
+        return;
+      }
+      
+      if (teamIdsToQuery.length === 0) {
+        setAllData([]);
+        setLoading(false);
+        return;
+      }
+      
+      // 데이터 조회 시작 전에 기존 데이터 초기화 (팀이 있고 요청이 취소되지 않은 경우에만)
+      // 이 시점에서 요청이 취소되지 않았는지 다시 확인
+      if (currentRequestRef.current === requestId) {
+        setAllData([]);
+      }
+      
+      // 각 팀의 멤버 목록 가져오기
+      const memberPromises = teamIdsToQuery.map(async (teamId) => {
+        const members = await getMemberList(teamId);
+        return members.map(member => ({ ...member, team_id: member.team_id || teamId }));
+      });
+      const memberResults = await Promise.all(memberPromises);
+      const allTeamMembers = memberResults.flat();
+      
+      // 중복 제거
+      const teamMembers = allTeamMembers.filter((member, index, self) =>
+        index === self.findIndex(m => m.user_id === member.user_id)
+      );
+      
+      // 각 팀원의 user_id로 스케줄 조회
       const allSchedules: Schedule[] = [];
       
-      // 1월부터 12월까지 순차적으로 조회
-      for (let month = 1; month <= 12; month++) {
+      // 1월부터 12월까지 병렬로 조회 (성능 개선)
+      const monthPromises = Array.from({ length: 12 }, (_, i) => i + 1).map(async (month) => {
         try {
-          const apiResponse = await scheduleApi.getSchedules({
-            year,
-            month
-          }) as any;
+          // 각 팀원별로 스케줄 조회 (currentTab에 따라 sch_type 필터링)
+          const schedulePromises = teamMembers.map(member =>
+            scheduleApi.getSchedules({
+              year,
+              month,
+              user_id: member.user_id,
+              sch_type: currentTab === 'vacation' ? 'vacation' : 'event'
+            }).catch(() => null)
+          );
           
-          // API 응답에서 실제 스케줄 배열 추출
-          const schedules = Array.isArray(apiResponse?.items) ? apiResponse.items : (apiResponse?.items?.items || []);
+          const scheduleResponses = await Promise.all(schedulePromises);
+          const monthSchedules: Schedule[] = [];
           
-          if (Array.isArray(schedules) && schedules.length > 0) {
-            // 이번 달 데이터의 상태별 개수 로깅
-            const monthStatus = {
-              total: schedules.length,
-              Y: schedules.filter((s: any) => s?.sch_status === 'Y').length,
-              H: schedules.filter((s: any) => s?.sch_status === 'H').length,
-              N: schedules.filter((s: any) => s?.sch_status === 'N').length,
-            };
-            if (monthStatus.total > 0) {
-              console.log(`  ${year}-${month} API 응답:`, monthStatus);
+          scheduleResponses.forEach((apiResponse: any) => {
+            if (!apiResponse) return;
+            
+            // API 응답에서 실제 스케줄 배열 추출
+            let schedules: any[] = [];
+            if (Array.isArray(apiResponse)) {
+              schedules = apiResponse;
+            } else if (Array.isArray(apiResponse?.items)) {
+              schedules = apiResponse.items;
+            } else if (apiResponse?.items?.items && Array.isArray(apiResponse.items.items)) {
+              schedules = apiResponse.items.items;
             }
             
-            // null이 아니고 날짜가 있는 항목만 추가
-            const validSchedules = schedules.filter((schedule: any) => 
-              schedule !== null && schedule.sch_sdate
-            );
-            allSchedules.push(...validSchedules);
-          }
+            if (Array.isArray(schedules) && schedules.length > 0) {
+              // null이 아니고 날짜가 있으며, currentTab에 맞는 sch_type만 필터링
+              const validSchedules = schedules.filter((schedule: any) => 
+                schedule !== null && 
+                schedule.sch_sdate &&
+                schedule.sch_type === (currentTab === 'vacation' ? 'vacation' : 'event')
+              );
+              monthSchedules.push(...validSchedules);
+            }
+          });
+          
+          return monthSchedules;
         } catch (error) {
-          // 해당 월 데이터가 없으면 무시
+          // 해당 월 데이터가 없으면 빈 배열 반환
+          return [];
         }
+      });
+      
+      // 모든 월의 데이터를 병렬로 가져옴
+      const monthResults = await Promise.all(monthPromises);
+      monthResults.forEach(monthSchedules => {
+        allSchedules.push(...monthSchedules);
+      });
+      
+      // 요청이 취소되었는지 최종 확인 (데이터 저장 직전에만 확인)
+      if (currentRequestRef.current !== requestId) {
+        // 요청이 취소된 경우 아무것도 하지 않음 (새 요청이 이미 시작되었을 수 있음)
+        return;
       }
       
-      console.log('📅 전체 일정 데이터:', allSchedules.length, '건');
-      console.log('📋 선택된 팀 ID:', teamIds);
-      
-      // 상태별 개수 확인
-      const statusCount = {
-        Y: allSchedules.filter(s => s.sch_status === 'Y').length,
-        H: allSchedules.filter(s => s.sch_status === 'H').length,
-        N: allSchedules.filter(s => s.sch_status === 'N').length,
-      };
-      console.log('📊 상태별 개수:', statusCount);
-      
-      // 팀별 필터링은 클라이언트에서 처리
-      let filteredByTeam = allSchedules;
-      if (teamIds.length > 0) {
-        filteredByTeam = allSchedules.filter(item => teamIds.includes(item.team_id));
-        console.log('✅ 팀 필터 적용 후:', filteredByTeam.length, '건');
-        
-        // 팀 필터 후 상태별 개수
-        const teamStatusCount = {
-          Y: filteredByTeam.filter(s => s.sch_status === 'Y').length,
-          H: filteredByTeam.filter(s => s.sch_status === 'H').length,
-          N: filteredByTeam.filter(s => s.sch_status === 'N').length,
-        };
-        console.log('📊 팀 필터 후 상태별 개수:', teamStatusCount);
+      // 현재 활성 탭과 일치하는지 최종 확인
+      if (activeTab !== currentTab) {
+        // 탭이 변경된 경우 아무것도 하지 않음 (새 요청이 이미 시작되었을 수 있음)
+        return;
       }
       
-      // 데이터 샘플 출력 (처음 3개)
-      if (filteredByTeam.length > 0) {
-        console.log('📝 데이터 샘플:', filteredByTeam.slice(0, 3));
-      }
+      // 최종 확인: 현재 활성 탭과 일치하는 데이터만 필터링
+      const filteredByType = allSchedules.filter(schedule => 
+        schedule.sch_type === (activeTab === 'vacation' ? 'vacation' : 'event')
+      );
       
-      setAllData(filteredByTeam);
+      // 중복 제거: 같은 id를 가진 항목은 하나만 유지
+      const uniqueSchedules = filteredByType.filter((schedule, index, self) =>
+        index === self.findIndex(s => s.id === schedule.id)
+      );
+      
+      // 전체 데이터 저장 (모든 필터링은 filteredData useMemo에서 처리)
+      // 요청이 취소되지 않았는지 다시 한 번 확인
+      if (currentRequestRef.current === requestId) {
+        setAllData(uniqueSchedules);
+        setLoading(false);
+      }
     } catch (error) {
-      console.error('❌ 일정 데이터 조회 실패:', error);
+      // 요청이 취소되었는지 확인
+      if (currentRequestRef.current !== requestId) {
+        // 요청이 취소된 경우 로딩 상태를 유지하지 않음
+        return;
+      }
       setAllData([]);
-    } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, filters.year, teamIds, user?.team_id, user?.user_level]);
+
+  // 데이터 조회 (연도 변경 시에만 API 호출)
+  useEffect(() => {
+    fetchScheduleData();
+  }, [fetchScheduleData]);
 
   // 필터링된 데이터
   const filteredData = useMemo(() => {
-    console.log('🔍 필터링 시작 - 원본 데이터:', allData.length, '건');
     let result = [...allData];
     
+    // 팀 필터 (가장 먼저 적용)
+    if (teamIds.length > 0) {
+      result = result.filter(item => teamIds.includes(item.team_id));
+    }
+    
     // 탭 필터 (휴가 vs 이벤트)
-    const beforeTab = result.length;
     if (activeTab === 'vacation') {
       result = result.filter(item => item.sch_type === 'vacation');
     } else if (activeTab === 'event') {
       result = result.filter(item => item.sch_type === 'event');
     }
-    console.log(`   탭 필터 (${activeTab}):`, beforeTab, '→', result.length, '건');
     
     // 연도 필터
-    const beforeYear = result.length;
     if (filters.year) {
       result = result.filter(item => {
-        return item.sch_year === parseInt(filters.year!);
+        // sch_sdate에서 연도 추출 (YYYY-MM-DD 형식)
+        if (item.sch_sdate) {
+          const year = dayjs(item.sch_sdate).format('YYYY');
+          return year === filters.year;
+        }
+        // sch_year 필드가 있으면 그것도 확인
+        if (item.sch_year) {
+          return String(item.sch_year) === filters.year;
+        }
+        return false;
       });
-      console.log(`   연도 필터 (${filters.year}):`, beforeYear, '→', result.length, '건');
     }
     
     // 상태 필터 (H=취소요청됨, Y=승인완료, N=취소완료)
     if (filters.status && filters.status.length > 0) {
-      const beforeStatus = result.length;
-      // toolbar에서 직접 'H', 'Y', 'N' 값을 사용하므로 매핑 불필요
       result = result.filter(item => filters.status!.includes(item.sch_status));
-      console.log(`   상태 필터:`, beforeStatus, '→', result.length, '건');
     }
     
     // 휴가 유형 필터
     if (filters.vacationType && filters.vacationType.length > 0 && activeTab === 'vacation') {
-      const beforeVacType = result.length;
       result = result.filter(item => {
         if (!item.sch_vacation_type) return false;
         return filters.vacationType!.includes(item.sch_vacation_type);
       });
-      console.log(`   휴가 유형 필터:`, beforeVacType, '→', result.length, '건');
     }
     
     // 이벤트 유형 필터
     if (filters.eventType && filters.eventType.length > 0 && activeTab === 'event') {
-      const beforeEvtType = result.length;
       result = result.filter(item => {
         if (!item.sch_event_type) return false;
         return filters.eventType!.includes(item.sch_event_type);
       });
-      console.log(`   이벤트 유형 필터:`, beforeEvtType, '→', result.length, '건');
     }
     
     // 정렬: 1) 승인대기 최우선, 2) 시작일 최근순
@@ -253,9 +359,8 @@ export default function VacationList({
       return dateB - dateA;
     });
     
-    console.log('✅ 최종 필터링 결과:', result.length, '건');
     return result;
-  }, [allData, activeTab, filters]);
+  }, [allData, teamIds, activeTab, filters]);
 
   // 페이지네이션 적용된 데이터
   const paginatedData = useMemo(() => {
@@ -264,9 +369,30 @@ export default function VacationList({
     return filteredData.slice(startIndex, endIndex);
   }, [filteredData, page, pageSize]);
 
+  // 페이지 변경 시 테이블을 맨 위로 스크롤
+  const tableRef = React.useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (tableRef.current && page > 1) {
+      tableRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [page]);
+
   // 전체 데이터 개수 및 페이지 수
   const total = filteredData.length;
   const totalPages = Math.ceil(total / pageSize);
+
+  // 탭 변경 시 데이터 초기화 및 첫 페이지로 이동
+  useEffect(() => {
+    setCheckedItems([]);
+    setCheckAll(false);
+    onCheckedItemsChange([]);
+    setPage(1);
+  }, [activeTab]);
+
+  // 팀 필터 변경 시 첫 페이지로 이동
+  useEffect(() => {
+    setPage(1);
+  }, [teamIds]);
 
   // 필터 변경 시 체크박스 초기화 및 첫 페이지로 이동
   useEffect(() => {
@@ -274,7 +400,7 @@ export default function VacationList({
     setCheckAll(false);
     onCheckedItemsChange([]);
     setPage(1);
-  }, [activeTab, filters]);
+  }, [filters]);
 
   // 전체 선택 (현재 페이지의 반려됨, 승인완료 제외)
   const handleCheckAll = (checked: boolean) => {
@@ -313,10 +439,9 @@ export default function VacationList({
     
     try {
       await scheduleApi.updateScheduleStatus(selectedEvent.id, 'H');
-      fetchScheduleData(); // 데이터 새로고침
+      fetchScheduleData();
       handleCloseEventDialog();
     } catch (error) {
-      console.error('취소 요청 실패:', error);
       throw error;
     }
   };
@@ -327,14 +452,13 @@ export default function VacationList({
     
     try {
       await scheduleApi.approveScheduleCancel(selectedEvent.id);
-      fetchScheduleData(); // 데이터 새로고침
+      fetchScheduleData();
       handleCloseEventDialog();
       toast({
         title: "취소 승인 완료",
         description: "일정 취소가 승인되었습니다.",
       });
     } catch (error) {
-      console.error('취소 승인 실패:', error);
       toast({
         title: "승인 실패",
         description: "취소 승인 중 오류가 발생했습니다.",
@@ -360,10 +484,8 @@ export default function VacationList({
         checkedItems.map(id => scheduleApi.approveScheduleCancel(id))
       );
       
-      // 확인 모달 닫기
       setIsConfirmDialogOpen(false);
       
-      // Toast로 성공 메시지 표시
       toast({
         title: "취소 승인 완료",
         description: `${count}개의 일정 취소가 승인되었습니다.`,
@@ -375,7 +497,6 @@ export default function VacationList({
       onCheckedItemsChange([]);
       fetchScheduleData();
     } catch (error) {
-      console.error('일괄 승인 실패:', error);
       toast({
         title: "승인 실패",
         description: "일괄 승인 중 오류가 발생했습니다.",
@@ -465,7 +586,8 @@ export default function VacationList({
 
   return (
     <>
-      <Table variant="primary" align="center" className="table-fixed">
+      <div ref={tableRef} className="w-full">
+      <Table key={`table-${page}-${activeTab}`} variant="primary" align="center" className="table-fixed w-full">
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className="w-[7%] text-center p-2">부서</TableHead>
@@ -474,7 +596,9 @@ export default function VacationList({
               {activeTab === 'vacation' ? '휴가 유형' : '이벤트 유형'}
             </TableHead>
             <TableHead className="w-[20%] text-center p-2">기간</TableHead>
-            <TableHead className="w-[20%] text-center p-2">사용휴가일수</TableHead>
+            {activeTab === 'vacation' && (
+              <TableHead className="w-[20%] text-center p-2">사용휴가일수</TableHead>
+            )}
             <TableHead className="w-[10%] text-center p-2">등록일</TableHead>
             <TableHead className="w-[8%] text-center p-2">상태</TableHead>
             <TableHead className="w-[5%] text-center p-2">
@@ -488,23 +612,23 @@ export default function VacationList({
           </TableRow>
         </TableHeader>
 
-        <TableBody>
+        <TableBody key={`tbody-${page}-${activeTab}`}>
         {loading ? (
           <TableRow>
-            <TableCell className="h-100 text-gray-500" colSpan={8}>
-              일정 데이터 불러오는 중
+            <TableCell className="h-100 text-gray-500 w-full" colSpan={activeTab === 'vacation' ? 8 : 7}>
+              데이터 불러오는 중
             </TableCell>
           </TableRow>
-        ) : paginatedData.length === 0 ? (
+        ) : !loading && paginatedData.length === 0 ? (
           <TableRow>
-            <TableCell className="h-100 text-gray-500" colSpan={8}>
-              일정 데이터가 없습니다.
+            <TableCell className="h-100 text-gray-500 w-full" colSpan={activeTab === 'vacation' ? 8 : 7}>
+              데이터가 없습니다.
             </TableCell>
           </TableRow>
         ) : (
-          paginatedData.map((item) => (
+          paginatedData.map((item, index) => (
             <TableRow 
-              key={item.id}
+              key={`${item.id}-${item.sch_sdate}-${item.user_id}-${index}`}
               className="[&_td]:text-[13px] cursor-pointer hover:bg-gray-50"
               onClick={() => handleEventClick(item)}
             >
@@ -517,7 +641,9 @@ export default function VacationList({
                 }
               </TableCell>
               <TableCell className="text-center p-2">{getDateRangeText(item)}</TableCell>
-              <TableCell className="text-center p-2">{item.sch_vacation_used}</TableCell>
+              {activeTab === 'vacation' && item.sch_vacation_used && (
+                <TableCell className="text-center p-2">{item.sch_vacation_used}</TableCell>
+              )}
               <TableCell className="text-center p-2">
                 {item.sch_created_at ? dayjs(item.sch_created_at).format('YYYY-MM-DD') : '-'}
               </TableCell>
@@ -552,9 +678,18 @@ export default function VacationList({
         )}
         </TableBody>
       </Table>
+      </div>
       {total > 0 && (
         <div className="mt-5">
-          <AppPagination totalPages={totalPages} initialPage={page} visibleCount={5} onPageChange={(p) => setPage(p)} />
+          <AppPagination 
+            key={`pagination-${page}-${activeTab}`}
+            totalPages={totalPages} 
+            initialPage={page} 
+            visibleCount={10} 
+            onPageChange={(p) => {
+              setPage(p);
+            }} 
+          />
         </div>
       )}
 

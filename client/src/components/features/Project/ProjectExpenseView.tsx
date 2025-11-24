@@ -103,14 +103,12 @@ export default function projectExpenseView() {
 
   return (
     <>
-      <div className="flex items-end justify-between border-b border-b-gray-300 pb-2">
+      <div className="flex items-end justify-between">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-950">
-            {header.el_title} {status}
-          </h1>
-          <ul className="itmes-center flex gap-2 text-base text-gray-500">
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-950">{header.el_title}</h1>
+          {/* <ul className="itmes-center flex gap-2 text-base text-gray-500">
             <li>{formatKST(header.wdate)}</li>
-          </ul>
+          </ul> */}
         </div>
         <div className="flex gap-2">
           {header.status === 'Saved' && (
@@ -158,19 +156,19 @@ export default function projectExpenseView() {
               </TableColumn>
             </div>
 
-            {header.remark && (
-              <div className="flex w-[31.33%] flex-col">
-                <h3 className="mb-2 text-lg font-bold text-gray-800">비고</h3>
-                <TableColumn className="flex-1">
-                  <TableColumnHeader className="h-full text-[13px]">
-                    <TableColumnHeaderCell className="h-full">비고</TableColumnHeaderCell>
-                  </TableColumnHeader>
-                  <TableColumnBody className="h-full text-[13px]">
-                    <TableColumnCell className="h-full whitespace-pre">{header.remark}</TableColumnCell>
-                  </TableColumnBody>
-                </TableColumn>
-              </div>
-            )}
+            <div className="flex w-[31.33%] flex-col">
+              <h3 className="mb-2 text-lg font-bold text-gray-800">비고</h3>
+              <TableColumn className="flex-1">
+                <TableColumnHeader className="h-full text-[13px]">
+                  <TableColumnHeaderCell className="h-[33.33%]">비용 상태</TableColumnHeaderCell>
+                  <TableColumnHeaderCell className="h-[66.66%]">비고</TableColumnHeaderCell>
+                </TableColumnHeader>
+                <TableColumnBody className="h-full text-[13px]">
+                  <TableColumnCell className="h-[33.33%]">{status}</TableColumnCell>
+                  <TableColumnCell className="h-[66.66%] whitespace-pre">{header.remark}</TableColumnCell>
+                </TableColumnBody>
+              </TableColumn>
+            </div>
           </div>
           <div className="mt-6">
             <h3 className="mb-2 text-lg font-bold text-gray-800">비용 항목</h3>
@@ -221,7 +219,7 @@ export default function projectExpenseView() {
                       )}
                       <TableCell>
                         {item.pro_id ? (
-                          <Link to={`/expense/proposal/${item.pro_id}`} target="_blank" rel="noopener noreferrer">
+                          <Link to={`/project/proposal/${item.pro_id}`} target="_blank" rel="noopener noreferrer">
                             <LinkIcon className="mx-auto size-4" />
                           </Link>
                         ) : (

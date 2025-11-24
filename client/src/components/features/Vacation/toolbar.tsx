@@ -3,7 +3,7 @@ import { Button } from "@components/ui/button";
 import { MultiSelect } from "@components/multiselect/multi-select";
 import { useAuth } from '@/contexts/AuthContext';
 import { getTeams } from '@/api/teams';
-import { type MyTeamItem } from '@/api/working';
+import { workingApi, type MyTeamItem } from '@/api/working';
 import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // 셀렉트 옵션 타입 정의
@@ -57,15 +57,11 @@ export default function VacationToolbar({
         return;
       }
       
-      // 전체 팀 목록 조회
-      const allTeamDetails = await getTeams({});
-      
-      let teamItems: MyTeamItem[] = [];
-      
       // admin 권한 체크
       if (user.user_level === 'admin') {
-        // 모든 팀 표시
-        teamItems = allTeamDetails.map(team => ({
+        // admin인 경우: 모든 팀 표시
+        const allTeamDetails = await getTeams({});
+        const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
           seq: 0,
           manager_id: user.user_id,
           manager_name: user.user_name || '',
@@ -79,57 +75,9 @@ export default function VacationToolbar({
         return;
       }
       
-      // 일반 사용자 (manager)
-      if (!user?.team_id) {
-        return;
-      }
-      
-      // 사용자의 팀 정보 찾기
-      const myTeam = allTeamDetails.find(t => t.team_id === user.team_id);
-      if (!myTeam) {
-        return;
-      }
-      
-      if (myTeam.level === 0) {
-        // 국장인 경우: 본인의 국과 모든 하위 팀 표시
-        // 본인의 국 추가
-        teamItems.push({
-          seq: 0,
-          manager_id: user.user_id,
-          manager_name: user.user_name || '',
-          team_id: myTeam.team_id,
-          team_name: myTeam.team_name,
-          parent_id: myTeam.parent_id || undefined,
-          level: myTeam.level,
-        });
-        
-        // 하위 팀들 추가
-        const subTeams = allTeamDetails.filter(t => t.parent_id === myTeam.team_id);
-        subTeams.forEach(sub => {
-          teamItems.push({
-            seq: 0,
-            manager_id: user.user_id,
-            manager_name: user.user_name || '',
-            team_id: sub.team_id,
-            team_name: sub.team_name,
-            parent_id: sub.parent_id || undefined,
-            level: sub.level,
-          });
-        });
-      } else if (myTeam.level === 1) {
-        // 팀장인 경우: 본인의 팀만 표시
-        teamItems = [{
-          seq: 0,
-          manager_id: user.user_id,
-          manager_name: user.user_name || '',
-          team_id: myTeam.team_id,
-          team_name: myTeam.team_name,
-          parent_id: myTeam.parent_id || undefined,
-          level: myTeam.level,
-        }];
-      } else {
-        return;
-      }
+      // manager인 경우: /manager/myteam API로 사용자가 관리하는 모든 팀 조회
+      const myTeamResponse = await workingApi.getMyTeamList();
+      const teamItems: MyTeamItem[] = myTeamResponse.items || [];
       
       setTeams(teamItems);
       
@@ -267,7 +215,7 @@ export default function VacationToolbar({
               { value: 'N', label: '취소완료' },
             ]}
             onValueChange={(value) => handleSelectChange('status', value)}
-            value={filters.status}
+            defaultValue={filters.status}
             placeholder="상태"
             size="sm"
             maxCount={0}
@@ -289,7 +237,7 @@ export default function VacationToolbar({
                 { value: 'official', label: '공가' },
               ]}
               onValueChange={(value) => handleSelectChange('vacationType', value)}
-              value={filters.vacationType}
+              defaultValue={filters.vacationType}
               placeholder="휴가 유형"
               size="sm"
               maxCount={0}
@@ -312,7 +260,7 @@ export default function VacationToolbar({
                 { value: 'etc', label: '기타' },
               ]}
               onValueChange={(value) => handleSelectChange('eventType', value)}
-              value={filters.eventType}
+              defaultValue={filters.eventType}
               placeholder="이벤트 유형"
               size="sm"
               maxCount={0}

@@ -22,7 +22,7 @@ export default function ManagerWorking() {
   };
 
   return (
-    <div>
+    <div className="mb-5">
       <Toolbar 
         currentDate={currentDate} 
         onDateChange={setCurrentDate} 

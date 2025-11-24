@@ -12,11 +12,35 @@ interface OverviewProps {
     overtimeWorkHours: number;
     overtimeWorkMinutes: number;
   };
+  variant?: 'default' | 'compact';
+  className?: string;
 }
 
-export default function Overview({ weeklyStats }: OverviewProps) {
+export default function Overview({ weeklyStats, variant = 'default', className }: OverviewProps) {
+  const isCompact = variant === 'compact';
+  
+  if (isCompact) {
+    return (
+      <div className={className}>
+        <div className="flex flex-col gap-0">
+          <div className="flex items-center gap-1 ">
+            <span className="text-gray-800 text-xl font-black">주간누적</span>
+            <span className="text-primary-blue-500 text-lg font-bold">{weeklyStats?.workHours || 0}시간 {String(weeklyStats?.workMinutes || 0).padStart(2, '0')}분</span>
+          </div>
+          <p className="flex items-center gap-x-1 text-sm text-gray-700">
+            이번 주 근무 시간이 {weeklyStats?.remainingHours || 0}시간 {String(weeklyStats?.remainingMinutes || 0).padStart(2, '0')}분 남았어요.
+          </p>
+        </div>
+        <WorkHoursBar 
+          hours={(weeklyStats?.workHours || 0) + ((weeklyStats?.workMinutes || 0) / 60)} 
+          className="mt-4" 
+        />
+      </div>
+    );
+  }
+  
   return (
-    <div className="flex align-center justify-center border border-gray-300 p-7.5">
+    <div className={`flex align-center justify-center border border-gray-300 p-7.5 ${className || ''}`}>
       <div className="flex flex-col gap-2 border-r border-gray-300 pr-10 mr-10">
         <div className="flex flex-col gap-0">
           <div className="flex items-center gap-1 ">

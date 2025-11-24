@@ -249,6 +249,88 @@ export interface pExpenseViewDTO {
   logs: pExpenseLogDTO[];
 }
 
+// ------------------------------
+// 견적서
+// ------------------------------
+export type projectEstimateParams = {
+  project_id?: string;
+  page?: number;
+  size?: number;
+};
+
+export type EstimateListItem = {
+  est_id: number;
+  project_id: string;
+  user_id: string;
+  user_nm: string;
+  est_title: string;
+  est_amount: number;
+  est_budget: number;
+  est_valid: string;
+  wdate: string;
+  items_count?: number; // 해당 견적서에 등록된 항목 갯수
+  evidences_count?: number; // 해당 견적서에 등록된 증빙자료 갯수
+};
+
+// 프로젝트 견적서 리스트 Reponse
+export type projectEstimateResponse = {
+  items: EstimateListItem[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+};
+
+// 프로젝트 견적서 작성 Payload
+// 견적서 Header 타입
+export interface EstimateHeader {
+  project_id: string; // 프로젝트 ID
+  est_title: string; // 견적서 제목
+  est_valid: 'Y' | 'S'; // 신규(Y) / 추가(S)
+}
+
+// 견적서 Body 항목 타입
+export interface EstimateItem {
+  ei_type: string;
+  ei_name: string;
+  unit_price?: number;
+  qty?: number;
+  amount?: number;
+  exp_cost?: number;
+  remarks?: string;
+  ei_order: number; // 배열의 순서
+}
+
+// 증빙 항목 타입 (footer)
+export interface EstimateEvidenceItem {
+  ee_fname: string;
+  ee_sname: string;
+  ee_size: number;
+  ee_type: string;
+  remark?: string;
+}
+
+// 전체 Payload 타입
+export interface EstimatePayload {
+  header: EstimateHeader;
+  body: EstimateItem[];
+  footer: EstimateEvidenceItem[];
+}
+
+// 견적서 작성 응답 타입
+export interface EstimateRegisterResponse {
+  ok: boolean;
+  est_id: number;
+  totals: {
+    est_amount: number;
+  };
+  counts: {
+    items: number;
+    evidences: number;
+    match_deleted: number;
+  };
+}
+
 // 즐겨찾기 리스트
 export const getBookmarkList = async () => {
   const res = await http<{ project_id: string }[]>('/user/project/bookmark/list', { method: 'GET' });
@@ -340,4 +422,23 @@ export async function claimProjectTempExpense(payload: { seqs: number[] }): Prom
   const res = http<{ ok: boolean }>(`/user/pexpense/claim/`, { method: 'POST', body: JSON.stringify(payload) });
 
   return res;
+}
+
+// 견적서 리스트 조회
+export async function getEstimateList(params: projectEstimateParams) {
+  const clean = cleanParams(params);
+
+  // 쿼리스트링으로 변환
+  const query = new URLSearchParams(clean as Record<string, string>).toString();
+  const res = await http<projectEstimateResponse>(`/user/estimate/list?${query}`, { method: 'GET' });
+
+  return res;
+}
+
+// 견적서 작성하기
+export async function estimateRegister(payload: EstimatePayload) {
+  return http<EstimateRegisterResponse>(`/user/estimate/register`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
