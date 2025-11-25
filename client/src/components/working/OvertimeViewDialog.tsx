@@ -77,8 +77,8 @@ export default function OvertimeViewDialog({
            (user?.team_id === 1 || user?.team_id === 5);
   };
   
-  // 보상 지급 가능 여부 확인 (HR/Finance팀이고 휴일 근무 탭이며 보상요청 상태일 때)
-  const canShowCompensation = isHrOrFinanceTeam() && activeTab === 'weekend' && status === '보상요청';
+  // 보상 지급 가능 여부 확인 (HR/Finance팀이고 휴일 근무 탭이며 보상대기 상태일 때)
+  const canShowCompensation = isHrOrFinanceTeam() && activeTab === 'weekend' && status === '보상대기';
   
   // 신청 취소하기 확인 다이얼로그
   const handleCancelClick = () => {
@@ -459,7 +459,7 @@ export default function OvertimeViewDialog({
               </>
             )}
 
-            {/* HR/Finance팀 관리자 모드 - 보상요청 상태일 때 보상 지급하기 버튼 */}
+            {/* HR/Finance팀 관리자 모드 - 보상대기 상태일 때 보상 지급하기 버튼 */}
             {canShowCompensation && isManager && !isOwnRequest && (
               <Button variant="default" onClick={handleCompensationClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
                 보상 지급하기

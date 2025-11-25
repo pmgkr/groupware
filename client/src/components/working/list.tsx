@@ -110,12 +110,12 @@ export default function WorkingList({
     setSelectedOvertime({ userId, dayKey, overtimeId });
     setIsOvertimeDialogOpen(true);
     
-    // 초과근무 상세 정보 조회
+    // 추가근무 상세 정보 조회
     try {
       const detail = await workingApi.getManagerOvertimeDetail(parseInt(overtimeId));
       setOvertimeDetailData(detail);
     } catch (error) {
-      console.error('초과근무 상세 조회 실패:', error);
+      console.error('추가근무 상세 조회 실패:', error);
     }
   };
 

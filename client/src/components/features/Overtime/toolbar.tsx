@@ -160,10 +160,10 @@ export default function OvertimeToolbar({
         { value: 'rejected', label: '반려됨' },
       ];
     } else {
-      // 휴일 근무: 승인대기, 보상요청, 보상완료, 반려됨
+      // 휴일 근무: 승인대기, 보상대기, 보상완료, 반려됨
       return [
         { value: 'pending', label: '승인대기' },
-        { value: 'approved', label: '보상요청' },
+        { value: 'approved', label: '보상대기' },
         { value: 'confirmed', label: '보상완료' },
         { value: 'rejected', label: '반려됨' },
       ];
@@ -181,7 +181,7 @@ export default function OvertimeToolbar({
       setFilters(newFilters);
       onFilterChange(newFilters);
     } else {
-      // 휴일: 승인대기, 보상요청 기본 선택
+      // 휴일: 승인대기, 보상대기 기본 선택
       const newFilters = {
         ...filters,
         status: ['pending', 'approved']

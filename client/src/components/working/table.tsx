@@ -72,7 +72,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
     
     if (currentStatus === "신청하기" || currentStatus === "반려됨") {
       try {
-        // 초과근무 API 파라미터 구성
+        // 추가근무 API 파라미터 구성
         const apiParams = buildOvertimeApiParams(selectedDay, overtimeData);
         
         // API 호출
@@ -84,9 +84,9 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
         setDialogOpen(false);
         setSelectedIndex(null);
       } catch (error: any) {
-        console.error('초과근무 신청 실패:', error);
+        console.error('추가근무 신청 실패:', error);
         const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
-        alert(`초과근무 신청에 실패했습니다.\n오류: ${errorMessage}`);
+        alert(`추가근무 신청에 실패했습니다.\n오류: ${errorMessage}`);
       }
     }
   };
@@ -107,11 +107,11 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
     const selectedDay = data[selectedIndex];
     
     if (!selectedDay.overtimeId) {
-      throw new Error('초과근무 ID를 찾을 수 없습니다.');
+      throw new Error('추가근무 ID를 찾을 수 없습니다.');
     }
     
     if (selectedDay.overtimeStatus !== "승인대기") {
-      throw new Error('승인대기 상태의 초과근무만 취소할 수 있습니다.');
+      throw new Error('승인대기 상태의 추가근무만 취소할 수 있습니다.');
     }
     
     try {
@@ -123,7 +123,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
       setViewDialogOpen(false);
       setSelectedIndex(null);
     } catch (error: any) {
-      console.error('초과근무 취소 실패:', error);
+      console.error('추가근무 취소 실패:', error);
       throw error;
     }
   };

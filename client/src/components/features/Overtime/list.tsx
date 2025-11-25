@@ -161,7 +161,7 @@ export default function OvertimeList({
       
       setAllData(uniqueItems);
     } catch (error) {
-      console.error('초과근무 데이터 조회 실패:', error);
+      console.error('추가근무 데이터 조회 실패:', error);
       setAllData([]);
     } finally {
       setLoading(false);
@@ -335,12 +335,12 @@ export default function OvertimeList({
     setSelectedOvertime(item);
     setIsOvertimeDialogOpen(true);
     
-    // 초과근무 상세 정보 조회
+    // 추가근무 상세 정보 조회
     try {
       const detail = await workingApi.getManagerOvertimeDetail(item.id);
       setOvertimeDetailData(detail);
     } catch (error) {
-      console.error('초과근무 상세 조회 실패:', error);
+      console.error('추가근무 상세 조회 실패:', error);
     }
   };
 
@@ -379,7 +379,7 @@ export default function OvertimeList({
     }
   };
 
-  // 보상 지급 핸들러 (보상요청 상태 승인)
+  // 보상 지급 핸들러 (보상대기 상태 승인)
   const handleCompensationOvertime = async () => {
     if (!selectedOvertime?.id) return;
     
@@ -470,7 +470,7 @@ export default function OvertimeList({
   const getStatusText = (status: string) => {
     switch (status) {
       case 'H': return '승인대기';
-      case 'T': return activeTab === 'weekday' ? '승인완료' : '보상요청';
+      case 'T': return activeTab === 'weekday' ? '승인완료' : '보상대기';
       case 'Y': return '보상완료';
       case 'N': return '반려됨';
       default: return status;
@@ -524,7 +524,7 @@ export default function OvertimeList({
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className="w-[7%] text-center p-2">부서</TableHead>
             <TableHead className="w-[7%] text-center p-2">이름</TableHead>
-            <TableHead className="w-[10%] text-center p-2">초과근무날짜</TableHead>
+            <TableHead className="w-[10%] text-center p-2">추가근무날짜</TableHead>
             {activeTab === 'weekday' ?
                 <>
                 <TableHead className="w-[8%] text-center p-2">예상퇴근시간</TableHead>
@@ -556,13 +556,13 @@ export default function OvertimeList({
         {loading ? (
           <TableRow>
             <TableCell className="h-100 text-gray-500" colSpan={10}>
-              초과근무 신청 데이터 불러오는 중
+              추가근무 신청 데이터 불러오는 중
             </TableCell>
           </TableRow>
         ) : paginatedData.length === 0 ? (
           <TableRow>
             <TableCell className="h-100 text-gray-500" colSpan={10}>
-              초과근무 신청 데이터가 없습니다.
+              추가근무 신청 데이터가 없습니다.
             </TableCell>
           </TableRow>
         ) : (
@@ -604,7 +604,7 @@ export default function OvertimeList({
                   <Badge 
                     variant={activeTab === 'weekday' ? 'outline' : 'secondary'} 
                     size="table" 
-                    title={activeTab === 'weekday' ? '승인완료' : '보상요청'}
+                    title={activeTab === 'weekday' ? '승인완료' : '보상대기'}
                   >
                     {getStatusText(item.ot_status)}
                   </Badge>
@@ -680,8 +680,8 @@ export default function OvertimeList({
         const mapStatus = (status: string) => {
           if (status === 'H') return '승인대기';
           if (status === 'T') {
-            // 평일 추가근무는 승인완료, 휴일 근무는 보상요청
-            return activeTab === 'weekday' ? '승인완료' : '보상요청';
+            // 평일 추가근무는 승인완료, 휴일 근무는 보상대기
+            return activeTab === 'weekday' ? '승인완료' : '보상대기';
           }
           if (status === 'N') return '반려됨';
           return '신청하기';
@@ -718,7 +718,7 @@ export default function OvertimeList({
               totalHours: 0,
               totalMinutes: 0,
               overtimeStatus: overtimeDetailData?.info ? mapStatus(overtimeDetailData.info.ot_status) : 
-                            getStatusText(selectedOvertime.ot_status) as "신청하기" | "승인대기" | "승인완료" | "반려됨" | "보상요청",
+                            getStatusText(selectedOvertime.ot_status) as "신청하기" | "승인대기" | "승인완료" | "반려됨" | "보상대기",
               overtimeData: convertOvertimeData()
             }}
           />
