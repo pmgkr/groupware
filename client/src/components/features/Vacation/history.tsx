@@ -56,6 +56,7 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
   // 일정 다이얼로그 state
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<MyVacationItem | null>(null);
+  const [selectedCancelledItem, setSelectedCancelledItem] = useState<MyVacationItem | null>(null);
 
   // 연도 변경 핸들러
   const handleYearChange = (year: string) => {
@@ -145,9 +146,19 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
   const total = groupedData.length;
   const totalPages = Math.ceil(total / pageSize);
 
+  // sch_status를 상태 텍스트로 변환하는 함수
+  const getScheduleStatusText = (schStatus?: string): "등록 완료" | "취소 요청됨" | "취소 완료" => {
+    if (!schStatus) return '등록 완료';
+    if (schStatus === 'Y') return '등록 완료';
+    if (schStatus === 'H') return '취소 요청됨';
+    if (schStatus === 'N') return '취소 완료';
+    return '등록 완료';
+  };
+
   // 일정 클릭 핸들러
-  const handleEventClick = async (item: MyVacationItem) => {
+  const handleEventClick = async (item: MyVacationItem, cancelledItem?: MyVacationItem) => {
     setSelectedEvent(item);
+    setSelectedCancelledItem(cancelledItem || null);
     setIsEventDialogOpen(true);
   };
 
@@ -155,6 +166,7 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
   const handleCloseEventDialog = () => {
     setIsEventDialogOpen(false);
     setSelectedEvent(null);
+    setSelectedCancelledItem(null);
   };
 
   // 취소 요청 핸들러 (사용자가 취소 신청)
@@ -257,12 +269,13 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
                 key={`${group.item.sch_id}-${index}`}
                 className={`[&_td]:text-[13px] cursor-pointer ${
                   hasCancelled 
-                    ? 'bg-gray-200 [&_td]:text-gray-500' 
+                    // ? ' [&_td]:text-gray-400' 
+                    ? 'opacity-40' 
                     : ''
                 }`}
-                onClick={() => handleEventClick(group.item)}
+                onClick={() => handleEventClick(group.item, group.cancelledItem)}
               >
-                <TableCell className="text-gray-800! text-center p-2">{group.item.sdate} - {group.item.edate}</TableCell>
+                <TableCell className="text-center p-2">{group.item.sdate} - {group.item.edate}</TableCell>
                 <TableCell className="text-center p-2">
                   <div className="flex flex-col gap-0.5">
                     <span>{getVacationTypeText(group.item.v_type)}</span>
@@ -327,7 +340,7 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
           onApproveCancel={handleApproveCancel}
           selectedEvent={{
             id: String(selectedEvent.sch_id),
-            title: selectedEvent.remark || '',
+            title: getVacationTypeText(selectedEvent.v_type) || '',
             description: selectedEvent.remark || '',
             startDate: selectedEvent.sdate,
             endDate: selectedEvent.edate,
@@ -339,7 +352,9 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
             author: user?.user_name || '-',
             userId: user?.user_id || '',
             teamId: user?.team_id || 0,
-            status: '등록 완료',
+            status: selectedCancelledItem 
+              ? '취소 완료' 
+              : getScheduleStatusText(selectedEvent.sch_status),
             createdAt: selectedEvent.wdate
           }}
         />
