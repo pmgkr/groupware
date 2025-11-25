@@ -29,7 +29,7 @@ export function TableColumnHeaderCell({ className, ...props }: React.ComponentPr
   return (
     <div
       data-slot="tableColumn-header-cell"
-      className={cn('bg-primary-blue-100 flex items-center border-b border-gray-300 px-5 py-2.5 last:border-b-0', className)}
+      className={cn('bg-primary-blue-100 flex h-full items-center border-b border-gray-300 px-5 py-2.5 last:border-b-0', className)}
       {...props}
     />
   );
@@ -40,7 +40,7 @@ export function TableColumnCell({ className, ...props }: React.ComponentProps<'d
   return (
     <div
       data-slot="tableColumn-cell"
-      className={cn('flex items-center border-b border-gray-300 px-4 py-2.5 text-gray-800 last:border-b-0', className)}
+      className={cn('flex h-full items-center border-b border-gray-300 px-4 py-2.5 text-gray-800 last:border-b-0', className)}
       {...props}
     />
   );

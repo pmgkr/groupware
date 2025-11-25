@@ -159,10 +159,12 @@ export function mapExcelToQuotationItems(excelData: any[]): any[] {
     const amount = Math.round(rawAmount);
     const remarks = remarksRaw ? String(remarksRaw).trim() : '';
 
+    const isTotalButNotLast = /total/i.test(item) && !/grand\s*total/i.test(item) && row !== excelData[excelData.length - 1];
+
     // ----------------------------------------
     // Sub Total
     // ----------------------------------------
-    if (/^sub\s*total/i.test(item)) {
+    if (/^sub\s*total/i.test(item) || isTotalButNotLast) {
       result.push({
         type: 'subtotal',
         label: item,
