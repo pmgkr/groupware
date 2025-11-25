@@ -3,7 +3,7 @@ import { Button } from "@components/ui/button";
 import { MultiSelect } from "@components/multiselect/multi-select";
 import { useAuth } from '@/contexts/AuthContext';
 import { getTeams } from '@/api/teams';
-import { workingApi, type MyTeamItem } from '@/api/working';
+import { getTeams as getManagerTeams, type MyTeamItem } from '@/api/manager/teams';
 import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // 셀렉트 옵션 타입 정의
@@ -27,6 +27,8 @@ interface OvertimeToolbarProps {
   onFilterChange?: (filters: OvertimeFilters) => void;
   checkedItems?: number[];
   onApproveAll?: () => void;
+  page?: 'manager' | 'admin';
+  maxCount?: number;
 }
 
 export default function OvertimeToolbar({ 
@@ -35,7 +37,9 @@ export default function OvertimeToolbar({
   onTeamSelect = () => {},
   onFilterChange = () => {},
   checkedItems = [],
-  onApproveAll = () => {}
+  onApproveAll = () => {},
+  page = 'manager',
+  maxCount = 0
 }: OvertimeToolbarProps) {
   const { user } = useAuth();
   
@@ -59,9 +63,9 @@ export default function OvertimeToolbar({
         return;
       }
       
-      // admin 권한 체크
-      if (user.user_level === 'admin') {
-        // admin인 경우: 모든 팀 표시
+      // page prop에 따라 분기
+      if (page === 'admin') {
+        // admin 페이지: 모든 팀 표시
         const allTeamDetails = await getTeams({});
         const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
           seq: 0,
@@ -77,9 +81,17 @@ export default function OvertimeToolbar({
         return;
       }
       
-      // manager인 경우: /manager/myteam API로 사용자가 관리하는 모든 팀 조회
-      const myTeamResponse = await workingApi.getMyTeamList();
-      const teamItems: MyTeamItem[] = myTeamResponse.items || [];
+      // manager 페이지: 권한 상관없이 자기가 팀장인 팀 목록만 조회
+      const allTeamDetails = await getManagerTeams({});
+      const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
+        seq: 0,
+        manager_id: team.manager_id || '',
+        manager_name: team.manager_name || '',
+        team_id: team.team_id,
+        team_name: team.team_name,
+        parent_id: team.parent_id || undefined,
+        level: team.level,
+      }));
       
       setTeams(teamItems);
       
@@ -125,7 +137,7 @@ export default function OvertimeToolbar({
   // 초기 팀 목록 로드
   useEffect(() => {
     loadTeams();
-  }, [user]);
+  }, [user, page]);
 
   // 팀 목록이 로드되면 모든 팀 선택
   useEffect(() => {
@@ -137,6 +149,7 @@ export default function OvertimeToolbar({
       const teamIds = allTeamIds.map(id => parseInt(id));
       onTeamSelect(teamIds);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teams]);
 
   // 팀 옵션 (알파벳순 정렬)
@@ -181,10 +194,10 @@ export default function OvertimeToolbar({
       setFilters(newFilters);
       onFilterChange(newFilters);
     } else {
-      // 휴일: 승인대기, 보상대기 기본 선택
+      // 휴일: 승인대기만 기본 선택
       const newFilters = {
         ...filters,
-        status: ['pending', 'approved']
+        status: ['pending']
       };
       setFilters(newFilters);
       onFilterChange(newFilters);

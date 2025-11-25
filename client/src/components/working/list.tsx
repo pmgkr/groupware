@@ -8,6 +8,8 @@ import OvertimeViewDialog from '@/components/working/OvertimeViewDialog';
 import WorkTimeEditDialog from '@/components/working/WorkTimeEditDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { workingApi } from '@/api/working';
+import { managerOvertimeApi } from '@/api/manager/overtime';
+import { managerWorkingApi } from '@/api/manager/working';
 import { Settings } from 'lucide-react';
 
 export interface DayWorkInfo {
@@ -112,7 +114,7 @@ export default function WorkingList({
     
     // 추가근무 상세 정보 조회
     try {
-      const detail = await workingApi.getManagerOvertimeDetail(parseInt(overtimeId));
+      const detail = await managerOvertimeApi.getManagerOvertimeDetail(parseInt(overtimeId));
       setOvertimeDetailData(detail);
     } catch (error) {
       console.error('추가근무 상세 조회 실패:', error);
@@ -131,7 +133,7 @@ export default function WorkingList({
     if (!selectedOvertime?.overtimeId) return;
     
     try {
-      await workingApi.approveOvertime(parseInt(selectedOvertime.overtimeId));
+      await managerOvertimeApi.approveOvertime(parseInt(selectedOvertime.overtimeId));
       // 데이터 새로고침을 위해 부모 컴포넌트에 알림 (나중에 구현)
       window.location.reload(); // 임시로 새로고침
     } catch (error) {
@@ -145,7 +147,7 @@ export default function WorkingList({
     if (!selectedOvertime?.overtimeId) return;
     
     try {
-      await workingApi.rejectOvertime(parseInt(selectedOvertime.overtimeId), reason);
+      await managerOvertimeApi.rejectOvertime(parseInt(selectedOvertime.overtimeId), reason);
       // 데이터 새로고침을 위해 부모 컴포넌트에 알림 (나중에 구현)
       window.location.reload(); // 임시로 새로고침
     } catch (error) {
@@ -189,7 +191,7 @@ export default function WorkingList({
         endpoint: '/manager/wlog/update'
       });
       
-      await workingApi.updateWorkTime(
+      await managerWorkingApi.updateWorkTime(
         selectedWorkTime.userId,
         selectedWorkTime.date,
         startTime,

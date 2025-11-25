@@ -43,6 +43,7 @@ export default function ManagerVacation() {
         onFilterChange={handleFilterChange}
         checkedItems={checkedItems}
         onApproveAll={handleApproveAll}
+        page="manager"
       />
       
       <VacationList

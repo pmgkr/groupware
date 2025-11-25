@@ -3,7 +3,7 @@ import { Button } from "@components/ui/button";
 import { MultiSelect } from "@components/multiselect/multi-select";
 import { useAuth } from '@/contexts/AuthContext';
 import { getTeams } from '@/api/teams';
-import { workingApi, type MyTeamItem } from '@/api/working';
+import { getTeams as getManagerTeams, type MyTeamItem } from '@/api/manager/teams';
 import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // 셀렉트 옵션 타입 정의
@@ -26,6 +26,8 @@ interface VacationToolbarProps {
   onFilterChange?: (filters: VacationFilters) => void;
   checkedItems?: number[];
   onApproveAll?: () => void;
+  page?: 'manager' | 'admin';
+  maxCount?: number;
 }
 
 export default function VacationToolbar({ 
@@ -34,7 +36,9 @@ export default function VacationToolbar({
   onTeamSelect = () => {},
   onFilterChange = () => {},
   checkedItems = [],
-  onApproveAll = () => {}
+  onApproveAll = () => {},
+  page = 'manager',
+  maxCount = 0
 }: VacationToolbarProps) {
   const { user } = useAuth();
   
@@ -45,7 +49,7 @@ export default function VacationToolbar({
   // 일정 필터 state
   const [filters, setFilters] = useState<VacationFilters>({
     year: new Date().getFullYear().toString(),
-    status: [],
+    status: page === 'manager' ? ['H'] : [], // manager 페이지에서는 취소요청됨(H) 기본 선택
     vacationType: [],
     eventType: []
   });
@@ -57,9 +61,9 @@ export default function VacationToolbar({
         return;
       }
       
-      // admin 권한 체크
-      if (user.user_level === 'admin') {
-        // admin인 경우: 모든 팀 표시
+      // page prop에 따라 분기
+      if (page === 'admin') {
+        // admin 페이지: 모든 팀 표시
         const allTeamDetails = await getTeams({});
         const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
           seq: 0,
@@ -75,9 +79,17 @@ export default function VacationToolbar({
         return;
       }
       
-      // manager인 경우: /manager/myteam API로 사용자가 관리하는 모든 팀 조회
-      const myTeamResponse = await workingApi.getMyTeamList();
-      const teamItems: MyTeamItem[] = myTeamResponse.items || [];
+      // manager 페이지: 권한 상관없이 자기가 팀장인 팀 목록만 조회
+      const allTeamDetails = await getManagerTeams({});
+      const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
+        seq: 0,
+        manager_id: team.manager_id || '',
+        manager_name: team.manager_name || '',
+        team_id: team.team_id,
+        team_name: team.team_name,
+        parent_id: team.parent_id || undefined,
+        level: team.level,
+      }));
       
       setTeams(teamItems);
       
@@ -118,10 +130,23 @@ export default function VacationToolbar({
     }
   };
 
+  // 초기 필터 설정 (manager 페이지에서 취소요청됨 기본 선택)
+  useEffect(() => {
+    if (page === 'manager') {
+      const initialFilters = {
+        ...filters,
+        status: ['H']
+      };
+      setFilters(initialFilters);
+      onFilterChange(initialFilters);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
   // 초기 팀 목록 로드
   useEffect(() => {
     loadTeams();
-  }, [user]);
+  }, [user, page]);
 
   // 팀 목록이 로드되면 모든 팀 선택
   useEffect(() => {
@@ -133,6 +158,7 @@ export default function VacationToolbar({
       const teamIds = allTeamIds.map(id => parseInt(id));
       onTeamSelect(teamIds);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teams]);
 
   // 팀 옵션 (알파벳순 정렬)

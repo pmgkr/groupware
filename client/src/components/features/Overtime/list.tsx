@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import OvertimeViewDialog from '@/components/working/OvertimeViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { workingApi } from '@/api/working';
+import { managerOvertimeApi } from '@/api/manager/overtime';
 import { getTeams } from '@/api/teams';
 import { getMemberList } from '@/api/common/team';
 import type { OvertimeItem } from '@/api/working';
@@ -109,43 +110,23 @@ export default function OvertimeList({
   // 데이터 조회
   useEffect(() => {
     fetchOvertimeData();
-  }, [teamIds, user?.team_id, user?.user_level]);
+  }, [teamIds]);
 
   const fetchOvertimeData = async () => {
     setLoading(true);
     try {
-      // teamIds가 있으면 사용, 없으면 user.team_id 사용
-      let teamIdsToQuery: number[] = [];
-      
-      if (teamIds.length > 0) {
-        // 팀이 선택된 경우
-        teamIdsToQuery = teamIds;
-      } else if (user?.user_level === 'manager') {
-        // manager인 경우: /manager/myteam으로 관리하는 모든 팀 조회
-        try {
-          const myTeamResponse = await workingApi.getMyTeamList();
-          teamIdsToQuery = (myTeamResponse.items || []).map(team => team.team_id);
-        } catch (error) {
-          console.error('관리 팀 목록 조회 실패:', error);
-          // 실패 시 user.team_id 사용
-          if (user?.team_id) {
-            teamIdsToQuery = [user.team_id];
-          }
-        }
-      } else if (user?.team_id) {
-        // 일반 사용자 또는 admin인 경우
-        teamIdsToQuery = [user.team_id];
-      }
-      
-      if (teamIdsToQuery.length === 0) {
+      // teamIds가 없으면 데이터 조회하지 않음 (Toolbar에서 항상 전달해야 함)
+      if (teamIds.length === 0) {
         setAllData([]);
         setLoading(false);
         return;
       }
       
+      const teamIdsToQuery = teamIds;
+      
       // 각 팀별로 데이터 조회
       const promises = teamIdsToQuery.map(teamId => 
-        workingApi.getManagerOvertimeList({
+        managerOvertimeApi.getManagerOvertimeList({
           team_id: teamId,
           page: 1,
           size: 1000
@@ -337,7 +318,7 @@ export default function OvertimeList({
     
     // 추가근무 상세 정보 조회
     try {
-      const detail = await workingApi.getManagerOvertimeDetail(item.id);
+      const detail = await managerOvertimeApi.getManagerOvertimeDetail(item.id);
       setOvertimeDetailData(detail);
     } catch (error) {
       console.error('추가근무 상세 조회 실패:', error);
@@ -356,7 +337,7 @@ export default function OvertimeList({
     if (!selectedOvertime?.id) return;
     
     try {
-      await workingApi.approveOvertime(selectedOvertime.id);
+      await managerOvertimeApi.approveOvertime(selectedOvertime.id);
       fetchOvertimeData(); // 데이터 새로고침
       handleCloseOvertimeDialog();
     } catch (error) {
@@ -370,7 +351,7 @@ export default function OvertimeList({
     if (!selectedOvertime?.id) return;
     
     try {
-      await workingApi.rejectOvertime(selectedOvertime.id, reason);
+      await managerOvertimeApi.rejectOvertime(selectedOvertime.id, reason);
       fetchOvertimeData(); // 데이터 새로고침
       handleCloseOvertimeDialog();
     } catch (error) {
@@ -384,7 +365,7 @@ export default function OvertimeList({
     if (!selectedOvertime?.id) return;
     
     try {
-      await workingApi.confirmOvertimeCompensation({ ot_seq: selectedOvertime.id });
+      await managerOvertimeApi.confirmOvertimeCompensation({ ot_seq: selectedOvertime.id });
       fetchOvertimeData(); // 데이터 새로고침
       handleCloseOvertimeDialog();
     } catch (error) {
@@ -418,7 +399,7 @@ export default function OvertimeList({
     try {
       // 모든 체크된 항목에 대해 승인 요청
       await Promise.all(
-        checkedItems.map(id => workingApi.approveOvertime(id))
+        checkedItems.map(id => managerOvertimeApi.approveOvertime(id))
       );
       
       // 확인 모달 닫기
