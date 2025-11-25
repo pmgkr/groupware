@@ -4,9 +4,11 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import OvertimeViewDialog from '@/components/working/OvertimeViewDialog';
+import OvertimeDialog from '@/components/working/OvertimeDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { MyOvertimeHistory as fetchMyOvertimeHistory, type MyOvertimeItem } from '@/api/mypage';
 import { workingApi } from '@/api/working';
+import { buildOvertimeApiParams } from '@/utils/overtimeHelper';
 import { useToast } from '@/components/ui/use-toast';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +23,8 @@ export interface MyOvertimeHistoryProps {
 export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear = new Date().getFullYear() }: MyOvertimeHistoryProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  console.log('MyOvertimeHistory 렌더링 - selectedYear:', selectedYear);
   
   // 데이터 state
   const [allData, setAllData] = useState<MyOvertimeItem[]>([]);
@@ -55,6 +59,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
   
   // 추가근무 다이얼로그 state
   const [isOvertimeDialogOpen, setIsOvertimeDialogOpen] = useState(false);
+  const [isReapplyDialogOpen, setIsReapplyDialogOpen] = useState(false);
   const [selectedOvertime, setSelectedOvertime] = useState<MyOvertimeItem | null>(null);
 
   // 연도 변경 시 페이지 리셋
@@ -76,7 +81,9 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
 
     setLoading(true);
     try {
+      console.log('추가근무 내역 조회 - selectedYear:', selectedYear, 'page:', page);
       const overtimeData = await fetchMyOvertimeHistory(page, pageSize, selectedYear, user.user_id);
+      console.log('추가근무 내역 조회 결과:', overtimeData.items?.length, '건');
       setAllData(overtimeData.items || []);
       setLoading(false);
     } catch (error) {
@@ -90,10 +97,20 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
   useEffect(() => {
     fetchOvertimeData();
   }, [fetchOvertimeData]);
+  
+  // selectedYear 변경 시 페이지 리셋 (이미 위에 있지만 중복 제거)
+  // selectedYear가 변경되면 fetchOvertimeData가 재생성되고 자동으로 호출됨
 
   // 탭에 따라 필터링된 데이터
   const filteredData = useMemo(() => {
     let result = [...allData];
+    
+    // 연도 필터링 (selectedYear와 일치하는 데이터만)
+    result = result.filter(item => {
+      if (!item.ot_date) return false;
+      const itemYear = dayjs(item.ot_date).year();
+      return itemYear === selectedYear;
+    });
     
     // 탭 필터 (평일 추가근무 vs 휴일 근무)
     if (activeTab === 'weekday') {
@@ -112,7 +129,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
     });
     
     return result;
-  }, [allData, activeTab]);
+  }, [allData, activeTab, selectedYear]);
 
   // 페이지네이션 적용된 데이터
   const paginatedData = useMemo(() => {
@@ -179,7 +196,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
       if (status === 'T') {
         return activeTab === 'weekday' ? '승인완료' : '보상대기';
       }
-      if (status === 'N') return '반려됨';
+      if (status === 'N') return '취소완료';
       if (status === 'Y') return '승인완료';
       return '신청하기';
     };
@@ -252,9 +269,38 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
 
   // 재신청 핸들러
   const handleReapplyOvertime = () => {
-    // 재신청은 별도 페이지나 다이얼로그로 이동할 수 있음
-    // 여기서는 다이얼로그만 닫기
-    handleCloseOvertimeDialog();
+    // 재신청하기: ViewDialog 닫고 신청 Dialog 열기
+    setIsOvertimeDialogOpen(false);
+    setIsReapplyDialogOpen(true);
+  };
+
+  // 재신청 다이얼로그 닫기
+  const handleCloseReapplyDialog = () => {
+    setIsReapplyDialogOpen(false);
+    setSelectedOvertime(null);
+  };
+
+  // 재신청 저장 핸들러
+  const handleReapplySave = async (overtimeData: any) => {
+    if (!selectedOvertime) return;
+    
+    try {
+      // 추가근무 API 파라미터 구성
+      const selectedDay = convertToWorkData(selectedOvertime);
+      const apiParams = buildOvertimeApiParams(selectedDay, overtimeData);
+      
+      // API 호출
+      await workingApi.requestOvertime(apiParams);
+      
+      // 성공 시 데이터 다시 로드
+      fetchOvertimeData();
+      
+      handleCloseReapplyDialog();
+    } catch (error: any) {
+      console.error('추가근무 재신청 실패:', error);
+      const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
+      alert(`추가근무 재신청에 실패했습니다.\n오류: ${errorMessage}`);
+    }
   };
 
   // Y/N 텍스트 변환
@@ -288,7 +334,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
       case 'H': return '승인대기';
       case 'T': return activeTab === 'weekday' ? '승인완료' : '보상대기';
       case 'Y': return '보상완료';
-      case 'N': return '반려됨';
+      case 'N': return '취소완료';
       default: return status;
     }
   };
@@ -298,7 +344,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
     switch (status) {
       case 'H': return 'text-orange-600 font-semibold'; // 승인대기
       case 'T': return 'text-green-600 font-semibold'; // 승인완료
-      case 'N': return 'text-red-600 font-semibold'; // 반려됨
+      case 'N': return 'text-red-600 font-semibold'; // 취소완료
       default: return 'text-gray-600';
     }
   };
@@ -306,39 +352,39 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
   return (
     <>
       <div ref={tableRef} className="w-full">
-      <Table key={`table-${page}`} variant="primary" align="center" className="table-fixed w-full">
+      <Table key={`table-${page}`} variant="primary" align="center" className="w-full">
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[10%] text-center p-2">추가근무날짜</TableHead>
+            <TableHead className="text-center p-2 w-[10%]">추가근무날짜</TableHead>
             {activeTab === 'weekday' ? (
               <>
-                <TableHead className="w-[8%] text-center p-2">예상퇴근시간</TableHead>
-                <TableHead className="w-[8%] text-center p-2">식대</TableHead>
-                <TableHead className="w-[8%] text-center p-2">교통비</TableHead>
+                <TableHead className="text-center p-2 w-[10%]">예상퇴근시간</TableHead>
+                <TableHead className="text-center p-2 w-[8%]">식대</TableHead>
+                <TableHead className="text-center p-2 w-[8%]">교통비</TableHead>
               </>
             ) : (
               <>
-                <TableHead className="w-[8%] text-center p-2">예상근무시간</TableHead>
-                <TableHead className="w-[10%] text-center p-2">보상방식</TableHead>
+                <TableHead className="text-center p-2 w-[10%]">예상근무시간</TableHead>
+                <TableHead className="text-center p-2 w-[12%]">보상방식</TableHead>
               </>
             )}
-            <TableHead className="w-[12%] text-center p-2">클라이언트명</TableHead>
-            <TableHead className="w-[20%] text-center p-2">작업내용</TableHead>
-            <TableHead className="w-[10%] text-center p-2">신청일</TableHead>
-            <TableHead className="w-[10%] text-center p-2">상태</TableHead>
+            <TableHead className="text-center p-2 w-[15%]">클라이언트명</TableHead>
+            <TableHead className="text-center p-2 w-auto">작업내용</TableHead>
+            <TableHead className="text-center p-2 w-[13%]">신청일</TableHead>
+            <TableHead className="text-center p-2 w-[8%]">상태</TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody key={`tbody-${page}`}>
         {loading ? (
           <TableRow>
-            <TableCell className="h-100 text-gray-500 w-full" colSpan={activeTab === 'weekday' ? 9 : 8}>
+            <TableCell className="h-100 text-gray-500 text-center p-2" colSpan={activeTab === 'weekday' ? 9 : 8}>
               데이터 불러오는 중
             </TableCell>
           </TableRow>
         ) : !loading && paginatedData.length === 0 ? (
           <TableRow>
-            <TableCell className="h-100 text-gray-500 w-full" colSpan={activeTab === 'weekday' ? 9 : 8}>
+            <TableCell className="h-100 text-gray-500 text-center p-2" colSpan={activeTab === 'weekday' ? 9 : 8}>
               데이터가 없습니다.
             </TableCell>
           </TableRow>
@@ -346,7 +392,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
           paginatedData.map((item, index) => (
             <TableRow 
               key={`${item.id}-${index}`}
-              className="[&_td]:text-[13px] cursor-pointer hover:bg-gray-50"
+              className={`[&_td]:text-[13px] cursor-pointer hover:bg-gray-50 ${item.ot_status === 'N' ? 'opacity-40' : ''}`}
               onClick={() => handleOvertimeClick(item)}
             >
               <TableCell className="text-center p-2">
@@ -364,8 +410,16 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
                   <TableCell className="text-center p-2">{getRewardText(item.ot_reward)}</TableCell>
                 </>
               )}
-              <TableCell className="text-center p-2 whitespace-nowrap text-ellipsis overflow-hidden">{item.ot_client || '-'}</TableCell>
-              <TableCell className="text-left p-2 whitespace-nowrap text-ellipsis overflow-hidden">{item.ot_description || '-'}</TableCell>
+              <TableCell className="text-center p-2 overflow-hidden text-ellipsis whitespace-nowrap max-w-0">
+                <span className="block overflow-hidden text-ellipsis whitespace-nowrap" title={item.ot_client || '-'}>
+                  {item.ot_client || '-'}
+                </span>
+              </TableCell>
+              <TableCell className="text-left p-2 overflow-hidden text-ellipsis whitespace-nowrap max-w-0">
+                <span className="block overflow-hidden text-ellipsis whitespace-nowrap" title={item.ot_description || '-'}>
+                  {item.ot_description || '-'}
+                </span>
+              </TableCell>
               <TableCell className="text-center p-2">
                 {item.ot_created_at ? dayjs(item.ot_created_at).format('YYYY-MM-DD HH:mm:ss') : '-'}
               </TableCell>
@@ -390,7 +444,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
                   </Badge>
                 )}
                 {item.ot_status === 'N' && (
-                  <Badge variant="grayish" size="table" title="반려됨">
+                  <Badge variant="grayish" size="table" title="취소완료">
                     {getStatusText(item.ot_status)}
                   </Badge>
                 )}
@@ -427,6 +481,16 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
           isOwnRequest={true}
           activeTab={activeTab}
           user={user ? { user_level: user.user_level, team_id: user.team_id ?? undefined } : undefined}
+        />
+      )}
+
+      {/*추가근무 재신청 다이얼로그 */}
+      {selectedOvertime && (
+        <OvertimeDialog
+          isOpen={isReapplyDialogOpen}
+          onClose={handleCloseReapplyDialog}
+          selectedDay={convertToWorkData(selectedOvertime)}
+          onSave={handleReapplySave}
         />
       )}
 
