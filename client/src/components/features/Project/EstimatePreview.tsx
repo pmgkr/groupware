@@ -177,17 +177,22 @@ export default function EstimatePreview() {
             if (evidenceFiles.length > 0) {
               // File 객체만 추출
               const onlyFiles = evidenceFiles.map((f) => f.file ?? f);
+              console.log(onlyFiles);
               const uploaded = await uploadFilesToServer(onlyFiles, 'est_evidence');
 
               console.log('✅ 업로드 완료:', uploaded);
 
               // 업로드 성공 후 evidenceItems 구성
-              evidenceItems = uploaded.map((f: any) => ({
-                ee_fname: f.fname,
-                ee_sname: f.sname,
-                ee_size: f.size,
-                ee_type: f.type,
-              }));
+              evidenceItems = uploaded.map((f: any, idx: number) => {
+                const file = onlyFiles[idx];
+
+                return {
+                  ee_fname: f.fname,
+                  ee_sname: f.sname,
+                  ee_size: file.size,
+                  ee_type: file.type,
+                };
+              });
             } else {
               // 증빙자료 없음으면 사유 저장
               evidenceItems = [{ remark: reason ?? '' }];
@@ -201,7 +206,8 @@ export default function EstimatePreview() {
               qty: i.qty ?? null,
               amount: i.amount ?? null,
               exp_cost: i.cost ?? null,
-              remarks: i.remarks ?? null,
+              ava_amount: i.amount ?? null,
+              remark: i.remarks ?? null,
               ei_order: idx,
             }));
 
@@ -220,7 +226,6 @@ export default function EstimatePreview() {
 
             const result = await estimateRegister(payload);
 
-            console.log('✅ 등록 성공:', result);
             if (result.ok) {
               const item_count = result.counts.items;
 
@@ -422,6 +427,20 @@ export default function EstimatePreview() {
                       <TableCell className="text-right font-semibold">{row.amount.toLocaleString()}</TableCell>
                       <TableCell></TableCell>
                       <TableCell className="text-left">{row.remarks}</TableCell>
+                    </>
+                  )}
+
+                  {/* ------------------------ */}
+                  {/* Discount Row */}
+                  {/* ------------------------ */}
+                  {row.type === 'discount' && (
+                    <>
+                      <TableCell colSpan={3} className="bg-gray-300 font-semibold">
+                        {row.label}
+                      </TableCell>
+                      <TableCell className="bg-gray-300 text-right font-semibold">{formatAmount(row.amount)}</TableCell>
+                      <TableCell className="bg-gray-300"></TableCell>
+                      <TableCell className="bg-gray-300 text-left">{row.remarks}</TableCell>
                     </>
                   )}
 

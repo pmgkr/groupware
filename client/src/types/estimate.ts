@@ -32,6 +32,7 @@ export type QuotationDiscount = {
   label: string;
   unit_price: string;
   amount: number;
+  remarks?: string;
 };
 
 export type QuotationAgencyFee = {
@@ -39,7 +40,7 @@ export type QuotationAgencyFee = {
   label: string;
   unit_price: string | number;
   amount: number;
-  remarks: string;
+  remarks?: string;
 };
 
 export type QuotationMappedItem =

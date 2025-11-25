@@ -297,7 +297,8 @@ export interface EstimateItem {
   qty?: number;
   amount?: number;
   exp_cost?: number;
-  remarks?: string;
+  ava_amount?: number;
+  remark?: string;
   ei_order: number; // 배열의 순서
 }
 
@@ -329,6 +330,52 @@ export interface EstimateRegisterResponse {
     evidences: number;
     match_deleted: number;
   };
+}
+
+// ----------------------
+// 견적서 조회용
+// ----------------------
+export interface EstimateHeaderView extends EstimateHeader {
+  est_id: number;
+  user_id: string;
+  user_nm: string;
+  est_amount: number;
+  est_budget: number;
+  exp_total?: number;
+  wdate: string;
+}
+
+export interface EstimateItemsView extends EstimateItem {
+  seq: number;
+  est_id: number;
+}
+
+export interface EstimateEvidencesView extends EstimateEvidenceItem {
+  seq: number;
+  user_id: string;
+  user_nm: string;
+  uploaded_at: string;
+}
+
+export interface EstimateLogs {
+  seq: number;
+  user_id: string;
+  user_nm: string;
+  project_id: string;
+  est_id: number;
+  el_type: string;
+  ei_seq?: number;
+  ei_befre?: string;
+  ei_after?: string;
+  ei_message: string;
+  created_at: string;
+}
+
+export interface EstimateViewDTO {
+  header: EstimateHeaderView;
+  items: EstimateItemsView[];
+  evidences: EstimateEvidencesView[];
+  logs: EstimateLogs[];
 }
 
 // 즐겨찾기 리스트
@@ -397,9 +444,9 @@ export async function getProjectExpense(params: projectExpenseParams) {
 }
 
 // 프로젝트비용 상세보기
-export async function getProjectExpenseView(expid: string | undefined): Promise<pExpenseViewDTO> {
-  if (!expid) throw new Error('expid가 필요합니다.');
-  return http<pExpenseViewDTO>(`/user/pexpense/info/${expid}`, { method: 'GET' });
+export async function getProjectExpenseView(exp_id: string | undefined): Promise<pExpenseViewDTO> {
+  if (!exp_id) throw new Error('expid가 필요합니다.');
+  return http<pExpenseViewDTO>(`/user/pexpense/info/${exp_id}`, { method: 'GET' });
 }
 
 // 프로젝트비용 작성하기
@@ -441,4 +488,10 @@ export async function estimateRegister(payload: EstimatePayload) {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+export async function getEstimateView(est_id: string | undefined) {
+  if (!est_id) throw new Error('견적서 ID가 필요합니다.');
+
+  return http<EstimateViewDTO>(`/user/estimate/detail?est_id=${est_id}`, { method: 'GET' });
 }

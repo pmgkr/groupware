@@ -8,6 +8,7 @@ import ProjectExpenseRegister from '@/components/features/Project/ProjectExpense
 import ProjectExpenseMatch from '@/components/features/Project/ProjectExpenseMatch';
 import ProjectEstimate from '@/components/features/Project/ProjectEstimate';
 import EstimatePreview from '@/components/features/Project/EstimatePreview';
+import EstimateView from '@/components/features/Project/EstimateView';
 
 export const projectRoutes: RouteObject = {
   path: 'project', // 상위 Layout 기준 → /project
@@ -33,6 +34,7 @@ export const projectRoutes: RouteObject = {
         { path: 'expense/match', element: <ProjectExpenseMatch />, handle: { hideNav: true, hideTitle: true } },
         { path: 'estimate', element: <ProjectEstimate />, handle: { hideNav: true, hideTitle: true } },
         { path: 'estimate/preview', element: <EstimatePreview />, handle: { hideNav: true, hideTitle: true } },
+        { path: 'estimate/:estId', element: <EstimateView />, handle: { hideNav: true, hideTitle: true } },
       ],
     },
   ],

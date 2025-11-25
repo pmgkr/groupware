@@ -107,11 +107,11 @@ export default function ProjectEstimate() {
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className="w-[6%]">#</TableHead>
             <TableHead className="text-left">견적서 제목</TableHead>
-            <TableHead className="w-[12%]">클라이언트</TableHead>
+            {/* <TableHead className="w-[12%]">클라이언트</TableHead> */}
             <TableHead className="w-[10%]">견적서 총액</TableHead>
             <TableHead className="w-[10%]">가용 예산</TableHead>
             <TableHead className="w-[8%]">작성자</TableHead>
-            <TableHead className="w-[7%]">상태</TableHead>
+            <TableHead className="w-[8%]">상태</TableHead>
             <TableHead className="w-[14%]">작성일시</TableHead>
           </TableRow>
         </TableHeader>
@@ -121,11 +121,11 @@ export default function ProjectEstimate() {
               <TableRow className="[&_td]:text-[13px]" key={item.est_id}>
                 <TableCell>{estimateList.length - idx}</TableCell>
                 <TableCell className="text-left">
-                  <Link to="2" className="hover:underline">
+                  <Link to={`${item.est_id}`} className="hover:underline">
                     {item.est_title}
                   </Link>
                 </TableCell>
-                <TableCell>{data.client_nm}</TableCell>
+                {/* <TableCell>{data.client_nm}</TableCell> */}
                 <TableCell>{formatAmount(item.est_amount)}</TableCell>
                 <TableCell>{formatAmount(item.est_budget)}</TableCell>
                 <TableCell>{item.user_nm}</TableCell>

@@ -13,7 +13,9 @@ export function displayUnitPrice(val: number | string): string {
   return val.toLocaleString(); // 일반 금액
 }
 
-export function formatAmount(amount: number | string): string {
+export function formatAmount(amount: number | string | undefined): string {
+  if (amount === undefined || amount === null) return '0';
+
   // 원화일 때 1000원 단위로 콤마 추가
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   if (isNaN(numericAmount)) return '-';
