@@ -249,7 +249,7 @@ export default function Dashboard() {
                        {getMeetingroomKoreanName(meetingroom.mr_name)}
                      </Badge>
                      <p className="overflow-hidden text-ellipsis whitespace-nowrap">
-                        {formatTime(meetingroom.stime)} - {formatTime(meetingroom.etime)} {`${meetingroom.ml_title}`}
+                        {formatTime(meetingroom.stime)} - {formatTime(meetingroom.etime)} {`${meetingroom.title}`}
                       </p>
                    </li>
                  ))}

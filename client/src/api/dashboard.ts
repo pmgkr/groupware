@@ -62,7 +62,7 @@ export interface Meetingroom {
     mr_name: string;
     stime: string;
     etime: string;
-    ml_title?: string;
+    title?: string;
 }
 
 // 일반비용
