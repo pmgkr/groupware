@@ -472,7 +472,7 @@ export default function OvertimeList({
       case 'H': return '승인대기';
       case 'T': return activeTab === 'weekday' ? '승인완료' : '보상대기';
       case 'Y': return '보상완료';
-      case 'N': return '반려됨';
+      case 'N': return '취소완료';
       default: return status;
     }
   };
@@ -482,7 +482,7 @@ export default function OvertimeList({
     switch (status) {
       case 'H': return 'text-orange-600 font-semibold'; // 승인대기
       case 'T': return 'text-green-600 font-semibold'; // 승인완료
-      case 'N': return 'text-red-600 font-semibold'; // 반려됨
+      case 'N': return 'text-red-600 font-semibold'; // 취소완료
       default: return 'text-gray-600';
     }
   };
@@ -569,7 +569,7 @@ export default function OvertimeList({
           paginatedData.map((item) => (
             <TableRow 
               key={item.id}
-              className="[&_td]:text-[13px] cursor-pointer hover:bg-gray-50"
+              className={`[&_td]:text-[13px] cursor-pointer hover:bg-gray-50 ${item.ot_status === 'N' ? 'opacity-40' : ''}`}
               onClick={() => handleOvertimeClick(item)}
             >
               <TableCell className="text-center p-2">{getTeamName(item.team_id)}</TableCell>
@@ -615,7 +615,7 @@ export default function OvertimeList({
                   </Badge>
                 )}
                 {item.ot_status === 'N' && (
-                  <Badge variant="grayish" size="table" title="반려됨">
+                  <Badge variant="grayish" size="table" title="취소완료">
                     {getStatusText(item.ot_status)}
                   </Badge>
                 )}
@@ -683,7 +683,7 @@ export default function OvertimeList({
             // 평일 추가근무는 승인완료, 휴일 근무는 보상대기
             return activeTab === 'weekday' ? '승인완료' : '보상대기';
           }
-          if (status === 'N') return '반려됨';
+          if (status === 'N') return '취소완료';
           return '신청하기';
         };
         
@@ -718,7 +718,7 @@ export default function OvertimeList({
               totalHours: 0,
               totalMinutes: 0,
               overtimeStatus: overtimeDetailData?.info ? mapStatus(overtimeDetailData.info.ot_status) : 
-                            getStatusText(selectedOvertime.ot_status) as "신청하기" | "승인대기" | "승인완료" | "반려됨" | "보상대기",
+                            getStatusText(selectedOvertime.ot_status) as "신청하기" | "승인대기" | "승인완료" | "취소완료" | "보상대기",
               overtimeData: convertOvertimeData()
             }}
           />

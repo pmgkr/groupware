@@ -56,7 +56,7 @@ export interface ManagerOvertimeListParams {
   team_id?: number;
   page?: number;
   size?: number;
-  flag?: string;  // ot_status (H: 승인대기, T: 승인완료, Y: 리워드지급(최종승인), N: 반려됨)
+  flag?: string;  // ot_status (H: 승인대기, T: 승인완료, Y: 리워드지급(최종승인), N: 취소완료)
 }
 
 // 관리자 추가근무 최종승인(리워드지급) 파라미터
@@ -86,7 +86,7 @@ export interface OvertimeItem {
   ot_reward: string;
   ot_client: string;
   ot_description: string;
-  ot_status: string;  // "H" (승인대기), "T" (승인완료), "N" (반려됨)
+  ot_status: string;  // "H" (승인대기), "T" (승인완료), "N" (취소완료)
   ot_created_at: string;
   ot_modified_at: string;
 }

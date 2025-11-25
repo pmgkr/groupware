@@ -242,7 +242,7 @@ export default function WorkingList({
     switch (overtimeStatus) {
       case '승인대기': return { bg: 'bg-orange-500', ping: 'bg-orange-400' };
       case '승인완료': return { bg: 'bg-green-500', ping: 'bg-green-400' };
-      case '반려됨': return { bg: 'bg-gray-400', ping: 'bg-gray-300' };
+      case '취소완료': return { bg: 'bg-gray-400', ping: 'bg-gray-300' };
       default: return { bg: 'bg-orange-500', ping: 'bg-orange-400' };
     }
   };
@@ -518,7 +518,7 @@ export default function WorkingList({
         const mapStatus = (status: string) => {
           if (status === 'H') return '승인대기';
           if (status === 'T') return '승인완료';
-          if (status === 'N') return '반려됨';
+          if (status === 'N') return '취소완료';
           return '신청하기';
         };
         
@@ -549,7 +549,7 @@ export default function WorkingList({
               totalHours: 0,
               totalMinutes: 0,
               overtimeStatus: overtimeDetailData?.info ? mapStatus(overtimeDetailData.info.ot_status) : 
-                            (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "반려됨",
+                            (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "취소완료",
               overtimeData: convertOvertimeData()
             }}
           />

@@ -153,19 +153,19 @@ export default function OvertimeToolbar({
   // 상태 옵션 (탭에 따라 다름)
   const statusOptions = useMemo(() => {
     if (activeTab === 'weekday') {
-      // 평일 추가근무: 승인대기, 승인완료, 반려됨
+      // 평일 추가근무: 승인대기, 승인완료, 취소완료
       return [
         { value: 'pending', label: '승인대기' },
         { value: 'approved', label: '승인완료' },
-        { value: 'rejected', label: '반려됨' },
+        { value: 'rejected', label: '취소완료' },
       ];
     } else {
-      // 휴일 근무: 승인대기, 보상대기, 보상완료, 반려됨
+      // 휴일 근무: 승인대기, 보상대기, 보상완료, 취소완료
       return [
         { value: 'pending', label: '승인대기' },
         { value: 'approved', label: '보상대기' },
         { value: 'confirmed', label: '보상완료' },
-        { value: 'rejected', label: '반려됨' },
+        { value: 'rejected', label: '취소완료' },
       ];
     }
   }, [activeTab]);

@@ -163,6 +163,7 @@ export type MyVacationItem = {
   edate: string;
   remark: string;
   wdate: string;
+  sch_status?: string; // Y: 등록 완료, H: 취소 요청됨, N: 취소 완료
 };
 
 export async function MyVacationHistory(vyear: number): Promise<MyVacationItem[]> {

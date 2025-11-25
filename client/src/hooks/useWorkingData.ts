@@ -50,11 +50,11 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
           index === self.findIndex(m => m.user_id === member.user_id)
         );
 
-        // 2. 초과근무 목록 조회 (team_id로) - 모든 상태 포함 (H: 승인대기, T: 승인완료, N: 반려됨)
+        // 2. 초과근무 목록 조회 (team_id로) - 모든 상태 포함 (H: 승인대기, T: 승인완료, N: 취소완료)
         let allOvertimeResponse: OvertimeListResponse = { items: [], total: 0, page: 1, size: 1000, pages: 0 };
         
         try {
-          const flags = ['H', 'T', 'N']; // 승인대기, 승인완료, 반려됨 모두 조회
+          const flags = ['H', 'T', 'N']; // 승인대기, 승인완료, 취소완료 모두 조회
           const overtimePromises = teamIdsToQuery.flatMap(teamId => 
             flags.map(flag => 
               workingApi.getManagerOvertimeList({ team_id: teamId, page: 1, size: 1000, flag })

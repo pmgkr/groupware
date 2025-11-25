@@ -376,19 +376,19 @@ export default function OvertimeViewDialog({
           <div className="space-y-2">
             <Label>신청 상태</Label>
             <div className={`px-4 py-2 rounded-lg border ${
-              status === "반려됨" 
+              status === "취소완료" 
                 ? "border-red-300 bg-red-50"
                 : "border-gray-300 bg-gray-100"
             }`}>
                 <div>
                   <span className={`text-base font-semibold ${
-                    status === "반려됨" ? "text-red-700" :
+                    status === "취소완료" ? "text-red-700" :
                     "text-gray-800"
                   }`}>
                     {status}
                   </span>
                   {/* 승인완료 시 승인일 표시는 백엔드 데이터 연동 시 추가 예정 */}
-                  {status === "반려됨" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
+                  {status === "취소완료" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
                     <>
                     <p className="text-sm text-gray-800 mt-1">
                         반려일: {dayjs(selectedDay.rejectionDate).format('YYYY년 MM월 DD일')}
@@ -403,7 +403,7 @@ export default function OvertimeViewDialog({
           </div>
 
           {/* 반려 정보 표시 */}
-          {/* {status === "반려됨" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
+          {/* {status === "취소완료" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
             <>
               
               <div className="space-y-2">
@@ -469,7 +469,7 @@ export default function OvertimeViewDialog({
             {/* 본인 신청이거나 일반 사용자 모드 */}
             {(isOwnRequest || !isManager) && (
               <>
-                {status === "반려됨" && onReapply && (
+                {status === "취소완료" && onReapply && (
                   <Button variant="default" onClick={onReapply} className="mr-0">재신청하기</Button>
                 )}
                 {status === "승인대기" && (
