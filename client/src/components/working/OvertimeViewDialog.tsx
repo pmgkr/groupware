@@ -375,16 +375,9 @@ export default function OvertimeViewDialog({
 
           <div className="space-y-2">
             <Label>신청 상태</Label>
-            <div className={`px-4 py-2 rounded-lg border ${
-              status === "취소완료" 
-                ? "border-red-300 bg-red-50"
-                : "border-gray-300 bg-gray-100"
-            }`}>
+            <div className="px-4 py-2 rounded-lg border border-gray-300 bg-gray-100">
                 <div>
-                  <span className={`text-base font-semibold ${
-                    status === "취소완료" ? "text-red-700" :
-                    "text-gray-800"
-                  }`}>
+                  <span className="text-base font-semibold text-gray-800">
                     {status}
                   </span>
                   {/* 승인완료 시 승인일 표시는 백엔드 데이터 연동 시 추가 예정 */}
