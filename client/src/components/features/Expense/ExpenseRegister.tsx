@@ -28,7 +28,7 @@ import { UserRound, FileText, OctagonAlert } from 'lucide-react';
 
 import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getMyAccounts, type BankAccount } from '@/api/mypage';
+import { getMyAccounts, type BankAccount } from '@/api/mypage/profile';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const expenseSchema = z.object({

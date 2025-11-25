@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import OvertimeViewDialog from '@/components/working/OvertimeViewDialog';
 import OvertimeDialog from '@/components/working/OvertimeDialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { MyOvertimeHistory as fetchMyOvertimeHistory, type MyOvertimeItem } from '@/api/mypage';
+import { MyOvertimeHistory as fetchMyOvertimeHistory, type MyOvertimeItem } from '@/api/mypage/overtime';
 import { workingApi } from '@/api/working';
 import { buildOvertimeApiParams } from '@/utils/overtimeHelper';
 import { useToast } from '@/components/ui/use-toast';
