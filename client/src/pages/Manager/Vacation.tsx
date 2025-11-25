@@ -51,6 +51,7 @@ export default function ManagerVacation() {
         activeTab={activeTab}
         filters={filters}
         onCheckedItemsChange={setCheckedItems}
+        isPage="manager"
       />
     </div>
   );

@@ -9,6 +9,10 @@ import { RadioGroup } from '@components/ui/radio-group';
 import { RadioButton } from '@components/ui/radioButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 import type { WorkData } from '@/types/working';
+import { useAuth } from '@/contexts/AuthContext';
+import { workingApi } from '@/api/working';
+import { managerOvertimeApi } from '@/api/manager/overtime';
+import { buildOvertimeApiParams } from '@/utils/overtimeHelper';
 
 import { getClientList, type ClientList } from '@/api/common/project';
 
@@ -35,6 +39,7 @@ interface OvertimeData {
 }
 
 export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, selectedDay, selectedIndex }: OvertimeDialogProps) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState<OvertimeData>({
     overtimeHours: "",
     overtimeMinutes: "",
@@ -51,6 +56,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
   const [errors, setErrors] = useState<Partial<Record<keyof OvertimeData, string>>>({});
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [clientList, setClientList] = useState<ClientList[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 클라이언트 리스트 조회
   useEffect(() => {
@@ -59,7 +65,6 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
         const clients = await getClientList();
         setClientList(clients);
       } catch (error) {
-        console.error('클라이언트 리스트 조회 실패:', error);
         setClientList([]);
       }
     };
@@ -134,28 +139,111 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validateForm()) {
       return; // 유효성 검사 실패 시 저장하지 않음
     }
     
-    onSave(formData);
-    onClose();
-    // 폼 초기화
-    setFormData({
-      overtimeHours: "",
-      overtimeMinutes: "",
-      overtimeReason: "",
-      clientName: "",
-      workDescription: "",
-      overtimeType: "",
-      expectedEndTime: "",
-      expectedEndMinute: "",
-      mealAllowance: "",
-      transportationAllowance: ""
-    });
-    setErrors({}); // 에러 상태도 초기화
-    setHasUserInteracted(false); // 사용자 상호작용 상태도 초기화
+    if (!selectedDay) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // 추가근무 API 파라미터 구성
+      const apiParams = buildOvertimeApiParams(selectedDay, formData);
+      
+      // 추가근무 신청 API 호출
+      const response = await workingApi.requestOvertime(apiParams);
+      
+      // manager 또는 admin인 경우 바로 승인 처리
+      const isManagerOrAdmin = user?.user_level === 'manager' || user?.user_level === 'admin';
+      if (isManagerOrAdmin) {
+        // 응답에서 ot_seq 추출 (다양한 응답 구조 대응)
+        let otSeq = response?.ot_seq || response?.id || response?.data?.ot_seq || response?.data?.id;
+        
+        // ot_seq를 찾을 수 없는 경우, 목록 조회로 찾기 (재신청 포함)
+        if (!otSeq) {
+          try {
+            // 해당 날짜의 추가근무 목록 조회
+            const dateStr = selectedDay.date;
+            const formattedDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+            
+            // 재시도 로직: API 호출 후 데이터가 반영될 때까지 대기
+            let retryCount = 0;
+            const maxRetries = 5;
+            
+            while (!otSeq && retryCount < maxRetries) {
+              // 첫 시도는 즉시, 이후는 300ms 대기 후 재시도
+              if (retryCount > 0) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+              }
+              
+              // 사용자 ID로 최신 추가근무 목록 조회
+              const overtimeList = await workingApi.getOvertimeList({
+                page: 1,
+                size: 20,
+                user_id: user?.user_id
+              });
+              
+              // 해당 날짜의 승인대기 상태인 항목 찾기 (가장 최신 항목)
+              const pendingOvertimes = overtimeList.items?.filter(
+                (item: any) => item.ot_date === formattedDate && item.ot_status === 'H'
+              ) || [];
+              
+              // 가장 최신 항목 선택 (created_at 기준)
+              if (pendingOvertimes.length > 0) {
+                const latestOvertime = pendingOvertimes.reduce((latest: any, current: any) => {
+                  const latestTime = new Date(latest.ot_created_at || 0).getTime();
+                  const currentTime = new Date(current.ot_created_at || 0).getTime();
+                  return currentTime > latestTime ? current : latest;
+                });
+                otSeq = latestOvertime.id;
+                break;
+              }
+              
+              retryCount++;
+            }
+          } catch (listError) {
+          }
+        }
+        
+        if (otSeq) {
+          try {
+            await managerOvertimeApi.approveOvertime(otSeq);
+          } catch (approveError: any) {
+            // 자동 승인 실패해도 신청은 성공했으므로 계속 진행
+          }
+        } else {
+        }
+      }
+      
+      // 성공 시 부모 컴포넌트에 알림
+      onSave(formData);
+      onClose();
+      
+      // 폼 초기화
+      setFormData({
+        overtimeHours: "",
+        overtimeMinutes: "",
+        overtimeReason: "",
+        clientName: "",
+        workDescription: "",
+        overtimeType: "",
+        expectedEndTime: "",
+        expectedEndMinute: "",
+        mealAllowance: "",
+        transportationAllowance: ""
+      });
+      setErrors({}); // 에러 상태도 초기화
+      setHasUserInteracted(false); // 사용자 상호작용 상태도 초기화
+    } catch (error: any) {
+      const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
+      alert(`추가근무 신청에 실패했습니다.\n오류: ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
@@ -504,8 +592,10 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
             </>
           ) : (
             <>
-              <Button onClick={handleSave}>신청하기</Button>
-              <Button variant="outline" onClick={handleClose}>닫기</Button>
+              <Button onClick={handleSave} disabled={isSubmitting}>
+                {isSubmitting ? '처리 중' : '신청하기'}
+              </Button>
+              <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>닫기</Button>
             </>
           )}
         </DialogFooter>
