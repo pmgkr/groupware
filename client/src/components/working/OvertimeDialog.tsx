@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
-import { Textbox } from '@components/ui/textbox';
 import { Textarea } from '@components/ui/textarea';
 import { RadioGroup } from '@components/ui/radio-group';
 import { RadioButton } from '@components/ui/radioButton';
@@ -13,16 +12,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { workingApi } from '@/api/working';
 import { managerOvertimeApi } from '@/api/manager/overtime';
 import { buildOvertimeApiParams } from '@/utils/overtimeHelper';
-
 import { getClientList, type ClientList } from '@/api/common/project';
 
 interface OvertimeDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: OvertimeData) => void;
-  onCancel?: () => void; // 추가근무 취소 콜백
+  onCancel?: () => void;
   selectedDay?: WorkData;
-  selectedIndex?: number;
 }
 
 interface OvertimeData {
@@ -38,101 +35,60 @@ interface OvertimeData {
   transportationAllowance: string;
 }
 
-export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, selectedDay, selectedIndex }: OvertimeDialogProps) {
-  const { user } = useAuth();
-  const [formData, setFormData] = useState<OvertimeData>({
-    overtimeHours: "",
-    overtimeMinutes: "",
-    overtimeReason: "",
-    clientName: "",
-    workDescription: "",
-    overtimeType: "",
-    expectedEndTime: "",
-    expectedEndMinute: "",
-    mealAllowance: "",
-    transportationAllowance: ""
-  });
+const initialFormData: OvertimeData = {
+  overtimeHours: "",
+  overtimeMinutes: "",
+  overtimeReason: "",
+  clientName: "",
+  workDescription: "",
+  overtimeType: "",
+  expectedEndTime: "",
+  expectedEndMinute: "",
+  mealAllowance: "",
+  transportationAllowance: ""
+};
 
+export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, selectedDay }: OvertimeDialogProps) {
+  const { user } = useAuth();
+  const [formData, setFormData] = useState<OvertimeData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof OvertimeData, string>>>({});
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [clientList, setClientList] = useState<ClientList[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 클라이언트 리스트 조회
   useEffect(() => {
-    const fetchClientList = async () => {
-      try {
-        const clients = await getClientList();
-        setClientList(clients);
-      } catch (error) {
-        setClientList([]);
-      }
-    };
-
     if (isOpen) {
-      fetchClientList();
+      getClientList().then(setClientList).catch(() => setClientList([]));
     }
   }, [isOpen]);
 
   const handleInputChange = (field: keyof OvertimeData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    // 사용자 상호작용 표시
-    setHasUserInteracted(true);
-    
-    // 입력 시 해당 필드의 에러 메시지 제거
+    setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: undefined
-      }));
+      setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
-  // 유효성 검사 함수
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof OvertimeData, string>> = {};
     
-    // 클라이언트명 검증
     if (!formData.clientName.trim()) {
       newErrors.clientName = "클라이언트명을 선택해주세요.";
     }
-    
-    // 작업 내용 검증
     if (!formData.workDescription.trim()) {
       newErrors.workDescription = "작업 내용을 입력해주세요.";
     }
     
-    // 평일인 경우 예상 퇴근 시간 검증
     if (selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType)) {
-      if (!formData.expectedEndTime) {
-        newErrors.expectedEndTime = "예상 퇴근 시간을 선택해주세요.";
-      }
-      if (!formData.expectedEndMinute) {
-        newErrors.expectedEndMinute = "예상 퇴근 분을 선택해주세요.";
-      }
-      if (!formData.mealAllowance) {
-        newErrors.mealAllowance = "식대 사용여부를 선택해주세요.";
-      }
-      if (!formData.transportationAllowance) {
-        newErrors.transportationAllowance = "교통비 사용여부를 선택해주세요.";
-      }
+      if (!formData.expectedEndTime) newErrors.expectedEndTime = "예상 퇴근 시간을 선택해주세요.";
+      if (!formData.expectedEndMinute) newErrors.expectedEndMinute = "예상 퇴근 분을 선택해주세요.";
+      if (!formData.mealAllowance) newErrors.mealAllowance = "식대 사용여부를 선택해주세요.";
+      if (!formData.transportationAllowance) newErrors.transportationAllowance = "교통비 사용여부를 선택해주세요.";
     }
     
-    // 주말 또는 공휴일인 경우 추가근무 시간 및 보상 지급방식 검증
     if (selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType)) {
-      if (!formData.overtimeHours) {
-        newErrors.overtimeHours = "추가근무 시간을 선택해주세요.";
-      }
-      if (!formData.overtimeMinutes) {
-        newErrors.overtimeMinutes = "추가근무 시간을 선택해주세요.";
-      }
-      if (!formData.overtimeType) {
-        newErrors.overtimeType = "보상 지급방식을 선택해주세요.";
-      }
+      if (!formData.overtimeHours) newErrors.overtimeHours = "추가근무 시간을 선택해주세요.";
+      if (!formData.overtimeMinutes) newErrors.overtimeMinutes = "추가근무 시간을 선택해주세요.";
+      if (!formData.overtimeType) newErrors.overtimeType = "보상 지급방식을 선택해주세요.";
     }
     
     setErrors(newErrors);
@@ -140,59 +96,39 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
   };
 
   const handleSave = async () => {
-    if (!validateForm()) {
-      return; // 유효성 검사 실패 시 저장하지 않음
-    }
-    
-    if (!selectedDay) {
-      return;
-    }
+    if (!validateForm() || !selectedDay) return;
     
     setIsSubmitting(true);
     
     try {
-      // 추가근무 API 파라미터 구성
       const apiParams = buildOvertimeApiParams(selectedDay, formData);
-      
-      // 추가근무 신청 API 호출
       const response = await workingApi.requestOvertime(apiParams);
       
-      // manager 또는 admin인 경우 바로 승인 처리
       const isManagerOrAdmin = user?.user_level === 'manager' || user?.user_level === 'admin';
       if (isManagerOrAdmin) {
-        // 응답에서 ot_seq 추출 (다양한 응답 구조 대응)
         let otSeq = response?.ot_seq || response?.id || response?.data?.ot_seq || response?.data?.id;
         
-        // ot_seq를 찾을 수 없는 경우, 목록 조회로 찾기 (재신청 포함)
         if (!otSeq) {
           try {
-            // 해당 날짜의 추가근무 목록 조회
-            const dateStr = selectedDay.date;
-            const formattedDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+            const formattedDate = selectedDay.date.includes('T') 
+              ? selectedDay.date.split('T')[0] 
+              : selectedDay.date;
             
-            // 재시도 로직: API 호출 후 데이터가 반영될 때까지 대기
-            let retryCount = 0;
-            const maxRetries = 5;
-            
-            while (!otSeq && retryCount < maxRetries) {
-              // 첫 시도는 즉시, 이후는 300ms 대기 후 재시도
+            for (let retryCount = 0; retryCount < 5 && !otSeq; retryCount++) {
               if (retryCount > 0) {
                 await new Promise(resolve => setTimeout(resolve, 300));
               }
               
-              // 사용자 ID로 최신 추가근무 목록 조회
               const overtimeList = await workingApi.getOvertimeList({
                 page: 1,
                 size: 20,
                 user_id: user?.user_id
               });
               
-              // 해당 날짜의 승인대기 상태인 항목 찾기 (가장 최신 항목)
               const pendingOvertimes = overtimeList.items?.filter(
                 (item: any) => item.ot_date === formattedDate && item.ot_status === 'H'
               ) || [];
               
-              // 가장 최신 항목 선택 (created_at 기준)
               if (pendingOvertimes.length > 0) {
                 const latestOvertime = pendingOvertimes.reduce((latest: any, current: any) => {
                   const latestTime = new Date(latest.ot_created_at || 0).getTime();
@@ -202,42 +138,25 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                 otSeq = latestOvertime.id;
                 break;
               }
-              
-              retryCount++;
             }
-          } catch (listError) {
+          } catch {
+            // 목록 조회 실패 시 무시
           }
         }
         
         if (otSeq) {
           try {
             await managerOvertimeApi.approveOvertime(otSeq);
-          } catch (approveError: any) {
+          } catch {
             // 자동 승인 실패해도 신청은 성공했으므로 계속 진행
           }
-        } else {
         }
       }
       
-      // 성공 시 부모 컴포넌트에 알림
       onSave(formData);
       onClose();
-      
-      // 폼 초기화
-      setFormData({
-        overtimeHours: "",
-        overtimeMinutes: "",
-        overtimeReason: "",
-        clientName: "",
-        workDescription: "",
-        overtimeType: "",
-        expectedEndTime: "",
-        expectedEndMinute: "",
-        mealAllowance: "",
-        transportationAllowance: ""
-      });
-      setErrors({}); // 에러 상태도 초기화
-      setHasUserInteracted(false); // 사용자 상호작용 상태도 초기화
+      setFormData(initialFormData);
+      setErrors({});
     } catch (error: any) {
       const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
       alert(`추가근무 신청에 실패했습니다.\n오류: ${errorMessage}`);
@@ -248,47 +167,21 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
 
   const handleClose = () => {
     onClose();
-    // 폼 초기화
-    setFormData({
-      overtimeHours: "",
-      overtimeMinutes: "",
-      overtimeReason: "",
-      clientName: "",
-      workDescription: "",
-      overtimeType: "",
-      expectedEndTime: "",
-      expectedEndMinute: "",
-      mealAllowance: "",
-      transportationAllowance: ""
-    });
-    setErrors({}); // 에러 상태도 초기화
-    setHasUserInteracted(false); // 사용자 상호작용 상태도 초기화
+    setFormData(initialFormData);
+    setErrors({});
   };
 
-  // 주말 여부 확인 함수
-  const isWeekend = (dayOfWeek: string) => {
-    return dayOfWeek === '토' || dayOfWeek === '일';
-  };
-
-  // 주말 또는 공휴일 여부 확인 함수 (폼 표시 제어용)
   const isWeekendOrHoliday = (dayOfWeek: string, workType: string) => {
     return dayOfWeek === '토' || dayOfWeek === '일' || workType === '공휴일';
   };
 
-  // 토요일 여부 확인 함수
-  const isSaturday = (dayOfWeek: string) => {
-    return dayOfWeek === '토';
-  };
-
-  // 일요일 또는 공휴일 여부 확인 함수
+  const isSaturday = (dayOfWeek: string) => dayOfWeek === '토';
   const isSundayOrHoliday = (dayOfWeek: string, workType: string) => {
     return dayOfWeek === '일' || workType === '공휴일';
   };
 
-  // 다이얼로그가 열릴 때 상태 초기화 또는 기존 데이터 로드
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
-      // 기존 추가근무 데이터가 있는 경우 (승인대기, 승인완료 등)
       if (selectedDay?.overtimeData) {
         setFormData({
           overtimeHours: selectedDay.overtimeData.overtimeHours || "",
@@ -303,22 +196,9 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
           transportationAllowance: selectedDay.overtimeData.transportationAllowance || ""
         });
       } else {
-        // 새로운 신청인 경우 초기화
-        setFormData({
-          overtimeHours: "",
-          overtimeMinutes: "",
-          overtimeReason: "",
-          clientName: "",
-          workDescription: "",
-          overtimeType: "",
-          expectedEndTime: "",
-          expectedEndMinute: "",
-          mealAllowance: "",
-          transportationAllowance: ""
-        });
+        setFormData(initialFormData);
       }
-      setHasUserInteracted(false); // 사용자 상호작용 상태 초기화
-      setErrors({}); // 에러 상태 초기화
+      setErrors({});
     }
   }, [isOpen, selectedDay]);
 
@@ -328,11 +208,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
         <DialogHeader>
           <DialogTitle>추가근무 신청</DialogTitle>
           <DialogDescription>
-            {selectedDay && (
-              <>
-                {dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} {selectedDay.dayOfWeek}요일의 추가근무를 신청합니다.
-              </>
-            )}
+            {selectedDay && `${dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} ${selectedDay.dayOfWeek}요일의 추가근무를 신청합니다.`}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -498,8 +374,10 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                     </SelectContent>
                   </Select>
                 </div>
-                {errors.overtimeMinutes && (
-                  <p className="text-sm text-red-500">{errors.overtimeHours}</p>
+                {(errors.overtimeHours || errors.overtimeMinutes) && (
+                  <p className="text-sm text-red-500">
+                    {errors.overtimeHours || errors.overtimeMinutes}
+                  </p>
                 )}
               </div>
 
