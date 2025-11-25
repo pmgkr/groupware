@@ -202,8 +202,10 @@ export async function MyOvertimeHistory(page: number, size: number, vyear: numbe
   const queryParams = new URLSearchParams();
   queryParams.append('page', page.toString());
   queryParams.append('size', size.toString());
-  if (vyear) queryParams.append('vyear', vyear.toString());
+  queryParams.append('vyear', vyear.toString()); // 항상 vyear 전달
   if (user_id) queryParams.append('user_id', user_id);
+  
+  console.log('MyOvertimeHistory API 호출 - vyear:', vyear, 'queryParams:', queryParams.toString());
   
   const res = await http<{ total: number; page: number; size: number; pages: number; items: MyOvertimeItem[] }>(`/mypage/overtime?${queryParams.toString()}`, { method: 'GET' });
   return res;

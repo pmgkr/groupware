@@ -93,20 +93,30 @@ export const buildOvertimeApiParams = (
     selectedDay.workType
   );
 
+  // 날짜를 YYYY-MM-DD 형식으로 변환 (ISO 형식인 경우 처리)
+  let formattedDate = selectedDay.date;
+  if (formattedDate.includes('T')) {
+    // ISO 형식인 경우 YYYY-MM-DD로 변환
+    formattedDate = formattedDate.split('T')[0];
+  }
+  
   // 기본 필수 필드
   const apiParams: OvertimeApiParams = {
     ot_type: otType,
-    ot_date: selectedDay.date,
+    ot_date: formattedDate,
     ot_client: formData.clientName || '',
     ot_description: formData.workDescription || '',
   };
 
   // 평일인 경우: 예상 퇴근 시간, 식대, 교통비만 추가
   if (!isWeekendOrHol) {
-    const hour = formData.expectedEndTime.padStart(2, '0');
-    const minute = formData.expectedEndMinute.padStart(2, '0');
-    apiParams.ot_stime = `${hour}:${minute}:00`;
-    apiParams.ot_etime = `${hour}:${minute}:00`;
+    // expectedEndTime과 expectedEndMinute가 비어있지 않은 경우에만 처리
+    if (formData.expectedEndTime && formData.expectedEndMinute) {
+      const hour = formData.expectedEndTime.padStart(2, '0');
+      const minute = formData.expectedEndMinute.padStart(2, '0');
+      apiParams.ot_stime = `${hour}:${minute}:00`;
+      apiParams.ot_etime = `${hour}:${minute}:00`;
+    }
     apiParams.ot_food = formData.mealAllowance === 'yes' ? 'Y' : 'N';
     apiParams.ot_trans = formData.transportationAllowance === 'yes' ? 'Y' : 'N';
   }
