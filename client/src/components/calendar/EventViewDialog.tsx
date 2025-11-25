@@ -62,6 +62,11 @@ export default function EventViewDialog({
   const status = (() => {
     const baseStatus = selectedEvent?.status || "등록 완료";
     
+    // "취소 완료" 상태는 그대로 반환 (버튼 표시 안 함)
+    if (baseStatus === "취소 완료") {
+      return "취소 완료";
+    }
+    
     // "취소 요청됨" 상태인 경우
     if (baseStatus === "취소 요청됨") {
       // 매니저이면서 같은 팀인 경우 "취소 요청됨"로 표시
@@ -274,21 +279,25 @@ export default function EventViewDialog({
           )}
         </div>
         <DialogFooter>
-          {isManager && isSameTeam && status === "취소 요청됨" && onApproveCancel && (
-            <Button variant="destructive" onClick={handleApproveCancel}>취소 요청 승인</Button>
-          )}
-          {/* 액션 버튼들 - 본인의 일정일 때만 표시 */}
-          {isMyEvent && status === "등록 완료" && (
+          {status !== "취소 완료" && (
             <>
-              {user_level === 'user' && onRequestCancel && (
-                <Button variant="destructive" onClick={handleCancelRequest}>
-                  취소 신청하기
-                </Button>
+              {isManager && isSameTeam && status === "취소 요청됨" && onApproveCancel && (
+                <Button variant="destructive" onClick={handleApproveCancel}>취소 요청 승인</Button>
               )}
-              {(user_level === 'manager' || user_level === 'admin') && onApproveCancel && (
-                <Button variant="destructive" onClick={handleCancelRequest}>
-                  취소하기
-                </Button>
+              {/* 액션 버튼들 - 본인의 일정일 때만 표시 */}
+              {isMyEvent && status === "등록 완료" && (
+                <>
+                  {user_level === 'user' && onRequestCancel && (
+                    <Button variant="destructive" onClick={handleCancelRequest}>
+                      취소 신청하기
+                    </Button>
+                  )}
+                  {(user_level === 'manager' || user_level === 'admin') && onApproveCancel && (
+                    <Button variant="destructive" onClick={handleCancelRequest}>
+                      취소하기
+                    </Button>
+                  )}
+                </>
               )}
             </>
           )}

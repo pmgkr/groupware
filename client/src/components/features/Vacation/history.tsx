@@ -56,6 +56,7 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
   // 일정 다이얼로그 state
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<MyVacationItem | null>(null);
+  const [selectedCancelledItem, setSelectedCancelledItem] = useState<MyVacationItem | null>(null);
 
   // 연도 변경 핸들러
   const handleYearChange = (year: string) => {
@@ -145,9 +146,19 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
   const total = groupedData.length;
   const totalPages = Math.ceil(total / pageSize);
 
+  // sch_status를 상태 텍스트로 변환하는 함수
+  const getScheduleStatusText = (schStatus?: string): "등록 완료" | "취소 요청됨" | "취소 완료" => {
+    if (!schStatus) return '등록 완료';
+    if (schStatus === 'Y') return '등록 완료';
+    if (schStatus === 'H') return '취소 요청됨';
+    if (schStatus === 'N') return '취소 완료';
+    return '등록 완료';
+  };
+
   // 일정 클릭 핸들러
-  const handleEventClick = async (item: MyVacationItem) => {
+  const handleEventClick = async (item: MyVacationItem, cancelledItem?: MyVacationItem) => {
     setSelectedEvent(item);
+    setSelectedCancelledItem(cancelledItem || null);
     setIsEventDialogOpen(true);
   };
 
@@ -155,6 +166,7 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
   const handleCloseEventDialog = () => {
     setIsEventDialogOpen(false);
     setSelectedEvent(null);
+    setSelectedCancelledItem(null);
   };
 
   // 취소 요청 핸들러 (사용자가 취소 신청)
@@ -217,6 +229,8 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
     return baseType;
   };
 
+  
+
   return (
     <>
       <Overview onYearChange={handleYearChange} />
@@ -247,48 +261,57 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
             </TableCell>
           </TableRow>
         ) : (
-          paginatedData.flatMap((group, index) => {
+          paginatedData.map((group, index) => {
             const hasCancelled = !!group.cancelledItem;
-            const rows = [
+            
+            return (
               <TableRow 
-                key={`${group.item.sch_id}-main-${index}`}
+                key={`${group.item.sch_id}-${index}`}
                 className={`[&_td]:text-[13px] cursor-pointer ${
                   hasCancelled 
-                    ? 'bg-gray-100 [&_td]:text-gray-500 border-0' 
-                    : 'hover:bg--50'
+                    // ? ' [&_td]:text-gray-400' 
+                    ? 'opacity-40' 
+                    : ''
                 }`}
-                onClick={() => handleEventClick(group.item)}
+                onClick={() => handleEventClick(group.item, group.cancelledItem)}
               >
-                <TableCell className="text-gray-700! text-center p-2">{group.item.sdate} - {group.item.edate}</TableCell>
-                <TableCell className="text-center p-2 pb-1">
-                  {getVacationTypeText(group.item.v_type)}
+                <TableCell className="text-center p-2">{group.item.sdate} - {group.item.edate}</TableCell>
+                <TableCell className="text-center p-2">
+                  <div className="flex flex-col gap-0.5">
+                    <span>{getVacationTypeText(group.item.v_type)}</span>
+                    {hasCancelled && (
+                      <span className="text-red-500">
+                        {getVacationTypeText(group.cancelledItem!.v_type)}
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
-                <TableCell className="text-center p-2">{group.item.v_count || '-'}</TableCell>
-                <TableCell className="text-center p-2">{group.item.wdate ? dayjs(group.item.wdate).format('YYYY-MM-DD') : '-'}</TableCell>
-                <TableCell className="text-left p-2">{group.item.remark || '-'}</TableCell>
+                <TableCell className="text-center p-2">
+                  <div className="flex flex-col gap-0.5">
+                    <span>{group.item.v_count || '-'}</span>
+                    {hasCancelled && (
+                      <span className="text-gray-800">{group.cancelledItem!.v_count || '-'}</span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-center p-2">
+                  <div className="flex flex-col gap-0.5">
+                    <span>{group.item.wdate ? dayjs(group.item.wdate).format('YYYY-MM-DD') : '-'}</span>
+                    {hasCancelled && (
+                      <span className="text-gray-800">{group.cancelledItem!.wdate ? dayjs(group.cancelledItem!.wdate).format('YYYY-MM-DD') : '-'}</span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-left p-2">
+                  <div className="flex flex-col gap-0.5">
+                    <span>{group.item.remark || '-'}</span>
+                    {hasCancelled && (
+                      <span className="text-gray-800">{group.cancelledItem!.remark || '-'}</span>
+                    )}
+                  </div>
+                </TableCell>
               </TableRow>
-            ];
-            
-            // 취소된 항목이 있으면 별도 행으로 표시
-            if (group.cancelledItem) {
-              rows.push(
-                <TableRow 
-                  key={`${group.cancelledItem.sch_id}-cancelled-${index}`}
-                  className="[&_td]:text-[13px] cursor-pointer hover:bg-gray-50"
-                  onClick={() => handleEventClick(group.cancelledItem!)}
-                >
-                  <TableCell className="text-center p-2"></TableCell>
-                  <TableCell className="text-center p-2 text-red-500">
-                    {getVacationTypeText(group.cancelledItem.v_type)}
-                  </TableCell>
-                  <TableCell className="text-center p-2">{group.cancelledItem.v_count || '-'}</TableCell>
-                  <TableCell className="text-center p-2">{group.cancelledItem.wdate ? dayjs(group.cancelledItem.wdate).format('YYYY-MM-DD') : '-'}</TableCell>
-                  <TableCell className="text-left p-2">{group.cancelledItem.remark || '-'}</TableCell>
-                </TableRow>
-              );
-            }
-            
-            return rows;
+            );
           })
         )}
         </TableBody>
@@ -317,7 +340,7 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
           onApproveCancel={handleApproveCancel}
           selectedEvent={{
             id: String(selectedEvent.sch_id),
-            title: selectedEvent.remark || '',
+            title: getVacationTypeText(selectedEvent.v_type) || '',
             description: selectedEvent.remark || '',
             startDate: selectedEvent.sdate,
             endDate: selectedEvent.edate,
@@ -329,7 +352,9 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
             author: user?.user_name || '-',
             userId: user?.user_id || '',
             teamId: user?.team_id || 0,
-            status: '등록 완료',
+            status: selectedCancelledItem 
+              ? '취소 완료' 
+              : getScheduleStatusText(selectedEvent.sch_status),
             createdAt: selectedEvent.wdate
           }}
         />

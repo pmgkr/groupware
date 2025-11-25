@@ -14,7 +14,7 @@ export interface WorkData {
   overtimeMinutes: number;
   totalHours: number;
   totalMinutes: number;
-  overtimeStatus: "신청하기" | "승인대기" | "승인완료" | "반려됨" | "보상요청";
+  overtimeStatus: "신청하기" | "승인대기" | "승인완료" | "취소완료" | "보상대기";
   dayOfWeek: string;
   rejectionDate?: string;
   rejectionReason?: string;

@@ -51,26 +51,6 @@ export interface OvertimeListParams {
   user_id?: string;
 }
 
-// 관리자 추가근무 목록 조회 파라미터
-export interface ManagerOvertimeListParams {
-  team_id?: number;
-  page?: number;
-  size?: number;
-  flag?: string;  // ot_status (H: 승인대기, T: 승인완료, Y: 리워드지급(최종승인), N: 반려됨)
-}
-
-// 관리자 추가근무 최종승인(리워드지급) 파라미터
-export interface ManagerOvertimeRewardParams {
-  ot_seq: number;
-}
-
-// 관리자 근태 로그 주간 조회 파라미터
-export interface ManagerWorkLogWeekParams {
-  team_id: number;
-  weekno: number;
-  yearno: number;
-}
-
 // 추가근무 항목
 export interface OvertimeItem {
   id: number;
@@ -86,7 +66,7 @@ export interface OvertimeItem {
   ot_reward: string;
   ot_client: string;
   ot_description: string;
-  ot_status: string;  // "H" (승인대기), "T" (승인완료), "N" (반려됨)
+  ot_status: string;  // "H" (승인대기), "T" (승인완료), "N" (취소완료)
   ot_created_at: string;
   ot_modified_at: string;
 }
@@ -98,21 +78,6 @@ export interface OvertimeListResponse {
   page: number;
   size: number;
   pages: number;
-}
-
-// 관리자의 팀 목록 조회 응답
-export interface MyTeamItem {
-  seq: number;
-  manager_id: string;
-  manager_name: string;
-  team_id: number;
-  team_name: string;
-  parent_id?: number;
-  level?: number;
-}
-
-export interface MyTeamListResponse {
-  items: MyTeamItem[];
 }
 
 // 근태 로그 API
@@ -157,126 +122,10 @@ export const workingApi = {
     return response;
   },
 
-  // 추가근무 승인 (관리자)
-  approveOvertime: async (id: number): Promise<any> => {
-    const response = await http('/manager/overtime/confirm', {
-      method: 'POST',
-      body: JSON.stringify({ ot_seq: id }),
-    });
-    return response;
-  },
-
-  // 추가근무 반려 (관리자)
-  rejectOvertime: async (id: number, reason: string): Promise<any> => {
-    const response = await http('/manager/overtime/reject', {
-      method: 'POST',
-      body: JSON.stringify({ ot_seq: id, reason }),
-    });
-    return response;
-  },
-
   // 추가근무 상세 조회
   getOvertimeDetail: async (id: number): Promise<OvertimeItem> => {
     const response = await http<OvertimeItem>(`/user/overtime/${id}`);
     return response;
-  },
-
-  // 관리자 - 팀원 추가근무 목록 조회
-  getManagerOvertimeList: async (params?: ManagerOvertimeListParams): Promise<OvertimeListResponse> => {
-    const queryParams = new URLSearchParams();
-    
-    if (params?.team_id) queryParams.append('team_id', params.team_id.toString());
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.size) queryParams.append('size', params.size.toString());
-    if (params?.flag) queryParams.append('flag', params.flag);
-
-    const response = await http<OvertimeListResponse>(`/manager/overtime/list?${queryParams.toString()}`);
-    return response;
-  },
-
-  // 관리자 - 추가근무 리워드 지급(최종승인)
-  grantOvertimeReward: async (otSeq: number): Promise<any> => {
-    const response = await http('/manager/overtime/confirm', {
-      method: 'POST',
-      body: JSON.stringify({ ot_seq: otSeq }),
-    });
-    return response;
-  },
-
-  // 관리자 - 보상요청 상태 승인(리워드 지급)
-  confirmOvertimeCompensation: async (params: ManagerOvertimeRewardParams): Promise<any> => {
-    const response = await http('/manager/overtime/confirm', {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
-    return response;
-  },
-
-  // 관리자 - 추가근무 상세 조회 (로그 포함)
-  getManagerOvertimeDetail: async (id: number): Promise<any> => {
-    const response = await http<any>(`/manager/overtime/info/${id}`);
-    return response;
-  },
-
-  // 관리자 - 나의 팀 목록 조회
-  getMyTeamList: async (): Promise<MyTeamListResponse> => {
-    const response = await http<MyTeamListResponse>('/manager/myteam');
-    return response;
-  },
-
-  // 출퇴근 시간 수정/등록 (관리자)
-  updateWorkTime: async (userId: string, date: string, startTime: string, endTime: string): Promise<any> => {
-    // 시간 형식 변환: "HH:mm" -> "HH:mm:ss"
-    const formatTime = (time: string) => {
-      if (!time) return '';
-      // 이미 초가 포함되어 있으면 그대로 반환
-      if (time.length === 8) return time;
-      // "HH:mm" 형식이면 ":00" 추가
-      return `${time}:00`;
-    };
-
-    const response = await http('/manager/wlog/update', {
-      method: 'POST',
-      body: JSON.stringify({ 
-        user_id: userId, 
-        tdate: date,
-        stime: formatTime(startTime), 
-        etime: formatTime(endTime)
-      }),
-    });
-    return response;
-  },
-
-  // 관리자 - 근태 로그 주간 조회
-  getManagerWorkLogsWeek: async (params: ManagerWorkLogWeekParams): Promise<WorkLogResponse> => {
-    const queryParams = new URLSearchParams();
-    
-    queryParams.append('team_id', params.team_id.toString());
-    queryParams.append('weekno', params.weekno.toString());
-    queryParams.append('yearno', params.yearno.toString());
-
-    const url = `/manager/wlog/week?${queryParams.toString()}`;
-    
-    try {
-      const response = await http<any>(url);
-      
-      // 응답 형식 확인 및 변환
-      if (response && typeof response === 'object') {
-        // 이미 WorkLogResponse 형식인 경우
-        if (response.wlog !== undefined) {
-          return {
-            wlog: Array.isArray(response.wlog) ? response.wlog : [],
-            vacation: Array.isArray(response.vacation) ? response.vacation : []
-          };
-        }
-        // 다른 형식일 수 있으므로 그대로 반환 (호환성 유지)
-        return response as WorkLogResponse;
-      }
-      
-      return { wlog: [], vacation: [] };
-    } catch (error) {
-      throw error;
-    }
   },
 };
 

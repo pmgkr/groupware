@@ -39,7 +39,7 @@ export default function WorkingDetailDialog({
       const sdate = dayjs(startDate).format('YYYY-MM-DD');
       const edate = dayjs(endDate).format('YYYY-MM-DD');
       
-      // 근태 로그와 초과근무 목록 병렬로 가져오기
+      // 근태 로그와 추가근무 목록 병렬로 가져오기
       const [workLogResponse, overtimeResponse] = await Promise.all([
         workingApi.getWorkLogs({
           search_id: userId,

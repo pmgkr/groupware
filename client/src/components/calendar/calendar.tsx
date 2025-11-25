@@ -190,10 +190,10 @@ export default function CustomCalendar({
       throw new Error('일정 ID를 찾을 수 없습니다.');
     }
 
-    const { scheduleApi } = await import('@/api/calendar');
+    const { managerVacationApi } = await import('@/api/manager/vacation');
     
     // 취소 요청됨 상태 → 취소 완료 (관리자 API 사용)
-    await scheduleApi.approveScheduleCancel(eventId);
+    await managerVacationApi.approveScheduleCancel(eventId);
     
     // 다이얼로그 닫기
     handleCloseEventViewDialog();

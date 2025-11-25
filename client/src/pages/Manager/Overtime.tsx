@@ -45,6 +45,7 @@ export default function ManagerOvertime() {
         onFilterChange={handleFilterChange}
         checkedItems={checkedItems}
         onApproveAll={handleApproveAll}
+        page="manager"
       />
       
       <OvertimeList

@@ -27,6 +27,7 @@ export default function ManagerWorking() {
         currentDate={currentDate} 
         onDateChange={setCurrentDate} 
         onTeamSelect={handleTeamSelect}
+        page="manager"
       />
       
       <WorkingList

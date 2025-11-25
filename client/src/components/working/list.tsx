@@ -8,6 +8,8 @@ import OvertimeViewDialog from '@/components/working/OvertimeViewDialog';
 import WorkTimeEditDialog from '@/components/working/WorkTimeEditDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { workingApi } from '@/api/working';
+import { managerOvertimeApi } from '@/api/manager/overtime';
+import { managerWorkingApi } from '@/api/manager/working';
 import { Settings } from 'lucide-react';
 
 export interface DayWorkInfo {
@@ -110,12 +112,12 @@ export default function WorkingList({
     setSelectedOvertime({ userId, dayKey, overtimeId });
     setIsOvertimeDialogOpen(true);
     
-    // 초과근무 상세 정보 조회
+    // 추가근무 상세 정보 조회
     try {
-      const detail = await workingApi.getManagerOvertimeDetail(parseInt(overtimeId));
+      const detail = await managerOvertimeApi.getManagerOvertimeDetail(parseInt(overtimeId));
       setOvertimeDetailData(detail);
     } catch (error) {
-      console.error('초과근무 상세 조회 실패:', error);
+      console.error('추가근무 상세 조회 실패:', error);
     }
   };
 
@@ -131,7 +133,7 @@ export default function WorkingList({
     if (!selectedOvertime?.overtimeId) return;
     
     try {
-      await workingApi.approveOvertime(parseInt(selectedOvertime.overtimeId));
+      await managerOvertimeApi.approveOvertime(parseInt(selectedOvertime.overtimeId));
       // 데이터 새로고침을 위해 부모 컴포넌트에 알림 (나중에 구현)
       window.location.reload(); // 임시로 새로고침
     } catch (error) {
@@ -145,7 +147,7 @@ export default function WorkingList({
     if (!selectedOvertime?.overtimeId) return;
     
     try {
-      await workingApi.rejectOvertime(parseInt(selectedOvertime.overtimeId), reason);
+      await managerOvertimeApi.rejectOvertime(parseInt(selectedOvertime.overtimeId), reason);
       // 데이터 새로고침을 위해 부모 컴포넌트에 알림 (나중에 구현)
       window.location.reload(); // 임시로 새로고침
     } catch (error) {
@@ -189,7 +191,7 @@ export default function WorkingList({
         endpoint: '/manager/wlog/update'
       });
       
-      await workingApi.updateWorkTime(
+      await managerWorkingApi.updateWorkTime(
         selectedWorkTime.userId,
         selectedWorkTime.date,
         startTime,
@@ -242,7 +244,7 @@ export default function WorkingList({
     switch (overtimeStatus) {
       case '승인대기': return { bg: 'bg-orange-500', ping: 'bg-orange-400' };
       case '승인완료': return { bg: 'bg-green-500', ping: 'bg-green-400' };
-      case '반려됨': return { bg: 'bg-gray-400', ping: 'bg-gray-300' };
+      case '취소완료': return { bg: 'bg-gray-400', ping: 'bg-gray-300' };
       default: return { bg: 'bg-orange-500', ping: 'bg-orange-400' };
     }
   };
@@ -518,7 +520,7 @@ export default function WorkingList({
         const mapStatus = (status: string) => {
           if (status === 'H') return '승인대기';
           if (status === 'T') return '승인완료';
-          if (status === 'N') return '반려됨';
+          if (status === 'N') return '취소완료';
           return '신청하기';
         };
         
@@ -549,7 +551,7 @@ export default function WorkingList({
               totalHours: 0,
               totalMinutes: 0,
               overtimeStatus: overtimeDetailData?.info ? mapStatus(overtimeDetailData.info.ot_status) : 
-                            (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "반려됨",
+                            (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "취소완료",
               overtimeData: convertOvertimeData()
             }}
           />

@@ -3,7 +3,7 @@ import { Button } from "@components/ui/button";
 import { MultiSelect } from "@components/multiselect/multi-select";
 import { useAuth } from '@/contexts/AuthContext';
 import { getTeams } from '@/api/teams';
-import { workingApi, type MyTeamItem } from '@/api/working';
+import { getTeams as getManagerTeams, type MyTeamItem } from '@/api/manager/teams';
 
 
 // 셀렉트 옵션 타입 정의
@@ -28,13 +28,15 @@ interface ToolbarProps {
   onDateChange: (newDate: Date) => void;
   onTeamSelect?: (teamIds: number[]) => void;
   showTeamSelect?: boolean; // 팀 선택 셀렉터 표시 여부
+  page?: 'manager' | 'admin'; // 페이지 타입
 }
 
 export default function Toolbar({ 
   currentDate, 
   onDateChange,
   onTeamSelect = () => {},
-  showTeamSelect = true
+  showTeamSelect = true,
+  page = 'manager'
 }: ToolbarProps) {
   const { user } = useAuth();
   
@@ -49,9 +51,9 @@ export default function Toolbar({
         return;
       }
       
-      // admin 권한 체크
-      if (user.user_level === 'admin') {
-        // admin인 경우: 모든 팀 표시
+      // page prop에 따라 분기
+      if (page === 'admin') {
+        // admin 페이지: 모든 팀 표시
         const allTeamDetails = await getTeams({});
         const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
           seq: 0,
@@ -67,9 +69,17 @@ export default function Toolbar({
         return;
       }
       
-      // manager인 경우: /manager/myteam API로 사용자가 관리하는 모든 팀 조회
-      const myTeamResponse = await workingApi.getMyTeamList();
-      const teamItems: MyTeamItem[] = myTeamResponse.items || [];
+      // manager 페이지: 권한 상관없이 자기가 팀장인 팀 목록만 조회
+      const allTeamDetails = await getManagerTeams({});
+      const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
+        seq: 0,
+        manager_id: team.manager_id || '',
+        manager_name: team.manager_name || '',
+        team_id: team.team_id,
+        team_name: team.team_name,
+        parent_id: team.parent_id || undefined,
+        level: team.level,
+      }));
       
       setTeams(teamItems);
       
@@ -117,7 +127,7 @@ export default function Toolbar({
   // 초기 팀 목록 로드
   useEffect(() => {
     loadTeams();
-  }, [user]);
+  }, [user, page]);
 
   // 팀 목록이 로드되면 기본적으로 모든 팀 선택
   useEffect(() => {

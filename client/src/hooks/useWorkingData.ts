@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
-import { workingApi, type OvertimeListResponse } from '@/api/working';
+import { type OvertimeListResponse } from '@/api/working';
+import { managerOvertimeApi } from '@/api/manager/overtime';
+import { managerWorkingApi } from '@/api/manager/working';
 import { getMemberList } from '@/api/common/team';
 import { useAuth } from '@/contexts/AuthContext';
 import type { WorkData } from '@/types/working';
@@ -50,14 +52,14 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
           index === self.findIndex(m => m.user_id === member.user_id)
         );
 
-        // 2. 초과근무 목록 조회 (team_id로) - 모든 상태 포함 (H: 승인대기, T: 승인완료, N: 반려됨)
+        // 2. 초과근무 목록 조회 (team_id로) - 모든 상태 포함 (H: 승인대기, T: 승인완료, N: 취소완료)
         let allOvertimeResponse: OvertimeListResponse = { items: [], total: 0, page: 1, size: 1000, pages: 0 };
         
         try {
-          const flags = ['H', 'T', 'N']; // 승인대기, 승인완료, 반려됨 모두 조회
+          const flags = ['H', 'T', 'N']; // 승인대기, 승인완료, 취소완료 모두 조회
           const overtimePromises = teamIdsToQuery.flatMap(teamId => 
             flags.map(flag => 
-              workingApi.getManagerOvertimeList({ team_id: teamId, page: 1, size: 1000, flag })
+              managerOvertimeApi.getManagerOvertimeList({ team_id: teamId, page: 1, size: 1000, flag })
                 .catch(() => ({ items: [], total: 0, page: 1, size: 1000, pages: 0 }))
             )
           );
@@ -99,7 +101,7 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
         for (const [teamId, members] of teamGroups) {
           try {
             // 관리자 - 근태 로그 주간 조회 (팀별로 조회)
-            const workLogResponse = await workingApi.getManagerWorkLogsWeek({
+            const workLogResponse = await managerWorkingApi.getManagerWorkLogsWeek({
               team_id: teamId,
               weekno: week,
               yearno: year

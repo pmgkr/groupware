@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import OvertimeViewDialog from '@/components/working/OvertimeViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { workingApi } from '@/api/working';
+import { managerOvertimeApi } from '@/api/manager/overtime';
 import { getTeams } from '@/api/teams';
 import { getMemberList } from '@/api/common/team';
 import type { OvertimeItem } from '@/api/working';
@@ -109,43 +110,23 @@ export default function OvertimeList({
   // 데이터 조회
   useEffect(() => {
     fetchOvertimeData();
-  }, [teamIds, user?.team_id, user?.user_level]);
+  }, [teamIds]);
 
   const fetchOvertimeData = async () => {
     setLoading(true);
     try {
-      // teamIds가 있으면 사용, 없으면 user.team_id 사용
-      let teamIdsToQuery: number[] = [];
-      
-      if (teamIds.length > 0) {
-        // 팀이 선택된 경우
-        teamIdsToQuery = teamIds;
-      } else if (user?.user_level === 'manager') {
-        // manager인 경우: /manager/myteam으로 관리하는 모든 팀 조회
-        try {
-          const myTeamResponse = await workingApi.getMyTeamList();
-          teamIdsToQuery = (myTeamResponse.items || []).map(team => team.team_id);
-        } catch (error) {
-          console.error('관리 팀 목록 조회 실패:', error);
-          // 실패 시 user.team_id 사용
-          if (user?.team_id) {
-            teamIdsToQuery = [user.team_id];
-          }
-        }
-      } else if (user?.team_id) {
-        // 일반 사용자 또는 admin인 경우
-        teamIdsToQuery = [user.team_id];
-      }
-      
-      if (teamIdsToQuery.length === 0) {
+      // teamIds가 없으면 데이터 조회하지 않음 (Toolbar에서 항상 전달해야 함)
+      if (teamIds.length === 0) {
         setAllData([]);
         setLoading(false);
         return;
       }
       
+      const teamIdsToQuery = teamIds;
+      
       // 각 팀별로 데이터 조회
       const promises = teamIdsToQuery.map(teamId => 
-        workingApi.getManagerOvertimeList({
+        managerOvertimeApi.getManagerOvertimeList({
           team_id: teamId,
           page: 1,
           size: 1000
@@ -161,7 +142,7 @@ export default function OvertimeList({
       
       setAllData(uniqueItems);
     } catch (error) {
-      console.error('초과근무 데이터 조회 실패:', error);
+      console.error('추가근무 데이터 조회 실패:', error);
       setAllData([]);
     } finally {
       setLoading(false);
@@ -335,12 +316,12 @@ export default function OvertimeList({
     setSelectedOvertime(item);
     setIsOvertimeDialogOpen(true);
     
-    // 초과근무 상세 정보 조회
+    // 추가근무 상세 정보 조회
     try {
-      const detail = await workingApi.getManagerOvertimeDetail(item.id);
+      const detail = await managerOvertimeApi.getManagerOvertimeDetail(item.id);
       setOvertimeDetailData(detail);
     } catch (error) {
-      console.error('초과근무 상세 조회 실패:', error);
+      console.error('추가근무 상세 조회 실패:', error);
     }
   };
 
@@ -356,7 +337,7 @@ export default function OvertimeList({
     if (!selectedOvertime?.id) return;
     
     try {
-      await workingApi.approveOvertime(selectedOvertime.id);
+      await managerOvertimeApi.approveOvertime(selectedOvertime.id);
       fetchOvertimeData(); // 데이터 새로고침
       handleCloseOvertimeDialog();
     } catch (error) {
@@ -370,7 +351,7 @@ export default function OvertimeList({
     if (!selectedOvertime?.id) return;
     
     try {
-      await workingApi.rejectOvertime(selectedOvertime.id, reason);
+      await managerOvertimeApi.rejectOvertime(selectedOvertime.id, reason);
       fetchOvertimeData(); // 데이터 새로고침
       handleCloseOvertimeDialog();
     } catch (error) {
@@ -379,12 +360,12 @@ export default function OvertimeList({
     }
   };
 
-  // 보상 지급 핸들러 (보상요청 상태 승인)
+  // 보상 지급 핸들러 (보상대기 상태 승인)
   const handleCompensationOvertime = async () => {
     if (!selectedOvertime?.id) return;
     
     try {
-      await workingApi.confirmOvertimeCompensation({ ot_seq: selectedOvertime.id });
+      await managerOvertimeApi.confirmOvertimeCompensation({ ot_seq: selectedOvertime.id });
       fetchOvertimeData(); // 데이터 새로고침
       handleCloseOvertimeDialog();
     } catch (error) {
@@ -418,7 +399,7 @@ export default function OvertimeList({
     try {
       // 모든 체크된 항목에 대해 승인 요청
       await Promise.all(
-        checkedItems.map(id => workingApi.approveOvertime(id))
+        checkedItems.map(id => managerOvertimeApi.approveOvertime(id))
       );
       
       // 확인 모달 닫기
@@ -470,9 +451,9 @@ export default function OvertimeList({
   const getStatusText = (status: string) => {
     switch (status) {
       case 'H': return '승인대기';
-      case 'T': return activeTab === 'weekday' ? '승인완료' : '보상요청';
+      case 'T': return activeTab === 'weekday' ? '승인완료' : '보상대기';
       case 'Y': return '보상완료';
-      case 'N': return '반려됨';
+      case 'N': return '취소완료';
       default: return status;
     }
   };
@@ -482,7 +463,7 @@ export default function OvertimeList({
     switch (status) {
       case 'H': return 'text-orange-600 font-semibold'; // 승인대기
       case 'T': return 'text-green-600 font-semibold'; // 승인완료
-      case 'N': return 'text-red-600 font-semibold'; // 반려됨
+      case 'N': return 'text-red-600 font-semibold'; // 취소완료
       default: return 'text-gray-600';
     }
   };
@@ -524,7 +505,7 @@ export default function OvertimeList({
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className="w-[7%] text-center p-2">부서</TableHead>
             <TableHead className="w-[7%] text-center p-2">이름</TableHead>
-            <TableHead className="w-[10%] text-center p-2">초과근무날짜</TableHead>
+            <TableHead className="w-[10%] text-center p-2">추가근무날짜</TableHead>
             {activeTab === 'weekday' ?
                 <>
                 <TableHead className="w-[8%] text-center p-2">예상퇴근시간</TableHead>
@@ -556,20 +537,20 @@ export default function OvertimeList({
         {loading ? (
           <TableRow>
             <TableCell className="h-100 text-gray-500" colSpan={10}>
-              초과근무 신청 데이터 불러오는 중
+              추가근무 신청 데이터 불러오는 중
             </TableCell>
           </TableRow>
         ) : paginatedData.length === 0 ? (
           <TableRow>
             <TableCell className="h-100 text-gray-500" colSpan={10}>
-              초과근무 신청 데이터가 없습니다.
+              추가근무 신청 데이터가 없습니다.
             </TableCell>
           </TableRow>
         ) : (
           paginatedData.map((item) => (
             <TableRow 
               key={item.id}
-              className="[&_td]:text-[13px] cursor-pointer hover:bg-gray-50"
+              className={`[&_td]:text-[13px] cursor-pointer hover:bg-gray-50 ${item.ot_status === 'N' ? 'opacity-40' : ''}`}
               onClick={() => handleOvertimeClick(item)}
             >
               <TableCell className="text-center p-2">{getTeamName(item.team_id)}</TableCell>
@@ -604,7 +585,7 @@ export default function OvertimeList({
                   <Badge 
                     variant={activeTab === 'weekday' ? 'outline' : 'secondary'} 
                     size="table" 
-                    title={activeTab === 'weekday' ? '승인완료' : '보상요청'}
+                    title={activeTab === 'weekday' ? '승인완료' : '보상대기'}
                   >
                     {getStatusText(item.ot_status)}
                   </Badge>
@@ -615,7 +596,7 @@ export default function OvertimeList({
                   </Badge>
                 )}
                 {item.ot_status === 'N' && (
-                  <Badge variant="grayish" size="table" title="반려됨">
+                  <Badge variant="grayish" size="table" title="취소완료">
                     {getStatusText(item.ot_status)}
                   </Badge>
                 )}
@@ -680,10 +661,10 @@ export default function OvertimeList({
         const mapStatus = (status: string) => {
           if (status === 'H') return '승인대기';
           if (status === 'T') {
-            // 평일 추가근무는 승인완료, 휴일 근무는 보상요청
-            return activeTab === 'weekday' ? '승인완료' : '보상요청';
+            // 평일 추가근무는 승인완료, 휴일 근무는 보상대기
+            return activeTab === 'weekday' ? '승인완료' : '보상대기';
           }
-          if (status === 'N') return '반려됨';
+          if (status === 'N') return '취소완료';
           return '신청하기';
         };
         
@@ -718,7 +699,7 @@ export default function OvertimeList({
               totalHours: 0,
               totalMinutes: 0,
               overtimeStatus: overtimeDetailData?.info ? mapStatus(overtimeDetailData.info.ot_status) : 
-                            getStatusText(selectedOvertime.ot_status) as "신청하기" | "승인대기" | "승인완료" | "반려됨" | "보상요청",
+                            getStatusText(selectedOvertime.ot_status) as "신청하기" | "승인대기" | "승인완료" | "취소완료" | "보상대기",
               overtimeData: convertOvertimeData()
             }}
           />
