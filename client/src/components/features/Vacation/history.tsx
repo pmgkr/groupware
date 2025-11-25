@@ -217,6 +217,8 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
     return baseType;
   };
 
+  
+
   return (
     <>
       <Overview onYearChange={handleYearChange} />
@@ -247,48 +249,56 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
             </TableCell>
           </TableRow>
         ) : (
-          paginatedData.flatMap((group, index) => {
+          paginatedData.map((group, index) => {
             const hasCancelled = !!group.cancelledItem;
-            const rows = [
+            
+            return (
               <TableRow 
-                key={`${group.item.sch_id}-main-${index}`}
+                key={`${group.item.sch_id}-${index}`}
                 className={`[&_td]:text-[13px] cursor-pointer ${
                   hasCancelled 
-                    ? 'bg-gray-100 [&_td]:text-gray-500 border-0' 
-                    : 'hover:bg--50'
+                    ? 'bg-gray-200 [&_td]:text-gray-500' 
+                    : ''
                 }`}
                 onClick={() => handleEventClick(group.item)}
               >
-                <TableCell className="text-gray-700! text-center p-2">{group.item.sdate} - {group.item.edate}</TableCell>
-                <TableCell className="text-center p-2 pb-1">
-                  {getVacationTypeText(group.item.v_type)}
+                <TableCell className="text-gray-800! text-center p-2">{group.item.sdate} - {group.item.edate}</TableCell>
+                <TableCell className="text-center p-2">
+                  <div className="flex flex-col gap-0.5">
+                    <span>{getVacationTypeText(group.item.v_type)}</span>
+                    {hasCancelled && (
+                      <span className="text-red-500">
+                        {getVacationTypeText(group.cancelledItem!.v_type)}
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
-                <TableCell className="text-center p-2">{group.item.v_count || '-'}</TableCell>
-                <TableCell className="text-center p-2">{group.item.wdate ? dayjs(group.item.wdate).format('YYYY-MM-DD') : '-'}</TableCell>
-                <TableCell className="text-left p-2">{group.item.remark || '-'}</TableCell>
+                <TableCell className="text-center p-2">
+                  <div className="flex flex-col gap-0.5">
+                    <span>{group.item.v_count || '-'}</span>
+                    {hasCancelled && (
+                      <span className="text-gray-800">{group.cancelledItem!.v_count || '-'}</span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-center p-2">
+                  <div className="flex flex-col gap-0.5">
+                    <span>{group.item.wdate ? dayjs(group.item.wdate).format('YYYY-MM-DD') : '-'}</span>
+                    {hasCancelled && (
+                      <span className="text-gray-800">{group.cancelledItem!.wdate ? dayjs(group.cancelledItem!.wdate).format('YYYY-MM-DD') : '-'}</span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-left p-2">
+                  <div className="flex flex-col gap-0.5">
+                    <span>{group.item.remark || '-'}</span>
+                    {hasCancelled && (
+                      <span className="text-gray-800">{group.cancelledItem!.remark || '-'}</span>
+                    )}
+                  </div>
+                </TableCell>
               </TableRow>
-            ];
-            
-            // 취소된 항목이 있으면 별도 행으로 표시
-            if (group.cancelledItem) {
-              rows.push(
-                <TableRow 
-                  key={`${group.cancelledItem.sch_id}-cancelled-${index}`}
-                  className="[&_td]:text-[13px] cursor-pointer hover:bg-gray-50"
-                  onClick={() => handleEventClick(group.cancelledItem!)}
-                >
-                  <TableCell className="text-center p-2"></TableCell>
-                  <TableCell className="text-center p-2 text-red-500">
-                    {getVacationTypeText(group.cancelledItem.v_type)}
-                  </TableCell>
-                  <TableCell className="text-center p-2">{group.cancelledItem.v_count || '-'}</TableCell>
-                  <TableCell className="text-center p-2">{group.cancelledItem.wdate ? dayjs(group.cancelledItem.wdate).format('YYYY-MM-DD') : '-'}</TableCell>
-                  <TableCell className="text-left p-2">{group.cancelledItem.remark || '-'}</TableCell>
-                </TableRow>
-              );
-            }
-            
-            return rows;
+            );
           })
         )}
         </TableBody>
