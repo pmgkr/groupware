@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
@@ -9,6 +9,8 @@ import { RadioGroup } from '@components/ui/radio-group';
 import { RadioButton } from '@components/ui/radioButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 import type { WorkData } from '@/types/working';
+
+import { getClientList, type ClientList } from '@/api/common/project';
 
 interface OvertimeDialogProps {
   isOpen: boolean;
@@ -48,6 +50,24 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
 
   const [errors, setErrors] = useState<Partial<Record<keyof OvertimeData, string>>>({});
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [clientList, setClientList] = useState<ClientList[]>([]);
+
+  // 클라이언트 리스트 조회
+  useEffect(() => {
+    const fetchClientList = async () => {
+      try {
+        const clients = await getClientList();
+        setClientList(clients);
+      } catch (error) {
+        console.error('클라이언트 리스트 조회 실패:', error);
+        setClientList([]);
+      }
+    };
+
+    if (isOpen) {
+      fetchClientList();
+    }
+  }, [isOpen]);
 
   const handleInputChange = (field: keyof OvertimeData, value: string) => {
     setFormData(prev => ({
@@ -73,7 +93,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     
     // 클라이언트명 검증
     if (!formData.clientName.trim()) {
-      newErrors.clientName = "클라이언트명을 입력해주세요.";
+      newErrors.clientName = "클라이언트명을 선택해주세요.";
     }
     
     // 작업 내용 검증
@@ -441,16 +461,26 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
           )}
 
           <div className="space-y-3">
-            <Label htmlFor="client-name">클라이언트명을 입력해주세요.</Label>
-            <Textbox
-              id="client-name"
-              placeholder="클라이언트명을 입력하세요"
+            <Label htmlFor="client-name">클라이언트명을 선택해주세요.</Label>
+            <Select
+              key="client-name"
               value={formData.clientName}
-              onChange={(e) => handleInputChange('clientName', e.target.value)}
-              className="w-full"
-              maxLength={45}
-              errorMessage={errors.clientName}
-            />
+              onValueChange={(value) => handleInputChange('clientName', value)}
+            >
+              <SelectTrigger className={`w-full ${errors.clientName ? 'border-red-500' : ''}`}>
+                <SelectValue placeholder="클라이언트명을 선택하세요" />
+              </SelectTrigger>
+              <SelectContent className="z-[200]">
+                {clientList.map((client) => (
+                  <SelectItem key={client.cl_seq} value={client.cl_name}>
+                    {client.cl_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.clientName && (
+              <p className="text-sm text-red-500">{errors.clientName}</p>
+            )}
           </div>
           
           <div className="space-y-3">
