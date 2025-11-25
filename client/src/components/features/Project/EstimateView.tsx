@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
-import { Link, useLocation, useOutletContext, useNavigate, useParams } from 'react-router';
+import { Link, useOutletContext, useNavigate, useParams } from 'react-router';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { getEstimateView, type EstimateViewDTO } from '@/api';
 import { formatKST, formatAmount, displayUnitPrice } from '@/utils';
+
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
@@ -15,15 +17,17 @@ import { Info, OctagonAlert, Paperclip, MessageSquareMore } from 'lucide-react';
 import { Download } from '@/assets/images/icons';
 
 export default function EstimateView() {
-  const { estId, projectId } = useParams();
   const navigate = useNavigate();
+  const { estId, projectId } = useParams();
+
+  const { addDialog } = useAppDialog();
 
   const [estData, setEstData] = useState<EstimateViewDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const { data } = useOutletContext<ProjectLayoutContext>();
 
-  const leftRef = useRef<HTMLDivElement>(null);
-  const rightRef = useRef<HTMLDivElement>(null);
+  const leftRef = useRef<HTMLDivElement>(null); // 견적서 정보 useRef
+  const rightRef = useRef<HTMLDivElement>(null); // 견적서 증빙 useRef
 
   useLayoutEffect(() => {
     const sync = () => {
@@ -54,9 +58,6 @@ export default function EstimateView() {
     })();
   }, [estId]);
 
-  console.log('데이터 ', data);
-  console.log('견적서 데이터 ', estData);
-
   if (!estData)
     return (
       <div className="p-6 text-center text-gray-500">
@@ -68,6 +69,21 @@ export default function EstimateView() {
         </div>
       </div>
     );
+
+  console.log('데이터 ', data);
+  console.log('견적서 데이터 ', estData);
+
+  const handleEstEdit = () => {
+    addDialog({
+      title: '견적서를 수정하시겠습니까?',
+      message: '수정 시, 증빙 자료 업로드 또는 증빙 사유 입력이 필수입니다.',
+      confirmText: '수정',
+      cancelText: '취소',
+      onConfirm: async () => {
+        navigate(`/project/${projectId}/estimate/${estId}/edit`);
+      },
+    });
+  };
 
   const getBudgetPercent = ((estData.header.est_budget / estData.header.est_amount) * 100).toFixed(2);
 
@@ -183,8 +199,8 @@ export default function EstimateView() {
           <h2 className="text-lg font-bold text-gray-800">견적서 항목</h2>
           <div className="flex gap-2">
             {estData.header.est_valid === 'Y' && (
-              <Button type="button" variant="outline" size="sm" asChild>
-                <Link to="">견적서 수정</Link>
+              <Button type="button" variant="outline" size="sm" onClick={handleEstEdit}>
+                견적서 수정
               </Button>
             )}
 

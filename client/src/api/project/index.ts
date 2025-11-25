@@ -378,6 +378,25 @@ export interface EstimateViewDTO {
   logs: EstimateLogs[];
 }
 
+export interface EstimateEditItem {
+  ei_type: string;
+  ei_name: string;
+  unit_price: number | string;
+  qty: number | string;
+  amount: number | string;
+  ava_amount: number | string;
+  exp_cost: number | string;
+  remark: string;
+  ei_order: number;
+}
+
+export interface EstimateEditForm {
+  header: {
+    est_title: string;
+  };
+  items: EstimateEditItem[];
+}
+
 // 즐겨찾기 리스트
 export const getBookmarkList = async () => {
   const res = await http<{ project_id: string }[]>('/user/project/bookmark/list', { method: 'GET' });
