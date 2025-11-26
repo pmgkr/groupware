@@ -152,11 +152,14 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               const latestWorkType = hasMultipleWorkTypes ? row.workTypes![0] : null;
               const otherWorkTypes = hasMultipleWorkTypes ? row.workTypes!.slice(1) : [];
               
+              // 승인완료된 추가근무가 있으면 구분을 "일반근무"로 표시
+              const displayWorkType = row.overtimeStatus === '승인완료' ? '일반근무' : (hasMultipleWorkTypes ? latestWorkType!.type : row.workType);
+              
               return (
                 <td key={index} className={`h-[65px] px-6 py-4 whitespace-nowrap text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                   <div className="inline-flex items-center gap-1 flex-wrap justify-center">
-                    <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getWorkTypeColor(hasMultipleWorkTypes ? latestWorkType!.type : row.workType)}`}>
-                      {hasMultipleWorkTypes ? latestWorkType!.type : row.workType}
+                    <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getWorkTypeColor(displayWorkType)}`}>
+                      {displayWorkType}
                     </span>
                     {/* 이벤트가 여러개일 때 이벤트 목록 툴팁 노출 */}
                     {hasMultipleWorkTypes && (
@@ -200,21 +203,56 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
                 </Tooltip>
               </div>
             </td>
-            {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                {row.workType === '-' ? '-' : row.startTime}
-              </td>
-            ))}
+            {data.map((row, index) => {
+              // 승인완료된 추가근무가 있으면 추가근무 데이터에서 출근시간(stime)만 가져오기
+              if (row.overtimeStatus === '승인완료' && row.overtimeData) {
+                const overtimeStartHour = row.overtimeData.expectedStartTime?.padStart(2, '0') || '';
+                const overtimeStartMinute = row.overtimeData.expectedStartTimeMinute?.padStart(2, '0') || '';
+                
+                const overtimeStartTime = overtimeStartHour && overtimeStartMinute 
+                  ? `${overtimeStartHour}:${overtimeStartMinute}` 
+                  : '-';
+                
+                return (
+                  <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                    {overtimeStartTime}
+                  </td>
+                );
+              } else {
+                return (
+                  <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                    {row.workType === '-' ? '-' : row.startTime}
+                  </td>
+                );
+              }
+            })}
           </tr>
           <tr className="hover:bg-gray-50">
             <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
               퇴근시간
             </td>
-            {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                {row.workType === '-' ? '-' : row.endTime}
-              </td>
-            ))}
+            {data.map((row, index) => {
+              // 승인완료된 추가근무가 있으면 추가근무 데이터에서 퇴근 시간 가져오기
+              if (row.overtimeStatus === '승인완료' && row.overtimeData) {
+                const overtimeEndHour = row.overtimeData.expectedEndTime?.padStart(2, '0') || '';
+                const overtimeEndMinute = row.overtimeData.expectedEndMinute?.padStart(2, '0') || '';
+                const overtimeEndTime = overtimeEndHour && overtimeEndMinute 
+                  ? `${overtimeEndHour}:${overtimeEndMinute}` 
+                  : '-';
+                
+                return (
+                  <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                    {overtimeEndTime}
+                  </td>
+                );
+              } else {
+                return (
+                  <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                    {row.workType === '-' ? '-' : row.endTime}
+                  </td>
+                );
+              }
+            })}
           </tr>
           <tr className="hover:bg-gray-50">
             <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
@@ -264,11 +302,27 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
             <td className="px-6 py-4 whitespace-nowrap text-[13px] font-bold text-gray-900 bg-gray-50">
               총 근무시간
             </td>
-            {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400 font-normal' : 'text-gray-900 font-bold'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                {row.workType === '-' ? '-' : `${row.totalHours}시간 ${String(row.totalMinutes || 0).padStart(2, '0')}분`}
-              </td>
-            ))}
+            {data.map((row, index) => {
+              // 승인완료된 추가근무가 있으면 추가근무 데이터에서 ot_hours 사용
+              if (row.overtimeStatus === '승인완료' && row.overtimeData) {
+                const overtimeHours = parseInt(row.overtimeData.overtimeHours || '0');
+                const overtimeMinutes = parseInt(row.overtimeData.overtimeMinutes || '0');
+                
+                return (
+                  <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] text-gray-900 font-bold text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                    {overtimeHours > 0 || overtimeMinutes > 0 
+                      ? `${overtimeHours}시간 ${String(overtimeMinutes || 0).padStart(2, '0')}분`
+                      : '-'}
+                  </td>
+                );
+              } else {
+                return (
+                  <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400 font-normal' : 'text-gray-900 font-bold'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                    {row.workType === '-' ? '-' : `${row.totalHours}시간 ${String(row.totalMinutes || 0).padStart(2, '0')}분`}
+                  </td>
+                );
+              }
+            })}
           </tr>
           {!readOnly && (
             <tr className="hover:bg-gray-50">
