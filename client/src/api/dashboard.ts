@@ -5,11 +5,15 @@ import { http } from '@/lib/http';
 export interface Wlog {
     wlogWeek: {
        user_id: string,
-       total_minutes:number // 총 근무시간 
+       total_minutes:number, // 총 근무시간 
+       whour:number, // 총 근무시간 시간
+       wmin:number
     }[];
     wlogToday: {
         stime: string | null,
-        etime: string | null
+        etime: string | null,
+        c_stime: string | null,
+        c_etime: string | null,
     }[];
 }
 
