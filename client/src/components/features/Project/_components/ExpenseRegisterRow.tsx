@@ -51,7 +51,7 @@ function ExpenseRowComponent({
 
   const fetchClients = useCallback(async () => {
     try {
-      const expenseTypeParam = user_level === 'staff' || user_level === 'user' ? 'exp_type1' : 'exp_type2';
+      const expenseTypeParam = user_level === 'user' ? 'exp_type1' : 'exp_type2';
 
       const res = await getExpenseType(expenseTypeParam);
       const mapped = res.map((t: any) => ({

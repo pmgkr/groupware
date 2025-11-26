@@ -271,8 +271,8 @@ export default function ExpenseList() {
   useEffect(() => {
     (async () => {
       try {
-        // 유저레벨이 staff나 user인 경우 nexp_type2 : manager나 admin인 경우 nexp_type1 호출
-        const expenseTypeParam = user_level === 'staff' || user_level === 'user' ? 'nexp_type2' : 'nexp_type1';
+        // 유저레벨이 user인 경우 nexp_type2 : manager나 admin인 경우 nexp_type1 호출
+        const expenseTypeParam = user_level === 'user' ? 'nexp_type2' : 'nexp_type1';
 
         const data = await getExpenseType(expenseTypeParam);
         const mapped = data.map((t: any) => ({
