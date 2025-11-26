@@ -12,9 +12,17 @@ import { managerOvertimeApi } from '@/api/manager/overtime';
 import { managerWorkingApi } from '@/api/manager/working';
 import { Settings } from 'lucide-react';
 import { getHolidayNameCached } from '@/services/holidayApi';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
+import { getWorkTypeColor } from '@/utils/workTypeHelper';
 
 export interface DayWorkInfo {
   workType: string;
+  workTypes?: Array<{
+    type: string;
+    createdAt: string;
+  }>; // 여러 workType이 있을 경우 배열로 저장 (+뱃지 표시용)
   startTime?: string;
   endTime?: string;
   totalTime: string;
@@ -254,23 +262,6 @@ export default function WorkingList({
     return hours + minutes / 60;
   };
 
-  // 근무 타입 색상 함수
-  const getWorkTypeColor = (workType: string) => {
-    switch (workType) {
-      case "-": return "bg-gray-50 text-gray-400";
-      case "일반근무": return "bg-gray-300 text-gray-900";
-      case "연차": return "bg-primary-blue-150 text-primary-blue";
-      case "오전반차": return "bg-primary-purple-100 text-primary-pink-500";
-      case "오전반반차": return "bg-primary-purple-100 text-primary-purple-500";
-      case "오후반차": return "bg-primary-purple-100 text-primary-pink-500";
-      case "오후반반차": return "bg-primary-purple-100 text-primary-purple-500";
-      case "외부근무": return "bg-primary-yellow-150 text-primary-orange-600";
-      case "재택근무": return "bg-gray-300 text-gray-900";
-      case "공가": return "bg-red-100 text-red-600";
-      case "공휴일": return "bg-red-200 text-red-700";
-      default: return "bg-primary-gray-100 text-primary-gray";
-    }
-  };
 
   // 추가근무 도트 색상 함수
   const getOvertimeDotColor = (overtimeStatus?: string) => {
@@ -290,7 +281,7 @@ export default function WorkingList({
 
     // 근무 타입이 없을 때
     if (dayInfo.workType === '-') {
-      // 추가근무가 있으면 표시
+      // 추가근무가 있으면 표시 (승인대기 상태일 때만 도트 표시)
       if (dayInfo.hasOvertime) {
         return (
           <div className="flex flex-col gap-1">
@@ -301,15 +292,15 @@ export default function WorkingList({
             >
               - {/* 첫 번째 "-" 텍스트 */}
               
-              {/* 추가근무 알림 도트 */}
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                {/* 애니메이션 */}
-                {isPending && (
+              {/* 추가근무 알림 도트 - 승인대기 상태일 때만 표시 */}
+              {isPending && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  {/* 애니메이션 */}
                   <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor.ping} opacity-75`}></span>
-                )}
-                {/* 도트 */}
-                <span className={`relative inline-flex rounded-full h-3 w-3 ${dotColor.bg} border border-white`}></span>
-              </span>
+                  {/* 도트 */}
+                  <span className={`relative inline-flex rounded-full h-3 w-3 ${dotColor.bg} border border-white`}></span>
+                </span>
+              )}
             </span>              
             <span className="text-gray-400 h-[20px]">-</span>
             <span className="text-gray-400 h-[16px]">-</span>
@@ -348,22 +339,52 @@ export default function WorkingList({
       );
     }
 
+    // workTypes 배열이 있고 여러 개인 경우
+    const hasMultipleWorkTypes = dayInfo.workTypes && dayInfo.workTypes.length > 1;
+    const latestWorkType = hasMultipleWorkTypes ? dayInfo.workTypes![0] : null;
+    const otherWorkTypes = hasMultipleWorkTypes ? dayInfo.workTypes!.slice(1) : [];
+    
+    // 표시할 workType 결정
+    const displayWorkType = hasMultipleWorkTypes ? latestWorkType!.type : dayInfo.workType;
+
     return (
       <div className="flex flex-col gap-1">
-        <span 
-          className={`inline-flex self-center px-2 py-0.5 text-xs font-semibold rounded-full relative ${getWorkTypeColor(dayInfo.workType)} ${dayInfo.hasOvertime ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
-          onClick={() => dayInfo.hasOvertime && dayInfo.overtimeId && handleOvertimeClick(userId, dayKey, dayInfo.overtimeId)}
-        >
-          {dayInfo.workType}
-          {dayInfo.hasOvertime && (
-            <span className="absolute -top-1 -right-1 flex h-3 w-3">
-              {isPending && (
+        <div className="inline-flex items-center gap-1 flex-wrap justify-center">
+          <span 
+            className={`inline-flex self-center px-2 py-0.5 text-xs font-semibold rounded-full relative ${getWorkTypeColor(displayWorkType)} ${dayInfo.hasOvertime ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+            onClick={() => dayInfo.hasOvertime && dayInfo.overtimeId && handleOvertimeClick(userId, dayKey, dayInfo.overtimeId)}
+          >
+            {displayWorkType}
+            {/* 추가근무 알림 도트 - 승인대기 상태일 때만 표시 */}
+            {isPending && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
                 <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor.ping} opacity-75`}></span>
-              )}
-              <span className={`relative inline-flex rounded-full h-3 w-3 ${dotColor.bg} border border-white`}></span>
-            </span>
+                <span className={`relative inline-flex rounded-full h-3 w-3 ${dotColor.bg} border border-white`}></span>
+              </span>
+            )}
+          </span>
+          {/* 이벤트가 여러개일 때 이벤트 목록 툴팁 노출 */}
+          {hasMultipleWorkTypes && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="grayish" className="px-1 py-0 text-xs cursor-pointer">
+                    +{otherWorkTypes.length}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="flex flex-col gap-1">
+                    {dayInfo.workTypes!.map((wt, idx) => (
+                      <div key={idx} className="text-sm">                                 
+                        {wt.type}
+                      </div>
+                    ))}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
-        </span>
+        </div>
         <span className="text-sm font-medium">{dayInfo.totalTime}</span>
         {isManager ? (
           <div className="flex items-center justify-center gap-1">
