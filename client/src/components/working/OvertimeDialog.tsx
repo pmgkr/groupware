@@ -372,7 +372,6 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                       <SelectItem value="21">21시</SelectItem>
                       <SelectItem value="22">22시</SelectItem>
                       <SelectItem value="23">23시</SelectItem>
-                      <SelectItem value="24">24시</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select
@@ -430,6 +429,12 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                       <SelectItem value="22">22시</SelectItem>
                       <SelectItem value="23">23시</SelectItem>
                       <SelectItem value="24">24시</SelectItem>
+                      <SelectItem value="25">1시</SelectItem>
+                      <SelectItem value="26">2시</SelectItem>
+                      <SelectItem value="27">3시</SelectItem>
+                      <SelectItem value="28">4시</SelectItem>
+                      <SelectItem value="29">5시</SelectItem>
+                      <SelectItem value="30">6시</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select
