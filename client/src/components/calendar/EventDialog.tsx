@@ -145,21 +145,11 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
               parseFloat(currentYearInfo.va_carryover || '0') +
               parseFloat(currentYearInfo.va_comp || '0');
             setRemainingVacationDays(totalRemaining);
-            
-            console.log('휴가 정보 로드:', {
-              userId: user.user_id,
-              year: currentYear,
-              va_current: currentYearInfo.va_current,
-              va_carryover: currentYearInfo.va_carryover,
-              va_comp: currentYearInfo.va_comp,
-              totalRemaining
-            });
           } else {
             setVacationInfo(null);
             setRemainingVacationDays(0);
           }
         } catch (error) {
-          console.error('휴가 정보를 불러오는데 실패했습니다:', error);
           setVacationInfo(null);
           setRemainingVacationDays(0);
         }
@@ -200,8 +190,6 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
         if (['vacationHalfMorning', 'vacationHalfAfternoon', 'vacationQuarterMorning', 'vacationQuarterAfternoon'].includes(value)) {
           newData.allDay = false;
           // startTime은 DateTimePicker에서 선택될 때 설정됨
-          console.log('반차/반반차 타입 선택:', value);
-          console.log('allDay를 false로 설정 (시간은 DateTimePicker에서 선택 필요)');
         } else if (value === 'vacationDay' || value === 'vacationOfficial') {
           // 연차/공가는 종일로 설정
           newData.allDay = true;
@@ -224,8 +212,6 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
 
   // 단일 날짜 선택 핸들러
   const handleDateSelect = (date: Date | undefined) => {
-    console.log('=== handleDateSelect 호출 ===');
-    console.log('선택된 date:', date);
     
     if (date) {
       // 로컬 시간 기준으로 YYYY-MM-DD 문자열 생성
@@ -239,10 +225,6 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       const minute = String(date.getMinutes()).padStart(2, '0');
       const timeStr = `${hour}:${minute}`;
       
-      console.log('생성된 dateStr:', dateStr);
-      console.log('생성된 timeStr:', timeStr);
-      console.log('hour:', hour, 'minute:', minute);
-      
       setFormData(prev => {
         const newData = {
           ...prev,
@@ -252,7 +234,6 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
           startTime: timeStr, // 시간 정보 저장
         };
         
-        console.log('업데이트된 formData.startTime:', newData.startTime);
         return newData;
       });
       
@@ -264,7 +245,6 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
         }));
       }
     } else {
-      console.log('date가 undefined입니다');
     }
   };
 
@@ -287,7 +267,6 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       if (formData.category === 'vacation' && formData.eventType === 'vacationDay') {
         vacationDays = await calculateWorkingDays(range.from, range.to);
         setCalculatedVacationDays(vacationDays);
-        console.log(`연차 사용 일수 계산: ${vacationDays}일 (주말/공휴일 제외)`);
       }
       
       setFormData(prev => ({
@@ -400,14 +379,6 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       ...formData,
       vacationDaysUsed,
     };
-
-    console.log('=== EventDialog handleSave ===');
-    console.log('저장할 formData:', JSON.stringify(eventDataToSave, null, 2));
-    console.log('formData.startTime:', formData.startTime);
-    console.log('formData.endTime:', formData.endTime);
-    console.log('formData.eventType:', formData.eventType);
-    console.log('formData.selectedDate:', formData.selectedDate);
-    console.log('연차 사용일수:', vacationDaysUsed);
 
     onSave(eventDataToSave);
     

@@ -8,6 +8,8 @@ import type { WorkData } from "@/types/working";
 import { workingApi } from "@/api/working";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { getWorkTypeColor } from "@/utils/workTypeHelper";
+import { isWeekendOrHoliday } from "@/utils/overtimeHelper";
 
 // 오늘 날짜 확인 함수
 const isToday = (date: string) => {
@@ -25,22 +27,6 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  const getWorkTypeColor = (workType: string) => {
-    switch (workType) {
-      case "-": return "bg-gray-50 text-gray-400";
-      case "일반근무": return "bg-gray-300 text-gray-900";
-      case "연차": return "bg-primary-blue-150 text-primary-blue";
-      case "오전반차": return "bg-primary-purple-100 text-primary-pink-500";
-      case "오전반반차": return "bg-primary-purple-100 text-primary-purple-500";
-      case "오후반차": return "bg-primary-purple-100 text-primary-pink-500";
-      case "오후반반차": return "bg-primary-purple-100 text-primary-purple-500";
-      case "외부근무": return "bg-primary-yellow-150 text-primary-orange-600";
-      case "재택근무": return "bg-gray-300 text-gray-900";
-      case "공가": return "bg-red-100 text-red-600";
-      case "공휴일": return "bg-red-200 text-red-700";
-      default: return "bg-primary-gray-100 text-primary-gray";
-    }
-  };
 
   const getOvertimeButtonVariant = (status: string) => {
     switch (status) {
@@ -129,7 +115,11 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               return (
                 <th key={index} className={`w-[185px] px-6 py-3 text-center text-[13px] font-medium text-gray-500 uppercase tracking-wider ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                   <div className="flex flex-col">
-                    <span className="text-[13px] text-gray-800">{dayjs(row.date).format("MM/DD")}</span>
+                    <span className={`text-[13px] ${row.holidayName ? 'text-red-600' : 'text-gray-800'}`}>
+                      {row.holidayName 
+                        ? `${dayjs(row.date).format("MM/DD")} ${row.holidayName}`
+                        : dayjs(row.date).format("MM/DD")}
+                    </span>
                     <span className={`text-[13px] font-semibold ${getDayColor(row.dayOfWeek)}`}>{row.dayOfWeek}요일</span>
                   </div>
                 </th>
@@ -148,11 +138,16 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               const latestWorkType = hasMultipleWorkTypes ? row.workTypes![0] : null;
               const otherWorkTypes = hasMultipleWorkTypes ? row.workTypes!.slice(1) : [];
               
+              // 승인완료된 추가근무가 있으면 뱃지에는 항상 "추가근무"로 표시
+              const displayWorkType = row.overtimeStatus === '승인완료' 
+                ? '추가근무' 
+                : (hasMultipleWorkTypes ? latestWorkType!.type : row.workType);
+              
               return (
                 <td key={index} className={`h-[65px] px-6 py-4 whitespace-nowrap text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                  <div className="inline-flex items-center gap-1">
-                    <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getWorkTypeColor(hasMultipleWorkTypes ? latestWorkType!.type : row.workType)}`}>
-                      {hasMultipleWorkTypes ? latestWorkType!.type : row.workType}
+                  <div className="inline-flex items-center gap-1 flex-wrap justify-center">
+                    <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getWorkTypeColor(displayWorkType)}`}>
+                      {displayWorkType}
                     </span>
                     {/* 이벤트가 여러개일 때 이벤트 목록 툴팁 노출 */}
                     {hasMultipleWorkTypes && (
@@ -196,21 +191,58 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
                 </Tooltip>
               </div>
             </td>
-            {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                {row.workType === '-' ? '-' : row.startTime}
-              </td>
-            ))}
+            {data.map((row, index) => {
+              // 승인완료된 추가근무가 있고 주말/공휴일일 때만 추가근무 데이터에서 출근시간(stime) 사용
+              const isWeekendOrHolidayDay = isWeekendOrHoliday(row.dayOfWeek, row.isHoliday || false, row.workType);
+              if (row.overtimeStatus === '승인완료' && row.overtimeData && isWeekendOrHolidayDay) {
+                const overtimeStartHour = row.overtimeData.expectedStartTime?.padStart(2, '0') || '';
+                const overtimeStartMinute = row.overtimeData.expectedStartTimeMinute?.padStart(2, '0') || '';
+                
+                const overtimeStartTime = overtimeStartHour && overtimeStartMinute 
+                  ? `${overtimeStartHour}:${overtimeStartMinute}` 
+                  : '-';
+                
+                return (
+                  <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                    {overtimeStartTime}
+                  </td>
+                );
+              } else {
+                return (
+                  <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                    {row.workType === '-' ? '-' : row.startTime}
+                  </td>
+                );
+              }
+            })}
           </tr>
           <tr className="hover:bg-gray-50">
             <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
               퇴근시간
             </td>
-            {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                {row.workType === '-' ? '-' : row.endTime}
-              </td>
-            ))}
+            {data.map((row, index) => {
+              // 승인완료된 추가근무가 있고 주말/공휴일일 때만 추가근무 데이터에서 퇴근 시간 사용
+              const isWeekendOrHolidayDay = isWeekendOrHoliday(row.dayOfWeek, row.isHoliday || false, row.workType);
+              if (row.overtimeStatus === '승인완료' && row.overtimeData && isWeekendOrHolidayDay) {
+                const overtimeEndHour = row.overtimeData.expectedEndTime?.padStart(2, '0') || '';
+                const overtimeEndMinute = row.overtimeData.expectedEndMinute?.padStart(2, '0') || '';
+                const overtimeEndTime = overtimeEndHour && overtimeEndMinute 
+                  ? `${overtimeEndHour}:${overtimeEndMinute}` 
+                  : '-';
+                
+                return (
+                  <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                    {overtimeEndTime}
+                  </td>
+                );
+              } else {
+                return (
+                  <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                    {row.workType === '-' ? '-' : row.endTime}
+                  </td>
+                );
+              }
+            })}
           </tr>
           <tr className="hover:bg-gray-50">
             <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
@@ -260,11 +292,28 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
             <td className="px-6 py-4 whitespace-nowrap text-[13px] font-bold text-gray-900 bg-gray-50">
               총 근무시간
             </td>
-            {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400 font-normal' : 'text-gray-900 font-bold'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                {row.workType === '-' ? '-' : `${row.totalHours}시간 ${String(row.totalMinutes || 0).padStart(2, '0')}분`}
-              </td>
-            ))}
+            {data.map((row, index) => {
+              // 승인완료된 추가근무가 있고 주말/공휴일일 때만 추가근무 데이터에서 ot_hours 사용
+              const isWeekendOrHolidayDay = isWeekendOrHoliday(row.dayOfWeek, row.isHoliday || false, row.workType);
+              if (row.overtimeStatus === '승인완료' && row.overtimeData && isWeekendOrHolidayDay) {
+                const overtimeHours = parseInt(row.overtimeData.overtimeHours || '0');
+                const overtimeMinutes = parseInt(row.overtimeData.overtimeMinutes || '0');
+                
+                return (
+                  <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] text-gray-900 font-bold text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                    {overtimeHours > 0 || overtimeMinutes > 0 
+                      ? `${overtimeHours}시간 ${String(overtimeMinutes || 0).padStart(2, '0')}분`
+                      : '-'}
+                  </td>
+                );
+              } else {
+                return (
+                  <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400 font-normal' : 'text-gray-900 font-bold'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                    {row.workType === '-' ? '-' : `${row.totalHours}시간 ${String(row.totalMinutes || 0).padStart(2, '0')}분`}
+                  </td>
+                );
+              }
+            })}
           </tr>
           {!readOnly && (
             <tr className="hover:bg-gray-50">

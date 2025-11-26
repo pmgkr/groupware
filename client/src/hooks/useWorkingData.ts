@@ -10,6 +10,7 @@ import type { WorkingListItem, DayWorkInfo } from '@/components/working/list';
 import { getWeekEndDate, getWeekNumber } from '@/utils/dateHelper';
 import { calculateWeeklyStats } from '@/utils/workingStatsHelper';
 import { convertApiDataToWorkData } from '@/services/workingDataConverter';
+import { isWeekendOrHoliday } from '@/utils/overtimeHelper';
 
 interface UseWorkingDataProps {
   weekStartDate: Date;
@@ -210,14 +211,72 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
             const overtimeId = dayData.overtimeId?.toString();
             const overtimeStatus = dayData.overtimeStatus;
             
-            // 근무 타입이 없으면 데이터 없음
+            // 승인완료된 추가근무가 있고 주말/공휴일일 때만 추가근무 데이터의 시간 사용
+            const isWeekendOrHolidayDay = isWeekendOrHoliday(dayData.dayOfWeek, dayData.isHoliday || false, dayData.workType);
+            if (dayData.overtimeStatus === '승인완료' && dayData.overtimeData && isWeekendOrHolidayDay) {
+              const overtimeStartHour = dayData.overtimeData.expectedStartTime?.padStart(2, '0') || '';
+              const overtimeStartMinute = dayData.overtimeData.expectedStartTimeMinute?.padStart(2, '0') || '';
+              const overtimeEndHour = dayData.overtimeData.expectedEndTime?.padStart(2, '0') || '';
+              const overtimeEndMinute = dayData.overtimeData.expectedEndMinute?.padStart(2, '0') || '';
+              
+              const overtimeStartTime = overtimeStartHour && overtimeStartMinute 
+                ? `${overtimeStartHour}:${overtimeStartMinute}` 
+                : '-';
+              const overtimeEndTime = overtimeEndHour && overtimeEndMinute 
+                ? `${overtimeEndHour}:${overtimeEndMinute}` 
+                : '-';
+              
+              // ot_hours에서 시간과 분 추출
+              const overtimeHours = parseInt(dayData.overtimeData.overtimeHours || '0');
+              const overtimeMinutes = parseInt(dayData.overtimeData.overtimeMinutes || '0');
+              
+              const totalTime = overtimeHours > 0 || overtimeMinutes > 0
+                ? `${overtimeHours}h ${overtimeMinutes}m`
+                : '-';
+              
+              return {
+                workType: '추가근무', // 승인완료된 추가근무는 뱃지에 항상 추가근무로 표시
+                workTypes: dayData.workTypes, // 여러 workType이 있을 경우 배열 전달
+                startTime: overtimeStartTime,
+                endTime: overtimeEndTime !== '-' ? overtimeEndTime : undefined,
+                totalTime,
+                hasOvertime,
+                overtimeId,
+                overtimeStatus,
+                holidayName: dayData.holidayName,
+              };
+            }
+            
+            // 승인완료된 추가근무가 있지만 평일인 경우 - 뱃지만 추가근무로 표시, 시간은 원래 데이터 사용
+            if (dayData.overtimeStatus === '승인완료') {
+              // 출근 데이터가 있으면 근무타입에 관계없이 모두 표시
+              const totalTime = dayData.totalHours === 0 && dayData.totalMinutes === 0
+                ? '진행중'
+                : `${dayData.totalHours}h ${dayData.totalMinutes}m`;
+              
+              return {
+                workType: '추가근무', // 승인완료된 추가근무는 뱃지에 항상 추가근무로 표시
+                workTypes: dayData.workTypes,
+                startTime: dayData.startTime,
+                endTime: dayData.endTime !== '-' ? dayData.endTime : undefined,
+                totalTime,
+                hasOvertime,
+                overtimeId,
+                overtimeStatus,
+                holidayName: dayData.holidayName,
+              };
+            }
+            
+            // 근무 타입이 없으면 데이터 없음 (단, 승인완료된 추가근무가 있으면 위에서 이미 처리됨)
             if (dayData.workType === '-') {
               return { 
                 workType: dayData.workType,
+                workTypes: dayData.workTypes, // 여러 workType이 있을 경우 배열 전달
                 totalTime: '-',
                 hasOvertime,
                 overtimeId,
                 overtimeStatus,
+                holidayName: dayData.holidayName,
               };
             }
             
@@ -225,10 +284,12 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
             if (dayData.startTime === '-') {
               return {
                 workType: dayData.workType,
+                workTypes: dayData.workTypes, // 여러 workType이 있을 경우 배열 전달
                 totalTime: '-',
                 hasOvertime,
                 overtimeId,
                 overtimeStatus,
+                holidayName: dayData.holidayName,
               };
             }
             
@@ -240,12 +301,14 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
             
             return {
               workType: dayData.workType,
+              workTypes: dayData.workTypes, // 여러 workType이 있을 경우 배열 전달
               startTime: dayData.startTime,
               endTime: dayData.endTime !== '-' ? dayData.endTime : undefined,
               totalTime,
               hasOvertime,
               overtimeId,
               overtimeStatus,
+              holidayName: dayData.holidayName,
             };
           };
 

@@ -31,7 +31,7 @@ import { AppPagination } from '@/components/ui/AppPagination';
 dayjs.locale('ko');
 
 // 시간 문자열에서 HH:mm 추출 (ISO timestamp 또는 HH:mm:ss -> HH:mm)
-const formatTime = (timeStr: string) => {
+const formatTime = (timeStr: string | null | undefined) => {
   if (!timeStr) return '-';
   
   // ISO 형식 (1970-01-01T20:15:00 또는 2025-10-28T20:15:00)인 경우
@@ -546,7 +546,7 @@ export default function OvertimeList({
                 </>
             :
                 <>
-                <TableHead className="w-[8%] text-center p-2">예상근무시간</TableHead>
+                <TableHead className="w-[16%] text-center p-2">예상근무시간</TableHead>
                 <TableHead className="w-[10%] text-center p-2">보상방식</TableHead>
                 </>
             }
@@ -598,7 +598,9 @@ export default function OvertimeList({
                 </>
                 :
                 <>
-                <TableCell className="w-[8%] text-center p-2">{formatHours(item.ot_hours)}</TableCell>
+                <TableCell className="w-[16%] text-center p-2">
+                  {formatTime(item.ot_stime)}-{formatTime(item.ot_etime)}({formatHours(item.ot_hours)})
+                </TableCell>
                 <TableCell className="w-[10%] text-center p-2">{getRewardText(item.ot_reward)}</TableCell>
                 </>
               }
@@ -768,6 +770,8 @@ export default function OvertimeList({
           totalMinutes: 0,
           overtimeStatus: getStatusText(selectedOvertime.ot_status) as "신청하기" | "승인대기" | "승인완료" | "취소완료",
           overtimeData: overtimeDetailData?.info ? {
+            expectedStartTime: overtimeDetailData.info.ot_stime ? overtimeDetailData.info.ot_stime.split(':')[0] : '',
+            expectedStartTimeMinute: overtimeDetailData.info.ot_stime ? overtimeDetailData.info.ot_stime.split(':')[1] : '',
             expectedEndTime: overtimeDetailData.info.ot_etime ? overtimeDetailData.info.ot_etime.split(':')[0] : '',
             expectedEndMinute: overtimeDetailData.info.ot_etime ? overtimeDetailData.info.ot_etime.split(':')[1] : '',
             mealAllowance: overtimeDetailData.info.ot_food === 'Y' ? 'yes' : 'no',
