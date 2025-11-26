@@ -10,6 +10,7 @@ export interface Weather {
   POP: string;
   REH: string;
   WSD: string;
+  locationName?: string; // 위치 정보 (IP 기반)
 }
 
 export interface WeatherResponse {
@@ -33,9 +34,10 @@ export interface WeatherResponse {
 class WeatherApiService {
   private baseUrl = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0'
   private apiKey: string
-  // 서울 강남구 테헤란로 132 좌표 (nx=61, ny=125)
-  private nx = 61
-  private ny = 125
+  // 기본 좌표 (서울 강남구 테헤란로 132) - IP 기반 위치 추정 실패 시 사용
+  private defaultNx = 61
+  private defaultNy = 125
+  private locationCache: { nx: number; ny: number; locationName: string } | null = null
 
   constructor() {
     // Vite 환경에서는 VITE_ 접두사 사용
@@ -76,6 +78,41 @@ class WeatherApiService {
   }
 
   /**
+   * IP 기반 위치 정보를 가져와서 격자 좌표로 변환
+   */
+  private async getLocationCoordinates(): Promise<{ nx: number; ny: number; locationName: string }> {
+    // 캐시가 있으면 캐시 사용 (1시간 유효)
+    if (this.locationCache) {
+      return this.locationCache;
+    }
+
+    try {
+      const { getLocationByIP, convertLatLonToGrid, getLocationName } = await import('@/utils/locationHelper');
+      const location = await getLocationByIP();
+      
+      if (location) {
+        const { nx, ny } = convertLatLonToGrid(location.latitude, location.longitude);
+        const locationName = getLocationName(location);
+        
+        // 캐시 저장
+        this.locationCache = { nx, ny, locationName };
+        
+        // 1시간 후 캐시 삭제
+        setTimeout(() => {
+          this.locationCache = null;
+        }, 60 * 60 * 1000);
+        
+        return { nx, ny, locationName };
+      }
+    } catch (error) {
+      console.warn('IP 기반 위치 추정 실패, 기본 위치 사용:', error);
+    }
+    
+    // 기본 위치 반환
+    return { nx: this.defaultNx, ny: this.defaultNy, locationName: '서울 강남구' };
+  }
+
+  /**
    * 현재 위치의 날씨 정보를 가져옵니다
    */
   async getCurrentWeather(): Promise<Weather | null> {
@@ -87,6 +124,9 @@ class WeatherApiService {
     try {
       const { baseDate, baseTime } = this.getBaseDateTime()
       
+      // IP 기반 위치 좌표 가져오기
+      const { nx, ny, locationName } = await this.getLocationCoordinates()
+      
       // 초단기실황 조회 (getUltraSrtNcst) - TMP, REH, PTY, WSD
       const ncstUrl = `${this.baseUrl}/getUltraSrtNcst`
       const ncstParams = new URLSearchParams({
@@ -96,8 +136,8 @@ class WeatherApiService {
         dataType: 'JSON',
         base_date: baseDate,
         base_time: baseTime,
-        nx: this.nx.toString(),
-        ny: this.ny.toString(),
+        nx: nx.toString(),
+        ny: ny.toString(),
       })
 
       // 초단기예보 조회 (getUltraSrtFcst) - SKY, POP
@@ -109,8 +149,8 @@ class WeatherApiService {
         dataType: 'JSON',
         base_date: baseDate,
         base_time: baseTime,
-        nx: this.nx.toString(),
-        ny: this.ny.toString(),
+        nx: nx.toString(),
+        ny: ny.toString(),
       })
 
       // 두 API를 병렬로 호출
@@ -214,6 +254,7 @@ class WeatherApiService {
           POP: weatherData.POP || '',
           REH: weatherData.REH || '',
           WSD: weatherData.WSD || '',
+          locationName,
         }
       }
 

@@ -95,7 +95,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-1">
             {weather ? (
               <>
-                <span className="text-gray-800">서울 강남구</span>
+                <span className="text-gray-800">{weather.locationName || '서울 강남구'}</span>
                 <span>
                   {weather.TMP ? `${weather.TMP}°C` : '-'}
                   {weather.SKY && `, ${skyText(weather.SKY)}`}

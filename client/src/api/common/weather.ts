@@ -10,6 +10,7 @@ export interface Weather {
     POP: string;
     REH: string;
     WSD: string;
+    locationName?: string; // 위치 정보 (IP 기반)
 }
 
 // 날씨 API
