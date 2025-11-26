@@ -35,10 +35,6 @@ export const loadCalendarEvents = async ({
 
   // API 응답에서 실제 스케줄 배열 추출
   const schedules = Array.isArray(apiResponse.items) ? apiResponse.items : (apiResponse.items?.items || []);
-
-  if (Array.isArray(schedules) && schedules.length > 0) {
-    console.log('schedules:', schedules);
-  }
   
   // null이 아닌 항목, sch_status가 'N'이 아닌 항목만 필터링하고 변환
   let calendarEvents = schedules

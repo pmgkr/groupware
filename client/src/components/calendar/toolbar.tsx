@@ -44,7 +44,6 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
       const allTeams = await getTeams({});
       setTeams(allTeams.map(t => ({ team_id: t.team_id, team_name: t.team_name })));
     } catch (error) {
-      console.error('팀 목록 로드 실패:', error);
       setTeams([]);
     }
   };
