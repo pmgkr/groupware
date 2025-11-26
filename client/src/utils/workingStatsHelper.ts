@@ -20,8 +20,25 @@ export const calculateWeeklyStats = (data: WorkData[]): WeeklyStats => {
   const totalBasicMinutes = data.reduce((sum, day) => sum + day.basicMinutes, 0);
   const totalOvertimeHours = data.reduce((sum, day) => sum + day.overtimeHours, 0);
   const totalOvertimeMinutes = data.reduce((sum, day) => sum + day.overtimeMinutes, 0);
-  const totalWorkHours = data.reduce((sum, day) => sum + day.totalHours, 0);
-  const totalWorkMinutes = data.reduce((sum, day) => sum + day.totalMinutes, 0);
+  
+  // 총 근무시간 계산 - 승인완료된 추가근무는 ot_hours 사용
+  const totalWorkHours = data.reduce((sum, day) => {
+    // 승인완료된 추가근무가 있으면 ot_hours 사용
+    if (day.overtimeStatus === '승인완료' && day.overtimeData) {
+      const overtimeHours = parseInt(day.overtimeData.overtimeHours || '0');
+      return sum + overtimeHours;
+    }
+    return sum + day.totalHours;
+  }, 0);
+  
+  const totalWorkMinutes = data.reduce((sum, day) => {
+    // 승인완료된 추가근무가 있으면 ot_hours의 분 사용
+    if (day.overtimeStatus === '승인완료' && day.overtimeData) {
+      const overtimeMinutes = parseInt(day.overtimeData.overtimeMinutes || '0');
+      return sum + overtimeMinutes;
+    }
+    return sum + (day.totalMinutes || 0);
+  }, 0);
   
   // 총 근무시간 계산 (시간과 분 정규화)
   const totalWorkMinutesAll = (totalWorkHours * 60) + (totalWorkMinutes || 0);
