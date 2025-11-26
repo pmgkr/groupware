@@ -100,18 +100,18 @@ export default function Dashboard() {
                 <div className="flex items-center gap-1 ">
                   <span className="text-gray-800 text-xl font-black">주간누적</span>
                   {(() => {
-                    const totalMinutes = wlog.wlogWeek[0]?.total_minutes || 0;
-                    const { hours, minutes } = formatMinutes(totalMinutes);
+                    const weekData = Array.isArray(wlog.wlogWeek) ? wlog.wlogWeek[0] : wlog.wlogWeek;
                     return (
                       <span className="text-primary-blue-500 text-lg font-bold">
-                        {hours}시간 {String(minutes).padStart(2, '0')}분
+                        {weekData?.whour || 0}시간 {String(weekData?.wmin || 0).padStart(2, '0')}분
                       </span>
                     );
                   })()}
                 </div>
                 <p className="flex items-center gap-x-1 text-sm text-gray-700">
                   {(() => {
-                    const totalMinutes = wlog.wlogWeek[0]?.total_minutes || 0;
+                    const weekData = Array.isArray(wlog.wlogWeek) ? wlog.wlogWeek[0] : wlog.wlogWeek;
+                    const totalMinutes = ((weekData?.whour || 0) * 60) + (weekData?.wmin || 0);
                     const remainingMinutes = Math.max(0, (52 * 60) - totalMinutes);
                     const { hours, minutes } = formatMinutes(remainingMinutes);
                     return `이번 주 근무 시간이 ${hours}시간 ${String(minutes).padStart(2, '0')}분 남았어요.`;
@@ -120,8 +120,8 @@ export default function Dashboard() {
               </div>
               <WorkHoursBar 
                 hours={(() => {
-                  const totalMinutes = wlog.wlogWeek[0]?.total_minutes || 0;
-                  return totalMinutes / 60;
+                  const weekData = Array.isArray(wlog.wlogWeek) ? wlog.wlogWeek[0] : wlog.wlogWeek;
+                  return ((weekData?.whour || 0) * 60 + (weekData?.wmin || 0)) / 60;
                 })()} 
                 className="mt-4" 
               />

@@ -110,13 +110,14 @@ export const buildOvertimeApiParams = (
     ot_description: formData.workDescription || '',
   };
 
-  // 평일인 경우: 예상 퇴근 시간, 식대, 교통비만 추가
-  if (!isWeekendOrHol) {
+  // weekday일 때: 예상 퇴근 시간, 식대, 교통비만 추가
+  if (otType === 'weekday') {
+    // weekday일 때는 ot_stime을 null로 전송
+    apiParams.ot_stime = null as any;
     // expectedEndTime과 expectedEndMinute가 비어있지 않은 경우에만 처리
     if (formData.expectedEndTime && formData.expectedEndMinute) {
       const hour = formData.expectedEndTime.padStart(2, '0');
       const minute = formData.expectedEndMinute.padStart(2, '0');
-      apiParams.ot_stime = `${hour}:${minute}:00`;
       apiParams.ot_etime = `${hour}:${minute}:00`;
     }
     apiParams.ot_food = formData.mealAllowance === 'yes' ? 'Y' : 'N';

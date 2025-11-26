@@ -13,6 +13,34 @@ export interface WorkLog {
   wlog_modified_at?: string;
 }
 
+export interface WlogWeek {
+  yearNo: number;
+  weekNo: number;
+  sdate: string;
+  edate: string;
+  wlog: [
+    {
+      user_id: string;
+      user_nm: string;
+      tdate: string;
+      stime: string;
+      etime: string;
+      wmin: number;
+      kind: string;
+      type: string;
+    }
+  ];
+  vacation: [
+    {
+      user_id: string;
+      user_nm: string;
+      tdate: string;
+      stime: string;
+      etime: string;
+    }
+  ];
+}
+
 export interface Vacation {
   // vacation 타입 정의 (필요시 추가)
   [key: string]: any;
@@ -28,6 +56,12 @@ export interface WorkLogQueryParams {
   search_id?: string;
   sdate: string;
   edate: string;
+}
+
+// 주간 근태 로그 조회 파라미터
+export interface WlogWeekParams {
+  weekno: number;
+  yearno: number;
 }
 
 // 추가근무 신청 파라미터
@@ -93,6 +127,16 @@ export const workingApi = {
     queryParams.append('edate', params.edate);
 
     const response = await http<WorkLogResponse>(`/user/wlog/list?${queryParams.toString()}`);
+    return response;
+  },
+
+  // 주간 근태 로그 조회 (WlogWeek)
+  getWlogWeek: async (params: WlogWeekParams): Promise<WlogWeek> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('weekno', params.weekno.toString());
+    queryParams.append('yearno', params.yearno.toString());
+
+    const response = await http<WlogWeek>(`/user/wlog/week?${queryParams.toString()}`);
     return response;
   },
 
