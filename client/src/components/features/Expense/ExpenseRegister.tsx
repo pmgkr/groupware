@@ -30,6 +30,7 @@ import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getMyAccounts, type BankAccount } from '@/api/mypage';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AccountSelectDialog } from './_components/AccountSelectDialog';
 
 const expenseSchema = z.object({
   el_method: z.string().nonempty('결제 수단을 선택해주세요.'),
@@ -562,30 +563,13 @@ export default function ExpenseRegister() {
                     )}
                   />
                 </div>
-                {/* 계좌 선택 */}
-                <Dialog open={accountDialogOpen} onOpenChange={setAccountDialogOpen}>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>계좌 선택</DialogTitle>
-                    </DialogHeader>
-
-                    <div className="mt-4 max-h-[300px] overflow-y-auto">
-                      {accountList.map((acc) => (
-                        <Button
-                          key={acc.seq}
-                          variant="ghost"
-                          className="[&]:hover:bg-primary-blue-150 w-full justify-start"
-                          onClick={() => handleSelectAccount(acc)}>
-                          <div className="flex text-left">
-                            <div className="text-primary-blue mr-3 font-semibold">{acc.account_alias || acc.account_name}</div>
-                            <span className="mr-1 font-light text-gray-700">{acc.bank_account}</span>
-                            <span className="font-light text-gray-700">({acc.bank_name})</span>
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <AccountSelectDialog
+                  open={accountDialogOpen}
+                  onOpenChange={setAccountDialogOpen}
+                  accounts={accountList}
+                  bankList={bankList}
+                  onSelect={handleSelectAccount}
+                />
 
                 <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
                   <FormField

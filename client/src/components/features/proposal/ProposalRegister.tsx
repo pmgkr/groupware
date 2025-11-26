@@ -15,6 +15,7 @@ import { uploadFilesToServer } from '@/api';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { Check } from 'lucide-react';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { useLocation } from 'react-router';
 
 // Zod 스키마 정의 (유효성 검사 규칙)
 const formSchema = z.object({
@@ -28,8 +29,17 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function ProposalRegister() {
   type PreviewFile = File | { id: number; name: string; url: string; size?: number; type?: string };
+  const location = useLocation();
 
+  //일반비용 - 프로젝트 구분
+  const isProject = location.pathname.includes('/project');
   const navigate = useNavigate();
+
+  const onBack = () => {
+    if (isProject) navigate('/project/proposal');
+    else navigate('/expense/proposal');
+  };
+
   const [files, setFiles] = useState<PreviewFile[]>([]);
   const [deletedFileIds, setDeletedFileIds] = useState<number[]>([]);
   const [formattedPrice, setFormattedPrice] = useState('');
@@ -67,12 +77,12 @@ export default function ProposalRegister() {
       const uploaded = await uploadFilesToServer(newFiles, 'report');
 
       const payload = {
-        rp_category: data.category,
+        rp_category: isProject ? '프로젝트' : data.category,
         rp_title: data.title,
         rp_state: '진행',
         rp_content: data.content,
         rp_cost: Number(data.price),
-        rp_project_type: 'non_project',
+        rp_project_type: isProject ? 'project' : 'non_project',
         rp_expense_no: null,
         references: [],
         files: uploaded.map((f) => ({
@@ -90,7 +100,7 @@ export default function ProposalRegister() {
         duration: 2000,
       });
 
-      navigate('..');
+      onBack(); // 리스트로 이동
     } catch (err) {
       console.error('등록 실패:', err);
     }
@@ -103,27 +113,29 @@ export default function ProposalRegister() {
           <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
             {/* 카테고리 Select Box */}
             <div className="mb-3 flex flex-1 gap-x-2.5">
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem className="w-[180px]">
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="카테고리를 선택하세요" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="교육비">교육비</SelectItem>
-                        <SelectItem value="구매요청">구매요청</SelectItem>
-                        <SelectItem value="일반비용">일반비용</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {!isProject && (
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem className="w-[180px]">
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="카테고리를 선택하세요" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="교육비">교육비</SelectItem>
+                          <SelectItem value="구매요청">구매요청</SelectItem>
+                          <SelectItem value="일반비용">일반비용</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               {/* 금액 Input */}
               <FormField
                 control={form.control}
@@ -187,7 +199,7 @@ export default function ProposalRegister() {
               <BoardAttachFile files={files} setFiles={setFiles} onRemoveExisting={(id) => setDeletedFileIds((prev) => [...prev, id])} />
               <div className="flex gap-x-2">
                 <Button type="submit">제출</Button>
-                <Button type="button" variant="secondary" onClick={() => navigate('..')}>
+                <Button type="button" variant="secondary" onClick={onBack}>
                   취소
                 </Button>
               </div>
