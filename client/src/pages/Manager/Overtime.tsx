@@ -53,6 +53,7 @@ export default function ManagerOvertime() {
         activeTab={activeTab}
         filters={overtimeFilters}
         onCheckedItemsChange={handleCheckedItemsChange}
+        isPage="manager"
       />
     </div>
   );

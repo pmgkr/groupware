@@ -6,7 +6,6 @@ import OvertimeDialog from "./OvertimeDialog";
 import OvertimeViewDialog from "./OvertimeViewDialog";
 import type { WorkData } from "@/types/working";
 import { workingApi } from "@/api/working";
-import { buildOvertimeApiParams } from "@/utils/overtimeHelper";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 
@@ -65,30 +64,8 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
   };
 
   const handleOvertimeSave = async (overtimeData: any) => {
-    if (selectedIndex === null) return;
-    
-    const selectedDay = data[selectedIndex];
-    const currentStatus = selectedDay.overtimeStatus;
-    
-    if (currentStatus === "신청하기" || currentStatus === "취소완료") {
-      try {
-        // 추가근무 API 파라미터 구성
-        const apiParams = buildOvertimeApiParams(selectedDay, overtimeData);
-        
-        // API 호출
-        await workingApi.requestOvertime(apiParams);
-        
-        // 성공 시 데이터 다시 로드
-        await onDataRefresh();
-        
-        setDialogOpen(false);
-        setSelectedIndex(null);
-      } catch (error: any) {
-        console.error('추가근무 신청 실패:', error);
-        const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
-        alert(`추가근무 신청에 실패했습니다.\n오류: ${errorMessage}`);
-      }
-    }
+    // OvertimeDialog에서 모든 처리를 완료했으므로, 데이터만 새로고침
+    await onDataRefresh();
   };
 
   const handleDialogClose = () => {

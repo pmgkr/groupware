@@ -23,9 +23,7 @@ export interface MyOvertimeHistoryProps {
 export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear = new Date().getFullYear() }: MyOvertimeHistoryProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  
-  console.log('MyOvertimeHistory 렌더링 - selectedYear:', selectedYear);
-  
+    
   // 데이터 state
   const [allData, setAllData] = useState<MyOvertimeItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -81,13 +79,10 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
 
     setLoading(true);
     try {
-      console.log('추가근무 내역 조회 - selectedYear:', selectedYear, 'page:', page);
       const overtimeData = await fetchMyOvertimeHistory(page, pageSize, selectedYear, user.user_id);
-      console.log('추가근무 내역 조회 결과:', overtimeData.items?.length, '건');
       setAllData(overtimeData.items || []);
       setLoading(false);
     } catch (error) {
-      console.error('추가근무 내역 조회 실패:', error);
       setAllData([]);
       setLoading(false);
     }
@@ -289,15 +284,14 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
       const selectedDay = convertToWorkData(selectedOvertime);
       const apiParams = buildOvertimeApiParams(selectedDay, overtimeData);
       
-      // API 호출
-      await workingApi.requestOvertime(apiParams);
+      // API 호출(Dialog에서 저장하므로 해당 코드 삭제)
+      // await workingApi.requestOvertime(apiParams);
       
       // 성공 시 데이터 다시 로드
       fetchOvertimeData();
       
       handleCloseReapplyDialog();
     } catch (error: any) {
-      console.error('추가근무 재신청 실패:', error);
       const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
       alert(`추가근무 재신청에 실패했습니다.\n오류: ${errorMessage}`);
     }

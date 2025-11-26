@@ -15,16 +15,29 @@ const getOvertimeStatus = (status: string): WorkData['overtimeStatus'] => {
 };
 
 /**
- * ISO 시간 문자열에서 시간/분 추출
+ * 시간 문자열에서 시간/분 추출 (ISO 형식 또는 HH:mm:ss 형식)
  */
-const extractTimeFromISO = (isoString: string): { hour: string; minute: string } => {
-  const match = isoString.match(/T(\d{2}):(\d{2})/);
-  if (match) {
+const extractTimeFromISO = (timeString: string): { hour: string; minute: string } => {
+  if (!timeString) return { hour: '', minute: '' };
+  
+  // ISO 형식 (예: "2024-01-01T09:00:00" 또는 "2024-01-01T09:00:00Z")
+  const isoMatch = timeString.match(/T(\d{2}):(\d{2})/);
+  if (isoMatch) {
     return {
-      hour: String(parseInt(match[1])),
-      minute: String(parseInt(match[2]))
+      hour: String(parseInt(isoMatch[1])),
+      minute: String(parseInt(isoMatch[2]))
     };
   }
+  
+  // HH:mm:ss 형식 (예: "09:00:00")
+  const timeMatch = timeString.match(/^(\d{2}):(\d{2})/);
+  if (timeMatch) {
+    return {
+      hour: String(parseInt(timeMatch[1])),
+      minute: String(parseInt(timeMatch[2]))
+    };
+  }
+  
   return { hour: '', minute: '' };
 };
 
@@ -87,7 +100,8 @@ const formatTime = (time: string | null): string => {
  * 초과근무 신청 데이터 추출
  */
 const extractOvertimeData = (overtime: any) => {
-  const time = overtime.ot_etime ? extractTimeFromISO(overtime.ot_etime.toString()) : { hour: '', minute: '' };
+  const endTime = overtime.ot_etime ? extractTimeFromISO(overtime.ot_etime.toString()) : { hour: '', minute: '' };
+  const startTime = overtime.ot_stime ? extractTimeFromISO(overtime.ot_stime.toString()) : { hour: '', minute: '' };
   
   // ot_hours가 소수점 형태(예: "2.5")인 경우 시간과 분으로 분리
   let overtimeHours = '';
@@ -101,8 +115,10 @@ const extractOvertimeData = (overtime: any) => {
   }
   
   return {
-    expectedEndTime: time.hour,
-    expectedEndMinute: time.minute,
+    expectedStartTime: startTime.hour,
+    expectedStartTimeMinute: startTime.minute,
+    expectedEndTime: endTime.hour,
+    expectedEndMinute: endTime.minute,
     mealAllowance: overtime.ot_food === 'Y' ? 'yes' : overtime.ot_food === 'N' ? 'no' : '',
     transportationAllowance: overtime.ot_trans === 'Y' ? 'yes' : overtime.ot_trans === 'N' ? 'no' : '',
     overtimeHours: overtimeHours,

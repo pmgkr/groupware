@@ -54,13 +54,15 @@ export interface VacationListProps {
   activeTab?: 'vacation' | 'event';
   filters?: VacationFilters;
   onCheckedItemsChange?: (items: number[]) => void;
+  isPage?: 'manager' | 'admin';
 }
 
 export default function VacationList({ 
   teamIds = [],
   activeTab = 'vacation',
   filters = {},
-  onCheckedItemsChange = () => {}
+  onCheckedItemsChange = () => {},
+  isPage = 'manager'
 }: VacationListProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -384,11 +386,23 @@ export default function VacationList({
     setPage(1);
   }, [filters]);
 
-  // 전체 선택 (현재 페이지의 반려됨, 승인완료 제외)
+  // 선택 가능한 상태 확인 헬퍼 함수 (isPage prop 기반)
+  const isSelectableStatus = useCallback((status: string) => {
+    if (isPage === 'admin') {
+      // admin 페이지: 보상대기만 선택 가능 (휴가관리에는 보상대기 상태가 없으므로 일단 H만)
+      // TODO: 보상대기 상태가 추가되면 수정 필요
+      return status === 'H';
+    } else {
+      // manager 페이지: 승인대기(H)만 선택 가능
+      return status === 'H';
+    }
+  }, [isPage]);
+
+  // 전체 선택 (isPage prop 기반)
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
     const newCheckedItems = checked 
-      ? paginatedData.filter(item => item.sch_status !== 'N' && item.sch_status !== 'Y').map((item) => item.id) 
+      ? paginatedData.filter(item => isSelectableStatus(item.sch_status)).map((item) => item.id) 
       : [];
     setCheckedItems(newCheckedItems);
     onCheckedItemsChange(newCheckedItems);
@@ -651,7 +665,7 @@ export default function VacationList({
                   id={`chk_${item.id}`} 
                   className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkedItems.includes(item.id) && 'bg-primary-blue-150')} 
                   checked={checkedItems.includes(item.id)} 
-                  disabled={item.sch_status === 'N' || item.sch_status === 'Y'}
+                  disabled={!isSelectableStatus(item.sch_status)}
                   onCheckedChange={(checked) => handleCheckItem(item.id, checked as boolean)} 
                 />
               </TableCell>
