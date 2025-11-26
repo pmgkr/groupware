@@ -230,7 +230,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                 <div className="flex gap-2">
                   <Select
                     key="expected-end-time"
-                    value={formData.expectedEndTime || undefined}
+                    value={formData.expectedEndTime ? formData.expectedEndTime : undefined}
                     onValueChange={(value) => handleInputChange('expectedEndTime', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndTime ? 'border-red-500' : ''}`}>
@@ -254,7 +254,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                   </Select>
                   <Select
                     key="expected-end-minute"
-                    value={formData.expectedEndMinute || undefined}
+                    value={formData.expectedEndMinute ? formData.expectedEndMinute : undefined}
                     onValueChange={(value) => handleInputChange('expectedEndMinute', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndMinute ? 'border-red-500' : ''}`}>
@@ -347,7 +347,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                 <div className="flex gap-2">
                   <Select
                     key="expected-start-time"
-                    value={formData.expectedStartTime || undefined}
+                    value={formData.expectedStartTime ? formData.expectedStartTime : undefined}
                     onValueChange={(value) => handleInputChange('expectedStartTime', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedStartTime ? 'border-red-500' : ''}`}>
@@ -375,8 +375,8 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                     </SelectContent>
                   </Select>
                   <Select
-                    key="expected-end-minute"
-                    value={formData.expectedStartTimeMinute || undefined}
+                    key="expected-start-minute"
+                    value={formData.expectedStartTimeMinute ? formData.expectedStartTimeMinute : undefined}
                     onValueChange={(value) => handleInputChange('expectedStartTimeMinute', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedStartTimeMinute ? 'border-red-500' : ''}`}>
@@ -409,7 +409,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                 <div className="flex gap-2">
                   <Select
                     key="expected-end-time"
-                    value={formData.expectedEndTime || undefined}
+                    value={formData.expectedEndTime ? formData.expectedEndTime : undefined}
                     onValueChange={(value) => handleInputChange('expectedEndTime', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndTime ? 'border-red-500' : ''}`}>
@@ -439,7 +439,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                   </Select>
                   <Select
                     key="expected-end-minute"
-                    value={formData.expectedEndMinute || undefined}
+                    value={formData.expectedEndMinute ? formData.expectedEndMinute : undefined}
                     onValueChange={(value) => handleInputChange('expectedEndMinute', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndMinute ? 'border-red-500' : ''}`}>
