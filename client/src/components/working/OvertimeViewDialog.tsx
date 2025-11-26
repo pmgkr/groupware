@@ -228,6 +228,8 @@ export default function OvertimeViewDialog({
   
   // 신청 데이터
   const overtimeData = selectedDay?.overtimeData || {
+    expectedStartTime: "",
+    expectedStartTimeMinute: "",
     expectedEndTime: "",
     expectedEndMinute: "",
     mealAllowance: "",
