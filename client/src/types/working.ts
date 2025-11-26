@@ -20,6 +20,8 @@ export interface WorkData {
   rejectionReason?: string;
   // 신청 데이터 추가
   overtimeData?: {
+    expectedStartTime: string;
+    expectedStartTimeMinute: string;
     expectedEndTime: string;
     expectedEndMinute: string;
     mealAllowance: string;

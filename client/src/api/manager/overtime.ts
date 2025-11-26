@@ -21,6 +21,7 @@ export interface OvertimeItem {
   team_id: number;
   ot_type: string;
   ot_date: string;
+  ot_stime: string;
   ot_etime: string;
   ot_hours: string;
   ot_food: string;

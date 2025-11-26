@@ -53,6 +53,8 @@ export const convertRewardType = (
  * 초과근무 신청 데이터를 API 파라미터로 변환
  */
 export interface OvertimeFormData {
+  expectedStartTime: string;
+  expectedStartTimeMinute: string;
   expectedEndTime: string;
   expectedEndMinute: string;
   mealAllowance: string;
@@ -121,23 +123,50 @@ export const buildOvertimeApiParams = (
     apiParams.ot_trans = formData.transportationAllowance === 'yes' ? 'Y' : 'N';
   }
 
-  // 주말 또는 공휴일인 경우: 초과근무 시간, 보상 지급방식만 추가
+  // 주말 또는 공휴일인 경우: 출근 시간, 퇴근 시간, 보상 지급방식 추가
   if (isWeekendOrHol) {
-    // 시간과 분을 소수점 형태로 변환 (예: 2시간 30분 = "2.5")
-    const hours = parseInt(formData.overtimeHours) || 0;
-    const minutes = parseInt(formData.overtimeMinutes) || 0;
-    const totalHours = hours + (minutes / 60);
-    
-    // 근무 시간이 0인 경우 에러 발생
-    if (totalHours <= 0) {
-      throw new Error('추가근무 시간을 입력해주세요.');
+    // 출근 시간 설정
+    if (formData.expectedStartTime && formData.expectedStartTimeMinute) {
+      const startHour = formData.expectedStartTime.padStart(2, '0');
+      const startMinute = formData.expectedStartTimeMinute.padStart(2, '0');
+      apiParams.ot_stime = `${startHour}:${startMinute}:00`;
     }
     
-    apiParams.ot_hours = totalHours.toString();
+    // 퇴근 시간 설정
+    if (formData.expectedEndTime && formData.expectedEndMinute) {
+      const endHour = formData.expectedEndTime.padStart(2, '0');
+      const endMinute = formData.expectedEndMinute.padStart(2, '0');
+      apiParams.ot_etime = `${endHour}:${endMinute}:00`;
+    }
     
-    // 토요일, 일요일, 공휴일인 경우 ot_stime, ot_etime을 00:00:00으로 설정
-    apiParams.ot_stime = '00:00:00';
-    apiParams.ot_etime = '00:00:00';
+    // 출근 시간과 퇴근 시간을 기반으로 근무 시간 자동 계산
+    if (formData.expectedStartTime && formData.expectedStartTimeMinute && 
+        formData.expectedEndTime && formData.expectedEndMinute) {
+      const startHour = parseInt(formData.expectedStartTime) || 0;
+      const startMinute = parseInt(formData.expectedStartTimeMinute) || 0;
+      const endHour = parseInt(formData.expectedEndTime) || 0;
+      const endMinute = parseInt(formData.expectedEndMinute) || 0;
+      
+      // 시간을 분 단위로 변환
+      const startTotalMinutes = startHour * 60 + startMinute;
+      let endTotalMinutes = endHour * 60 + endMinute;
+      
+      // 24시를 넘어가는 경우 처리 (예: 23시 출근, 02시 퇴근)
+      if (endTotalMinutes < startTotalMinutes) {
+        endTotalMinutes += 24 * 60; // 다음 날로 넘어감
+      }
+      
+      // 근무 시간 계산 (분 단위)
+      const workMinutes = endTotalMinutes - startTotalMinutes;
+      
+      // 시간으로 변환 (소수점 형태)
+      const workHours = workMinutes / 60;
+      
+      // 최소 0.5시간 이상이어야 함
+      if (workHours > 0) {
+        apiParams.ot_hours = workHours.toString();
+      }
+    }
     
     // 보상 지급방식
     apiParams.ot_reward = convertRewardType(formData.overtimeType);

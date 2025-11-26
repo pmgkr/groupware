@@ -490,21 +490,33 @@ export default function WorkingList({
           
           const info = overtimeDetailData.info;
           
-          // ot_etime에서 시/분 추출 (타임존 변환 없이)
-          let expectedHour = "";
-          let expectedMinute = "";
+          // ot_stime에서 시/분 추출 (출근 시간)
+          let expectedStartHour = "";
+          let expectedStartMinute = "";
+          if (info.ot_stime) {
+            const timeStr = info.ot_stime.includes('T') ? info.ot_stime.split('T')[1] : info.ot_stime;
+            const timeParts = timeStr.split(':');
+            expectedStartHour = timeParts[0];
+            expectedStartMinute = timeParts[1];
+          }
+          
+          // ot_etime에서 시/분 추출 (퇴근 시간)
+          let expectedEndHour = "";
+          let expectedEndMinute = "";
           if (info.ot_etime) {
             const timeStr = info.ot_etime.includes('T') ? info.ot_etime.split('T')[1] : info.ot_etime;
             const timeParts = timeStr.split(':');
-            expectedHour = timeParts[0];
-            expectedMinute = timeParts[1];
+            expectedEndHour = timeParts[0];
+            expectedEndMinute = timeParts[1];
           }
           
           const hours = info.ot_hours ? parseFloat(info.ot_hours) : 0;
           
           return {
-            expectedEndTime: expectedHour,
-            expectedEndMinute: expectedMinute,
+            expectedStartTime: expectedStartHour,
+            expectedStartTimeMinute: expectedStartMinute,
+            expectedEndTime: expectedEndHour,
+            expectedEndMinute: expectedEndMinute,
             mealAllowance: info.ot_food === 'Y' ? 'yes' : 'no',
             transportationAllowance: info.ot_trans === 'Y' ? 'yes' : 'no',
             overtimeHours: String(Math.floor(hours)),

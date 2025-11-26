@@ -34,7 +34,8 @@ export interface WorkLogQueryParams {
 export interface OvertimeRequestParams {
   ot_type: string;          // 추가근무 타입 ("weekday" - 평일, "saturday" - 토요일, "sunday" - 일요일, "holiday" - 공휴일)
   ot_date: string;          // 근무 날짜 (YYYY-MM-DD)
-  ot_etime?: string;        // 예상 퇴근 시간 (HH:mm:ss) - 평일인 경우
+  ot_stime?: string;        // 예상 출근 시간 (HH:mm:ss) - 주말/공휴일인 경우
+  ot_etime?: string;        // 예상 퇴근 시간 (HH:mm:ss) - 모든 경우
   ot_hours?: string;        // 추가근무 시간 - 주말/공휴일인 경우
   ot_food?: string;         // 식대 사용 여부 (Y/N)
   ot_trans?: string;        // 교통비 사용 여부 (Y/N)
@@ -59,6 +60,7 @@ export interface OvertimeItem {
   team_id: number;
   ot_type: string;
   ot_date: string;
+  ot_stime: string;
   ot_etime: string;
   ot_hours: string;
   ot_food: string;
