@@ -423,7 +423,9 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
                 </>
               ) : (
                 <>
-                  <TableCell className="text-center p-2">{formatHours(item.ot_hours)}</TableCell>
+                  <TableCell className="text-center p-2">
+                    {formatTime(item.ot_stime)}-{formatTime(item.ot_etime)} ({formatHours(item.ot_hours)})
+                  </TableCell>
                   <TableCell className="text-center p-2">{getRewardText(item.ot_reward)}</TableCell>
                 </>
               )}
