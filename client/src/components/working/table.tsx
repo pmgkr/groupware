@@ -293,7 +293,6 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
         onClose={handleDialogClose}
         onSave={handleOvertimeSave}
         selectedDay={selectedIndex !== null ? data[selectedIndex] : undefined}
-        selectedIndex={selectedIndex || undefined}
       />
       
       <OvertimeViewDialog
