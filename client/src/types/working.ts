@@ -34,5 +34,6 @@ export interface WorkData {
   };
   overtimeId?: number; // 초과근무 ID
   isHoliday?: boolean; // 공휴일 여부
+  holidayName?: string | null; // 공휴일 이름 (예: "신정", "설날", "추석")
 }
 

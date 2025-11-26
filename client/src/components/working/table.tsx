@@ -129,7 +129,11 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               return (
                 <th key={index} className={`w-[185px] px-6 py-3 text-center text-[13px] font-medium text-gray-500 uppercase tracking-wider ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                   <div className="flex flex-col">
-                    <span className="text-[13px] text-gray-800">{dayjs(row.date).format("MM/DD")}</span>
+                    <span className={`text-[13px] ${row.holidayName ? 'text-red-600' : 'text-gray-800'}`}>
+                      {row.holidayName 
+                        ? `${dayjs(row.date).format("MM/DD")} ${row.holidayName}`
+                        : dayjs(row.date).format("MM/DD")}
+                    </span>
                     <span className={`text-[13px] font-semibold ${getDayColor(row.dayOfWeek)}`}>{row.dayOfWeek}요일</span>
                   </div>
                 </th>
@@ -150,7 +154,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               
               return (
                 <td key={index} className={`h-[65px] px-6 py-4 whitespace-nowrap text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
-                  <div className="inline-flex items-center gap-1">
+                  <div className="inline-flex items-center gap-1 flex-wrap justify-center">
                     <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getWorkTypeColor(hasMultipleWorkTypes ? latestWorkType!.type : row.workType)}`}>
                       {hasMultipleWorkTypes ? latestWorkType!.type : row.workType}
                     </span>

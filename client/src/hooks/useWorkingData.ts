@@ -218,6 +218,7 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
                 hasOvertime,
                 overtimeId,
                 overtimeStatus,
+                holidayName: dayData.holidayName,
               };
             }
             
@@ -229,6 +230,7 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
                 hasOvertime,
                 overtimeId,
                 overtimeStatus,
+                holidayName: dayData.holidayName,
               };
             }
             
@@ -246,6 +248,7 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
               hasOvertime,
               overtimeId,
               overtimeStatus,
+              holidayName: dayData.holidayName,
             };
           };
 

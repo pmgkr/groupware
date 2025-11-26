@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { Button } from '@components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,6 +11,7 @@ import { workingApi } from '@/api/working';
 import { managerOvertimeApi } from '@/api/manager/overtime';
 import { managerWorkingApi } from '@/api/manager/working';
 import { Settings } from 'lucide-react';
+import { getHolidayNameCached } from '@/services/holidayApi';
 
 export interface DayWorkInfo {
   workType: string;
@@ -20,6 +21,7 @@ export interface DayWorkInfo {
   hasOvertime?: boolean;
   overtimeId?: string;
   overtimeStatus?: string;
+  holidayName?: string | null; // 공휴일 이름
 }
 
 export interface WorkingListItem {
@@ -82,6 +84,37 @@ export default function WorkingList({
   const getDayDate = (dayIndex: number) => {
     if (!weekStartDate) return '';
     return dayjs(weekStartDate).add(dayIndex, 'day').format('MM/DD');
+  };
+
+  // 각 요일의 공휴일 이름 가져오기
+  const [holidayNames, setHolidayNames] = useState<(string | null)[]>([]);
+
+  useEffect(() => {
+    const loadHolidayNames = async () => {
+      if (!weekStartDate) return;
+      
+      const names = await Promise.all(
+        Array.from({ length: 7 }, async (_, index) => {
+          const date = dayjs(weekStartDate).add(index, 'day').toDate();
+          return await getHolidayNameCached(date);
+        })
+      );
+      
+      setHolidayNames(names);
+    };
+
+    loadHolidayNames();
+  }, [weekStartDate]);
+
+  // 날짜와 공휴일 이름을 함께 표시하는 함수
+  const getDayDateWithHoliday = (dayIndex: number) => {
+    const dateStr = getDayDate(dayIndex);
+    const holidayName = holidayNames[dayIndex];
+    
+    if (holidayName) {
+      return `${dateStr} ${holidayName}`;
+    }
+    return dateStr;
   };
 
   // 전체 선택
@@ -382,37 +415,44 @@ export default function WorkingList({
             <TableHead className="w-[15%]">주간 누적시간</TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(0)}(월)</span>
+                <span className={`text-sm ${holidayNames[0] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(0)}</span>
+                <span className="text-sm text-gray-800">(월)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(1)}(화)</span>
+                <span className={`text-sm ${holidayNames[1] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(1)}</span>
+                <span className="text-sm text-gray-800">(화)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(2)}(수)</span>
+                <span className={`text-sm ${holidayNames[2] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(2)}</span>
+                <span className="text-sm text-gray-800">(수)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(3)}(목)</span>
+                <span className={`text-sm ${holidayNames[3] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(3)}</span>
+                <span className="text-sm text-gray-800">(목)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(4)}(금)</span>
+                <span className={`text-sm ${holidayNames[4] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(4)}</span>
+                <span className="text-sm text-gray-800">(금)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(5)}(토)</span>
+                <span className={`text-sm ${holidayNames[5] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(5)}</span>
+                <span className="text-sm text-gray-800">(토)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(6)}(일)</span>
+                <span className={`text-sm ${holidayNames[6] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(6)}</span>
+                <span className="text-sm text-gray-800">(일)</span>
               </div>
             </TableHead>
             <TableHead className="w-[8%]">자세히 보기</TableHead>
