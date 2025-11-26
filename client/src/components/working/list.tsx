@@ -415,44 +415,44 @@ export default function WorkingList({
             <TableHead className="w-[15%]">주간 누적시간</TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className={`text-sm ${holidayNames[0] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(0)}</span>
-                <span className="text-sm text-gray-800">(월)</span>
+                <span className={`text-sm ${holidayNames[0] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(0)}(월)</span>
+                {holidayNames[0] && <span className="text-xs text-red-600">{holidayNames[0]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className={`text-sm ${holidayNames[1] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(1)}</span>
-                <span className="text-sm text-gray-800">(화)</span>
+                <span className={`text-sm ${holidayNames[1] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(1)}(화)</span>
+                {holidayNames[1] && <span className="text-xs text-red-600">{holidayNames[1]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className={`text-sm ${holidayNames[2] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(2)}</span>
-                <span className="text-sm text-gray-800">(수)</span>
+                <span className={`text-sm ${holidayNames[2] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(2)}(수)</span>
+                {holidayNames[2] && <span className="text-xs text-red-600">{holidayNames[2]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className={`text-sm ${holidayNames[3] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(3)}</span>
-                <span className="text-sm text-gray-800">(목)</span>
+                <span className={`text-sm ${holidayNames[3] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(3)}(목)</span>
+                {holidayNames[3] && <span className="text-xs text-red-600">{holidayNames[3]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className={`text-sm ${holidayNames[4] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(4)}</span>
-                <span className="text-sm text-gray-800">(금)</span>
+                <span className={`text-sm ${holidayNames[4] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(4)}(금)</span>
+                {holidayNames[4] && <span className="text-xs text-red-600">{holidayNames[4]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className={`text-sm ${holidayNames[5] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(5)}</span>
-                <span className="text-sm text-gray-800">(토)</span>
+                <span className={`text-sm ${holidayNames[5] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(5)}(토)</span>
+                {holidayNames[5] && <span className="text-xs text-red-600">{holidayNames[5]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className={`text-sm ${holidayNames[6] ? 'text-primary-red-500' : 'text-gray-800'}`}>{getDayDateWithHoliday(6)}</span>
-                <span className="text-sm text-gray-800">(일)</span>
+                <span className={`text-sm ${holidayNames[6] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(6)}(일)</span>
+                {holidayNames[6] && <span className="text-xs text-red-600">{holidayNames[6]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">자세히 보기</TableHead>
