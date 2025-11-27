@@ -24,6 +24,21 @@ interface EstimateRowProps {
   onRemoveRow: (idx: number) => void;
 }
 
+const getUpperAmountSum = (idx: number, items: any[]) => {
+  let sum = 0;
+  for (let i = 0; i < idx; i++) {
+    const row = items[i];
+
+    // item, discount, amount가 숫자인 row만 합산
+    if (row.ei_type !== 'title' && row.ei_type !== 'subtotal') {
+      if (typeof row.amount === 'number') {
+        sum += row.amount;
+      }
+    }
+  }
+  return sum;
+};
+
 function RowComponent({ field, idx, control, watch, setValue, updateRow, updateRowAll, onAddRow, onRemoveRow }: EstimateRowProps) {
   const t = field.ei_type;
 
@@ -222,8 +237,10 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
                     field.onChange(raw);
 
                     // amount 즉시 계산
-                    const qty = Number(row?.qty) ?? 0;
-                    setValue(`items.${idx}.amount`, raw * qty, {
+                    const qty = Number(row?.qty || 0);
+                    const amt = Math.round(raw * qty); // 반올림 적용
+
+                    setValue(`items.${idx}.amount`, amt, {
                       shouldDirty: true,
                       shouldTouch: false,
                     });
@@ -276,7 +293,9 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
 
                     // 즉시 amount 업데이트
                     const price = Number(row?.unit_price || 0);
-                    setValue(`items.${idx}.amount`, qty * price, {
+                    const amt = Math.round(qty * price); // 반올림 적용
+
+                    setValue(`items.${idx}.amount`, amt, {
                       shouldDirty: true,
                       shouldTouch: false,
                     });
@@ -344,14 +363,85 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
             control={control}
             name={`items.${idx}.unit_price`}
             render={({ field }) => {
-              const displayValue = formatAmount(field.value || 0);
+              const prevValueRef = useRef(field.value ?? '');
+
+              const value = field.value ?? '';
+
+              const displayValue =
+                value !== '' && Number(value) >= 1
+                  ? formatAmount(Number(value)) // 정수
+                  : value; // 소수
 
               return (
                 <Input
                   className="h-9 text-right"
                   value={displayValue}
                   onChange={(e) => {
-                    const raw = Number(e.target.value.replace(/[^\d]/g, '') || 0);
+                    let raw = e.target.value.replace(/[^\d.]/g, '');
+
+                    const items = watch('items');
+                    const upperSum = getUpperAmountSum(idx, items);
+
+                    // --- Backspace 로 지우기 문제 해결 ---
+                    if (prevValueRef.current === '0.' && (raw === '0' || raw === '')) {
+                      field.onChange('');
+                      setValue(`items.${idx}.amount`, 0);
+                      prevValueRef.current = '';
+                      return;
+                    }
+
+                    // 점 여러 개 방지
+                    const parts = raw.split('.');
+                    if (parts.length > 2) {
+                      raw = parts[0] + '.' + parts[1];
+                    }
+
+                    // "." 시작 → "0.xx"
+                    if (raw.startsWith('.')) {
+                      raw = '0' + raw;
+                    }
+
+                    // "0" 시작 → 소수 모드
+                    if (raw.startsWith('0')) {
+                      if (!raw.includes('.')) {
+                        raw = '0.';
+                      }
+                      const p = raw.split('.');
+                      if (p[1]?.length > 2) {
+                        raw = p[0] + '.' + p[1].slice(0, 2);
+                      }
+
+                      field.onChange(raw);
+                      prevValueRef.current = raw;
+
+                      // amount 계산 (0.xx)
+                      const rate = Number(raw);
+                      const amt = Math.round(upperSum * rate);
+                      setValue(`items.${idx}.amount`, amt);
+                      return;
+                    }
+
+                    // 1~9 시작 → 정수 모드
+                    if (/^[1-9]/.test(raw)) {
+                      raw = raw.replace(/\./g, ''); // 소수점 제거
+
+                      field.onChange(raw);
+                      prevValueRef.current = raw;
+
+                      // amount = 정수 그대로
+                      setValue(`items.${idx}.amount`, Number(raw));
+                      return;
+                    }
+
+                    // 빈 값
+                    if (raw === '') {
+                      field.onChange('');
+                      setValue(`items.${idx}.amount`, 0);
+                      prevValueRef.current = '';
+                      return;
+                    }
+
+                    prevValueRef.current = raw;
                     field.onChange(raw);
                   }}
                 />
