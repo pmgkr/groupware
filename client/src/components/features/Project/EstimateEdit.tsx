@@ -69,6 +69,9 @@ export default function EstimateEdit() {
     name: 'items',
   });
 
+  // 초기 reset 시 RawData 저장
+  const initialItemsRef = useRef<EstimateEditForm['items']>([]);
+
   // ----------------------------------------
   // 데이터 로드
   // ----------------------------------------
@@ -93,6 +96,21 @@ export default function EstimateEdit() {
           ei_order: row.ei_order ?? '',
         })),
       });
+
+      const init = res.items.map((row) => ({
+        seq: row.seq,
+        ei_type: row.ei_type,
+        ei_name: row.ei_name,
+        unit_price: row.unit_price ?? '',
+        qty: row.qty ?? '',
+        amount: row.amount ?? '',
+        ava_amount: row.ava_amount,
+        exp_cost: row.exp_cost,
+        remark: row.remark,
+        ei_order: row.ei_order,
+      }));
+
+      initialItemsRef.current = structuredClone(init);
     };
 
     load();
@@ -120,6 +138,7 @@ export default function EstimateEdit() {
     };
 
     insert(insertIndex, base);
+    setValue(`items.${insertIndex}`, base, { shouldDirty: false });
 
     updateRowAll();
   };
@@ -134,19 +153,17 @@ export default function EstimateEdit() {
     updateRowAll();
   };
 
-  const updateRow = (idx: number) => {
-    const items = form.getValues('items');
-    const updated = calcAll(items);
-    setValue('items', updated, { shouldDirty: true, shouldValidate: false });
-  };
-
   const updateRowAll = () => {
     const items = form.getValues('items');
     const updated = calcAll(structuredClone(items));
 
     updated.forEach((row, i) => {
       if (!isEqual(items[i], row)) {
-        setValue(`items.${i}`, row, {
+        setValue(`items.${i}.amount`, row.amount, {
+          shouldDirty: false,
+          shouldValidate: false,
+        });
+        setValue(`items.${i}.exp_cost`, row.exp_cost, {
           shouldDirty: false,
           shouldValidate: false,
         });
@@ -187,7 +204,7 @@ export default function EstimateEdit() {
 
     // 2) Items (edit / insert 통합)
     const items = v.items.map((item, idx) => ({
-      seq: item.seq ?? null, // 기존 데이터는 seq 존재, 신규는 null로 전달
+      se: item.seq ?? null, // 기존 데이터는 seq 존재, 신규는 null로 전달
       ei_type: item.ei_type,
       ei_name: item.ei_name,
       unit_price: Number(item.unit_price) || 0,
@@ -196,7 +213,7 @@ export default function EstimateEdit() {
       exp_cost: Number(item.exp_cost) || 0,
       ava_amount: Number(item.ava_amount) || 0,
       remark: item.remark || '',
-      ei_order: idx + 1, // 현재 화면상의 순서가 그대로 order
+      ei_order: idx, // 현재 화면상의 순서가 그대로 order
     }));
 
     // 3) evidences 증빙자료
@@ -379,7 +396,7 @@ export default function EstimateEdit() {
                   <TableHead className="w-[12%] px-4">단가</TableHead>
                   <TableHead className="w-[8%] px-4">수량</TableHead>
                   <TableHead className="w-[12%] px-4">금액</TableHead>
-                  <TableHead className="w-[8%] px-4">가용 금액</TableHead>
+                  <TableHead className="w-[10%] px-4">가용 금액</TableHead>
                   <TableHead className="w-[10%] px-4">
                     <TooltipProvider>
                       <Tooltip>
@@ -393,7 +410,7 @@ export default function EstimateEdit() {
                       </Tooltip>
                     </TooltipProvider>
                   </TableHead>
-                  <TableHead className="w-[24%]">비고</TableHead>
+                  <TableHead className="w-[22%]">비고</TableHead>
                   <TableHead className="w-8 px-0"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -410,8 +427,8 @@ export default function EstimateEdit() {
                           setValue={setValue}
                           onAddRow={handleRowAdd}
                           onRemoveRow={handleRemoveRow}
-                          updateRow={updateRow}
                           updateRowAll={updateRowAll}
+                          initialItems={initialItemsRef.current}
                         />
                       </TableRow>
                     </SortableItem>

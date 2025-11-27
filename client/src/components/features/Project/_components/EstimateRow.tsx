@@ -1,14 +1,18 @@
 import { memo, useRef, useEffect } from 'react';
-import { type UseFormSetValue, type Control, useWatch } from 'react-hook-form';
+import { type UseFormSetValue, type Control, useWatch, useFormState } from 'react-hook-form';
 import type { EstimateEditForm } from '@/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuGroup, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { TableCell } from '@/components/ui/table';
 import { GripVertical, Ellipsis, ArrowUp, ArrowDown, X } from 'lucide-react';
 import { SortableItemHandle } from '@/components/ui/sortable';
 import { FormField } from '@/components/ui/form';
+import { cn } from '@/lib/utils';
 import { formatAmount } from '@/utils';
+
+type DirtyCheckField = 'ei_name' | 'unit_price' | 'qty' | 'amount' | 'exp_cost' | 'remark';
 
 interface EstimateRowProps {
   field: any;
@@ -18,7 +22,8 @@ interface EstimateRowProps {
   watch: (path: string) => any;
   setValue: UseFormSetValue<EstimateEditForm>;
 
-  updateRow: (idx: number) => void;
+  initialItems: EstimateEditForm['items'];
+
   updateRowAll: () => void;
   onAddRow: (dir: 'up' | 'down', idx: number) => void;
   onRemoveRow: (idx: number) => void;
@@ -39,36 +44,67 @@ const getUpperAmountSum = (idx: number, items: any[]) => {
   return sum;
 };
 
-function RowComponent({ field, idx, control, watch, setValue, updateRow, updateRowAll, onAddRow, onRemoveRow }: EstimateRowProps) {
+function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAddRow, onRemoveRow, initialItems }: EstimateRowProps) {
   const t = field.ei_type;
 
-  const amount = useWatch({
-    control,
-    name: `items.${idx}.amount`,
-  });
+  const amount = useWatch({ control, name: `items.${idx}.amount` });
+  const expCost = useWatch({ control, name: `items.${idx}.exp_cost` });
+  const row = useWatch({ control, name: `items.${idx}` });
+
+  const initialRow = (initialItems ?? []).find((r) => r.seq === row.seq);
+
+  const normalizeValue = (v: any) => {
+    if (v === null || v === undefined) return '';
+    return v.toString().trim();
+  };
+
+  const normalizeNumber = (v: any) => (v === '' || v === null || v === undefined ? 0 : Number(v));
+
+  const isDirty = (key: DirtyCheckField) => {
+    if (!initialRow) return false;
+
+    // 숫자 필드
+    if (['unit_price', 'qty', 'amount', 'exp_cost'].includes(key)) {
+      return normalizeNumber(initialRow[key]) !== normalizeNumber(row[key]);
+    }
+
+    // 문자열 필드
+    return normalizeValue(initialRow[key]) !== normalizeValue(row[key]);
+  };
 
   useEffect(() => {
-    if (t === 'item' || t === 'agency_fee' || t === 'discount') {
-      updateRowAll();
-    }
+    if (t === 'item' || t === 'agency_fee' || t === 'discount') updateRowAll();
   }, [amount]);
 
-  const expCost = useWatch({
-    control,
-    name: `items.${idx}.exp_cost`,
-  });
-
   useEffect(() => {
-    if (t === 'item' || t === 'agency_fee') {
-      updateRowAll();
-    }
+    if (t === 'item' || t === 'agency_fee') updateRowAll();
   }, [expCost]);
 
-  /** 🔍 Optimized row value subscribe */
-  const row = useWatch({
-    control,
-    name: `items.${idx}`,
-  });
+  // Amount가 변경 시 rawData와 비교해서 가용금액 업데이트
+  useEffect(() => {
+    if (!initialRow) return; // 신규 row 제외
+    if (t !== 'item' && t !== 'agency_fee') return;
+
+    // 사용자가 입력한 변경이 아니면 diff 반영 X
+    const userChanged = isDirty('unit_price') || isDirty('qty') || isDirty('exp_cost') || isDirty('remark') || isDirty('ei_name');
+
+    if (!userChanged) return;
+
+    const initialAmount = Number(initialRow.amount) || 0;
+    const currentAmount = Number(row?.amount) || 0;
+
+    const diff = currentAmount - initialAmount;
+
+    if (diff === 0) return;
+
+    const baseAva = Number(initialRow.ava_amount) || 0;
+    const newAva = baseAva + diff;
+
+    setValue(`items.${idx}.ava_amount`, newAva, {
+      shouldDirty: true,
+      shouldTouch: false,
+    });
+  }, [row?.amount]);
 
   /** 공통 Drag Handle */
   const bg = {
@@ -77,10 +113,12 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
     grandtotal: 'bg-primary-blue-150',
   };
 
+  const dirtyClass = 'text-primary-blue-500 font-bold border-primary-500';
+
   const Drag = (
     <TableCell className={`px-0 ${bg[t as keyof typeof bg]}`} data-drag-handle>
       <SortableItemHandle asChild>
-        <Button variant="svgIcon" size="icon" className="size-5">
+        <Button variant="svgIcon" size="icon" className="size-5" tabIndex={-1}>
           <GripVertical className="size-4 text-gray-600" />
         </Button>
       </SortableItemHandle>
@@ -92,7 +130,7 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
     <TableCell className={`px-0 ${bg[t as keyof typeof bg]}`}>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant="svgIcon" size="icon" className="size-5">
+          <Button variant="svgIcon" size="icon" className="size-5" tabIndex={-1}>
             <Ellipsis />
           </Button>
         </DropdownMenuTrigger>
@@ -122,7 +160,7 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
           <FormField
             control={control}
             name={`items.${idx}.ei_name`}
-            render={({ field }) => <Input {...field} className="h-9 font-bold" />}
+            render={({ field }) => <Input {...field} className={cn('h-9 font-bold', isDirty('ei_name') && dirtyClass)} />}
           />
         </TableCell>
         <TableCell colSpan={6}></TableCell>
@@ -174,11 +212,9 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
     return (
       <>
         {Drag}
-
         <TableCell className="bg-gray-300 pl-1 font-semibold" colSpan={3}>
           Discount
         </TableCell>
-
         <TableCell className="bg-gray-300 text-right">
           <FormField
             control={control}
@@ -197,13 +233,10 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
             }}
           />
         </TableCell>
-
         <TableCell className="bg-gray-300" colSpan={2}></TableCell>
-
         <TableCell className="bg-gray-300">
-          <Input className="h-9" {...control.register(`items.${idx}.remark`)} />
+          <Input className={cn('h-9', isDirty('remark') && dirtyClass)} {...control.register(`items.${idx}.remark`)} />
         </TableCell>
-
         {Menu}
       </>
     );
@@ -216,7 +249,11 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
         {Drag}
 
         <TableCell className="pl-1">
-          <FormField control={control} name={`items.${idx}.ei_name`} render={({ field }) => <Input {...field} className="h-9" />} />
+          <FormField
+            control={control}
+            name={`items.${idx}.ei_name`}
+            render={({ field }) => <Input {...field} className={cn('h-9', isDirty('ei_name') && dirtyClass)} />}
+          />
         </TableCell>
 
         {/* unit_price */}
@@ -230,7 +267,7 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
 
               return (
                 <Input
-                  className="h-9 text-right"
+                  className={cn('h-9 text-right', isDirty('unit_price') && dirtyClass)}
                   value={displayValue}
                   onChange={(e) => {
                     const raw = Number(e.target.value.replace(/[^\d]/g, '') || 0);
@@ -250,8 +287,6 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
             }}
           />
         </TableCell>
-
-        {/* qty */}
         {/* qty */}
         <TableCell>
           <FormField
@@ -262,7 +297,7 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
 
               return (
                 <Input
-                  className="h-9 text-right"
+                  className={cn('h-9 text-right', isDirty('qty') && dirtyClass)}
                   value={rawValue}
                   onChange={(e) => {
                     let v = e.target.value;
@@ -308,12 +343,12 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
 
         {/* amount */}
         <TableCell>
-          <Input className="h-9 text-right" readOnly value={formatAmount(row?.amount || 0)} />
+          <Input className={cn('h-9 text-right', isDirty('amount') && dirtyClass)} readOnly value={formatAmount(row?.amount || 0)} />
         </TableCell>
-
         {/* ava_amount */}
-        <TableCell className="text-right">{formatAmount(row?.ava_amount || 0)}</TableCell>
-
+        <TableCell className="text-right">
+          {formatAmount(row?.ava_amount || 0)} <span className="text-primary-blue-500 text-sm">(12)</span>
+        </TableCell>
         {/* exp_cost */}
         <TableCell>
           <FormField
@@ -325,7 +360,7 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
 
               return (
                 <Input
-                  className="h-9 text-right"
+                  className={cn('h-9 text-right', isDirty('exp_cost') && dirtyClass)}
                   value={displayValue}
                   onChange={(e) => {
                     const raw = Number(e.target.value.replace(/[^\d]/g, '') || 0);
@@ -339,7 +374,7 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
 
         {/* remark */}
         <TableCell>
-          <Input className="h-9" {...control.register(`items.${idx}.remark`)} />
+          <Input className={cn('h-9', isDirty('remark') && dirtyClass)} {...control.register(`items.${idx}.remark`)} />
         </TableCell>
 
         {Menu}
@@ -354,7 +389,11 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
 
         {/* name */}
         <TableCell className="pl-1">
-          <FormField control={control} name={`items.${idx}.ei_name`} render={({ field }) => <Input {...field} className="h-9" />} />
+          <FormField
+            control={control}
+            name={`items.${idx}.ei_name`}
+            render={({ field }) => <Input {...field} className={cn('h-9', isDirty('ei_name') && dirtyClass)} />}
+          />
         </TableCell>
 
         {/* unit_price */}
@@ -374,7 +413,7 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
 
               return (
                 <Input
-                  className="h-9 text-right"
+                  className={cn('h-9 text-right', isDirty('unit_price') && dirtyClass)}
                   value={displayValue}
                   onChange={(e) => {
                     let raw = e.target.value.replace(/[^\d.]/g, '');
@@ -463,7 +502,7 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
 
               return (
                 <Input
-                  className="h-9 text-right"
+                  className={cn('h-9 text-right', isDirty('amount') && dirtyClass)}
                   value={displayValue}
                   onChange={(e) => {
                     const raw = Number(e.target.value.replace(/[^\d]/g, '') || 0);
@@ -486,7 +525,7 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
             render={({ field }) => {
               return (
                 <Input
-                  className="h-9 text-right"
+                  className={cn('h-9 text-right', isDirty('exp_cost') && dirtyClass)}
                   value={formatAmount(field.value || 0)}
                   onChange={(e) => {
                     const raw = Number(e.target.value.replace(/[^\d]/g, '') || 0);
@@ -500,9 +539,8 @@ function RowComponent({ field, idx, control, watch, setValue, updateRow, updateR
 
         {/* remark */}
         <TableCell>
-          <Input className="h-9" {...control.register(`items.${idx}.remark`)} />
+          <Input className={cn('h-9', isDirty('remark') && dirtyClass)} {...control.register(`items.${idx}.remark`)} />
         </TableCell>
-
         {Menu}
       </>
     );
