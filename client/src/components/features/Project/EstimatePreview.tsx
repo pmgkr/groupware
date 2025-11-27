@@ -292,23 +292,22 @@ export default function EstimatePreview() {
         <div className="flex flex-wrap justify-between">
           <div className="w-[74%] tracking-tight">
             <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 정보</h2>
-            <TableColumn>
-              <TableColumnHeader className="w-[15%]">
+            <TableColumn className="[&_div]:text-[13px] [&_input]:text-[13px]">
+              <TableColumnHeader className="w-[18%]">
                 <TableColumnHeaderCell>프로젝트 #</TableColumnHeaderCell>
               </TableColumnHeader>
               <TableColumnBody>
                 <TableColumnCell>{data.project_id}</TableColumnCell>
               </TableColumnBody>
-              <TableColumnHeader className="w-[15%]">
+              <TableColumnHeader className="w-[18%]">
                 <TableColumnHeaderCell>클라이언트</TableColumnHeaderCell>
               </TableColumnHeader>
               <TableColumnBody>
                 <TableColumnCell>{data.client_nm}</TableColumnCell>
               </TableColumnBody>
             </TableColumn>
-
-            <TableColumn className="border-t-0">
-              <TableColumnHeader className="w-[15%]">
+            <TableColumn className="border-t-0 [&_div]:text-[13px] [&_input]:text-[13px]">
+              <TableColumnHeader className="w-[18%]">
                 <TableColumnHeaderCell className="h-full">견적서 제목</TableColumnHeaderCell>
               </TableColumnHeader>
               <TableColumnBody>
