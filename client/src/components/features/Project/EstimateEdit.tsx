@@ -1,11 +1,10 @@
-import * as React from 'react';
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Link, useOutletContext, useNavigate, useParams } from 'react-router';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
+import isEqual from 'lodash.isequal';
 import { useUser } from '@/hooks/useUser';
-import { useDebounce } from 'use-debounce';
-import { formatKST, formatAmount, displayUnitPrice } from '@/utils';
-import { useTotalsCalculator } from './hooks/usetotalsCalculator';
+import { calcAll } from './utils/calc';
+import { formatAmount } from '@/utils';
 import EstimateEvidence from './_components/EstimateEvidence';
 import type { PreviewFile } from './_components/EstimateEvidence';
 import { EstimateRow } from './_components/EstimateRow';
@@ -13,6 +12,7 @@ import { EstimateRow } from './_components/EstimateRow';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { getEstimateView, type EstimateEditForm, uploadFilesToServer, estimateEdit } from '@/api';
 import { Sortable, SortableContent, SortableItem, SortableItemHandle, SortableOverlay } from '@/components/ui/sortable';
+
 import { buildResultMessage } from './utils/message';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -27,7 +27,6 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuGroup, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 import { Info, Trash, OctagonAlert, GripVertical, Ellipsis, ArrowUp, ArrowDown, X } from 'lucide-react';
 
@@ -100,17 +99,6 @@ export default function EstimateEdit() {
   }, [estId, reset]);
 
   // ----------------------------------------
-  // 계산 - Debounce → useTotalsCalculator
-  // ----------------------------------------
-  const watchedItems = useWatch({
-    control,
-    name: 'items',
-  });
-  const [debouncedItems] = useDebounce(watchedItems, 120);
-
-  useTotalsCalculator({ debouncedItems, setValue });
-
-  // ----------------------------------------
   // Row 추가/삭제
   // ----------------------------------------
   const handleRowAdd = (dir: 'up' | 'down', idx: number) => {
@@ -132,6 +120,8 @@ export default function EstimateEdit() {
     };
 
     insert(insertIndex, base);
+
+    updateRowAll();
   };
 
   const handleRemoveRow = (idx: number) => {
@@ -140,6 +130,28 @@ export default function EstimateEdit() {
       setRemovedItems((prev) => [...prev, row.seq as number]);
     }
     remove(idx);
+
+    updateRowAll();
+  };
+
+  const updateRow = (idx: number) => {
+    const items = form.getValues('items');
+    const updated = calcAll(items);
+    setValue('items', updated, { shouldDirty: true, shouldValidate: false });
+  };
+
+  const updateRowAll = () => {
+    const items = form.getValues('items');
+    const updated = calcAll(structuredClone(items));
+
+    updated.forEach((row, i) => {
+      if (!isEqual(items[i], row)) {
+        setValue(`items.${i}`, row, {
+          shouldDirty: false,
+          shouldValidate: false,
+        });
+      }
+    });
   };
 
   // --------------------------
@@ -356,20 +368,19 @@ export default function EstimateEdit() {
             value={fields.map((f) => f.id)}
             getItemValue={(id) => id}
             onMove={({ activeIndex, overIndex }) => {
-              if (activeIndex !== overIndex) {
-                move(activeIndex, overIndex);
-              }
+              if (activeIndex !== overIndex) move(activeIndex, overIndex);
+              updateRowAll();
             }}>
             <Table variant="primary" align="center" className="table-fixed">
               <TableHeader>
                 <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
                   <TableHead className="w-8 px-0"></TableHead>
-                  <TableHead className="pl-1 text-left">항목명</TableHead>
-                  <TableHead className="w-[10%]">단가</TableHead>
-                  <TableHead className="w-[8%]">수량</TableHead>
-                  <TableHead className="w-[10%]">금액</TableHead>
-                  <TableHead className="w-[10%]">가용 금액</TableHead>
-                  <TableHead className="w-[10%]">
+                  <TableHead className="pr-4 pl-1 text-left">항목명</TableHead>
+                  <TableHead className="w-[12%] px-4">단가</TableHead>
+                  <TableHead className="w-[8%] px-4">수량</TableHead>
+                  <TableHead className="w-[12%] px-4">금액</TableHead>
+                  <TableHead className="w-[8%] px-4">가용 금액</TableHead>
+                  <TableHead className="w-[10%] px-4">
                     <TooltipProvider>
                       <Tooltip>
                         <span className="flex items-center justify-center gap-1">
@@ -399,6 +410,8 @@ export default function EstimateEdit() {
                           setValue={setValue}
                           onAddRow={handleRowAdd}
                           onRemoveRow={handleRemoveRow}
+                          updateRow={updateRow}
+                          updateRowAll={updateRowAll}
                         />
                       </TableRow>
                     </SortableItem>

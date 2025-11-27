@@ -1,63 +1,35 @@
 import { useEffect } from 'react';
-import type { UseFormSetValue, UseFormGetValues } from 'react-hook-form';
-import type { EstimateRow } from '@/api';
-import { calculateTotals } from '../utils/estimate';
+import type { EstimateEditForm } from '@/api';
+import { calcSubtotal, calcGrandTotal, calcGrandTotalExp } from '../utils/estimate';
 
-interface UseTotalsCalculatorProps {
-  debouncedItems: EstimateRow[];
-  setValue: UseFormSetValue<any>;
+interface Props {
+  items: EstimateEditForm['items'];
+  setValue: any;
 }
 
-export function useTotalsCalculator({ debouncedItems, setValue }: UseTotalsCalculatorProps) {
+/**
+ * Row 이동(정렬 변경) 후에만 전체 계산을 다시 수행한다.
+ */
+export function useTotalsCalculator({ items, setValue }: Props) {
   useEffect(() => {
-    if (!Array.isArray(debouncedItems) || debouncedItems.length === 0) return;
+    if (!items || items.length === 0) return;
 
-    let groupAmount = 0; // subtotal 그룹
-    let groupExpCost = 0;
-
-    let totalAmount = 0; // grandtotal 전체 합계
-    let totalExpCost = 0;
-
-    debouncedItems.forEach((row, idx) => {
-      const type = row.ei_type;
-
-      if (type === 'item' || type === 'agency_fee') {
-        const amt = Number(row.amount || 0);
-        const exp = Number(row.exp_cost || 0);
-
-        groupAmount += amt;
-        groupExpCost += exp;
-
-        totalAmount += amt;
-        totalExpCost += exp;
-      }
-
-      if (type === 'discount') {
-        // '-' 단독 입력은 계산하지 않음
-        if (row.amount === '-' || row.amount === '' || row.amount === null) return;
-
-        const amt = Number(row.amount || 0);
-        const exp = Number(row.exp_cost || 0);
-
-        groupAmount += amt;
-        groupExpCost += exp;
-
-        totalAmount += amt;
-        totalExpCost += exp;
-      }
-
-      if (type === 'subtotal') {
-        setValue(`items.${idx}.amount`, groupAmount, { shouldDirty: false });
-        setValue(`items.${idx}.exp_cost`, groupExpCost, { shouldDirty: false });
-
-        groupAmount = 0;
-        groupExpCost = 0;
-      }
-
-      if (type === 'grandtotal') {
-        setValue(`items.${idx}.amount`, totalAmount, { shouldDirty: false });
-        setValue(`items.${idx}.exp_cost`, totalExpCost, { shouldDirty: false });
+    // --------- 1) Subtotal 다시 계산 ----------
+    items.forEach((row, idx) => {
+      if (row.ei_type === 'subtotal') {
+        const val = calcSubtotal(items, idx);
+        setValue(`items.${idx}.amount`, val, { shouldDirty: false });
       }
     });
-  }, [debouncedItems, setValue]);
+
+    // --------- 2) Grand Total 다시 계산 ----------
+    const grandVal = calcGrandTotal(items);
+    const grandExp = calcGrandTotalExp(items);
+
+    const grandIndex = items.findIndex((r) => r.ei_type === 'grandtotal');
+    if (grandIndex !== -1) {
+      setValue(`items.${grandIndex}.amount`, grandVal, { shouldDirty: false });
+      setValue(`items.${grandIndex}.exp_cost`, grandExp, { shouldDirty: false });
+    }
+  }, [items, setValue]);
 }

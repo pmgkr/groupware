@@ -13,50 +13,84 @@ export function isAmountItem<T extends { type: string }>(
   return ['item', 'agency_fee', 'discount'].includes(f.type);
 }
 
-export function calculateTotals(items: EstimateRow[]): EstimateRow[] {
-  let grandAmount = 0;
-  let grandExp = 0;
+export function recalcAmount(unit_price: number, qty: number) {
+  return Number(unit_price) * Number(qty);
+}
 
-  let groupAmount = 0;
+export function calcSubtotal(rows: EstimateRow[], startIndex: number) {
+  let sum = 0;
 
-  return items.map((row) => {
-    const type = row.ei_type;
+  for (let i = startIndex + 1; i < rows.length; i++) {
+    const row = rows[i];
 
-    // 🔹 1) 숫자 변환 안전 적용
-    const price = Number(row.unit_price || 0);
-    const qty = Number(row.qty || 0);
-    const exp = Number(row.exp_cost || 0);
-    const amount = Number(row.amount || 0);
+    // 다음 subtotal 또는 grandtotal 만나면 그룹 종료
+    if (row.ei_type === 'subtotal' || row.ei_type === 'grandtotal') break;
 
-    // 🔹 item / agency_fee / discount → group 합산에 포함
-    if (type === 'item' || type === 'agency_fee' || type === 'discount') {
-      groupAmount += amount;
-      return row;
+    if (row.ei_type === 'item' || row.ei_type === 'agency_fee') {
+      sum += Number(row.amount || 0);
     }
 
-    // 🔹 subtotal → groupAmount 적용
-    if (type === 'subtotal') {
-      row.amount = groupAmount;
-      grandAmount += groupAmount;
-      groupAmount = 0;
-      return row;
+    if (row.ei_type === 'discount') {
+      sum += Number(row.amount || 0); // discount는 음수 처리됨
     }
+  }
 
-    // 🔹 grandtotal → 전체 계산
-    if (type === 'grandtotal') {
-      // subtotal 유무 상관 없이 전체 금액 재계산
-      const totalAmount = items
-        .filter((r) => ['item', 'discount', 'agency_fee'].includes(r.ei_type))
-        .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  return sum;
+}
 
-      const totalExp = items.filter((r) => ['item'].includes(r.ei_type)).reduce((sum, r) => sum + (Number(r.exp_cost) || 0), 0);
-
-      row.amount = totalAmount;
-      row.exp_cost = totalExp;
-
-      return row;
+export function calcGrandTotal(rows: EstimateRow[]) {
+  return rows.reduce((acc, row) => {
+    if (row.ei_type !== 'subtotal' && row.ei_type !== 'grandtotal') {
+      return acc + Number(row.amount || 0);
     }
+    return acc;
+  }, 0);
+}
 
-    return row;
+export function calcGrandTotalExp(rows: EstimateRow[]) {
+  return rows.reduce((acc, row) => acc + Number(row.exp_cost || 0), 0);
+}
+
+export function recalcTotals(items: any[]) {
+  // 1) Subtotal 계산
+  items.forEach((row, idx) => {
+    if (row.ei_type === 'subtotal') {
+      let sum = 0;
+
+      for (let i = idx - 1; i >= 0; i--) {
+        const prev = items[i];
+        if (prev.ei_type === 'subtotal') break;
+
+        if (['item', 'agency_fee', 'discount'].includes(prev.ei_type)) {
+          const val = prev.amount === '-' || prev.amount === '' || prev.amount == null ? 0 : Number(prev.amount);
+
+          if (!isNaN(val)) sum += val;
+        }
+      }
+
+      row.amount = sum;
+    }
   });
+
+  // 2) Grand Total 계산
+  let grand = 0;
+  let exp = 0;
+
+  items.forEach((row) => {
+    if (['item', 'agency_fee', 'discount'].includes(row.ei_type)) {
+      const a = row.amount === '-' || row.amount === '' || row.amount == null ? 0 : Number(row.amount);
+      const e = row.exp_cost === '-' || row.exp_cost === '' || row.exp_cost == null ? 0 : Number(row.exp_cost);
+
+      if (!isNaN(a)) grand += a;
+      if (!isNaN(e)) exp += e;
+    }
+  });
+
+  const gIdx = items.findIndex((r) => r.ei_type === 'grandtotal');
+  if (gIdx !== -1) {
+    items[gIdx].amount = grand;
+    items[gIdx].exp_cost = exp;
+  }
+
+  return items;
 }
