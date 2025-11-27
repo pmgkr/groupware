@@ -1,22 +1,25 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
-import { Textbox } from '@components/ui/textbox';
 import { Textarea } from '@components/ui/textarea';
 import { RadioGroup } from '@components/ui/radio-group';
 import { RadioButton } from '@components/ui/radioButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 import type { WorkData } from '@/types/working';
+import { useAuth } from '@/contexts/AuthContext';
+import { workingApi } from '@/api/working';
+import { managerOvertimeApi } from '@/api/manager/overtime';
+import { buildOvertimeApiParams } from '@/utils/overtimeHelper';
+import { getClientList, type ClientList } from '@/api/common/project';
 
 interface OvertimeDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: OvertimeData) => void;
-  onCancel?: () => void; // 추가근무 취소 콜백
+  onCancel?: () => void;
   selectedDay?: WorkData;
-  selectedIndex?: number;
 }
 
 interface OvertimeData {
@@ -26,161 +29,167 @@ interface OvertimeData {
   clientName: string;
   workDescription: string;
   overtimeType: string;
+  expectedStartTime: string;
+  expectedStartTimeMinute: string;
   expectedEndTime: string;
   expectedEndMinute: string;
   mealAllowance: string;
   transportationAllowance: string;
 }
 
-export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, selectedDay, selectedIndex }: OvertimeDialogProps) {
-  const [formData, setFormData] = useState<OvertimeData>({
-    overtimeHours: "",
-    overtimeMinutes: "",
-    overtimeReason: "",
-    clientName: "",
-    workDescription: "",
-    overtimeType: "",
-    expectedEndTime: "",
-    expectedEndMinute: "",
-    mealAllowance: "",
-    transportationAllowance: ""
-  });
+const initialFormData: OvertimeData = {
+  overtimeHours: "",
+  overtimeMinutes: "",
+  overtimeReason: "",
+  clientName: "",
+  workDescription: "",
+  overtimeType: "",
+  expectedStartTime: "",
+  expectedStartTimeMinute: "",
+  expectedEndTime: "",
+  expectedEndMinute: "",
+  mealAllowance: "",
+  transportationAllowance: ""
+};
 
+export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, selectedDay }: OvertimeDialogProps) {
+  const { user } = useAuth();
+  const [formData, setFormData] = useState<OvertimeData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof OvertimeData, string>>>({});
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [clientList, setClientList] = useState<ClientList[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      getClientList().then(setClientList).catch(() => setClientList([]));
+    }
+  }, [isOpen]);
 
   const handleInputChange = (field: keyof OvertimeData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    // 사용자 상호작용 표시
-    setHasUserInteracted(true);
-    
-    // 입력 시 해당 필드의 에러 메시지 제거
+    setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: undefined
-      }));
+      setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
-  // 유효성 검사 함수
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof OvertimeData, string>> = {};
     
-    // 클라이언트명 검증
     if (!formData.clientName.trim()) {
-      newErrors.clientName = "클라이언트명을 입력해주세요.";
+      newErrors.clientName = "클라이언트명을 선택해주세요.";
     }
-    
-    // 작업 내용 검증
     if (!formData.workDescription.trim()) {
       newErrors.workDescription = "작업 내용을 입력해주세요.";
     }
     
-    // 평일인 경우 예상 퇴근 시간 검증
     if (selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType)) {
-      if (!formData.expectedEndTime) {
-        newErrors.expectedEndTime = "예상 퇴근 시간을 선택해주세요.";
-      }
-      if (!formData.expectedEndMinute) {
-        newErrors.expectedEndMinute = "예상 퇴근 분을 선택해주세요.";
-      }
-      if (!formData.mealAllowance) {
-        newErrors.mealAllowance = "식대 사용여부를 선택해주세요.";
-      }
-      if (!formData.transportationAllowance) {
-        newErrors.transportationAllowance = "교통비 사용여부를 선택해주세요.";
-      }
+      // 평일: 퇴근 시간만 검증
+      if (!formData.expectedEndTime) newErrors.expectedEndTime = "예상 퇴근 시간을 선택해주세요.";
+      if (!formData.expectedEndMinute) newErrors.expectedEndMinute = "예상 퇴근 분을 선택해주세요.";
+      if (!formData.mealAllowance) newErrors.mealAllowance = "식대 사용여부를 선택해주세요.";
+      if (!formData.transportationAllowance) newErrors.transportationAllowance = "교통비 사용여부를 선택해주세요.";
     }
     
-    // 주말 또는 공휴일인 경우 추가근무 시간 및 보상 지급방식 검증
     if (selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType)) {
-      if (!formData.overtimeHours) {
-        newErrors.overtimeHours = "추가근무 시간을 선택해주세요.";
-      }
-      if (!formData.overtimeMinutes) {
-        newErrors.overtimeMinutes = "추가근무 시간을 선택해주세요.";
-      }
-      if (!formData.overtimeType) {
-        newErrors.overtimeType = "보상 지급방식을 선택해주세요.";
-      }
+      // 주말/공휴일: 출근 시간과 퇴근 시간 검증 (ot_hours는 자동 계산)
+      if (!formData.expectedStartTime) newErrors.expectedStartTime = "예상 출근 시간을 선택해주세요.";
+      if (!formData.expectedStartTimeMinute) newErrors.expectedStartTimeMinute = "예상 출근 분을 선택해주세요.";
+      if (!formData.expectedEndTime) newErrors.expectedEndTime = "예상 퇴근 시간을 선택해주세요.";
+      if (!formData.expectedEndMinute) newErrors.expectedEndMinute = "예상 퇴근 분을 선택해주세요.";
+      if (!formData.overtimeType) newErrors.overtimeType = "보상 지급방식을 선택해주세요.";
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
-    if (!validateForm()) {
-      return; // 유효성 검사 실패 시 저장하지 않음
-    }
+  const handleSave = async () => {
+    if (!validateForm() || !selectedDay) return;
     
-    onSave(formData);
-    onClose();
-    // 폼 초기화
-    setFormData({
-      overtimeHours: "",
-      overtimeMinutes: "",
-      overtimeReason: "",
-      clientName: "",
-      workDescription: "",
-      overtimeType: "",
-      expectedEndTime: "",
-      expectedEndMinute: "",
-      mealAllowance: "",
-      transportationAllowance: ""
-    });
-    setErrors({}); // 에러 상태도 초기화
-    setHasUserInteracted(false); // 사용자 상호작용 상태도 초기화
+    setIsSubmitting(true);
+    
+    try {
+      const apiParams = buildOvertimeApiParams(selectedDay, formData);
+      const response = await workingApi.requestOvertime(apiParams);
+      
+      const isManagerOrAdmin = user?.user_level === 'manager' || user?.user_level === 'admin';
+      if (isManagerOrAdmin) {
+        let otSeq = response?.ot_seq || response?.id || response?.data?.ot_seq || response?.data?.id;
+        
+        if (!otSeq) {
+          try {
+            const formattedDate = selectedDay.date.includes('T') 
+              ? selectedDay.date.split('T')[0] 
+              : selectedDay.date;
+            
+            for (let retryCount = 0; retryCount < 5 && !otSeq; retryCount++) {
+              if (retryCount > 0) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+              }
+              
+              const overtimeList = await workingApi.getOvertimeList({
+                page: 1,
+                size: 20,
+                user_id: user?.user_id
+              });
+              
+              const pendingOvertimes = overtimeList.items?.filter(
+                (item: any) => item.ot_date === formattedDate && item.ot_status === 'H'
+              ) || [];
+              
+              if (pendingOvertimes.length > 0) {
+                const latestOvertime = pendingOvertimes.reduce((latest: any, current: any) => {
+                  const latestTime = new Date(latest.ot_created_at || 0).getTime();
+                  const currentTime = new Date(current.ot_created_at || 0).getTime();
+                  return currentTime > latestTime ? current : latest;
+                });
+                otSeq = latestOvertime.id;
+                break;
+              }
+            }
+          } catch {
+            // 목록 조회 실패 시 무시
+          }
+        }
+        
+        if (otSeq) {
+          try {
+            await managerOvertimeApi.approveOvertime(otSeq);
+          } catch {
+            // 자동 승인 실패해도 신청은 성공했으므로 계속 진행
+          }
+        }
+      }
+      
+      onSave(formData);
+      onClose();
+      setFormData(initialFormData);
+      setErrors({});
+    } catch (error: any) {
+      const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
+      alert(`추가근무 신청에 실패했습니다.\n오류: ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
     onClose();
-    // 폼 초기화
-    setFormData({
-      overtimeHours: "",
-      overtimeMinutes: "",
-      overtimeReason: "",
-      clientName: "",
-      workDescription: "",
-      overtimeType: "",
-      expectedEndTime: "",
-      expectedEndMinute: "",
-      mealAllowance: "",
-      transportationAllowance: ""
-    });
-    setErrors({}); // 에러 상태도 초기화
-    setHasUserInteracted(false); // 사용자 상호작용 상태도 초기화
+    setFormData(initialFormData);
+    setErrors({});
   };
 
-  // 주말 여부 확인 함수
-  const isWeekend = (dayOfWeek: string) => {
-    return dayOfWeek === '토' || dayOfWeek === '일';
-  };
-
-  // 주말 또는 공휴일 여부 확인 함수 (폼 표시 제어용)
   const isWeekendOrHoliday = (dayOfWeek: string, workType: string) => {
     return dayOfWeek === '토' || dayOfWeek === '일' || workType === '공휴일';
   };
 
-  // 토요일 여부 확인 함수
-  const isSaturday = (dayOfWeek: string) => {
-    return dayOfWeek === '토';
-  };
-
-  // 일요일 또는 공휴일 여부 확인 함수
+  const isSaturday = (dayOfWeek: string) => dayOfWeek === '토';
   const isSundayOrHoliday = (dayOfWeek: string, workType: string) => {
     return dayOfWeek === '일' || workType === '공휴일';
   };
 
-  // 다이얼로그가 열릴 때 상태 초기화 또는 기존 데이터 로드
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
-      // 기존 추가근무 데이터가 있는 경우 (승인대기, 승인완료 등)
       if (selectedDay?.overtimeData) {
         setFormData({
           overtimeHours: selectedDay.overtimeData.overtimeHours || "",
@@ -189,28 +198,17 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
           clientName: selectedDay.overtimeData.clientName || "",
           workDescription: selectedDay.overtimeData.workDescription || "",
           overtimeType: selectedDay.overtimeData.overtimeType || "",
+          expectedStartTime: selectedDay.overtimeData.expectedStartTime || "",
+          expectedStartTimeMinute: selectedDay.overtimeData.expectedStartTimeMinute || "",
           expectedEndTime: selectedDay.overtimeData.expectedEndTime || "",
           expectedEndMinute: selectedDay.overtimeData.expectedEndMinute || "",
           mealAllowance: selectedDay.overtimeData.mealAllowance || "",
           transportationAllowance: selectedDay.overtimeData.transportationAllowance || ""
         });
       } else {
-        // 새로운 신청인 경우 초기화
-        setFormData({
-          overtimeHours: "",
-          overtimeMinutes: "",
-          overtimeReason: "",
-          clientName: "",
-          workDescription: "",
-          overtimeType: "",
-          expectedEndTime: "",
-          expectedEndMinute: "",
-          mealAllowance: "",
-          transportationAllowance: ""
-        });
+        setFormData(initialFormData);
       }
-      setHasUserInteracted(false); // 사용자 상호작용 상태 초기화
-      setErrors({}); // 에러 상태 초기화
+      setErrors({});
     }
   }, [isOpen, selectedDay]);
 
@@ -220,11 +218,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
         <DialogHeader>
           <DialogTitle>추가근무 신청</DialogTitle>
           <DialogDescription>
-            {selectedDay && (
-              <>
-                {dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} {selectedDay.dayOfWeek}요일의 추가근무를 신청합니다.
-              </>
-            )}
+            {selectedDay && `${dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} ${selectedDay.dayOfWeek}요일의 추가근무를 신청합니다.`}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -236,7 +230,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                 <div className="flex gap-2">
                   <Select
                     key="expected-end-time"
-                    value={formData.expectedEndTime || undefined}
+                    value={formData.expectedEndTime ? formData.expectedEndTime : undefined}
                     onValueChange={(value) => handleInputChange('expectedEndTime', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndTime ? 'border-red-500' : ''}`}>
@@ -260,7 +254,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                   </Select>
                   <Select
                     key="expected-end-minute"
-                    value={formData.expectedEndMinute || undefined}
+                    value={formData.expectedEndMinute ? formData.expectedEndMinute : undefined}
                     onValueChange={(value) => handleInputChange('expectedEndMinute', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndMinute ? 'border-red-500' : ''}`}>
@@ -349,49 +343,128 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
           {selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
             <>
               <div className="space-y-3">
-                <Label htmlFor="overtime-hours">예상 근무 시간을 선택해주세요.</Label>
-                
+                <Label htmlFor="expected-start-time">예상 출근 시간을 선택해주세요.</Label>
                 <div className="flex gap-2">
                   <Select
-                  key="overtime-hours"
-                  value={formData.overtimeHours || undefined}
-                  onValueChange={(value) => handleInputChange('overtimeHours', value)}
-                >
-                    <SelectTrigger className={`w-full ${errors.overtimeHours ? 'border-red-500' : ''}`}>
+                    key="expected-start-time"
+                    value={formData.expectedStartTime ? formData.expectedStartTime : undefined}
+                    onValueChange={(value) => handleInputChange('expectedStartTime', value)}
+                  >
+                    <SelectTrigger className={`flex-1 ${errors.expectedStartTime ? 'border-red-500' : ''}`}>
                       <SelectValue placeholder="시간을 선택하세요" />
                     </SelectTrigger>
                     <SelectContent className="z-[200]">
-                      <SelectItem value="0">0시간</SelectItem>
-                      <SelectItem value="1">1시간</SelectItem>
-                      <SelectItem value="2">2시간</SelectItem>
-                      <SelectItem value="3">3시간</SelectItem>
-                      <SelectItem value="4">4시간</SelectItem>
-                      <SelectItem value="5">5시간</SelectItem>
-                      <SelectItem value="6">6시간</SelectItem>
-                      <SelectItem value="7">7시간</SelectItem>
-                      <SelectItem value="8">8시간</SelectItem>
-                      <SelectItem value="9">9시간</SelectItem>
-                      <SelectItem value="10">10시간</SelectItem>
-                      <SelectItem value="11">11시간</SelectItem>
-                      <SelectItem value="12">12시간</SelectItem>
+                      <SelectItem value="6">06시</SelectItem>
+                      <SelectItem value="7">07시</SelectItem>
+                      <SelectItem value="8">08시</SelectItem>
+                      <SelectItem value="9">09시</SelectItem>
+                      <SelectItem value="10">10시</SelectItem>
+                      <SelectItem value="11">11시</SelectItem>
+                      <SelectItem value="12">12시</SelectItem>
+                      <SelectItem value="13">13시</SelectItem>
+                      <SelectItem value="14">14시</SelectItem>
+                      <SelectItem value="15">15시</SelectItem>
+                      <SelectItem value="16">16시</SelectItem>
+                      <SelectItem value="17">17시</SelectItem>
+                      <SelectItem value="18">18시</SelectItem>
+                      <SelectItem value="19">19시</SelectItem>
+                      <SelectItem value="20">20시</SelectItem>
+                      <SelectItem value="21">21시</SelectItem>
+                      <SelectItem value="22">22시</SelectItem>
+                      <SelectItem value="23">23시</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select
-                    key="overtime-minutes"
-                    value={formData.overtimeMinutes || undefined}
-                    onValueChange={(value) => handleInputChange('overtimeMinutes', value)}
+                    key="expected-start-minute"
+                    value={formData.expectedStartTimeMinute ? formData.expectedStartTimeMinute : undefined}
+                    onValueChange={(value) => handleInputChange('expectedStartTimeMinute', value)}
                   >
-                    <SelectTrigger className={`w-full ${errors.overtimeHours ? 'border-red-500' : ''}`}>
+                    <SelectTrigger className={`flex-1 ${errors.expectedStartTimeMinute ? 'border-red-500' : ''}`}>
                       <SelectValue placeholder="분을 선택하세요" />
                     </SelectTrigger>
                     <SelectContent className="z-[200]">
                       <SelectItem value="0">0분</SelectItem>
+                      <SelectItem value="5">5분</SelectItem>
+                      <SelectItem value="10">10분</SelectItem>
+                      <SelectItem value="15">15분</SelectItem>
+                      <SelectItem value="20">20분</SelectItem>
+                      <SelectItem value="25">25분</SelectItem>
                       <SelectItem value="30">30분</SelectItem>
+                      <SelectItem value="35">35분</SelectItem>
+                      <SelectItem value="40">40분</SelectItem>
+                      <SelectItem value="45">45분</SelectItem>
+                      <SelectItem value="50">50분</SelectItem>
+                      <SelectItem value="55">55분</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                {errors.overtimeMinutes && (
-                  <p className="text-sm text-red-500">{errors.overtimeHours}</p>
+                {(errors.expectedStartTime || errors.expectedStartTimeMinute) && (
+                  <p className="text-sm text-red-500">
+                    {errors.expectedStartTime || errors.expectedStartTimeMinute}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="expected-end-time">예상 퇴근 시간을 선택해주세요.</Label>
+                <div className="flex gap-2">
+                  <Select
+                    key="expected-end-time"
+                    value={formData.expectedEndTime ? formData.expectedEndTime : undefined}
+                    onValueChange={(value) => handleInputChange('expectedEndTime', value)}
+                  >
+                    <SelectTrigger className={`flex-1 ${errors.expectedEndTime ? 'border-red-500' : ''}`}>
+                      <SelectValue placeholder="시간을 선택하세요" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[200]">
+                      <SelectItem value="12">12시</SelectItem>
+                      <SelectItem value="13">13시</SelectItem>
+                      <SelectItem value="14">14시</SelectItem>
+                      <SelectItem value="15">15시</SelectItem>
+                      <SelectItem value="16">16시</SelectItem>
+                      <SelectItem value="17">17시</SelectItem>
+                      <SelectItem value="18">18시</SelectItem>
+                      <SelectItem value="19">19시</SelectItem>
+                      <SelectItem value="20">20시</SelectItem>
+                      <SelectItem value="21">21시</SelectItem>
+                      <SelectItem value="22">22시</SelectItem>
+                      <SelectItem value="23">23시</SelectItem>
+                      <SelectItem value="24">24시</SelectItem>
+                      <SelectItem value="25">1시</SelectItem>
+                      <SelectItem value="26">2시</SelectItem>
+                      <SelectItem value="27">3시</SelectItem>
+                      <SelectItem value="28">4시</SelectItem>
+                      <SelectItem value="29">5시</SelectItem>
+                      <SelectItem value="30">6시</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    key="expected-end-minute"
+                    value={formData.expectedEndMinute ? formData.expectedEndMinute : undefined}
+                    onValueChange={(value) => handleInputChange('expectedEndMinute', value)}
+                  >
+                    <SelectTrigger className={`flex-1 ${errors.expectedEndMinute ? 'border-red-500' : ''}`}>
+                      <SelectValue placeholder="분을 선택하세요" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[200]">
+                      <SelectItem value="0">0분</SelectItem>
+                      <SelectItem value="5">5분</SelectItem>
+                      <SelectItem value="10">10분</SelectItem>
+                      <SelectItem value="15">15분</SelectItem>
+                      <SelectItem value="20">20분</SelectItem>
+                      <SelectItem value="25">25분</SelectItem>
+                      <SelectItem value="30">30분</SelectItem>
+                      <SelectItem value="35">35분</SelectItem>
+                      <SelectItem value="40">40분</SelectItem>
+                      <SelectItem value="45">45분</SelectItem>
+                      <SelectItem value="50">50분</SelectItem>
+                      <SelectItem value="55">55분</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(errors.expectedEndTime || errors.expectedEndMinute) && (
+                  <p className="text-sm text-red-500">
+                    {errors.expectedEndTime || errors.expectedEndMinute}
+                  </p>
                 )}
               </div>
 
@@ -441,16 +514,26 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
           )}
 
           <div className="space-y-3">
-            <Label htmlFor="client-name">클라이언트명을 입력해주세요.</Label>
-            <Textbox
-              id="client-name"
-              placeholder="클라이언트명을 입력하세요"
+            <Label htmlFor="client-name">클라이언트명을 선택해주세요.</Label>
+            <Select
+              key="client-name"
               value={formData.clientName}
-              onChange={(e) => handleInputChange('clientName', e.target.value)}
-              className="w-full"
-              maxLength={45}
-              errorMessage={errors.clientName}
-            />
+              onValueChange={(value) => handleInputChange('clientName', value)}
+            >
+              <SelectTrigger className={`w-full ${errors.clientName ? 'border-red-500' : ''}`}>
+                <SelectValue placeholder="클라이언트명을 선택하세요" />
+              </SelectTrigger>
+              <SelectContent className="z-[200]">
+                {clientList.map((client) => (
+                  <SelectItem key={client.cl_seq} value={client.cl_name}>
+                    {client.cl_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.clientName && (
+              <p className="text-sm text-red-500">{errors.clientName}</p>
+            )}
           </div>
           
           <div className="space-y-3">
@@ -474,8 +557,10 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
             </>
           ) : (
             <>
-              <Button onClick={handleSave}>신청하기</Button>
-              <Button variant="outline" onClick={handleClose}>닫기</Button>
+              <Button onClick={handleSave} disabled={isSubmitting}>
+                {isSubmitting ? '처리 중' : '신청하기'}
+              </Button>
+              <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>닫기</Button>
             </>
           )}
         </DialogFooter>

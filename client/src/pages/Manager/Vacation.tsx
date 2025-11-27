@@ -43,6 +43,7 @@ export default function ManagerVacation() {
         onFilterChange={handleFilterChange}
         checkedItems={checkedItems}
         onApproveAll={handleApproveAll}
+        page="manager"
       />
       
       <VacationList
@@ -50,6 +51,7 @@ export default function ManagerVacation() {
         activeTab={activeTab}
         filters={filters}
         onCheckedItemsChange={setCheckedItems}
+        isPage="manager"
       />
     </div>
   );

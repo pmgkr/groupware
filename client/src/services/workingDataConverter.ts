@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import type { WorkData } from '@/types/working';
-import { isHolidayCached } from '@/services/holidayApi';
+import { isHolidayCached, getHolidayNameCached } from '@/services/holidayApi';
 
 /**
  * ot_status를 overtimeStatus로 변환
@@ -9,22 +9,35 @@ const getOvertimeStatus = (status: string): WorkData['overtimeStatus'] => {
   switch (status) {
     case 'H': return '승인대기';
     case 'T': return '승인완료';
-    case 'N': return '반려됨';
+    case 'N': return '취소완료';
     default: return '신청하기';
   }
 };
 
 /**
- * ISO 시간 문자열에서 시간/분 추출
+ * 시간 문자열에서 시간/분 추출 (ISO 형식 또는 HH:mm:ss 형식)
  */
-const extractTimeFromISO = (isoString: string): { hour: string; minute: string } => {
-  const match = isoString.match(/T(\d{2}):(\d{2})/);
-  if (match) {
+const extractTimeFromISO = (timeString: string): { hour: string; minute: string } => {
+  if (!timeString) return { hour: '', minute: '' };
+  
+  // ISO 형식 (예: "2024-01-01T09:00:00" 또는 "2024-01-01T09:00:00Z")
+  const isoMatch = timeString.match(/T(\d{2}):(\d{2})/);
+  if (isoMatch) {
     return {
-      hour: String(parseInt(match[1])),
-      minute: String(parseInt(match[2]))
+      hour: String(parseInt(isoMatch[1])),
+      minute: String(parseInt(isoMatch[2]))
     };
   }
+  
+  // HH:mm:ss 형식 (예: "09:00:00")
+  const timeMatch = timeString.match(/^(\d{2}):(\d{2})/);
+  if (timeMatch) {
+    return {
+      hour: String(parseInt(timeMatch[1])),
+      minute: String(parseInt(timeMatch[2]))
+    };
+  }
+  
   return { hour: '', minute: '' };
 };
 
@@ -87,7 +100,8 @@ const formatTime = (time: string | null): string => {
  * 초과근무 신청 데이터 추출
  */
 const extractOvertimeData = (overtime: any) => {
-  const time = overtime.ot_etime ? extractTimeFromISO(overtime.ot_etime.toString()) : { hour: '', minute: '' };
+  const endTime = overtime.ot_etime ? extractTimeFromISO(overtime.ot_etime.toString()) : { hour: '', minute: '' };
+  const startTime = overtime.ot_stime ? extractTimeFromISO(overtime.ot_stime.toString()) : { hour: '', minute: '' };
   
   // ot_hours가 소수점 형태(예: "2.5")인 경우 시간과 분으로 분리
   let overtimeHours = '';
@@ -101,8 +115,10 @@ const extractOvertimeData = (overtime: any) => {
   }
   
   return {
-    expectedEndTime: time.hour,
-    expectedEndMinute: time.minute,
+    expectedStartTime: startTime.hour,
+    expectedStartTimeMinute: startTime.minute,
+    expectedEndTime: endTime.hour,
+    expectedEndMinute: endTime.minute,
     mealAllowance: overtime.ot_food === 'Y' ? 'yes' : overtime.ot_food === 'N' ? 'no' : '',
     transportationAllowance: overtime.ot_trans === 'Y' ? 'yes' : overtime.ot_trans === 'N' ? 'no' : '',
     overtimeHours: overtimeHours,
@@ -222,8 +238,9 @@ export const convertApiDataToWorkData = async (
     const dateString = dayjs(currentDate).format('YYYY-MM-DD');
     const dayOfWeek = daysOfWeek[i];
     
-    // 공휴일 여부 확인
+    // 공휴일 여부 확인 및 공휴일 이름 가져오기
     const isHoliday = await isHolidayCached(currentDate);
+    const holidayName = isHoliday ? await getHolidayNameCached(currentDate) : null;
     
     // 해당 날짜의 데이터 찾기
     const wlog = wlogs.find((log: any) => log.tdate === dateString);
@@ -268,11 +285,10 @@ export const convertApiDataToWorkData = async (
       return kind && kind !== '-';
     });
     
-    // 다른 이벤트가 없을 때만 일반근무 또는 공휴일 추가
+    // 다른 이벤트가 없을 때만 일반근무 추가 (공휴일은 별도 배지로 표시)
     if (!hasRealEvent && hasWlog) {
-      const baseWorkType = isHoliday ? '공휴일' : '일반근무';
       const wlogCreatedAt = wlog?.wlog_created_at || new Date().toISOString();
-      workTypesArray.push({ type: baseWorkType, createdAt: wlogCreatedAt });
+      workTypesArray.push({ type: '일반근무', createdAt: wlogCreatedAt });
     }
     
     // wlog도 없고 vacation도 없는 경우 "-" 추가
@@ -290,15 +306,13 @@ export const convertApiDataToWorkData = async (
     // 우선순위 vacation 선택 (기존 로직 유지)
     const vacation = selectPriorityVacation(vacationsForDate);
     
-    // 근무 구분 결정 (기존 로직 유지, 호환성 위해)
+    // 근무 구분 결정 (공휴일은 별도 배지로 표시하므로 workType에는 '일반근무'로 설정)
     let workType: WorkData['workType'];
     if (vacation) {
       workType = getWorkTypeFromVacation(vacation, hasWlog);
     } else {
-      if (hasWlog && isHoliday) {
-        workType = '공휴일';
-      } else if (hasWlog) {
-        workType = '일반근무';
+      if (hasWlog) {
+        workType = '일반근무'; // 공휴일이어도 workType은 일반근무로 설정
       } else {
         workType = '-';
       }
@@ -325,6 +339,7 @@ export const convertApiDataToWorkData = async (
         overtimeData,
         overtimeId: overtime?.id,
         isHoliday,
+        holidayName,
       });
     } else if (wlog && wlog.stime && !wlog.etime) {
       // 출근만 하고 퇴근 안한 경우
@@ -345,6 +360,7 @@ export const convertApiDataToWorkData = async (
         overtimeData,
         overtimeId: overtime?.id,
         isHoliday,
+        holidayName,
       });
     } else {
       // wlog 데이터가 없는 경우
@@ -365,6 +381,7 @@ export const convertApiDataToWorkData = async (
         overtimeData,
         overtimeId: overtime?.id,
         isHoliday,
+        holidayName,
       });
     }
   }

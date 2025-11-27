@@ -6,18 +6,22 @@ import Overview from "@components/working/Overview";
 import { workingApi } from "@/api/working";
 import { useAuth } from "@/contexts/AuthContext";
 import type { WorkData } from "@/types/working";
-import { getWeekStartDate, getWeekEndDate } from "@/utils/dateHelper";
-import { calculateWeeklyStats } from "@/utils/workingStatsHelper";
+import { getWeekStartDate, getWeekEndDate, getWeekNumber } from "@/utils/dateHelper";
 import { convertApiDataToWorkData } from "@/services/workingDataConverter";
+import { formatMinutes } from "@/utils/date";
 
 
 export default function WorkHoursTable() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [data, setData] = useState<WorkData[]>([]);
+  const [weeklyTotalMinutes, setWeeklyTotalMinutes] = useState<number>(0);
   
   // 현재 주의 시작일 계산
   const weekStartDate = useMemo(() => getWeekStartDate(currentDate), [currentDate]);
+  
+  // 주차와 연도 계산
+  const { week, year } = useMemo(() => getWeekNumber(weekStartDate), [weekStartDate]);
 
   // API에서 근태 로그 데이터 가져오기
   const loadWorkLogs = async () => {
@@ -29,15 +33,12 @@ export default function WorkHoursTable() {
       const startDate = weekStartDate;
       const endDate = getWeekEndDate(weekStartDate);
       
-      const sdate = dayjs(startDate).format('YYYY-MM-DD');
-      const edate = dayjs(endDate).format('YYYY-MM-DD');
-      
       // 근태 로그, 초과근무, 스케줄(이벤트) 병렬로 가져오기
-      const [workLogResponse, overtimeResponse, scheduleEvents] = await Promise.all([
-        workingApi.getWorkLogs({
-          search_id: user.user_id,
-          sdate,
-          edate,
+      // WlogWeek API 사용
+      const [wlogWeekResponse, overtimeResponse, scheduleEvents] = await Promise.all([
+        workingApi.getWlogWeek({
+          weekno: week,
+          yearno: year,
         }),
         workingApi.getOvertimeList({
           page: 1,
@@ -49,8 +50,6 @@ export default function WorkHoursTable() {
             const { scheduleApi } = await import('@/api/calendar');
             const year = startDate.getFullYear();
             const month = startDate.getMonth() + 1;
-            // 승인완료(Y)와 승인대기(H) 모두 가져오기 위해 sch_status 파라미터 제거
-            // (API가 배열을 받지 않을 수 있으므로 클라이언트에서 필터링)
             const response = await scheduleApi.getSchedules({ 
               year, 
               month, 
@@ -113,14 +112,15 @@ export default function WorkHoursTable() {
         })()
       ]);
       
-      // schedule API에서 모든 일정(휴가 + 이벤트)을 가져오므로 workLogResponse.vacation은 제외
-      // (중복 방지를 위해 schedule API 데이터만 사용)
-      const combinedVacations = scheduleEvents;
+      // wlog 배열에서 wmin 합계 계산 (주간누적)
+      const totalWmin = (wlogWeekResponse.wlog || []).reduce((sum, wlog) => sum + (wlog.wmin || 0), 0);
+      setWeeklyTotalMinutes(totalWmin);
       
+      // schedule API에서 모든 일정(휴가 + 이벤트)을 가져오므로 wlogWeekResponse.vacation과 병합
       // API 데이터를 WorkData 형식으로 변환
       const apiData = await convertApiDataToWorkData(
-        workLogResponse.wlog || [], 
-        combinedVacations,
+        wlogWeekResponse.wlog || [], 
+        [...(wlogWeekResponse.vacation || []), ...scheduleEvents],
         overtimeResponse.items || [],
         weekStartDate,
         user.user_id
@@ -129,6 +129,7 @@ export default function WorkHoursTable() {
     } catch (error) {
       console.error('근태 로그 로드 실패:', error);
       setData([]);
+      setWeeklyTotalMinutes(0);
     }
   };
   
@@ -137,10 +138,25 @@ export default function WorkHoursTable() {
     if (user?.user_id) {
       loadWorkLogs();
     }
-  }, [currentDate, weekStartDate, user?.user_id]);
+  }, [currentDate, weekStartDate, user?.user_id, week, year]);
 
-  // 주간 근무시간 통계 계산
-  const weeklyStats = useMemo(() => calculateWeeklyStats(data), [data]);
+  // 주간 근무시간 통계 계산 (wmin 합계 사용)
+  const weeklyStats = useMemo(() => {
+    const { hours, minutes } = formatMinutes(weeklyTotalMinutes);
+    const remainingMinutes = Math.max(0, (52 * 60) - weeklyTotalMinutes);
+    const { hours: remainingHours, minutes: remainingMins } = formatMinutes(remainingMinutes);
+    
+    return {
+      workHours: hours,
+      workMinutes: minutes,
+      remainingHours,
+      remainingMinutes: remainingMins,
+      basicWorkHours: 0, // WlogWeek API에는 기본/연장 구분이 없으므로 0
+      basicWorkMinutes: 0,
+      overtimeWorkHours: 0,
+      overtimeWorkMinutes: 0,
+    };
+  }, [weeklyTotalMinutes]);
 
   return (
     <div>

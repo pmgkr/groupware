@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { Button } from '@components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -8,16 +8,28 @@ import OvertimeViewDialog from '@/components/working/OvertimeViewDialog';
 import WorkTimeEditDialog from '@/components/working/WorkTimeEditDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { workingApi } from '@/api/working';
+import { managerOvertimeApi } from '@/api/manager/overtime';
+import { managerWorkingApi } from '@/api/manager/working';
 import { Settings } from 'lucide-react';
+import { getHolidayNameCached } from '@/services/holidayApi';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
+import { getWorkTypeColor } from '@/utils/workTypeHelper';
 
 export interface DayWorkInfo {
   workType: string;
+  workTypes?: Array<{
+    type: string;
+    createdAt: string;
+  }>; // 여러 workType이 있을 경우 배열로 저장 (+뱃지 표시용)
   startTime?: string;
   endTime?: string;
   totalTime: string;
   hasOvertime?: boolean;
   overtimeId?: string;
   overtimeStatus?: string;
+  holidayName?: string | null; // 공휴일 이름
 }
 
 export interface WorkingListItem {
@@ -82,6 +94,37 @@ export default function WorkingList({
     return dayjs(weekStartDate).add(dayIndex, 'day').format('MM/DD');
   };
 
+  // 각 요일의 공휴일 이름 가져오기
+  const [holidayNames, setHolidayNames] = useState<(string | null)[]>([]);
+
+  useEffect(() => {
+    const loadHolidayNames = async () => {
+      if (!weekStartDate) return;
+      
+      const names = await Promise.all(
+        Array.from({ length: 7 }, async (_, index) => {
+          const date = dayjs(weekStartDate).add(index, 'day').toDate();
+          return await getHolidayNameCached(date);
+        })
+      );
+      
+      setHolidayNames(names);
+    };
+
+    loadHolidayNames();
+  }, [weekStartDate]);
+
+  // 날짜와 공휴일 이름을 함께 표시하는 함수
+  const getDayDateWithHoliday = (dayIndex: number) => {
+    const dateStr = getDayDate(dayIndex);
+    const holidayName = holidayNames[dayIndex];
+    
+    if (holidayName) {
+      return `${dateStr} ${holidayName}`;
+    }
+    return dateStr;
+  };
+
   // 전체 선택
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
@@ -110,12 +153,12 @@ export default function WorkingList({
     setSelectedOvertime({ userId, dayKey, overtimeId });
     setIsOvertimeDialogOpen(true);
     
-    // 초과근무 상세 정보 조회
+    // 추가근무 상세 정보 조회
     try {
-      const detail = await workingApi.getManagerOvertimeDetail(parseInt(overtimeId));
+      const detail = await managerOvertimeApi.getManagerOvertimeDetail(parseInt(overtimeId));
       setOvertimeDetailData(detail);
     } catch (error) {
-      console.error('초과근무 상세 조회 실패:', error);
+      console.error('추가근무 상세 조회 실패:', error);
     }
   };
 
@@ -131,7 +174,7 @@ export default function WorkingList({
     if (!selectedOvertime?.overtimeId) return;
     
     try {
-      await workingApi.approveOvertime(parseInt(selectedOvertime.overtimeId));
+      await managerOvertimeApi.approveOvertime(parseInt(selectedOvertime.overtimeId));
       // 데이터 새로고침을 위해 부모 컴포넌트에 알림 (나중에 구현)
       window.location.reload(); // 임시로 새로고침
     } catch (error) {
@@ -145,7 +188,7 @@ export default function WorkingList({
     if (!selectedOvertime?.overtimeId) return;
     
     try {
-      await workingApi.rejectOvertime(parseInt(selectedOvertime.overtimeId), reason);
+      await managerOvertimeApi.rejectOvertime(parseInt(selectedOvertime.overtimeId), reason);
       // 데이터 새로고침을 위해 부모 컴포넌트에 알림 (나중에 구현)
       window.location.reload(); // 임시로 새로고침
     } catch (error) {
@@ -189,7 +232,7 @@ export default function WorkingList({
         endpoint: '/manager/wlog/update'
       });
       
-      await workingApi.updateWorkTime(
+      await managerWorkingApi.updateWorkTime(
         selectedWorkTime.userId,
         selectedWorkTime.date,
         startTime,
@@ -219,30 +262,13 @@ export default function WorkingList({
     return hours + minutes / 60;
   };
 
-  // 근무 타입 색상 함수
-  const getWorkTypeColor = (workType: string) => {
-    switch (workType) {
-      case "-": return "bg-gray-50 text-gray-400";
-      case "일반근무": return "bg-gray-300 text-gray-900";
-      case "연차": return "bg-primary-blue-150 text-primary-blue";
-      case "오전반차": return "bg-primary-purple-100 text-primary-pink-500";
-      case "오전반반차": return "bg-primary-purple-100 text-primary-purple-500";
-      case "오후반차": return "bg-primary-purple-100 text-primary-pink-500";
-      case "오후반반차": return "bg-primary-purple-100 text-primary-purple-500";
-      case "외부근무": return "bg-primary-yellow-150 text-primary-orange-600";
-      case "재택근무": return "bg-gray-300 text-gray-900";
-      case "공가": return "bg-red-100 text-red-600";
-      case "공휴일": return "bg-red-200 text-red-700";
-      default: return "bg-primary-gray-100 text-primary-gray";
-    }
-  };
 
   // 추가근무 도트 색상 함수
   const getOvertimeDotColor = (overtimeStatus?: string) => {
     switch (overtimeStatus) {
       case '승인대기': return { bg: 'bg-orange-500', ping: 'bg-orange-400' };
       case '승인완료': return { bg: 'bg-green-500', ping: 'bg-green-400' };
-      case '반려됨': return { bg: 'bg-gray-400', ping: 'bg-gray-300' };
+      case '취소완료': return { bg: 'bg-gray-400', ping: 'bg-gray-300' };
       default: return { bg: 'bg-orange-500', ping: 'bg-orange-400' };
     }
   };
@@ -255,7 +281,7 @@ export default function WorkingList({
 
     // 근무 타입이 없을 때
     if (dayInfo.workType === '-') {
-      // 추가근무가 있으면 표시
+      // 추가근무가 있으면 표시 (승인대기 상태일 때만 도트 표시)
       if (dayInfo.hasOvertime) {
         return (
           <div className="flex flex-col gap-1">
@@ -266,15 +292,15 @@ export default function WorkingList({
             >
               - {/* 첫 번째 "-" 텍스트 */}
               
-              {/* 추가근무 알림 도트 */}
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                {/* 애니메이션 */}
-                {isPending && (
+              {/* 추가근무 알림 도트 - 승인대기 상태일 때만 표시 */}
+              {isPending && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  {/* 애니메이션 */}
                   <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor.ping} opacity-75`}></span>
-                )}
-                {/* 도트 */}
-                <span className={`relative inline-flex rounded-full h-3 w-3 ${dotColor.bg} border border-white`}></span>
-              </span>
+                  {/* 도트 */}
+                  <span className={`relative inline-flex rounded-full h-3 w-3 ${dotColor.bg} border border-white`}></span>
+                </span>
+              )}
             </span>              
             <span className="text-gray-400 h-[20px]">-</span>
             <span className="text-gray-400 h-[16px]">-</span>
@@ -313,22 +339,52 @@ export default function WorkingList({
       );
     }
 
+    // workTypes 배열이 있고 여러 개인 경우
+    const hasMultipleWorkTypes = dayInfo.workTypes && dayInfo.workTypes.length > 1;
+    const latestWorkType = hasMultipleWorkTypes ? dayInfo.workTypes![0] : null;
+    const otherWorkTypes = hasMultipleWorkTypes ? dayInfo.workTypes!.slice(1) : [];
+    
+    // 표시할 workType 결정
+    const displayWorkType = hasMultipleWorkTypes ? latestWorkType!.type : dayInfo.workType;
+
     return (
       <div className="flex flex-col gap-1">
-        <span 
-          className={`inline-flex self-center px-2 py-0.5 text-xs font-semibold rounded-full relative ${getWorkTypeColor(dayInfo.workType)} ${dayInfo.hasOvertime ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
-          onClick={() => dayInfo.hasOvertime && dayInfo.overtimeId && handleOvertimeClick(userId, dayKey, dayInfo.overtimeId)}
-        >
-          {dayInfo.workType}
-          {dayInfo.hasOvertime && (
-            <span className="absolute -top-1 -right-1 flex h-3 w-3">
-              {isPending && (
+        <div className="inline-flex items-center gap-1 flex-wrap justify-center">
+          <span 
+            className={`inline-flex self-center px-2 py-0.5 text-xs font-semibold rounded-full relative ${getWorkTypeColor(displayWorkType)} ${dayInfo.hasOvertime ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+            onClick={() => dayInfo.hasOvertime && dayInfo.overtimeId && handleOvertimeClick(userId, dayKey, dayInfo.overtimeId)}
+          >
+            {displayWorkType}
+            {/* 추가근무 알림 도트 - 승인대기 상태일 때만 표시 */}
+            {isPending && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
                 <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor.ping} opacity-75`}></span>
-              )}
-              <span className={`relative inline-flex rounded-full h-3 w-3 ${dotColor.bg} border border-white`}></span>
-            </span>
+                <span className={`relative inline-flex rounded-full h-3 w-3 ${dotColor.bg} border border-white`}></span>
+              </span>
+            )}
+          </span>
+          {/* 이벤트가 여러개일 때 이벤트 목록 툴팁 노출 */}
+          {hasMultipleWorkTypes && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="grayish" className="px-1 py-0 text-xs cursor-pointer">
+                    +{otherWorkTypes.length}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="flex flex-col gap-1">
+                    {dayInfo.workTypes!.map((wt, idx) => (
+                      <div key={idx} className="text-sm">                                 
+                        {wt.type}
+                      </div>
+                    ))}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
-        </span>
+        </div>
         <span className="text-sm font-medium">{dayInfo.totalTime}</span>
         {isManager ? (
           <div className="flex items-center justify-center gap-1">
@@ -380,37 +436,44 @@ export default function WorkingList({
             <TableHead className="w-[15%]">주간 누적시간</TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(0)}(월)</span>
+                <span className={`text-sm ${holidayNames[0] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(0)}(월)</span>
+                {holidayNames[0] && <span className="text-xs text-red-600">{holidayNames[0]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(1)}(화)</span>
+                <span className={`text-sm ${holidayNames[1] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(1)}(화)</span>
+                {holidayNames[1] && <span className="text-xs text-red-600">{holidayNames[1]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(2)}(수)</span>
+                <span className={`text-sm ${holidayNames[2] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(2)}(수)</span>
+                {holidayNames[2] && <span className="text-xs text-red-600">{holidayNames[2]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(3)}(목)</span>
+                <span className={`text-sm ${holidayNames[3] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(3)}(목)</span>
+                {holidayNames[3] && <span className="text-xs text-red-600">{holidayNames[3]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(4)}(금)</span>
+                <span className={`text-sm ${holidayNames[4] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(4)}(금)</span>
+                {holidayNames[4] && <span className="text-xs text-red-600">{holidayNames[4]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(5)}(토)</span>
+                <span className={`text-sm ${holidayNames[5] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(5)}(토)</span>
+                {holidayNames[5] && <span className="text-xs text-red-600">{holidayNames[5]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-800">{getDayDate(6)}(일)</span>
+                <span className={`text-sm ${holidayNames[6] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(6)}(일)</span>
+                {holidayNames[6] && <span className="text-xs text-red-600">{holidayNames[6]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">자세히 보기</TableHead>
@@ -488,21 +551,33 @@ export default function WorkingList({
           
           const info = overtimeDetailData.info;
           
-          // ot_etime에서 시/분 추출 (타임존 변환 없이)
-          let expectedHour = "";
-          let expectedMinute = "";
+          // ot_stime에서 시/분 추출 (출근 시간)
+          let expectedStartHour = "";
+          let expectedStartMinute = "";
+          if (info.ot_stime) {
+            const timeStr = info.ot_stime.includes('T') ? info.ot_stime.split('T')[1] : info.ot_stime;
+            const timeParts = timeStr.split(':');
+            expectedStartHour = timeParts[0];
+            expectedStartMinute = timeParts[1];
+          }
+          
+          // ot_etime에서 시/분 추출 (퇴근 시간)
+          let expectedEndHour = "";
+          let expectedEndMinute = "";
           if (info.ot_etime) {
             const timeStr = info.ot_etime.includes('T') ? info.ot_etime.split('T')[1] : info.ot_etime;
             const timeParts = timeStr.split(':');
-            expectedHour = timeParts[0];
-            expectedMinute = timeParts[1];
+            expectedEndHour = timeParts[0];
+            expectedEndMinute = timeParts[1];
           }
           
           const hours = info.ot_hours ? parseFloat(info.ot_hours) : 0;
           
           return {
-            expectedEndTime: expectedHour,
-            expectedEndMinute: expectedMinute,
+            expectedStartTime: expectedStartHour,
+            expectedStartTimeMinute: expectedStartMinute,
+            expectedEndTime: expectedEndHour,
+            expectedEndMinute: expectedEndMinute,
             mealAllowance: info.ot_food === 'Y' ? 'yes' : 'no',
             transportationAllowance: info.ot_trans === 'Y' ? 'yes' : 'no',
             overtimeHours: String(Math.floor(hours)),
@@ -518,7 +593,7 @@ export default function WorkingList({
         const mapStatus = (status: string) => {
           if (status === 'H') return '승인대기';
           if (status === 'T') return '승인완료';
-          if (status === 'N') return '반려됨';
+          if (status === 'N') return '취소완료';
           return '신청하기';
         };
         
@@ -549,7 +624,7 @@ export default function WorkingList({
               totalHours: 0,
               totalMinutes: 0,
               overtimeStatus: overtimeDetailData?.info ? mapStatus(overtimeDetailData.info.ot_status) : 
-                            (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "반려됨",
+                            (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "취소완료",
               overtimeData: convertOvertimeData()
             }}
           />

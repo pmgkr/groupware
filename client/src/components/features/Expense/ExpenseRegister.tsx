@@ -28,7 +28,7 @@ import { UserRound, FileText, OctagonAlert } from 'lucide-react';
 
 import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getMyAccounts, type BankAccount } from '@/api/mypage';
+import { getMyAccounts, type BankAccount } from '@/api/mypage/profile';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const expenseSchema = z.object({
@@ -126,8 +126,8 @@ export default function ExpenseRegister() {
   useEffect(() => {
     (async () => {
       try {
-        // 유저레벨이 staff나 user인 경우 nexp_type2 : manager나 admin인 경우 nexp_type1 호출
-        const expenseTypeParam = user_level === 'staff' || user_level === 'user' ? 'nexp_type2' : 'nexp_type1';
+        // 유저레벨이 user인 경우 nexp_type2 : manager나 admin인 경우 nexp_type1 호출
+        const expenseTypeParam = user_level === 'user' ? 'nexp_type2' : 'nexp_type1';
 
         // 페이지 렌더 시 API 병렬 호출
         const [bankResult, expResult] = await Promise.allSettled([getBankList(), getExpenseType(expenseTypeParam)]);

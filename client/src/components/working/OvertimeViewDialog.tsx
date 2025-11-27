@@ -77,8 +77,8 @@ export default function OvertimeViewDialog({
            (user?.team_id === 1 || user?.team_id === 5);
   };
   
-  // 보상 지급 가능 여부 확인 (HR/Finance팀이고 휴일 근무 탭이며 보상요청 상태일 때)
-  const canShowCompensation = isHrOrFinanceTeam() && activeTab === 'weekend' && status === '보상요청';
+  // 보상 지급 가능 여부 확인 (HR/Finance팀이고 휴일 근무 탭이며 보상대기 상태일 때)
+  const canShowCompensation = isHrOrFinanceTeam() && activeTab === 'weekend' && status === '보상대기';
   
   // 신청 취소하기 확인 다이얼로그
   const handleCancelClick = () => {
@@ -228,6 +228,8 @@ export default function OvertimeViewDialog({
   
   // 신청 데이터
   const overtimeData = selectedDay?.overtimeData || {
+    expectedStartTime: "",
+    expectedStartTimeMinute: "",
     expectedEndTime: "",
     expectedEndMinute: "",
     mealAllowance: "",
@@ -314,9 +316,15 @@ export default function OvertimeViewDialog({
           {selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="overtime-hours">추가근무 시간</Label>
-                <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
-                  <span className="text-base">{overtimeData.overtimeHours}시간 {overtimeData.overtimeMinutes}분</span>
+                <Label htmlFor="expected-start-time">예상 업무 시간</Label>
+                <div className="flex-1 flex gap-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
+                  <span className="text-base">
+                    {overtimeData.expectedStartTime}시 {overtimeData.expectedStartTimeMinute}분
+                  </span>
+                  -
+                  <span className="text-base">
+                    {overtimeData.expectedEndTime}시 {overtimeData.expectedEndMinute}분
+                  </span>
                 </div>
               </div>
 
@@ -375,20 +383,13 @@ export default function OvertimeViewDialog({
 
           <div className="space-y-2">
             <Label>신청 상태</Label>
-            <div className={`px-4 py-2 rounded-lg border ${
-              status === "반려됨" 
-                ? "border-red-300 bg-red-50"
-                : "border-gray-300 bg-gray-100"
-            }`}>
+            <div className="px-4 py-2 rounded-lg border border-gray-300 bg-gray-100">
                 <div>
-                  <span className={`text-base font-semibold ${
-                    status === "반려됨" ? "text-red-700" :
-                    "text-gray-800"
-                  }`}>
+                  <span className="text-base font-semibold text-gray-800">
                     {status}
                   </span>
                   {/* 승인완료 시 승인일 표시는 백엔드 데이터 연동 시 추가 예정 */}
-                  {status === "반려됨" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
+                  {status === "취소완료" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
                     <>
                     <p className="text-sm text-gray-800 mt-1">
                         반려일: {dayjs(selectedDay.rejectionDate).format('YYYY년 MM월 DD일')}
@@ -403,7 +404,7 @@ export default function OvertimeViewDialog({
           </div>
 
           {/* 반려 정보 표시 */}
-          {/* {status === "반려됨" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
+          {/* {status === "취소완료" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
             <>
               
               <div className="space-y-2">
@@ -459,7 +460,7 @@ export default function OvertimeViewDialog({
               </>
             )}
 
-            {/* HR/Finance팀 관리자 모드 - 보상요청 상태일 때 보상 지급하기 버튼 */}
+            {/* HR/Finance팀 관리자 모드 - 보상대기 상태일 때 보상 지급하기 버튼 */}
             {canShowCompensation && isManager && !isOwnRequest && (
               <Button variant="default" onClick={handleCompensationClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
                 보상 지급하기
@@ -469,7 +470,7 @@ export default function OvertimeViewDialog({
             {/* 본인 신청이거나 일반 사용자 모드 */}
             {(isOwnRequest || !isManager) && (
               <>
-                {status === "반려됨" && onReapply && (
+                {status === "취소완료" && onReapply && (
                   <Button variant="default" onClick={onReapply} className="mr-0">재신청하기</Button>
                 )}
                 {status === "승인대기" && (

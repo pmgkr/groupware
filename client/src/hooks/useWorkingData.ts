@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
-import { workingApi, type OvertimeListResponse } from '@/api/working';
+import { type OvertimeListResponse } from '@/api/working';
+import { managerOvertimeApi } from '@/api/manager/overtime';
+import { managerWorkingApi } from '@/api/manager/working';
 import { getMemberList } from '@/api/common/team';
 import { useAuth } from '@/contexts/AuthContext';
 import type { WorkData } from '@/types/working';
@@ -50,14 +52,14 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
           index === self.findIndex(m => m.user_id === member.user_id)
         );
 
-        // 2. 초과근무 목록 조회 (team_id로) - 모든 상태 포함 (H: 승인대기, T: 승인완료, N: 반려됨)
+        // 2. 초과근무 목록 조회 (team_id로) - 모든 상태 포함 (H: 승인대기, T: 승인완료, N: 취소완료)
         let allOvertimeResponse: OvertimeListResponse = { items: [], total: 0, page: 1, size: 1000, pages: 0 };
         
         try {
-          const flags = ['H', 'T', 'N']; // 승인대기, 승인완료, 반려됨 모두 조회
+          const flags = ['H', 'T', 'N']; // 승인대기, 승인완료, 취소완료 모두 조회
           const overtimePromises = teamIdsToQuery.flatMap(teamId => 
             flags.map(flag => 
-              workingApi.getManagerOvertimeList({ team_id: teamId, page: 1, size: 1000, flag })
+              managerOvertimeApi.getManagerOvertimeList({ team_id: teamId, page: 1, size: 1000, flag })
                 .catch(() => ({ items: [], total: 0, page: 1, size: 1000, pages: 0 }))
             )
           );
@@ -99,7 +101,7 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
         for (const [teamId, members] of teamGroups) {
           try {
             // 관리자 - 근태 로그 주간 조회 (팀별로 조회)
-            const workLogResponse = await workingApi.getManagerWorkLogsWeek({
+            const workLogResponse = await managerWorkingApi.getManagerWorkLogsWeek({
               team_id: teamId,
               weekno: week,
               yearno: year
@@ -208,14 +210,35 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
             const overtimeId = dayData.overtimeId?.toString();
             const overtimeStatus = dayData.overtimeStatus;
             
-            // 근무 타입이 없으면 데이터 없음
+            // 승인완료된 추가근무는 뱃지만 추가근무로 표시, 시간은 원래 데이터 사용
+            if (dayData.overtimeStatus === '승인완료') {
+              const totalTime = dayData.totalHours === 0 && dayData.totalMinutes === 0
+                ? '진행중'
+                : `${dayData.totalHours}h ${dayData.totalMinutes}m`;
+              
+              return {
+                workType: '추가근무', // 승인완료된 추가근무는 뱃지에 항상 추가근무로 표시
+                workTypes: dayData.workTypes,
+                startTime: dayData.startTime,
+                endTime: dayData.endTime !== '-' ? dayData.endTime : undefined,
+                totalTime,
+                hasOvertime,
+                overtimeId,
+                overtimeStatus,
+                holidayName: dayData.holidayName,
+              };
+            }
+            
+            // 근무 타입이 없으면 데이터 없음 (단, 승인완료된 추가근무가 있으면 위에서 이미 처리됨)
             if (dayData.workType === '-') {
               return { 
                 workType: dayData.workType,
+                workTypes: dayData.workTypes, // 여러 workType이 있을 경우 배열 전달
                 totalTime: '-',
                 hasOvertime,
                 overtimeId,
                 overtimeStatus,
+                holidayName: dayData.holidayName,
               };
             }
             
@@ -223,10 +246,12 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
             if (dayData.startTime === '-') {
               return {
                 workType: dayData.workType,
+                workTypes: dayData.workTypes, // 여러 workType이 있을 경우 배열 전달
                 totalTime: '-',
                 hasOvertime,
                 overtimeId,
                 overtimeStatus,
+                holidayName: dayData.holidayName,
               };
             }
             
@@ -238,12 +263,14 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
             
             return {
               workType: dayData.workType,
+              workTypes: dayData.workTypes, // 여러 workType이 있을 경우 배열 전달
               startTime: dayData.startTime,
               endTime: dayData.endTime !== '-' ? dayData.endTime : undefined,
               totalTime,
               hasOvertime,
               overtimeId,
               overtimeStatus,
+              holidayName: dayData.holidayName,
             };
           };
 

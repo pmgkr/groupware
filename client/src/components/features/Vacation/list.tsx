@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import EventViewDialog from '@/components/calendar/EventViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { scheduleApi, type Schedule } from '@/api/calendar';
+import { managerVacationApi } from '@/api/manager/vacation';
 import { getTeams } from '@/api/teams';
 import { getMemberList } from '@/api/common/team';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -53,13 +54,15 @@ export interface VacationListProps {
   activeTab?: 'vacation' | 'event';
   filters?: VacationFilters;
   onCheckedItemsChange?: (items: number[]) => void;
+  isPage?: 'manager' | 'admin';
 }
 
 export default function VacationList({ 
   teamIds = [],
   activeTab = 'vacation',
   filters = {},
-  onCheckedItemsChange = () => {}
+  onCheckedItemsChange = () => {},
+  isPage = 'manager'
 }: VacationListProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -141,39 +144,20 @@ export default function VacationList({
       const year = filters.year ? parseInt(filters.year) : new Date().getFullYear();
       const currentTab = activeTab; // 클로저 문제 방지를 위해 로컬 변수에 저장
       
-      // 근태 관리와 동일한 로직: teamIds가 있으면 사용, 없으면 user.team_id 사용
-      let teamIdsToQuery: number[] = [];
-      
-      if (teamIds.length > 0) {
-        teamIdsToQuery = teamIds;
-      } else if (user?.user_level === 'manager') {
-        // manager인 경우: /manager/myteam으로 관리하는 모든 팀 조회
-        try {
-          const { workingApi } = await import('@/api/working');
-          const myTeamResponse = await workingApi.getMyTeamList();
-          teamIdsToQuery = (myTeamResponse.items || []).map(team => team.team_id);
-        } catch (error) {
-          // 실패 시 user.team_id 사용
-          if (user?.team_id) {
-            teamIdsToQuery = [user.team_id];
-          }
-        }
-      } else if (user?.team_id) {
-        // 일반 사용자 또는 admin인 경우
-        teamIdsToQuery = [user.team_id];
-      }
-      
       // 요청이 취소되었는지 확인
       if (currentRequestRef.current !== requestId) {
         // 요청이 취소된 경우 아무것도 하지 않음 (새 요청이 이미 시작되었을 수 있음)
         return;
       }
       
-      if (teamIdsToQuery.length === 0) {
+      // teamIds가 없으면 데이터 조회하지 않음 (Toolbar에서 항상 전달해야 함)
+      if (teamIds.length === 0) {
         setAllData([]);
         setLoading(false);
         return;
       }
+      
+      const teamIdsToQuery = teamIds;
       
       // 데이터 조회 시작 전에 기존 데이터 초기화 (팀이 있고 요청이 취소되지 않은 경우에만)
       // 이 시점에서 요청이 취소되지 않았는지 다시 확인
@@ -287,7 +271,7 @@ export default function VacationList({
       setAllData([]);
       setLoading(false);
     }
-  }, [activeTab, filters.year, teamIds, user?.team_id, user?.user_level]);
+  }, [activeTab, filters.year, teamIds]);
 
   // 데이터 조회 (연도 변경 시에만 API 호출)
   useEffect(() => {
@@ -402,11 +386,23 @@ export default function VacationList({
     setPage(1);
   }, [filters]);
 
-  // 전체 선택 (현재 페이지의 반려됨, 승인완료 제외)
+  // 선택 가능한 상태 확인 헬퍼 함수 (isPage prop 기반)
+  const isSelectableStatus = useCallback((status: string) => {
+    if (isPage === 'admin') {
+      // admin 페이지: 보상대기만 선택 가능 (휴가관리에는 보상대기 상태가 없으므로 일단 H만)
+      // TODO: 보상대기 상태가 추가되면 수정 필요
+      return status === 'H';
+    } else {
+      // manager 페이지: 승인대기(H)만 선택 가능
+      return status === 'H';
+    }
+  }, [isPage]);
+
+  // 전체 선택 (isPage prop 기반)
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
     const newCheckedItems = checked 
-      ? paginatedData.filter(item => item.sch_status !== 'N' && item.sch_status !== 'Y').map((item) => item.id) 
+      ? paginatedData.filter(item => isSelectableStatus(item.sch_status)).map((item) => item.id) 
       : [];
     setCheckedItems(newCheckedItems);
     onCheckedItemsChange(newCheckedItems);
@@ -451,7 +447,7 @@ export default function VacationList({
     if (!selectedEvent?.id) return;
     
     try {
-      await scheduleApi.approveScheduleCancel(selectedEvent.id);
+      await managerVacationApi.approveScheduleCancel(selectedEvent.id);
       fetchScheduleData();
       handleCloseEventDialog();
       toast({
@@ -481,7 +477,7 @@ export default function VacationList({
     try {
       // 모든 체크된 항목에 대해 취소 요청 승인 (관리자 API 사용)
       await Promise.all(
-        checkedItems.map(id => scheduleApi.approveScheduleCancel(id))
+        checkedItems.map(id => managerVacationApi.approveScheduleCancel(id))
       );
       
       setIsConfirmDialogOpen(false);
@@ -669,7 +665,7 @@ export default function VacationList({
                   id={`chk_${item.id}`} 
                   className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkedItems.includes(item.id) && 'bg-primary-blue-150')} 
                   checked={checkedItems.includes(item.id)} 
-                  disabled={item.sch_status === 'N' || item.sch_status === 'Y'}
+                  disabled={!isSelectableStatus(item.sch_status)}
                   onCheckedChange={(checked) => handleCheckItem(item.id, checked as boolean)} 
                 />
               </TableCell>

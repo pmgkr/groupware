@@ -18,10 +18,14 @@ export const calculateWeeklyStats = (data: WorkData[]): WeeklyStats => {
   // 각 날짜의 시간과 분을 합산
   const totalBasicHours = data.reduce((sum, day) => sum + day.basicHours, 0);
   const totalBasicMinutes = data.reduce((sum, day) => sum + day.basicMinutes, 0);
+  
+  // 연장 근무시간 계산
   const totalOvertimeHours = data.reduce((sum, day) => sum + day.overtimeHours, 0);
   const totalOvertimeMinutes = data.reduce((sum, day) => sum + day.overtimeMinutes, 0);
+  
+  // 총 근무시간 계산
   const totalWorkHours = data.reduce((sum, day) => sum + day.totalHours, 0);
-  const totalWorkMinutes = data.reduce((sum, day) => sum + day.totalMinutes, 0);
+  const totalWorkMinutes = data.reduce((sum, day) => sum + (day.totalMinutes || 0), 0);
   
   // 총 근무시간 계산 (시간과 분 정규화)
   const totalWorkMinutesAll = (totalWorkHours * 60) + (totalWorkMinutes || 0);
