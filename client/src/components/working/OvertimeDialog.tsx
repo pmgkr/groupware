@@ -110,7 +110,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     setIsSubmitting(true);
     
     try {
-      const apiParams = buildOvertimeApiParams(selectedDay, formData);
+      const apiParams = buildOvertimeApiParams(selectedDay, formData, clientList);
       const response = await workingApi.requestOvertime(apiParams);
       
       const isManagerOrAdmin = user?.user_level === 'manager' || user?.user_level === 'admin';
