@@ -1,4 +1,5 @@
 import type { WorkData } from '@/types/working';
+import type { ClientList } from '@/api/common/project';
 
 /**
  * 초과근무 타입 결정
@@ -81,7 +82,8 @@ export interface OvertimeApiParams {
 
 export const buildOvertimeApiParams = (
   selectedDay: WorkData,
-  formData: OvertimeFormData
+  formData: OvertimeFormData,
+  clientList: ClientList[] = []
 ): OvertimeApiParams => {
   const otType = determineOvertimeType(
     selectedDay.dayOfWeek,
@@ -102,11 +104,23 @@ export const buildOvertimeApiParams = (
     formattedDate = formattedDate.split('T')[0];
   }
   
+  // clientName이 cl_seq(숫자)인 경우 클라이언트 이름으로 변환
+  let clientName = formData.clientName || '';
+  if (clientName && clientList.length > 0) {
+    const clientSeq = parseInt(clientName, 10);
+    if (!isNaN(clientSeq)) {
+      const client = clientList.find(c => c.cl_seq === clientSeq);
+      if (client) {
+        clientName = client.cl_name;
+      }
+    }
+  }
+  
   // 기본 필수 필드
   const apiParams: OvertimeApiParams = {
     ot_type: otType,
     ot_date: formattedDate,
-    ot_client: formData.clientName || '',
+    ot_client: clientName,
     ot_description: formData.workDescription || '',
   };
 
