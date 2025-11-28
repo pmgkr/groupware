@@ -48,6 +48,7 @@ export default function EstimateEdit() {
   const [rowAddTarget, setRowAddTarget] = useState<{ dir: 'up' | 'down'; idx: number } | null>(null);
 
   const [removedItems, setRemovedItems] = useState<number[]>([]); // 삭제된 항목 배열 State
+  const [reordered, setReordered] = useState(false);
 
   // ----------------------------------------
   // RHF 초기화
@@ -144,13 +145,21 @@ export default function EstimateEdit() {
   };
 
   const handleRemoveRow = (idx: number) => {
-    const row = form.getValues(`items.${idx}`);
-    if (typeof row.seq === 'number') {
-      setRemovedItems((prev) => [...prev, row.seq as number]);
-    }
-    remove(idx);
+    addDialog({
+      title: '견적서 항목 삭제',
+      message: '선택한 견적서 항목을 삭제하시겠습니까?',
+      confirmText: '삭제',
+      cancelText: '취소',
+      onConfirm: () => {
+        const row = form.getValues(`items.${idx}`);
+        if (typeof row.seq === 'number') {
+          setRemovedItems((prev) => [...prev, row.seq as number]);
+        }
+        remove(idx);
 
-    updateRowAll();
+        updateRowAll();
+      },
+    });
   };
 
   const updateRowAll = () => {
@@ -158,7 +167,9 @@ export default function EstimateEdit() {
     const updated = calcAll(structuredClone(items));
 
     updated.forEach((row, i) => {
-      if (!isEqual(items[i], row)) {
+      const needUpdate = reordered || !isEqual(items[i], row); // 값이 달라졌으면 업데이트
+
+      if (needUpdate) {
         setValue(`items.${i}.amount`, row.amount, {
           shouldDirty: false,
           shouldValidate: false,
@@ -204,7 +215,7 @@ export default function EstimateEdit() {
 
     // 2) Items (edit / insert 통합)
     const items = v.items.map((item, idx) => ({
-      se: item.seq ?? null, // 기존 데이터는 seq 존재, 신규는 null로 전달
+      seq: item.seq ?? null, // 기존 데이터는 seq 존재, 신규는 null로 전달
       ei_type: item.ei_type,
       ei_name: item.ei_name,
       unit_price: Number(item.unit_price) || 0,
@@ -277,6 +288,8 @@ export default function EstimateEdit() {
         const result = await estimateEdit(estId, payload);
 
         if (result && typeof result.est_id === 'number') {
+          console.log('✅ 견적서 수정 완료 리턴값 :', result);
+
           const insertData = result.inserted_items.length;
           const deleteData = result.deleted_items.length;
           const updateData = result.updated_items.length;
@@ -385,7 +398,10 @@ export default function EstimateEdit() {
             value={fields.map((f) => f.id)}
             getItemValue={(id) => id}
             onMove={({ activeIndex, overIndex }) => {
-              if (activeIndex !== overIndex) move(activeIndex, overIndex);
+              if (activeIndex !== overIndex) {
+                move(activeIndex, overIndex);
+                setReordered(true);
+              }
               updateRowAll();
             }}>
             <Table variant="primary" align="center" className="table-fixed">
@@ -418,7 +434,7 @@ export default function EstimateEdit() {
                 <TableBody>
                   {fields.map((field, idx) => (
                     <SortableItem key={field.id} value={field.id} asChild>
-                      <TableRow>
+                      <TableRow className="[&_input]:h-8.5 [&_input]:text-[13px] [&_td]:px-4 [&_td]:text-[13px]">
                         <EstimateRow
                           field={field}
                           idx={idx}
