@@ -4,6 +4,7 @@ import { PlusIcon, MinusIcon } from 'lucide-react';
 import { Label } from '@components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
 import { Input } from '@components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 interface GrantDialogProps {
   isOpen: boolean;
@@ -53,7 +54,7 @@ export default function GrantDialog({ isOpen, onClose, userName }: GrantDialogPr
                             </SelectValue>
                         </SelectTrigger>
                         <SelectContent className="z-[200]">
-                            <SelectItem value="current">당해연차</SelectItem>
+                            <SelectItem value="current">기본연차</SelectItem>
                             <SelectItem value="carryover">이월연차</SelectItem>
                             <SelectItem value="special">특별대휴</SelectItem>
                             <SelectItem value="official">공가</SelectItem>
@@ -65,13 +66,19 @@ export default function GrantDialog({ isOpen, onClose, userName }: GrantDialogPr
                 <Label htmlFor="grant-type">휴가 부여일수</Label>
                 <div className="flex gap-2">
                     <Input type="number" placeholder="휴가 부여일수를 입력해주세요" />
-                    <Button variant="outlinePrimary" size="sm">
-                        <MinusIcon className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outlinePrimary" size="sm">
-                        <PlusIcon className="w-4 h-4" />
-                    </Button>
+                    <div className="flex flex-col gap-1 h-11">
+                      <Button variant="outlinePrimary" size="sm" className="flex-1 h-auto rounded-sm">
+                          <PlusIcon className="w-4 h-4" />
+                      </Button>
+                      <Button variant="outlinePrimary" size="sm" className="flex-1 h-auto rounded-sm">
+                          <MinusIcon className="w-4 h-4" />
+                      </Button>
+                    </div>
                 </div>
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="grant-type">설명</Label>
+              <Textarea placeholder="부여되는 휴가에 대한 설명을 기입해주세요" className="resize-none" />
             </div>
         </div>
         <DialogFooter>

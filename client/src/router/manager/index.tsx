@@ -3,6 +3,7 @@ import Manager from '@/pages/Manager';
 import Working from '@/pages/Manager/Working';
 import Overtime from '@/pages/Manager/Overtime';
 import Vacation from '@/pages/Manager/Vacation';
+import UserDetail from '@/pages/Manager/UserDetail';
 
 export const managerRoutes: RouteObject = {
   path: 'manager', // → /manager
@@ -21,6 +22,7 @@ export const managerRoutes: RouteObject = {
     { index: true, element: <Manager /> },
     { path: 'working', element: <Working /> },
     { path: 'vacation', element: <Vacation /> },
+    { path: 'vacation/user/:id', element: <UserDetail /> },
     { path: 'overtime', element: <Overtime /> },
   ],
 };

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,7 @@ export interface UserListItem {
   CountFromHireDate: string;
   availableVacationDays: number; // 사용가능 휴가일수
   totalVacationDays: VacationDayInfo; // 총 휴가일수
-  currentYearVacation: VacationDayInfo; // 당해연차
+  currentYearVacation: VacationDayInfo; // 기본연차
   carryOverVacation: VacationDayInfo; // 이월연차
   specialVacation: VacationDayInfo; // 특별대휴
   officialVacation: VacationDayInfo; // 공가
@@ -35,6 +36,9 @@ export interface UserListProps {
 export default function UserList({ 
   data = []
 }: UserListProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
   // 다이얼로그 상태
   const [isGrantDialogOpen, setIsGrantDialogOpen] = useState(false);
   const [selectedUserName, setSelectedUserName] = useState<string>('');
@@ -49,6 +53,18 @@ export default function UserList({
   const handleCloseGrantDialog = () => {
     setIsGrantDialogOpen(false);
     setSelectedUserName('');
+  };
+
+  // 사용자 상세 페이지로 이동
+  const handleRowClick = (userId: string, e: React.MouseEvent) => {
+    // 버튼 클릭 시에는 이동하지 않음
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    
+    // 현재 경로에 따라 적절한 경로로 이동
+    const basePath = location.pathname.includes('/admin') ? '/admin' : '/manager';
+    navigate(`${basePath}/vacation/user/${userId}`);
   };
 
   // 하드코딩 데이터
@@ -179,23 +195,46 @@ export default function UserList({
     );
   };
 
+  // const renderVacationDetailBadge = (info: VacationDayInfo) => {
+  //   return (
+  //     <div className="inline-flex items-center gap-1 flex-wrap justify-center flex-col">
+  //       {info.plusDays !== undefined && (
+  //         <Badge 
+  //           variant="outline"
+  //           size="table"
+  //           className="border-none"
+  //         >
+  //           +{info.plusDays}일
+  //         </Badge>
+  //       )}
+  //       {info.minusDays !== undefined && (
+  //         <Badge 
+  //           variant="destructive"
+  //           size="table"
+  //           className="border-none text-gray-500"
+  //         >
+  //           -{info.minusDays}일
+  //         </Badge>
+  //       )}
+  //     </div>
+  //   );
+  // };
+
   const renderVacationDetailBadge = (info: VacationDayInfo) => {
     return (
       <div className="inline-flex items-center gap-1 flex-wrap justify-center flex-col">
         {info.plusDays !== undefined && (
           <Badge 
-            variant="outline"
+            variant="secondary"
             size="table"
-            className="border-none"
           >
             +{info.plusDays}일
           </Badge>
         )}
         {info.minusDays !== undefined && (
           <Badge 
-            variant="destructive"
+            variant="grayish"
             size="table"
-            className="border-none text-gray-500"
           >
             -{info.minusDays}일
           </Badge>
@@ -226,7 +265,7 @@ export default function UserList({
           <TableHead className="w-[8%] text-center p-0">부서</TableHead>
           <TableHead className="w-[10%] text-center">이름</TableHead>
           <TableHead className="w-[15%] text-center">입사일</TableHead>
-          <TableHead className="w-[10%] text-center">당해연차</TableHead>
+          <TableHead className="w-[10%] text-center">기본연차</TableHead>
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
               <span>이월연차</span>
@@ -281,7 +320,11 @@ export default function UserList({
           </TableRow>
         ) : (
           displayData.map((item) => (
-            <TableRow key={item.id} className="[&_td]:text-[13px]">
+            <TableRow 
+              key={item.id} 
+              className="[&_td]:text-[13px] cursor-pointer hover:bg-gray-50"
+              onClick={(e) => handleRowClick(item.id, e)}
+            >
               <TableCell className="text-center p-0">{item.department}</TableCell>
               <TableCell className="p-2.5 px-5 text-center">
                 <div className="flex items-center gap-1">
