@@ -13,6 +13,7 @@ import { workingApi } from '@/api/working';
 import { managerOvertimeApi } from '@/api/manager/overtime';
 import { buildOvertimeApiParams } from '@/utils/overtimeHelper';
 import { getClientList, type ClientList } from '@/api/common/project';
+import { SearchableSelect } from '@components/ui/SearchableSelect';
 
 interface OvertimeDialogProps {
   isOpen: boolean;
@@ -515,22 +516,16 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
 
           <div className="space-y-3">
             <Label htmlFor="client-name">클라이언트명을 선택해주세요.</Label>
-            <Select
-              key="client-name"
+            <SearchableSelect
+              options={clientList.map((client) => ({
+                label: client.cl_name,
+                value: client.cl_seq.toString()
+              }))}
               value={formData.clientName}
-              onValueChange={(value) => handleInputChange('clientName', value)}
-            >
-              <SelectTrigger className={`w-full ${errors.clientName ? 'border-red-500' : ''}`}>
-                <SelectValue placeholder="클라이언트명을 선택하세요" />
-              </SelectTrigger>
-              <SelectContent className="z-[200]">
-                {clientList.map((client) => (
-                  <SelectItem key={client.cl_seq} value={client.cl_name}>
-                    {client.cl_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(value) => handleInputChange('clientName', value)}
+              invalid={!!errors.clientName}
+              placeholder="클라이언트를 선택하세요"
+            />
             {errors.clientName && (
               <p className="text-sm text-red-500">{errors.clientName}</p>
             )}
