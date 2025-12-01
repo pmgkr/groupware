@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { formatKST, formatAmount } from '@/utils';
-import { getProjectExpenseView, type pExpenseViewDTO } from '@/api';
+import { getProjectExpenseView, type pExpenseViewDTO, getEstimateInfo, type EstimateHeaderView } from '@/api';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
@@ -20,11 +20,14 @@ export default function ProjectExpenseMatch() {
   const { state } = useLocation(); // 저장된 비용 Seq
   const navigate = useNavigate();
 
+  // 비용 데이터 State
   const [data, setData] = useState<pExpenseViewDTO | null>(null);
   const [loading, setLoading] = useState(true);
 
   // 견적서 다이얼로그 State
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [estLoading, setEstLoading] = useState(false);
+  const [estData, setEstData] = useState<EstimateHeaderView | null>(null);
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
@@ -107,8 +110,21 @@ export default function ProjectExpenseMatch() {
   // ----------------------------------------
   // 견적서 불러오기 핸들러
   // ----------------------------------------
-  const handleEstimateInfo = () => {
+
+  const handleEstimateInfo = async () => {
     setDialogOpen(true);
+    setEstLoading(true);
+
+    try {
+      const res = await getEstimateInfo(projectId);
+      setEstData(res);
+
+      console.log(res);
+    } catch (err) {
+      console.error('❌ 비용 상세 조회 실패:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -337,6 +337,7 @@ export interface EstimateRegisterResponse {
 // 견적서 조회용
 // ----------------------
 export interface EstimateHeaderView extends EstimateHeader {
+  result: any;
   est_id: number;
   user_id: string;
   user_nm: string;
@@ -510,6 +511,19 @@ export async function projectExpenseRegister(payload: pExpenseRegisterPayload) {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+// 프로젝트비용 매칭을 위한 견적서 정보 가져오기
+export async function getEstimateInfo(projectId: string | undefined) {
+  if (!projectId) throw new Error('projectId가 필요합니다.');
+
+  return http<EstimateHeaderView>(`/user/pexpense/estimate/list/${projectId}`, { method: 'GET' });
+}
+
+export async function getEstimateItemsInfo(est_id: number | undefined) {
+  if (!est_id) throw new Error('견적서 ID가 필요합니다.');
+
+  return http<{ result: EstimateItemsView[] }>(`/user/pexpense/estimate/item/${est_id}`, { method: 'GET' });
 }
 
 // 프로젝트비용 삭제처리

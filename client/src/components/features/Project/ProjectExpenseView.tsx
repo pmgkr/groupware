@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { formatKST, formatAmount } from '@/utils';
-import { getProjectExpenseView, type pExpenseViewDTO } from '@/api';
+import {
+  getProjectExpenseView,
+  type pExpenseViewDTO,
+  getEstimateInfo,
+  type EstimateHeaderView,
+  getEstimateItemsInfo,
+  type EstimateItemsView,
+} from '@/api';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Download, Edit } from '@/assets/images/icons';
 import { File, Link as LinkIcon } from 'lucide-react';
 
@@ -14,12 +22,23 @@ import { format } from 'date-fns';
 import { statusIconMap, getLogMessage } from '../Expense/utils/statusUtils';
 import EstimateMatching from './_components/EstimateMatching';
 
+export interface estViewMatchDTO {
+  header: EstimateHeaderView;
+  items: EstimateItemsView[];
+}
+
 export default function projectExpenseView() {
   const { expId, projectId } = useParams();
   const navigate = useNavigate();
 
+  // 비용 데이터 State
   const [data, setData] = useState<pExpenseViewDTO | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // 견적서 다이얼로그 State
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [estLoading, setEstLoading] = useState(false);
+  const [estData, setEstData] = useState<estViewMatchDTO | null>(null);
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
@@ -100,6 +119,30 @@ export default function projectExpenseView() {
   };
 
   const status = statusMap[header.status as keyof typeof statusMap];
+
+  // ----------------------------------------
+  // 견적서 불러오기 핸들러
+  // ----------------------------------------
+
+  const handleEstimateInfo = async () => {
+    setDialogOpen(true);
+    setEstLoading(true);
+
+    try {
+      const raw = await getEstimateInfo(projectId);
+      const header = raw.result?.[0] ?? null;
+      const rawItems = await getEstimateItemsInfo(header.est_id);
+      const estItems = rawItems.result ?? [];
+
+      setEstData({ header: header, items: estItems });
+    } catch (err) {
+      console.error('❌ 비용 상세 조회 실패:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  console.log('estData', estData);
 
   return (
     <>
@@ -286,10 +329,85 @@ export default function projectExpenseView() {
         </div>
 
         <div className="w-[24%]">
-          <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
+          <div className="flex justify-between">
+            <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
+            <Button type="button" size="sm" className="px-2.5" onClick={handleEstimateInfo}>
+              견적서 불러오기
+            </Button>
+          </div>
           <EstimateMatching />
         </div>
       </div>
+
+      {/* ---------------- 견적서 불러오기 다이얼로그 ---------------- */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>견적서 불러오기</DialogTitle>
+            <DialogDescription>비용을 매칭할 견적서 항목을 선택해 주세요.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col">
+            {estData &&
+              (() => {
+                const getBudgetPercent = ((estData.header.est_budget / estData.header.est_amount) * 100).toFixed(2);
+                return (
+                  <>
+                    <TableColumn className="[&_div]:text-[13px]">
+                      <TableColumnHeader className="w-[18%]">
+                        <TableColumnHeaderCell>견적서 제목</TableColumnHeaderCell>
+                      </TableColumnHeader>
+                      <TableColumnBody>
+                        <TableColumnCell className="leading-[1.3]">{estData.header.est_title}</TableColumnCell>
+                      </TableColumnBody>
+                      <TableColumnHeader className="w-[18%]">
+                        <TableColumnHeaderCell>가용 예산 / 견적서 총액</TableColumnHeaderCell>
+                      </TableColumnHeader>
+                      <TableColumnBody>
+                        <TableColumnCell>
+                          {formatAmount(estData.header.est_budget)} / {formatAmount(estData.header.est_amount)}{' '}
+                          <span className="ml-1 font-bold">({getBudgetPercent}%)</span>
+                        </TableColumnCell>
+                      </TableColumnBody>
+                    </TableColumn>
+
+                    <Table variant="primary" align="center" className="mt-4 table-fixed">
+                      <TableHeader>
+                        <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+                          <TableHead className="text-left">항목명</TableHead>
+                          <TableHead className="w-[10%]">단가</TableHead>
+                          <TableHead className="w-[8%]">수량</TableHead>
+                          <TableHead className="w-[10%]">금액</TableHead>
+                          <TableHead className="w-[10%]">가용 금액</TableHead>
+                          <TableHead className="w-[24%]">비고</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {estData.items.map((item) => (
+                          <TableRow key={item.seq} className="[&_td]:text-[13px]">
+                            <TableCell className="text-left">{item.item_name}</TableCell>
+                            <TableCell className="text-right">{formatAmount(item.unit_price)}</TableCell>
+                            <TableCell className="text-right">{item.qty}</TableCell>
+                            <TableCell className="text-right">{formatAmount(item.amount)}</TableCell>
+                            <TableCell className="text-right">{formatAmount(item.ava_amount)}</TableCell>
+                            <TableCell>{item.remark}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </>
+                );
+              })()}
+          </div>
+          <DialogFooter className="justify-center">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                취소
+              </Button>
+            </DialogClose>
+            <Button type="button">등록</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
