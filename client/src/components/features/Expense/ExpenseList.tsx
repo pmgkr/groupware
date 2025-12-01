@@ -446,7 +446,7 @@ export default function ExpenseList() {
 
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
-          <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+          <TableRow className="[&_th]:px-3 [&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className={cn('w-[3%] px-0 transition-all duration-150', activeTab !== 'saved' && 'hidden')}>
               <Checkbox
                 id="chk_all"
@@ -456,10 +456,10 @@ export default function ExpenseList() {
               />
             </TableHead>
             <TableHead className="w-[8%]">EXP#</TableHead>
-            <TableHead className="w-[6%]">증빙 수단</TableHead>
+            <TableHead className="w-[8%] whitespace-nowrap">증빙 수단</TableHead>
             <TableHead className="w-[8%]">비용 용도</TableHead>
             <TableHead>비용 제목</TableHead>
-            <TableHead className="w-[6%]">증빙 상태</TableHead>
+            <TableHead className="w-[6%] whitespace-nowrap">증빙 상태</TableHead>
             <TableHead className="w-[10%]">금액</TableHead>
             <TableHead className="w-[6%]">세금</TableHead>
             <TableHead className="w-[10%]">합계</TableHead>

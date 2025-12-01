@@ -78,7 +78,7 @@ export default function ProjectEstimate() {
         setEstimateList(res.items);
         setTotal(res.total);
       } catch (err) {
-        console.error('❌ 비용 리스트 불러오기 실패:', err);
+        console.error('❌ 견적서 리스트 불러오기 실패:', err);
       } finally {
         setLoading(false);
       }
