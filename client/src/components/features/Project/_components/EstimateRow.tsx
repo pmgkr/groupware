@@ -17,11 +17,10 @@ type DirtyCheckField = 'ei_name' | 'unit_price' | 'qty' | 'amount' | 'ava_amount
 interface EstimateRowProps {
   field: any;
   idx: number;
+  watch: (path: string) => any;
 
   control: Control<EstimateEditForm>;
-  watch: (path: string) => any;
   setValue: UseFormSetValue<EstimateEditForm>;
-
   initialItems: EstimateEditForm['items'];
 
   updateRowAll: () => void;
@@ -54,6 +53,8 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
   const row = useWatch({ control, name: `items.${idx}` });
 
   const initialRow = (initialItems ?? []).find((r) => r.seq === row.seq);
+
+  console.log(initialRow, row);
 
   const normalizeValue = (v: any) => {
     if (v === null || v === undefined) return '';
@@ -237,40 +238,34 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
             render={({ field }) => {
               const inputRef = useRef<HTMLInputElement>(null);
 
-              const displayValue =
-                field.value === '' || field.value == null ? '' : formatAmount(Number(String(field.value).replace(/[^\d]/g, '')));
+              // 🔥 저장(raw)은 항상 음수 → display는 절댓값
+              const numeric = Number(field.value);
+              const displayValue = !numeric ? '' : formatAmount(Math.abs(numeric));
 
-              /** 🔥 커서 유지 + raw 숫자 저장 입력 핸들러 */
+              /** 🔥 커서 유지 + raw 음수 저장 핸들러 */
               const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 const input = e.target;
                 const rawPrev = input.value;
-
                 const cursorPrev = input.selectionStart ?? rawPrev.length;
 
-                // 입력 타입 체크
                 const isDelete = (e.nativeEvent as InputEvent)?.inputType === 'deleteContentForward';
                 const isBackspace = (e.nativeEvent as InputEvent)?.inputType === 'deleteContentBackward';
 
-                // 이전 숫자 문자열
-                const prevDigitsText = rawPrev.replace(/[^\d]/g, '');
-                const totalDigits = prevDigitsText.length;
-
                 const prevDigitsBeforeCursor = rawPrev.slice(0, cursorPrev).replace(/[^\d]/g, '').length;
-
                 const prevDigitsAfterCursor = rawPrev.slice(cursorPrev).replace(/[^\d]/g, '').length;
 
-                // 숫자만 추출 (Raw)
-                let raw = rawPrev.replace(/[^\d]/g, '');
+                // 숫자만 추출 → 음수로 변환
+                let rawDigits = rawPrev.replace(/[^\d]/g, '');
 
-                if (raw === '') {
+                if (rawDigits === '') {
                   field.onChange('');
                   requestAnimationFrame(() => input.setSelectionRange(0, 0));
                   return;
                 }
 
-                const formatted = formatAmount(Number(raw));
+                const formatted = formatAmount(Number(rawDigits));
 
-                // ===== 커서 이동 계산 =====
+                // 커서 이동 계산
                 let cursorNew = 0;
 
                 if (isBackspace) {
@@ -302,8 +297,9 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
                   }
                 }
 
-                // raw 값 저장
-                field.onChange(raw);
+                // 🔥 raw 값을 항상 음수로 저장
+                const negativeRaw = -Number(rawDigits);
+                field.onChange(negativeRaw);
 
                 requestAnimationFrame(() => {
                   input.setSelectionRange(cursorNew, cursorNew);
@@ -312,12 +308,18 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
 
               return (
                 <div className="relative before:absolute before:top-1/2 before:left-2 before:-translate-y-1/2 before:content-['-']">
-                  <Input ref={inputRef} value={displayValue} onChange={handleChange} className="h-9 pl-5 text-right" />
+                  <Input
+                    ref={inputRef}
+                    value={displayValue}
+                    onChange={handleChange}
+                    className={cn('h-9 pl-5 text-right', isDirty('amount') && dirtyClass)}
+                  />
                 </div>
               );
             }}
           />
         </TableCell>
+
         <TableCell className="bg-gray-300" colSpan={2}></TableCell>
         <TableCell className="bg-gray-300">
           <Input className={cn('h-9', isDirty('remark') && dirtyClass)} {...control.register(`items.${idx}.remark`)} />
@@ -502,7 +504,11 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
 
         {/* amount */}
         <TableCell>
-          <Input className={cn('h-9 text-right', isDirty('amount') && dirtyClass)} readOnly value={formatAmount(row?.amount || 0)} />
+          <Input
+            className={cn('h-9 bg-gray-100 text-right text-gray-600', isDirty('amount') && dirtyClass)}
+            readOnly
+            value={formatAmount(row?.amount || 0)}
+          />
         </TableCell>
         {/* ava_amount */}
         <TableCell className={cn('text-right', isDirty('ava_amount') && dirtyClass)}>
@@ -682,7 +688,17 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
         </TableCell>
 
         {/* ava_amount */}
-        <TableCell className={cn('text-right', isDirty('ava_amount') && dirtyClass)}>{formatAmount(row?.ava_amount || 0)}</TableCell>
+        <TableCell className={cn('text-right', isDirty('ava_amount') && dirtyClass)}>
+          <div className="flex items-center justify-end gap-1">
+            {formatAmount(row?.ava_amount || 0)}{' '}
+            <span
+              className="flex cursor-pointer items-center gap-0.5 text-xs font-normal text-gray-500 hover:text-gray-700"
+              title="매칭된 비용 갯수">
+              <Link className="size-3" />
+              12
+            </span>
+          </div>
+        </TableCell>
 
         {/* exp_cost */}
         <TableCell>

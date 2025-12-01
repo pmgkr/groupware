@@ -103,73 +103,105 @@ export default function projectExpenseView() {
 
   return (
     <>
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-950">{header.el_title}</h1>
-          {/* <ul className="itmes-center flex gap-2 text-base text-gray-500">
-            <li>{formatKST(header.wdate)}</li>
-          </ul> */}
-        </div>
-        <div className="flex gap-2">
-          {header.status === 'Saved' && (
-            <Button type="button" variant="outline" size="sm" asChild>
-              <Link to={`/expense/edit/${header.exp_id}`}>
-                <Edit /> 수정
-              </Link>
-            </Button>
-          )}
-        </div>
-      </div>
-      <div className="flex min-h-140 flex-wrap justify-between pt-6 pb-12">
+      <div className="flex min-h-140 flex-wrap justify-between pb-12">
         <div className="w-[74%] tracking-tight">
-          <div className="flex flex-wrap gap-[3%]">
-            <div className="w-[31.33%]">
-              <h3 className="mb-2 text-lg font-bold text-gray-800">일반 정보</h3>
-              <TableColumn>
-                <TableColumnHeader className="text-[13px]">
-                  <TableColumnHeaderCell>작성자</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>증빙 수단</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>입금희망일</TableColumnHeaderCell>
-                </TableColumnHeader>
-                <TableColumnBody className="text-[13px]">
-                  <TableColumnCell>{header.user_nm}</TableColumnCell>
-                  <TableColumnCell>{header.el_method}</TableColumnCell>
-                  <TableColumnCell>{header.el_deposit ? formatDate(header.el_deposit) : <span>-</span>}</TableColumnCell>
-                </TableColumnBody>
-              </TableColumn>
-            </div>
-            <div className="w-[31.33%]">
-              <h3 className="mb-2 text-lg font-bold text-gray-800">계좌 정보</h3>
-              <TableColumn>
-                <TableColumnHeader className="text-[13px]">
-                  <TableColumnHeaderCell>은행명</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>계좌번호</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>예금주</TableColumnHeaderCell>
-                </TableColumnHeader>
-                <TableColumnBody className="text-[13px]">
-                  <TableColumnCell>
-                    {header.bank_name} [{header.bank_code}]
-                  </TableColumnCell>
-                  <TableColumnCell>{header.bank_account}</TableColumnCell>
-                  <TableColumnCell>{header.account_name}</TableColumnCell>
-                </TableColumnBody>
-              </TableColumn>
-            </div>
-
-            <div className="flex w-[31.33%] flex-col">
-              <h3 className="mb-2 text-lg font-bold text-gray-800">비고</h3>
-              <TableColumn className="flex-1">
-                <TableColumnHeader className="h-full text-[13px]">
-                  <TableColumnHeaderCell className="h-[33.33%]">비용 상태</TableColumnHeaderCell>
-                  <TableColumnHeaderCell className="h-[66.66%]">비고</TableColumnHeaderCell>
-                </TableColumnHeader>
-                <TableColumnBody className="h-full text-[13px]">
-                  <TableColumnCell className="h-[33.33%]">{status}</TableColumnCell>
-                  <TableColumnCell className="h-[66.66%] whitespace-pre">{header.remark}</TableColumnCell>
-                </TableColumnBody>
-              </TableColumn>
-            </div>
+          <div className="flex w-full items-end justify-between pb-2">
+            <h3 className="text-lg font-bold text-gray-800">비용 정보</h3>
+            {header.status === 'Saved' && (
+              <Button
+                type="button"
+                variant="transparent"
+                title="비용 수정"
+                size="sm"
+                asChild
+                className="h-auto gap-1 text-gray-600 hover:text-gray-700 has-[>svg]:px-1">
+                <Link to={`/project/${projectId}/expense/edit/${header.seq}`}>
+                  <Edit className="size-4.5" />
+                </Link>
+              </Button>
+            )}
           </div>
+          <TableColumn className="[&_div]:text-[13px]">
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>비용 제목</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{header.el_title}</TableColumnCell>
+            </TableColumnBody>
+          </TableColumn>
+          <TableColumn className="border-t-0 [&_div]:text-[13px]">
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>작성자</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{header.user_nm}</TableColumnCell>
+            </TableColumnBody>
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>은행명</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>
+                {header.bank_name} [{header.bank_code}]
+              </TableColumnCell>
+            </TableColumnBody>
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>비용 상태</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell className="py-0">{status}</TableColumnCell>
+            </TableColumnBody>
+          </TableColumn>
+          <TableColumn className="border-t-0 [&_div]:text-[13px]">
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>증빙 수단</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{header.el_method}</TableColumnCell>
+            </TableColumnBody>
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>계좌번호</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{header.bank_account}</TableColumnCell>
+            </TableColumnBody>
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>비용 타입</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{header.is_estimate === 'Y' ? '견적서 비용' : '견적서 외 비용'}</TableColumnCell>
+            </TableColumnBody>
+          </TableColumn>
+          <TableColumn className="border-t-0 [&_div]:text-[13px]">
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>작성일</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{formatDate(header.wdate)}</TableColumnCell>
+            </TableColumnBody>
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>예금주</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{header.account_name}</TableColumnCell>
+            </TableColumnBody>
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>입금 희망일</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{header.el_deposit ? formatDate(header.el_deposit) : <span>-</span>}</TableColumnCell>
+            </TableColumnBody>
+          </TableColumn>
+          {header.remark && (
+            <TableColumn className="border-t-0 [&_div]:text-[13px]">
+              <TableColumnHeader className="w-[12%]">
+                <TableColumnHeaderCell>비고</TableColumnHeaderCell>
+              </TableColumnHeader>
+              <TableColumnBody>
+                <TableColumnCell className="whitespace-pre">{header.remark}</TableColumnCell>
+              </TableColumnBody>
+            </TableColumn>
+          )}
+
           <div className="mt-6">
             <h3 className="mb-2 text-lg font-bold text-gray-800">비용 항목</h3>
             <Table variant="primary" align="center" className="table-fixed">
@@ -201,7 +233,7 @@ export default function projectExpenseView() {
                             {item.attachments.map((att, idx) => (
                               <li key={idx} className="overflow-hidden text-sm text-gray-800">
                                 <a
-                                  href={`${import.meta.env.VITE_API_ORIGIN}/uploads/nexpense/${att.ea_sname}`}
+                                  href={`${import.meta.env.VITE_API_ORIGIN}/uploads/pexpense/${att.ea_sname}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="flex items-center justify-center gap-1">
@@ -241,17 +273,18 @@ export default function projectExpenseView() {
                 </TableRow>
               </TableBody>
             </Table>
-          </div>
-          <div className="mt-8 flex w-full items-center justify-between">
-            <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/project/${projectId}/expense`)}>
-              목록
-            </Button>
+            <div className="mt-8 flex w-full items-center justify-between">
+              <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/project/${projectId}/expense`)}>
+                목록
+              </Button>
 
-            <Button type="button" size="sm">
-              <Download /> 다운로드
-            </Button>
+              <Button type="button" size="sm">
+                <Download /> 다운로드
+              </Button>
+            </div>
           </div>
         </div>
+
         <div className="w-[24%]">
           <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
           <EstimateMatching />

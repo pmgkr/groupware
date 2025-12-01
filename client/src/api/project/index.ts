@@ -181,6 +181,7 @@ export interface pExpenseHeaderBase {
   bank_code: string;
   account_name: string;
   remark?: string | null;
+  is_estimate?: 'Y' | 'N';
 }
 
 // ------------------------------
