@@ -384,7 +384,8 @@ export default function projectExpenseView() {
                       <TableBody>
                         {estData.items.map((item) => (
                           <TableRow key={item.seq} className="[&_td]:text-[13px]">
-                            <TableCell className="text-left">{item.item_name}</TableCell>
+                            <TableCell className="text-left">{item.ei_name}</TableCell>
+                            {/* item_name -> ei_name으로 수정필요 */}
                             <TableCell className="text-right">{formatAmount(item.unit_price)}</TableCell>
                             <TableCell className="text-right">{item.qty}</TableCell>
                             <TableCell className="text-right">{formatAmount(item.amount)}</TableCell>
