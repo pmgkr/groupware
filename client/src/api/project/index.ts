@@ -181,6 +181,7 @@ export interface pExpenseHeaderBase {
   bank_code: string;
   account_name: string;
   remark?: string | null;
+  is_estimate?: 'Y' | 'N';
 }
 
 // ------------------------------
@@ -336,6 +337,7 @@ export interface EstimateRegisterResponse {
 // 견적서 조회용
 // ----------------------
 export interface EstimateHeaderView extends EstimateHeader {
+  result: any;
   est_id: number;
   user_id: string;
   user_nm: string;
@@ -376,6 +378,60 @@ export interface EstimateViewDTO {
   items: EstimateItemsView[];
   evidences: EstimateEvidencesView[];
   logs: EstimateLogs[];
+}
+
+// EstimateRow Type
+export type EstimateItemType = 'title' | 'item' | 'subtotal' | 'discount' | 'agency_fee' | 'grandtotal' | string;
+
+export interface EstimateRow {
+  seq?: number | null;
+  ei_type: EstimateItemType;
+  ei_name: string;
+  unit_price: number | string;
+  qty: number | string;
+  amount: number | string;
+  ava_amount?: number | string;
+  exp_cost?: number | string;
+  remark?: string;
+  ei_order: number;
+}
+
+// Edit에서 보낼 Form의 Response Type
+export interface EstimateEditForm {
+  header: {
+    est_title: string;
+    project_id: string | undefined;
+    user_id: string | undefined;
+    user_nm: string | undefined;
+  };
+  items: EstimateRow[];
+  removed_seq: number[];
+  evidences: {
+    ee_fname?: string;
+    ee_sname?: string;
+    ee_size?: number;
+    ee_type?: string;
+    remark?: string;
+  }[];
+}
+
+// EstimateEdit Response DTO
+// 개별 matched item 타입
+export interface EstimateMatchedItem {
+  seq: number; // estimate_item.seq
+  amount: string; // 수정된 amount (string으로 내려옴)
+  ava_amount: string; // 가용 금액 (amount - alloc_amount)
+  alloc_amount: string | null; // 매칭된 금액 (없으면 null)
+}
+
+// 전체 Response DTO
+export interface EstimateEditResponse {
+  est_id: number; // 견적서 ID
+  est_amount: number; // 수정 후 전체 견적 총 금액
+  deleted_items: number[]; // 삭제된 estimate_item seq 목록
+  inserted_items: number[]; // 새로 추가된 estimate_item seq 목록
+  updated_items: number[]; // 수정된 estimate_item seq 목록
+  matched_items: EstimateMatchedItem[]; // 매칭 영향 받은 항목들
 }
 
 // 즐겨찾기 리스트
@@ -457,6 +513,19 @@ export async function projectExpenseRegister(payload: pExpenseRegisterPayload) {
   });
 }
 
+// 프로젝트비용 매칭을 위한 견적서 정보 가져오기
+export async function getEstimateInfo(projectId: string | undefined) {
+  if (!projectId) throw new Error('projectId가 필요합니다.');
+
+  return http<EstimateHeaderView>(`/user/pexpense/estimate/list/${projectId}`, { method: 'GET' });
+}
+
+export async function getEstimateItemsInfo(est_id: number | undefined) {
+  if (!est_id) throw new Error('견적서 ID가 필요합니다.');
+
+  return http<{ result: EstimateItemsView[] }>(`/user/pexpense/estimate/item/${est_id}`, { method: 'GET' });
+}
+
 // 프로젝트비용 삭제처리
 export async function deleteProjectTempExpense(payload: { seqs: number[] }): Promise<{ ok: boolean }> {
   const res = http<{ ok: boolean }>(`/user/pexpense/delete/`, { method: 'POST', body: JSON.stringify(payload) });
@@ -494,4 +563,11 @@ export async function getEstimateView(est_id: string | undefined) {
   if (!est_id) throw new Error('견적서 ID가 필요합니다.');
 
   return http<EstimateViewDTO>(`/user/estimate/detail?est_id=${est_id}`, { method: 'GET' });
+}
+
+// 견적서 수정하기
+export async function estimateEdit(est_id: string | undefined, payload: EstimateEditForm) {
+  if (!est_id) throw new Error('견적서 ID가 필요합니다.');
+
+  return http<EstimateEditResponse>(`/user/estimate/edit/${est_id}`, { method: 'POST', body: JSON.stringify(payload) });
 }

@@ -271,8 +271,8 @@ export default function ExpenseList() {
   useEffect(() => {
     (async () => {
       try {
-        // 유저레벨이 staff나 user인 경우 nexp_type2 : manager나 admin인 경우 nexp_type1 호출
-        const expenseTypeParam = user_level === 'staff' || user_level === 'user' ? 'nexp_type2' : 'nexp_type1';
+        // 유저레벨이 user인 경우 nexp_type2 : manager나 admin인 경우 nexp_type1 호출
+        const expenseTypeParam = user_level === 'user' ? 'nexp_type2' : 'nexp_type1';
 
         const data = await getExpenseType(expenseTypeParam);
         const mapped = data.map((t: any) => ({
@@ -446,7 +446,7 @@ export default function ExpenseList() {
 
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
-          <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+          <TableRow className="[&_th]:px-3 [&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className={cn('w-[3%] px-0 transition-all duration-150', activeTab !== 'saved' && 'hidden')}>
               <Checkbox
                 id="chk_all"
@@ -456,10 +456,10 @@ export default function ExpenseList() {
               />
             </TableHead>
             <TableHead className="w-[8%]">EXP#</TableHead>
-            <TableHead className="w-[6%]">증빙 수단</TableHead>
+            <TableHead className="w-[8%] whitespace-nowrap">증빙 수단</TableHead>
             <TableHead className="w-[8%]">비용 용도</TableHead>
             <TableHead>비용 제목</TableHead>
-            <TableHead className="w-[6%]">증빙 상태</TableHead>
+            <TableHead className="w-[6%] whitespace-nowrap">증빙 상태</TableHead>
             <TableHead className="w-[10%]">금액</TableHead>
             <TableHead className="w-[6%]">세금</TableHead>
             <TableHead className="w-[10%]">합계</TableHead>

@@ -6,14 +6,14 @@ export default function EstimateMatching() {
   return (
     <Table variant="primary" align="center">
       <TableHeader>
-        <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+        <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
           <TableHead className="text-left">항목명</TableHead>
-          <TableHead className="w-[15%]">이전 금액</TableHead>
-          <TableHead className="w-[15%]">매칭 금액 (B)</TableHead>
+          <TableHead className="w-[18%] whitespace-nowrap">이전 금액</TableHead>
+          <TableHead className="w-[18%] whitespace-nowrap">매칭 금액 (B)</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableRow className="[&_td]:text-[13px]">
+        <TableRow className="[&_td]:px-2 [&_td]:text-[13px]">
           <TableCell className="text-left">키링 부자재</TableCell>
           <TableCell>100,000</TableCell>
           <TableCell>

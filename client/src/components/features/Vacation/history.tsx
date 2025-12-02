@@ -5,7 +5,7 @@ import 'dayjs/locale/ko';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import EventViewDialog from '@/components/calendar/EventViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { MyVacationHistory as fetchMyVacationHistory, type MyVacationItem } from '@/api/mypage';
+import { MyVacationHistory as fetchMyVacationHistory, type MyVacationItem } from '@/api/mypage/vacation';
 import { useToast } from '@/components/ui/use-toast';
 import { AppPagination } from '@/components/ui/AppPagination';
 import Overview from '@/components/features/Vacation/overview';

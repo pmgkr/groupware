@@ -19,7 +19,7 @@ import {
   type BankAccount,
   type BankCode,
   type UserDTO,
-} from '@/api/mypage';
+} from '@/api/mypage/profile';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';

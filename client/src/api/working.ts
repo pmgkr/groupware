@@ -13,6 +13,34 @@ export interface WorkLog {
   wlog_modified_at?: string;
 }
 
+export interface WlogWeek {
+  yearNo: number;
+  weekNo: number;
+  sdate: string;
+  edate: string;
+  wlog: [
+    {
+      user_id: string;
+      user_nm: string;
+      tdate: string;
+      stime: string;
+      etime: string;
+      wmin: number;
+      kind: string;
+      type: string;
+    }
+  ];
+  vacation: [
+    {
+      user_id: string;
+      user_nm: string;
+      tdate: string;
+      stime: string;
+      etime: string;
+    }
+  ];
+}
+
 export interface Vacation {
   // vacation 타입 정의 (필요시 추가)
   [key: string]: any;
@@ -30,11 +58,18 @@ export interface WorkLogQueryParams {
   edate: string;
 }
 
+// 주간 근태 로그 조회 파라미터
+export interface WlogWeekParams {
+  weekno: number;
+  yearno: number;
+}
+
 // 추가근무 신청 파라미터
 export interface OvertimeRequestParams {
   ot_type: string;          // 추가근무 타입 ("weekday" - 평일, "saturday" - 토요일, "sunday" - 일요일, "holiday" - 공휴일)
   ot_date: string;          // 근무 날짜 (YYYY-MM-DD)
-  ot_etime?: string;        // 예상 퇴근 시간 (HH:mm:ss) - 평일인 경우
+  ot_stime?: string;        // 예상 출근 시간 (HH:mm:ss) - 주말/공휴일인 경우
+  ot_etime?: string;        // 예상 퇴근 시간 (HH:mm:ss) - 모든 경우
   ot_hours?: string;        // 추가근무 시간 - 주말/공휴일인 경우
   ot_food?: string;         // 식대 사용 여부 (Y/N)
   ot_trans?: string;        // 교통비 사용 여부 (Y/N)
@@ -59,6 +94,7 @@ export interface OvertimeItem {
   team_id: number;
   ot_type: string;
   ot_date: string;
+  ot_stime: string;
   ot_etime: string;
   ot_hours: string;
   ot_food: string;
@@ -91,6 +127,16 @@ export const workingApi = {
     queryParams.append('edate', params.edate);
 
     const response = await http<WorkLogResponse>(`/user/wlog/list?${queryParams.toString()}`);
+    return response;
+  },
+
+  // 주간 근태 로그 조회 (WlogWeek)
+  getWlogWeek: async (params: WlogWeekParams): Promise<WlogWeek> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('weekno', params.weekno.toString());
+    queryParams.append('yearno', params.yearno.toString());
+
+    const response = await http<WlogWeek>(`/user/wlog/week?${queryParams.toString()}`);
     return response;
   },
 

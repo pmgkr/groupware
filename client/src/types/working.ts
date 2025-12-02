@@ -1,7 +1,7 @@
 // 근무 데이터 타입 정의
 export interface WorkData {
   date: string;
-  workType: "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가" | "공휴일";
+  workType: "-" | "일반근무" | "추가근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가" | "공휴일";
   workTypes?: Array<{
     type: WorkData['workType'];
     createdAt: string; // 등록 시간
@@ -20,6 +20,8 @@ export interface WorkData {
   rejectionReason?: string;
   // 신청 데이터 추가
   overtimeData?: {
+    expectedStartTime: string;
+    expectedStartTimeMinute: string;
     expectedEndTime: string;
     expectedEndMinute: string;
     mealAllowance: string;
@@ -32,5 +34,6 @@ export interface WorkData {
   };
   overtimeId?: number; // 초과근무 ID
   isHoliday?: boolean; // 공휴일 여부
+  holidayName?: string | null; // 공휴일 이름 (예: "신정", "설날", "추석")
 }
 

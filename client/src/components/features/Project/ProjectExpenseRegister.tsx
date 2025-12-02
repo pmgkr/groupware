@@ -27,6 +27,7 @@ import { Add, Calendar, TooltipNoti, Delete, Close } from '@/assets/images/icons
 import { UserRound, FileText, OctagonAlert } from 'lucide-react';
 
 import { format } from 'date-fns';
+import { getMyAccounts, type BankAccount } from '@/api/mypage/profile';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 const expenseSchema = z.object({
@@ -93,6 +94,7 @@ export default function ProjectExpenseRegister() {
       account_name: '',
       el_deposit: '',
       remark: '',
+      is_estimate: '',
       expense_items: Array.from({ length: articleCount }).map(() => ({
         type: '',
         title: '',
@@ -248,6 +250,52 @@ export default function ProjectExpenseRegister() {
     [handleDropFiles]
   );
 
+  //내계좌 불러오기
+  const [accountList, setAccountList] = useState<BankAccount[]>([]);
+  const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getMyAccounts();
+        setAccountList(data);
+      } catch (err) {
+        console.error('❌ 계좌 목록 불러오기 실패:', err);
+      }
+    })();
+  }, []);
+  const handleFillMyMainAccount = () => {
+    const mainAcc = accountList.find((acc) => acc.flag === 'mine');
+
+    if (!mainAcc) {
+      addAlert({
+        title: '계좌 없음',
+        message: '대표 계좌가 등록되어 있지 않습니다.',
+        icon: <OctagonAlert />,
+        duration: 2500,
+      });
+      return;
+    }
+
+    form.setValue('bank_account', mainAcc.bank_account);
+    form.setValue('bank_code', bankList.find((b) => b.name === mainAcc.bank_name)?.code || '');
+    form.setValue('bank_name', mainAcc.bank_name);
+    form.setValue('account_name', mainAcc.account_name);
+  };
+
+  //계좌 선택
+  const handleOpenAccountDialog = () => {
+    setAccountDialogOpen(true);
+  };
+
+  const handleSelectAccount = (acc: BankAccount) => {
+    form.setValue('bank_account', acc.bank_account);
+    form.setValue('bank_code', bankList.find((b) => b.name === acc.bank_name)?.code || '');
+    form.setValue('bank_name', acc.bank_name);
+    form.setValue('account_name', acc.account_name);
+
+    setAccountDialogOpen(false);
+  };
+
   // 등록 버튼 클릭 시
   const onSubmit = async (values: any) => {
     try {
@@ -331,7 +379,7 @@ export default function ProjectExpenseRegister() {
             );
 
             // 서버 업로드
-            uploadedFiles = await uploadFilesToServer(uploadable, 'nexpense');
+            uploadedFiles = await uploadFilesToServer(uploadable, 'pexpense');
             uploadedFiles = uploadedFiles.map((file, i) => ({
               ...file,
               rowIdx: allNewFiles[i]?.rowIdx ?? 0,
@@ -359,6 +407,8 @@ export default function ProjectExpenseRegister() {
 
           console.log('enrichedItems:', enrichedItems);
 
+          const isEstimate: 'Y' | 'N' = projectType === 'est' ? 'Y' : 'N';
+
           // [5] 단일 객체로 데이터 전송
           const payload = {
             header: {
@@ -373,6 +423,7 @@ export default function ProjectExpenseRegister() {
               bank_code: values.bank_code,
               account_name: values.account_name,
               remark: values.remark || '',
+              is_estimate: isEstimate,
             },
             items: enrichedItems.map((i: any) => ({
               ei_type: i.type,
@@ -405,7 +456,7 @@ export default function ProjectExpenseRegister() {
             if (projectType === 'est') {
               addAlert({
                 title: '비용 등록이 완료되었습니다.',
-                message: `<p>총 <span class="text-primary-blue-500">${item_count}개</span> 비용 항목이 등록 되었습니다.\n견적서 매칭으로 이동합니다.</p>`,
+                message: `<p>총 <span class="text-primary-blue-500">${item_count}개</span> 비용 항목이 등록 되었습니다.<br />견적서 매칭으로 이동합니다.</p>`,
                 icon: <OctagonAlert />,
                 duration: 2000,
               });
@@ -491,18 +542,22 @@ export default function ProjectExpenseRegister() {
                           <FormLabel className="gap-.5 font-bold text-gray-950">
                             계좌번호<span className="text-primary-blue-500">*</span>
                           </FormLabel>
-                          <div className="flex h-5.5 overflow-hidden rounded-[var(--spacing)] border-1 border-gray-300">
+                          <div className="flex h-5 overflow-hidden rounded-[var(--spacing)]">
                             <Button
+                              type="button"
                               variant="svgIcon"
                               size="icon"
                               title="내 대표계좌"
-                              className="bg-primary-blue-500/60 hover:bg-primary-blue-500/80 h-full rounded-none">
+                              onClick={handleFillMyMainAccount}
+                              className="bg-primary-blue-300 hover:bg-primary-blue-500/80 h-full rounded-none">
                               <UserRound className="size-3.5 text-white" />
                             </Button>
                             <Button
+                              type="button"
                               variant="svgIcon"
                               size="icon"
                               title="내 계좌리스트"
+                              onClick={handleOpenAccountDialog}
                               className="h-full rounded-none bg-gray-400 hover:bg-gray-500/80">
                               <FileText className="size-3.5 text-white" />
                             </Button>

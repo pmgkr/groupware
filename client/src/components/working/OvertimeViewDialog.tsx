@@ -228,6 +228,8 @@ export default function OvertimeViewDialog({
   
   // 신청 데이터
   const overtimeData = selectedDay?.overtimeData || {
+    expectedStartTime: "",
+    expectedStartTimeMinute: "",
     expectedEndTime: "",
     expectedEndMinute: "",
     mealAllowance: "",
@@ -314,9 +316,15 @@ export default function OvertimeViewDialog({
           {selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="overtime-hours">추가근무 시간</Label>
-                <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
-                  <span className="text-base">{overtimeData.overtimeHours}시간 {overtimeData.overtimeMinutes}분</span>
+                <Label htmlFor="expected-start-time">예상 업무 시간</Label>
+                <div className="flex-1 flex gap-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
+                  <span className="text-base">
+                    {overtimeData.expectedStartTime}시 {overtimeData.expectedStartTimeMinute}분
+                  </span>
+                  -
+                  <span className="text-base">
+                    {overtimeData.expectedEndTime}시 {overtimeData.expectedEndMinute}분
+                  </span>
                 </div>
               </div>
 

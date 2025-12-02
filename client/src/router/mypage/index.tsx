@@ -10,15 +10,16 @@ export const mypageRoutes: RouteObject = {
     title: '마이페이지',
     nav: [
       { to: '/mypage', label: '내 프로필', end: true },
-      { to: '/mypage/expense', label: '내 비용관리' },
       { to: '/mypage/vacation', label: '휴가 내역' },
       { to: '/mypage/overtime', label: '추가근무 내역' },
+      { to: '/mypage/expense', label: '내 비용관리' },
+
     ],
   },
   children: [
     { index: true, element: <Mypage /> },
-    { path: 'expense', element: <MyExpense /> },
     { path: 'vacation', element: <Vacation /> },
     { path: 'overtime', element: <Overtime /> },
+    { path: 'expense', element: <MyExpense /> },
   ],
 };

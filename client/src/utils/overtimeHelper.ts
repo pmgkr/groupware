@@ -1,4 +1,5 @@
 import type { WorkData } from '@/types/working';
+import type { ClientList } from '@/api/common/project';
 
 /**
  * 초과근무 타입 결정
@@ -53,6 +54,8 @@ export const convertRewardType = (
  * 초과근무 신청 데이터를 API 파라미터로 변환
  */
 export interface OvertimeFormData {
+  expectedStartTime: string;
+  expectedStartTimeMinute: string;
   expectedEndTime: string;
   expectedEndMinute: string;
   mealAllowance: string;
@@ -79,7 +82,8 @@ export interface OvertimeApiParams {
 
 export const buildOvertimeApiParams = (
   selectedDay: WorkData,
-  formData: OvertimeFormData
+  formData: OvertimeFormData,
+  clientList: ClientList[] = []
 ): OvertimeApiParams => {
   const otType = determineOvertimeType(
     selectedDay.dayOfWeek,
@@ -100,44 +104,60 @@ export const buildOvertimeApiParams = (
     formattedDate = formattedDate.split('T')[0];
   }
   
+  // clientName이 cl_seq(숫자)인 경우 클라이언트 이름으로 변환
+  let clientName = formData.clientName || '';
+  if (clientName && clientList.length > 0) {
+    const clientSeq = parseInt(clientName, 10);
+    if (!isNaN(clientSeq)) {
+      const client = clientList.find(c => c.cl_seq === clientSeq);
+      if (client) {
+        clientName = client.cl_name;
+      }
+    }
+  }
+  
   // 기본 필수 필드
   const apiParams: OvertimeApiParams = {
     ot_type: otType,
     ot_date: formattedDate,
-    ot_client: formData.clientName || '',
+    ot_client: clientName,
     ot_description: formData.workDescription || '',
   };
 
-  // 평일인 경우: 예상 퇴근 시간, 식대, 교통비만 추가
-  if (!isWeekendOrHol) {
+  // weekday일 때: 예상 퇴근 시간, 식대, 교통비만 추가
+  if (otType === 'weekday') {
+    // weekday일 때는 ot_stime을 null로 전송
+    apiParams.ot_stime = null as any;
     // expectedEndTime과 expectedEndMinute가 비어있지 않은 경우에만 처리
     if (formData.expectedEndTime && formData.expectedEndMinute) {
       const hour = formData.expectedEndTime.padStart(2, '0');
       const minute = formData.expectedEndMinute.padStart(2, '0');
-      apiParams.ot_stime = `${hour}:${minute}:00`;
       apiParams.ot_etime = `${hour}:${minute}:00`;
     }
     apiParams.ot_food = formData.mealAllowance === 'yes' ? 'Y' : 'N';
     apiParams.ot_trans = formData.transportationAllowance === 'yes' ? 'Y' : 'N';
   }
 
-  // 주말 또는 공휴일인 경우: 초과근무 시간, 보상 지급방식만 추가
+  // 주말 또는 공휴일인 경우: 출근 시간, 퇴근 시간, 보상 지급방식 추가 (ot_hours는 백엔드에서 처리)
   if (isWeekendOrHol) {
-    // 시간과 분을 소수점 형태로 변환 (예: 2시간 30분 = "2.5")
-    const hours = parseInt(formData.overtimeHours) || 0;
-    const minutes = parseInt(formData.overtimeMinutes) || 0;
-    const totalHours = hours + (minutes / 60);
-    
-    // 근무 시간이 0인 경우 에러 발생
-    if (totalHours <= 0) {
-      throw new Error('추가근무 시간을 입력해주세요.');
+    // 출근 시간
+    if (formData.expectedStartTime && formData.expectedStartTimeMinute) {
+      const startHour = parseInt(formData.expectedStartTime) || 0;
+      const startMinute = formData.expectedStartTimeMinute.padStart(2, '0');
+      const hour = startHour >= 24 ? String(startHour - 24).padStart(2, '0') : String(startHour).padStart(2, '0');
+      apiParams.ot_stime = `${hour}:${startMinute}:00`;
     }
     
-    apiParams.ot_hours = totalHours.toString();
+    // 퇴근 시간
+    if (formData.expectedEndTime && formData.expectedEndMinute) {
+      const endHour = parseInt(formData.expectedEndTime) || 0;
+      const endMinute = formData.expectedEndMinute.padStart(2, '0');
+      const hour = endHour >= 24 ? String(endHour - 24).padStart(2, '0') : String(endHour).padStart(2, '0');
+      apiParams.ot_etime = `${hour}:${endMinute}:00`;
+    }
     
-    // 토요일, 일요일, 공휴일인 경우 ot_stime, ot_etime을 00:00:00으로 설정
-    apiParams.ot_stime = '00:00:00';
-    apiParams.ot_etime = '00:00:00';
+    // ot_hours는 백엔드에서 계산하므로 0으로 전송
+    apiParams.ot_hours = '0';
     
     // 보상 지급방식
     apiParams.ot_reward = convertRewardType(formData.overtimeType);

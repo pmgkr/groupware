@@ -1,4 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router';
+import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/hooks/useUser';
 import { cn } from '@/lib/utils';
@@ -16,6 +17,14 @@ export default function Header() {
 
   const { user_name, job_role, profile_image } = useUser();
   const { logout } = useAuth();
+
+  // profile_image가 변경될 때만 타임스탬프를 업데이트하여 무한 로딩 방지
+  const profileImageUrl = useMemo(() => {
+    if (profile_image) {
+      return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${profile_image}?t=${Date.now()}`;
+    }
+    return getImageUrl('dummy/profile');
+  }, [profile_image]);
 
   const logoutClick = async () => {
     await logout(); // 서버 쿠키 삭제 + 토큰 초기화
@@ -57,11 +66,7 @@ export default function Header() {
           <Link to="/mypage">
             <div className="relative mx-auto mb-2.5 aspect-square w-25 overflow-hidden rounded-[50%]">
               <img
-                src={
-                  profile_image
-                    ? `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${profile_image}?t=${Date.now()}`
-                    : getImageUrl('dummy/profile')
-                }
+                src={profileImageUrl}
                 alt="프로필 이미지"
                 className="h-full w-full object-cover"
               />

@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import OvertimeViewDialog from '@/components/working/OvertimeViewDialog';
 import OvertimeDialog from '@/components/working/OvertimeDialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { MyOvertimeHistory as fetchMyOvertimeHistory, type MyOvertimeItem } from '@/api/mypage';
+import { MyOvertimeHistory as fetchMyOvertimeHistory, type MyOvertimeItem } from '@/api/mypage/overtime';
 import { workingApi } from '@/api/working';
 import { buildOvertimeApiParams } from '@/utils/overtimeHelper';
 import { useToast } from '@/components/ui/use-toast';
@@ -23,9 +23,7 @@ export interface MyOvertimeHistoryProps {
 export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear = new Date().getFullYear() }: MyOvertimeHistoryProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  
-  console.log('MyOvertimeHistory 렌더링 - selectedYear:', selectedYear);
-  
+    
   // 데이터 state
   const [allData, setAllData] = useState<MyOvertimeItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -81,13 +79,10 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
 
     setLoading(true);
     try {
-      console.log('추가근무 내역 조회 - selectedYear:', selectedYear, 'page:', page);
       const overtimeData = await fetchMyOvertimeHistory(page, pageSize, selectedYear, user.user_id);
-      console.log('추가근무 내역 조회 결과:', overtimeData.items?.length, '건');
       setAllData(overtimeData.items || []);
       setLoading(false);
     } catch (error) {
-      console.error('추가근무 내역 조회 실패:', error);
       setAllData([]);
       setLoading(false);
     }
@@ -173,17 +168,38 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
     return timeStr;
   };
 
+  // 시간 문자열에서 시간/분 추출 (ISO 형식 또는 HH:mm:ss 형식)
+  const extractTimeFromISO = (timeString: string): { hour: string; minute: string } => {
+    if (!timeString) return { hour: '', minute: '' };
+    
+    // ISO 형식 (예: "2024-01-01T09:00:00" 또는 "2024-01-01T09:00:00Z")
+    const isoMatch = timeString.match(/T(\d{2}):(\d{2})/);
+    if (isoMatch) {
+      return {
+        hour: String(parseInt(isoMatch[1])),
+        minute: String(parseInt(isoMatch[2]))
+      };
+    }
+    
+    // HH:mm:ss 형식 (예: "09:00:00")
+    const timeMatch = timeString.match(/^(\d{2}):(\d{2})/);
+    if (timeMatch) {
+      return {
+        hour: String(parseInt(timeMatch[1])),
+        minute: String(parseInt(timeMatch[2]))
+      };
+    }
+    
+    return { hour: '', minute: '' };
+  };
+
   // MyOvertimeItem을 WorkData로 변환하는 함수
   const convertToWorkData = useCallback((item: MyOvertimeItem): WorkData => {
-    // ot_etime에서 시/분 추출
-    let expectedHour = "";
-    let expectedMinute = "";
-    if (item.ot_etime) {
-      const timeStr = item.ot_etime.includes('T') ? item.ot_etime.split('T')[1] : item.ot_etime;
-      const timeParts = timeStr.split(':');
-      expectedHour = timeParts[0] || "";
-      expectedMinute = timeParts[1] || "";
-    }
+    // ot_stime에서 시/분 추출 (출근 시간)
+    const startTime = item.ot_stime ? extractTimeFromISO(item.ot_stime.toString()) : { hour: '', minute: '' };
+    
+    // ot_etime에서 시/분 추출 (퇴근 시간)
+    const endTime = item.ot_etime ? extractTimeFromISO(item.ot_etime.toString()) : { hour: '', minute: '' };
     
     // ot_hours에서 시간/분 추출
     const hours = item.ot_hours ? parseFloat(item.ot_hours) : 0;
@@ -229,8 +245,10 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
       overtimeStatus: mapStatus(item.ot_status),
       overtimeId: item.id,
       overtimeData: {
-        expectedEndTime: expectedHour,
-        expectedEndMinute: expectedMinute,
+        expectedStartTime: startTime.hour,
+        expectedStartTimeMinute: startTime.minute,
+        expectedEndTime: endTime.hour,
+        expectedEndMinute: endTime.minute,
         mealAllowance: item.ot_food === 'Y' ? 'yes' : 'no',
         transportationAllowance: item.ot_trans === 'Y' ? 'yes' : 'no',
         overtimeHours: overtimeHours,
@@ -287,17 +305,16 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
     try {
       // 추가근무 API 파라미터 구성
       const selectedDay = convertToWorkData(selectedOvertime);
-      const apiParams = buildOvertimeApiParams(selectedDay, overtimeData);
+      const apiParams = buildOvertimeApiParams(selectedDay, overtimeData, []);
       
-      // API 호출
-      await workingApi.requestOvertime(apiParams);
+      // API 호출(Dialog에서 저장하므로 해당 코드 삭제)
+      // await workingApi.requestOvertime(apiParams);
       
       // 성공 시 데이터 다시 로드
       fetchOvertimeData();
       
       handleCloseReapplyDialog();
     } catch (error: any) {
-      console.error('추가근무 재신청 실패:', error);
       const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
       alert(`추가근무 재신청에 실패했습니다.\n오류: ${errorMessage}`);
     }
@@ -406,7 +423,9 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
                 </>
               ) : (
                 <>
-                  <TableCell className="text-center p-2">{formatHours(item.ot_hours)}</TableCell>
+                  <TableCell className="text-center p-2">
+                    {formatTime(item.ot_stime)}-{formatTime(item.ot_etime)} ({formatHours(item.ot_hours)})
+                  </TableCell>
                   <TableCell className="text-center p-2">{getRewardText(item.ot_reward)}</TableCell>
                 </>
               )}
