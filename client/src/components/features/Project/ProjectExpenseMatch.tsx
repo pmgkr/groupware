@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { formatKST, formatAmount } from '@/utils';
-import { getProjectExpenseView, type pExpenseViewDTO, getEstimateInfo, type EstimateHeaderView } from '@/api';
+import {
+  getProjectExpenseView,
+  type pExpenseViewDTO,
+  getEstimateInfo,
+  type EstimateHeaderView,
+  getEstimateItemsInfo,
+  type EstimateItemsView,
+} from '@/api';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
@@ -14,6 +21,12 @@ import { File, Link as LinkIcon, FolderSearch } from 'lucide-react';
 import { format } from 'date-fns';
 import { statusIconMap, getLogMessage } from '../Expense/utils/statusUtils';
 import EstimateMatching from './_components/EstimateMatching';
+import { type expenseInfo } from '@/types/estimate';
+
+export interface estViewMatchDTO {
+  header: EstimateHeaderView;
+  items: EstimateItemsView[];
+}
 
 export default function ProjectExpenseMatch() {
   const { projectId } = useParams(); // 프로젝트 ID
@@ -26,8 +39,8 @@ export default function ProjectExpenseMatch() {
 
   // 견적서 다이얼로그 State
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [estLoading, setEstLoading] = useState(false);
-  const [estData, setEstData] = useState<EstimateHeaderView | null>(null);
+  const [expenseInfo, setExpenseInfo] = useState<expenseInfo | null>(null);
+  const [matchedItems, setMatchedItems] = useState<EstimateItemsView[]>([]);
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
@@ -110,21 +123,9 @@ export default function ProjectExpenseMatch() {
   // ----------------------------------------
   // 견적서 불러오기 핸들러
   // ----------------------------------------
-
-  const handleEstimateInfo = async () => {
+  const handleEstimateInfo = (seq: number, ei_amount: number) => {
     setDialogOpen(true);
-    setEstLoading(true);
-
-    try {
-      const res = await getEstimateInfo(projectId);
-      setEstData(res);
-
-      console.log(res);
-    } catch (err) {
-      console.error('❌ 비용 상세 조회 실패:', err);
-    } finally {
-      setLoading(false);
-    }
+    setExpenseInfo({ seq: seq, ei_amount: ei_amount });
   };
 
   return (
@@ -240,6 +241,7 @@ export default function ProjectExpenseMatch() {
                   <TableHead className="w-[10%]">세금</TableHead>
                   <TableHead className="w-[14%]">합계</TableHead>
                   <TableHead className="w-[20%]">증빙자료</TableHead>
+                  <TableHead className="w-[8%]">견적서</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -274,6 +276,14 @@ export default function ProjectExpenseMatch() {
                       ) : (
                         <TableCell>-</TableCell>
                       )}
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className="cursor-pointer text-xs"
+                          onClick={() => handleEstimateInfo(item.seq, item.ei_amount)}>
+                          매칭하기
+                        </Badge>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -303,11 +313,8 @@ export default function ProjectExpenseMatch() {
         <div className="w-[24%]">
           <div className="flex justify-between">
             <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
-            <Button type="button" size="sm" className="px-2.5" onClick={handleEstimateInfo}>
-              견적서 불러오기
-            </Button>
           </div>
-          <EstimateMatching />
+          <EstimateMatching matchedItems={matchedItems} expenseInfo={expenseInfo} onReset={handleResetMatching} onRefresh={fetchExpense} />
         </div>
       </div>
 
