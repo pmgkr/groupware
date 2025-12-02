@@ -78,9 +78,11 @@ export interface ReportCard {
   content?: string;
   price: number;
   team: string;
+  team_name: string;
   user: string;
   user_id: string;
   date: string;
+  rp_user_name: string;
 }
 
 export async function getReportList(): Promise<ReportCard[]> {

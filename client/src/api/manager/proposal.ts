@@ -55,16 +55,9 @@ export async function rejectReport(rp_seq: string, user_id: string) {
   });
 }
 
-//팀 가져오기
-export type MemberDTO = {
-  user_id: string;
-  user_name: string;
-  team_id: number | null;
-  team_name: string;
-  job_role?: string | null;
-};
-export async function getMemberList(): Promise<MemberDTO[]> {
-  return http<MemberDTO[]>('/user/common/memberlist', {
-    method: 'GET',
+//기안서 삭제
+export async function deleteReport(rp_seq: string) {
+  return await http(`/user/office/report/delete/${rp_seq}`, {
+    method: 'DELETE',
   });
 }

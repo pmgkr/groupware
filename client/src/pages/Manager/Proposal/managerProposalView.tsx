@@ -3,7 +3,6 @@ import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { type ApprovalState, type Step } from '@/components/features/proposal/ProposalProgress';
-//import { approveReport, getReportInfoManager, rejectReport, type MemberDTO, type ReportFileDTO } from '@/api/expense/proposal';
 import ProposalViewContent from '@/components/features/proposal/ProposalView';
 import { useUser } from '@/hooks/useUser';
 import { getMemberList } from '@/api';
@@ -11,7 +10,7 @@ import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { AlertTriangle, CircleCheck, CircleX } from 'lucide-react';
 import type { ReportFileDTO } from '@/api/expense/proposal';
-import { approveReport, getReportInfoManager, rejectReport, type MemberDTO } from '@/api/manager/proposal';
+import { approveReport, getReportInfoManager, rejectReport } from '@/api/manager/proposal';
 
 export default function ManagerProposalView() {
   const { id } = useParams<{ id: string }>();
@@ -21,9 +20,6 @@ export default function ManagerProposalView() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [loading, setLoading] = useState(true);
   const user = useUser();
-  const [members, setMembers] = useState<MemberDTO[]>([]);
-  const writer = members.find((m) => m.user_id === report?.rp_user_id);
-  const writerTeamName = writer?.team_name;
   const [searchParams] = useSearchParams();
   const currentTab = searchParams.get('tab') || 'pending';
 
@@ -36,9 +32,6 @@ export default function ManagerProposalView() {
         const data = await getReportInfoManager(id); // 매니저용 API
         setReport(data.report);
         setFiles(data.files || []);
-
-        const list = await getMemberList(); // ⭐ 전체 직원 목록
-        setMembers(list);
 
         // Steps 생성
         const roleLabels: Record<number, string> = {
@@ -178,6 +171,7 @@ export default function ManagerProposalView() {
     return false;
   })();
 
+  const writerTeamName = report.team_name;
   // 실제 렌더링 - 공통 컴포넌트에 데이터 전달
   return (
     <ProposalViewContent

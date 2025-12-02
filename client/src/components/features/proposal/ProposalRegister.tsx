@@ -87,6 +87,7 @@ export default function ProposalRegister() {
         references: [],
         files: uploaded.map((f) => ({
           rf_name: f.fname,
+          rf_sname: f.sname,
           rf_type: f.ext,
         })),
       };

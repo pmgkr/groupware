@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { formatAmount, formatKST } from '@/utils';
 import { useEffect, useState } from 'react';
 import { generateReportNumber, type ReportCard } from '@/api/expense/proposal';
-import type { ManagerReportCard, MemberDTO } from '@/api/manager/proposal';
+import type { ManagerReportCard } from '@/api/manager/proposal';
 import { useNavigate, useSearchParams } from 'react-router';
 
 interface ProposalListContentProps {
@@ -17,7 +17,6 @@ interface ProposalListContentProps {
 
   // 매니저용 옵션
   isManager?: boolean; // 매니저 화면인지 여부
-  members?: MemberDTO[];
   showWriterInfo?: boolean; //기안자 확인용
   showRegisterButton?: boolean; //승인반려버튼
 }
@@ -40,7 +39,6 @@ const categories = [
 export default function ProposalList({
   reports,
   pageSize = 10,
-  members,
   onRowClick,
   onRegister,
   showWriterInfo = false,
@@ -63,18 +61,6 @@ export default function ProposalList({
     const tab = searchParams.get('tab') || (isManager ? 'pending' : 'draft');
     setActiveTab(tab);
   }, [searchParams]);
-
-  // 작성자/팀 정보를 찾는 함수
-  const getWriterInfo = (userId: string) => {
-    if (!members) return null;
-    const m = members.find((mem) => mem.user_id === userId);
-    if (!m) return null;
-
-    return {
-      name: m.user_name,
-      team: m.team_name,
-    };
-  };
 
   // 탭 필터링
   const managerTabs = [
@@ -198,7 +184,7 @@ export default function ProposalList({
             </TableRow>
           ) : (
             paginatedReports.map((report) => {
-              const writer = showWriterInfo ? getWriterInfo(report.user_id) : null;
+              const writer = showWriterInfo ? { team: report.team, name: report.user } : null;
 
               return (
                 <TableRow key={report.id} onClick={() => onRowClick(report.id, activeTab)} className="cursor-pointer hover:bg-gray-100">

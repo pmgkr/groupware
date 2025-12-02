@@ -13,6 +13,7 @@ interface ProposalViewContentProps {
   showApprovalButtons?: boolean;
   onApprove?: () => void;
   onReject?: () => void;
+  onDelete?: () => void;
 
   // 파일 리스트 추가
   files?: {
@@ -32,6 +33,7 @@ export default function ProposalView({
   onBack,
   onApprove,
   onReject,
+  onDelete,
   showApprovalButtons = false,
   showWriterInfo = false,
   writerTeamName,
@@ -66,7 +68,7 @@ export default function ProposalView({
           {showWriterInfo && (
             <>
               <div className="px-3">
-                <span className="mr-2 text-gray-900">팀</span> {writerTeamName}
+                <span className="mr-2 text-gray-900">팀</span> {report.team_name}
               </div>
               <div className="px-3">
                 <span className="mr-2 text-gray-900">작성자</span> {report.rp_user_name}
@@ -90,20 +92,26 @@ export default function ProposalView({
       <div className="mb-4 flex items-center justify-between bg-gray-50 py-4">
         <div>
           {/* 첨부파일 */}
-          {files.map((file) => (
-            <Button
-              key={file.rf_seq}
-              variant="outline"
-              className="hover:text-primary-blue-500 hover:bg-primary-blue-100 mr-2 text-sm [&]:border-gray-300 [&]:p-4"
-              onClick={() => {
-                // ✨ 다운로드 URL 생기면 연결
-                console.log('파일 다운로드 준비:', file);
-              }}>
-              <div className="flex items-center gap-2">
-                <span className="font-normal">{file.rf_name}</span>
-              </div>
+          {files.map((file) => {
+            const url = `https://gbend.cafe24.com/uploads/report/${file.rf_sname}`;
+
+            return (
+              <Button
+                key={file.rf_seq}
+                variant="outline"
+                className="hover:bg-primary-blue-100 mr-2 text-sm text-gray-500 [&]:border-gray-300 [&]:p-4"
+                onClick={() => window.open(url, '_blank')}>
+                {file.rf_name}
+              </Button>
+            );
+          })}
+        </div>
+        <div className="flex gap-2">
+          {onDelete && (
+            <Button variant="destructive" size="sm" className="bg-red-500 text-white" onClick={onDelete}>
+              삭제
             </Button>
-          ))}
+          )}
         </div>
       </div>
 

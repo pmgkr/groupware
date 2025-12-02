@@ -2,14 +2,12 @@
 import { useNavigate } from 'react-router';
 import { useEffect, useState } from 'react';
 import ProposalListContent from '@/components/features/proposal/ProposalList';
-import { getReportListManager, type ManagerReportCard, type MemberDTO } from '@/api/manager/proposal';
-import { getMemberList } from '@/api';
+import { getReportListManager, type ManagerReportCard } from '@/api/manager/proposal';
 
 export default function ManagerProposalList() {
   const [reports, setReports] = useState<ManagerReportCard[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const [members, setMembers] = useState<MemberDTO[]>([]);
 
   // 결재 상태 텍스트 매핑 (팀장 전용)
   const getManagerDisplayState = (state: string | null) => {
@@ -39,9 +37,6 @@ export default function ManagerProposalList() {
         }));
 
         setReports(processed);
-
-        const memberList = await getMemberList();
-        setMembers(memberList);
       } catch (err) {
         console.error('❌ 매니저용 보고서 목록 불러오기 실패:', err);
       } finally {
@@ -60,7 +55,6 @@ export default function ManagerProposalList() {
     <ProposalListContent
       reports={reports}
       isManager={true}
-      members={members}
       showWriterInfo={true}
       onRowClick={(id, tab) => navigate(`view/${id}?tab=${tab}`)}
       showRegisterButton={false}
