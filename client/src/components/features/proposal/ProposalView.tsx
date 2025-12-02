@@ -1,58 +1,43 @@
-import { useParams, useNavigate } from 'react-router';
-import { dummyReports } from '@/components/report/BlockItem';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
-import { CircleX } from '@/assets/images/icons';
-import ProposalProgress, { type ApprovalState, type Step } from './ProposalProgress';
-import { generateReportNumber, getReportInfo, type ReportInfoResponse } from '@/api/expense/proposal';
+import ProposalProgress, { type Step } from '@/components/features/proposal/ProposalProgress';
+import { generateReportNumber } from '@/api/expense/proposal';
 import { formatAmount, formatKST } from '@/utils';
 
-export default function ProposalView() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const [report, setReport] = useState<any>(null);
-  const [lines, setLines] = useState<any[]>([]);
-  const [steps, setSteps] = useState<Step[]>([]);
-  const [data, setData] = useState<ReportInfoResponse | null>(null);
+interface ProposalViewContentProps {
+  report: any;
+  steps: Step[];
+  onBack: () => void;
+  // 매니저용 추가 props (옵셔널)
+  showWriterInfo?: boolean;
+  writerTeamName?: string;
+  showApprovalButtons?: boolean;
+  onApprove?: () => void;
+  onReject?: () => void;
+  onDelete?: () => void;
 
-  useEffect(() => {
-    if (!id) return;
+  // 파일 리스트 추가
+  files?: {
+    rf_seq: number;
+    rp_seq: number;
+    rf_name: string;
+    rf_type: string;
+    rf_uploaded_at: string;
+    rf_sname?: string; // 서버 저장명 있을 수 있음
+  }[];
+}
 
-    (async () => {
-      try {
-        const data = await getReportInfo(id);
-        setReport(data.report);
-        setLines(data.lines);
-
-        //step변환
-        const roleLabels: Record<number, string> = {
-          2: '팀장',
-          3: '회계팀장',
-          4: '대표',
-        };
-
-        const converted = data.lines.map((line) => ({
-          label: roleLabels[line.rl_order],
-          status: line.rl_state as ApprovalState,
-        }));
-
-        setSteps(converted.slice(1, 4));
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-  }, [id]);
-
-  if (!report) {
-    return (
-      <div className="p-6 text-center">
-        <p className="mb-4 text-gray-500">해당 문서를 찾을 수 없습니다.</p>
-        <Button onClick={() => navigate(-1)}>뒤로가기</Button>
-      </div>
-    );
-  }
-
-  //문서번호
+export default function ProposalView({
+  report,
+  steps,
+  files = [],
+  onBack,
+  onApprove,
+  onReject,
+  onDelete,
+  showApprovalButtons = false,
+  showWriterInfo = false,
+  writerTeamName,
+}: ProposalViewContentProps) {
   const reportNum = generateReportNumber(report.rp_category, report.rp_seq);
 
   return (
@@ -60,23 +45,35 @@ export default function ProposalView() {
       <div className="flex justify-between p-4 pr-1">
         <h2 className="border-gray-900 text-2xl font-bold">{report.rp_title}</h2>
       </div>
+
       <div className="mb-4 flex items-center justify-between">
         <div className="flex divide-x divide-gray-300 border-t border-b border-gray-300 p-4 text-base leading-tight text-gray-500">
-          <div className="px-3 pl-0">
+          <div className="px-3">
+            <span className="mr-2 text-gray-900">문서번호</span>
+            {reportNum}
+          </div>
+          <div className="px-3">
             <span className="mr-2 text-gray-900">구분</span> {report.rp_category}
           </div>
           <div className="px-3">
             <span className="mr-2 text-gray-900">금액</span> {formatAmount(report.rp_cost)}
           </div>
-          <div className="px-3">
-            <span className="mr-2 text-gray-900">문서번호</span>
-            {reportNum}
-          </div>
+
           {report.rp_category === '프로젝트' && report.rp_project_no && (
             <div className="px-3">
               <span className="mr-2 text-gray-900">프로젝트 번호</span>
               {report.rp_project_no}
             </div>
+          )}
+          {showWriterInfo && (
+            <>
+              <div className="px-3">
+                <span className="mr-2 text-gray-900">팀</span> {report.team_name}
+              </div>
+              <div className="px-3">
+                <span className="mr-2 text-gray-900">작성자</span> {report.rp_user_name}
+              </div>
+            </>
           )}
           <div className="px-3">
             <span className="mr-2 text-gray-900">작성일자</span>
@@ -91,20 +88,54 @@ export default function ProposalView() {
       <div className="bg-gray-200 p-5">
         <div className="mb-6 text-gray-800" dangerouslySetInnerHTML={{ __html: report.rp_content }}></div>
       </div>
-      <div className="mb-6 bg-gray-50 py-4">
-        <Button
-          variant="outline"
-          className="hover:text-primary-blue-500 hover:bg-primary-blue-100 mr-2 text-sm [&]:border-gray-300 [&]:p-4">
-          <div className="flex items-center gap-2">
-            <span className="font-normal">파일명.pdf</span>
-          </div>
-        </Button>
+
+      <div className="mb-4 flex items-center justify-between bg-gray-50 py-4">
+        <div>
+          {/* 첨부파일 */}
+          {files.map((file) => {
+            const url = `https://gbend.cafe24.com/uploads/report/${file.rf_sname}`;
+
+            return (
+              <Button
+                key={file.rf_seq}
+                variant="outline"
+                className="hover:bg-primary-blue-100 mr-2 text-sm text-gray-500 [&]:border-gray-300 [&]:p-4"
+                onClick={() => window.open(url, '_blank')}>
+                {file.rf_name}
+              </Button>
+            );
+          })}
+        </div>
+        <div className="flex gap-2">
+          {onDelete && (
+            <Button variant="destructive" size="sm" className="bg-red-500 text-white" onClick={onDelete}>
+              삭제
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div className="text-right">
-        <Button variant="outline" size="sm" onClick={() => navigate('..')}>
-          목록
-        </Button>
+      <div className="flex justify-between">
+        <div>
+          <Button variant="outline" size="sm" onClick={onBack}>
+            목록
+          </Button>
+        </div>
+        {/* 매니저 전용 승인/반려 버튼 */}
+        {showApprovalButtons && (
+          <div className="flex gap-2">
+            <Button className="bg-destructive hover:bg-destructive mr-0 w-15" variant="destructive" size="sm" onClick={onReject}>
+              반려
+            </Button>
+            <Button
+              className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0 w-15"
+              variant="default"
+              size="sm"
+              onClick={onApprove}>
+              승인
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
