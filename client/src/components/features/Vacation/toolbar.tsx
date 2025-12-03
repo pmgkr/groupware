@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router';
 import { Button } from "@components/ui/button";
 import { MultiSelect } from "@components/multiselect/multi-select";
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,7 @@ interface VacationToolbarProps {
   onFilterChange?: (filters: VacationFilters) => void;
   checkedItems?: number[];
   onApproveAll?: () => void;
+  onListClick?: () => void;
   page?: 'manager' | 'admin';
   maxCount?: number;
 }
@@ -40,10 +42,15 @@ export default function VacationToolbar({
   onFilterChange = () => {},
   checkedItems = [],
   onApproveAll = () => {},
+  onListClick = () => {},
   page = 'manager',
   maxCount = 0
 }: VacationToolbarProps) {
   const { user } = useAuth();
+  const location = useLocation();
+  
+  // 최고관리자-휴가관리-상세페이지
+  const isAdminDetailPage = location.pathname.includes('/vacation/user/');
   
   // 팀 관련 state
   const [teams, setTeams] = useState<MyTeamItem[]>([]);
@@ -407,6 +414,9 @@ export default function VacationToolbar({
       
       {page === 'manager' && (
         <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>승인하기</Button>
+      )}
+      {page === 'admin' && isAdminDetailPage && (
+        <Button onClick={onListClick} size="sm">목록</Button>
       )}
     </div>
   );

@@ -166,8 +166,13 @@ export type MyVacationItem = {
   sch_status?: string; // Y: 등록 완료, H: 취소 요청됨, N: 취소 완료
 };
 
-export async function MyVacationHistory(vyear: number): Promise<MyVacationItem[]> {
-  const res = await http<{ summary: MyVacationSummary[]; lists: MyVacationItem[] }>(`/mypage/vacation?vyear=${vyear}`, { method: 'GET' });
+export async function MyVacationHistory(vyear: number, user_id?: string): Promise<MyVacationItem[]> {
+  const params = new URLSearchParams();
+  params.append('vyear', vyear.toString());
+  if (user_id) {
+    params.append('user_id', user_id);
+  }
+  const res = await http<{ summary: MyVacationSummary[]; lists: MyVacationItem[] }>(`/mypage/vacation?${params.toString()}`, { method: 'GET' });
   return res.lists || [];
 }
 

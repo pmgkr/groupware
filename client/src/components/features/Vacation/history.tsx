@@ -6,21 +6,31 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import EventViewDialog from '@/components/calendar/EventViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { MyVacationHistory as fetchMyVacationHistory, type MyVacationItem } from '@/api/mypage/vacation';
+import { adminVacationApi } from '@/api/admin/vacation';
 import { useToast } from '@/components/ui/use-toast';
 import { AppPagination } from '@/components/ui/AppPagination';
-import Overview from '@/components/features/Vacation/overview';
 
 dayjs.locale('ko');
 
-export interface MyVacationHistoryProps {}
+export interface MyVacationHistoryProps {
+  userId?: string;
+  year?: number;
+}
 
-export default function MyVacationHistory({}: MyVacationHistoryProps) {
+export default function MyVacationHistory({ userId, year }: MyVacationHistoryProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // 연도 state
+  // 연도 state - props로 받거나 기본값 사용
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedYear, setSelectedYear] = useState<number>(year || currentYear);
+  
+  // userId가 변경되면 selectedYear도 업데이트
+  useEffect(() => {
+    if (year !== undefined) {
+      setSelectedYear(year);
+    }
+  }, [year]);
   
   // 데이터 state
   const [allData, setAllData] = useState<MyVacationItem[]>([]);
@@ -30,6 +40,9 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const pageSize = 15;
+  
+  // userId가 props로 전달되면 Admin API 사용, 없으면 MyVacationHistory API 사용
+  const isAdminView = !!userId;
 
   // URL 파라미터와 page state 동기화 (초기 로드 시에만)
   useEffect(() => {
@@ -58,32 +71,47 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
   const [selectedEvent, setSelectedEvent] = useState<MyVacationItem | null>(null);
   const [selectedCancelledItem, setSelectedCancelledItem] = useState<MyVacationItem | null>(null);
 
-  // 연도 변경 핸들러
-  const handleYearChange = (year: string) => {
-    const yearNum = parseInt(year);
-    setSelectedYear(yearNum);
-    // 페이지를 1로 리셋
-    setPage(1);
-  };
-
   // 데이터 조회 함수
   const fetchScheduleData = useCallback(async () => {
-    if (!user?.user_id || !user?.team_id) {
+    // userId가 props로 전달되면 해당 유저의 데이터를 조회, 없으면 현재 로그인한 유저의 데이터 조회
+    const targetUserId = userId || user?.user_id;
+    
+    if (!targetUserId) {
       setAllData([]);
       return;
     }
 
     setLoading(true);
     try {
-      const vacationData = await fetchMyVacationHistory(selectedYear);
+      let vacationData: MyVacationItem[];
+      
+      if (isAdminView) {
+        // Admin API 사용: /admin/vacation/info
+        const response = await adminVacationApi.getVacationInfo(targetUserId, selectedYear, page, pageSize);
+        // body를 MyVacationItem 형식으로 변환 (idx 제외)
+        vacationData = (response.body || []).map(item => ({
+          sch_id: item.sch_id,
+          v_year: item.v_year,
+          v_type: item.v_type,
+          v_count: item.v_count,
+          sdate: item.sdate,
+          edate: item.edate,
+          remark: item.remark,
+          wdate: item.wdate
+        }));
+      } else {
+        // MyVacationHistory API 사용
+        vacationData = await fetchMyVacationHistory(selectedYear);
+      }
       
       setAllData(vacationData);
       setLoading(false);
     } catch (error) {
+      console.error('휴가 이력 로드 실패:', error);
       setAllData([]);
       setLoading(false);
     }
-  }, [user?.user_id, user?.team_id, selectedYear]);
+  }, [userId, user?.user_id, selectedYear, page, pageSize, isAdminView]);
 
   // 데이터 조회
   useEffect(() => {
@@ -233,8 +261,6 @@ export default function MyVacationHistory({}: MyVacationHistoryProps) {
 
   return (
     <>
-      <Overview onYearChange={handleYearChange} />
-
       <div ref={tableRef} className="w-full">
       <Table key={`table-${page}`} variant="primary" align="center" className="table-fixed w-full">
         <TableHeader>
