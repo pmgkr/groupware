@@ -5,19 +5,19 @@ import 'dayjs/locale/ko';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import EventViewDialog from '@/components/calendar/EventViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { MyVacationHistory as fetchMyVacationHistory, type MyVacationItem } from '@/api/mypage/vacation';
+import { MyVacationHistory as fetchVacationHistory, type MyVacationItem as VacationItem } from '@/api/mypage/vacation';
 import { adminVacationApi } from '@/api/admin/vacation';
 import { useToast } from '@/components/ui/use-toast';
 import { AppPagination } from '@/components/ui/AppPagination';
 
 dayjs.locale('ko');
 
-export interface MyVacationHistoryProps {
+export interface VacationHistoryProps {
   userId?: string;
   year?: number;
 }
 
-export default function MyVacationHistory({ userId, year }: MyVacationHistoryProps) {
+export default function VacationHistory({ userId, year }: VacationHistoryProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -32,8 +32,15 @@ export default function MyVacationHistory({ userId, year }: MyVacationHistoryPro
     }
   }, [year]);
   
+  // userId가 변경되면 데이터 초기화
+  useEffect(() => {
+    if (userId) {
+      setAllData([]);
+    }
+  }, [userId]);
+  
   // 데이터 state
-  const [allData, setAllData] = useState<MyVacationItem[]>([]);
+  const [allData, setAllData] = useState<VacationItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   // 페이지네이션 state (URL 파라미터와 동기화)
@@ -41,7 +48,7 @@ export default function MyVacationHistory({ userId, year }: MyVacationHistoryPro
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const pageSize = 15;
   
-  // userId가 props로 전달되면 Admin API 사용, 없으면 MyVacationHistory API 사용
+  // userId가 props로 전달되면 Admin API 사용, 없으면 VacationHistory API 사용
   const isAdminView = !!userId;
 
   // URL 파라미터와 page state 동기화 (초기 로드 시에만)
@@ -68,8 +75,8 @@ export default function MyVacationHistory({ userId, year }: MyVacationHistoryPro
   
   // 일정 다이얼로그 state
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<MyVacationItem | null>(null);
-  const [selectedCancelledItem, setSelectedCancelledItem] = useState<MyVacationItem | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<VacationItem | null>(null);
+  const [selectedCancelledItem, setSelectedCancelledItem] = useState<VacationItem | null>(null);
 
   // 데이터 조회 함수
   const fetchScheduleData = useCallback(async () => {
@@ -83,25 +90,50 @@ export default function MyVacationHistory({ userId, year }: MyVacationHistoryPro
 
     setLoading(true);
     try {
-      let vacationData: MyVacationItem[];
+      let vacationData: VacationItem[];
       
       if (isAdminView) {
-        // Admin API 사용: /admin/vacation/info
-        const response = await adminVacationApi.getVacationInfo(targetUserId, selectedYear, page, pageSize);
-        // body를 MyVacationItem 형식으로 변환 (idx 제외)
-        vacationData = (response.body || []).map(item => ({
-          sch_id: item.sch_id,
-          v_year: item.v_year,
-          v_type: item.v_type,
-          v_count: item.v_count,
-          sdate: item.sdate,
-          edate: item.edate,
-          remark: item.remark,
-          wdate: item.wdate
-        }));
+        // Admin API 사용: /admin/vacation/info - 모든 페이지를 순회해서 데이터 가져오기
+        vacationData = [];
+        let currentPage = 1;
+        const fetchSize = 100; // 한 번에 가져올 데이터 수
+        let hasMore = true;
+        
+        while (hasMore) {
+          const response = await adminVacationApi.getVacationInfo(targetUserId, selectedYear, currentPage, fetchSize);
+          const pageData = (response.body || []).map(item => ({
+            sch_id: item.sch_id,
+            v_year: item.v_year,
+            v_type: item.v_type,
+            v_count: item.v_count,
+            sdate: item.sdate,
+            edate: item.edate,
+            remark: item.remark,
+            wdate: item.wdate
+          }));
+          
+          vacationData = [...vacationData, ...pageData];
+          
+          // footer 정보로 다음 페이지가 있는지 확인
+          if (response.footer) {
+            const total = response.footer.total || 0;
+            const fetched = vacationData.length;
+            hasMore = fetched < total;
+          } else {
+            // footer가 없으면 현재 페이지에 데이터가 없으면 종료
+            hasMore = pageData.length > 0;
+          }
+          
+          currentPage++;
+          
+          // 무한 루프 방지 (최대 100페이지까지만)
+          if (currentPage > 100) {
+            break;
+          }
+        }
       } else {
-        // MyVacationHistory API 사용
-        vacationData = await fetchMyVacationHistory(selectedYear);
+        // VacationHistory API 사용
+        vacationData = await fetchVacationHistory(selectedYear);
       }
       
       setAllData(vacationData);
@@ -118,31 +150,17 @@ export default function MyVacationHistory({ userId, year }: MyVacationHistoryPro
     fetchScheduleData();
   }, [fetchScheduleData]);
 
-  // sch_id별로 그룹화된 데이터
+  // 모든 데이터를 개별 항목으로 표시 (그룹화 제거)
   const groupedData = useMemo(() => {
-    const groups = new Map<number, MyVacationItem[]>();
+    // 모든 항목을 개별적으로 표시 (취소 항목 포함)
+    const result: Array<{ item: VacationItem; cancelledItem?: VacationItem }> = [];
     
+    // 모든 항목을 개별 행으로 표시
     allData.forEach(item => {
-      if (!groups.has(item.sch_id)) {
-        groups.set(item.sch_id, []);
-      }
-      groups.get(item.sch_id)!.push(item);
-    });
-    
-    // 일반 항목과 취소 완료 항목을 함께 표시
-    const result: Array<{ item: MyVacationItem; cancelledItem?: MyVacationItem }> = [];
-    
-    groups.forEach((items, schId) => {
-      const mainItem = items.find(item => item.v_type !== 'cancel');
-      const cancelledItem = items.find(item => item.v_type === 'cancel');
-      
-      // 일반 항목이 있으면 표시
-      if (mainItem) {
-        result.push({
-          item: mainItem,
-          cancelledItem: cancelledItem
-        });
-      }
+      result.push({
+        item: item,
+        cancelledItem: undefined
+      });
     });
     
     // 승인일 기준으로 정렬 (최신순)
@@ -184,7 +202,7 @@ export default function MyVacationHistory({ userId, year }: MyVacationHistoryPro
   };
 
   // 일정 클릭 핸들러
-  const handleEventClick = async (item: MyVacationItem, cancelledItem?: MyVacationItem) => {
+  const handleEventClick = async (item: VacationItem, cancelledItem?: VacationItem) => {
     setSelectedEvent(item);
     setSelectedCancelledItem(cancelledItem || null);
     setIsEventDialogOpen(true);
@@ -267,7 +285,7 @@ export default function MyVacationHistory({ userId, year }: MyVacationHistoryPro
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className="w-[20%] text-center p-2">기간</TableHead>
             <TableHead className="w-[10%] text-center p-2">유형</TableHead>
-            <TableHead className="w-[10%] text-center p-2">사용휴가일수</TableHead>
+            <TableHead className="w-[10%] text-center p-2">휴가일수</TableHead>
             <TableHead className="w-[15%] text-center p-2">승인일</TableHead>
             <TableHead className="w-[35%] text-center p-2">설명</TableHead>
           </TableRow>

@@ -23,6 +23,7 @@ export interface VacationItem {
     team_id: number;
     user_status: string;
     hire_date: string;
+    profile_image?: string | null; // 프로필 이미지
     v_current: number; // 기본연차
     v_carryover: number; //이월연차
     v_comp: number;  // 특별대휴
@@ -87,10 +88,16 @@ export const adminVacationApi = {
     });
     return response;
   },
-  grantVacation: async (user_id: string, year:number, page:number, size:number): Promise<any> => {
-    const response = await http<any>(`/admin/vacation/grant/${user_id}?year=${year}&page=${page}&size=${size}`, {
+  grantVacation: async (user_id: string, va_year: number, va_type: string, v_count: number, remark: string): Promise<any> => {
+    const response = await http<any>('/admin/vacation/grant', {
       method: 'POST',
-      body: JSON.stringify({ year, page, size })
+      body: JSON.stringify({
+        user_id,
+        va_year,
+        va_type,
+        v_count,
+        remark
+      })
     });
     return response;
   },

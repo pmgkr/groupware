@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router';
 import { Button } from "@components/ui/button";
 import { MultiSelect } from "@components/multiselect/multi-select";
@@ -32,6 +32,8 @@ interface VacationToolbarProps {
   onListClick?: () => void;
   page?: 'manager' | 'admin';
   maxCount?: number;
+  initialTeamIds?: number[];
+  initialUserIds?: string[];
 }
 
 export default function VacationToolbar({ 
@@ -44,7 +46,9 @@ export default function VacationToolbar({
   onApproveAll = () => {},
   onListClick = () => {},
   page = 'manager',
-  maxCount = 0
+  maxCount = 0,
+  initialTeamIds,
+  initialUserIds
 }: VacationToolbarProps) {
   const { user } = useAuth();
   const location = useLocation();
@@ -59,6 +63,10 @@ export default function VacationToolbar({
   // 팀원 관련 state (Admin일 때만 사용)
   const [teamMembers, setTeamMembers] = useState<Array<{ user_id: string; user_name: string }>>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  
+  // 초기값 설정 여부를 추적하는 ref
+  const initialTeamSetRef = useRef(false);
+  const initialUserSetRef = useRef(false);
   
   // 일정 필터 state
   const [filters, setFilters] = useState<VacationFilters>({
@@ -169,7 +177,14 @@ export default function VacationToolbar({
         }
       }
     } else if (id === 'users') {
-      const userValues = Array.isArray(value) ? value : [value];
+      let userValues = Array.isArray(value) ? value : [value];
+      
+      // 상세 페이지에서는 최대 1개만 선택 가능
+      if (isAdminDetailPage && userValues.length > 1) {
+        // 가장 최근에 선택한 항목만 유지
+        userValues = [userValues[userValues.length - 1]];
+      }
+      
       setSelectedUsers(userValues);
       onUserSelect(userValues);
     } else {
@@ -209,9 +224,9 @@ export default function VacationToolbar({
     loadTeams();
   }, [user, page]);
 
-  // 팀 목록이 로드되면 모든 팀 선택
+  // 팀 목록이 로드되면 모든 팀 선택 (상세 페이지가 아닐 때만)
   useEffect(() => {
-    if (teams.length > 0 && selectedTeams.length === 0) {
+    if (teams.length > 0 && selectedTeams.length === 0 && !isAdminDetailPage) {
       const allTeamIds = teams.map(team => String(team.team_id));
       setSelectedTeams(allTeamIds);
       
@@ -225,10 +240,51 @@ export default function VacationToolbar({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teams]);
-
-  // 선택된 팀이 변경될 때 팀원 목록 로드 (Admin일 때만)
+  }, [teams, isAdminDetailPage]);
+  
+  // 상세 페이지에서 초기 팀 선택값 설정 (한 번만 실행)
   useEffect(() => {
+    if (isAdminDetailPage && teams.length > 0 && initialTeamIds && initialTeamIds.length > 0 && !initialTeamSetRef.current) {
+      const teamIds = initialTeamIds.map(id => String(id));
+      // 이미 같은 값이면 설정하지 않음
+      const currentTeamIds = selectedTeams.map(id => parseInt(id)).sort().join(',');
+      const newTeamIds = initialTeamIds.sort().join(',');
+      
+      if (currentTeamIds !== newTeamIds) {
+        setSelectedTeams(teamIds);
+        onTeamSelect(initialTeamIds);
+        initialTeamSetRef.current = true;
+        
+        // 팀원 목록 로드
+        loadTeamMembers(initialTeamIds);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdminDetailPage, teams, initialTeamIds]);
+  
+  // 상세 페이지에서 초기 유저 선택값 설정 (한 번만 실행)
+  useEffect(() => {
+    if (isAdminDetailPage && teamMembers.length > 0 && initialUserIds && initialUserIds.length > 0 && !initialUserSetRef.current) {
+      // 이미 같은 값이면 설정하지 않음
+      const currentUserIds = [...selectedUsers].sort().join(',');
+      const newUserIds = [...initialUserIds].sort().join(',');
+      
+      if (currentUserIds !== newUserIds) {
+        setSelectedUsers(initialUserIds);
+        onUserSelect(initialUserIds);
+        initialUserSetRef.current = true;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdminDetailPage, teamMembers, initialUserIds]);
+
+  // 선택된 팀이 변경될 때 팀원 목록 로드 (Admin일 때만, 상세 페이지가 아닐 때만)
+  useEffect(() => {
+    // 상세 페이지에서는 initialTeamIds로 이미 설정했으므로 이 로직을 건너뜀
+    if (isAdminDetailPage && initialTeamSetRef.current) {
+      return;
+    }
+    
     if (page === 'admin' && selectedTeams.length > 0) {
       const teamIds = selectedTeams.map(id => parseInt(id));
       loadTeamMembers(teamIds);
@@ -238,7 +294,7 @@ export default function VacationToolbar({
       onUserSelect([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTeams, page]);
+  }, [selectedTeams, page, isAdminDetailPage]);
 
   // 팀 옵션 (알파벳순 정렬)
   const teamOptions = useMemo(() => {
@@ -336,7 +392,7 @@ export default function VacationToolbar({
               size="sm"
               maxCount={0}
               searchable={true}
-              hideSelectAll={false}
+              hideSelectAll={isAdminDetailPage}
               autoSize={true}
               className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
               disabled={selectedTeams.length === 0}
@@ -416,7 +472,7 @@ export default function VacationToolbar({
         <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>승인하기</Button>
       )}
       {page === 'admin' && isAdminDetailPage && (
-        <Button onClick={onListClick} size="sm">목록</Button>
+        <Button onClick={onListClick} variant="outline" size="sm">목록</Button>
       )}
     </div>
   );

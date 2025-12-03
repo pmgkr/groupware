@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router';
 import UserList from '@/components/features/Vacation/userList';
 import Toolbar from '@components/features/Vacation/toolbar';
 import type { VacationFilters } from '@components/features/Vacation/toolbar';
-import MyVacationHistoryComponent from '@components/features/Vacation/history';
+import VacationHistory from '@components/features/Vacation/history';
 import { adminVacationApi } from '@/api/admin/vacation';
 
 export default function VacationDetail() {
@@ -12,8 +12,8 @@ export default function VacationDetail() {
   
   // 선택된 팀 ID 목록 - 클릭한 유저의 팀으로 설정
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
-  // 선택된 유저 ID 목록 - 클릭한 유저로 설정
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  // 선택된 유저 ID 목록 - 클릭한 유저로 설정 (초기값으로 id 설정)
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(id ? [id] : []);
   
   // 활성 탭 (휴가 vs 이벤트)
   const [activeTab, setActiveTab] = useState<'vacation' | 'event'>('vacation');
@@ -24,6 +24,26 @@ export default function VacationDetail() {
   // 체크된 항목들
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
 
+  // 유저 정보 state (toolbar에 전달하기 위해)
+  const [userTeamId, setUserTeamId] = useState<number | null>(null);
+  const [userName, setUserName] = useState<string>('');
+
+  // id가 변경되면 상태 초기화 및 selectedUserIds 업데이트
+  useEffect(() => {
+    if (id) {
+      setSelectedUserIds([id]);
+      // 팀 정보는 API 호출 후 설정되므로 여기서는 초기화만
+      setSelectedTeamIds([]);
+      setUserTeamId(null);
+      setUserName('');
+    } else {
+      setSelectedUserIds([]);
+      setSelectedTeamIds([]);
+      setUserTeamId(null);
+      setUserName('');
+    }
+  }, [id]);
+
   // 유저 정보 로드 및 필터 설정
   useEffect(() => {
     const loadUserInfo = async () => {
@@ -33,15 +53,21 @@ export default function VacationDetail() {
         const currentYear = filters.year ? parseInt(filters.year) : new Date().getFullYear();
         const response = await adminVacationApi.getVacationInfo(id, currentYear, 1, 20);
         
-        // 유저 ID 설정
+        // 유저 ID 설정 (확실히 설정)
         setSelectedUserIds([response.header.user_id]);
+        setUserName(response.header.user_name);
         
         // 팀 ID 설정
         if (response.header.team_id) {
           setSelectedTeamIds([response.header.team_id]);
+          setUserTeamId(response.header.team_id);
         }
       } catch (error) {
         console.error('유저 정보 로드 실패:', error);
+        // 에러 발생 시에도 상태 초기화
+        setSelectedUserIds([]);
+        setSelectedTeamIds([]);
+        setUserTeamId(null);
       }
     };
     
@@ -56,6 +82,11 @@ export default function VacationDetail() {
   // 유저 선택 핸들러
   const handleUserSelect = (userIds: string[]) => {
     setSelectedUserIds(userIds);
+    
+    // 상세 페이지에서 유저 선택 시 URL 업데이트 (1개만 선택 가능)
+    if (userIds.length === 1) {
+      navigate(`/admin/vacation/user/${userIds[0]}`, { replace: true });
+    }
   };
   
   // 필터 변경 핸들러
@@ -90,6 +121,8 @@ export default function VacationDetail() {
         onApproveAll={handleApproveAll}
         onListClick={handleListClick}
         page="admin"
+        initialTeamIds={userTeamId ? [userTeamId] : undefined}
+        initialUserIds={id ? [id] : undefined}
       />
       <UserList 
         year={year}
@@ -97,7 +130,7 @@ export default function VacationDetail() {
         userIds={selectedUserIds}
       />
       <div className="mt-6">
-        <MyVacationHistoryComponent
+        <VacationHistory
         userId={id}
         year={year}
       />
