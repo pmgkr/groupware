@@ -348,6 +348,7 @@ export interface EstimateHeaderView extends EstimateHeader {
 }
 
 export interface EstimateItemsView extends EstimateItem {
+  [x: string]: any;
   seq: number;
   est_id: number;
 }
@@ -417,11 +418,14 @@ export interface EstimateEditForm {
 
 // EstimateEdit Response DTO
 // 개별 matched item 타입
+// 견적서 매칭확인 Response Type
 export interface EstimateMatchedItem {
-  seq: number; // estimate_item.seq
-  amount: string; // 수정된 amount (string으로 내려옴)
-  ava_amount: string; // 가용 금액 (amount - alloc_amount)
-  alloc_amount: string | null; // 매칭된 금액 (없으면 null)
+  seq: number;
+  target_seq: number;
+  ei_name: string;
+  alloc_amount?: number;
+  ava_amount: number;
+  pl_seq: number;
 }
 
 // 전체 Response DTO
@@ -432,6 +436,19 @@ export interface EstimateEditResponse {
   inserted_items: number[]; // 새로 추가된 estimate_item seq 목록
   updated_items: number[]; // 수정된 estimate_item seq 목록
   matched_items: EstimateMatchedItem[]; // 매칭 영향 받은 항목들
+}
+
+// ------------------------------
+// 프로젝트비용 > 견적서 API
+// ------------------------------
+export interface EstimateItemsMatch {
+  seq: number; // pexpense_match.seq
+  pl_seq: number; // pexpense_item.seq
+  target_seq: number; // estimate_item.seq
+  ei_name?: string; // 견적서 항목명
+  ava_amount?: number; // 견적서 가용 금액
+  alloc_amount: number; // 매칭된 금액
+  wdate: string;
 }
 
 // 즐겨찾기 리스트
@@ -523,7 +540,10 @@ export async function getEstimateInfo(projectId: string | undefined) {
 export async function getEstimateItemsInfo(est_id: number | undefined) {
   if (!est_id) throw new Error('견적서 ID가 필요합니다.');
 
-  return http<{ result: EstimateItemsView[] }>(`/user/pexpense/estimate/item/${est_id}`, { method: 'GET' });
+  return http<{
+    map(arg0: (item: any) => any): EstimateItemsView[];
+    result: EstimateItemsView[];
+  }>(`/user/pexpense/estimate/item/${est_id}`, { method: 'GET' });
 }
 
 // 프로젝트비용 삭제처리
@@ -538,6 +558,62 @@ export async function claimProjectTempExpense(payload: { seqs: number[] }): Prom
   const res = http<{ ok: boolean }>(`/user/pexpense/claim/`, { method: 'POST', body: JSON.stringify(payload) });
 
   return res;
+}
+
+// 프로젝트비용 > 견적서 매칭처리
+export interface ExpenseEstimateMatchItem {
+  seq: number;
+  target_seq: number;
+  alloc_amount: number;
+}
+
+export interface ExpenseEstimateMatchRequest {
+  items: ExpenseEstimateMatchItem[];
+}
+
+export interface ExpenseEstimateMatchResponse {
+  ok: boolean;
+  results: Array<{
+    seq: number;
+    pl_seq: number;
+    target_seq: number;
+    alloc_amount: string;
+  }>;
+}
+
+export interface EstimateItemsResetResponse {
+  list: {
+    ok: boolean;
+    results: Array<{
+      pl_seq: number;
+      target_seq: number;
+    }>;
+  };
+}
+
+export async function expenseEstimateMatch(payload: ExpenseEstimateMatchRequest) {
+  return http<ExpenseEstimateMatchResponse>(`/user/pexpense/estimate/match`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+// 프로젝트비용 > 견적서 매칭 조회
+export interface EstimateItemsMatchResponse {
+  list: EstimateItemsMatch[];
+}
+
+export async function getExpenseMatchedItems(ei_seq: number | undefined) {
+  if (!ei_seq) throw new Error('비용 항목 번호가 필요합니다.');
+
+  return http<EstimateItemsMatchResponse>(`/user/pexpense/estimate/info/${ei_seq}`, { method: 'POST' });
+}
+
+// 프로젝트비용 > 견적서 매칭 리셋
+export async function setExpenseMatchedReset(ei_seq: number | undefined) {
+  if (!ei_seq) throw new Error('비용 항목 번호가 필요합니다.');
+
+  return http<EstimateItemsResetResponse>(`/user/pexpense/estimate/reset/${ei_seq}`, { method: 'POST' });
 }
 
 // 견적서 리스트 조회

@@ -62,7 +62,7 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
           <AlertDialogHeader className="gap-1">
             {dialog?.title && <AlertDialogTitle dangerouslySetInnerHTML={{ __html: dialog.title }}></AlertDialogTitle>}
             {dialog?.message && (
-              <AlertDialogDescription className="leading-[1.2] text-gray-700" dangerouslySetInnerHTML={{ __html: dialog.message }} />
+              <AlertDialogDescription className="leading-[1.3] text-gray-700" dangerouslySetInnerHTML={{ __html: dialog.message }} />
             )}
           </AlertDialogHeader>
           {dialog?.content && <div className="w-full max-w-full" dangerouslySetInnerHTML={{ __html: dialog.content }}></div>}

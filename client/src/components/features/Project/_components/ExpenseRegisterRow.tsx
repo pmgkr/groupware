@@ -9,7 +9,6 @@ import { Input } from '@components/ui/input';
 import { Button } from '@components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { SearchableSelect, type SingleSelectOption } from '@components/ui/SearchableSelect';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
 import { DayPicker } from '@components/daypicker';
 import { cn } from '@/lib/utils';
 import { Calendar, Close } from '@/assets/images/icons';

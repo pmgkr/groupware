@@ -1,44 +1,73 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
-import { formatKST, formatAmount } from '@/utils';
+import { formatKST, formatAmount, displayUnitPrice } from '@/utils';
 import {
   getProjectExpenseView,
-  type pExpenseViewDTO,
-  getEstimateInfo,
-  type EstimateHeaderView,
   getEstimateItemsInfo,
+  type pExpenseViewDTO,
+  type EstimateHeaderView,
   type EstimateItemsView,
+  type pExpenseItemDTO,
 } from '@/api';
+import { getExpenseMatchedItems, type EstimateItemsMatch, setExpenseMatchedReset } from '@/api/project';
 
-import { Button } from '@components/ui/button';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
+import EstimateSelectDialog from './_components/EstimateSelectDialog';
+import EstimateMatching from './_components/EstimateMatching';
+import EstimateMatched from './_components/EstimateMatched';
+import { type expenseInfo } from '@/types/estimate';
+
 import { Badge } from '@components/ui/badge';
+import { Checkbox } from '@components/ui/checkbox';
+import { Button } from '@components/ui/button';
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Download, Edit } from '@/assets/images/icons';
-import { File, Link as LinkIcon } from 'lucide-react';
+import { File, Link as LinkIcon, RotateCcw, CheckCircle } from 'lucide-react';
 
 import { format } from 'date-fns';
 import { statusIconMap, getLogMessage } from '../Expense/utils/statusUtils';
-import EstimateMatching from './_components/EstimateMatching';
 
-export interface estViewMatchDTO {
-  header: EstimateHeaderView;
-  items: EstimateItemsView[];
+export interface pExpenseItemWithMatch extends pExpenseItemDTO {
+  matchedList?: EstimateItemsMatch[];
+}
+
+// 특정 컴포넌트에서만 사용할 확장 타입
+export interface pExpenseViewWithMatch extends pExpenseViewDTO {
+  items: pExpenseItemWithMatch[];
+}
+
+// 견적서 매칭확인 Response Type
+export interface EstimateMatchedItem {
+  seq: number;
+  target_seq: number;
+  ei_name: string;
+  alloc_amount: number;
+  ava_amount: number;
+  pl_seq: number;
 }
 
 export default function projectExpenseView() {
   const { expId, projectId } = useParams();
   const navigate = useNavigate();
 
+  const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
+
   // 비용 데이터 State
-  const [data, setData] = useState<pExpenseViewDTO | null>(null);
+  const [data, setData] = useState<pExpenseViewWithMatch | null>(null);
   const [loading, setLoading] = useState(true);
 
   // 견적서 다이얼로그 State
+  const isConfirmedRef = useRef(false); // DialogClose 체크용
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [estLoading, setEstLoading] = useState(false);
-  const [estData, setEstData] = useState<estViewMatchDTO | null>(null);
+  const [expenseInfo, setExpenseInfo] = useState<expenseInfo | null>(null);
+  const [matchedItems, setMatchedItems] = useState<EstimateItemsView[]>([]);
+  const [selectedExpSeq, setSelectedExpSeq] = useState<number | null>(null); // 현재 선택된 비용 항목 번호
+  const [dbMatchedItems, setDbMatchedItems] = useState<EstimateMatchedItem[]>([]); // 매칭확인 후 Response Type 세팅
+  const [matchedMap, setMatchedMap] = useState<Record<number, any[]>>({}); // 어떤 row가 매칭 완료되었는 지 저장
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
@@ -46,20 +75,42 @@ export default function projectExpenseView() {
     return format(date, 'yyyy-MM-dd');
   };
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await getProjectExpenseView(expId);
-        setData(res);
-      } catch (err) {
-        console.error('❌ 비용 상세 조회 실패:', err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [expId]);
+  /** ----------------------------
+   * 프로젝트 비용 상세 불러오기
+   ---------------------------- */
+  const fetchExpense = async () => {
+    try {
+      const res = await getProjectExpenseView(expId);
+      console.log('✅ 비용 상세 조회 성공:', res);
 
-  console.log(data);
+      const itemsWithMatch = await Promise.all(
+        res.items.map(async (item) => {
+          const matchedRes = await getExpenseMatchedItems(item.seq);
+          return {
+            ...item,
+            matchedList: matchedRes.list,
+          };
+        })
+      );
+
+      const extendedRes: pExpenseViewWithMatch = {
+        ...res,
+        items: itemsWithMatch,
+      };
+
+      console.log('✅ 매칭된 비용 상세 조회 성공:', extendedRes);
+
+      setData(extendedRes);
+    } catch (err) {
+      console.error('❌ 비용 상세 조회 실패:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExpense();
+  }, [expId]);
 
   if (loading) return <div className="flex h-[50vh] items-center justify-center text-gray-500">데이터를 불러오는 중입니다...</div>;
 
@@ -77,7 +128,7 @@ export default function projectExpenseView() {
 
   const { header, items } = data;
 
-  // .총 비용 계산
+  // 총 비용 계산
   const totals = items.reduce(
     (acc, item) => {
       acc.amount += item.ei_amount || 0;
@@ -123,26 +174,149 @@ export default function projectExpenseView() {
   // ----------------------------------------
   // 견적서 불러오기 핸들러
   // ----------------------------------------
+  const handleEstimateInfo = (seq: number, ei_amount: number) => {
+    setMatchedItems([]); // 선택된 견적 항목 배열 초기화
+    setDbMatchedItems([]); // 매칭완료 견적 배열 초기화
+    setExpenseInfo({ seq, ei_amount }); // 현재 비용 항목 정보 전달
 
-  const handleEstimateInfo = async () => {
-    setDialogOpen(true);
-    setEstLoading(true);
+    requestAnimationFrame(() => {
+      setDialogOpen(true);
+    });
+  };
 
-    try {
-      const raw = await getEstimateInfo(projectId);
-      const header = raw.result?.[0] ?? null;
-      const rawItems = await getEstimateItemsInfo(header.est_id);
-      const estItems = rawItems.result ?? [];
+  // 견적서 불러오기 다이얼로그 등록 핸들러
+  const handleConfirm = (items: EstimateItemsView[]) => {
+    if (expenseInfo) {
+      setMatchedMap((prev) => ({
+        ...prev,
+        [expenseInfo.seq]: items,
+      }));
+    }
 
-      setEstData({ header: header, items: estItems });
-    } catch (err) {
-      console.error('❌ 비용 상세 조회 실패:', err);
-    } finally {
-      setLoading(false);
+    setMatchedItems(items);
+    isConfirmedRef.current = true;
+  };
+
+  // 견적서 불러오기 다이얼로그 취소 핸들러
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+
+    if (!open) {
+      if (!isConfirmedRef.current && setMatchedItems.length === 0) {
+        // Dialog가 닫히는 순간 실행됨
+        handleMatchingClear();
+      }
+
+      isConfirmedRef.current = false;
     }
   };
 
-  console.log('estData', estData);
+  // 견적서 매칭 매칭하기 핸들러
+  const handleMatchComplete = (expenseSeq: number, items: any[]) => {
+    setMatchedMap((prev) => ({
+      ...prev,
+      [expenseSeq]: items, // 배열로 저장
+    }));
+
+    setDbMatchedItems([]);
+    setSelectedExpSeq(null);
+  };
+
+  // 견적서 매칭 초기화 핸들러
+  const handleResetMatching = () => {
+    setMatchedItems([]);
+    setExpenseInfo(null);
+    setSelectedExpSeq(null);
+  };
+
+  // 견적서 매칭 클리어 핸들러
+  const handleMatchingClear = () => {
+    if (!expenseInfo) return;
+
+    const seq = expenseInfo.seq;
+
+    // 1) matchedMap에서 seq 제거
+    setMatchedMap((prev) => {
+      const updated = { ...prev };
+      delete updated[seq];
+      return updated;
+    });
+
+    // 2) EstimateMatching 영역 초기화
+    handleResetMatching();
+  };
+
+  // 매칭완료 클릭 시, 견적서 매칭 Data 세팅
+  const handleMatchedItems = async (idx: number) => {
+    if (!data) return;
+
+    handleMatchingClear(); // 매칭중인 항목이 있었다면, 클리어
+
+    const item = data.items[idx];
+    const matchedEstSeq = item.matchedList?.map((m) => m.target_seq) || [];
+
+    console.log(item, matchedEstSeq);
+
+    if (matchedEstSeq.length === 0) {
+      setMatchedItems([]);
+      setDbMatchedItems([]);
+      setExpenseInfo({ seq: item.seq, ei_amount: item.ei_amount });
+      return;
+    }
+
+    const response = await getExpenseMatchedItems(item.seq);
+    const matchedList = response.list ?? [];
+
+    const mapped: EstimateMatchedItem[] = matchedList.map((m) => ({
+      seq: m.seq,
+      target_seq: m.target_seq,
+      ei_name: m.ei_name ?? '', // 🔥 여기 때문에 TS 에러 났었음
+      alloc_amount: m.alloc_amount ?? 0,
+      ava_amount: m.ava_amount ?? 0,
+      pl_seq: m.pl_seq,
+    }));
+
+    console.log('🟦 getEstimateItemsInfo results:', mapped);
+
+    setMatchedItems([]);
+    setDbMatchedItems(mapped);
+    setSelectedExpSeq(item.seq); // 선택된 비용항목 번호 저장
+    setExpenseInfo({ seq: item.seq, ei_amount: item.ei_amount });
+  };
+
+  // 매칭 재설정 버튼 클릭 시
+  const handleDeleteMatching = async () => {
+    if (selectedExpSeq === null) return;
+
+    try {
+      addDialog({
+        title: '견적 매칭 재설정',
+        message: `견적서 매칭을 재설정 하시겠습니까? <br />기존 매칭이 삭제되고 다시 매칭을 진행해야 합니다.`,
+        confirmText: '확인',
+        cancelText: '취소',
+        onConfirm: async () => {
+          const res = await setExpenseMatchedReset(selectedExpSeq);
+
+          if (res.list.ok) {
+            addAlert({
+              title: '견적서 매칭 삭제',
+              message: '기존 매칭이 삭제되었습니다.<br />견적서 매칭을 다시 진행해 주세요.',
+              icon: <CheckCircle />,
+              duration: 1500,
+            });
+
+            fetchExpense(); // 비용 항목 쪽 다시 렌더링
+            setSelectedExpSeq(null);
+            setExpenseInfo(null);
+            setDbMatchedItems([]); // 매칭완료 Response Type 클리어
+            handleMatchingClear();
+          }
+        },
+      });
+    } catch (err) {
+      console.error('❌ 비용 상세 조회 실패:', err);
+    }
+  };
 
   return (
     <>
@@ -253,15 +427,15 @@ export default function projectExpenseView() {
                   <TableHead className="w-[10%]">비용유형</TableHead>
                   <TableHead className="w-[20%]">가맹점명</TableHead>
                   <TableHead className="w-[10%] px-4">매입일자</TableHead>
-                  <TableHead className="w-[14%]">금액</TableHead>
+                  <TableHead className="w-[14%]">금액 (A)</TableHead>
                   <TableHead className="w-[10%]">세금</TableHead>
                   <TableHead className="w-[14%]">합계</TableHead>
                   <TableHead className="w-[20%]">증빙자료</TableHead>
-                  <TableHead className="w-[8%]">기안서</TableHead>
+                  <TableHead className="w-[8%]">견적서</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item) => {
+                {items.map((item, idx) => {
                   return (
                     <TableRow key={item.seq} className="[&_td]:text-[13px]">
                       <TableCell>{item.ei_type}</TableCell>
@@ -292,27 +466,71 @@ export default function projectExpenseView() {
                       ) : (
                         <TableCell>-</TableCell>
                       )}
-                      <TableCell>
-                        {item.pro_id ? (
-                          <Link to={`/project/proposal/${item.pro_id}`} target="_blank" rel="noopener noreferrer">
-                            <LinkIcon className="mx-auto size-4" />
-                          </Link>
-                        ) : (
-                          <span>-</span>
-                        )}
+                      <TableCell className="px-1 text-center [&_button]:rounded-xl [&_button]:border [&_button]:text-xs [&_button]:transition-none">
+                        {(() => {
+                          const alreadyMatched = (item.matchedList?.length ?? 0) > 0;
+                          const isMatched = (matchedMap[item.seq]?.length ?? 0) > 0;
+                          const isMatching = expenseInfo?.seq === item.seq && matchedItems.length > 0;
+                          const isWaiting = expenseInfo && expenseInfo.seq !== item.seq && matchedItems.length > 0;
+
+                          // 1) 이미 DB에서 매칭된 row, 클릭 시 EstimateMatching 데이터 세팅
+                          if (alreadyMatched) {
+                            return (
+                              <Button size="xs" variant="outline" onClick={() => handleMatchedItems(idx)}>
+                                매칭완료
+                              </Button>
+                            );
+                          }
+
+                          // 2) 현재 매칭중인 Row, 클릭 시 Dialog 오픈
+                          if (isMatching) {
+                            return (
+                              <Button size="xs" className="border-primary-blue/10" onClick={() => setDialogOpen(true)}>
+                                매칭중
+                              </Button>
+                            );
+                          }
+
+                          // 3) 클라이언트에서 방금 매칭된 row, 클릭 시 EstimateMatching 데이터 세팅
+                          if (isMatched) {
+                            return (
+                              <Button size="xs" variant="outline" onClick={() => handleMatchedItems(idx)}>
+                                매칭완료
+                              </Button>
+                            );
+                          }
+
+                          // 4) 매칭중일 때 다른 row는 disabled 처리
+                          if (isWaiting) {
+                            return (
+                              <Button size="xs" variant="secondary" disabled>
+                                매칭대기
+                              </Button>
+                            );
+                          }
+
+                          // 5) 기본: 매칭하기
+                          return (
+                            <Button
+                              size="xs"
+                              className="bg-primary-blue-100 text-primary-blue border-primary-blue-300/10 hover:bg-primary-blue-150 hover:text-primary-blue active:bg-primary-blue-100"
+                              onClick={() => handleEstimateInfo(item.seq, item.ei_amount)}>
+                              매칭하기
+                            </Button>
+                          );
+                        })()}
                       </TableCell>
                     </TableRow>
                   );
                 })}
-                <TableRow className="bg-primary-blue-50">
-                  <TableCell className="font-semibold">총 비용 (A)</TableCell>
-                  <TableCell className="text-left"></TableCell>
-                  <TableCell className="text-left"></TableCell>
+                <TableRow className="bg-primary-blue-50 [&_td]:py-3">
+                  <TableCell className="font-semibold" colSpan={3}>
+                    총 비용
+                  </TableCell>
                   <TableCell className="text-right font-semibold">{formatAmount(totals.amount)}원</TableCell>
                   <TableCell className="text-right font-semibold">{formatAmount(totals.tax)}원</TableCell>
                   <TableCell className="text-right font-semibold">{formatAmount(totals.total)}원</TableCell>
-                  <TableCell className="text-left"></TableCell>
-                  <TableCell className="text-left"></TableCell>
+                  <TableCell className="text-left" colSpan={2}></TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -331,84 +549,40 @@ export default function projectExpenseView() {
         <div className="w-[24%]">
           <div className="flex justify-between">
             <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
-            <Button type="button" size="sm" className="px-2.5" onClick={handleEstimateInfo}>
-              견적서 불러오기
-            </Button>
+
+            {dbMatchedItems.length > 0 ? (
+              <Button type="button" size="sm" variant="svgIcon" className="h-auto pr-1! text-gray-500" onClick={handleDeleteMatching}>
+                견적 매칭 재설정 <RotateCcw className="size-3" />
+              </Button>
+            ) : (
+              matchedItems.length > 0 && (
+                <Button type="button" size="sm" variant="svgIcon" className="h-auto pr-1! text-gray-500" onClick={handleMatchingClear}>
+                  견적서 매칭취소 <RotateCcw className="size-3" />
+                </Button>
+              )
+            )}
           </div>
-          <EstimateMatching />
+          {dbMatchedItems.length > 0 ? (
+            <EstimateMatched items={dbMatchedItems} />
+          ) : (
+            <EstimateMatching
+              matchedItems={matchedItems}
+              expenseInfo={expenseInfo}
+              onReset={handleResetMatching}
+              onRefresh={fetchExpense}
+              onMatched={handleMatchComplete}
+            />
+          )}
         </div>
       </div>
-
-      {/* ---------------- 견적서 불러오기 다이얼로그 ---------------- */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-5xl">
-          <DialogHeader>
-            <DialogTitle>견적서 불러오기</DialogTitle>
-            <DialogDescription>비용을 매칭할 견적서 항목을 선택해 주세요.</DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col">
-            {estData &&
-              (() => {
-                const getBudgetPercent = ((estData.header.est_budget / estData.header.est_amount) * 100).toFixed(2);
-                return (
-                  <>
-                    <TableColumn className="[&_div]:text-[13px]">
-                      <TableColumnHeader className="w-[18%]">
-                        <TableColumnHeaderCell>견적서 제목</TableColumnHeaderCell>
-                      </TableColumnHeader>
-                      <TableColumnBody>
-                        <TableColumnCell className="leading-[1.3]">{estData.header.est_title}</TableColumnCell>
-                      </TableColumnBody>
-                      <TableColumnHeader className="w-[18%]">
-                        <TableColumnHeaderCell>가용 예산 / 견적서 총액</TableColumnHeaderCell>
-                      </TableColumnHeader>
-                      <TableColumnBody>
-                        <TableColumnCell>
-                          {formatAmount(estData.header.est_budget)} / {formatAmount(estData.header.est_amount)}{' '}
-                          <span className="ml-1 font-bold">({getBudgetPercent}%)</span>
-                        </TableColumnCell>
-                      </TableColumnBody>
-                    </TableColumn>
-
-                    <Table variant="primary" align="center" className="mt-4 table-fixed">
-                      <TableHeader>
-                        <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-                          <TableHead className="text-left">항목명</TableHead>
-                          <TableHead className="w-[10%]">단가</TableHead>
-                          <TableHead className="w-[8%]">수량</TableHead>
-                          <TableHead className="w-[10%]">금액</TableHead>
-                          <TableHead className="w-[10%]">가용 금액</TableHead>
-                          <TableHead className="w-[24%]">비고</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {estData.items.map((item) => (
-                          <TableRow key={item.seq} className="[&_td]:text-[13px]">
-                            <TableCell className="text-left">{item.ei_name}</TableCell>
-                            {/* item_name -> ei_name으로 수정필요 */}
-                            <TableCell className="text-right">{formatAmount(item.unit_price)}</TableCell>
-                            <TableCell className="text-right">{item.qty}</TableCell>
-                            <TableCell className="text-right">{formatAmount(item.amount)}</TableCell>
-                            <TableCell className="text-right">{formatAmount(item.ava_amount)}</TableCell>
-                            <TableCell>{item.remark}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </>
-                );
-              })()}
-          </div>
-          <DialogFooter className="justify-center">
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                취소
-              </Button>
-            </DialogClose>
-            <Button type="button">등록</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EstimateSelectDialog
+        open={dialogOpen}
+        onOpenChange={handleDialogOpenChange}
+        projectId={projectId}
+        expenseInfo={expenseInfo}
+        onConfirm={handleConfirm}
+        selectingItems={matchedItems}
+      />
     </>
   );
 }

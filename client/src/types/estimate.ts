@@ -50,3 +50,9 @@ export type QuotationMappedItem =
   | QuotationGrandTotal
   | QuotationDiscount
   | QuotationAgencyFee;
+
+// 비용 - 견적서 매칭하기 위한 정보
+export type expenseInfo = {
+  seq: number;
+  ei_amount: number;
+};
