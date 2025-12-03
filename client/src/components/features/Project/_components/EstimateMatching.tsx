@@ -161,7 +161,7 @@ export default function EstimateMatching({
           {/* ---------------- 매칭 선택 전 ---------------- */}
           {!matchedItems.length && (
             <TableRow>
-              <TableCell colSpan={4} className="h-47 text-center text-[13px]">
+              <TableCell colSpan={4} className="h-47 text-center text-[13px] text-gray-700">
                 비용 항목에서 견적서 매칭을 선택해 주세요.
               </TableCell>
             </TableRow>

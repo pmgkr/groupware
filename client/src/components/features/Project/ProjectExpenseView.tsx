@@ -9,9 +9,13 @@ import {
   type EstimateItemsView,
   type pExpenseItemDTO,
 } from '@/api';
-import { getExpenseMatchedItems, type EstimateItemsMatch } from '@/api/project';
-import { cn } from '@/lib/utils';
+import { getExpenseMatchedItems, type EstimateItemsMatch, setExpenseMatchedReset } from '@/api/project';
+
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import EstimateSelectDialog from './_components/EstimateSelectDialog';
+import EstimateMatching from './_components/EstimateMatching';
+import EstimateMatched from './_components/EstimateMatched';
 import { type expenseInfo } from '@/types/estimate';
 
 import { Badge } from '@components/ui/badge';
@@ -21,11 +25,10 @@ import { Button } from '@components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import { Download, Edit } from '@/assets/images/icons';
-import { File, Link as LinkIcon, RotateCcw } from 'lucide-react';
+import { File, Link as LinkIcon, RotateCcw, CheckCircle } from 'lucide-react';
 
 import { format } from 'date-fns';
 import { statusIconMap, getLogMessage } from '../Expense/utils/statusUtils';
-import EstimateMatching from './_components/EstimateMatching';
 
 export interface pExpenseItemWithMatch extends pExpenseItemDTO {
   matchedList?: EstimateItemsMatch[];
@@ -36,9 +39,22 @@ export interface pExpenseViewWithMatch extends pExpenseViewDTO {
   items: pExpenseItemWithMatch[];
 }
 
+// 견적서 매칭확인 Response Type
+export interface EstimateMatchedItem {
+  seq: number;
+  target_seq: number;
+  ei_name: string;
+  alloc_amount: number;
+  ava_amount: number;
+  pl_seq: number;
+}
+
 export default function projectExpenseView() {
   const { expId, projectId } = useParams();
   const navigate = useNavigate();
+
+  const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
 
   // 비용 데이터 State
   const [data, setData] = useState<pExpenseViewWithMatch | null>(null);
@@ -49,6 +65,8 @@ export default function projectExpenseView() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [expenseInfo, setExpenseInfo] = useState<expenseInfo | null>(null);
   const [matchedItems, setMatchedItems] = useState<EstimateItemsView[]>([]);
+  const [selectedExpSeq, setSelectedExpSeq] = useState<number | null>(null); // 현재 선택된 비용 항목 번호
+  const [dbMatchedItems, setDbMatchedItems] = useState<EstimateMatchedItem[]>([]); // 매칭확인 후 Response Type 세팅
   const [matchedMap, setMatchedMap] = useState<Record<number, any[]>>({}); // 어떤 row가 매칭 완료되었는 지 저장
 
   const formatDate = (d?: string | Date | null) => {
@@ -158,6 +176,7 @@ export default function projectExpenseView() {
   // ----------------------------------------
   const handleEstimateInfo = (seq: number, ei_amount: number) => {
     setMatchedItems([]); // 선택된 견적 항목 배열 초기화
+    setDbMatchedItems([]); // 매칭완료 견적 배열 초기화
     setExpenseInfo({ seq, ei_amount }); // 현재 비용 항목 정보 전달
 
     requestAnimationFrame(() => {
@@ -185,7 +204,7 @@ export default function projectExpenseView() {
     if (!open) {
       if (!isConfirmedRef.current && setMatchedItems.length === 0) {
         // Dialog가 닫히는 순간 실행됨
-        handleCancleMatching();
+        handleMatchingClear();
       }
 
       isConfirmedRef.current = false;
@@ -198,16 +217,20 @@ export default function projectExpenseView() {
       ...prev,
       [expenseSeq]: items, // 배열로 저장
     }));
+
+    setDbMatchedItems([]);
+    setSelectedExpSeq(null);
   };
 
   // 견적서 매칭 초기화 핸들러
   const handleResetMatching = () => {
     setMatchedItems([]);
     setExpenseInfo(null);
+    setSelectedExpSeq(null);
   };
 
-  // 견적서 매칭취소 핸들러
-  const handleCancleMatching = () => {
+  // 견적서 매칭 클리어 핸들러
+  const handleMatchingClear = () => {
     if (!expenseInfo) return;
 
     const seq = expenseInfo.seq;
@@ -227,24 +250,72 @@ export default function projectExpenseView() {
   const handleMatchedItems = async (idx: number) => {
     if (!data) return;
 
+    handleMatchingClear(); // 매칭중인 항목이 있었다면, 클리어
+
     const item = data.items[idx];
     const matchedEstSeq = item.matchedList?.map((m) => m.target_seq) || [];
 
-    console.log(item);
+    console.log(item, matchedEstSeq);
 
     if (matchedEstSeq.length === 0) {
       setMatchedItems([]);
+      setDbMatchedItems([]);
       setExpenseInfo({ seq: item.seq, ei_amount: item.ei_amount });
       return;
     }
 
     const response = await getExpenseMatchedItems(item.seq);
+    const matchedList = response.list ?? [];
 
-    console.log('🟦 getEstimateItemsInfo results:', response);
-    // 부장님이 API 수정해주시면, response 데이터로 matchedEstItems 수정 필요
+    const mapped: EstimateMatchedItem[] = matchedList.map((m) => ({
+      seq: m.seq,
+      target_seq: m.target_seq,
+      ei_name: m.ei_name ?? '', // 🔥 여기 때문에 TS 에러 났었음
+      alloc_amount: m.alloc_amount ?? 0,
+      ava_amount: m.ava_amount ?? 0,
+      pl_seq: m.pl_seq,
+    }));
 
-    // setMatchedItems(matchedEstItems);
+    console.log('🟦 getEstimateItemsInfo results:', mapped);
+
+    setMatchedItems([]);
+    setDbMatchedItems(mapped);
+    setSelectedExpSeq(item.seq); // 선택된 비용항목 번호 저장
     setExpenseInfo({ seq: item.seq, ei_amount: item.ei_amount });
+  };
+
+  // 매칭 재설정 버튼 클릭 시
+  const handleDeleteMatching = async () => {
+    if (selectedExpSeq === null) return;
+
+    try {
+      addDialog({
+        title: '견적 매칭 재설정',
+        message: `견적서 매칭을 재설정 하시겠습니까? <br />기존 매칭이 삭제되고 다시 매칭을 진행해야 합니다.`,
+        confirmText: '확인',
+        cancelText: '취소',
+        onConfirm: async () => {
+          const res = await setExpenseMatchedReset(selectedExpSeq);
+
+          if (res.list.ok) {
+            addAlert({
+              title: '견적서 매칭 삭제',
+              message: '기존 매칭이 삭제되었습니다.<br />견적서 매칭을 다시 진행해 주세요.',
+              icon: <CheckCircle />,
+              duration: 1500,
+            });
+
+            fetchExpense(); // 비용 항목 쪽 다시 렌더링
+            setSelectedExpSeq(null);
+            setExpenseInfo(null);
+            setDbMatchedItems([]); // 매칭완료 Response Type 클리어
+            handleMatchingClear();
+          }
+        },
+      });
+    } catch (err) {
+      console.error('❌ 비용 상세 조회 실패:', err);
+    }
   };
 
   return (
@@ -479,19 +550,29 @@ export default function projectExpenseView() {
           <div className="flex justify-between">
             <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
 
-            {matchedItems.length > 0 && (
-              <Button type="button" size="sm" variant="svgIcon" className="h-auto pr-1! text-gray-500" onClick={handleCancleMatching}>
-                견적서 매칭취소 <RotateCcw className="size-3" />
+            {dbMatchedItems.length > 0 ? (
+              <Button type="button" size="sm" variant="svgIcon" className="h-auto pr-1! text-gray-500" onClick={handleDeleteMatching}>
+                견적 매칭 재설정 <RotateCcw className="size-3" />
               </Button>
+            ) : (
+              matchedItems.length > 0 && (
+                <Button type="button" size="sm" variant="svgIcon" className="h-auto pr-1! text-gray-500" onClick={handleMatchingClear}>
+                  견적서 매칭취소 <RotateCcw className="size-3" />
+                </Button>
+              )
             )}
           </div>
-          <EstimateMatching
-            matchedItems={matchedItems}
-            expenseInfo={expenseInfo}
-            onReset={handleResetMatching}
-            onRefresh={fetchExpense}
-            onMatched={handleMatchComplete}
-          />
+          {dbMatchedItems.length > 0 ? (
+            <EstimateMatched items={dbMatchedItems} />
+          ) : (
+            <EstimateMatching
+              matchedItems={matchedItems}
+              expenseInfo={expenseInfo}
+              onReset={handleResetMatching}
+              onRefresh={fetchExpense}
+              onMatched={handleMatchComplete}
+            />
+          )}
         </div>
       </div>
       <EstimateSelectDialog
