@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { formatKST, formatAmount } from '@/utils';
 import {
@@ -8,8 +8,9 @@ import {
   type EstimateHeaderView,
   getEstimateItemsInfo,
   type EstimateItemsView,
+  type pExpenseItemDTO,
 } from '@/api';
-
+import { getExpenseMatchedItems, type EstimateItemsMatch } from '@/api/project';
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -28,19 +29,30 @@ export interface estViewMatchDTO {
   items: EstimateItemsView[];
 }
 
+export interface pExpenseItemWithMatch extends pExpenseItemDTO {
+  matchedList?: EstimateItemsMatch[];
+}
+
+// 특정 컴포넌트에서만 사용할 확장 타입
+export interface pExpenseViewWithMatch extends pExpenseViewDTO {
+  items: pExpenseItemWithMatch[];
+}
+
 export default function ProjectExpenseMatch() {
   const { projectId } = useParams(); // 프로젝트 ID
   const { state } = useLocation(); // 저장된 비용 Seq
   const navigate = useNavigate();
 
   // 비용 데이터 State
-  const [data, setData] = useState<pExpenseViewDTO | null>(null);
+  const [data, setData] = useState<pExpenseViewWithMatch | null>(null);
   const [loading, setLoading] = useState(true);
 
   // 견적서 다이얼로그 State
+  const isConfirmedRef = useRef(false); // DialogClose 체크용
   const [dialogOpen, setDialogOpen] = useState(false);
   const [expenseInfo, setExpenseInfo] = useState<expenseInfo | null>(null);
   const [matchedItems, setMatchedItems] = useState<EstimateItemsView[]>([]);
+  const [matchedMap, setMatchedMap] = useState<Record<number, any[]>>({}); // 어떤 row가 매칭 완료되었는 지 저장
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
@@ -49,18 +61,35 @@ export default function ProjectExpenseMatch() {
   };
 
   // 초기 페이지 렌더 시 비용 상세 데이터 로드
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await getProjectExpenseView(state.exp_id);
-        setData(res);
-      } catch (err) {
-        console.error('❌ 비용 상세 조회 실패:', err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  const fetchExpense = async () => {
+    try {
+      const res = await getProjectExpenseView(state.exp_id);
+      console.log('✅ 비용 상세 조회 성공:', res);
+
+      const itemsWithMatch = await Promise.all(
+        res.items.map(async (item) => {
+          const matchedRes = await getExpenseMatchedItems(item.seq);
+          return {
+            ...item,
+            matchedList: matchedRes.list,
+          };
+        })
+      );
+
+      const extendedRes: pExpenseViewWithMatch = {
+        ...res,
+        items: itemsWithMatch,
+      };
+
+      console.log('✅ 매칭된 비용 상세 조회 성공:', extendedRes);
+
+      setData(extendedRes);
+    } catch (err) {
+      console.error('❌ 비용 상세 조회 실패:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) return <div className="flex h-[50vh] items-center justify-center text-gray-500">데이터를 불러오는 중입니다...</div>;
 
@@ -124,8 +153,94 @@ export default function ProjectExpenseMatch() {
   // 견적서 불러오기 핸들러
   // ----------------------------------------
   const handleEstimateInfo = (seq: number, ei_amount: number) => {
-    setDialogOpen(true);
-    setExpenseInfo({ seq: seq, ei_amount: ei_amount });
+    setMatchedItems([]); // 선택된 견적 항목 배열 초기화
+    setExpenseInfo({ seq, ei_amount }); // 현재 비용 항목 정보 전달
+
+    requestAnimationFrame(() => {
+      setDialogOpen(true);
+    });
+  };
+
+  // 견적서 불러오기 다이얼로그 등록 핸들러
+  const handleConfirm = (items: EstimateItemsView[]) => {
+    if (expenseInfo) {
+      setMatchedMap((prev) => ({
+        ...prev,
+        [expenseInfo.seq]: items,
+      }));
+    }
+
+    setMatchedItems(items);
+    isConfirmedRef.current = true;
+  };
+
+  // 견적서 불러오기 다이얼로그 취소 핸들러
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+
+    if (!open) {
+      if (!isConfirmedRef.current && setMatchedItems.length === 0) {
+        // Dialog가 닫히는 순간 실행됨
+        handleCancleMatching();
+      }
+
+      isConfirmedRef.current = false;
+    }
+  };
+
+  // 견적서 매칭 매칭하기 핸들러
+  const handleMatchComplete = (expenseSeq: number, items: any[]) => {
+    setMatchedMap((prev) => ({
+      ...prev,
+      [expenseSeq]: items, // 배열로 저장
+    }));
+  };
+
+  // 견적서 매칭 초기화 핸들러
+  const handleResetMatching = () => {
+    setMatchedItems([]);
+    setExpenseInfo(null);
+  };
+
+  // 견적서 매칭취소 핸들러
+  const handleCancleMatching = () => {
+    if (!expenseInfo) return;
+
+    const seq = expenseInfo.seq;
+
+    // 1) matchedMap에서 seq 제거
+    setMatchedMap((prev) => {
+      const updated = { ...prev };
+      delete updated[seq];
+      return updated;
+    });
+
+    // 2) EstimateMatching 영역 초기화
+    handleResetMatching();
+  };
+
+  // 매칭완료 클릭 시, 견적서 매칭 Data 세팅
+  const handleMatchedItems = async (idx: number) => {
+    if (!data) return;
+
+    const item = data.items[idx];
+    const matchedEstSeq = item.matchedList?.map((m) => m.target_seq) || [];
+
+    console.log(item);
+
+    if (matchedEstSeq.length === 0) {
+      setMatchedItems([]);
+      setExpenseInfo({ seq: item.seq, ei_amount: item.ei_amount });
+      return;
+    }
+
+    const response = await getExpenseMatchedItems(item.seq);
+
+    console.log('🟦 getEstimateItemsInfo results:', response);
+    // 부장님이 API 수정해주시면, response 데이터로 matchedEstItems 수정 필요
+
+    // setMatchedItems(matchedEstItems);
+    setExpenseInfo({ seq: item.seq, ei_amount: item.ei_amount });
   };
 
   return (
@@ -314,7 +429,13 @@ export default function ProjectExpenseMatch() {
           <div className="flex justify-between">
             <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
           </div>
-          <EstimateMatching matchedItems={matchedItems} expenseInfo={expenseInfo} onReset={handleResetMatching} onRefresh={fetchExpense} />
+          <EstimateMatching
+            matchedItems={matchedItems}
+            expenseInfo={expenseInfo}
+            onReset={handleResetMatching}
+            onRefresh={fetchExpense}
+            onMatched={handleMatchComplete}
+          />
         </div>
       </div>
 

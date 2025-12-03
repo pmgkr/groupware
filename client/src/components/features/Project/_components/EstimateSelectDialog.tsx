@@ -6,6 +6,7 @@ import { Button } from '@components/ui/button';
 import { Spinner } from '@components/ui/spinner';
 import { Checkbox } from '@components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectTriggerFull, SelectValue, SelectContent, SelectItem, SelectTrigger } from '@components/ui/select';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@components/ui/dialog';
 
@@ -37,6 +38,10 @@ export default function EstimateSelectDialog({
   const [estData, setEstData] = useState<estViewMatchDTO | null>(null);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
 
+  // 멀티 견적서 대응 State
+  const [estimateList, setEstimateList] = useState<EstimateHeaderView[]>([]);
+  const [selectedEstId, setSelectedEstId] = useState<number | null>(null);
+
   /** ---------------------------
    *  견적서 로딩
    --------------------------- */
@@ -48,23 +53,19 @@ export default function EstimateSelectDialog({
         setLoading(true);
 
         const raw = await getEstimateInfo(projectId);
-        const header = raw.result?.[0] ?? null;
+        const list = raw.result ?? [];
 
-        if (!header) {
+        console.log('가져온 견적서', list);
+        setEstimateList(list);
+
+        // 리스트가 1개일 때만 자동 선택
+        if (list.length === 1) {
+          setSelectedEstId(list[0].est_id);
+        } else {
+          // 여러개의 견적서라면 선택 전까지 UI 비활성화
+          setSelectedEstId(null);
           setEstData(null);
-          return;
         }
-
-        const itemRes = await getEstimateItemsInfo(header.est_id);
-        const items = (itemRes.result ?? []).map((i) => ({
-          ...i,
-          unit_price: i.unit,
-          ei_name: i.item_name,
-        }));
-
-        console.log(items);
-
-        setEstData({ header, items });
       } catch (err) {
         console.error('❌ 견적서 불러오기 오류:', err);
       } finally {
@@ -73,6 +74,38 @@ export default function EstimateSelectDialog({
     })();
   }, [open, projectId]);
 
+  /** ---------------------------
+   *  특정 견적서 선택 후 항목 로딩
+   --------------------------- */
+  useEffect(() => {
+    if (!selectedEstId) return; // 선택 전에는 아무 것도 하지 않음
+
+    (async () => {
+      try {
+        setLoading(true);
+
+        const header = estimateList.find((e) => e.est_id === selectedEstId);
+        if (!header) return;
+
+        const itemRes = await getEstimateItemsInfo(selectedEstId);
+        const items = (itemRes.result ?? []).map((i) => ({
+          ...i,
+          unit_price: i.unit,
+          ei_name: i.item_name,
+        }));
+
+        setEstData({ header, items });
+      } catch (err) {
+        console.error('❌ 항목 로딩 오류:', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [selectedEstId, estimateList]);
+
+  /** ---------------------------
+   *  selectingItems 초기 적용
+   --------------------------- */
   useEffect(() => {
     if (open && selectingItems) {
       setSelectedItems(selectingItems?.map((item) => item.seq) ?? []);
@@ -103,8 +136,6 @@ export default function EstimateSelectDialog({
   const selectedAvaAmount =
     estData?.items?.filter((item) => selectedItems.includes(item.seq))?.reduce((sum, item) => sum + Number(item.ava_amount ?? 0), 0) || 0;
 
-  console.log(expenseInfo);
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl">
@@ -121,31 +152,55 @@ export default function EstimateSelectDialog({
             </div>
           )}
 
+          {!loading && selectedEstId !== null && (
+            <TableColumn className="[&_div]:text-[13px]">
+              <TableColumnHeader className="w-[18%]">
+                <TableColumnHeaderCell>견적서 제목</TableColumnHeaderCell>
+              </TableColumnHeader>
+
+              <TableColumnBody>
+                {estData ? (
+                  <TableColumnCell className="leading-[1.3]">{estData.header.est_title}</TableColumnCell>
+                ) : (
+                  <TableColumnCell className="p-0! leading-[1.3]">
+                    <Select
+                      value={selectedEstId ? String(selectedEstId) : undefined}
+                      onValueChange={(value) => setSelectedEstId(Number(value))}>
+                      <SelectTrigger size="sm" className="h-full! w-full border-0 text-[13px]! shadow-none">
+                        <SelectValue placeholder="견적서를 선택하세요" />
+                      </SelectTrigger>
+                      <SelectContent className="border-gray-300">
+                        {estimateList.map((est) => (
+                          <SelectItem key={est.est_id} value={String(est.est_id)} size="sm">
+                            {est.est_title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableColumnCell>
+                )}
+              </TableColumnBody>
+              {estData && (
+                <>
+                  <TableColumnHeader className="w-[18%]">
+                    <TableColumnHeaderCell>가용 예산 / 견적서 총액</TableColumnHeaderCell>
+                  </TableColumnHeader>
+                  <TableColumnBody>
+                    <TableColumnCell>
+                      {formatAmount(estData.header.est_budget)} / {formatAmount(estData.header.est_amount)}{' '}
+                      <span className="ml-1 font-bold">
+                        ({((estData.header.est_budget / estData.header.est_amount) * 100).toFixed(2)}
+                        %)
+                      </span>
+                    </TableColumnCell>
+                  </TableColumnBody>
+                </>
+              )}
+            </TableColumn>
+          )}
+
           {!loading && estData && (
             <>
-              {/* 기본 정보 */}
-              <TableColumn className="[&_div]:text-[13px]">
-                <TableColumnHeader className="w-[18%]">
-                  <TableColumnHeaderCell>견적서 제목</TableColumnHeaderCell>
-                </TableColumnHeader>
-                <TableColumnBody>
-                  <TableColumnCell className="leading-[1.3]">{estData.header.est_title}</TableColumnCell>
-                </TableColumnBody>
-
-                <TableColumnHeader className="w-[18%]">
-                  <TableColumnHeaderCell>가용 예산 / 견적서 총액</TableColumnHeaderCell>
-                </TableColumnHeader>
-                <TableColumnBody>
-                  <TableColumnCell>
-                    {formatAmount(estData.header.est_budget)} / {formatAmount(estData.header.est_amount)}{' '}
-                    <span className="ml-1 font-bold">
-                      ({((estData.header.est_budget / estData.header.est_amount) * 100).toFixed(2)}
-                      %)
-                    </span>
-                  </TableColumnCell>
-                </TableColumnBody>
-              </TableColumn>
-
               {/* 선택 및 합계 */}
               <div className="mt-4">
                 <div className="mb-1 flex items-center justify-between text-[13px]">

@@ -518,7 +518,7 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
               className="flex cursor-pointer items-center gap-0.5 text-xs font-normal text-gray-500 hover:text-gray-700"
               title="매칭된 비용 갯수">
               <Link className="size-3" />
-              12
+              {/* {row.match_count} */}
             </span>
           </div>
         </TableCell>

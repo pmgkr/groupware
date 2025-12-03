@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 
 import { format } from 'date-fns';
-import { Info, OctagonAlert, Paperclip, MessageSquareMore } from 'lucide-react';
+import { Info, OctagonAlert, Paperclip, MessageSquareMore, Link as LinkIcon } from 'lucide-react';
 import { Download } from '@/assets/images/icons';
 
 export default function EstimateView() {
@@ -198,7 +198,7 @@ export default function EstimateView() {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-800">견적서 항목</h2>
           <div className="flex gap-2">
-            {estData.header.est_valid === 'Y' && (
+            {(estData.header.est_valid === 'Y' || estData.header.est_valid === 'S') && (
               <Button type="button" variant="outline" size="sm" onClick={handleEstEdit}>
                 견적서 수정
               </Button>
@@ -258,7 +258,20 @@ export default function EstimateView() {
                     <TableCell className="text-right">{formatAmount(row.unit_price)}</TableCell>
                     <TableCell className="text-right">{row.qty}</TableCell>
                     <TableCell className="text-right">{formatAmount(row.amount)}</TableCell>
-                    <TableCell className="text-right">{formatAmount(row.ava_amount)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {formatAmount(row.ava_amount)}{' '}
+                        <Button
+                          type="button"
+                          variant="svgIcon"
+                          size="xs"
+                          className="gap-0.5 text-xs font-normal text-gray-500 hover:text-gray-700"
+                          title="매칭된 비용 갯수">
+                          <LinkIcon className="size-3" />
+                          {row.match_count}
+                        </Button>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">{formatAmount(row.exp_cost)}</TableCell>
                     <TableCell className="text-left leading-[1.1] break-keep whitespace-break-spaces">{row.remark}</TableCell>
                   </>
