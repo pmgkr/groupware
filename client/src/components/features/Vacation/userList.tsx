@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router';
+import { useNavigate } from 'react-router';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { PlusIcon, MinusIcon, SettingsIcon, InfoIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import GrantDialog from './grantDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { type SelectOption, type VacationFilters } from '@/components/features/Vacation/toolbar';
 
 
 export interface VacationDayInfo {
@@ -37,7 +38,6 @@ export default function UserList({
   data = []
 }: UserListProps) {
   const navigate = useNavigate();
-  const location = useLocation();
   
   // 다이얼로그 상태
   const [isGrantDialogOpen, setIsGrantDialogOpen] = useState(false);
@@ -60,11 +60,8 @@ export default function UserList({
     // 버튼 클릭 시에는 이동하지 않음
     if ((e.target as HTMLElement).closest('button')) {
       return;
-    }
-    
-    // 현재 경로에 따라 적절한 경로로 이동
-    const basePath = location.pathname.includes('/admin') ? '/admin' : '/manager';
-    navigate(`${basePath}/vacation/user/${userId}`);
+    }    
+    navigate(`/admin/vacation/user/${userId}`);
   };
 
   // 하드코딩 데이터
@@ -149,29 +146,6 @@ export default function UserList({
   };
 
 
-  // const renderVacationBadge = (info: VacationDayInfo) => {
-  //   return (
-  //     <div className="inline-flex items-center gap-1 flex-wrap justify-center flex-col">
-  //       {info.plusDays !== undefined && (
-  //         <Badge 
-  //           variant="default"
-  //           size="table"
-  //         >
-  //           +{info.plusDays}일
-  //         </Badge>
-  //       )}
-  //       {info.minusDays !== undefined && (
-  //         <Badge 
-  //           variant="secondary"
-  //           size="table"
-  //         >
-  //           -{info.minusDays}일
-  //         </Badge>
-  //       )}
-  //     </div>
-  //   );
-  // };
-
   const renderVacationBadge = (info: VacationDayInfo) => {
     return (
       <div className="inline-flex items-center gap-1 flex-wrap justify-center flex-col">
@@ -195,30 +169,6 @@ export default function UserList({
     );
   };
 
-  // const renderVacationDetailBadge = (info: VacationDayInfo) => {
-  //   return (
-  //     <div className="inline-flex items-center gap-1 flex-wrap justify-center flex-col">
-  //       {info.plusDays !== undefined && (
-  //         <Badge 
-  //           variant="outline"
-  //           size="table"
-  //           className="border-none"
-  //         >
-  //           +{info.plusDays}일
-  //         </Badge>
-  //       )}
-  //       {info.minusDays !== undefined && (
-  //         <Badge 
-  //           variant="destructive"
-  //           size="table"
-  //           className="border-none text-gray-500"
-  //         >
-  //           -{info.minusDays}일
-  //         </Badge>
-  //       )}
-  //     </div>
-  //   );
-  // };
 
   const renderVacationDetailBadge = (info: VacationDayInfo) => {
     return (

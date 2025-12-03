@@ -4,6 +4,7 @@ import { MultiSelect } from "@components/multiselect/multi-select";
 import { useAuth } from '@/contexts/AuthContext';
 import { getTeams } from '@/api/teams';
 import { getTeams as getManagerTeams, type MyTeamItem } from '@/api/manager/teams';
+import { getMemberList } from '@/api/common/team';
 import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // 셀렉트 옵션 타입 정의
@@ -23,6 +24,7 @@ interface VacationToolbarProps {
   activeTab?: 'vacation' | 'event';
   onTabChange?: (tab: 'vacation' | 'event') => void;
   onTeamSelect?: (teamIds: number[]) => void;
+  onUserSelect?: (userIds: string[]) => void;
   onFilterChange?: (filters: VacationFilters) => void;
   checkedItems?: number[];
   onApproveAll?: () => void;
@@ -34,6 +36,7 @@ export default function VacationToolbar({
   activeTab = 'vacation',
   onTabChange = () => {},
   onTeamSelect = () => {},
+  onUserSelect = () => {},
   onFilterChange = () => {},
   checkedItems = [],
   onApproveAll = () => {},
@@ -45,6 +48,10 @@ export default function VacationToolbar({
   // 팀 관련 state
   const [teams, setTeams] = useState<MyTeamItem[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  
+  // 팀원 관련 state (Admin일 때만 사용)
+  const [teamMembers, setTeamMembers] = useState<Array<{ user_id: string; user_name: string }>>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   
   // 일정 필터 state
   const [filters, setFilters] = useState<VacationFilters>({
@@ -99,6 +106,39 @@ export default function VacationToolbar({
     }
   };
 
+  // 선택된 팀들의 팀원 목록 로드 (Admin일 때만)
+  const loadTeamMembers = async (teamIds: number[]) => {
+    if (page !== 'admin' || teamIds.length === 0) {
+      setTeamMembers([]);
+      setSelectedUsers([]);
+      onUserSelect([]);
+      return;
+    }
+
+    try {
+      const memberPromises = teamIds.map(async (teamId) => {
+        const members = await getMemberList(teamId);
+        return members.map((m: any) => ({
+          user_id: m.user_id,
+          user_name: m.user_name
+        }));
+      });
+      
+      const memberResults = await Promise.all(memberPromises);
+      const allMembers = memberResults.flat();
+      
+      // 중복 제거
+      const uniqueMembers = allMembers.filter((member, index, self) =>
+        index === self.findIndex(m => m.user_id === member.user_id)
+      );
+      
+      setTeamMembers(uniqueMembers);
+    } catch (error) {
+      console.error('팀원 목록 로드 실패:', error);
+      setTeamMembers([]);
+    }
+  };
+
   // 셀렉트 변경 핸들러
   const handleSelectChange = (id: string, value: string[] | string) => {
     if (id === 'teams') {
@@ -108,9 +148,23 @@ export default function VacationToolbar({
       if (teamValues.length > 0) {
         const teamIds = teamValues.map(v => parseInt(v));
         onTeamSelect(teamIds);
+        
+        // Admin일 때 선택된 팀의 팀원 목록 로드
+        if (page === 'admin') {
+          loadTeamMembers(teamIds);
+        }
       } else {
         onTeamSelect([]);
+        if (page === 'admin') {
+          setTeamMembers([]);
+          setSelectedUsers([]);
+          onUserSelect([]);
+        }
       }
+    } else if (id === 'users') {
+      const userValues = Array.isArray(value) ? value : [value];
+      setSelectedUsers(userValues);
+      onUserSelect(userValues);
     } else {
       // 일정 필터 핸들러
       const newFilters = { ...filters };
@@ -157,9 +211,27 @@ export default function VacationToolbar({
       // 부모 컴포넌트에 알림
       const teamIds = allTeamIds.map(id => parseInt(id));
       onTeamSelect(teamIds);
+      
+      // Admin일 때 선택된 팀의 팀원 목록 로드
+      if (page === 'admin' && teamIds.length > 0) {
+        loadTeamMembers(teamIds);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teams]);
+
+  // 선택된 팀이 변경될 때 팀원 목록 로드 (Admin일 때만)
+  useEffect(() => {
+    if (page === 'admin' && selectedTeams.length > 0) {
+      const teamIds = selectedTeams.map(id => parseInt(id));
+      loadTeamMembers(teamIds);
+    } else if (page === 'admin' && selectedTeams.length === 0) {
+      setTeamMembers([]);
+      setSelectedUsers([]);
+      onUserSelect([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTeams, page]);
 
   // 팀 옵션 (알파벳순 정렬)
   const teamOptions = useMemo(() => {
@@ -172,33 +244,47 @@ export default function VacationToolbar({
     }));
   }, [teams]);
 
+  // 팀원 옵션 (알파벳순 정렬)
+  const userOptions = useMemo(() => {
+    const sortedMembers = [...teamMembers].sort((a, b) => 
+      a.user_name.localeCompare(b.user_name, 'ko')
+    );
+    return sortedMembers.map(member => ({
+      value: member.user_id,
+      label: member.user_name
+    }));
+  }, [teamMembers]);
+
   return (
     <div className="w-full flex items-center justify-between mb-5">
       <div className="flex items-center">
         {/* 탭 버튼 */}
-        <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
-          <Button
-            onClick={() => onTabChange('vacation')}
-            className={`h-8 w-18 rounded-sm p-0 text-sm ${
-              activeTab === 'vacation'
-                ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-            }`}>
-            휴가
-          </Button>
-          <Button
-            onClick={() => onTabChange('event')}
-            className={`h-8 w-18 rounded-sm p-0 text-sm ${
-              activeTab === 'event'
-                ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-            }`}>
-            이벤트
-          </Button>
-        </div>
-
+        { page === 'manager' && (
+          <div className="flex items-center gap-2 after:mx-5 after:inline-flex after:h-7 after:w-[1px] after:bg-gray-300 after:align-middle">
+            <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
+              <Button
+                onClick={() => onTabChange('vacation')}
+                className={`h-8 w-18 rounded-sm p-0 text-sm ${
+                  activeTab === 'vacation'
+                    ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                    : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+                }`}>
+                휴가
+              </Button>
+              <Button
+                onClick={() => onTabChange('event')}
+                className={`h-8 w-18 rounded-sm p-0 text-sm ${
+                  activeTab === 'event'
+                    ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                    : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+                }`}>
+                이벤트
+              </Button>
+            </div>
+          </div>
+        )}
         {/* 필터 셀렉트들 */}
-        <div className="flex items-center gap-2 before:mx-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
+        <div className="flex items-center gap-2 ">
           
           {/* 연도 단일 선택 */}
           <Select value={filters.year} onValueChange={(v) => handleSelectChange('year', v)}>
@@ -232,28 +318,47 @@ export default function VacationToolbar({
             className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
           />
 
-          {/* 상태 선택 */}
-          <MultiSelect
-            simpleSelect={true}
-            options={[
-              { value: 'H', label: '취소요청됨' },
-              { value: 'Y', label: '승인완료' },
-              { value: 'N', label: '취소완료' },
-            ]}
-            onValueChange={(value) => handleSelectChange('status', value)}
-            defaultValue={filters.status}
-            placeholder="상태"
-            size="sm"
-            maxCount={0}
-            searchable={false}
-            hideSelectAll={false}
-            autoSize={true}
-            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
-          />
+          {/* 팀원 선택 (Admin일 때만) */}
+          {page === 'admin' && (
+            <MultiSelect
+              simpleSelect={true}
+              options={userOptions}
+              onValueChange={(value) => handleSelectChange('users', value)}
+              defaultValue={selectedUsers}
+              placeholder="팀원 선택"
+              size="sm"
+              maxCount={0}
+              searchable={true}
+              hideSelectAll={false}
+              autoSize={true}
+              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+              disabled={selectedTeams.length === 0}
+            />
+          )}
 
-          {activeTab === 'vacation' && (
-            <>
-            {/* 휴가 유형 선택 */}
+          {/* 상태 선택 (Manager일 때만) */}
+          {page === 'manager' && (
+            <MultiSelect
+              simpleSelect={true}
+              options={[
+                { value: 'H', label: '취소요청됨' },
+                { value: 'Y', label: '승인완료' },
+                { value: 'N', label: '취소완료' },
+              ]}
+              onValueChange={(value) => handleSelectChange('status', value)}
+              defaultValue={filters.status}
+              placeholder="상태"
+              size="sm"
+              maxCount={0}
+              searchable={false}
+              hideSelectAll={false}
+              autoSize={true}
+              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+            />
+          )}
+
+          {/* 휴가 유형 선택 (Manager일 때만) */}
+          {page === 'manager' && activeTab === 'vacation' && (
             <MultiSelect
               simpleSelect={true}
               options={[
@@ -272,7 +377,6 @@ export default function VacationToolbar({
               autoSize={true}
               className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
             />
-            </>
           )}
 
           {activeTab === 'event' && (
@@ -301,7 +405,9 @@ export default function VacationToolbar({
         </div>
       </div>
       
-      <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>승인하기</Button>
+      {page === 'manager' && (
+        <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>승인하기</Button>
+      )}
     </div>
   );
 }
