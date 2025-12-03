@@ -32,6 +32,7 @@ export type pExpenseListItem = {
   edate?: string | null; // 지급 완료일자 (Finance)
   cdate?: string | null; // 승인일자 (Manager)
   remark: string;
+  is_estimate?: string; // 견적서 비용 or 견적서 외 비용
 };
 
 // 프로젝트 리스트 조회용 타입
@@ -166,6 +167,7 @@ export interface pExpenseItemBase {
   ei_tax: number;
   ei_total: number;
   pro_id?: number | null;
+  is_estimate?: string;
   attachments?: pExpenseAttachment[];
 }
 

@@ -16,10 +16,11 @@ import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import EstimateSelectDialog from './_components/EstimateSelectDialog';
 import EstimateMatching from './_components/EstimateMatching';
 import EstimateMatched from './_components/EstimateMatched';
+import ExpenseViewRow from './_components/ExpenseViewRow';
+import ExpenseViewEstRow from './_components/ExpenseViewEstRow';
 import { type expenseInfo } from '@/types/estimate';
 
 import { Badge } from '@components/ui/badge';
-import { Checkbox } from '@components/ui/checkbox';
 import { Button } from '@components/ui/button';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -28,7 +29,6 @@ import { Download, Edit } from '@/assets/images/icons';
 import { File, Link as LinkIcon, RotateCcw, CheckCircle } from 'lucide-react';
 
 import { format } from 'date-fns';
-import { statusIconMap, getLogMessage } from '../Expense/utils/statusUtils';
 
 export interface pExpenseItemWithMatch extends pExpenseItemDTO {
   matchedList?: EstimateItemsMatch[];
@@ -321,7 +321,7 @@ export default function projectExpenseView() {
   return (
     <>
       <div className="flex min-h-140 flex-wrap justify-between pb-12">
-        <div className="w-[74%] tracking-tight">
+        <div className={`${data.header.is_estimate === 'Y' ? 'w-[74%]' : 'w-full'} tracking-tight`}>
           <div className="flex w-full items-end justify-between pb-2">
             <h3 className="text-lg font-bold text-gray-800">비용 정보</h3>
             {header.status === 'Saved' && (
@@ -427,102 +427,47 @@ export default function projectExpenseView() {
                   <TableHead className="w-[10%]">비용유형</TableHead>
                   <TableHead className="w-[20%]">가맹점명</TableHead>
                   <TableHead className="w-[10%] px-4">매입일자</TableHead>
-                  <TableHead className="w-[14%]">금액 (A)</TableHead>
+                  {data.header.is_estimate === 'Y' ? (
+                    <TableHead className="w-[14%]">금액 (A)</TableHead>
+                  ) : (
+                    <TableHead className="w-[14%]">금액</TableHead>
+                  )}
                   <TableHead className="w-[10%]">세금</TableHead>
                   <TableHead className="w-[14%]">합계</TableHead>
                   <TableHead className="w-[20%]">증빙자료</TableHead>
-                  <TableHead className="w-[8%]">견적서</TableHead>
+                  {data.header.is_estimate === 'Y' ? (
+                    <TableHead className="w-[8%]">견적서</TableHead>
+                  ) : (
+                    <TableHead className="w-[8%]">기안서</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item, idx) => {
-                  return (
-                    <TableRow key={item.seq} className="[&_td]:text-[13px]">
-                      <TableCell>{item.ei_type}</TableCell>
-                      <TableCell>{item.ei_title}</TableCell>
-                      <TableCell className="px-4">{formatDate(item.ei_pdate)}</TableCell>
-                      <TableCell className="text-right">{formatAmount(item.ei_amount)}원</TableCell>
-                      <TableCell className="text-right">{item.ei_tax === 0 ? 0 : `${formatAmount(item.ei_tax)}원`}</TableCell>
-                      <TableCell className="text-right">{formatAmount(item.ei_total)}원</TableCell>
-                      {item.attachments && item.attachments.length > 0 ? (
-                        <TableCell>
-                          <ul>
-                            {item.attachments.map((att, idx) => (
-                              <li key={idx} className="overflow-hidden text-sm text-gray-800">
-                                <a
-                                  href={`${import.meta.env.VITE_API_ORIGIN}/uploads/pexpense/${att.ea_sname}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center justify-center gap-1">
-                                  <File className="size-3.5 shrink-0" />
-                                  <span className="overflow-hidden text-left text-ellipsis whitespace-nowrap hover:underline">
-                                    {att.ea_fname}
-                                  </span>
-                                </a>
-                              </li>
-                            ))}
-                          </ul>
-                        </TableCell>
-                      ) : (
-                        <TableCell>-</TableCell>
-                      )}
-                      <TableCell className="px-1 text-center [&_button]:rounded-xl [&_button]:border [&_button]:text-xs [&_button]:transition-none">
-                        {(() => {
-                          const alreadyMatched = (item.matchedList?.length ?? 0) > 0;
-                          const isMatched = (matchedMap[item.seq]?.length ?? 0) > 0;
-                          const isMatching = expenseInfo?.seq === item.seq && matchedItems.length > 0;
-                          const isWaiting = expenseInfo && expenseInfo.seq !== item.seq && matchedItems.length > 0;
+                {data.header.is_estimate === 'Y'
+                  ? items.map((item, idx) => {
+                      const alreadyMatched = (item.matchedList?.length ?? 0) > 0;
+                      const isMatched = (matchedMap[item.seq]?.length ?? 0) > 0;
+                      const isMatching = expenseInfo?.seq === item.seq && matchedItems.length > 0;
+                      const isWaiting = Boolean(expenseInfo && expenseInfo.seq !== item.seq && matchedItems.length > 0);
 
-                          // 1) 이미 DB에서 매칭된 row, 클릭 시 EstimateMatching 데이터 세팅
-                          if (alreadyMatched) {
-                            return (
-                              <Button size="xs" variant="outline" onClick={() => handleMatchedItems(idx)}>
-                                매칭완료
-                              </Button>
-                            );
-                          }
-
-                          // 2) 현재 매칭중인 Row, 클릭 시 Dialog 오픈
-                          if (isMatching) {
-                            return (
-                              <Button size="xs" className="border-primary-blue/10" onClick={() => setDialogOpen(true)}>
-                                매칭중
-                              </Button>
-                            );
-                          }
-
-                          // 3) 클라이언트에서 방금 매칭된 row, 클릭 시 EstimateMatching 데이터 세팅
-                          if (isMatched) {
-                            return (
-                              <Button size="xs" variant="outline" onClick={() => handleMatchedItems(idx)}>
-                                매칭완료
-                              </Button>
-                            );
-                          }
-
-                          // 4) 매칭중일 때 다른 row는 disabled 처리
-                          if (isWaiting) {
-                            return (
-                              <Button size="xs" variant="secondary" disabled>
-                                매칭대기
-                              </Button>
-                            );
-                          }
-
-                          // 5) 기본: 매칭하기
-                          return (
-                            <Button
-                              size="xs"
-                              className="bg-primary-blue-100 text-primary-blue border-primary-blue-300/10 hover:bg-primary-blue-150 hover:text-primary-blue active:bg-primary-blue-100"
-                              onClick={() => handleEstimateInfo(item.seq, item.ei_amount)}>
-                              매칭하기
-                            </Button>
-                          );
-                        })()}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                      return (
+                        <ExpenseViewEstRow
+                          key={item.seq}
+                          item={item}
+                          idx={idx}
+                          onMatched={() => handleMatchedItems(idx)}
+                          onMatching={() => setDialogOpen(true)}
+                          onSetMatching={() => handleEstimateInfo(item.seq, item.ei_amount)}
+                          alreadyMatched={alreadyMatched}
+                          isMatched={isMatched}
+                          isMatching={isMatching}
+                          isWaiting={isWaiting}
+                        />
+                      );
+                    })
+                  : items.map((item, idx) => {
+                      return <ExpenseViewRow key={item.seq} item={item} />;
+                    })}
                 <TableRow className="bg-primary-blue-50 [&_td]:py-3">
                   <TableCell className="font-semibold" colSpan={3}>
                     총 비용
@@ -546,34 +491,37 @@ export default function projectExpenseView() {
           </div>
         </div>
 
-        <div className="w-[24%]">
-          <div className="flex justify-between">
-            <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
+        {data.header.is_estimate === 'Y' && (
+          // 견적서 비용일 때만 견적서 매칭 UI 제공
+          <div className="w-[24%]">
+            <div className="flex justify-between">
+              <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
 
-            {dbMatchedItems.length > 0 ? (
-              <Button type="button" size="sm" variant="svgIcon" className="h-auto pr-1! text-gray-500" onClick={handleDeleteMatching}>
-                견적 매칭 재설정 <RotateCcw className="size-3" />
-              </Button>
-            ) : (
-              matchedItems.length > 0 && (
-                <Button type="button" size="sm" variant="svgIcon" className="h-auto pr-1! text-gray-500" onClick={handleMatchingClear}>
-                  견적서 매칭취소 <RotateCcw className="size-3" />
+              {dbMatchedItems.length > 0 ? (
+                <Button type="button" size="sm" variant="svgIcon" className="h-auto pr-1! text-gray-500" onClick={handleDeleteMatching}>
+                  견적 매칭 재설정 <RotateCcw className="size-3" />
                 </Button>
-              )
+              ) : (
+                matchedItems.length > 0 && (
+                  <Button type="button" size="sm" variant="svgIcon" className="h-auto pr-1! text-gray-500" onClick={handleMatchingClear}>
+                    견적서 매칭취소 <RotateCcw className="size-3" />
+                  </Button>
+                )
+              )}
+            </div>
+            {dbMatchedItems.length > 0 ? (
+              <EstimateMatched items={dbMatchedItems} />
+            ) : (
+              <EstimateMatching
+                matchedItems={matchedItems}
+                expenseInfo={expenseInfo}
+                onReset={handleResetMatching}
+                onRefresh={fetchExpense}
+                onMatched={handleMatchComplete}
+              />
             )}
           </div>
-          {dbMatchedItems.length > 0 ? (
-            <EstimateMatched items={dbMatchedItems} />
-          ) : (
-            <EstimateMatching
-              matchedItems={matchedItems}
-              expenseInfo={expenseInfo}
-              onReset={handleResetMatching}
-              onRefresh={fetchExpense}
-              onMatched={handleMatchComplete}
-            />
-          )}
-        </div>
+        )}
       </div>
       <EstimateSelectDialog
         open={dialogOpen}

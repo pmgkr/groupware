@@ -7,10 +7,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { formatAmount, formatKST } from '@/utils';
-import type { ExpenseListItem } from '@/api';
+import type { pExpenseListItem } from '@/api';
 
 type ExpenseRowProps = {
-  item: ExpenseListItem;
+  item: pExpenseListItem;
   activeTab: 'all' | 'saved';
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
@@ -32,11 +32,11 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
   const parseCategories = (cate: string) => cate?.split('|').filter(Boolean) ?? [];
   const categories = Array.from(new Set(parseCategories(item.el_type))); // 중복 카테고리 제거
 
-  console.log(item.el_type);
+  console.log('아이템', item);
 
   return (
-    <TableRow className="[&_td]:text-[13px]">
-      <TableCell className={cn('px-0', activeTab !== 'saved' && 'hidden')}>
+    <TableRow className="[&_td]:px-2 [&_td]:text-[13px]">
+      <TableCell className={cn('px-0!', activeTab !== 'saved' && 'hidden')}>
         <Checkbox
           id={`chk_${item.seq}`}
           className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
@@ -72,6 +72,7 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
         </Link>
       </TableCell>
       <TableCell>{item.el_attach === 'Y' ? <Badge variant="secondary">제출</Badge> : <Badge variant="grayish">미제출</Badge>}</TableCell>
+      <TableCell>{item.is_estimate === 'Y' ? '견적서 비용' : '견적서 외'}</TableCell>
       <TableCell className="text-right">{formatAmount(item.el_amount)}원</TableCell>
       <TableCell className="text-right">{item.el_tax === 0 ? 0 : `${formatAmount(item.el_tax)}원`}</TableCell>
       <TableCell className="text-right">{formatAmount(item.el_total)}원</TableCell>

@@ -453,7 +453,7 @@ export default function Expense() {
 
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
-          <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+          <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className={cn('w-[3%] px-0 transition-all duration-150', activeTab !== 'saved' && 'hidden')}>
               <Checkbox
                 id="chk_all"
@@ -466,9 +466,10 @@ export default function Expense() {
             <TableHead className="w-[8%]">비용 용도</TableHead>
             <TableHead>비용 제목</TableHead>
             <TableHead className="w-[6%]">증빙 상태</TableHead>
-            <TableHead className="w-[10%]">금액</TableHead>
+            <TableHead className="w-[7%]">비용 유형</TableHead>
+            <TableHead className="w-[9%]">금액</TableHead>
             <TableHead className="w-[6%]">세금</TableHead>
-            <TableHead className="w-[10%]">합계</TableHead>
+            <TableHead className="w-[9%]">합계</TableHead>
             <TableHead className="w-[7%]">작성자</TableHead>
             <TableHead className="w-[7%]">상태</TableHead>
             <TableHead className="w-[12%]">작성 일시</TableHead>
@@ -478,13 +479,13 @@ export default function Expense() {
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 11 : 10}>
+              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 12 : 11}>
                 비용 리스트 불러오는 중 . . .
               </TableCell>
             </TableRow>
           ) : expenseList.length === 0 ? (
             <TableRow>
-              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 11 : 10}>
+              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 12 : 11}>
                 리스트가 없습니다.
               </TableCell>
             </TableRow>
