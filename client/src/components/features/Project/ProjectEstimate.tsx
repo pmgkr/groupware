@@ -75,7 +75,14 @@ export default function ProjectEstimate() {
         console.log('📦 견적서 요청 파라미터:', params);
         console.log('✅ 견적서 리스트 응답:', res);
 
-        setEstimateList(res.items);
+        const sortedList = res.items.sort((a, b) => {
+          if (a.est_valid === 'Y' && b.est_valid !== 'Y') return -1;
+          if (a.est_valid !== 'Y' && b.est_valid === 'Y') return 1;
+          return 0;
+        });
+
+        setEstimateList(sortedList);
+
         setTotal(res.total);
       } catch (err) {
         console.error('❌ 견적서 리스트 불러오기 실패:', err);
