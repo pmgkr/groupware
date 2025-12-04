@@ -322,16 +322,16 @@ export default function ProjectList() {
       {/* ---------------- 테이블 ---------------- */}
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
-          <TableRow className="[&_th]:px-4 [&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-12 px-0"></TableHead>
-            <TableHead className="w-22 px-0">프로젝트#</TableHead>
-            <TableHead className="w-[6%]">소속</TableHead>
+          <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
+            <TableHead className="w-12 px-0!"></TableHead>
+            <TableHead className="w-24 px-0!">프로젝트#</TableHead>
+            <TableHead className="w-[6%]">프로젝트 법인</TableHead>
             <TableHead className="w-[10%]">카테고리</TableHead>
             <TableHead>프로젝트 이름</TableHead>
             <TableHead className="w-[14%]">클라이언트</TableHead>
             <TableHead className="w-[8%]">오너</TableHead>
-            <TableHead className="w-[8%]">팀</TableHead>
-            <TableHead className="w-[8%]">상태</TableHead>
+            <TableHead className="w-[6%]">팀</TableHead>
+            <TableHead className="w-[6%]">상태</TableHead>
             <TableHead className="w-[10%]">시작일</TableHead>
           </TableRow>
         </TableHeader>
