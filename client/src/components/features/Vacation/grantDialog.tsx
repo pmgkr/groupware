@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
-import { PlusIcon, MinusIcon } from 'lucide-react';
+import { PlusIcon, MinusIcon, CheckCircle2Icon } from 'lucide-react';
 import { Label } from '@components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
 import { Input } from '@components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { adminVacationApi } from '@/api/admin/vacation';
 import { useToast } from '@/components/ui/use-toast';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 
 interface GrantDialogProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface GrantDialogProps {
 
 export default function GrantDialog({ isOpen, onClose, userId, userName, onSuccess }: GrantDialogProps) {
   const { toast } = useToast();
+  const { addAlert } = useAppAlert();
   const [vaYear, setVaYear] = useState<string>('');
   const [vaType, setVaType] = useState<string>('');
   const [vCount, setVCount] = useState<string>('1');
@@ -103,15 +105,30 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
         remark || ''
       );
       
-      toast({
-        title: '성공',
-        description: '휴가가 성공적으로 부여되었습니다.',
+      // 성공 정보 저장
+      const typeNames: Record<string, string> = {
+        current: '기본연차',
+        carryover: '이월연차',
+        special: '특별대휴',
+        official: '공가'
+      };
+      
+      const typeName = typeNames[vaType] || vaType;
+      
+      // 부여 다이얼로그 닫기
+      onClose();
+      
+      // 성공 알림 표시
+      addAlert({
+        title: '휴가 부여 완료',
+        message: `${userName}님에게 ${parseInt(vaYear)}년도 ${typeName} ${count}일이 부여되었습니다.`,
+        icon: <CheckCircle2Icon className="w-5 h-5 text-green-500" />,
+        duration: 2500,
       });
       
+      // 데이터 새로고침
       onSuccess?.();
-      onClose();
     } catch (error: any) {
-      console.error('휴가 부여 실패:', error);
       toast({
         title: '오류',
         description: error?.message || '휴가 부여에 실패했습니다.',
@@ -123,8 +140,9 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>휴가 관리</DialogTitle>
           <DialogDescription>
@@ -147,29 +165,8 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
                             <SelectItem value="2024">2024</SelectItem>
                             <SelectItem value="2025">2025</SelectItem>
                             <SelectItem value="2026">2026</SelectItem>
-                            <SelectItem value="2027">2027</SelectItem>
                         </SelectContent>
                     </Select>
-                    <div className="flex flex-col gap-1 h-11">
-                      <Button 
-                        variant="outlinePrimary" 
-                        size="sm" 
-                        className="flex-1 h-auto rounded-sm"
-                        onClick={() => handleYearChange(1)}
-                        type="button"
-                      >
-                          <PlusIcon className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="outlinePrimary" 
-                        size="sm" 
-                        className="flex-1 h-auto rounded-sm"
-                        onClick={() => handleYearChange(-1)}
-                        type="button"
-                      >
-                          <MinusIcon className="w-4 h-4" />
-                      </Button>
-                    </div>
                 </div>  
             </div>
             <div className="space-y-3">
@@ -244,5 +241,6 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
