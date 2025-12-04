@@ -165,7 +165,7 @@ export default function UserList({
           },
           // 공가
           officialVacation: {
-            plusDays: Number(Number(item.va_official) || 0) || 0,
+            plusDays: Number((Number(item.va_official) || 0) + (Number(item.v_official) || 0)) || 0,
             minusDays: Number(-(Number(item.v_official) || 0)) || 0
           },
           // 누적 휴가일수(공가제외)

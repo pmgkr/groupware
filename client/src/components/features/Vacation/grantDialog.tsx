@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@components/ui/dialog';
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@components/ui/alert-dialog';
 import { Button } from '@components/ui/button';
 import { PlusIcon, MinusIcon, CheckCircle2Icon } from 'lucide-react';
 import { Label } from '@components/ui/label';
@@ -9,6 +8,7 @@ import { Input } from '@components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { adminVacationApi } from '@/api/admin/vacation';
 import { useToast } from '@/components/ui/use-toast';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 
 interface GrantDialogProps {
   isOpen: boolean;
@@ -20,13 +20,12 @@ interface GrantDialogProps {
 
 export default function GrantDialog({ isOpen, onClose, userId, userName, onSuccess }: GrantDialogProps) {
   const { toast } = useToast();
+  const { addAlert } = useAppAlert();
   const [vaYear, setVaYear] = useState<string>('');
   const [vaType, setVaType] = useState<string>('');
   const [vCount, setVCount] = useState<string>('1');
   const [remark, setRemark] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [grantedInfo, setGrantedInfo] = useState<{ type: string; count: number; year: number } | null>(null);
 
   // 다이얼로그가 열릴 때 현재 연도로 초기화
   useEffect(() => {
@@ -114,17 +113,18 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
         official: '공가'
       };
       
-      setGrantedInfo({
-        type: typeNames[vaType] || vaType,
-        count,
-        year: parseInt(vaYear)
-      });
+      const typeName = typeNames[vaType] || vaType;
       
       // 부여 다이얼로그 닫기
       onClose();
       
-      // 성공 다이얼로그 표시
-      setShowSuccessDialog(true);
+      // 성공 알림 표시
+      addAlert({
+        title: '휴가 부여 완료',
+        message: `${userName}님에게 ${parseInt(vaYear)}년도 ${typeName} ${count}일이 부여되었습니다.`,
+        icon: <CheckCircle2Icon className="w-5 h-5 text-green-500" />,
+        duration: 2500,
+      });
       
       // 데이터 새로고침
       onSuccess?.();
@@ -137,11 +137,6 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSuccessDialogClose = () => {
-    setShowSuccessDialog(false);
-    setGrantedInfo(null);
   };
 
   return (
@@ -246,39 +241,6 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
         </DialogFooter>
       </DialogContent>
     </Dialog>
-    
-    {/* 성공 다이얼로그 */}
-    <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-      <AlertDialogContent className="sm:max-w-[425px]">
-        <AlertDialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0">
-              <CheckCircle2Icon className="w-8 h-8 text-green-500" />
-            </div>
-            <div>
-              <AlertDialogTitle className="text-left">휴가 부여 완료</AlertDialogTitle>
-              <AlertDialogDescription className="text-left mt-2">
-                {grantedInfo && (
-                  <div className="space-y-1">
-                    <p className="text-base font-medium text-gray-900">
-                      {userName}님에게 {grantedInfo.year}년도 {grantedInfo.type} {grantedInfo.count}일이 부여되었습니다.
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      화면에 반영된 내용을 확인해주세요.
-                    </p>
-                  </div>
-                )}
-              </AlertDialogDescription>
-            </div>
-          </div>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <Button onClick={handleSuccessDialogClose} className="w-full">
-            확인
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }
