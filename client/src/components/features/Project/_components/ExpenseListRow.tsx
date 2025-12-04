@@ -2,14 +2,12 @@
 import { memo } from 'react';
 import { Link, useParams } from 'react-router';
 import { cn } from '@/lib/utils';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { formatAmount, formatKST } from '@/utils';
 import type { pExpenseListItem } from '@/api';
-
-import { Asterisk } from 'lucide-react';
 
 type ExpenseRowProps = {
   item: pExpenseListItem;
@@ -33,8 +31,6 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
   // 비용 용도 슬라이드 유틸함수
   const parseCategories = (cate: string) => cate?.split('|').filter(Boolean) ?? [];
   const categories = Array.from(new Set(parseCategories(item.el_type))); // 중복 카테고리 제거
-
-  console.log('아이템', item);
 
   // 비용 항목 & 견적서 매칭 누락 체크용
   const matchMissing = item.alloc_status === 'empty' && item.is_estimate === 'Y' && (

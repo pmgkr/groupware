@@ -186,7 +186,7 @@ export default function ProjectExpenseView() {
             <Table variant="primary" align="center" className="table-fixed">
               <TableHeader>
                 <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-                  <TableHead className="w-[10%]">비용유형</TableHead>
+                  <TableHead className="w-[10%]">비용 용도</TableHead>
                   <TableHead className="w-[20%]">가맹점명</TableHead>
                   <TableHead className="w-[10%] px-4">매입일자</TableHead>
                   <TableHead className="w-[14%]">금액 (A)</TableHead>

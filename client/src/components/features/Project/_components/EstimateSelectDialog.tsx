@@ -64,7 +64,6 @@ export default function EstimateSelectDialog({
         const raw = await getEstimateInfo(projectId);
         const list = raw.result ?? [];
 
-        console.log('가져온 견적서', list);
         setEstimateList(list);
 
         // 리스트가 1개일 때만 자동 선택

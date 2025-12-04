@@ -651,3 +651,23 @@ export async function estimateEdit(est_id: string | undefined, payload: Estimate
 
   return http<EstimateEditResponse>(`/user/estimate/edit/${est_id}`, { method: 'POST', body: JSON.stringify(payload) });
 }
+
+// 견적서 > 매칭된 프로젝트 비용 리스트 가져오기
+export type EstExpenseItemResponse = {
+  pseq: number;
+  list_seq: number;
+  exp_id: string;
+  ei_type: string;
+  ei_title: string;
+  ei_pdate: string;
+  ei_amount: number;
+  ei_tax: number;
+  ei_total: number;
+  alloc_amount: number;
+};
+
+export async function getEstExpenseItem(ei_seq: number) {
+  if (!ei_seq) throw new Error('비용 항목 번호가 필요합니다.');
+
+  return http<EstExpenseItemResponse[]>(`/user/estimate/pexp_match/${ei_seq}`, { method: 'GET' });
+}

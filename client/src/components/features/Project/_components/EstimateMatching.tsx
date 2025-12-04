@@ -131,7 +131,6 @@ export default function EstimateMatching({
         // UI 초기화 + 상위 refresh
         onMatched(expenseInfo.seq, payload.items);
         onReset();
-        await onRefresh();
       }
     } catch (err) {
       console.error(err);
