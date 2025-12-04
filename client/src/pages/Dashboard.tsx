@@ -250,7 +250,10 @@ export default function Dashboard() {
             </ul>
             <div className="overflow-y-auto rounded-xl p-4">
               <ul className="grid grid-cols-3 gap-2 gap-y-4">
-                {calendarData.map((calendar, index) => (
+                {calendarData.length === 0 ? (
+                  <span className=" text-gray-500 text-base">등록된 일정이 없습니다.</span>
+                ) : (
+                calendarData.map((calendar, index) => (
                   <li 
                     key={`${calendar.user_name}-${calendar.sch_label}-${index}`} 
                     className="flex items-center gap-x-2 cursor-pointer hover:bg-gray-50 rounded-md p-1 transition-colors"
@@ -276,7 +279,8 @@ export default function Dashboard() {
                       </Badge>
                     </div>
                   </li>
-                ))}
+                  ))
+                )}
 
               </ul>
             </div>
