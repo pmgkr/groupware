@@ -10,12 +10,18 @@ import ProjectEstimate from '@/components/features/Project/ProjectEstimate';
 import EstimatePreview from '@/components/features/Project/EstimatePreview';
 import EstimateView from '@/components/features/Project/EstimateView';
 import EstimateEdit from '@/components/features/Project/EstimateEdit';
+import ProjectProposalList from '@/pages/Project/ProjectProposal/ProjectProposalList';
+import ProjectProposalView from '@/pages/Project/ProjectProposal/ProjectProposalView';
+import ProposalRegister from '@/components/features/proposal/ProposalRegister';
 
 export const projectRoutes: RouteObject = {
   path: 'project', // 상위 Layout 기준 → /project
   handle: {
     title: '프로젝트',
-    nav: [{ to: '/project', label: '프로젝트 관리', end: true }],
+    nav: [
+      { to: '/project', label: '프로젝트 관리', end: true },
+      { to: '/project/proposal', label: '프로젝트 기안' },
+    ],
   },
   children: [
     // 프로젝트 리스트
@@ -39,5 +45,8 @@ export const projectRoutes: RouteObject = {
         { path: 'estimate/:estId/edit', element: <EstimateEdit />, handle: { hideNav: true, hideTitle: true } },
       ],
     },
+    { path: 'proposal', element: <ProjectProposalList /> },
+    { path: 'proposal/register', element: <ProposalRegister /> },
+    { path: 'proposal/view/:id', element: <ProjectProposalView /> },
   ],
 };
