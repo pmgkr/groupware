@@ -38,7 +38,7 @@ export interface ReportLineDTO {
   rl_approver_id: string;
   rl_approver_name: string;
   rl_order: number;
-  rl_state: string; // '대기' | '검토' | '승인' | '반려'
+  rl_state: string; // '대기' | '진행' | '승인' | '반려'
   rl_decided_at: string;
   rl_sign_sname: string;
 }
@@ -78,8 +78,11 @@ export interface ReportCard {
   content?: string;
   price: number;
   team: string;
+  team_name: string;
   user: string;
+  user_id: string;
   date: string;
+  rp_user_name: string;
 }
 
 export async function getReportList(): Promise<ReportCard[]> {
@@ -97,6 +100,7 @@ export async function getReportList(): Promise<ReportCard[]> {
     price: item.rp_cost,
     team: item.team_name,
     user: item.rp_user_name,
+    user_id: item.rp_user_id,
   }));
 }
 

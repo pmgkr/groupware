@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
-import { Link, useLocation, useOutletContext, useNavigate, useParams } from 'react-router';
+import { Link, useOutletContext, useNavigate, useParams } from 'react-router';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { getEstimateView, type EstimateViewDTO } from '@/api';
 import { formatKST, formatAmount, displayUnitPrice } from '@/utils';
+
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
@@ -11,19 +13,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 
 import { format } from 'date-fns';
-import { Info, OctagonAlert, Paperclip, MessageSquareMore } from 'lucide-react';
+import { Info, OctagonAlert, Paperclip, MessageSquareMore, Link as LinkIcon } from 'lucide-react';
 import { Download } from '@/assets/images/icons';
 
 export default function EstimateView() {
-  const { estId, projectId } = useParams();
   const navigate = useNavigate();
+  const { estId, projectId } = useParams();
+
+  const { addDialog } = useAppDialog();
 
   const [estData, setEstData] = useState<EstimateViewDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const { data } = useOutletContext<ProjectLayoutContext>();
 
-  const leftRef = useRef<HTMLDivElement>(null);
-  const rightRef = useRef<HTMLDivElement>(null);
+  const leftRef = useRef<HTMLDivElement>(null); // 견적서 정보 useRef
+  const rightRef = useRef<HTMLDivElement>(null); // 견적서 증빙 useRef
 
   useLayoutEffect(() => {
     const sync = () => {
@@ -54,9 +58,6 @@ export default function EstimateView() {
     })();
   }, [estId]);
 
-  console.log('데이터 ', data);
-  console.log('견적서 데이터 ', estData);
-
   if (!estData)
     return (
       <div className="p-6 text-center text-gray-500">
@@ -68,6 +69,21 @@ export default function EstimateView() {
         </div>
       </div>
     );
+
+  console.log('데이터 ', data);
+  console.log('견적서 데이터 ', estData);
+
+  const handleEstEdit = () => {
+    addDialog({
+      title: '견적서를 수정하시겠습니까?',
+      message: '수정 시, 증빙 자료 업로드 또는 증빙 사유 입력이 필수입니다.',
+      confirmText: '수정',
+      cancelText: '취소',
+      onConfirm: async () => {
+        navigate(`/project/${projectId}/estimate/${estId}/edit`);
+      },
+    });
+  };
 
   const getBudgetPercent = ((estData.header.est_budget / estData.header.est_amount) * 100).toFixed(2);
 
@@ -182,9 +198,9 @@ export default function EstimateView() {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-800">견적서 항목</h2>
           <div className="flex gap-2">
-            {estData.header.est_valid === 'Y' && (
-              <Button type="button" variant="outline" size="sm" asChild>
-                <Link to="">견적서 수정</Link>
+            {(estData.header.est_valid === 'Y' || estData.header.est_valid === 'S') && (
+              <Button type="button" variant="outline" size="sm" onClick={handleEstEdit}>
+                견적서 수정
               </Button>
             )}
 
@@ -242,7 +258,20 @@ export default function EstimateView() {
                     <TableCell className="text-right">{formatAmount(row.unit_price)}</TableCell>
                     <TableCell className="text-right">{row.qty}</TableCell>
                     <TableCell className="text-right">{formatAmount(row.amount)}</TableCell>
-                    <TableCell className="text-right">{formatAmount(row.ava_amount)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {formatAmount(row.ava_amount)}{' '}
+                        <Button
+                          type="button"
+                          variant="svgIcon"
+                          size="xs"
+                          className="gap-0.5 text-xs font-normal text-gray-500 hover:text-gray-700"
+                          title="매칭된 비용 갯수">
+                          <LinkIcon className="size-3" />
+                          {row.match_count}
+                        </Button>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">{formatAmount(row.exp_cost)}</TableCell>
                     <TableCell className="text-left leading-[1.1] break-keep whitespace-break-spaces">{row.remark}</TableCell>
                   </>

@@ -6,3 +6,4 @@ export * from './date';
 export * from './fileValidator';
 export * from './excelMapper';
 export * from './cleanPrams';
+export * from './queue';

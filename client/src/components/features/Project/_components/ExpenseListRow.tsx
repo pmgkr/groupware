@@ -30,7 +30,7 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
 
   // 비용 용도 슬라이드 유틸함수
   const parseCategories = (cate: string) => cate?.split('|').filter(Boolean) ?? [];
-  const categories = parseCategories(item.el_type);
+  const categories = Array.from(new Set(parseCategories(item.el_type))); // 중복 카테고리 제거
 
   console.log(item.el_type);
 

@@ -59,7 +59,7 @@ export default function ProposalProgress({ steps }: ProposalProgressProps) {
       isDouble: false,
     };
   };
-
+  /* 
   const getMiddleDotColor = (index: number) => {
     const currentStep = steps[index];
     const nextStep = steps[index + 1];
@@ -80,9 +80,9 @@ export default function ProposalProgress({ steps }: ProposalProgressProps) {
 
     // 나머지는 회색
     return 'bg-gray-300';
-  };
+  }; */
 
-  const getProgressRatio = (steps: Step[]): number => {
+  /*  const getProgressRatio = (steps: Step[]): number => {
     const totalSteps = steps.length;
     const approvedCount = steps.filter((s) => s.status === '완료').length;
     const progressIndex = steps.findIndex((s) => s.status === '진행');
@@ -116,6 +116,47 @@ export default function ProposalProgress({ steps }: ProposalProgressProps) {
     // 대기만 있는 경우 (완료 다음이 모두 대기)
     // 완료, 대기 → 중간점(1) = 1/6 ≈ 16.67%
     // 완료, 완료, 대기 → 중간점 + 원 + 중간점(3) = 3/6 = 50%
+    const pointsReached = approvedCount * 2 - 1;
+    return (pointsReached / totalPoints) * 100;
+  }; */
+
+  const getMiddleDotColor = (index: number) => {
+    const currentStep = steps[index];
+
+    // 현재 스텝이 완료이면 다음 중간점 파란색
+    if (currentStep.status === '완료') {
+      return 'bg-primary-blue-300';
+    }
+
+    // 나머지는 회색
+    return 'bg-gray-300';
+  };
+
+  const getProgressRatio = (steps: Step[]): number => {
+    const totalSteps = steps.length;
+    const approvedCount = steps.filter((s) => s.status === '완료').length;
+    const rejectedIndex = steps.findIndex((s) => s.status === '반려');
+
+    // 전체 포인트 수 = (스텝 수 - 1) * 2 (각 구간마다 중간점 1개씩)
+    const totalPoints = (totalSteps - 1) * 2;
+
+    // 모두 완료인 경우
+    if (approvedCount === totalSteps) return 100;
+
+    // 완료가 없는 경우
+    if (approvedCount === 0) return 0;
+
+    // 반려가 있는 경우 - 반려 원까지 도달
+    if (rejectedIndex !== -1) {
+      // 완료 반려 대기 => 반려 원까지 (포인트 2) = 2/4 = 50%
+      // 완료 완료 반려 => 반려 원까지 (포인트 4) = 4/4 = 100%
+      const pointsReached = rejectedIndex * 2;
+      return (pointsReached / totalPoints) * 100;
+    }
+
+    // 반려가 없는 경우
+    // 완료 대기 대기 => 1개 완료 => 포인트 1 (중간점) = 1/4 = 25%
+    // 완료 완료 대기 => 2개 완료 => 포인트 3 (중간점+원+중간점) = 3/4 = 75%
     const pointsReached = approvedCount * 2 - 1;
     return (pointsReached / totalPoints) * 100;
   };

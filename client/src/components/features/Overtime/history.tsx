@@ -305,7 +305,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
     try {
       // 추가근무 API 파라미터 구성
       const selectedDay = convertToWorkData(selectedOvertime);
-      const apiParams = buildOvertimeApiParams(selectedDay, overtimeData);
+      const apiParams = buildOvertimeApiParams(selectedDay, overtimeData, []);
       
       // API 호출(Dialog에서 저장하므로 해당 코드 삭제)
       // await workingApi.requestOvertime(apiParams);
