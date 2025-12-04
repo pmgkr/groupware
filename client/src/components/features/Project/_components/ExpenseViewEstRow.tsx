@@ -36,8 +36,6 @@ export default function ExpenseViewEstRow({
   isMatching,
   isWaiting,
 }: EstimateViewEstRowProps) {
-  console.log(item);
-
   return (
     <TableRow key={item.seq} className="[&_td]:text-[13px]">
       <TableCell>{item.ei_type}</TableCell>

@@ -371,13 +371,13 @@ export default function Expense() {
               </SelectContent>
             </Select>
 
-            {/* 용도 다중 선택 */}
+            {/* 증빙수단 다중 선택 */}
             <MultiSelect
               className="max-w-[80px] min-w-auto!"
               size="sm"
-              placeholder="비용 용도"
-              options={typeOptions}
-              onValueChange={(v) => handleFilterChange(setSelectedType, v)}
+              placeholder="증빙 수단"
+              options={proofMethod}
+              onValueChange={(v) => handleFilterChange(setSelectedProof, v)}
               maxCount={0}
               hideSelectAll={true}
               autoSize={true}
@@ -386,13 +386,13 @@ export default function Expense() {
               simpleSelect={true}
             />
 
-            {/* 증빙수단 다중 선택 */}
+            {/* 용도 다중 선택 */}
             <MultiSelect
               className="max-w-[80px] min-w-auto!"
               size="sm"
-              placeholder="증빙 수단"
-              options={proofMethod}
-              onValueChange={(v) => handleFilterChange(setSelectedProof, v)}
+              placeholder="비용 용도"
+              options={typeOptions}
+              onValueChange={(v) => handleFilterChange(setSelectedType, v)}
               maxCount={0}
               hideSelectAll={true}
               autoSize={true}

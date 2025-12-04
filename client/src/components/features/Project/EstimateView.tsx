@@ -4,6 +4,9 @@ import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { getEstimateView, type EstimateViewDTO } from '@/api';
 import { formatKST, formatAmount, displayUnitPrice } from '@/utils';
 
+import ExpenseItemDialog from './_components/ExpenseItemDialog';
+
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { Button } from '@components/ui/button';
@@ -20,11 +23,14 @@ export default function EstimateView() {
   const navigate = useNavigate();
   const { estId, projectId } = useParams();
 
+  const { addAlert } = useAppAlert();
   const { addDialog } = useAppDialog();
 
-  const [estData, setEstData] = useState<EstimateViewDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const { data } = useOutletContext<ProjectLayoutContext>();
+  const [estData, setEstData] = useState<EstimateViewDTO | null>(null);
+  const [seletedEstId, setSelectedEstId] = useState<number | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false); // 매칭된 비용 항목 Dialog State
 
   const leftRef = useRef<HTMLDivElement>(null); // 견적서 정보 useRef
   const rightRef = useRef<HTMLDivElement>(null); // 견적서 증빙 useRef
@@ -85,6 +91,28 @@ export default function EstimateView() {
     });
   };
 
+  // 가용금액 옆 링크 버튼 클릭 시, 매칭된 비용 항목 리스트 가져오기
+  const getExpenseItemDialog = async (ei_seq: number) => {
+    if (!ei_seq || ei_seq === null) {
+      addAlert({
+        title: '비용 조회 실패',
+        message: '해당 항목에 매칭된 비용 항목을 찾을 수 없습니다.',
+        icon: <OctagonAlert />,
+        duration: 1500,
+      });
+      return;
+    }
+
+    setSelectedEstId(ei_seq);
+    setDialogOpen(true);
+  };
+
+  const dialogClose = () => {
+    setSelectedEstId(null);
+    setDialogOpen(false);
+  };
+
+  // 가용금액 퍼센트
   const getBudgetPercent = ((estData.header.est_budget / estData.header.est_amount) * 100).toFixed(2);
 
   const statusMap = {
@@ -265,8 +293,10 @@ export default function EstimateView() {
                           type="button"
                           variant="svgIcon"
                           size="xs"
-                          className="gap-0.5 text-xs font-normal text-gray-500 hover:text-gray-700"
-                          title="매칭된 비용 갯수">
+                          className="gap-0.5 text-xs font-normal text-gray-600 hover:text-gray-700"
+                          title="매칭된 비용 갯수"
+                          onClick={() => getExpenseItemDialog(row.seq)}
+                          disabled={row.match_count === 0}>
                           <LinkIcon className="size-3" />
                           {row.match_count}
                         </Button>
@@ -347,6 +377,8 @@ export default function EstimateView() {
           </Button>
         </div>
       </div>
+
+      <ExpenseItemDialog open={dialogOpen} ei_seq={seletedEstId} onClose={dialogClose} />
     </>
   );
 }

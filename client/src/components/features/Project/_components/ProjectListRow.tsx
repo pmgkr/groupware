@@ -31,7 +31,7 @@ export const ProjectRow = memo(({ item, isFavorite = false, onToggleFavorite }: 
   const status = statusMap[item.project_status] ?? { label: item.project_status, variant: 'grayish' };
 
   return (
-    <TableRow key={item.project_id} className="[&_td]:px-4 [&_td]:text-[13px]">
+    <TableRow key={item.project_id} className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]">
       {/* 즐겨찾기 */}
       <TableCell className="px-0!">
         <Button
