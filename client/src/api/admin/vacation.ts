@@ -18,6 +18,7 @@ export interface VacationItem {
     va_carryover: number;
     va_comp: number;
     va_long: number;
+    va_official: number;
     va_used?: string; // 사용한 휴가일수
     user_name: string;
     team_id: number;
