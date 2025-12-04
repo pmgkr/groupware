@@ -3,14 +3,13 @@ import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { type ApprovalState, type Step } from '@/components/features/proposal/ProposalProgress';
-import { getReportInfo, type ReportFileDTO, type ReportInfoResponse } from '@/api/expense/proposal';
+import { deleteReport, getReportInfo, type ReportFileDTO, type ReportInfoResponse } from '@/api/expense/proposal';
 import ProposalViewContent from '@/components/features/proposal/ProposalView';
 
 import { useUser } from '@/hooks/useUser';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { CircleCheck, AlertTriangle } from 'lucide-react';
-import { deleteReport } from '@/api/manager/proposal';
 
 export default function ProposalView() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +31,9 @@ export default function ProposalView() {
     if (!user?.user_id) return false;
     if (report.rp_user_id !== user.user_id) return false; // 본인만
     if (report.rp_state === '완료' || report.rp_state === '반려') return false; // 완료/반려는 불가
+    if (report.manager_state === '완료' || report.finance_state === '완료' || report.gm_state === '완료') {
+      return false; //팀장/회계/대표 결재 중 하나라도 완료되면 삭제 불가
+    }
     return true;
   })();
 

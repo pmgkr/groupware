@@ -16,6 +16,7 @@ import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { Check } from 'lucide-react';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useLocation } from 'react-router';
+import { TableColumn, TableColumnBody, TableColumnCell, TableColumnHeader, TableColumnHeaderCell } from '@/components/ui/tableColumn';
 
 // Zod 스키마 정의 (유효성 검사 규칙)
 const formSchema = z.object({
@@ -113,74 +114,84 @@ export default function ProposalRegister() {
         <Form {...form}>
           <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
             {/* 카테고리 Select Box */}
-            <div className="mb-3 flex flex-1 gap-x-2.5">
-              {!isProject && (
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem className="w-[180px]">
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="카테고리를 선택하세요" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="교육비">교육비</SelectItem>
-                          <SelectItem value="구매요청">구매요청</SelectItem>
-                          <SelectItem value="일반비용">일반비용</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-              {/* 금액 Input */}
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input
-                        className="w-[300px]"
-                        placeholder="금액을 입력하세요"
-                        inputMode="numeric"
-                        value={formattedPrice}
-                        onChange={(e) => {
-                          const raw = e.target.value.replace(/,/g, '');
-                          // 숫자 외 입력 방지
-                          if (!/^\d*$/.test(raw)) return;
-                          // RHF 실제 값 업데이트
-                          field.onChange(raw);
-                          // 화면 표시용 formatting
-                          setFormattedPrice(raw ? formatAmount(raw) : '');
-                        }}
+            {/* 입력 영역 테이블 */}
+            <div className="mt-6 mb-4 overflow-hidden">
+              {/* 첫번째 줄: 카테고리 + 금액 */}
+              <TableColumn className="[&_div]:text-[13px] [&_input]:text-[13px]">
+                {/* 카테고리 */}
+
+                <TableColumnHeader className="w-[14%]">
+                  <TableColumnHeaderCell>카테고리</TableColumnHeaderCell>
+                </TableColumnHeader>
+                <TableColumnBody>
+                  <TableColumnCell>
+                    {!isProject && (
+                      <FormField
+                        control={form.control}
+                        name="category"
+                        render={({ field }) => (
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <SelectTrigger className="h-full! w-full border-0 p-0 text-[13px] shadow-none" size="sm">
+                              <SelectValue placeholder="선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="교육비">교육비</SelectItem>
+                              <SelectItem value="구매요청">구매요청</SelectItem>
+                              <SelectItem value="일반비용">일반비용</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                       />
-                    </FormControl>
+                    )}
+                  </TableColumnCell>
+                </TableColumnBody>
 
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                {/* 금액 */}
+                <TableColumnHeader className="w-[14%]">
+                  <TableColumnHeaderCell>금액</TableColumnHeaderCell>
+                </TableColumnHeader>
+                <TableColumnBody>
+                  <TableColumnCell>
+                    <FormField
+                      control={form.control}
+                      name="price"
+                      render={({ field }) => (
+                        <Input
+                          className="h-full w-full border-0 p-0 text-[13px] shadow-none"
+                          placeholder="0"
+                          inputMode="numeric"
+                          value={formattedPrice}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/,/g, '');
+                            if (!/^\d*$/.test(raw)) return;
+                            field.onChange(raw);
+                            setFormattedPrice(raw ? formatAmount(raw) : '');
+                          }}
+                        />
+                      )}
+                    />
+                  </TableColumnCell>
+                </TableColumnBody>
+              </TableColumn>
+
+              {/* 두번째 줄: 제목 */}
+              <TableColumn className="border-t-0 [&_div]:text-[13px] [&_input]:text-[13px]">
+                <TableColumnHeader className="w-[14%]">
+                  <TableColumnHeaderCell>제목</TableColumnHeaderCell>
+                </TableColumnHeader>
+                <TableColumnBody>
+                  <TableColumnCell>
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <Input className="h-full w-full border-0 p-0 text-[13px] shadow-none" placeholder="제목을 입력하세요" {...field} />
+                      )}
+                    />
+                  </TableColumnCell>
+                </TableColumnBody>
+              </TableColumn>
             </div>
-
-            {/* 제목 Input */}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem className="w-full">
-                  <FormControl>
-                    <Input placeholder="제목을 입력하세요" {...field} />
-                  </FormControl>
-
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}

@@ -162,6 +162,7 @@ export default function ProposalList({
             <TableHead className="w-[10%]">번호</TableHead>
             <TableHead className="w-[10%]">구분</TableHead>
             <TableHead className="w-[40%]">제목</TableHead>
+            <TableHead className="w-[8%]">결재 상태</TableHead>
             <TableHead className="w-[10%]">금액</TableHead>
 
             {showWriterInfo && (
@@ -170,8 +171,7 @@ export default function ProposalList({
                 <TableHead className="w-[8%]">작성자</TableHead>
               </>
             )}
-            <TableHead className="w-[10%]">일자</TableHead>
-            <TableHead className="w-[10%]">상태</TableHead>
+            <TableHead className="w-[10%]">작성일</TableHead>
           </TableRow>
         </TableHeader>
 
@@ -185,14 +185,60 @@ export default function ProposalList({
           ) : (
             paginatedReports.map((report) => {
               const writer = showWriterInfo ? { team: report.team, name: report.user } : null;
+              const displayStatus = report.approval_manager_display_state ?? report.approval_user_display_state ?? report.state;
 
               return (
-                <TableRow key={report.id} onClick={() => onRowClick(report.id, activeTab)} className="cursor-pointer hover:bg-gray-100">
+                <TableRow
+                  key={report.id}
+                  onClick={() => onRowClick(report.id, activeTab)}
+                  className="cursor-pointer hover:bg-gray-100 [&_td]:text-[13px]">
                   <TableCell>{generateReportNumber(report.category, report.id)}</TableCell>
                   <TableCell>{report.category}</TableCell>
 
                   {/* 제목 */}
                   <TableCell className="text-left">{report.title}</TableCell>
+                  {/* 상태 */}
+                  <TableCell>
+                    {(() => {
+                      switch (displayStatus) {
+                        case '팀장대기':
+                          return (
+                            <Badge variant="secondary" size="table">
+                              팀장대기
+                            </Badge>
+                          );
+                        case '팀장결재완료':
+                          return <Badge size="table">팀장결재완료</Badge>;
+
+                        case '회계대기':
+                          return (
+                            <Badge variant="secondary" size="table" className="bg-primary-yellow-150 text-primary-orange">
+                              회계대기
+                            </Badge>
+                          );
+
+                        case 'GM대기':
+                          return (
+                            <Badge variant="secondary" size="table" className="bg-primary-purple-150 text-primary-purple">
+                              GM대기
+                            </Badge>
+                          );
+
+                        case '승인완료':
+                          return <Badge size="table">승인완료</Badge>;
+
+                        case '반려':
+                          return (
+                            <Badge size="table" className="bg-[#FF2200]">
+                              반려
+                            </Badge>
+                          );
+
+                        default:
+                          return <Badge size="table">진행</Badge>;
+                      }
+                    })()}
+                  </TableCell>
 
                   {/* 금액 */}
                   <TableCell className="text-right">{formatAmount(report.price)}원</TableCell>
@@ -207,57 +253,6 @@ export default function ProposalList({
 
                   {/* 날짜 */}
                   <TableCell>{formatKST(report.date, true)}</TableCell>
-
-                  {/* 상태 */}
-                  <TableCell>
-                    {(() => {
-                      const displayStatus = (() => {
-                        if (isManager && isManagerReportCard(report)) {
-                          return report.approval_display_state;
-                        }
-                        return report.state;
-                      })();
-
-                      switch (displayStatus) {
-                        case '팀장결재대기':
-                          return (
-                            <Badge variant="secondary" size="table">
-                              결재대기
-                            </Badge>
-                          );
-                        case '팀장결재완료':
-                          return <Badge size="table">결재완료</Badge>;
-                        case '팀장반려':
-                          return (
-                            <Badge size="table" className="bg-[#FF2200]">
-                              반려
-                            </Badge>
-                          );
-                        case '대기':
-                          return (
-                            <Badge variant="secondary" size="table">
-                              대기
-                            </Badge>
-                          );
-                        case '진행':
-                          return (
-                            <Badge variant="outline" size="table">
-                              진행
-                            </Badge>
-                          );
-                        case '완료':
-                          return <Badge size="table">완료</Badge>;
-                        case '반려':
-                          return (
-                            <Badge size="table" className="bg-[#FF2200]">
-                              반려
-                            </Badge>
-                          );
-                        default:
-                          return null;
-                      }
-                    })()}
-                  </TableCell>
                 </TableRow>
               );
             })
