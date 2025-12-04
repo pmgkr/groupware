@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import ProposalProgress, { type Step } from '@/components/features/proposal/ProposalProgress';
 import { generateReportNumber } from '@/api/expense/proposal';
 import { formatAmount, formatKST } from '@/utils';
+import 'quill/dist/quill.snow.css';
 
 interface ProposalViewContentProps {
   report: any;
@@ -85,17 +86,16 @@ export default function ProposalView({
         </div>
       </div>
 
-      <div className="bg-gray-200 p-5">
-        <div className="mb-6 text-gray-800" dangerouslySetInnerHTML={{ __html: report.rp_content }}></div>
+      <div className="ql-snow bg-gray-200 p-5">
+        <div className="ql-editor mb-6 text-gray-800" dangerouslySetInnerHTML={{ __html: report.rp_content }}></div>
       </div>
 
-      <div className="mb-4 flex items-center justify-between bg-gray-50 py-4">
-        <div>
-          {/* 첨부파일 */}
-          {files.map((file) => {
-            const url = `https://gbend.cafe24.com/uploads/report/${file.rf_sname}`;
-
-            return (
+      {/* 첨부파일 */}
+      {files.map((file) => {
+        const url = `https://gbend.cafe24.com/uploads/report/${file.rf_sname}`;
+        return (
+          <div className="mb-4 flex items-center justify-between bg-gray-50 py-4">
+            <div>
               <Button
                 key={file.rf_seq}
                 variant="outline"
@@ -103,19 +103,12 @@ export default function ProposalView({
                 onClick={() => window.open(url, '_blank')}>
                 {file.rf_name}
               </Button>
-            );
-          })}
-        </div>
-        <div className="flex gap-2">
-          {onDelete && (
-            <Button variant="destructive" size="sm" className="bg-red-500 text-white" onClick={onDelete}>
-              삭제
-            </Button>
-          )}
-        </div>
-      </div>
+            </div>
+          </div>
+        );
+      })}
 
-      <div className="flex justify-between">
+      <div className="mt-4 flex justify-between">
         <div>
           <Button variant="outline" size="sm" onClick={onBack}>
             목록
@@ -133,6 +126,14 @@ export default function ProposalView({
               size="sm"
               onClick={onApprove}>
               승인
+            </Button>
+          </div>
+        )}
+
+        {onDelete && (
+          <div className="flex gap-2">
+            <Button variant="destructive" size="sm" className="bg-red-500 text-white" onClick={onDelete}>
+              삭제
             </Button>
           </div>
         )}
