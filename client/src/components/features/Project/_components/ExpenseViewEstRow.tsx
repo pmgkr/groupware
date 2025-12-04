@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { File } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TableRow, TableCell } from '@/components/ui/table';
-import type { pExpenseItemWithMatch } from '../ProjectExpenseView';
+import type { pExpenseItemWithMatch } from '../hooks/useProjectExpenseMatching';
 
 export interface EstimateViewEstRowProps {
   item: pExpenseItemWithMatch;

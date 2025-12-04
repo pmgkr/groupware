@@ -33,6 +33,8 @@ export type pExpenseListItem = {
   cdate?: string | null; // 승인일자 (Manager)
   remark: string;
   is_estimate?: string; // 견적서 비용 or 견적서 외 비용
+  alloc_status?: string; // 견적서 매칭 상태
+  allocated_amount?: number; // 견적서 매칭 합계
 };
 
 // 프로젝트 리스트 조회용 타입

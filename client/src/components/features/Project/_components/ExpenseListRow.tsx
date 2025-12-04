@@ -9,6 +9,8 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { formatAmount, formatKST } from '@/utils';
 import type { pExpenseListItem } from '@/api';
 
+import { Asterisk } from 'lucide-react';
+
 type ExpenseRowProps = {
   item: pExpenseListItem;
   activeTab: 'all' | 'saved';
@@ -33,6 +35,16 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
   const categories = Array.from(new Set(parseCategories(item.el_type))); // 중복 카테고리 제거
 
   console.log('아이템', item);
+
+  // 비용 항목 & 견적서 매칭 누락 체크용
+  const matchMissing = item.alloc_status === 'empty' && item.is_estimate === 'Y' && (
+    <span className="absolute -top-1 -right-1 flex size-3">
+      {/* 애니메이션 */}
+      <span className={`absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-500 opacity-75`}></span>
+      {/* 도트 */}
+      <span className={`relative inline-flex size-3 rounded-full border border-white bg-orange-500`}></span>
+    </span>
+  );
 
   return (
     <TableRow className="[&_td]:px-2 [&_td]:text-[13px]">
@@ -67,12 +79,19 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
         </TooltipProvider>
       </TableCell>
       <TableCell className="text-left">
-        <Link to={`/project/${projectId}/expense/${item.seq}`} className="hover:underline">
+        <Link to={`/project/${projectId}/expense/${item.seq}`} className="relative hover:underline">
           {item.el_title}
         </Link>
       </TableCell>
       <TableCell>{item.el_attach === 'Y' ? <Badge variant="secondary">제출</Badge> : <Badge variant="grayish">미제출</Badge>}</TableCell>
-      <TableCell>{item.is_estimate === 'Y' ? '견적서 비용' : '견적서 외'}</TableCell>
+      <TableCell>
+        <div className="relative inline-flex justify-center">
+          <Badge variant="grayish" className="border-gray-300 bg-white">
+            {item.is_estimate === 'Y' ? '견적서' : '견적서 외'}
+          </Badge>
+          {matchMissing}
+        </div>
+      </TableCell>
       <TableCell className="text-right">{formatAmount(item.el_amount)}원</TableCell>
       <TableCell className="text-right">{item.el_tax === 0 ? 0 : `${formatAmount(item.el_tax)}원`}</TableCell>
       <TableCell className="text-right">{formatAmount(item.el_total)}원</TableCell>
