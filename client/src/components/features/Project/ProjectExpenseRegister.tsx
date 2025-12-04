@@ -461,7 +461,7 @@ export default function ProjectExpenseRegister() {
                 duration: 2000,
               });
 
-              navigate(`/project/${projectId}/expense/match`, {
+              navigate(`/project/${projectId}/expense/${result.list_seq}`, {
                 state: {
                   exp_id: result.list_seq,
                 },

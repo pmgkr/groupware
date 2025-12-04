@@ -23,6 +23,8 @@ interface EstimateSelectDialogProps {
   expenseInfo: expenseInfo | null;
   onConfirm: (selected: EstimateItemsView[]) => void;
   selectingItems?: EstimateItemsView[]; // 선택된 항목들 (기본값 : 빈 배열);
+  selectedEstId: number | null;
+  setSelectedEstId: (id: number | null) => void;
 }
 
 export interface estViewMatchDTO {
@@ -37,6 +39,8 @@ export default function EstimateSelectDialog({
   expenseInfo,
   onConfirm,
   selectingItems,
+  selectedEstId,
+  setSelectedEstId,
 }: EstimateSelectDialogProps) {
   const { addAlert } = useAppAlert();
 
@@ -46,7 +50,6 @@ export default function EstimateSelectDialog({
 
   // 멀티 견적서 대응 State
   const [estimateList, setEstimateList] = useState<EstimateHeaderView[]>([]);
-  const [selectedEstId, setSelectedEstId] = useState<number | null>(null);
 
   /** ---------------------------
    *  견적서 로딩
@@ -67,8 +70,8 @@ export default function EstimateSelectDialog({
         // 리스트가 1개일 때만 자동 선택
         if (list.length === 1) {
           setSelectedEstId(list[0].est_id);
-        } else {
-          // 여러개의 견적서라면 선택 전까지 UI 비활성화
+        } else if (list.length > 1 && selectedEstId === null) {
+          // 여러개의 견적서 & 선택한 견적서가 없다면 선택 전까지 UI 대기
           setSelectedEstId(null);
           setEstData(null);
         }
@@ -101,6 +104,8 @@ export default function EstimateSelectDialog({
         }));
 
         setEstData({ header, items });
+
+        setSelectedItems([]);
       } catch (err) {
         console.error('❌ 항목 로딩 오류:', err);
       } finally {
