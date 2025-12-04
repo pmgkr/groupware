@@ -169,7 +169,7 @@ export default function Header() {
               <span>관리자</span>
             </NavLink>
           </li>
-          {/* <li>
+          <li>
             <NavLink
               to="/admin"
               className={({ isActive }) =>
@@ -179,9 +179,9 @@ export default function Header() {
                 )
               }>
               <Admin />
-              <span>어드민</span>
+              <span>최고관리자</span>
             </NavLink>
-          </li> */}
+          </li>
         </ul>
       </div>
     </>

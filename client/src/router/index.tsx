@@ -20,6 +20,7 @@ import { workingRoutes } from './working';
 import { officeRoutes } from './office';
 import { mypageRoutes } from './mypage';
 import { managerRoutes } from './manager';
+import { adminRoutes } from './admin';
 
 // 인증 후 Layout 하위의 자식 라우트들
 const authedChildren: RouteObject[] = [
@@ -31,6 +32,7 @@ const authedChildren: RouteObject[] = [
   officeRoutes,
   mypageRoutes,
   managerRoutes,
+  adminRoutes,
 ];
 
 // 로딩 컴포넌트
