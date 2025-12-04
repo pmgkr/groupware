@@ -198,7 +198,7 @@ export default function Dashboard() {
                   </li>
                 </ul>
             </div>
-            <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
+            <div className="rounded-md border border-gray-300 bg-white px-6 py-5 h-full">
               <SectionHeader
                 title="공지사항"
                 buttonText="전체보기"
@@ -209,7 +209,10 @@ export default function Dashboard() {
               />
               <div>
                 <ul className="flex flex-col gap-y-2 px-2 text-base tracking-tight text-gray-700">
-                  {notice.map((notice) => (
+                  {notice.length === 0 ? (
+                    <span className=" text-gray-500 text-base">등록된 공지사항이 없습니다.</span>
+                  ) : (
+                  notice.map((notice) => (
                     <li key={notice.n_seq} className="flex items-center gap-x-1.5 before:h-1 before:w-1 before:rounded-[50%] before:bg-gray-700">
                     <Link to={`/notice/${notice.n_seq}`} className="group flex items-center justify-between gap-x-1.5">
                       <p className="overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline">
@@ -217,7 +220,8 @@ export default function Dashboard() {
                       </p>
                       </Link>
                     </li>
-                  ))}
+                    ))
+                  )}
                 </ul>
               </div>
             </div>
@@ -289,16 +293,20 @@ export default function Dashboard() {
             />
               <div className="overflow-y-auto">
                 <ul className="flex flex-col gap-y-2 text-base tracking-tight text-gray-700">
-                 {meetingroom.map((meetingroom) => (
-                   <li key={`${meetingroom.mr_name}-${meetingroom.stime}-${meetingroom.etime}`} className="flex items-center gap-x-1.5">
-                     <Badge className={getMeetingroomBadgeColor(meetingroom.mr_name)}>
-                       {getMeetingroomKoreanName(meetingroom.mr_name)}
-                     </Badge>
-                     <p className="overflow-hidden text-ellipsis whitespace-nowrap">
-                        {formatTime(meetingroom.stime)} - {formatTime(meetingroom.etime)} {`${meetingroom.title}`}
-                      </p>
-                   </li>
-                 ))}
+                  {meetingroom.length === 0 ? (
+                    <span className=" text-gray-500 text-base">등록된 예약이 없습니다.</span>
+                    ) : (
+                    meetingroom.map((meetingroom) => (
+                      <li key={`${meetingroom.mr_name}-${meetingroom.stime}-${meetingroom.etime}`} className="flex items-center gap-x-1.5">
+                        <Badge className={getMeetingroomBadgeColor(meetingroom.mr_name)}>
+                          {getMeetingroomKoreanName(meetingroom.mr_name)}
+                        </Badge>
+                        <p className="overflow-hidden text-ellipsis whitespace-nowrap">
+                          {formatTime(meetingroom.stime)} - {formatTime(meetingroom.etime)} {`${meetingroom.title}`}
+                        </p>
+                      </li>
+                    ))
+                  )}
               </ul>
             </div>
           </div>
