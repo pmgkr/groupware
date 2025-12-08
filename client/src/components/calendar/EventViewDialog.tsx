@@ -292,7 +292,7 @@ export default function EventViewDialog({
                       취소 신청하기
                     </Button>
                   )}
-                  {(user_level === 'manager' || user_level === 'admin') && onApproveCancel && (
+                  {(user_level === 'manager' || user_level === 'admin') && onApproveCancel && isPage !== 'admin' && (
                     <Button variant="destructive" onClick={handleCancelRequest}>
                       취소하기
                     </Button>
