@@ -50,7 +50,7 @@ export default function OvertimeToolbar({
   // 추가근무 필터 state
   const [filters, setFilters] = useState<OvertimeFilters>({
     year: new Date().getFullYear().toString(),
-    status: [],
+    status: page === 'admin' && activeTab === 'weekend' ? ['approved'] : [], // admin이고 휴일일 때 기본값: 보상대기
     mealAllowance: [],
     transportAllowance: [],
     compensation: []
@@ -139,6 +139,19 @@ export default function OvertimeToolbar({
     loadTeams();
   }, [user, page]);
 
+  // 초기 마운트 시 admin이고 weekend일 때 보상대기 필터 설정
+  useEffect(() => {
+    if (page === 'admin' && activeTab === 'weekend') {
+      const newFilters = {
+        ...filters,
+        status: ['approved']
+      };
+      setFilters(newFilters);
+      onFilterChange(newFilters);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 초기 마운트 시에만 실행
+
   // 팀 목록이 로드되면 모든 팀 선택
   useEffect(() => {
     if (teams.length > 0 && selectedTeams.length === 0) {
@@ -194,15 +207,15 @@ export default function OvertimeToolbar({
       setFilters(newFilters);
       onFilterChange(newFilters);
     } else {
-      // 휴일: 승인대기만 기본 선택
+      // 휴일: admin일 때는 보상대기, manager일 때는 승인대기
       const newFilters = {
         ...filters,
-        status: ['pending']
+        status: page === 'admin' ? ['approved'] : ['pending']
       };
       setFilters(newFilters);
       onFilterChange(newFilters);
     }
-  }, [activeTab]);
+  }, [activeTab, page]);
 
   return (
     <div className="w-full flex items-center justify-between mb-5">

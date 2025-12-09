@@ -4,7 +4,7 @@ import OvertimeList from '@components/features/Overtime/list';
 
 export default function AdminOvertime() {
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
-  const [activeTab, setActiveTab] = useState<'weekday' | 'weekend'>('weekday');
+  const [activeTab, setActiveTab] = useState<'weekday' | 'weekend'>('weekend');
   const [overtimeFilters, setOvertimeFilters] = useState<OvertimeFilters>({});
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
 
