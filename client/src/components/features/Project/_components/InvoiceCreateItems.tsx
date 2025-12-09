@@ -109,7 +109,7 @@ export default function InvoiceItemsForm({ control, watch, setValue }: Props) {
       <div className="flex items-center justify-between border-t-1 border-t-gray-300 py-2 text-[13px] leading-[1.3]">
         <span className="w-[60%] text-right font-medium">TAX</span>
         <div className="w-[20%] px-2">
-          <Select onValueChange={(v) => setValue('tax', v)} defaultValue="0.1">
+          <Select value={watch('tax')} onValueChange={(v) => setValue('tax', v)} defaultValue="0.1">
             <SelectTrigger className="h-8! w-full text-sm!">
               <SelectValue placeholder="선택" />
             </SelectTrigger>

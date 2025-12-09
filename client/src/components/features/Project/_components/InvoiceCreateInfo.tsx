@@ -5,6 +5,7 @@ import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { DayPicker } from '@/components/daypicker';
 import { CalendarIcon, Bookmark } from 'lucide-react';
@@ -80,7 +81,8 @@ export default function InvoiceInfoForm({ control, watch, setValue, formatDate }
               </span>
               <button
                 type="button"
-                className="text-primary-blue-500 hover:[&_svg]:fill-primary flex cursor-pointer items-center gap-1 text-sm">
+                className="text-primary-blue-500 hover:[&_svg]:fill-primary flex cursor-pointer items-center gap-1 text-sm"
+                tabIndex={-1}>
                 <Bookmark className="size-3.5" /> 북마크
               </button>
             </FormLabel>
@@ -101,7 +103,19 @@ export default function InvoiceInfoForm({ control, watch, setValue, formatDate }
               담당자 연락처<span className="text-primary-blue-500">*</span>
             </FormLabel>
             <FormControl>
-              <Input placeholder="010-0000-0000" {...field} value={field.value ?? ''} />
+              <Input
+                placeholder="010-0000-0000"
+                {...field}
+                value={field.value ?? ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  // 허용되는 문자만 입력 (+, -, 숫자)
+                  if (!/^[0-9+\-]*$/.test(value)) return;
+
+                  field.onChange(value);
+                }}
+              />
             </FormControl>
           </FormItem>
         )}
@@ -131,7 +145,7 @@ export default function InvoiceInfoForm({ control, watch, setValue, formatDate }
           return (
             <FormItem>
               <FormLabel>발행 요청 일자</FormLabel>
-              <Popover open={isOpen} onOpenChange={setIsOpen}>
+              <Popover open={isOpen} onOpenChange={setIsOpen} modal={true}>
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button variant="outline" className={cn('h-11 w-full text-left', !field.value && 'text-muted-foreground')}>
@@ -166,6 +180,20 @@ export default function InvoiceInfoForm({ control, watch, setValue, formatDate }
             <FormLabel>PO 번호</FormLabel>
             <FormControl>
               <Input placeholder="PO 번호" {...field} value={field.value ?? ''} />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+
+      {/* 비고 */}
+      <FormField
+        control={control}
+        name="remark"
+        render={({ field }) => (
+          <FormItem className="col-span-2">
+            <FormLabel>비고</FormLabel>
+            <FormControl>
+              <Textarea placeholder="추가 기입할 정보가 있으면 입력해 주세요." className="h-16 min-h-16" {...field} />
             </FormControl>
           </FormItem>
         )}

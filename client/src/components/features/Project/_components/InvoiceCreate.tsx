@@ -22,7 +22,7 @@ import { Dialog, DialogTrigger, DialogClose, DialogContent, DialogHeader, Dialog
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { DayPicker } from '@components/daypicker';
 
-import { CalendarIcon, Bookmark } from 'lucide-react';
+import { OctagonAlert } from 'lucide-react';
 
 type Props = {
   onClose?: () => void;
@@ -43,7 +43,9 @@ export default function InvoiceCreateForm({ onClose, onSuccess }: Props) {
 
   const form = useForm<InvoiceFormValues>({
     mode: 'onSubmit',
+    reValidateMode: 'onChange',
     resolver: zodResolver(invoiceSchema),
+    shouldUnregister: false,
     defaultValues: {
       invoice_title: '',
       client_nm: data.client_nm,
@@ -56,8 +58,33 @@ export default function InvoiceCreateForm({ onClose, onSuccess }: Props) {
     },
   });
 
-  const formValidate = (step: 'info' | 'items' | 'confirm') => {
-    setRegisterStep(step);
+  const formValidate = async (nextStep: RegisterStep) => {
+    if (nextStep === 'items') {
+      // Info 단계 필수값 검증
+      const valid = await form.trigger(['invoice_title', 'client_nm', 'contact_nm', 'contact_tel']);
+
+      console.log(valid);
+
+      if (!valid) return;
+    }
+
+    if (nextStep === 'confirm') {
+      // Items 단계에서 최소 한 개의 유효한 row가 있는지 검사
+      const items = form.getValues('items') || [];
+      const hasValidRow = items.some((r) => r.il_title?.trim() && r.il_amount !== '' && r.il_qty !== '');
+
+      if (!hasValidRow) {
+        addAlert({
+          title: '항목 작성 필요',
+          message: '최소 1개의 항목을 입력해 주세요.',
+          icon: <OctagonAlert />,
+          duration: 2000,
+        });
+        return;
+      }
+    }
+
+    setRegisterStep(nextStep);
   };
 
   // Dialog 하위 취소 버튼 클릭 시 폼 리셋
@@ -69,10 +96,55 @@ export default function InvoiceCreateForm({ onClose, onSuccess }: Props) {
   // Dialog 인보이스 등록 onSubmit 이벤트 핸들러
   const handleRegister = () => {};
 
+  const onSubmit = (v: InvoiceFormValues) => {
+    addDialog({
+      title: '인보이스를 등록하시겠습니까?',
+      message: `<span class="text-primary-blue-500 font-semibold">${v.invoice_title}</span> 인보이스를 발행 신청합니다.`,
+      confirmText: '확인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        const cleanedItems = (v.items ?? [])
+          .filter((r) => r.il_title && r.il_amount && r.il_qty)
+          .map((r) => ({
+            il_title: r.il_title,
+            il_amount: Number(r.il_amount.replace(/,/g, '')),
+            il_qty: Number(r.il_qty.replace(/,/g, '')),
+          }));
+
+        const payload = {
+          invoice_title: v.invoice_title,
+          client_nm: v.client_nm,
+          contact_nm: v.contact_nm,
+          contact_tel: v.contact_tel,
+          contact_email: v.contact_email,
+          idate: v.idate,
+          po_no: v.po_no,
+          remark: v.remark,
+          tax: Number(v.tax),
+          items: cleanedItems,
+        };
+
+        // const result = await projectCreate(payload);
+
+        // console.log('✅ 등록 성공:', result);
+        // if (result.ok) {
+        //   addAlert({
+        //     title: '프로젝트 생성이 완료되었습니다.',
+        //     message: `<p>프로젝트 아이디 <span class="text-primary-blue-500">${result.project_id}</span>로 생성되었습니다.</p>`,
+        //     icon: <OctagonAlert />,
+        //     duration: 2000,
+        //   });
+
+        //   onSuccess?.();
+        // }
+      },
+    });
+  };
+
   return (
-    <Form {...form}>
-      <Dialog>
-        <form onSubmit={() => {}} className="space-y-5">
+    <Dialog>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
           <div className="grid grid-cols-2 items-start gap-4">
             {registerStep === 'info' && (
               <InvoiceInfoForm control={form.control} watch={form.watch} setValue={form.setValue} formatDate={formatDate} />
@@ -95,7 +167,7 @@ export default function InvoiceCreateForm({ onClose, onSuccess }: Props) {
                 <Button type="button" variant="outline" onClick={() => setRegisterStep('info')}>
                   이전
                 </Button>
-                <Button type="button" onClick={() => setRegisterStep('confirm')}>
+                <Button type="button" onClick={() => formValidate('confirm')}>
                   정보 확인
                 </Button>
               </div>
@@ -112,7 +184,7 @@ export default function InvoiceCreateForm({ onClose, onSuccess }: Props) {
             )}
           </div>
         </form>
-      </Dialog>
-    </Form>
+      </Form>
+    </Dialog>
   );
 }
