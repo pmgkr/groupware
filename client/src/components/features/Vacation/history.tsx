@@ -150,17 +150,95 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
     fetchScheduleData();
   }, [fetchScheduleData]);
 
-  // 모든 데이터를 개별 항목으로 표시 (그룹화 제거)
+  // 원본 항목과 취소된 항목을 그룹핑
   const groupedData = useMemo(() => {
-    // 모든 항목을 개별적으로 표시 (취소 항목 포함)
     const result: Array<{ item: VacationItem; cancelledItem?: VacationItem }> = [];
+    const processedIds = new Set<number>();
     
-    // 모든 항목을 개별 행으로 표시
+    // 모든 항목을 순회하면서 원본과 취소 항목을 매칭
     allData.forEach(item => {
-      result.push({
-        item: item,
-        cancelledItem: undefined
-      });
+      // 이미 처리된 항목은 건너뛰기
+      if (processedIds.has(item.sch_id)) {
+        return;
+      }
+      
+      // 취소 완료된 항목인 경우 (sch_status === 'N' 또는 v_type === 'cancel')
+      const isCancelled = item.sch_status === 'N' || item.v_type === 'cancel';
+      
+      if (isCancelled) {
+        // 같은 sch_id를 가진 원본 항목 찾기
+        let originalItem = allData.find(
+          other => other.sch_id === item.sch_id && 
+                   other.sch_status !== 'N' &&
+                   other.v_type !== 'cancel' &&
+                   other !== item
+        );
+        
+        // sch_id로 찾지 못한 경우, 같은 기간과 유형을 가진 원본 항목 찾기
+        if (!originalItem) {
+          originalItem = allData.find(
+            other => other.sdate === item.sdate &&
+                     other.edate === item.edate &&
+                     other.v_type !== 'cancel' &&
+                     other.sch_status !== 'N' &&
+                     other !== item &&
+                     !processedIds.has(other.sch_id)
+          );
+        }
+        
+        if (originalItem) {
+          // 원본 항목과 취소 항목을 함께 표시
+          result.push({
+            item: originalItem,
+            cancelledItem: item
+          });
+          processedIds.add(item.sch_id);
+          processedIds.add(originalItem.sch_id);
+        } else {
+          // 원본 항목을 찾지 못한 경우 취소 항목만 표시
+          result.push({
+            item: item,
+            cancelledItem: undefined
+          });
+          processedIds.add(item.sch_id);
+        }
+      } else {
+        // 원본 항목인 경우
+        // 같은 sch_id를 가진 취소 항목 찾기
+        let cancelledItem = allData.find(
+          other => other.sch_id === item.sch_id && 
+                   (other.sch_status === 'N' || other.v_type === 'cancel') &&
+                   other !== item
+        );
+        
+        // sch_id로 찾지 못한 경우, 같은 기간과 유형을 가진 취소 항목 찾기
+        if (!cancelledItem) {
+          cancelledItem = allData.find(
+            other => other.sdate === item.sdate &&
+                     other.edate === item.edate &&
+                     (other.sch_status === 'N' || other.v_type === 'cancel') &&
+                     other !== item &&
+                     !processedIds.has(other.sch_id)
+          );
+        }
+        
+        if (cancelledItem) {
+          // 원본 항목과 취소 항목을 함께 표시
+          result.push({
+            item: item,
+            cancelledItem: cancelledItem
+          });
+          processedIds.add(item.sch_id);
+          processedIds.add(cancelledItem.sch_id);
+        } else {
+          // 취소 항목이 없는 경우 원본만 표시
+          result.push({
+            item: item,
+            cancelledItem: undefined
+          });
+          processedIds.add(item.sch_id);
+        }
+      }
     });
     
     // 승인일 기준으로 정렬 (최신순)
