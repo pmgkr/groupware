@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import GrantDialog from './grantDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { adminVacationApi, type VacationItem } from '@/api/admin/vacation';
-import { getTeams } from '@/api/teams';
+import { getTeams } from '@/api/admin/teams';
 
 
 export interface VacationDayInfo {

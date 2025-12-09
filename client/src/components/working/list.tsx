@@ -52,12 +52,14 @@ export interface WorkingListProps {
   data?: WorkingListItem[];
   loading?: boolean;
   weekStartDate?: Date;
+  page?: 'admin' | 'manager';
 }
 
 export default function WorkingList({ 
   data = [], 
   loading = false,
-  weekStartDate
+  weekStartDate,
+  page
 }: WorkingListProps) {
   const { user } = useAuth();
   
@@ -224,20 +226,30 @@ export default function WorkingList({
     if (!selectedWorkTime) return;
     
     try {
+      const endpoint = page === 'admin' ? '/admin/wlog/update' : '/manager/wlog/update';
       console.log('✅ 출퇴근 시간 수정 요청:', {
         user_id: selectedWorkTime.userId,
         tdate: selectedWorkTime.date,
         stime: startTime ? `${startTime}:00` : '',
         etime: endTime ? `${endTime}:00` : '',
-        endpoint: '/manager/wlog/update'
+        endpoint
       });
       
-      await managerWorkingApi.updateWorkTime(
-        selectedWorkTime.userId,
-        selectedWorkTime.date,
-        startTime,
-        endTime
-      );
+      if (page === 'admin') {
+        await managerWorkingApi.updateAdminWorkTime(
+          selectedWorkTime.userId,
+          selectedWorkTime.date,
+          startTime,
+          endTime
+        );
+      } else {
+        await managerWorkingApi.updateWorkTime(
+          selectedWorkTime.userId,
+          selectedWorkTime.date,
+          startTime,
+          endTime
+        );
+      }
       
       console.log('✅ 출퇴근 시간 수정 성공!');
       // 데이터 새로고침

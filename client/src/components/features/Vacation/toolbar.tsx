@@ -3,7 +3,7 @@ import { useLocation } from 'react-router';
 import { Button } from "@components/ui/button";
 import { MultiSelect } from "@components/multiselect/multi-select";
 import { useAuth } from '@/contexts/AuthContext';
-import { getTeams } from '@/api/teams';
+import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams, type MyTeamItem } from '@/api/manager/teams';
 import { getMemberList } from '@/api/common/team';
 import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';

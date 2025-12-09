@@ -4,7 +4,7 @@ import Toolbar from '@components/working/toolbar';
 import { getWeekStartDate } from '@/utils/dateHelper';
 import { useWorkingData } from '@/hooks/useWorkingData';
 
-export default function ManagerWorking() {
+export default function AdminWorking() {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // 선택된 팀 ID 목록
@@ -14,7 +14,7 @@ export default function ManagerWorking() {
   const weekStartDate = useMemo(() => getWeekStartDate(currentDate), [currentDate]);
   
   // 근태 데이터 로드
-  const { workingList, loading } = useWorkingData({ weekStartDate, selectedTeamIds, page: 'manager' });
+  const { workingList, loading } = useWorkingData({ weekStartDate, selectedTeamIds, page: 'admin' });
 
   // 팀 선택 핸들러
   const handleTeamSelect = (teamIds: number[]) => {
@@ -27,14 +27,14 @@ export default function ManagerWorking() {
         currentDate={currentDate} 
         onDateChange={setCurrentDate} 
         onTeamSelect={handleTeamSelect}
-        page="manager"
+        page="admin"
       />
       
       <WorkingList
         data={workingList}
         loading={loading}
         weekStartDate={weekStartDate}
-        page="manager"
+        page="admin"
       />
     </div>
   );
