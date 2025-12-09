@@ -199,10 +199,10 @@ export default function OvertimeToolbar({
   // 탭 변경 시 상태 필터 기본값 설정
   useEffect(() => {
     if (activeTab === 'weekday') {
-      // 평일: 승인대기만 기본 선택
+      // 평일: admin일 때는 필터 없음(전체), manager일 때는 승인대기만 기본 선택
       const newFilters = {
         ...filters,
-        status: ['pending']
+        status: page === 'admin' ? [] : ['pending']
       };
       setFilters(newFilters);
       onFilterChange(newFilters);
