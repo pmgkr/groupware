@@ -646,7 +646,7 @@ export default function OvertimeList({
             >
               <TableCell className="text-center p-2 whitespace-nowrap">{getTeamName(item.team_id)}</TableCell>
               <TableCell className="text-center p-2">{item.user_name}</TableCell>
-              <TableCell className="text-center p-2">
+              <TableCell className="text-center p-2 whitespace-nowrap">
                 {item.ot_date ? dayjs(item.ot_date).format('YYYY-MM-DD (ddd)') : '-'}
               </TableCell>
               {activeTab === 'weekday' ?

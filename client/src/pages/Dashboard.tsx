@@ -15,7 +15,7 @@ import WorkHoursBar from '@/components/ui/WorkHoursBar';
 import { Icons } from '@components/icons';
 import EventViewDialog from '@/components/calendar/EventViewDialog';  
 
-import type { Calendar, Meetingroom, Wlog, Vacation, Notice } from '@/api/dashboard';
+import type { Calendar, Meetingroom, Wlog, Vacation, Notice, Expense } from '@/api/dashboard';
 
 import { getBadgeColor } from '@/utils/calendarHelper';
 import { formatTime, formatMinutes, formatKST } from '@/utils/date';
@@ -29,6 +29,13 @@ dayjs.locale('ko');
 
 // 캘린더 배지 목록
 const calendarBadges = ['연차', '반차', '반반차', '공가', '외부 일정', '재택'];
+
+// 비용 상태 맵
+const statusMap: Record<string, string> = {
+  'Claimed': '신청',
+  'Approved': '승인',
+  'Rejected': '거부',
+};
 
 
 export default function Dashboard() {
@@ -72,12 +79,15 @@ export default function Dashboard() {
     notice, 
     calendar: calendarData, 
     meetingroom,
+    expense: expenseData,
     isEventDialogOpen,
     selectedEventData,
     handleCalendarClick,
     handleCloseDialog,
     getMeetingroomKoreanName,
-    getMeetingroomBadgeColor
+    getMeetingroomBadgeColor,
+    getExpenseStepStatusName,
+    getExpenseBadgeColor
   } = useDashboard(selected);
 
   // 사용자 정보 가져오기 (Hook은 최상위 레벨에서 호출)
@@ -325,25 +335,32 @@ export default function Dashboard() {
             />
             <div className="overflow-y-auto">
               <ul className="flex flex-col gap-y-2 text-base tracking-tight text-gray-700">
-                <li>
-                  <Link to="" className="group flex items-center justify-between gap-x-1.5">
-                    <p className="overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline">5월 동아리 활동 건 </p>
-                    <Badge variant="secondary">승인대기</Badge>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="" className="group flex items-center justify-between gap-x-1.5">
-                    <p className="overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline">5월 야근식비</p>
-                    <Badge variant="secondary">승인대기</Badge>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="" className="group flex items-center justify-between gap-x-1.5">
-                    <p className="overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline">5월 야근택시비</p>
-                    <Badge variant="secondary">승인대기</Badge>
-                  </Link>
-                </li>
-              </ul>
+                {expenseData.length === 0 ? (
+                    <span className=" text-gray-500 text-base">등록된 비용이 없습니다.</span>
+                    ) : (
+                    expenseData.map((expense: Expense) => {
+                      const expensePath = expense.expenseType === 'nexpense' 
+                        ? `/expense/${expense.exp_id}`
+                        : `/project/${(expense as any).project_id || expense.proejct_id}/expense/${expense.exp_id}`;
+                      
+                      return (
+                        <li key={expense.seq} className="group flex items-center justify-between gap-x-1.5">
+                          <Link 
+                            to={expensePath} 
+                            className="flex items-center gap-x-2 flex-1 min-w-0 hover:underline"
+                          >
+                            <p className="overflow-hidden text-ellipsis whitespace-nowrap">
+                              [{expense.expenseType === 'nexpense' ? '일반비용' : '프로젝트'}] {expense.el_title}
+                            </p>
+                          </Link>
+                          <Badge className={getExpenseBadgeColor(expense.status)}>
+                            {getExpenseStepStatusName(expense.status)}
+                          </Badge>
+                        </li>
+                      );
+                    })
+                  )}
+                </ul>
             </div>
           </div>
         </div>
