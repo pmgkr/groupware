@@ -24,7 +24,7 @@ export const adminRoutes: RouteObject = {
     { path: 'vacation', element: <Vacation /> },
     { path: 'vacation/user/:id', element: <VacationDetail /> },
     { path: 'working', element: <AdminWorking /> },
-    { path: 'overtime', element: <AdminOvertime />}
+    { path: 'overtime', element: <AdminOvertime /> },
     { path: 'proposal', element: <AdminProposalList /> },
     { path: 'proposal/:id', element: <AdminProposalView /> },
   ],
