@@ -3,6 +3,7 @@ import ProposalProgress, { type Step } from '@/components/features/proposal/Prop
 import { generateReportNumber } from '@/api/expense/proposal';
 import { formatAmount, formatKST } from '@/utils';
 import 'quill/dist/quill.snow.css';
+import { Link } from 'react-router';
 
 interface ProposalViewContentProps {
   report: any;
@@ -41,6 +42,21 @@ export default function ProposalView({
 }: ProposalViewContentProps) {
   const reportNum = generateReportNumber(report.rp_category, report.rp_seq);
 
+  const handleDownload = async (fileUrl: string, fileName: string) => {
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('❌ 파일 다운로드 실패:', err);
+    }
+  };
   return (
     <div>
       <div className="flex justify-between p-4 pr-1">
@@ -50,22 +66,12 @@ export default function ProposalView({
       <div className="mb-4 flex items-center justify-between">
         <div className="flex divide-x divide-gray-300 border-t border-b border-gray-300 p-4 text-base leading-tight text-gray-500">
           <div className="px-3">
-            <span className="mr-2 text-gray-900">문서번호</span>
-            {reportNum}
-          </div>
-          <div className="px-3">
             <span className="mr-2 text-gray-900">구분</span> {report.rp_category}
           </div>
           <div className="px-3">
             <span className="mr-2 text-gray-900">금액</span> {formatAmount(report.rp_cost)}
           </div>
 
-          {report.rp_category === '프로젝트' && report.rp_project_no && (
-            <div className="px-3">
-              <span className="mr-2 text-gray-900">프로젝트 번호</span>
-              {report.rp_project_no}
-            </div>
-          )}
           {showWriterInfo && (
             <>
               <div className="px-3">
@@ -76,11 +82,25 @@ export default function ProposalView({
               </div>
             </>
           )}
+
           <div className="px-3">
             <span className="mr-2 text-gray-900">작성일자</span>
             {formatKST(report.rp_date)}
           </div>
+          {report.rp_expense_no && (
+            <div className="px-3">
+              <span className="mr-2 text-gray-900">EXP#</span>
+
+              <Link
+                to={`/expense/${report.rp_expense_no}`}
+                className="text-primary hover:text-primary/80 underline"
+                onClick={(e) => e.stopPropagation()}>
+                {report.rp_expense_no}
+              </Link>
+            </div>
+          )}
         </div>
+
         <div className="w-[300px]">
           <ProposalProgress steps={steps} />
         </div>
@@ -91,22 +111,23 @@ export default function ProposalView({
       </div>
 
       {/* 첨부파일 */}
-      {files.map((file) => {
-        const url = `https://gbend.cafe24.com/uploads/report/${file.rf_sname}`;
-        return (
-          <div className="mb-4 flex items-center justify-between bg-gray-50 py-4">
-            <div>
+      {files.length > 0 && (
+        <div className="mb-4 flex items-center bg-gray-50 py-4">
+          {files.map((file) => {
+            const url = `https://gbend.cafe24.com/uploads/report/${file.rf_sname}`;
+            return (
               <Button
                 key={file.rf_seq}
                 variant="outline"
                 className="hover:bg-primary-blue-100 mr-2 text-sm text-gray-500 [&]:border-gray-300 [&]:p-4"
-                onClick={() => window.open(url, '_blank')}>
+                /* onClick={() => window.open(url, '_blank')} */
+                onClick={() => handleDownload(url, file.rf_name)}>
                 {file.rf_name}
               </Button>
-            </div>
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
 
       <div className="mt-4 flex justify-between">
         <div>

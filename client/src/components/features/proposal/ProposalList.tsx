@@ -7,7 +7,7 @@ import { formatAmount, formatKST } from '@/utils';
 import { useEffect, useState } from 'react';
 import { generateReportNumber, type ReportCard } from '@/api/expense/proposal';
 import type { ManagerReportCard } from '@/api/manager/proposal';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 
 interface ProposalListContentProps {
   reports: ReportCard[]; // ManagerReportCard도 포함 가능
@@ -19,22 +19,13 @@ interface ProposalListContentProps {
   isManager?: boolean; // 매니저 화면인지 여부
   showWriterInfo?: boolean; //기안자 확인용
   showRegisterButton?: boolean; //승인반려버튼
+
+  isAdmin?: boolean;
+  adminRole?: 'finance' | 'gm' | null;
 }
 function isManagerReportCard(report: ReportCard | ManagerReportCard): report is ManagerReportCard {
   return 'manager_state' in report;
 }
-
-const tabs = [
-  { key: 'draft', label: '기안 문서' },
-  { key: 'complete', label: '완료 문서' },
-];
-
-const categories = [
-  { value: '전체', label: '전체' },
-  { value: '교육비', label: '교육비' },
-  { value: '구매요청', label: '구매요청' },
-  { value: '일반비용', label: '일반비용' },
-];
 
 export default function ProposalList({
   reports,
@@ -44,18 +35,38 @@ export default function ProposalList({
   showWriterInfo = false,
   showRegisterButton = true,
   isManager,
+  isAdmin,
+  adminRole,
 }: ProposalListContentProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [matchStatus, setMatchStatus] = useState<string | undefined>();
   const [searchParams] = useSearchParams();
+  const initialPage = Number(searchParams.get('page') || 1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const navigate = useNavigate();
 
   // URL에 tab=... 있으면 그걸 기본값으로
-  const initialTab = searchParams.get('tab') || (isManager ? 'pending' : 'draft');
+  const initialTab =
+    searchParams.get('tab') ||
+    (isAdmin
+      ? adminRole === 'finance'
+        ? 'pending' // 회계 기본 탭: 회계 대기 문서
+        : adminRole === 'gm'
+          ? 'pending' // GM 기본 탭: GM 대기 문서
+          : 'all'
+      : isManager
+        ? 'pending'
+        : 'draft');
   const [activeTab, setActiveTab] = useState(initialTab);
   const handleTabChange = (key: string) => {
     setActiveTab(key);
-    navigate(`?tab=${key}`);
+    // 필터 초기화
+    setSelectedCategory('');
+    setMatchStatus('');
+    // 페이지 초기화
+    setCurrentPage(1);
+
+    navigate(`?tab=${key}&page=1`);
   };
   useEffect(() => {
     const tab = searchParams.get('tab') || (isManager ? 'pending' : 'draft');
@@ -63,54 +74,170 @@ export default function ProposalList({
   }, [searchParams]);
 
   // 탭 필터링
-  const managerTabs = [
-    { key: 'pending', label: '결재 대기 문서' },
-    { key: 'approved', label: '결재 완료 문서' },
-  ];
-
   const userTabs = [
     { key: 'draft', label: '기안 문서' },
     { key: 'complete', label: '완료 문서' },
   ];
+  const managerTabs = [
+    { key: 'pending', label: '결재 대기 문서' },
+    { key: 'approved', label: '결재 완료 문서' },
+  ];
+  const financeTabs = [
+    { key: 'all', label: '전체' },
+    { key: 'pending', label: '회계 대기 문서' },
+    { key: 'complete', label: '회계 완료 문서' },
+  ];
+  const gmTabs = [
+    { key: 'all', label: '전체' },
+    { key: 'pending', label: 'GM 대기 문서' },
+    { key: 'complete', label: 'GM 완료 문서' },
+  ];
 
-  const usedTabs = isManager ? managerTabs : userTabs;
+  // 🔥 usedTabs 분기
+  let usedTabs = userTabs;
+
+  if (isManager) {
+    usedTabs = managerTabs;
+  }
+
+  if (isAdmin) {
+    if (adminRole === 'finance') {
+      usedTabs = financeTabs;
+    } else if (adminRole === 'gm') {
+      usedTabs = gmTabs;
+    }
+  }
+
   const tabFiltered = reports.filter((r) => {
-    if (!isManager) {
-      // 일반 유저 모드
+    // --------------------------
+    // 1) 일반 유저 모드
+    // --------------------------
+    if (!isManager && !isAdmin) {
       return activeTab === 'draft'
         ? r.state === '진행' || r.state === '대기'
         : activeTab === 'complete'
-          ? r.state === '완료' || r.state === '반려'
+          ? ['완료', '반려', '승인완료'].includes(r.state)
           : true;
     }
 
-    // 🔥 팀장용
-    if (!isManagerReportCard(r)) return false;
+    // --------------------------
+    // 2) 팀장 모드
+    // --------------------------
+    if (isManager) {
+      if (!isManagerReportCard(r)) return false;
 
-    if (activeTab === 'pending') {
-      return r.manager_state === '대기';
+      if (activeTab === 'pending') {
+        return r.manager_state === '대기';
+      }
+
+      if (activeTab === 'approved') {
+        return r.manager_state !== '대기'; // 완료+반려 모두
+      }
+
+      return true;
     }
 
-    if (activeTab === 'approved') {
-      return r.manager_state === '반려' || r.manager_state === '완료';
+    // --------------------------
+    // 3) 어드민 모드 (회계 / GM)
+    // --------------------------
+    if (isAdmin) {
+      // 회계(adminRole === "finance")
+      if (adminRole === 'finance') {
+        if (activeTab === 'all') return true;
+
+        if (activeTab === 'pending') {
+          return r.manager_state === '완료' && r.finance_state === '대기';
+        }
+
+        if (activeTab === 'complete') {
+          return r.finance_state !== '대기'; // 완료 + 반려
+        }
+      }
+
+      // GM(adminRole === "gm")
+      if (adminRole === 'gm') {
+        if (activeTab === 'all') return true;
+
+        if (activeTab === 'pending') {
+          return r.manager_state === '완료' && r.finance_state === '완료' && r.gm_state === '대기';
+        }
+
+        if (activeTab === 'complete') {
+          return r.gm_state !== '대기'; // 완료 + 반려
+        }
+      }
     }
 
     return true;
   });
 
   // 카테고리 필터링
+  const location = useLocation();
+  const path = location.pathname;
+  const isManagerPage = path.startsWith('/manager/proposal');
+  const isProjectPage = path.startsWith('/project/proposal');
+  const categories = isManagerPage
+    ? [
+        { value: '전체', label: '전체' },
+        { value: '교육비', label: '교육비' },
+        { value: '구매요청', label: '구매요청' },
+        { value: '일반비용', label: '일반비용' },
+        { value: '프로젝트', label: '프로젝트' }, // 🔥 매니저 전용
+      ]
+    : [
+        { value: '전체', label: '전체' },
+        { value: '교육비', label: '교육비' },
+        { value: '구매요청', label: '구매요청' },
+        { value: '일반비용', label: '일반비용' },
+      ];
   const categoryFiltered =
     !selectedCategory || selectedCategory === '전체' ? tabFiltered : tabFiltered.filter((r) => r.category === selectedCategory);
 
+  const matchStatusOptions = [
+    { value: 'all', label: '전체' },
+    { value: 'matched', label: '완료' },
+    { value: 'unmatched', label: '매칭전' },
+  ];
+  // 매칭 상태 필터 적용
+  const matchFiltered = categoryFiltered.filter((r) => {
+    if (!matchStatus || matchStatus === 'all') return true;
+
+    // 구매요청은 matched/unmatched에서 제외
+    if (r.category === '구매요청') return false;
+
+    if (matchStatus === 'matched') return !!r.expense_no;
+
+    if (matchStatus === 'unmatched') return !r.expense_no;
+
+    return true;
+  });
+  /*  // 카테고리 변경 시 1페이지로 이동
+  useEffect(() => {
+    setCurrentPage(1);
+    navigate(`?tab=${activeTab}&page=1`);
+  }, [selectedCategory]);
+
+  // 비용 매칭 상태 변경 시 1페이지로 이동
+  useEffect(() => {
+    setCurrentPage(1);
+    navigate(`?tab=${activeTab}&page=1`);
+  }, [matchStatus]); */
+
   // 정렬
-  const filteredReports = categoryFiltered.sort((a, b) => b.id - a.id);
+  const filteredReports = matchFiltered.sort((a, b) => b.id - a.id);
 
   // 페이지네이션
   const totalPages = Math.ceil(filteredReports.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedReports = filteredReports.slice(startIndex, startIndex + pageSize);
 
-  const handlePageChange = (page: number) => setCurrentPage(page);
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+
+    navigate(`?tab=${activeTab}&page=${page}`, {
+      replace: true, // 히스토리 누적 방지 (선택)
+    });
+  };
 
   return (
     <div>
@@ -132,20 +259,34 @@ export default function ProposalList({
             ))}
           </div>
 
-          <div className="flex items-center gap-x-2 before:mr-3 before:ml-3 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger size="sm" className="w-[100px]">
-                <SelectValue placeholder="구분 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!isProjectPage && (
+            <div className="flex items-center gap-x-2 before:mr-3 before:ml-3 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300">
+              <Select value={selectedCategory || ''} onValueChange={setSelectedCategory}>
+                <SelectTrigger size="sm" className="w-[100px]">
+                  <SelectValue placeholder="구분 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <Select value={matchStatus || ''} onValueChange={setMatchStatus}>
+            <SelectTrigger size="sm" className="w-[120px]">
+              <SelectValue placeholder="비용 매칭 상태" />
+            </SelectTrigger>
+            <SelectContent>
+              {matchStatusOptions.map((m) => (
+                <SelectItem key={m.value} value={m.value}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {showRegisterButton && onRegister && (
@@ -159,11 +300,12 @@ export default function ProposalList({
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[10%]">번호</TableHead>
+            <TableHead className="w-[5%]">번호</TableHead>
             <TableHead className="w-[10%]">구분</TableHead>
-            <TableHead className="w-[40%]">제목</TableHead>
-            <TableHead className="w-[8%]">결재 상태</TableHead>
+            <TableHead>제목</TableHead>
             <TableHead className="w-[10%]">금액</TableHead>
+            <TableHead className="w-[10%]">비용 매칭</TableHead>
+            <TableHead className="w-[8%]">결재 상태</TableHead>
 
             {showWriterInfo && (
               <>
@@ -183,20 +325,44 @@ export default function ProposalList({
               </TableCell>
             </TableRow>
           ) : (
-            paginatedReports.map((report) => {
+            paginatedReports.map((report, index) => {
               const writer = showWriterInfo ? { team: report.team, name: report.user } : null;
               const displayStatus = report.approval_manager_display_state ?? report.approval_user_display_state ?? report.state;
+
+              const rowNumber = filteredReports.length - ((currentPage - 1) * pageSize + index);
+
+              const isCostCategory = report.category === '일반비용' || report.category === '교육비' || report.category === '프로젝트';
 
               return (
                 <TableRow
                   key={report.id}
                   onClick={() => onRowClick(report.id, activeTab)}
                   className="cursor-pointer hover:bg-gray-100 [&_td]:text-[13px]">
-                  <TableCell>{generateReportNumber(report.category, report.id)}</TableCell>
+                  {/* <TableCell>{generateReportNumber(report.category, report.id)}</TableCell> */}
+                  <TableCell>{rowNumber}</TableCell>
+
                   <TableCell>{report.category}</TableCell>
 
                   {/* 제목 */}
                   <TableCell className="text-left">{report.title}</TableCell>
+                  {/* 금액 */}
+                  <TableCell className="text-right">{formatAmount(report.price)}원</TableCell>
+                  {/* 비용 매칭 */}
+                  {/* <TableCell>{report.expense_no}</TableCell> */}
+                  <TableCell>
+                    {report.category === '구매요청'
+                      ? '-'
+                      : isCostCategory &&
+                        (report.expense_no ? (
+                          <Badge size="table" variant="outline">
+                            완료
+                          </Badge>
+                        ) : (
+                          <Badge size="table" variant="outline" className="border-gray-600 text-gray-600">
+                            매칭전
+                          </Badge>
+                        ))}
+                  </TableCell>
                   {/* 상태 */}
                   <TableCell>
                     {(() => {
@@ -239,9 +405,6 @@ export default function ProposalList({
                       }
                     })()}
                   </TableCell>
-
-                  {/* 금액 */}
-                  <TableCell className="text-right">{formatAmount(report.price)}원</TableCell>
 
                   {/* 작성자 + 팀명 */}
                   {showWriterInfo && writer && (
