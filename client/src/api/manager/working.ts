@@ -1,4 +1,5 @@
 import { http } from '@/lib/http';
+import { adminWlogApi, type WlogWeekListResponse, type WlogUpdateResponse } from '@/api/admin/wlog';
 
 // 근태 로그 타입 정의
 export interface WorkLog {
@@ -32,7 +33,7 @@ export interface ManagerWorkLogWeekParams {
 
 // 관리자 근태 API
 export const managerWorkingApi = {
-  // 출퇴근 시간 수정/등록 (관리자)
+  // 출퇴근 시간 수정/등록 (매니저)
   updateWorkTime: async (userId: string, date: string, startTime: string, endTime: string): Promise<any> => {
     // 시간 형식 변환: "HH:mm" -> "HH:mm:ss"
     const formatTime = (time: string) => {
@@ -55,7 +56,7 @@ export const managerWorkingApi = {
     return response;
   },
 
-  // 관리자 - 근태 로그 주간 조회
+  // 관리자 - 근태 로그 주간 조회 (매니저)
   getManagerWorkLogsWeek: async (params: ManagerWorkLogWeekParams): Promise<WorkLogResponse> => {
     const queryParams = new URLSearchParams();
     
@@ -87,5 +88,14 @@ export const managerWorkingApi = {
     }
   },
 
+  // 관리자 - 근태 로그 주간 조회 (어드민)
+  getAdminWorkLogsWeek: async (params: ManagerWorkLogWeekParams): Promise<WlogWeekListResponse> => {
+    return await adminWlogApi.getWlogWeekList(params.team_id, params.weekno, params.yearno);
+  },
+
+  // 출퇴근 시간 수정/등록 (어드민)
+  updateAdminWorkTime: async (userId: string, date: string, startTime: string, endTime: string): Promise<WlogUpdateResponse> => {
+    return await adminWlogApi.updateWlog(userId, date, startTime, endTime);
+  },
 };
 

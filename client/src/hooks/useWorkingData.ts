@@ -14,9 +14,10 @@ import { convertApiDataToWorkData } from '@/services/workingDataConverter';
 interface UseWorkingDataProps {
   weekStartDate: Date;
   selectedTeamIds: number[];
+  page?: 'admin' | 'manager';
 }
 
-export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDataProps) {
+export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWorkingDataProps) {
   const { user } = useAuth();
   const [workingList, setWorkingList] = useState<WorkingListItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -101,11 +102,28 @@ export function useWorkingData({ weekStartDate, selectedTeamIds }: UseWorkingDat
         for (const [teamId, members] of teamGroups) {
           try {
             // 관리자 - 근태 로그 주간 조회 (팀별로 조회)
-            const workLogResponse = await managerWorkingApi.getManagerWorkLogsWeek({
-              team_id: teamId,
-              weekno: week,
-              yearno: year
-            });
+            let workLogResponse: any;
+            
+            if (page === 'admin') {
+              // Admin API 사용
+              const adminResponse = await managerWorkingApi.getAdminWorkLogsWeek({
+                team_id: teamId,
+                weekno: week,
+                yearno: year
+              });
+              // Admin API 응답을 WorkLogResponse 형식으로 변환
+              workLogResponse = {
+                wlog: adminResponse.wlog || [],
+                vacation: adminResponse.vacation || []
+              };
+            } else {
+              // Manager API 사용
+              workLogResponse = await managerWorkingApi.getManagerWorkLogsWeek({
+                team_id: teamId,
+                weekno: week,
+                yearno: year
+              });
+            }
             
             // 각 팀원별로 데이터 처리
             for (const member of members) {

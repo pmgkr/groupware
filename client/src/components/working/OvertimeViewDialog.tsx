@@ -437,12 +437,16 @@ export default function OvertimeViewDialog({
               <>
                 {!showRejectInput ? (
                   <>
-                    <Button variant="default" onClick={handleApproveClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
-                      승인하기
-                    </Button>
-                    <Button variant="destructive" onClick={() => setShowRejectInput(true)} className="bg-destructive hover:bg-destructive mr-0">
-                      반려하기
-                    </Button>
+                    {onApprove && (
+                      <Button variant="default" onClick={handleApproveClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
+                        승인하기
+                      </Button>
+                    )}
+                    {onReject && (
+                      <Button variant="destructive" onClick={() => setShowRejectInput(true)} className="bg-destructive hover:bg-destructive mr-0">
+                        반려하기
+                      </Button>
+                    )}
                   </>
                 ) : (
                   <>
@@ -460,11 +464,36 @@ export default function OvertimeViewDialog({
               </>
             )}
 
-            {/* HR/Finance팀 관리자 모드 - 보상대기 상태일 때 보상 지급하기 버튼 */}
-            {canShowCompensation && isManager && !isOwnRequest && (
-              <Button variant="default" onClick={handleCompensationClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
-                보상 지급하기
-              </Button>
+            {/* 보상대기 상태일 때 보상 지급하기 + 반려하기 버튼 (admin이고 휴일 근무일 때만) */}
+            {isManager && !isOwnRequest && status === "보상대기" && (onCompensation || onReject) && (
+              <>
+                {!showRejectInput ? (
+                  <>
+                    {onCompensation && (
+                      <Button variant="default" onClick={handleCompensationClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
+                        보상 지급하기
+                      </Button>
+                    )}
+                    {onReject && (
+                      <Button variant="destructive" onClick={() => setShowRejectInput(true)} className="bg-destructive hover:bg-destructive mr-0">
+                        반려하기
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Button variant="default" onClick={handleRejectSubmit}>
+                      반려 확정
+                    </Button>
+                    <Button variant="outline" onClick={() => {
+                      setShowRejectInput(false);
+                      setRejectReason('');
+                    }}>
+                      취소
+                    </Button>
+                  </>
+                )}
+              </>
             )}
 
             {/* 본인 신청이거나 일반 사용자 모드 */}
