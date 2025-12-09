@@ -13,7 +13,9 @@ export default function ProjectProposalList() {
     (async () => {
       try {
         const data = await getReportList();
-        setReports(data);
+        const filtered = data.filter((r) => r.category == '프로젝트');
+
+        setReports(filtered);
       } catch (err) {
         console.error('❌ 보고서 목록 불러오기 실패:', err);
       } finally {

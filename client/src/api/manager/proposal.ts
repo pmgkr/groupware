@@ -21,7 +21,7 @@ function mapManagerDisplayState(item: any) {
 }
 
 export async function getReportListManager(): Promise<ManagerReportCard[]> {
-  const res = await http<any>('/manager/report/list', { method: 'GET' });
+  const res = await http<any>('/manager/report/list?&size=100000', { method: 'GET' });
 
   const rawItems = res.items ?? [];
 
@@ -39,6 +39,7 @@ export async function getReportListManager(): Promise<ManagerReportCard[]> {
       team: item.team_name,
       user: item.rp_user_name,
       user_id: item.rp_user_id,
+      expense_no: item.rp_expense_no,
 
       manager_state: item.manager_state,
       finance_state: item.finance_state,

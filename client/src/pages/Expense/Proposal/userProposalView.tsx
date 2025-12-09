@@ -29,11 +29,29 @@ export default function ProposalView() {
   const canDelete = (() => {
     if (!report) return false;
     if (!user?.user_id) return false;
-    if (report.rp_user_id !== user.user_id) return false; // 본인만
-    if (report.rp_state === '완료' || report.rp_state === '반려') return false; // 완료/반려는 불가
-    if (report.manager_state === '완료' || report.finance_state === '완료' || report.gm_state === '완료') {
-      return false; //팀장/회계/대표 결재 중 하나라도 완료되면 삭제 불가
+
+    const isWriter = report.rp_user_id === user.user_id;
+    if (!isWriter) return false;
+
+    // 문서 최종 상태가 완료 / 반려이면 삭제 불가
+    if (report.rp_state === '완료' || report.rp_state === '반려') return false;
+
+    const isWriterManager = report.rp_user_id === report.manager_id; // ✔ 팀장이 작성한 문서인지
+    const managerState = report.manager_state?.trim();
+    const financeState = report.finance_state?.trim();
+
+    // user 작성한 문서
+    if (!isWriterManager) {
+      // 팀장 결재가 완료되면 삭제 불가
+      if (managerState === '완료') return false;
+      return true;
     }
+
+    // manager 작성한 문서
+    // 회계 결재가 완료되면 삭제 불가
+    if (financeState === '완료') return false;
+
+    // 그 외에는 삭제 가능
     return true;
   })();
 

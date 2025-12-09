@@ -98,6 +98,7 @@ function Checkbox({ className, label, labelProps, size, ...props }: CheckboxProp
         'peer data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border-input size-4 shrink-0 rounded-[2px] border-1 text-[var(--color-gray-500)] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50',
         'disabled:cursor-not-allowed disabled:border-gray-400 disabled:bg-[var(--color-gray-50)] disabled:text-gray-400 data-[state=checked]:disabled:border-gray-400',
         'cursor-pointer',
+        'flex items-center justify-center leading-none',
         className
       )}
       {...props}>

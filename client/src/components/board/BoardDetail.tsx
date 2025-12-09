@@ -117,12 +117,27 @@ export default function BoardDetail({ id }: BoardDetailProps) {
   };
 
   //첨부파일 다운로드
-  const handleDownload = (fileUrl: string, fileName: string) => {
+  /* const handleDownload = (fileUrl: string, fileName: string) => {
     const AfileDown = document.createElement('a');
     AfileDown.href = fileUrl;
     AfileDown.download = fileName;
     AfileDown.target = '_blank';
     AfileDown.click();
+  }; */
+  const handleDownload = async (fileUrl: string, fileName: string) => {
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('❌ 파일 다운로드 실패:', err);
+    }
   };
 
   // 댓글 등록

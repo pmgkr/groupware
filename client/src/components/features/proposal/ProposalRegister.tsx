@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import ReactQuillEditor from '@/components/board/ReactQuillEditor';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import { BoardAttachFile } from '@/components/board/BoardAttachFile';
 import { formatAmount } from '@/utils';
@@ -35,6 +35,15 @@ export default function ProposalRegister() {
   //일반비용 - 프로젝트 구분
   const isProject = location.pathname.includes('/project');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isProject) {
+      form.setValue('category', '프로젝트', {
+        shouldValidate: false,
+        shouldDirty: false,
+      });
+    }
+  }, [isProject]);
 
   const onBack = () => {
     if (isProject) navigate('/project/proposal');
@@ -125,22 +134,30 @@ export default function ProposalRegister() {
                 </TableColumnHeader>
                 <TableColumnBody>
                   <TableColumnCell>
-                    {!isProject && (
+                    {isProject ? (
+                      <div className="px-0 py-1 text-[13px]!">프로젝트</div>
+                    ) : (
                       <FormField
                         control={form.control}
                         name="category"
-                        render={({ field }) => (
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <SelectTrigger className="h-full! w-full border-0 p-0 text-[13px] shadow-none" size="sm">
-                              <SelectValue placeholder="선택" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="교육비">교육비</SelectItem>
-                              <SelectItem value="구매요청">구매요청</SelectItem>
-                              <SelectItem value="일반비용">일반비용</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
+                        render={({ field }) => {
+                          const error = form.formState.errors.category?.message;
+
+                          return (
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <SelectTrigger
+                                size="sm"
+                                className={`h-full! w-full border-0 p-0 text-[13px]! shadow-none ${error ? 'text-red-500!' : ''} `}>
+                                <SelectValue placeholder={error ? error.toString() : '선택'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="교육비">교육비</SelectItem>
+                                <SelectItem value="구매요청">구매요청</SelectItem>
+                                <SelectItem value="일반비용">일반비용</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          );
+                        }}
                       />
                     )}
                   </TableColumnCell>
@@ -155,20 +172,24 @@ export default function ProposalRegister() {
                     <FormField
                       control={form.control}
                       name="price"
-                      render={({ field }) => (
-                        <Input
-                          className="h-full w-full border-0 p-0 text-[13px] shadow-none"
-                          placeholder="0"
-                          inputMode="numeric"
-                          value={formattedPrice}
-                          onChange={(e) => {
-                            const raw = e.target.value.replace(/,/g, '');
-                            if (!/^\d*$/.test(raw)) return;
-                            field.onChange(raw);
-                            setFormattedPrice(raw ? formatAmount(raw) : '');
-                          }}
-                        />
-                      )}
+                      render={({ field }) => {
+                        const error = form.formState.errors.price?.message;
+
+                        return (
+                          <Input
+                            placeholder={error ? error.toString() : '0'}
+                            className={`h-full w-full border-0 p-0 text-[13px] shadow-none ${error ? 'placeholder-red-500!' : ''} placeholder:text-[13px]!`}
+                            inputMode="numeric"
+                            value={formattedPrice}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/,/g, '');
+                              if (!/^\d*$/.test(raw)) return;
+                              field.onChange(raw);
+                              setFormattedPrice(raw ? formatAmount(raw) : '');
+                            }}
+                          />
+                        );
+                      }}
                     />
                   </TableColumnCell>
                 </TableColumnBody>
@@ -184,9 +205,17 @@ export default function ProposalRegister() {
                     <FormField
                       control={form.control}
                       name="title"
-                      render={({ field }) => (
-                        <Input className="h-full w-full border-0 p-0 text-[13px] shadow-none" placeholder="제목을 입력하세요" {...field} />
-                      )}
+                      render={({ field }) => {
+                        const error = form.formState.errors.title?.message;
+
+                        return (
+                          <Input
+                            {...field}
+                            placeholder={error ? error.toString() : '제목을 입력하세요'}
+                            className={`h-full w-full border-0 p-0 text-[13px] shadow-none ${error ? 'placeholder-red-500!' : ''} placeholder:text-[13px]!`}
+                          />
+                        );
+                      }}
                     />
                   </TableColumnCell>
                 </TableColumnBody>

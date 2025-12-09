@@ -88,7 +88,20 @@ export interface ReportCard {
   gm_state: string;
   approval_user_display_state?: string;
   approval_manager_display_state?: string;
+  expense_no?: string;
 }
+
+//비용 기안서 매칭
+export interface ProposalItem {
+  rp_seq: number;
+  rp_title: string;
+  rp_category: string;
+  rp_cost: number;
+  rp_date: string;
+  rp_user_name: string;
+  rp_expense_no: string;
+}
+
 function normalize(v: any) {
   return (v || '').toString().trim();
 }
@@ -121,19 +134,12 @@ function mapUserDisplayState(item: any) {
 }
 
 export async function getReportList(): Promise<ReportCard[]> {
-  const res = await http<any>('/user/office/report/list', { method: 'GET' });
+  const res = await http<any>('/user/office/report/list?size=100000', { method: 'GET' });
 
   const rawItems = res.items ?? [];
 
   return rawItems.map((item: any) => {
-    /* console.log(
-      '🟦 RAW STATE CHECK',
-      item.rp_seq,
-      JSON.stringify(item.manager_state),
-      JSON.stringify(item.finance_state),
-      JSON.stringify(item.gm_state)
-    ); */
-    // 🔥 새로 추가된 display 상태 생성
+    //  display 상태 생성
     const displayState = mapUserDisplayState(item);
 
     return {
@@ -147,6 +153,7 @@ export async function getReportList(): Promise<ReportCard[]> {
       team: item.team_name,
       user: item.rp_user_name,
       user_id: item.rp_user_id,
+      expense_no: item.rp_expense_no,
 
       //서버에서 넘어오는 각각의 상태들
       manager_state: item.manager_state,
@@ -197,5 +204,17 @@ export async function registerReport(payload: any) {
 export async function deleteReport(rp_seq: string) {
   return await http(`/user/office/report/delete/${rp_seq}`, {
     method: 'DELETE',
+  });
+}
+
+export interface ProposalListResponse {
+  success: boolean;
+  items: ProposalItem[];
+}
+
+// 기안서 리스트 조회
+export async function getProposalList(flag: 'P' | 'N'): Promise<ProposalListResponse> {
+  return await http(`/user/office/report/expense/list?flag=${flag}`, {
+    method: 'GET',
   });
 }
