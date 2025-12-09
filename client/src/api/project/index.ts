@@ -1,6 +1,7 @@
 import { http } from '@/lib/http';
 import { cleanParams } from '@/utils';
 import type { ExpenseType, BankList } from '@/api/common/types';
+export * from './invoice';
 
 // ------------------------------
 // 프로젝트 비용 조회용 타입
