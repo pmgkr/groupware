@@ -8,7 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { workingApi } from '@/api/working';
 import { managerOvertimeApi } from '@/api/manager/overtime';
 import { adminOvertimeApi, type overtimeItem } from '@/api/admin/overtime';
-import { getTeams } from '@/api/teams';
+import { getTeams } from '@/api/admin/teams';
+import { getTeams as getCommonTeams } from '@/api/teams';
 import { getMemberList } from '@/api/common/team';
 import type { OvertimeItem } from '@/api/working';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -104,13 +105,15 @@ export default function OvertimeList({
   useEffect(() => {
     const loadTeams = async () => {
       try {
-        const teamList = await getTeams({});
+        const teamList = isPage === 'admin' 
+          ? await getTeams({})
+          : await getCommonTeams({});
         setTeams(teamList.map(t => ({ team_id: t.team_id, team_name: t.team_name })));
       } catch (error) {
       }
     };
     loadTeams();
-  }, []);
+  }, [isPage]);
 
   // 데이터 조회
   useEffect(() => {

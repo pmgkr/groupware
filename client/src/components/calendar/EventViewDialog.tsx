@@ -36,6 +36,7 @@ interface EventViewDialogProps {
   onRequestCancel?: () => void; // 취소 신청(사용자)
   onApproveCancel?: () => void; // 취소 승인(매니저)
   selectedEvent?: EventData;
+  isPage?: 'manager' | 'admin'; // 페이지 타입 (manager/admin)
 }
 
 export default function EventViewDialog({ 
@@ -43,7 +44,8 @@ export default function EventViewDialog({
   onClose, 
   onRequestCancel,
   onApproveCancel,
-  selectedEvent 
+  selectedEvent,
+  isPage
 }: EventViewDialogProps) {
   const { user_id, user_level, team_id } = useUser();
   const { addDialog } = useAppDialog();
@@ -292,7 +294,7 @@ export default function EventViewDialog({
                       취소 신청하기
                     </Button>
                   )}
-                  {(user_level === 'manager' || user_level === 'admin') && onApproveCancel && isPage !== 'admin' && (
+                  {(user_level === 'manager' || user_level === 'admin') && onApproveCancel && (!isPage || isPage !== 'admin') && (
                     <Button variant="destructive" onClick={handleCancelRequest}>
                       취소하기
                     </Button>
