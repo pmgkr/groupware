@@ -62,15 +62,20 @@ export default function ManagerProposalView() {
 
   // 승인 처리
   const handleApprove = async () => {
-    //console.log('[DEBUG] front user_id:', user?.user_id);
     if (!id || !user?.user_id) {
       alert('사용자 정보가 없어 승인할 수 없습니다.');
       return;
     }
 
+    // 🔥 비용매칭 경고 메시지 조건부 생성
+    const matchingNotice =
+      !report.rp_expense_no && ['일반비용', '교육비', '프로젝트'].includes(report.rp_category)
+        ? `<br/><span style="color:#d9534f; font-weight:500; line-height: 1.5;">※ 이 기안서는 비용 기안서 매칭이 필요합니다.</span>`
+        : '';
+
     addDialog({
-      title: '<span class= font-semibold">승인 확인</span>',
-      message: `이 기안서를 승인하시겠습니까?`,
+      title: '<span class="font-semibold">승인 확인</span>',
+      message: `이 기안서를 승인하시겠습니까?${matchingNotice}`,
       confirmText: '확인',
       cancelText: '취소',
       onConfirm: async () => {

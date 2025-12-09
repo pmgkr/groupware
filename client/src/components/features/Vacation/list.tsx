@@ -7,7 +7,8 @@ import EventViewDialog from '@/components/calendar/EventViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { scheduleApi, type Schedule } from '@/api/calendar';
 import { managerVacationApi } from '@/api/manager/vacation';
-import { getTeams } from '@/api/teams';
+import { getTeams } from '@/api/admin/teams';
+import { getTeams as getCommonTeams } from '@/api/teams';
 import { getMemberList } from '@/api/common/team';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -121,13 +122,15 @@ export default function VacationList({
   useEffect(() => {
     const loadTeams = async () => {
       try {
-        const teamList = await getTeams({});
+        const teamList = isPage === 'admin' 
+          ? await getTeams({})
+          : await getCommonTeams({});
         setTeams(teamList.map(t => ({ team_id: t.team_id, team_name: t.team_name })));
       } catch (error) {
       }
     };
     loadTeams();
-  }, []);
+  }, [isPage]);
 
   // 현재 요청 추적을 위한 ref (탭 변경 시 이전 요청 취소용)
   const currentRequestRef = useRef<string | null>(null);
@@ -696,6 +699,7 @@ export default function VacationList({
           onClose={handleCloseEventDialog}
           onRequestCancel={handleRequestCancel}
           onApproveCancel={handleApproveCancel}
+          isPage={isPage}
           selectedEvent={{
             id: String(selectedEvent.id),
             title: selectedEvent.sch_title,

@@ -14,7 +14,9 @@ export default function ProposalList() {
     (async () => {
       try {
         const data = await getReportList();
-        setReports(data);
+        const filtered = data.filter((r) => r.category !== '프로젝트');
+
+        setReports(filtered);
       } catch (err) {
         console.error('❌ 보고서 목록 불러오기 실패:', err);
       } finally {
@@ -28,7 +30,6 @@ export default function ProposalList() {
     return <div className="p-6 text-center">로딩 중...</div>;
   }
 
-  // 실제 렌더링 - 공통 컴포넌트에 데이터 전달
   return (
     <ProposalListContent
       reports={reports}

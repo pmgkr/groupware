@@ -7,7 +7,9 @@ import OvertimeDialog from '@/components/working/OvertimeDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { workingApi } from '@/api/working';
 import { managerOvertimeApi } from '@/api/manager/overtime';
-import { getTeams } from '@/api/teams';
+import { adminOvertimeApi, type overtimeItem } from '@/api/admin/overtime';
+import { getTeams } from '@/api/admin/teams';
+import { getTeams as getCommonTeams } from '@/api/teams';
 import { getMemberList } from '@/api/common/team';
 import type { OvertimeItem } from '@/api/working';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -103,13 +105,15 @@ export default function OvertimeList({
   useEffect(() => {
     const loadTeams = async () => {
       try {
-        const teamList = await getTeams({});
+        const teamList = isPage === 'admin' 
+          ? await getTeams({})
+          : await getCommonTeams({});
         setTeams(teamList.map(t => ({ team_id: t.team_id, team_name: t.team_name })));
       } catch (error) {
       }
     };
     loadTeams();
-  }, []);
+  }, [isPage]);
 
   // 데이터 조회
   useEffect(() => {
@@ -128,23 +132,47 @@ export default function OvertimeList({
       
       const teamIdsToQuery = teamIds;
       
-      // 각 팀별로 데이터 조회
-      const promises = teamIdsToQuery.map(teamId => 
-        managerOvertimeApi.getManagerOvertimeList({
-          team_id: teamId,
-          page: 1,
-          size: 1000
-        })
-      );
-      const responses = await Promise.all(promises);
-      const allItems = responses.flatMap(response => response.items || []);
-      
-      // 중복 제거 (같은 id가 여러 번 조회될 수 있음)
-      const uniqueItems = allItems.filter((item, index, self) =>
-        index === self.findIndex(t => t.id === item.id)
-      );
-      
-      setAllData(uniqueItems);
+      if (isPage === 'admin') {
+        // Admin API 사용: 각 팀별로 데이터 조회
+        // flag는 필터 상태에 따라 결정 (H: 승인대기, T: 승인완료/보상대기, Y: 보상완료, N: 취소완료)
+        // 모든 상태를 조회하기 위해 빈 문자열 또는 undefined 사용
+        const promises = teamIdsToQuery.map(teamId => 
+          adminOvertimeApi.getOvertimeList(teamId, 1, 1000, '')
+        );
+        const responses = await Promise.all(promises);
+        const allItems = responses.flatMap(response => response.items || []);
+        
+        // overtimeItem을 OvertimeItem으로 변환 (ot_stime이 null일 수 있음)
+        const convertedItems: OvertimeItem[] = allItems.map(item => ({
+          ...item,
+          ot_stime: item.ot_stime || ''
+        }));
+        
+        // 중복 제거 (같은 id가 여러 번 조회될 수 있음)
+        const uniqueItems = convertedItems.filter((item, index, self) =>
+          index === self.findIndex(t => t.id === item.id)
+        );
+        
+        setAllData(uniqueItems);
+      } else {
+        // Manager API 사용
+        const promises = teamIdsToQuery.map(teamId => 
+          managerOvertimeApi.getManagerOvertimeList({
+            team_id: teamId,
+            page: 1,
+            size: 1000
+          })
+        );
+        const responses = await Promise.all(promises);
+        const allItems = responses.flatMap(response => response.items || []);
+        
+        // 중복 제거 (같은 id가 여러 번 조회될 수 있음)
+        const uniqueItems = allItems.filter((item, index, self) =>
+          index === self.findIndex(t => t.id === item.id)
+        );
+        
+        setAllData(uniqueItems);
+      }
     } catch (error) {
       setAllData([]);
     } finally {
@@ -234,11 +262,17 @@ export default function OvertimeList({
       });
     }
     
-    // 정렬: 1) 승인대기 최우선, 2) 신청일 최근순
+    // 정렬: admin일 때는 보상대기(T) 최우선, manager일 때는 승인대기(H) 최우선, 그 다음 신청일 최근순
     result.sort((a, b) => {
-      // 1. 승인대기(H)를 최우선으로
-      if (a.ot_status === 'H' && b.ot_status !== 'H') return -1;
-      if (a.ot_status !== 'H' && b.ot_status === 'H') return 1;
+      if (isPage === 'admin') {
+        // admin: 보상대기(T)를 최우선으로
+        if (a.ot_status === 'T' && b.ot_status !== 'T') return -1;
+        if (a.ot_status !== 'T' && b.ot_status === 'T') return 1;
+      } else {
+        // manager: 승인대기(H)를 최우선으로
+        if (a.ot_status === 'H' && b.ot_status !== 'H') return -1;
+        if (a.ot_status !== 'H' && b.ot_status === 'H') return 1;
+      }
       
       // 2. 신청일(ot_created_at) 최근순 (내림차순)
       const dateA = a.ot_created_at ? new Date(a.ot_created_at).getTime() : 0;
@@ -315,8 +349,13 @@ export default function OvertimeList({
     
     // 추가근무 상세 정보 조회
     try {
-      const detail = await managerOvertimeApi.getManagerOvertimeDetail(item.id);
-      setOvertimeDetailData(detail);
+      if (isPage === 'admin') {
+        const detail = await adminOvertimeApi.getOvertimeDetail(item.id);
+        setOvertimeDetailData(detail);
+      } else {
+        const detail = await managerOvertimeApi.getManagerOvertimeDetail(item.id);
+        setOvertimeDetailData(detail);
+      }
     } catch (error) {
     }
   };
@@ -333,7 +372,11 @@ export default function OvertimeList({
     if (!selectedOvertime?.id) return;
     
     try {
-      await managerOvertimeApi.approveOvertime(selectedOvertime.id);
+      if (isPage === 'admin') {
+        await adminOvertimeApi.approveOvertime(selectedOvertime.id);
+      } else {
+        await managerOvertimeApi.approveOvertime(selectedOvertime.id);
+      }
       fetchOvertimeData(); // 데이터 새로고침
       handleCloseOvertimeDialog();
     } catch (error) {
@@ -346,7 +389,12 @@ export default function OvertimeList({
     if (!selectedOvertime?.id) return;
     
     try {
-      await managerOvertimeApi.rejectOvertime(selectedOvertime.id, reason);
+      if (isPage === 'admin') {
+        // Admin API는 reason 파라미터가 없음
+        await adminOvertimeApi.rejectOvertime(selectedOvertime.id);
+      } else {
+        await managerOvertimeApi.rejectOvertime(selectedOvertime.id, reason);
+      }
       fetchOvertimeData(); // 데이터 새로고침
       handleCloseOvertimeDialog();
     } catch (error) {
@@ -359,7 +407,12 @@ export default function OvertimeList({
     if (!selectedOvertime?.id) return;
     
     try {
-      await managerOvertimeApi.confirmOvertimeCompensation({ ot_seq: selectedOvertime.id });
+      if (isPage === 'admin') {
+        // Admin API에서는 보상 지급도 approveOvertime 사용
+        await adminOvertimeApi.approveOvertime(selectedOvertime.id);
+      } else {
+        await managerOvertimeApi.confirmOvertimeCompensation({ ot_seq: selectedOvertime.id });
+      }
       fetchOvertimeData(); // 데이터 새로고침
       handleCloseOvertimeDialog();
     } catch (error) {
@@ -433,9 +486,15 @@ export default function OvertimeList({
     const { overtime, compensation } = approveCounts;
     try {
       // 모든 체크된 항목에 대해 승인 요청
-      await Promise.all(
-        checkedItems.map(id => managerOvertimeApi.approveOvertime(id))
-      );
+      if (isPage === 'admin') {
+        await Promise.all(
+          checkedItems.map(id => adminOvertimeApi.approveOvertime(id))
+        );
+      } else {
+        await Promise.all(
+          checkedItems.map(id => managerOvertimeApi.approveOvertime(id))
+        );
+      }
       
       // 확인 모달 닫기
       setIsConfirmDialogOpen(false);
@@ -585,7 +644,7 @@ export default function OvertimeList({
               className={`[&_td]:text-[13px] cursor-pointer hover:bg-gray-50 ${item.ot_status === 'N' ? 'opacity-40' : ''}`}
               onClick={() => handleOvertimeClick(item)}
             >
-              <TableCell className="text-center p-2">{getTeamName(item.team_id)}</TableCell>
+              <TableCell className="text-center p-2 whitespace-nowrap">{getTeamName(item.team_id)}</TableCell>
               <TableCell className="text-center p-2">{item.user_name}</TableCell>
               <TableCell className="text-center p-2">
                 {item.ot_date ? dayjs(item.ot_date).format('YYYY-MM-DD (ddd)') : '-'}
@@ -599,14 +658,14 @@ export default function OvertimeList({
                 :
                 <>
                 <TableCell className="w-[16%] text-center p-2">
-                  {formatTime(item.ot_stime)}-{formatTime(item.ot_etime)}({formatHours(item.ot_hours)})
+                  {formatTime(item.ot_stime)}-{formatTime(item.ot_etime)} ({formatHours(item.ot_hours)})
                 </TableCell>
                 <TableCell className="w-[10%] text-center p-2">{getRewardText(item.ot_reward)}</TableCell>
                 </>
               }
               <TableCell className="text-center p-2 whitespace-nowrap text-ellipsis overflow-hidden">{item.ot_client || '-'}</TableCell>
               <TableCell className="text-left p-2 whitespace-nowrap text-ellipsis overflow-hidden">{item.ot_description || '-'}</TableCell>
-              <TableCell className="text-center p-2">
+              <TableCell className="text-center p-2 whitespace-nowrap">
                 {item.ot_created_at ? dayjs(item.ot_created_at).format('YYYY-MM-DD HH:mm:ss') : '-'}
               </TableCell>
               <TableCell className="text-center p-2">
@@ -725,9 +784,22 @@ export default function OvertimeList({
                 handleCloseOvertimeDialog();
               }
             }}
-            onApprove={isManager && !isOwnRequest ? handleApproveOvertime : undefined}
-            onReject={isManager && !isOwnRequest ? handleRejectOvertime : undefined}
-            onCompensation={isManager && !isOwnRequest ? handleCompensationOvertime : undefined}
+            onApprove={
+              isManager && !isOwnRequest && isPage !== 'admin'
+                ? handleApproveOvertime 
+                : undefined
+            }
+            onReject={
+              isManager && !isOwnRequest && 
+              isPage === 'admin' && activeTab === 'weekend' && selectedOvertime.ot_status === 'T'
+                ? handleRejectOvertime 
+                : undefined
+            }
+            onCompensation={
+              isManager && !isOwnRequest && isPage === 'admin' && activeTab === 'weekend'
+                ? handleCompensationOvertime 
+                : undefined
+            }
             onReapply={isOwnRequest ? handleReapplyOvertime : undefined}
             isManager={isManager}
             isOwnRequest={isOwnRequest}

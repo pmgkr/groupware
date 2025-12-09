@@ -1,5 +1,5 @@
 // src/components/features/Expense/_components/ExpenseRegisterRow.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
 import { Button } from '@components/ui/button';
@@ -11,9 +11,13 @@ import { Calendar, Close } from '@/assets/images/icons';
 import { FileText } from 'lucide-react';
 import { useToggleState } from '@/hooks/useToggleState';
 import { format } from 'date-fns';
-import { formatAmount } from '@/utils';
+import { formatAmount, formatKST } from '@/utils';
 import { AttachmentField } from './AttachmentField';
 import type { PreviewFile } from './UploadArea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { getProposalList, type ProposalItem } from '@/api/expense/proposal';
+import { Checkbox } from '@/components/ui/checkbox';
 
 type ExpenseRowProps = {
   index: number;
@@ -42,6 +46,30 @@ function ExpenseRowComponent({
 }: ExpenseRowProps) {
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
 
+  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [proposalList, setProposalList] = useState<ProposalItem[]>([]);
+  const [selectedProposalId, setSelectedProposalId] = useState<number | null>(null);
+  const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
+
+  const handleOpenMatchingDialog = async () => {
+    setDialogOpen(true);
+
+    const flag = 'N';
+
+    try {
+      // 응답 구조: { success: boolean, items: ProposalItem[] }
+      const res = await getProposalList(flag);
+
+      const proposals = res.items ?? [];
+
+      const filtered = proposals.filter((p) => ['일반비용', '교육비'].includes(p.rp_category) && !p.rp_expense_no);
+
+      setProposalList(filtered);
+    } catch (err) {
+      console.error('기안서 리스트 불러오기 실패:', err);
+    }
+  };
+
   return (
     <article className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0">
       {/* 상단 영역 */}
@@ -49,8 +77,12 @@ function ExpenseRowComponent({
         <button
           type="button"
           className="text-primary-blue-500 flex cursor-pointer items-center gap-1 text-sm hover:underline"
-          onClick={() => setActiveFile(String(index))}>
-          <FileText className="size-3.5" /> 기안서 매칭
+          onClick={() => {
+            setActiveFile(String(index));
+            handleOpenMatchingDialog();
+          }}>
+          <FileText className="size-3.5" />
+          {selectedProposal ? `${selectedProposal.rp_title}` : '기안서 매칭'}
         </button>
         <Button type="button" variant="svgIcon" size="icon" onClick={() => onRemove(index)}>
           <Close className="size-4" />
@@ -235,6 +267,74 @@ function ExpenseRowComponent({
           />
         </div>
       </div>
+      {/* 기안서 매칭 다이얼로그 */}
+      <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>기안서 매칭</DialogTitle>
+          </DialogHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[40px]"></TableHead>
+                <TableHead className="w-[100px]">구분</TableHead>
+                <TableHead>제목</TableHead>
+                <TableHead className="w-[120px]">금액</TableHead>
+                <TableHead className="w-[240px]">작성일</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {proposalList.map((p) => {
+                const isSelected = selectedProposalId === p.rp_seq;
+                const isDisabled = selectedProposalId !== null && !isSelected;
+
+                return (
+                  <TableRow key={p.rp_seq} className="hover:bg-gray-100">
+                    <TableCell>
+                      <Checkbox
+                        size="sm"
+                        id={`proposal-${p.rp_seq}`}
+                        checked={isSelected}
+                        disabled={isDisabled}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedProposalId(p.rp_seq);
+                            setSelectedProposal(p); // ⭐ 전체 객체 저장
+                          } else {
+                            setSelectedProposalId(null);
+                            setSelectedProposal(null);
+                          }
+                        }}
+                      />
+                    </TableCell>
+
+                    <TableCell>{p.rp_category}</TableCell>
+                    <TableCell className="text-left">{p.rp_title}</TableCell>
+                    <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
+                    <TableCell>{formatKST(p.rp_date)}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+
+          <div className="mt-6 flex justify-end gap-2">
+            <Button size="sm" variant="outline" onClick={() => setDialogOpen(false)}>
+              취소
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                if (!selectedProposalId) return;
+                console.log('선택된 기안서:', selectedProposalId);
+                setDialogOpen(false);
+              }}>
+              선택하기
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </article>
   );
 }
