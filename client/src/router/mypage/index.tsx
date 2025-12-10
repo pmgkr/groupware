@@ -12,14 +12,13 @@ export const mypageRoutes: RouteObject = {
       { to: '/mypage', label: '내 프로필', end: true },
       { to: '/mypage/vacation', label: '휴가 내역' },
       { to: '/mypage/overtime', label: '추가근무 내역' },
-      { to: '/mypage/expense', label: '내 비용관리' },
-
+      /* { to: '/mypage/expense', label: '내 비용관리' }, */
     ],
   },
   children: [
     { index: true, element: <Mypage /> },
     { path: 'vacation', element: <Vacation /> },
     { path: 'overtime', element: <Overtime /> },
-    { path: 'expense', element: <MyExpense /> },
+    /* { path: 'expense', element: <MyExpense /> }, */
   ],
 };

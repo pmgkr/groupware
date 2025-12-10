@@ -12,7 +12,7 @@ export default function ManagerProposalList() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await getReportListManager(); // 🔥 이미 상태 매핑 완료된 리스트
+        const data = await getReportListManager();
         setReports(data);
       } catch (err) {
         console.error('❌ 매니저용 보고서 목록 불러오기 실패:', err);

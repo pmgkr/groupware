@@ -144,7 +144,9 @@ export async function uploadNoticeAttachments(n_seq: number, files: File[], subd
         n_seq,
         f_name: f.fname,
         nf_name: f.sname,
-        f_type: ext, //
+        f_type: ext,
+        subdir: f.subdir,
+        url: f.url,
       }),
     });
   }

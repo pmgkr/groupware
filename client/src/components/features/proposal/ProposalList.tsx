@@ -4,31 +4,40 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatAmount, formatKST } from '@/utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { generateReportNumber, type ReportCard } from '@/api/expense/proposal';
 import type { ManagerReportCard } from '@/api/manager/proposal';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { SearchGray } from '@/assets/images/icons';
 
 interface ProposalListContentProps {
-  reports: ReportCard[]; // ManagerReportCard도 포함 가능
+  // 🔥 기존 방식 (User, Manager)
+  reports?: ReportCard[] | ManagerReportCard[];
+
   onRowClick: (id: number, tab: string) => void;
   onRegister?: () => void;
   pageSize?: number;
 
   // 매니저용 옵션
-  isManager?: boolean; // 매니저 화면인지 여부
-  showWriterInfo?: boolean; //기안자 확인용
-  showRegisterButton?: boolean; //승인반려버튼
+  isManager?: boolean;
+  showWriterInfo?: boolean;
+  showRegisterButton?: boolean;
 
   isAdmin?: boolean;
   adminRole?: 'finance' | 'gm' | null;
+
+  // 🔥 새로운 방식 (Admin) - API 호출 함수
+  onFetchData?: (params: { page: number; size: number; type?: string; q?: string }) => Promise<ReportCard[] | ManagerReportCard[]>;
 }
+
 function isManagerReportCard(report: ReportCard | ManagerReportCard): report is ManagerReportCard {
   return 'manager_state' in report;
 }
 
 export default function ProposalList({
-  reports,
+  reports: reportsProp, // 🔥 기존 방식용 props
   pageSize = 10,
   onRowClick,
   onRegister,
@@ -37,41 +46,96 @@ export default function ProposalList({
   isManager,
   isAdmin,
   adminRole,
+  onFetchData, // 🔥 새로운 방식용 props
 }: ProposalListContentProps) {
+  // 🔥 API에서 받아온 데이터 (새로운 방식용)
+  const [fetchedReports, setFetchedReports] = useState<(ReportCard | ManagerReportCard)[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 검색창 입력값
+  const [searchQuery, setSearchQuery] = useState('');
+  // 🔥 실제 검색에 사용되는 값 (엔터나 클릭 시에만 업데이트)
+  const [activeSearchQuery, setActiveSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [matchStatus, setMatchStatus] = useState<string | undefined>();
   const [searchParams] = useSearchParams();
   const initialPage = Number(searchParams.get('page') || 1);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('');
 
-  // URL에 tab=... 있으면 그걸 기본값으로
-  const initialTab =
-    searchParams.get('tab') ||
-    (isAdmin
-      ? adminRole === 'finance'
-        ? 'pending' // 회계 기본 탭: 회계 대기 문서
-        : adminRole === 'gm'
-          ? 'pending' // GM 기본 탭: GM 대기 문서
-          : 'all'
-      : isManager
-        ? 'pending'
-        : 'draft');
-  const [activeTab, setActiveTab] = useState(initialTab);
+  // 🔥 일괄 선택 관련 state
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [isAllSelected, setIsAllSelected] = useState(false);
+
+  // 🔥 실제 사용할 reports: reportsProp이 있으면 그것 사용, 없으면 fetchedReports 사용
+  const reports = reportsProp || fetchedReports;
+
+  // 🔥 API 호출 함수 (onFetchData가 있을 때만)
+  const fetchReports = async () => {
+    if (!onFetchData) return;
+
+    setIsLoading(true);
+    try {
+      const data = await onFetchData({
+        page: 1,
+        size: 100000,
+        type: activeTab !== 'all' ? activeTab : undefined,
+        q: activeSearchQuery || undefined, // 🔥 searchQuery → activeSearchQuery
+      });
+
+      setFetchedReports(data);
+    } catch (error) {
+      console.error('Failed to fetch reports:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 🔥 검색 실행 (엔터 or 돋보기 클릭 시)
+  const handleSearch = () => {
+    setActiveSearchQuery(searchQuery); // 🔥 입력값을 실제 검색어로 반영
+    setCurrentPage(1);
+    navigate(`?tab=${activeTab}&page=1`, { replace: true });
+    setSelectedIds([]);
+    setIsAllSelected(false);
+  };
+
+  useEffect(() => {
+    let defaultTab = '';
+
+    if (searchParams.get('tab')) {
+      defaultTab = searchParams.get('tab')!;
+    } else if (isAdmin) {
+      if (adminRole === 'gm') defaultTab = 'pending';
+      else defaultTab = 'pending';
+    } else if (isManager) {
+      defaultTab = 'pending';
+    } else {
+      defaultTab = 'draft';
+    }
+
+    setActiveTab(defaultTab);
+  }, [searchParams, isAdmin, adminRole, isManager]);
+
+  // 🔥 탭, 페이지, 실제 검색어 변경 시 API 재호출 (onFetchData가 있을 때만)
+  useEffect(() => {
+    if (activeTab && onFetchData) {
+      fetchReports();
+    }
+  }, [activeTab, activeSearchQuery, onFetchData]); // 🔥 searchQuery → activeSearchQuery
+
   const handleTabChange = (key: string) => {
     setActiveTab(key);
-    // 필터 초기화
     setSelectedCategory('');
     setMatchStatus('');
-    // 페이지 초기화
     setCurrentPage(1);
+    setSelectedIds([]);
+    setIsAllSelected(false);
+    setSearchQuery('');
 
     navigate(`?tab=${key}&page=1`);
   };
-  useEffect(() => {
-    const tab = searchParams.get('tab') || (isManager ? 'pending' : 'draft');
-    setActiveTab(tab);
-  }, [searchParams]);
 
   // 탭 필터링
   const userTabs = [
@@ -93,7 +157,6 @@ export default function ProposalList({
     { key: 'complete', label: 'GM 완료 문서' },
   ];
 
-  // 🔥 usedTabs 분기
   let usedTabs = userTabs;
 
   if (isManager) {
@@ -101,17 +164,15 @@ export default function ProposalList({
   }
 
   if (isAdmin) {
-    if (adminRole === 'finance') {
-      usedTabs = financeTabs;
-    } else if (adminRole === 'gm') {
+    if (adminRole === 'gm') {
       usedTabs = gmTabs;
+    } else {
+      usedTabs = financeTabs;
     }
   }
 
+  // 🔥 프론트 필터링 (카테고리, 매칭 상태)
   const tabFiltered = reports.filter((r) => {
-    // --------------------------
-    // 1) 일반 유저 모드
-    // --------------------------
     if (!isManager && !isAdmin) {
       return activeTab === 'draft'
         ? r.state === '진행' || r.state === '대기'
@@ -120,9 +181,6 @@ export default function ProposalList({
           : true;
     }
 
-    // --------------------------
-    // 2) 팀장 모드
-    // --------------------------
     if (isManager) {
       if (!isManagerReportCard(r)) return false;
 
@@ -131,30 +189,13 @@ export default function ProposalList({
       }
 
       if (activeTab === 'approved') {
-        return r.manager_state !== '대기'; // 완료+반려 모두
+        return r.manager_state !== '대기';
       }
 
       return true;
     }
 
-    // --------------------------
-    // 3) 어드민 모드 (회계 / GM)
-    // --------------------------
     if (isAdmin) {
-      // 회계(adminRole === "finance")
-      if (adminRole === 'finance') {
-        if (activeTab === 'all') return true;
-
-        if (activeTab === 'pending') {
-          return r.manager_state === '완료' && r.finance_state === '대기';
-        }
-
-        if (activeTab === 'complete') {
-          return r.finance_state !== '대기'; // 완료 + 반려
-        }
-      }
-
-      // GM(adminRole === "gm")
       if (adminRole === 'gm') {
         if (activeTab === 'all') return true;
 
@@ -163,7 +204,17 @@ export default function ProposalList({
         }
 
         if (activeTab === 'complete') {
-          return r.gm_state !== '대기'; // 완료 + 반려
+          return r.gm_state !== '대기';
+        }
+      } else {
+        if (activeTab === 'all') return true;
+
+        if (activeTab === 'pending') {
+          return r.manager_state === '완료' && r.finance_state === '대기';
+        }
+
+        if (activeTab === 'complete') {
+          return r.finance_state !== '대기';
         }
       }
     }
@@ -176,20 +227,22 @@ export default function ProposalList({
   const path = location.pathname;
   const isManagerPage = path.startsWith('/manager/proposal');
   const isProjectPage = path.startsWith('/project/proposal');
-  const categories = isManagerPage
-    ? [
-        { value: '전체', label: '전체' },
-        { value: '교육비', label: '교육비' },
-        { value: '구매요청', label: '구매요청' },
-        { value: '일반비용', label: '일반비용' },
-        { value: '프로젝트', label: '프로젝트' }, // 🔥 매니저 전용
-      ]
-    : [
-        { value: '전체', label: '전체' },
-        { value: '교육비', label: '교육비' },
-        { value: '구매요청', label: '구매요청' },
-        { value: '일반비용', label: '일반비용' },
-      ];
+  const isAdminPage = isAdmin;
+  const categories =
+    isManagerPage || isAdminPage
+      ? [
+          { value: '전체', label: '전체' },
+          { value: '교육비', label: '교육비' },
+          { value: '구매요청', label: '구매요청' },
+          { value: '일반비용', label: '일반비용' },
+          { value: '프로젝트', label: '프로젝트' },
+        ]
+      : [
+          { value: '전체', label: '전체' },
+          { value: '교육비', label: '교육비' },
+          { value: '구매요청', label: '구매요청' },
+          { value: '일반비용', label: '일반비용' },
+        ];
   const categoryFiltered =
     !selectedCategory || selectedCategory === '전체' ? tabFiltered : tabFiltered.filter((r) => r.category === selectedCategory);
 
@@ -198,11 +251,10 @@ export default function ProposalList({
     { value: 'matched', label: '완료' },
     { value: 'unmatched', label: '매칭전' },
   ];
-  // 매칭 상태 필터 적용
+
   const matchFiltered = categoryFiltered.filter((r) => {
     if (!matchStatus || matchStatus === 'all') return true;
 
-    // 구매요청은 matched/unmatched에서 제외
     if (r.category === '구매요청') return false;
 
     if (matchStatus === 'matched') return !!r.expense_no;
@@ -211,38 +263,90 @@ export default function ProposalList({
 
     return true;
   });
-  /*  // 카테고리 변경 시 1페이지로 이동
-  useEffect(() => {
-    setCurrentPage(1);
-    navigate(`?tab=${activeTab}&page=1`);
-  }, [selectedCategory]);
-
-  // 비용 매칭 상태 변경 시 1페이지로 이동
-  useEffect(() => {
-    setCurrentPage(1);
-    navigate(`?tab=${activeTab}&page=1`);
-  }, [matchStatus]); */
 
   // 정렬
   const filteredReports = matchFiltered.sort((a, b) => b.id - a.id);
 
   // 페이지네이션
-  const totalPages = Math.ceil(filteredReports.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedReports = filteredReports.slice(startIndex, startIndex + pageSize);
+  const { totalPages, paginatedReports } = useMemo(() => {
+    const total = Math.ceil(filteredReports.length / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const paginated = filteredReports.slice(startIndex, startIndex + pageSize);
+
+    return {
+      totalPages: total,
+      paginatedReports: paginated,
+    };
+  }, [filteredReports, currentPage, pageSize]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    setSelectedIds([]);
+    setIsAllSelected(false);
 
-    navigate(`?tab=${activeTab}&page=${page}`, {
-      replace: true, // 히스토리 누적 방지 (선택)
-    });
+    //navigate(`?tab=${activeTab}&page=${page}`, { replace: true});
+    //window.history.replaceState(null, '', `?tab=${activeTab}&page=${page}`);
+  };
+
+  const showBulkApproval = isAdmin && activeTab === 'pending';
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([]);
+      setIsAllSelected(false);
+    } else {
+      const allIds = paginatedReports.map((r) => r.id);
+      setSelectedIds(allIds);
+      setIsAllSelected(true);
+    }
+  };
+
+  const handleSelectOne = (id: number) => {
+    if (selectedIds.includes(id)) {
+      const newIds = selectedIds.filter((selectedId) => selectedId !== id);
+      setSelectedIds(newIds);
+      setIsAllSelected(false);
+    } else {
+      const newIds = [...selectedIds, id];
+      setSelectedIds(newIds);
+      if (newIds.length === paginatedReports.length) {
+        setIsAllSelected(true);
+      }
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedIds.length === 0) {
+      alert('승인할 문서를 선택해주세요.');
+      return;
+    }
+
+    const confirmMessage = `선택한 ${selectedIds.length}개 문서를 승인하시겠습니까?`;
+    if (!confirm(confirmMessage)) return;
+
+    try {
+      console.log('🔥 일괄 승인 요청:', selectedIds);
+      console.log('🔥 adminRole:', adminRole);
+
+      alert('승인이 완료되었습니다.');
+
+      setSelectedIds([]);
+      setIsAllSelected(false);
+
+      // 🔥 onFetchData가 있으면 목록 새로고침
+      if (onFetchData) {
+        fetchReports();
+      }
+    } catch (error) {
+      console.error('❌ 일괄 승인 실패:', error);
+      alert('승인 처리 중 오류가 발생했습니다.');
+    }
   };
 
   return (
     <div>
       {/* 탭 + 필터 + 작성 버튼 */}
-      <div className="mb-4 flex items-end justify-between gap-3">
+      <div className="mb-5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
             {usedTabs.map((tab) => (
@@ -289,10 +393,39 @@ export default function ProposalList({
           </Select>
         </div>
 
-        {showRegisterButton && onRegister && (
-          <Button size="sm" onClick={onRegister}>
-            기안서 작성하기
-          </Button>
+        {/* 🔥 검색창 - admin일 때만 표시 */}
+        {isAdmin && (
+          <div className="flex gap-x-2">
+            <div className="relative w-[175px]">
+              <Input
+                className="h-[32px] px-4 [&]:bg-white"
+                placeholder="검색어 입력"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+              <Button
+                variant="svgIcon"
+                size="icon"
+                className="absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2"
+                aria-label="검색"
+                onClick={handleSearch}>
+                <SearchGray className="text-gray-400" />
+              </Button>
+            </div>
+            {showRegisterButton && onRegister && (
+              <Button size="sm" onClick={onRegister}>
+                기안서 작성하기
+              </Button>
+            )}
+            {showBulkApproval && (
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleBulkApprove} disabled={selectedIds.length === 0}>
+                  승인 하기
+                </Button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -314,13 +447,20 @@ export default function ProposalList({
               </>
             )}
             <TableHead className="w-[10%]">작성일</TableHead>
+            {showBulkApproval && (
+              <TableHead className="w-[50px] px-2.5">
+                <Checkbox size="sm" checked={isAllSelected} onCheckedChange={handleSelectAll} />
+              </TableHead>
+            )}
           </TableRow>
         </TableHeader>
 
         <TableBody>
           {paginatedReports.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={showWriterInfo ? 8 : 6} className="py-10 text-center text-gray-500">
+              <TableCell
+                colSpan={showBulkApproval ? (showWriterInfo ? 10 : 8) : showWriterInfo ? 9 : 7}
+                className="py-10 text-center text-gray-500">
                 문서가 없습니다.
               </TableCell>
             </TableRow>
@@ -333,22 +473,19 @@ export default function ProposalList({
 
               const isCostCategory = report.category === '일반비용' || report.category === '교육비' || report.category === '프로젝트';
 
+              const isSelected = selectedIds.includes(report.id);
+
               return (
                 <TableRow
                   key={report.id}
                   onClick={() => onRowClick(report.id, activeTab)}
                   className="cursor-pointer hover:bg-gray-100 [&_td]:text-[13px]">
-                  {/* <TableCell>{generateReportNumber(report.category, report.id)}</TableCell> */}
                   <TableCell>{rowNumber}</TableCell>
 
                   <TableCell>{report.category}</TableCell>
 
-                  {/* 제목 */}
                   <TableCell className="text-left">{report.title}</TableCell>
-                  {/* 금액 */}
                   <TableCell className="text-right">{formatAmount(report.price)}원</TableCell>
-                  {/* 비용 매칭 */}
-                  {/* <TableCell>{report.expense_no}</TableCell> */}
                   <TableCell>
                     {report.category === '구매요청'
                       ? '-'
@@ -363,7 +500,6 @@ export default function ProposalList({
                           </Badge>
                         ))}
                   </TableCell>
-                  {/* 상태 */}
                   <TableCell>
                     {(() => {
                       switch (displayStatus) {
@@ -406,7 +542,6 @@ export default function ProposalList({
                     })()}
                   </TableCell>
 
-                  {/* 작성자 + 팀명 */}
                   {showWriterInfo && writer && (
                     <>
                       <TableCell>{writer.team}</TableCell>
@@ -414,8 +549,12 @@ export default function ProposalList({
                     </>
                   )}
 
-                  {/* 날짜 */}
                   <TableCell>{formatKST(report.date, true)}</TableCell>
+                  {showBulkApproval && (
+                    <TableCell onClick={(e) => e.stopPropagation()} className="px-2.5">
+                      <Checkbox checked={isSelected} onCheckedChange={() => handleSelectOne(report.id)} />
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })

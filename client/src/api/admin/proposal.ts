@@ -20,8 +20,21 @@ function mapManagerDisplayState(item: any) {
   return '';
 }
 
-export async function getReportListManager(): Promise<ManagerReportCard[]> {
-  const res = await http<any>('/manager/report/list?size=100000', { method: 'GET' });
+export async function getReportListManager(params: {
+  page: number;
+  size: number;
+  type?: string;
+  q?: string;
+}): Promise<ManagerReportCard[]> {
+  const queryParams = new URLSearchParams();
+  queryParams.append('page', '1');
+  queryParams.append('size', params.size.toString());
+  if (params.type) queryParams.append('type', params.type);
+  if (params.q) queryParams.append('q', params.q);
+
+  const res = await http<any>(`/manager/report/list?${queryParams.toString()}`, {
+    method: 'GET',
+  });
 
   const rawItems = res.items ?? [];
 
