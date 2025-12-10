@@ -12,6 +12,11 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getAvatarFallback } from '@/utils';
 
 /* ===========================================================
+    ★★ 계산식 헬퍼 사용 ★★
+=========================================================== */
+import { calcAllVacation } from "@/utils/vacationHelper";   
+
+/* ===========================================================
     타입 정의
 =========================================================== */
 
@@ -45,94 +50,6 @@ interface UserListProps {
   year?: number;
   teamIds?: number[];
   userIds?: string[];
-}
-
-/* ===========================================================
-    휴가 계산 함수들 (부호 복구 필수 적용)
-=========================================================== */
-
-// 특정 유형만 계산
-function calcVacationByType(logs: VacationLog[], type: string) {
-  let grant = 0;
-  let used = 0;
-
-  logs.forEach((log: VacationLog) => {
-    if (log.v_type !== type) return;
-
-    if (log.v_count < 0) grant += -log.v_count; // 부여
-    else used += log.v_count; // 사용
-  });
-
-  return {
-    plusDays: grant,
-    minusDays: -used,
-  };
-}
-
-// 공가 계산
-function calcOfficial(logs: VacationLog[]) {
-  let grant = 0;
-  let used = 0;
-
-  logs.forEach((log: VacationLog) => {
-    if (log.v_type !== "official") return;
-
-    if (log.v_count < 0) grant += -log.v_count;
-    else used += log.v_count;
-  });
-
-  return {
-    plusDays: grant,
-    minusDays: -used
-  };
-}
-
-// 기본연차(current + 사용종류)
-function calcCurrentYear(logs: VacationLog[]) {
-  let grant = 0;
-  let used = 0;
-
-  logs.forEach((log: VacationLog) => {
-    if (["current", "day", "half", "quater", "cancel"].includes(log.v_type)) {
-      if (log.v_count < 0) grant += -log.v_count;
-      else used += log.v_count;
-    }
-  });
-
-  return {
-    plusDays: grant,
-    minusDays: -used,
-    available: grant - used,
-  };
-}
-
-// 전체 휴가 계산 종합
-function calcAllVacationTypes(logs: VacationLog[]) {
-  const current = calcCurrentYear(logs);
-  const carry = calcVacationByType(logs, "carryover");
-  const special = calcVacationByType(logs, "comp");
-  const official = calcOfficial(logs);
-
-  const totalPlus = current.plusDays + carry.plusDays + special.plusDays;
-  const totalMinus = current.minusDays + carry.minusDays + special.minusDays;
-
-  const available =
-    current.available +
-    carry.plusDays +
-    special.plusDays +
-    (carry.minusDays + special.minusDays);
-
-  return {
-    current,
-    carry,
-    special,
-    official,
-    total: {
-      plusDays: totalPlus,
-      minusDays: totalMinus
-    },
-    available
-  };
 }
 
 /* ===========================================================
@@ -220,7 +137,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
         filteredItems = filteredItems.filter(i => userIds.includes(i.user_id));
       }
 
-      // 모든 유저 로그 병렬 호출 (일부 실패해도 계속 진행)
+      // 모든 유저 로그 병렬 호출
       const detailResults = await Promise.allSettled(
         filteredItems.map(item =>
           adminVacationApi.getVacationInfo(item.user_id, currentYear)
@@ -234,18 +151,19 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
         let detail = null;
         if (result.status === 'fulfilled') {
           detail = result.value;
-        } else {
-          // 에러가 발생해도 사용자 정보는 표시
-          console.warn(`휴가 정보 로드 실패 (${item.user_name}):`, result.reason?.message || result.reason);
         }
 
-        // 🚨 서버에서 v_count 를 반대로 보내므로 다시 돌려줘야 함!!
         const logs: VacationLog[] = (detail?.body ?? []).map((log: VacationLogItem) => ({
           ...log,
-          v_count: Number(log.v_count) * -1,  // 핵심 수정!!
+          v_count: Number(log.v_count),
         }));
 
-        const calc = calcAllVacationTypes(logs);
+        console.log("=== RAW detail logs BEFORE reversing ===", detail?.body);
+        console.log("=== logs AFTER reversing ===", logs);
+
+        /* ★★ 핵심 계산식 — 헬퍼로 통합 ★★ */
+        const calc = calcAllVacation(logs);
+
         const team = teamsData.find(t => t.team_id === item.team_id);
 
         // 입사일 계산
@@ -261,15 +179,13 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
           countFromHireDate = `${diff}일`;
         }
 
-        // 프로필 이미지 파일명 확인 및 정리 (공백 제거, null 체크)
         const profileImageName = item.profile_image && typeof item.profile_image === 'string' 
           ? item.profile_image.trim() 
           : null;
         
         return {
           id: item.user_id,
-          profile_image: profileImageName, // 원본 파일명만 저장
-
+          profile_image: profileImageName,
           department: team?.team_name || "",
           name: item.user_name,
           hireDate: formattedHireDate,
@@ -314,11 +230,9 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
   };
 
   useEffect(() => {
-    // teams가 로드된 후에 실행되도록 함
     if (teams.length > 0 || year || teamIds.length > 0 || userIds.length > 0) {
       loadVacationList();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year, teamIds, userIds, isDetailPage, teams]);
 
   /* ===========================================================
@@ -422,7 +336,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
 
               {/* 기본연차 */}
               <TableCell className="text-center">
-              <div className="flex flex-col items-center gap-1">
+                <div className="flex flex-col items-center gap-1">
                   <Badge variant="secondary" size="table">
                     {item.currentYearVacation.plusDays}일
                   </Badge>
