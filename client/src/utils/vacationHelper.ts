@@ -73,7 +73,7 @@ export function calcCurrentYear(logs: VacationLog[]) {
 export function calcAllVacation(logs: VacationLog[]) {
   const current = calcCurrentYear(logs);
   const carry = calcType(logs, ["carryover"]);
-  const special = calcType(logs, ["comp"]);
+  const special = calcType(logs, ["special"]);
   const official = calcType(logs, ["official"]);
 
   const totalPlus =
