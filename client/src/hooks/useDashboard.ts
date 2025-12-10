@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { dashboardApi, type Vacation, type Calendar, type Meetingroom, type Notification, type Wlog, type Notice } from '@/api/dashboard';
+import { dashboardApi, type Vacation, type Calendar, type Meetingroom, type Notification, type Wlog, type Notice, type Expense } from '@/api/dashboard';
 import { formatKST, timeToMinutes } from '@/utils/date';
 import dayjs from 'dayjs';
 
@@ -28,6 +28,34 @@ const getMeetingroomBadgeColor = (mrName: string): string => {
   return colorMap[mrName] || 'bg-gray-500';
 };
 
+// 비용 관련 함수
+const getExpenseStepStatusName = (status: string): string => {
+  const nameMap: Record<string, string> = {
+    'Saved': '임시저장',
+    'Claimed': '승인대기',
+    'Confirmed': '승인완료',
+    'Approved': '지급대기',
+    'Completed': '지급완료',
+    'Rejected': '반려됨',
+  };
+  return nameMap[status] || status;
+};
+
+const getExpenseBadgeColor = (status: string): string => {
+  const colorMap: Record<string, string> = {
+    // grayish variant의 className
+    'Saved': 'bg-gray-100 text-gray-700 [a&]:hover:bg-gray-300/90 border-gray-300/50',
+    // secondary variant의 className
+    'Claimed': 'bg-primary-blue-100 text-primary-blue [a&]:hover:bg-secondary/90 border-primary-blue-300/10',
+    // default variant의 className
+    'Confirmed': 'bg-primary-blue-500 text-primary-foreground [a&]:hover:bg-primary/90',
+    'Approved': 'bg-primary-blue/80',
+    'Completed': 'bg-primary-blue',
+    'Rejected': 'bg-destructive',
+  };
+  return colorMap[status] || 'bg-gray-500';
+};
+
 export function useDashboard(selectedDate?: Date) {
   const [wlog, setWlog] = useState<Wlog>({
     wlogWeek: [],
@@ -38,6 +66,7 @@ export function useDashboard(selectedDate?: Date) {
   const [calendar, setCalendar] = useState<Calendar[]>([]);
   const [meetingroom, setMeetingroom] = useState<Meetingroom[]>([]);
   const [notice, setNotice] = useState<Notice[]>([]);
+  const [expense, setExpense] = useState<Expense[]>([]);
   
   // 초기 데이터 로드 (한 번만 실행)
   useEffect(() => {
@@ -87,11 +116,24 @@ export function useDashboard(selectedDate?: Date) {
         }
     };
 
+    const fetchExpense = async () => {
+        try {
+            const data = await dashboardApi.getExpense();
+            // API에서 이미 nexpense 배열을 반환하므로 그대로 사용
+            const expenseArray = Array.isArray(data) ? data : [];
+            setExpense(expenseArray);
+        } catch (error) {
+            console.error('비용 정보 조회 실패:', error);
+            setExpense([]);
+        }
+    };
+
     fetchWlog();
     fetchVacation();
     fetchNotification();
     fetchMeetingroom();
     fetchNotice();
+    fetchExpense();
   }, []);
 
   // 선택된 날짜가 변경될 때 캘린더 데이터만 업데이트
@@ -203,6 +245,7 @@ export function useDashboard(selectedDate?: Date) {
     calendar: sortedCalendar, // 정렬된 캘린더 반환
     meetingroom: sortedMeetingroom, // 정렬된 미팅룸 반환
     notice,
+    expense, // 비용 데이터
     // EventViewDialog 관련
     isEventDialogOpen,
     selectedCalendar,
@@ -211,7 +254,10 @@ export function useDashboard(selectedDate?: Date) {
     handleCloseDialog,
     // 미팅룸 관련 함수
     getMeetingroomKoreanName,
-    getMeetingroomBadgeColor
+    getMeetingroomBadgeColor,
+    // 비용 관련 함수
+    getExpenseStepStatusName,
+    getExpenseBadgeColor
   };
 }
 

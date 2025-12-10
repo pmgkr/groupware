@@ -68,15 +68,19 @@ export interface Meetingroom {
   title?: string;
 }
 
-// 일반비용
-export interface Nonexpense {
+// 비용
+export interface Expense {
   seq: number;
-  exp_id: string;
+  proejct_id: string;
+  exp_id: string; // 비용넘버
   el_type: string;
   el_title: string;
-  el_amount: number;
-  el_total: number;
-  status: string;
+  el_method: string; // PMG, BANK
+  el_amount: number; // 세전금액
+  el_tax: number; // 세액
+  el_total: number; // 최종금액액
+  status: string; // Saved, Claimed, Approved, Rejected
+  expenseType?: 'nexpense' | 'pexpense'; // 비용 종류 구분
 }
 
 export const dashboardApi = {
@@ -130,11 +134,15 @@ export const dashboardApi = {
     return response;
   },
 
-  // 일반비용
-  getNonexpense: async (): Promise<Nonexpense[]> => {
-    const response = await http<Nonexpense[]>('/dashboard/nexpense', {
+  // 일반비용 및 프로젝트 비용
+  getExpense: async (): Promise<Expense[]> => {
+    const response = await http<{ nexpense: Expense[]; pexpense: Expense[] }>('/dashboard/nexpense', {
       method: 'POST',
     });
-    return response;
+    // 일반비용과 프로젝트 비용을 합쳐서 반환 (각 항목에 expenseType 추가)
+    const nexpense = (response?.nexpense || []).map((expense) => ({ ...expense, expenseType: 'nexpense' as const }));
+    const pexpense = (response?.pexpense || []).map((expense) => ({ ...expense, expenseType: 'pexpense' as const }));
+    const allExpenses = [...nexpense, ...pexpense];
+    return allExpenses;
   },
 };

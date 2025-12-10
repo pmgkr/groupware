@@ -9,6 +9,7 @@ import ProjectEstimate from '@/components/features/Project/ProjectEstimate';
 import EstimatePreview from '@/components/features/Project/EstimatePreview';
 import EstimateView from '@/components/features/Project/EstimateView';
 import EstimateEdit from '@/components/features/Project/EstimateEdit';
+import ProjectInvoice from '@/components/features/Project/ProjectInvoice';
 import ProjectProposalList from '@/pages/Project/ProjectProposal/ProjectProposalList';
 import ProjectProposalView from '@/pages/Project/ProjectProposal/ProjectProposalView';
 import ProposalRegister from '@/components/features/proposal/ProposalRegister';
@@ -41,6 +42,7 @@ export const projectRoutes: RouteObject = {
         { path: 'estimate/preview', element: <EstimatePreview />, handle: { hideNav: true, hideTitle: true } },
         { path: 'estimate/:estId', element: <EstimateView />, handle: { hideNav: true, hideTitle: true } },
         { path: 'estimate/:estId/edit', element: <EstimateEdit />, handle: { hideNav: true, hideTitle: true } },
+        { path: 'invoice', element: <ProjectInvoice />, handle: { hideNav: true, hideTitle: true } },
       ],
     },
     { path: 'proposal', element: <ProjectProposalList /> },
