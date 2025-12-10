@@ -6,19 +6,57 @@ import { Button } from '@/components/ui/button';
 import { SettingsIcon, InfoIcon } from 'lucide-react';
 import GrantDialog from './grantDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { adminVacationApi } from '@/api/admin/vacation';
+import { adminVacationApi, type VacationItem, type VacationLogItem } from '@/api/admin/vacation';
 import { getTeams } from '@/api/admin/teams';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getAvatarFallback } from '@/utils';
+
+/* ===========================================================
+    타입 정의
+=========================================================== */
+
+type VacationLog = {
+  v_type: string;
+  v_count: number;
+  [key: string]: any;
+};
+
+type Team = {
+  team_id: number;
+  team_name: string;
+};
+
+type DisplayDataItem = {
+  id: string;
+  profile_image: string | null;
+  department: string;
+  name: string;
+  hireDate: string;
+  CountFromHireDate: string;
+  currentYearVacation: { plusDays: number; minusDays: number };
+  carryOverVacation: { plusDays: number; minusDays: number };
+  specialVacation: { plusDays: number; minusDays: number };
+  officialVacation: { plusDays: number; minusDays: number };
+  totalVacationDays: { plusDays: number; minusDays: number };
+  availableVacationDays: number;
+};
+
+interface UserListProps {
+  year?: number;
+  teamIds?: number[];
+  userIds?: string[];
+}
 
 /* ===========================================================
     휴가 계산 함수들 (부호 복구 필수 적용)
 =========================================================== */
 
 // 특정 유형만 계산
-function calcVacationByType(logs, type) {
+function calcVacationByType(logs: VacationLog[], type: string) {
   let grant = 0;
   let used = 0;
 
-  logs.forEach(log => {
+  logs.forEach((log: VacationLog) => {
     if (log.v_type !== type) return;
 
     if (log.v_count < 0) grant += -log.v_count; // 부여
@@ -32,11 +70,11 @@ function calcVacationByType(logs, type) {
 }
 
 // 공가 계산
-function calcOfficial(logs) {
+function calcOfficial(logs: VacationLog[]) {
   let grant = 0;
   let used = 0;
 
-  logs.forEach(log => {
+  logs.forEach((log: VacationLog) => {
     if (log.v_type !== "official") return;
 
     if (log.v_count < 0) grant += -log.v_count;
@@ -50,11 +88,11 @@ function calcOfficial(logs) {
 }
 
 // 기본연차(current + 사용종류)
-function calcCurrentYear(logs) {
+function calcCurrentYear(logs: VacationLog[]) {
   let grant = 0;
   let used = 0;
 
-  logs.forEach(log => {
+  logs.forEach((log: VacationLog) => {
     if (["current", "day", "half", "quater", "cancel"].includes(log.v_type)) {
       if (log.v_count < 0) grant += -log.v_count;
       else used += log.v_count;
@@ -69,7 +107,7 @@ function calcCurrentYear(logs) {
 }
 
 // 전체 휴가 계산 종합
-function calcAllVacationTypes(logs) {
+function calcAllVacationTypes(logs: VacationLog[]) {
   const current = calcCurrentYear(logs);
   const carry = calcVacationByType(logs, "carryover");
   const special = calcVacationByType(logs, "comp");
@@ -101,20 +139,20 @@ function calcAllVacationTypes(logs) {
     컴포넌트 시작
 =========================================================== */
 
-export default function UserList({ year, teamIds = [], userIds = [] }) {
+export default function UserList({ year, teamIds = [], userIds = [] }: UserListProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isDetailPage = location.pathname.includes('/vacation/user/');
 
-  const [displayData, setDisplayData] = useState([]);
+  const [displayData, setDisplayData] = useState<DisplayDataItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [teams, setTeams] = useState([]);
+  const [teams, setTeams] = useState<Team[]>([]);
 
   const [isGrantDialogOpen, setIsGrantDialogOpen] = useState(false);
   const [selectedUserName, setSelectedUserName] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
 
-  const handleOpenGrantDialog = (userId, userName) => {
+  const handleOpenGrantDialog = (userId: string, userName: string) => {
     setSelectedUserId(userId);
     setSelectedUserName(userName);
     setIsGrantDialogOpen(true);
@@ -126,8 +164,8 @@ export default function UserList({ year, teamIds = [], userIds = [] }) {
     setSelectedUserId('');
   };
 
-  const handleRowClick = (userId, e) => {
-    if ((e.target).closest("button")) return;
+  const handleRowClick = (userId: string, e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("button")) return;
     navigate(`/admin/vacation/user/${userId}`);
   };
 
@@ -136,7 +174,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }) {
     const loadTeams = async () => {
       try {
         const teamList = await getTeams({});
-        setTeams(teamList.map(t => ({
+        setTeams(teamList.map((t) => ({
           team_id: t.team_id,
           team_name: t.team_name
         })));
@@ -155,6 +193,22 @@ export default function UserList({ year, teamIds = [], userIds = [] }) {
 
     try {
       const currentYear = year || new Date().getFullYear();
+      
+      // 팀 목록이 없으면 먼저 로드
+      let teamsData = teams;
+      if (teamsData.length === 0) {
+        try {
+          const teamList = await getTeams({});
+          teamsData = teamList.map((t) => ({
+            team_id: t.team_id,
+            team_name: t.team_name
+          }));
+          setTeams(teamsData);
+        } catch (e) {
+          console.error("팀 목록 로드 실패:", e);
+        }
+      }
+
       const response = await adminVacationApi.getVacationList(currentYear);
 
       let filteredItems = response.rows;
@@ -166,24 +220,33 @@ export default function UserList({ year, teamIds = [], userIds = [] }) {
         filteredItems = filteredItems.filter(i => userIds.includes(i.user_id));
       }
 
-      // 모든 유저 로그 병렬 호출
-      const detailList = await Promise.all(
+      // 모든 유저 로그 병렬 호출 (일부 실패해도 계속 진행)
+      const detailResults = await Promise.allSettled(
         filteredItems.map(item =>
           adminVacationApi.getVacationInfo(item.user_id, currentYear)
         )
       );
 
       const converted = filteredItems.map((item, idx) => {
-        const detail = detailList[idx];
+        const result = detailResults[idx];
+        
+        // 성공한 경우에만 데이터 사용, 실패한 경우 빈 배열
+        let detail = null;
+        if (result.status === 'fulfilled') {
+          detail = result.value;
+        } else {
+          // 에러가 발생해도 사용자 정보는 표시
+          console.warn(`휴가 정보 로드 실패 (${item.user_name}):`, result.reason?.message || result.reason);
+        }
 
         // 🚨 서버에서 v_count 를 반대로 보내므로 다시 돌려줘야 함!!
-        const logs = (detail?.body ?? []).map(log => ({
+        const logs: VacationLog[] = (detail?.body ?? []).map((log: VacationLogItem) => ({
           ...log,
           v_count: Number(log.v_count) * -1,  // 핵심 수정!!
         }));
 
         const calc = calcAllVacationTypes(logs);
-        const team = teams.find(t => t.team_id === item.team_id);
+        const team = teamsData.find(t => t.team_id === item.team_id);
 
         // 입사일 계산
         let formattedHireDate = "";
@@ -192,17 +255,20 @@ export default function UserList({ year, teamIds = [], userIds = [] }) {
         if (item.hire_date) {
           const hire = new Date(item.hire_date);
           const today = new Date();
-          const diff = Math.floor((today - hire) / 86400000);
+          const diff = Math.floor((today.getTime() - hire.getTime()) / 86400000);
 
           formattedHireDate = `${hire.getFullYear()}-${String(hire.getMonth() + 1).padStart(2, "0")}-${String(hire.getDate()).padStart(2, "0")}`;
           countFromHireDate = `${diff}일`;
         }
 
+        // 프로필 이미지 파일명 확인 및 정리 (공백 제거, null 체크)
+        const profileImageName = item.profile_image && typeof item.profile_image === 'string' 
+          ? item.profile_image.trim() 
+          : null;
+        
         return {
           id: item.user_id,
-          profile_image: item.profile_image
-            ? `${import.meta.env.VITE_API_ORIGIN || "https://gbend.cafe24.com"}/uploads/mypage/${item.profile_image}`
-            : "",
+          profile_image: profileImageName, // 원본 파일명만 저장
 
           department: team?.team_name || "",
           name: item.user_name,
@@ -248,8 +314,12 @@ export default function UserList({ year, teamIds = [], userIds = [] }) {
   };
 
   useEffect(() => {
-    loadVacationList();
-  }, [year, teamIds, userIds, teams, isDetailPage]);
+    // teams가 로드된 후에 실행되도록 함
+    if (teams.length > 0 || year || teamIds.length > 0 || userIds.length > 0) {
+      loadVacationList();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, teamIds, userIds, isDetailPage, teams]);
 
   /* ===========================================================
       렌더링
@@ -324,10 +394,21 @@ export default function UserList({ year, teamIds = [], userIds = [] }) {
 
               <TableCell className="text-center">
                 <div className="flex items-center gap-2 justify-center">
-                  <img
-                    src={item.profile_image || "/default-profile.webp"}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage 
+                      src={item.profile_image 
+                        ? (() => {
+                            const baseUrl = import.meta.env.VITE_API_ORIGIN || "https://gbend.cafe24.com";
+                            const imagePath = item.profile_image.startsWith('/') 
+                              ? item.profile_image.slice(1) 
+                              : item.profile_image;
+                            return `${baseUrl}/uploads/mypage/${imagePath}`;
+                          })()
+                        : undefined
+                      } 
+                    />
+                    <AvatarFallback>{getAvatarFallback(item.id)}</AvatarFallback>
+                  </Avatar>
                   {item.name}
                 </div>
               </TableCell>
