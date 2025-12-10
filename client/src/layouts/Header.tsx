@@ -65,11 +65,7 @@ export default function Header() {
         <div className="my-8.5 px-8">
           <Link to="/mypage">
             <div className="relative mx-auto mb-2.5 aspect-square w-25 overflow-hidden rounded-[50%]">
-              <img
-                src={profileImageUrl}
-                alt="프로필 이미지"
-                className="h-full w-full object-cover"
-              />
+              <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
             </div>
           </Link>
           <div className="my-2.5 text-center text-sm text-gray-700">
@@ -158,7 +154,7 @@ export default function Header() {
           </li>
           <li>
             <NavLink
-              to="/manager"
+              to="/manager/working"
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',

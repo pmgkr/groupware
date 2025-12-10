@@ -6,17 +6,18 @@ import { useUser } from '@/hooks/useUser';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
+
 import { Button } from '@components/ui/button';
 import { Checkbox } from '@components/ui/checkbox';
 import { AppPagination } from '@/components/ui/AppPagination';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
-import { Dialog, DialogClose, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { MultiSelect, type MultiSelectOption } from '@components/multiselect/multi-select';
+import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { type MultiSelectOption } from '@components/multiselect/multi-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Excel } from '@/assets/images/icons';
-import { RefreshCw, OctagonAlert } from 'lucide-react';
+import { OctagonAlert } from 'lucide-react';
 
 import { getExpenseLists, type ExpenseListItem, getExpenseType, deleteTempExpense, claimTempExpense } from '@/api';
+import { ExpenseListFilter } from './_components/ExpenseListFilter';
 import { ExpenseRow } from './_components/ExpenseListRow';
 
 export default function ExpenseList() {
@@ -243,30 +244,6 @@ export default function ExpenseList() {
     });
   };
 
-  // 필터 옵션 정의
-  const statusOptions: MultiSelectOption[] = [
-    { label: '임시저장', value: 'Saved' },
-    { label: '승인대기', value: 'Claimed' },
-    { label: '승인완료', value: 'Confirmed' },
-    { label: '지급대기', value: 'Approved' },
-    { label: '지급완료', value: 'Completed' },
-    { label: '반려됨', value: 'Rejected' },
-  ];
-
-  const proofMethod: MultiSelectOption[] = [
-    { label: 'PMG', value: 'PMG' },
-    { label: 'MCS', value: 'MCS' },
-    { label: '개인카드', value: '개인카드' },
-    { label: '세금계산서', value: '세금계산서' },
-    { label: '현금영수증', value: '현금영수증' },
-    { label: '기타', value: '기타' },
-  ];
-
-  const proofStatusOptions: MultiSelectOption[] = [
-    { label: '제출', value: 'Y' },
-    { label: '미제출', value: 'N' },
-  ];
-
   // 비용 유형 가져오기
   useEffect(() => {
     (async () => {
@@ -323,126 +300,23 @@ export default function ExpenseList() {
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center">
-          <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
-            <Button
-              onClick={() => handleTabChange('all')}
-              className={`h-8 w-18 rounded-sm p-0 text-sm ${
-                activeTab === 'all'
-                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-              }`}>
-              전체
-            </Button>
-            <Button
-              onClick={() => handleTabChange('saved')}
-              className={`h-8 w-18 rounded-sm p-0 text-sm ${
-                activeTab === 'saved'
-                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-              }`}>
-              임시 저장
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-x-2 before:mr-3 before:ml-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
-            {/* 연도 단일 선택 */}
-            <Select value={selectedYear} onValueChange={(v) => handleFilterChange(setSelectedYear, v)}>
-              <SelectTrigger size="sm">
-                <SelectValue placeholder="연도 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem size="sm" value="2025">
-                    2025
-                  </SelectItem>
-                  <SelectItem size="sm" value="2024">
-                    2024
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
-            {/* 용도 다중 선택 */}
-            <MultiSelect
-              className="max-w-[80px] min-w-auto!"
-              size="sm"
-              placeholder="비용 용도"
-              options={typeOptions}
-              onValueChange={(v) => handleFilterChange(setSelectedType, v)}
-              maxCount={0}
-              hideSelectAll={true}
-              autoSize={true}
-              closeOnSelect={false}
-              searchable={false}
-              simpleSelect={true}
-            />
-
-            {/* 증빙수단 다중 선택 */}
-            <MultiSelect
-              className="max-w-[80px] min-w-auto!"
-              size="sm"
-              placeholder="증빙 수단"
-              options={proofMethod}
-              onValueChange={(v) => handleFilterChange(setSelectedProof, v)}
-              maxCount={0}
-              hideSelectAll={true}
-              autoSize={true}
-              closeOnSelect={false}
-              searchable={false}
-              simpleSelect={true}
-            />
-
-            {/* 증빙상태 다중 선택 */}
-            <MultiSelect
-              className="max-w-[80px] min-w-auto!"
-              size="sm"
-              placeholder="증빙 상태"
-              options={proofStatusOptions}
-              onValueChange={(v) => handleFilterChange(setSelectedProofStatus, v)}
-              maxCount={0}
-              hideSelectAll={true}
-              autoSize={true}
-              closeOnSelect={false}
-              searchable={false}
-              simpleSelect={true}
-            />
-
-            {/* 상태 다중 선택 */}
-            <MultiSelect
-              className="max-w-[80px] min-w-auto!"
-              size="sm"
-              placeholder="비용 상태"
-              options={statusOptions}
-              onValueChange={(v) => handleFilterChange(setSelectedStatus, v)}
-              maxCount={0}
-              hideSelectAll={true}
-              autoSize={true}
-              closeOnSelect={false}
-              searchable={false}
-              simpleSelect={true}
-            />
-
-            <Button
-              type="button"
-              variant="svgIcon"
-              size="icon"
-              className="hover:text-primary-blue-500 size-6 text-gray-600 transition-transform hover:rotate-45"
-              onClick={() => handleTabChange(activeTab)}>
-              <RefreshCw />
-            </Button>
-          </div>
-        </div>
-
-        <Button
-          size="sm"
-          onClick={() => {
-            setRegisterDialog(true);
-          }}>
-          비용 작성하기
-        </Button>
-      </div>
+      <ExpenseListFilter
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        selectedYear={selectedYear}
+        selectedType={selectedType}
+        selectedStatus={selectedStatus}
+        selectedProof={selectedProof}
+        selectedProofStatus={selectedProofStatus}
+        typeOptions={typeOptions}
+        onYearChange={(v) => handleFilterChange(setSelectedYear, v)}
+        onTypeChange={(v) => handleFilterChange(setSelectedType, v)}
+        onStatusChange={(v) => handleFilterChange(setSelectedStatus, v)}
+        onProofChange={(v) => handleFilterChange(setSelectedProof, v)}
+        onProofStatusChange={(v) => handleFilterChange(setSelectedProofStatus, v)}
+        onRefresh={() => handleTabChange(activeTab)}
+        onOpenRegisterDialog={() => setRegisterDialog(true)}
+      />
 
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>

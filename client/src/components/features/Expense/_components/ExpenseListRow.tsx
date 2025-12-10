@@ -13,9 +13,10 @@ type ExpenseRowProps = {
   activeTab: 'all' | 'saved';
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
+  manager?: boolean;
 };
 
-export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRowProps) => {
+export const ExpenseRow = memo(({ item, activeTab, checked, onCheck, manager }: ExpenseRowProps) => {
   const statusMap = {
     Saved: <Badge variant="grayish">임시저장</Badge>,
     Claimed: <Badge variant="secondary">승인대기</Badge>,
