@@ -1,8 +1,16 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams, useOutletContext } from 'react-router';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
-import { getInvoiceList, type InvoiceListItem, type InvoiceListParams } from '@/api';
+import {
+  getInvoiceList,
+  getInvoiceDetail,
+  type InvoiceListItem,
+  type InvoiceListParams,
+  type InvoiceDetailDTO,
+  type InvoiceDetailAttachment,
+} from '@/api';
 import InvoiceCreateForm from './_components/InvoiceCreate';
+import { InvoicePreviewDialog } from './_components/InvoiceDetail';
 import { formatKST, formatAmount } from '@/utils';
 
 import { Input } from '@/components/ui/input';
@@ -13,7 +21,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
 import { Dialog, DialogClose, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
-import { RefreshCw } from 'lucide-react';
+import { X } from 'lucide-react';
+
+export function mapInvoiceDetail(raw: any): InvoiceDetailDTO {
+  const items = raw.items ?? [];
+
+  const attachment: InvoiceDetailAttachment[] = Object.entries(raw.attachment ?? {})
+    .filter(([key]) => /^\d+$/.test(key))
+    .map(([_, value]) => value as InvoiceDetailAttachment);
+
+  return {
+    header: raw.header,
+    items,
+    attachment,
+  };
+}
 
 export default function ProjectInvoice() {
   const navigate = useNavigate();
@@ -22,6 +44,7 @@ export default function ProjectInvoice() {
 
   // 상단 필터용 state
   const [registerDialog, setRegisterDialog] = useState(false); // Dialog용 State
+  const [detailDialog, setDetailDialog] = useState(false); // 인보이스 상세 Dialog State
   const [searchInput, setSearchInput] = useState(''); // 사용자가 입력중인 Input 저장값
   const [searchQuery, setSearchQuery] = useState(''); // 실제 검색 Input 저장값
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
@@ -34,6 +57,7 @@ export default function ProjectInvoice() {
 
   // API 데이터 state
   const [invoiceList, setInvoiceList] = useState<InvoiceListItem[]>([]);
+  const [invoiceDetail, setInvoiceDetail] = useState<InvoiceDetailDTO | null>(null);
   const [loading, setLoading] = useState(true);
 
   // 페이지네이션
@@ -88,7 +112,7 @@ export default function ProjectInvoice() {
   // 파라미터 초기화
   const resetAllFilters = () => {
     setPage(1);
-    setSelectedStatus([]);
+    setSearchInput('');
     setSearchQuery('');
 
     statusRef.current?.clear();
@@ -98,6 +122,20 @@ export default function ProjectInvoice() {
   const handleCreateSuccess = () => {
     fetchInvoices();
     setRegisterDialog(false);
+  };
+
+  const handleDetailOpen = async (seq: number) => {
+    try {
+      const res = await getInvoiceDetail(seq);
+
+      if (res.success) {
+        const detail = mapInvoiceDetail(res.data);
+        setInvoiceDetail(detail);
+        setDetailDialog(true);
+      }
+    } catch (err) {
+      console.error('❌ 인보이스 상세 불러오기 실패:', err);
+    }
   };
 
   return (
@@ -117,30 +155,32 @@ export default function ProjectInvoice() {
             simpleSelect={true}
             hideSelectAll={true}
           />
-
-          <Button
-            type="button"
-            variant="svgIcon"
-            size="icon"
-            className="hover:text-primary-blue-500 size-6 text-gray-600"
-            onClick={() => resetAllFilters()}>
-            <RefreshCw />
-          </Button>
         </div>
 
         <div className="flex gap-x-2">
-          <Input
-            className="max-w-42"
-            size="sm"
-            placeholder="검색어 입력"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                setSearchQuery(searchInput);
-              }
-            }}
-          />
+          <div className="relative">
+            <Input
+              className="max-w-42 pr-6"
+              size="sm"
+              placeholder="검색어 입력"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setSearchQuery(searchInput);
+                }
+              }}
+            />
+            {searchInput && (
+              <Button
+                type="button"
+                variant="svgIcon"
+                className="absolute top-0 right-0 h-full w-6 px-0 text-gray-500"
+                onClick={resetAllFilters}>
+                <X className="size-3.5" />
+              </Button>
+            )}
+          </div>
 
           <Button size="sm" onClick={() => setRegisterDialog(true)}>
             인보이스 작성
@@ -153,7 +193,7 @@ export default function ProjectInvoice() {
             <TableHead className="w-[8%]">인보이스 #</TableHead>
             <TableHead className="px-4!">인보이스 제목</TableHead>
             <TableHead className="w-[8%]">공급가액</TableHead>
-            <TableHead className="w-[8%]">부가세</TableHead>
+            <TableHead className="w-[8%]">세금</TableHead>
             <TableHead className="w-[9%]">합계</TableHead>
             <TableHead className="w-[10%] px-4!">작성자</TableHead>
             <TableHead className="w-[6%]">상태</TableHead>
@@ -165,11 +205,16 @@ export default function ProjectInvoice() {
             invoiceList.map((item, idx) => (
               <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]" key={item.seq}>
                 <TableCell className="whitespace-nowrap">
-                  <button type="button" className="cursor-pointer rounded-[4px] border bg-white px-2 py-1 text-sm leading-[1.3]">
+                  <button
+                    type="button"
+                    className="cursor-pointer rounded-[4px] border bg-white px-2 py-1 text-sm leading-[1.3]"
+                    onClick={() => handleDetailOpen(item.seq)}>
                     {item.invoice_id}
                   </button>
                 </TableCell>
-                <TableCell className="cursor-pointer px-4! text-left hover:underline">{item.invoice_title}</TableCell>
+                <TableCell className="cursor-pointer px-4! text-left hover:underline" onClick={() => handleDetailOpen(item.seq)}>
+                  {item.invoice_title}
+                </TableCell>
                 <TableCell className="text-right">{formatAmount(item.invoice_amount)}</TableCell>
                 <TableCell className="text-right">{formatAmount(item.invoice_tax)}</TableCell>
                 <TableCell className="text-right">{formatAmount(item.invoice_total)}</TableCell>
@@ -205,6 +250,9 @@ export default function ProjectInvoice() {
           <InvoiceCreateForm onClose={() => setRegisterDialog(false)} onSuccess={handleCreateSuccess} />
         </DialogContent>
       </Dialog>
+
+      {/* ---------------- 인보이스 상세 다이얼로그 ----------------- */}
+      <InvoicePreviewDialog open={detailDialog} onClose={() => setDetailDialog(false)} detail={invoiceDetail} />
     </>
   );
 }
