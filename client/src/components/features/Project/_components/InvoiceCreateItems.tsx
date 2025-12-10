@@ -29,7 +29,7 @@ export default function InvoiceItemsForm({ control, watch, setValue }: Props) {
     const raw = e.target.value.replace(/,/g, '');
     if (!/^\d*$/.test(raw)) return; // 숫자만 허용
 
-    setValue(`items.${idx}.il_amount`, raw);
+    setValue(`items.${idx}.ii_amount`, raw);
   };
 
   // 수량 변경 처리
@@ -37,7 +37,7 @@ export default function InvoiceItemsForm({ control, watch, setValue }: Props) {
     const raw = e.target.value.replace(/,/g, '');
     if (!/^\d*$/.test(raw)) return;
 
-    setValue(`items.${idx}.il_qty`, raw);
+    setValue(`items.${idx}.ii_qty`, raw);
   };
 
   // 계산 안전 처리 (공백 → 0)
@@ -48,14 +48,14 @@ export default function InvoiceItemsForm({ control, watch, setValue }: Props) {
   };
 
   const subtotal = items.reduce((sum, row) => {
-    return sum + parseNum(row.il_amount) * parseNum(row.il_qty);
+    return sum + parseNum(row.ii_amount) * parseNum(row.ii_qty);
   }, 0);
 
   const grandTotal = Math.round(subtotal + subtotal * tax);
 
   // 항목 추가 버튼 클릭 시
   const handleAddRow = useCallback(() => {
-    append({ il_title: '', il_amount: '', il_qty: '' });
+    append({ ii_title: '', ii_amount: '', ii_qty: '' });
   }, [append]);
 
   return (
@@ -75,12 +75,12 @@ export default function InvoiceItemsForm({ control, watch, setValue }: Props) {
               key={field.id}
               className="hover:bg-muted/15 [&_input]:text-[13px] [&_input]:placeholder:text-[13px] [&_td]:px-2 [&_td]:text-[13px]">
               <TableCell>
-                <Input {...control.register(`items.${idx}.il_title`)} placeholder="항목명" className="h-9" />
+                <Input {...control.register(`items.${idx}.ii_title`)} placeholder="항목명" className="h-9" />
               </TableCell>
               <TableCell>
                 <Input
                   inputMode="numeric"
-                  value={items[idx]?.il_amount === '' ? '' : formatAmount(parseNum(items[idx]?.il_amount))}
+                  value={items[idx]?.ii_amount === '' ? '' : formatAmount(parseNum(items[idx]?.ii_amount))}
                   onChange={(e) => handleAmountChange(e, idx)}
                   className="h-9 text-right"
                   placeholder="단가"
@@ -89,7 +89,7 @@ export default function InvoiceItemsForm({ control, watch, setValue }: Props) {
               <TableCell>
                 <Input
                   inputMode="numeric"
-                  value={items[idx]?.il_qty === '' ? '' : formatAmount(parseNum(items[idx]?.il_qty))}
+                  value={items[idx]?.ii_qty === '' ? '' : formatAmount(parseNum(items[idx]?.ii_qty))}
                   onChange={(e) => handleQtyChange(e, idx)}
                   className="h-9 text-right"
                   placeholder="수량"

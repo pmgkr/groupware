@@ -93,15 +93,29 @@ export default function InvoiceInfoForm({ control, watch, setValue, formatDate }
         )}
       />
 
+      {/* 담당자 이메일 */}
+      <FormField
+        control={control}
+        name="contact_email"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="gap-.5">
+              담당자 이메일<span className="text-primary-blue-500">*</span>
+            </FormLabel>
+            <FormControl>
+              <Input placeholder="email@example.com" {...field} value={field.value ?? ''} />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+
       {/* 담당자 연락처 */}
       <FormField
         control={control}
         name="contact_tel"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="gap-.5">
-              담당자 연락처<span className="text-primary-blue-500">*</span>
-            </FormLabel>
+            <FormLabel>담당자 연락처</FormLabel>
             <FormControl>
               <Input
                 placeholder="010-0000-0000"
@@ -116,20 +130,6 @@ export default function InvoiceInfoForm({ control, watch, setValue, formatDate }
                   field.onChange(value);
                 }}
               />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-
-      {/* 담당자 이메일 */}
-      <FormField
-        control={control}
-        name="contact_email"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>담당자 이메일</FormLabel>
-            <FormControl>
-              <Input placeholder="email@example.com" {...field} value={field.value ?? ''} />
             </FormControl>
           </FormItem>
         )}
