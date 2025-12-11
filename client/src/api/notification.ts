@@ -80,4 +80,15 @@ export const notificationApi = {
     });
     return response;
   },
+
+  /**
+   * 알림 삭제 처리
+   * @param noti_id - 알림 ID 배열
+   */
+  deleteNotification: async (noti_id: string): Promise<{ ok: boolean; deletedCount: number }> => {
+    const response = await http<{ ok: boolean; deletedCount: number }>(`/user/common/notification/remove?noti_id=${noti_id}`, {
+      method: 'GET',
+    });
+    return response;
+  },
 };

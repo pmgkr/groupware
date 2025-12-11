@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { Button } from '@components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@components/ui/avatar';
@@ -18,47 +19,64 @@ import 'dayjs/locale/ko';
 dayjs.extend(relativeTime);
 dayjs.locale('ko');
 
-// 상대 시간 포맷팅 함수 (예: "10일 5시간 3분 전")
+// 상대 시간 포맷팅 함수 (n일 전 or n시간 전 or n분 전)
 const formatRelativeTime = (dateString?: string): string => {
-  if (!dateString) {
-    return '';
-  }
+  if (!dateString) return '';
 
   const targetDate = dayjs(dateString);
-
-  // 날짜가 유효한지 확인
-  if (!targetDate.isValid()) {
-    return '';
-  }
+  if (!targetDate.isValid()) return '';
 
   const now = dayjs();
 
-  // 미래 날짜인 경우 처리
-  if (targetDate.isAfter(now)) {
+  // 미래 시각 → 방금 전 처리
+  if (targetDate.isAfter(now)) return '방금 전';
+
+  const diffMinutes = now.diff(targetDate, 'minute'); // 전체 분 차이
+  const diffHours = now.diff(targetDate, 'hour'); // 전체 시간 차이
+  const diffDays = now.diff(targetDate, 'day'); // 전체 일 차이
+
+  // 0분 이하 → 방금 전
+  if (diffMinutes <= 0) {
     return '방금 전';
   }
 
-  const days = now.diff(targetDate, 'day');
-  const hours = now.diff(targetDate, 'hour') % 24;
-  const minutes = now.diff(targetDate, 'minute') % 60;
-
-  const parts: string[] = [];
-
-  if (days > 0) {
-    parts.push(`${days}일`);
-  }
-  if (hours > 0) {
-    parts.push(`${hours}시간`);
-  }
-  if (minutes > 0 || parts.length === 0) {
-    parts.push(`${minutes}분`);
+  // 1시간 미만 → 분 단위 표시
+  if (diffMinutes < 60) {
+    return `${diffMinutes}분 전`;
   }
 
-  return parts.length > 0 ? `${parts.join(' ')} 전` : '방금 전';
+  // 24시간 미만 → 시간 단위 표시
+  if (diffHours < 24) {
+    return `${diffHours}시간 전`;
+  }
+
+  // 24시간 이상 → 일 단위 표시
+  return `${diffDays}일 전`;
 };
+
+function formatNotiMessage(msg: string) {
+  return msg.split(/(승인|반려)/g).map((part, i) => {
+    if (part === '승인') {
+      return (
+        <span key={i} className="text-green-600">
+          승인
+        </span>
+      );
+    }
+    if (part === '반려') {
+      return (
+        <span key={i} className="text-destructive">
+          반려
+        </span>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
 
 export function Notification() {
   const { user } = useAuth();
+  const { addDialog } = useAppDialog();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeTab, setActiveTab] = useState<string>('today');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -130,7 +148,7 @@ export function Notification() {
       } catch (error) {
         console.error('알림 조회 실패:', error);
       } finally {
-        setIsLoading(false);
+        setTimeout(() => setIsLoading(false), 150);
       }
     },
     [user]
@@ -166,9 +184,32 @@ export function Notification() {
     }
   };
 
+  const handleNotificationRemove = async () => {
+    addDialog({
+      title: '알림을 지우시겠습니까?',
+      message: `<span class="text-primary-blue-500 font-semibold">${notifications.length}</span>건의 알림이 삭제되며, 삭제된 알림은 복구할 수 없습니다.`,
+      confirmText: '확인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          const noti_ids = notifications.map((noti) => noti.noti_id).join(',');
+          const res = await notificationApi.deleteNotification(noti_ids);
+
+          if (res.ok) {
+            setNotifications([]); // 알림 배열 초기화
+            await fetchNotifications(activeTab === 'today' ? 'today' : 'recent'); // 리스트 다시 조회
+          }
+        } catch (error) {
+          console.error('알림 삭제 처리 실패:', error);
+        }
+      },
+    });
+  };
+
   // 알림 아이템 렌더링 함수
   const renderNotificationItem = (noti: Notification) => {
     const targetUser = userProfiles.get(noti.noti_target);
+
     return (
       <li
         key={noti.noti_id}
@@ -190,13 +231,19 @@ export function Notification() {
           </Avatar>
         )}
         <div className="w-66 flex-1">
-          <p className="overflow-hidden text-base leading-6">{noti.noti_message}</p>
-          <p className="overflow-hidden text-sm overflow-ellipsis whitespace-nowrap">
-            <span>{targetUser?.user_name && <strong>{targetUser.user_name}</strong>} </span>
+          <p className="overflow-hidden text-base leading-6">
+            {targetUser?.user_name && (
+              <>
+                <strong>{targetUser.user_name}</strong> 님이
+              </>
+            )}{' '}
+            {formatNotiMessage(noti.noti_message)}
+          </p>
+          <p className="overflow-hidden text-sm overflow-ellipsis whitespace-nowrap text-gray-500">
             {noti.noti_created_at && (
               <>
-                <span className="text-gray-500">{formatRelativeTime(noti.noti_created_at)}</span>
-                {noti.noti_title && <span className="text-gray-500"> · </span>}
+                <span>{formatRelativeTime(noti.noti_created_at)}</span>
+                {noti.noti_title && <span> · </span>}
               </>
             )}
             {noti.noti_title && <span>{noti.noti_title}</span>}
@@ -243,14 +290,7 @@ export function Notification() {
           </div>
 
           <SheetFooter>
-            <Button
-              type="button"
-              size="full"
-              onClick={() => {
-                // TODO: 전체 알림 지우기 API 구현 시 사용
-                // 현재는 API에 해당 기능이 없으므로 주석 처리
-                console.log('전체 알림 지우기 기능은 아직 구현되지 않았습니다.');
-              }}>
+            <Button type="button" size="full" onClick={handleNotificationRemove}>
               전체 알림 지우기
             </Button>
           </SheetFooter>

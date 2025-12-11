@@ -130,8 +130,8 @@ export default function NexpenseView() {
               user_id: data.header.user_id,
               user_name: data.header.user_nm,
               noti_target: user_id!,
-              noti_title: '비용 승인 완료',
-              noti_message: `비용 승인 완료`,
+              noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
+              noti_message: `청구한 비용을 승인했습니다.`,
               noti_type: 'expense',
               noti_url: `/expense/${data.header.exp_id}`,
             });
@@ -167,6 +167,16 @@ export default function NexpenseView() {
       const res = await rejectExpense(payload);
 
       if (res.status === 'Rejected') {
+        await notificationApi.registerNotification({
+          user_id: data.header.user_id,
+          user_name: data.header.user_nm,
+          noti_target: user_id!,
+          noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
+          noti_message: `청구한 비용을 반려했습니다.`,
+          noti_type: 'expense',
+          noti_url: `/expense/${data.header.exp_id}`,
+        });
+
         addAlert({
           title: '비용 반려 완료',
           message: `<p>비용 반려 처리가 완료되었습니다.</p>`,
