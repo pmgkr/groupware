@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -6,25 +6,14 @@ import { Button } from '@/components/ui/button';
 import { SettingsIcon, InfoIcon } from 'lucide-react';
 import GrantDialog from './grantDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { adminVacationApi, type VacationItem, type VacationLogItem } from '@/api/admin/vacation';
+import { adminVacationApi, type VacationItem } from '@/api/admin/vacation';
 import { getTeams } from '@/api/admin/teams';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getAvatarFallback } from '@/utils';
 
 /* ===========================================================
-    ★★ 계산식 헬퍼 사용 ★★
-=========================================================== */
-import { calcAllVacation } from "@/utils/vacationHelper";   
-
-/* ===========================================================
     타입 정의
 =========================================================== */
-
-type VacationLog = {
-  v_type: string;
-  v_count: number;
-  [key: string]: any;
-};
 
 type Team = {
   team_id: number;
@@ -38,12 +27,10 @@ type DisplayDataItem = {
   name: string;
   hireDate: string;
   CountFromHireDate: string;
-  currentYearVacation: { plusDays: number; minusDays: number };
-  carryOverVacation: { plusDays: number; minusDays: number };
-  specialVacation: { plusDays: number; minusDays: number };
-  officialVacation: { plusDays: number; minusDays: number };
-  totalVacationDays: { plusDays: number; minusDays: number };
-  availableVacationDays: number;
+  va_current: string;
+  va_carryover: string;
+  va_comp: string;
+  va_long: string;
 };
 
 interface UserListProps {
@@ -103,15 +90,25 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
   }, []);
 
   /* ===========================================================
-      휴가 목록 + 로그 병렬 로딩
+      휴가 목록 로딩
   ========================================================== */
-  const loadVacationList = async () => {
+  const loadingRef = useRef(false);
+  
+  // teamIds와 userIds를 문자열로 변환하여 안정적인 의존성 생성 (원본 배열 변경 방지)
+  const teamIdsKey = useMemo(() => [...teamIds].sort((a, b) => a - b).join(','), [teamIds]);
+  const userIdsKey = useMemo(() => [...userIds].sort().join(','), [userIds]);
+  
+  const loadVacationList = useCallback(async () => {
+    // 이미 로딩 중이면 중복 호출 방지
+    if (loadingRef.current) return;
+    
+    loadingRef.current = true;
     setLoading(true);
 
     try {
       const currentYear = year || new Date().getFullYear();
       
-      // 팀 목록이 없으면 먼저 로드
+      // 팀 목록 가져오기 (teams는 클로저로 최신 값 참조)
       let teamsData = teams;
       if (teamsData.length === 0) {
         try {
@@ -120,15 +117,37 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
             team_id: t.team_id,
             team_name: t.team_name
           }));
-          setTeams(teamsData);
+          // teams가 비어있을 때만 업데이트 (이미 로드된 경우 재호출 방지)
+          setTeams(prevTeams => {
+            if (prevTeams.length > 0) return prevTeams;
+            return teamsData;
+          });
         } catch (e) {
           console.error("팀 목록 로드 실패:", e);
         }
       }
 
-      const response = await adminVacationApi.getVacationList(currentYear);
+      // 모든 데이터를 가져오기 위해 size=100으로 요청
+      const response = await adminVacationApi.getVacationList(currentYear, undefined, undefined, 100);
 
       let filteredItems = response.rows;
+      
+      // 전체 데이터가 100개를 초과하는 경우 추가 페이지 로드
+      if (response.total > 100) {
+        const totalPages = Math.ceil(response.total / 100);
+        const additionalRequests = [];
+        
+        for (let page = 2; page <= totalPages; page++) {
+          additionalRequests.push(
+            adminVacationApi.getVacationList(currentYear, undefined, page, 100)
+          );
+        }
+        
+        const additionalResponses = await Promise.all(additionalRequests);
+        additionalResponses.forEach(res => {
+          filteredItems = [...filteredItems, ...res.rows];
+        });
+      }
 
       if (teamIds.length > 0) {
         filteredItems = filteredItems.filter(i => teamIds.includes(i.team_id));
@@ -137,33 +156,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
         filteredItems = filteredItems.filter(i => userIds.includes(i.user_id));
       }
 
-      // 모든 유저 로그 병렬 호출
-      const detailResults = await Promise.allSettled(
-        filteredItems.map(item =>
-          adminVacationApi.getVacationInfo(item.user_id, currentYear)
-        )
-      );
-
-      const converted = filteredItems.map((item, idx) => {
-        const result = detailResults[idx];
-        
-        // 성공한 경우에만 데이터 사용, 실패한 경우 빈 배열
-        let detail = null;
-        if (result.status === 'fulfilled') {
-          detail = result.value;
-        }
-
-        const logs: VacationLog[] = (detail?.body ?? []).map((log: VacationLogItem) => ({
-          ...log,
-          v_count: Number(log.v_count),
-        }));
-
-        console.log("=== RAW detail logs BEFORE reversing ===", detail?.body);
-        console.log("=== logs AFTER reversing ===", logs);
-
-        /* ★★ 핵심 계산식 — 헬퍼로 통합 ★★ */
-        const calc = calcAllVacation(logs);
-
+      const converted = filteredItems.map((item) => {
         const team = teamsData.find(t => t.team_id === item.team_id);
 
         // 입사일 계산
@@ -190,33 +183,10 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
           name: item.user_name,
           hireDate: formattedHireDate,
           CountFromHireDate: countFromHireDate,
-
-          currentYearVacation: {
-            plusDays: calc.current.plusDays,
-            minusDays: calc.current.minusDays
-          },
-
-          carryOverVacation: {
-            plusDays: calc.carry.plusDays,
-            minusDays: calc.carry.minusDays
-          },
-
-          specialVacation: {
-            plusDays: calc.special.plusDays,
-            minusDays: calc.special.minusDays
-          },
-
-          officialVacation: {
-            plusDays: calc.official.plusDays,
-            minusDays: calc.official.minusDays
-          },
-
-          totalVacationDays: {
-            plusDays: calc.total.plusDays,
-            minusDays: calc.total.minusDays
-          },
-
-          availableVacationDays: calc.available
+          va_current: item.va_current,
+          va_carryover: item.va_carryover,
+          va_comp: item.va_comp,
+          va_long: item.va_long
         };
       });
 
@@ -226,14 +196,15 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
       setDisplayData([]);
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
-  };
+  }, [year, teamIdsKey, userIdsKey]);
 
   useEffect(() => {
-    if (teams.length > 0 || year || teamIds.length > 0 || userIds.length > 0) {
-      loadVacationList();
-    }
-  }, [year, teamIds, userIds, isDetailPage, teams]);
+    // 초기 마운트 시 또는 의존성이 변경될 때만 호출
+    loadVacationList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, teamIdsKey, userIdsKey]);
 
   /* ===========================================================
       렌더링
@@ -281,9 +252,6 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
               </Tooltip>
             </div>
           </TableHead>
-
-          <TableHead className="w-[10%] text-center">누적 휴가일수</TableHead>
-          <TableHead className="w-[10%] text-center">총 잔여 휴가일수</TableHead>
           <TableHead className="w-[10%] text-center">휴가관리</TableHead>
         </TableRow>
       </TableHeader>
@@ -291,11 +259,11 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
       <TableBody>
         {loading ? (
           <TableRow>
-            <TableCell colSpan={10} className="text-center">로딩 중…</TableCell>
+            <TableCell colSpan={8} className="text-center">로딩 중…</TableCell>
           </TableRow>
         ) : displayData.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={10} className="text-center">데이터 없음</TableCell>
+            <TableCell colSpan={8} className="text-center">데이터 없음</TableCell>
           </TableRow>
         ) : (
           displayData.map(item => (
@@ -336,51 +304,24 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
 
               {/* 기본연차 */}
               <TableCell className="text-center">
-                <div className="flex flex-col items-center gap-1">
-                  <Badge variant="secondary" size="table">
-                    {item.currentYearVacation.plusDays}일
-                  </Badge>
-                  <Badge variant="grayish" size="table">
-                    {item.currentYearVacation.minusDays}일
-                  </Badge>
-                </div>
+                <Badge variant="secondary" size="table">
+                  {item.va_current}일
+                </Badge>
               </TableCell>
 
               {/* 이월 */}
               <TableCell className="text-center">
-                <div className="flex flex-col items-center gap-1">
-                  <Badge variant="secondary" size="table">{item.carryOverVacation.plusDays}일</Badge>
-                  <Badge variant="grayish" size="table">{item.carryOverVacation.minusDays}일</Badge>
-                </div>
+                <Badge variant="secondary" size="table">{item.va_carryover}일</Badge>
               </TableCell>
 
               {/* 특별 */}
               <TableCell className="text-center">
-                <div className="flex flex-col items-center gap-1">
-                  <Badge variant="secondary" size="table">{item.specialVacation.plusDays}일</Badge>
-                  <Badge variant="grayish" size="table">{item.specialVacation.minusDays}일</Badge>
-                </div>
+                <Badge variant="secondary" size="table">{item.va_comp}일</Badge>
               </TableCell>
 
-              {/* 공가 */}
+              {/* 공가 (근속휴가) */}
               <TableCell className="text-center">
-                <div className="flex flex-col items-center gap-1">
-                  <Badge variant="secondary" size="table">{item.officialVacation.plusDays}일</Badge>
-                  <Badge variant="grayish" size="table">{item.officialVacation.minusDays}일</Badge>
-                </div>
-              </TableCell>
-
-              {/* 누적 */}
-              <TableCell className="text-center">
-                <div className="flex flex-col items-center gap-1">
-                  <Badge variant="secondary" size="table">{item.totalVacationDays.plusDays}일</Badge>
-                  <Badge variant="grayish" size="table">{item.totalVacationDays.minusDays}일</Badge>
-                </div>
-              </TableCell>
-
-              {/* 잔여 */}
-              <TableCell className="text-center">
-                  <Badge variant="default" size="table">{item.availableVacationDays}일</Badge>
+                <Badge variant="secondary" size="table">{item.va_long}일</Badge>
               </TableCell>
 
               <TableCell className="text-center">

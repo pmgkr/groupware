@@ -28,15 +28,9 @@ export default function VacationDetail() {
   const [userTeamId, setUserTeamId] = useState<number | null>(null);
   const [userName, setUserName] = useState<string>('');
 
-  // id가 변경되면 상태 초기화 및 selectedUserIds 업데이트
+  // id가 변경되면 상태 초기화
   useEffect(() => {
-    if (id) {
-      setSelectedUserIds([id]);
-      // 팀 정보는 API 호출 후 설정되므로 여기서는 초기화만
-      setSelectedTeamIds([]);
-      setUserTeamId(null);
-      setUserName('');
-    } else {
+    if (!id) {
       setSelectedUserIds([]);
       setSelectedTeamIds([]);
       setUserTeamId(null);
@@ -53,13 +47,21 @@ export default function VacationDetail() {
         const currentYear = filters.year ? parseInt(filters.year) : new Date().getFullYear();
         const response = await adminVacationApi.getVacationInfo(id, currentYear, 1, 20);
         
-        // 유저 ID 설정 (확실히 설정)
-        setSelectedUserIds([response.header.user_id]);
+        // 유저 ID 설정 (같은 값이면 업데이트하지 않음)
+        setSelectedUserIds(prev => {
+          const newIds = [response.header.user_id];
+          if (prev.length === newIds.length && prev[0] === newIds[0]) return prev;
+          return newIds;
+        });
         setUserName(response.header.user_name);
         
-        // 팀 ID 설정
+        // 팀 ID 설정 (같은 값이면 업데이트하지 않음)
         if (response.header.team_id) {
-          setSelectedTeamIds([response.header.team_id]);
+          setSelectedTeamIds(prev => {
+            const newIds = [response.header.team_id];
+            if (prev.length === newIds.length && prev[0] === newIds[0]) return prev;
+            return newIds;
+          });
           setUserTeamId(response.header.team_id);
         }
       } catch (error) {
