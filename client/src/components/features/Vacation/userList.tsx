@@ -26,11 +26,11 @@ type DisplayDataItem = {
   department: string;
   name: string;
   hireDate: string;
-  CountFromHireDate: string;
   va_current: string;
   va_carryover: string;
   va_comp: string;
   va_long: string;
+  daycount: number;
 };
 
 interface UserListProps {
@@ -159,17 +159,11 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
       const converted = filteredItems.map((item) => {
         const team = teamsData.find(t => t.team_id === item.team_id);
 
-        // 입사일 계산
+        // 입사일 포맷팅
         let formattedHireDate = "";
-        let countFromHireDate = "";
-
         if (item.hire_date) {
           const hire = new Date(item.hire_date);
-          const today = new Date();
-          const diff = Math.floor((today.getTime() - hire.getTime()) / 86400000);
-
           formattedHireDate = `${hire.getFullYear()}-${String(hire.getMonth() + 1).padStart(2, "0")}-${String(hire.getDate()).padStart(2, "0")}`;
-          countFromHireDate = `${diff}일`;
         }
 
         const profileImageName = item.profile_image && typeof item.profile_image === 'string' 
@@ -182,11 +176,11 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
           department: team?.team_name || "",
           name: item.user_name,
           hireDate: formattedHireDate,
-          CountFromHireDate: countFromHireDate,
           va_current: item.va_current,
           va_carryover: item.va_carryover,
           va_comp: item.va_comp,
-          va_long: item.va_long
+          va_long: item.va_long,
+          daycount: (item as any).daycount || 0
         };
       });
 
@@ -298,7 +292,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
               <TableCell className="text-center">
                 <div className="flex flex-col items-center">
                   <span>{item.hireDate}</span>
-                  <span className="text-xs text-gray-500">{item.CountFromHireDate}</span>
+                  <span className="text-xs text-gray-500">{item.daycount}일</span>
                 </div>
               </TableCell>
 

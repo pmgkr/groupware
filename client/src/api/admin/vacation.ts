@@ -30,8 +30,8 @@ export interface VacationItem {
     v_comp: number;  // 특별대휴 (숫자, 음수 가능)
     v_official: number; // 공가 (숫자, 음수 가능)
     v_long: number; // 근속휴가 (숫자, 음수 가능)
+    daycount: number; // 근무일
 }
-
 export interface VacationLogItem {
     idx: number;
     sch_id: number;
