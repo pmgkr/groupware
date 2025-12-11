@@ -1,6 +1,7 @@
 import { useNavigate, useParams, Link } from 'react-router';
 import { formatAmount } from '@/utils';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
@@ -20,6 +21,12 @@ import ExpenseViewEstRow from './_components/ExpenseViewEstRow';
 export default function ProjectExpenseView() {
   const { expId, projectId } = useParams();
   const navigate = useNavigate();
+
+  const formatDate = (d?: string | Date | null) => {
+    if (!d) return '';
+    const date = typeof d === 'string' ? new Date(d) : d;
+    return format(date, 'yyyy-MM-dd');
+  };
 
   /** -----------------------------------------
    *  핵심 매칭 로직 공유 훅
@@ -149,10 +156,10 @@ export default function ProjectExpenseView() {
 
           <TableColumn className="border-t-0 [&_div]:text-[13px]">
             <TableColumnHeader className="w-[12%]">
-              <TableColumnHeaderCell>작성자</TableColumnHeaderCell>
+              <TableColumnHeaderCell>비용 유형</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>
-              <TableColumnCell>{header.user_nm}</TableColumnCell>
+              <TableColumnCell>{header.el_type}</TableColumnCell>
             </TableColumnBody>
             <TableColumnHeader className="w-[12%]">
               <TableColumnHeaderCell>은행명</TableColumnHeaderCell>
@@ -167,6 +174,47 @@ export default function ProjectExpenseView() {
             </TableColumnHeader>
             <TableColumnBody>
               <TableColumnCell>{statusBadge}</TableColumnCell>
+            </TableColumnBody>
+          </TableColumn>
+          <TableColumn className="border-t-0 [&_div]:text-[13px]">
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>증빙 수단</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{header.el_method}</TableColumnCell>
+            </TableColumnBody>
+
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>계좌번호</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{header.bank_account}</TableColumnCell>
+            </TableColumnBody>
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>입금희망일</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{header.el_deposit ? formatDate(header.el_deposit) : <span>-</span>}</TableColumnCell>
+            </TableColumnBody>
+          </TableColumn>
+          <TableColumn className="border-t-0 [&_div]:text-[13px]">
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>작성자</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{header.user_nm}</TableColumnCell>
+            </TableColumnBody>
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>예금주</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{header.account_name}</TableColumnCell>
+            </TableColumnBody>
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>작성일</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>{formatDate(header.wdate)}</TableColumnCell>
             </TableColumnBody>
           </TableColumn>
           {header.remark && (
