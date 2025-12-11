@@ -73,8 +73,13 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
     navigate(`/admin/vacation/user/${userId}`);
   };
 
+  // 팀 목록 로드 여부 추적 ref
+  const teamsLoadedRef = useRef(false);
+  
   /* 팀 목록 로드 */
   useEffect(() => {
+    if (teamsLoadedRef.current) return;
+    
     const loadTeams = async () => {
       try {
         const teamList = await getTeams({});
@@ -82,6 +87,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
           team_id: t.team_id,
           team_name: t.team_name
         })));
+        teamsLoadedRef.current = true;
       } catch (e) {
         console.error("팀 목록 로드 실패:", e);
       }
@@ -110,7 +116,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
       
       // 팀 목록 가져오기 (teams는 클로저로 최신 값 참조)
       let teamsData = teams;
-      if (teamsData.length === 0) {
+      if (teamsData.length === 0 && !teamsLoadedRef.current) {
         try {
           const teamList = await getTeams({});
           teamsData = teamList.map((t) => ({
@@ -120,6 +126,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
           // teams가 비어있을 때만 업데이트 (이미 로드된 경우 재호출 방지)
           setTeams(prevTeams => {
             if (prevTeams.length > 0) return prevTeams;
+            teamsLoadedRef.current = true;
             return teamsData;
           });
         } catch (e) {
