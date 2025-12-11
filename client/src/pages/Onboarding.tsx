@@ -10,7 +10,10 @@ export default function Onboarding() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { email, onboardingToken } = (location.state as { email: string; onboardingToken: string }) || {};
+  const { email: stateEmail, onboardingToken: stateToken } = (location.state as { email: string; onboardingToken: string }) || {};
+
+  const email = stateEmail || sessionStorage.getItem('onboarding:email');
+  const onboardingToken = stateToken || sessionStorage.getItem('onboarding:token');
 
   // 데이터가 올바르게 전달되었는지 확인 (선택 사항)
   if (!email || !onboardingToken) {
