@@ -70,8 +70,16 @@ export async function getManagerExpenseMine(params: ExpenseListParams) {
   return res;
 }
 
-export async function confirmExpense(seq: number[]): Promise<{ ok: boolean }> {
-  const res = http<{ ok: boolean }>(`/user/nexpense/claim/`, { method: 'POST', body: JSON.stringify(seq) });
+// 매니저 > 일반 비용 승인하기
+export async function confirmExpense(payload: { seqs: number[] }): Promise<{ count: number; status: string }> {
+  const res = http<{ count: number; status: string }>(`/manager/nexpense/confirm/`, { method: 'PATCH', body: JSON.stringify(payload) });
+
+  return res;
+}
+
+// 매니저 > 일반 비용 반려처리
+export async function rejectExpense(payload: { seq: number; reason?: string }): Promise<{ seq: number; status: string }> {
+  const res = http<{ seq: number; status: string }>(`/manager/nexpense/reject/`, { method: 'PATCH', body: JSON.stringify(payload) });
 
   return res;
 }

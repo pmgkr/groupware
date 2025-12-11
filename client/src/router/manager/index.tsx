@@ -8,6 +8,8 @@ import Vacation from '@/pages/Manager/Vacation';
 import ManagerProposalList from '@/pages/Manager/Proposal/managerProposalList';
 import ManagerProposalView from '@/pages/Manager/Proposal/managerProposalView';
 
+import NexpenseView from '@components/features/Expense/ManagerExpenseView';
+
 export const managerRoutes: RouteObject = {
   path: 'manager',
   handle: {
@@ -28,7 +30,11 @@ export const managerRoutes: RouteObject = {
     { path: 'working', element: <Working /> },
     { path: 'overtime', element: <Overtime /> },
     { path: 'pexpense', element: <Pexpense /> },
-    { path: 'nexpense', element: <Nexpense /> },
+    {
+      path: 'nexpense',
+      element: <Nexpense />,
+    },
+    { path: 'nexpense/:expId', element: <NexpenseView /> },
     { path: 'vacation', element: <Vacation /> },
     { path: 'proposal', element: <ManagerProposalList /> }, // 레이아웃 (index.tsx)
     { path: 'proposal/view/:id', element: <ManagerProposalView /> }, // 상세 + 승인/반려

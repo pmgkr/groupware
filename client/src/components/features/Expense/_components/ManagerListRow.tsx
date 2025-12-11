@@ -1,6 +1,6 @@
 // src/components/features/Expense/_components/ExpensListeRow.tsx
 import { memo } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,13 +10,13 @@ import type { ExpenseListItem } from '@/api';
 
 type ExpenseRowProps = {
   item: ExpenseListItem;
-  activeTab: 'all' | 'claimed';
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
 };
 
-export const ManagerListRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRowProps) => {
+export const ManagerListRow = memo(({ item, checked, onCheck }: ExpenseRowProps) => {
   const { user_id } = useUser();
+  const { search } = useLocation();
 
   const statusMap = {
     Saved: (
@@ -50,14 +50,14 @@ export const ManagerListRow = memo(({ item, activeTab, checked, onCheck }: Expen
   return (
     <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]">
       <TableCell className="whitespace-nowrap">
-        <Link to={`/expense/${item.exp_id}`} target="_blank" className="rounded-[4px] border-1 bg-white p-1 text-sm">
+        <Link to={`/manager/nexpense/${item.exp_id}${search}`} className="rounded-[4px] border-1 bg-white p-1 text-sm">
           {item.exp_id}
         </Link>
       </TableCell>
       <TableCell>{item.el_method}</TableCell>
       <TableCell>{item.el_type}</TableCell>
       <TableCell className="text-left">
-        <Link to={`/expense/${item.exp_id}`} target="_blank" className="hover:underline">
+        <Link to={`/manager/nexpense/${item.exp_id}${search}`} className="hover:underline">
           {item.el_title}
         </Link>
       </TableCell>
@@ -74,7 +74,7 @@ export const ManagerListRow = memo(({ item, activeTab, checked, onCheck }: Expen
           className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
           checked={checked}
           onCheckedChange={(v) => onCheck(item.seq, !!v)}
-          disabled={user_id === item.user_id}
+          disabled={user_id === item.user_id || item.status !== 'Claimed'}
         />
       </TableCell>
     </TableRow>

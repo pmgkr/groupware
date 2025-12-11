@@ -62,7 +62,7 @@ export function AppAlertProvider({ children }: { children: ReactNode }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className={cn('fixed top-8 left-1/2 z-[99] flex w-[380px] -translate-x-1/2 flex-col gap-3', alert.className)}>
+            className={cn('fixed top-8 left-1/2 z-100 flex w-[380px] -translate-x-1/2 flex-col gap-3', alert.className)}>
             <Alert className="text-base shadow-md">
               {alert.icon && alert.icon}
               {alert.title && <AlertTitle className="font-semibold" dangerouslySetInnerHTML={{ __html: alert.title }}></AlertTitle>}

@@ -6,7 +6,7 @@ import { type MyTeamItem } from '@/api/manager/teams';
 
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { MultiSelect, type MultiSelectOption } from '@/components/multiselect/multi-select';
+import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@/components/multiselect/multi-select';
 import { RefreshCw } from 'lucide-react';
 
 interface ExpenseListFilterProps {
@@ -19,6 +19,11 @@ interface ExpenseListFilterProps {
   selectedProof: string[];
   selectedProofStatus: string[];
 
+  typeRef: React.RefObject<MultiSelectRef | null>;
+  statusRef: React.RefObject<MultiSelectRef | null>;
+  proofRef: React.RefObject<MultiSelectRef | null>;
+  proofStatusRef: React.RefObject<MultiSelectRef | null>;
+
   typeOptions: MultiSelectOption[];
   checkedItems: number[];
 
@@ -30,7 +35,6 @@ interface ExpenseListFilterProps {
 
   onRefresh: () => void;
   onConfirm: () => void;
-  page?: string;
 }
 
 export function ManagerListFilter({
@@ -42,6 +46,10 @@ export function ManagerListFilter({
   selectedStatus,
   selectedProof,
   selectedProofStatus,
+  typeRef,
+  statusRef,
+  proofRef,
+  proofStatusRef,
 
   typeOptions,
 
@@ -114,8 +122,8 @@ export function ManagerListFilter({
               <SelectValue placeholder="연도 선택" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="2026">2026</SelectItem>
               <SelectItem value="2025">2025</SelectItem>
+              <SelectItem value="2026">2026</SelectItem>
             </SelectContent>
           </Select>
 
@@ -124,7 +132,9 @@ export function ManagerListFilter({
             size="sm"
             className="max-w-[88px] min-w-auto!"
             placeholder="비용 용도"
+            ref={typeRef}
             options={typeOptions}
+            defaultValue={selectedType}
             onValueChange={onTypeChange}
             maxCount={0}
             hideSelectAll={true}
@@ -139,7 +149,9 @@ export function ManagerListFilter({
             size="sm"
             className="max-w-[88px] min-w-auto!"
             placeholder="증빙 수단"
+            ref={proofRef}
             options={proofMethod}
+            defaultValue={selectedProof}
             onValueChange={onProofChange}
             maxCount={0}
             hideSelectAll={true}
@@ -154,7 +166,9 @@ export function ManagerListFilter({
             size="sm"
             className="max-w-[88px] min-w-auto!"
             placeholder="증빙 상태"
+            ref={proofStatusRef}
             options={proofStatusOptions}
+            defaultValue={selectedProofStatus}
             onValueChange={onProofStatusChange}
             maxCount={0}
             hideSelectAll={true}
@@ -165,19 +179,23 @@ export function ManagerListFilter({
           />
 
           {/* 상태 */}
-          <MultiSelect
-            size="sm"
-            className="max-w-[88px] min-w-auto!"
-            placeholder="비용 상태"
-            options={statusOptions}
-            onValueChange={onStatusChange}
-            maxCount={0}
-            hideSelectAll={true}
-            autoSize={true}
-            closeOnSelect={false}
-            searchable={false}
-            simpleSelect={true}
-          />
+          {activeTab === 'all' && (
+            <MultiSelect
+              size="sm"
+              className="max-w-[88px] min-w-auto!"
+              placeholder="비용 상태"
+              ref={statusRef}
+              options={statusOptions}
+              defaultValue={selectedStatus}
+              onValueChange={onStatusChange}
+              maxCount={0}
+              hideSelectAll={true}
+              autoSize={true}
+              closeOnSelect={false}
+              searchable={false}
+              simpleSelect={true}
+            />
+          )}
 
           {/* 새로고침 */}
           <Button
