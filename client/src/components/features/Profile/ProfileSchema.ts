@@ -3,6 +3,10 @@ import { z } from 'zod';
 
 export const ProfileSchema = z.object({
   user_id: z.string().email(), // 읽기 전용(숨김/disabled)
+  user_pw: z
+    .string()
+    .min(8, '비밀번호는 8자 이상이어야 합니다.')
+    .regex(/^(?=.*[a-zA-Z])(?=.*[0-9]).{8,}$/, '비밀번호는 영문과 숫자를 포함해야 합니다.'),
   user_name: z.string().trim().min(2, '이름을 입력해 주세요').max(30),
   user_name_en: z
     .string()

@@ -35,7 +35,7 @@ export type UserDTO = {
 
 // Login 테이블 조회 API
 export async function loginApi(payload: LoginPayload) {
-  return http<{ message: string; accessToken: string; user: UserDTO }>('/login', {
+  return http<{ message: string; accessToken: string; user: UserDTO; CODE?: string; code?: string; onboardingToken?: string }>('/login', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -44,6 +44,10 @@ export async function loginApi(payload: LoginPayload) {
 export async function onboardingApi(payload: OnboardingPayload, token: string) {
   return http<{ message: string; accessToken: string; user: UserDTO }>('/onboarding', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
     body: JSON.stringify(payload),
   });
 }
@@ -54,4 +58,15 @@ export async function getUser() {
 
 export async function logoutApi() {
   return http<{ message: string }>('/user/logout', { method: 'POST' });
+}
+
+export async function initFormApi(token_user_id: string, onboardingToken: string) {
+  return http<{ user_name?: string; email?: string;[key: string]: any }>('/initform', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${onboardingToken}`,
+    },
+    body: JSON.stringify({ token_user_id }),
+  });
 }
