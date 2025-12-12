@@ -32,16 +32,26 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
     }
   }, [year]);
   
-  // userId가 변경되면 데이터 초기화
+  // userId가 변경되면 데이터 초기화 및 fetch key 리셋
   useEffect(() => {
     if (userId) {
       setAllData([]);
+      lastFetchKeyRef.current = ''; // fetch key 리셋하여 재호출 가능하게
     }
   }, [userId]);
+  
+  // selectedYear가 변경되면 fetch key 리셋
+  useEffect(() => {
+    lastFetchKeyRef.current = ''; // year 변경 시 재호출 가능하게
+  }, [selectedYear]);
   
   // 데이터 state
   const [allData, setAllData] = useState<VacationItem[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // 중복 호출 방지 ref
+  const loadingRef = useRef(false);
+  const lastFetchKeyRef = useRef<string>('');
 
   // 페이지네이션 state (URL 파라미터와 동기화)
   const [searchParams, setSearchParams] = useSearchParams();
@@ -88,6 +98,14 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
       return;
     }
 
+    // 중복 호출 방지: 같은 파라미터로 이미 호출 중이면 스킵
+    const fetchKey = `${targetUserId}-${selectedYear}`;
+    if (loadingRef.current || lastFetchKeyRef.current === fetchKey) {
+      return;
+    }
+
+    loadingRef.current = true;
+    lastFetchKeyRef.current = fetchKey;
     setLoading(true);
     try {
       let vacationData: VacationItem[];
@@ -142,6 +160,8 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
       console.error('휴가 이력 로드 실패:', error);
       setAllData([]);
       setLoading(false);
+    } finally {
+      loadingRef.current = false;
     }
   }, [userId, user?.user_id, selectedYear, page, pageSize, isAdminView]);
 

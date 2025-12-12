@@ -1,15 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { type OvertimeListResponse } from '@/api/working';
 import { managerOvertimeApi } from '@/api/manager/overtime';
 import { managerWorkingApi } from '@/api/manager/working';
 import { getMemberList } from '@/api/common/team';
+import { getTeams } from '@/api/admin/teams';
 import { useAuth } from '@/contexts/AuthContext';
 import type { WorkData } from '@/types/working';
 import type { WorkingListItem, DayWorkInfo } from '@/components/working/list';
 import { getWeekEndDate, getWeekNumber } from '@/utils/dateHelper';
 import { calculateWeeklyStats } from '@/utils/workingStatsHelper';
 import { convertApiDataToWorkData } from '@/services/workingDataConverter';
+
+// 모듈 레벨 캐시 (모든 인스턴스가 공유)
+const scheduleCache = new Map<string, any>();
+const wlogCache = new Map<string, any>();
+const memberCache = new Map<number, any[]>();
+const overtimeCache = new Map<string, OvertimeListResponse>();
+
+// 모듈 레벨 로딩 상태 관리 (중복 호출 방지)
+const loadingStates = new Map<string, Promise<any>>();
 
 interface UseWorkingDataProps {
   weekStartDate: Date;
@@ -21,10 +31,35 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
   const { user } = useAuth();
   const [workingList, setWorkingList] = useState<WorkingListItem[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // 중복 호출 방지 ref
+  const loadingRef = useRef(false);
+  const lastParamsRef = useRef<string>('');
+
+  // 안정적인 의존성 키 생성
+  const paramsKey = useMemo(() => {
+    const teamIdsKey = [...selectedTeamIds].sort((a, b) => a - b).join(',');
+    const { year, week } = getWeekNumber(weekStartDate);
+    return `${teamIdsKey}-${year}-${week}-${page || ''}`;
+  }, [selectedTeamIds, weekStartDate, page]);
 
   useEffect(() => {
     const loadTeamWorkLogs = async () => {
-      setLoading(true);
+      // 모듈 레벨에서 같은 paramsKey로 이미 로딩 중이면 스킵
+      if (loadingStates.has(paramsKey)) {
+        try {
+          await loadingStates.get(paramsKey);
+        } catch {
+          // 에러 무시
+        }
+        return;
+      }
+
+      // 로딩 Promise 생성
+      const loadPromise = (async () => {
+        loadingRef.current = true;
+        lastParamsRef.current = paramsKey;
+        setLoading(true);
       try {
         const startDate = weekStartDate;
         const endDate = getWeekEndDate(weekStartDate);
@@ -33,7 +68,24 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
         const edate = dayjs(endDate).format('YYYY-MM-DD');
 
         // 1. 멤버 목록 가져오기 (team_id 포함)
-        const teamIdsToQuery = selectedTeamIds.length > 0 ? selectedTeamIds : (user?.team_id ? [user.team_id] : []);
+        let teamIdsToQuery: number[] = [];
+        
+        if (selectedTeamIds.length > 0) {
+          // 선택된 팀이 있으면 선택된 팀 사용
+          teamIdsToQuery = selectedTeamIds;
+        } else if (page === 'admin') {
+          // admin 페이지이고 선택된 팀이 없으면 모든 팀 조회
+          try {
+            const allTeams = await getTeams({});
+            teamIdsToQuery = allTeams.map(team => team.team_id);
+          } catch (error) {
+            console.error('팀 목록 로드 실패:', error);
+            teamIdsToQuery = user?.team_id ? [user.team_id] : [];
+          }
+        } else {
+          // manager 페이지이거나 admin이 아닐 때는 사용자의 팀만
+          teamIdsToQuery = user?.team_id ? [user.team_id] : [];
+        }
         
         if (teamIdsToQuery.length === 0) {
           setWorkingList([]);
@@ -41,9 +93,40 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
           return;
         }
 
+        // 멤버 목록 캐시 사용 (중복 호출 방지)
         const memberPromises = teamIdsToQuery.map(async (teamId) => {
-          const members = await getMemberList(teamId);
-          return members.map(member => ({ ...member, team_id: member.team_id || teamId }));
+          if (memberCache.has(teamId)) {
+            const cached = memberCache.get(teamId)!;
+            return cached.map(member => ({ ...member, team_id: member.team_id || teamId }));
+          }
+          
+          // 같은 teamId로 이미 로딩 중이면 대기
+          const memberCacheKey = `member-${teamId}`;
+          if (loadingStates.has(memberCacheKey)) {
+            try {
+              await loadingStates.get(memberCacheKey);
+              if (memberCache.has(teamId)) {
+                const cached = memberCache.get(teamId)!;
+                return cached.map(member => ({ ...member, team_id: member.team_id || teamId }));
+              }
+            } catch {
+              // 에러 무시
+            }
+          }
+          
+          const loadPromise = (async () => {
+            const members = await getMemberList(teamId);
+            const membersWithTeam = members.map(member => ({ ...member, team_id: member.team_id || teamId }));
+            memberCache.set(teamId, membersWithTeam);
+            return membersWithTeam;
+          })();
+          
+          loadingStates.set(memberCacheKey, loadPromise);
+          try {
+            return await loadPromise;
+          } finally {
+            loadingStates.delete(memberCacheKey);
+          }
         });
         const memberResults = await Promise.all(memberPromises);
         const allTeamMembers = memberResults.flat();
@@ -53,16 +136,49 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
           index === self.findIndex(m => m.user_id === member.user_id)
         );
 
-        // 2. 초과근무 목록 조회 (team_id로) - 모든 상태 포함 (H: 승인대기, T: 승인완료, N: 취소완료)
+        // 2. 초과근무 목록 조회 (team_id로) - 모든 상태 포함 (H: 승인대기, T: 승인완료, N: 취소완료) - 캐시 사용
         let allOvertimeResponse: OvertimeListResponse = { items: [], total: 0, page: 1, size: 1000, pages: 0 };
         
         try {
           const flags = ['H', 'T', 'N']; // 승인대기, 승인완료, 취소완료 모두 조회
           const overtimePromises = teamIdsToQuery.flatMap(teamId => 
-            flags.map(flag => 
-              managerOvertimeApi.getManagerOvertimeList({ team_id: teamId, page: 1, size: 1000, flag })
-                .catch(() => ({ items: [], total: 0, page: 1, size: 1000, pages: 0 }))
-            )
+            flags.map(async (flag) => {
+              const cacheKey = `${teamId}-${flag}`;
+              if (overtimeCache.has(cacheKey)) {
+                return overtimeCache.get(cacheKey)!;
+              }
+              
+              // 같은 키로 이미 로딩 중이면 대기
+              if (loadingStates.has(cacheKey)) {
+                try {
+                  await loadingStates.get(cacheKey);
+                  if (overtimeCache.has(cacheKey)) {
+                    return overtimeCache.get(cacheKey)!;
+                  }
+                } catch {
+                  // 에러 무시
+                }
+              }
+              
+              const loadPromise = (async () => {
+                try {
+                  const result = await managerOvertimeApi.getManagerOvertimeList({ team_id: teamId, page: 1, size: 1000, flag });
+                  overtimeCache.set(cacheKey, result);
+                  return result;
+                } catch {
+                  const emptyResult = { items: [], total: 0, page: 1, size: 1000, pages: 0 };
+                  overtimeCache.set(cacheKey, emptyResult);
+                  return emptyResult;
+                }
+              })();
+              
+              loadingStates.set(cacheKey, loadPromise);
+              try {
+                return await loadPromise;
+              } finally {
+                loadingStates.delete(cacheKey);
+              }
+            })
           );
           const overtimeResults = await Promise.all(overtimePromises);
           const allItems = overtimeResults.flatMap(result => result.items || []);
@@ -104,25 +220,54 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
             // 관리자 - 근태 로그 주간 조회 (팀별로 조회)
             let workLogResponse: any;
             
-            if (page === 'admin') {
-              // Admin API 사용
-              const adminResponse = await managerWorkingApi.getAdminWorkLogsWeek({
-                team_id: teamId,
-                weekno: week,
-                yearno: year
-              });
-              // Admin API 응답을 WorkLogResponse 형식으로 변환
-              workLogResponse = {
-                wlog: adminResponse.wlog || [],
-                vacation: adminResponse.vacation || []
-              };
-            } else {
-              // Manager API 사용
-              workLogResponse = await managerWorkingApi.getManagerWorkLogsWeek({
-                team_id: teamId,
-                weekno: week,
-                yearno: year
-              });
+            // wlog/week API 캐시 사용 (중복 호출 방지)
+            const wlogCacheKey = `${teamId}-${week}-${year}-${page || ''}`;
+            if (wlogCache.has(wlogCacheKey)) {
+              workLogResponse = wlogCache.get(wlogCacheKey)!;
+            } else if (loadingStates.has(wlogCacheKey)) {
+              // 같은 키로 이미 로딩 중이면 대기
+              try {
+                await loadingStates.get(wlogCacheKey);
+                if (wlogCache.has(wlogCacheKey)) {
+                  workLogResponse = wlogCache.get(wlogCacheKey)!;
+                }
+              } catch {
+                // 에러 무시
+              }
+            }
+            
+            if (!workLogResponse) {
+              const loadPromise = (async () => {
+                if (page === 'admin') {
+                  // Admin API 사용
+                  const adminResponse = await managerWorkingApi.getAdminWorkLogsWeek({
+                    team_id: teamId,
+                    weekno: week,
+                    yearno: year
+                  });
+                  // Admin API 응답을 WorkLogResponse 형식으로 변환
+                  workLogResponse = {
+                    wlog: adminResponse.wlog || [],
+                    vacation: adminResponse.vacation || []
+                  };
+                } else {
+                  // Manager API 사용
+                  workLogResponse = await managerWorkingApi.getManagerWorkLogsWeek({
+                    team_id: teamId,
+                    weekno: week,
+                    yearno: year
+                  });
+                }
+                wlogCache.set(wlogCacheKey, workLogResponse);
+                return workLogResponse;
+              })();
+              
+              loadingStates.set(wlogCacheKey, loadPromise);
+              try {
+                workLogResponse = await loadPromise;
+              } finally {
+                loadingStates.delete(wlogCacheKey);
+              }
             }
             
             // 각 팀원별로 데이터 처리
@@ -136,20 +281,51 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
                   v.user_id === member.user_id
                 );
 
-            // 스케줄 API를 통해 이벤트 가져오기 (해당 팀원)
+            // 스케줄 API를 통해 이벤트 가져오기 (해당 팀원) - 캐시 사용
             let scheduleEvents: any[] = [];
             try {
               const { scheduleApi } = await import('@/api/calendar');
               const year = startDate.getFullYear();
               const month = startDate.getMonth() + 1;
               
-              // 승인완료(Y)와 승인대기(H) 모두 가져오기 위해 sch_status 파라미터 제거
-              // (API가 배열을 받지 않을 수 있으므로 클라이언트에서 필터링)
-              const response = await scheduleApi.getSchedules({ 
-                year, 
-                month, 
-                user_id: member.user_id
-              }) as any;
+              // 캐시 키: user_id + year-month
+              const scheduleCacheKey = `${member.user_id}-${year}-${month}`;
+              
+              let response: any;
+              if (scheduleCache.has(scheduleCacheKey)) {
+                response = scheduleCache.get(scheduleCacheKey)!;
+              } else if (loadingStates.has(scheduleCacheKey)) {
+                // 같은 키로 이미 로딩 중이면 대기
+                try {
+                  await loadingStates.get(scheduleCacheKey);
+                  if (scheduleCache.has(scheduleCacheKey)) {
+                    response = scheduleCache.get(scheduleCacheKey)!;
+                  }
+                } catch {
+                  // 에러 무시
+                }
+              }
+              
+              if (!response) {
+                const loadPromise = (async () => {
+                  // 승인완료(Y)와 승인대기(H) 모두 가져오기 위해 sch_status 파라미터 제거
+                  // (API가 배열을 받지 않을 수 있으므로 클라이언트에서 필터링)
+                  const result = await scheduleApi.getSchedules({ 
+                    year, 
+                    month, 
+                    user_id: member.user_id
+                  }) as any;
+                  scheduleCache.set(scheduleCacheKey, result);
+                  return result;
+                })();
+                
+                loadingStates.set(scheduleCacheKey, loadPromise);
+                try {
+                  response = await loadPromise;
+                } finally {
+                  loadingStates.delete(scheduleCacheKey);
+                }
+              }
               
               const schedules = Array.isArray(response?.items) ? response.items : (response?.items?.items || []);
               
@@ -325,13 +501,24 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
         setWorkingList([]);
       } finally {
         setLoading(false);
+        loadingRef.current = false;
+        loadingStates.delete(paramsKey);
+      }
+      })();
+      
+      loadingStates.set(paramsKey, loadPromise);
+      
+      try {
+        await loadPromise;
+      } catch (error) {
+        // 에러는 이미 내부에서 처리됨
       }
     };
 
-    if (user?.team_id || selectedTeamIds.length > 0) {
+    if (user?.team_id || selectedTeamIds.length > 0 || page === 'admin') {
       loadTeamWorkLogs();
     }
-  }, [weekStartDate, selectedTeamIds, user?.team_id]);
+  }, [paramsKey, user?.team_id, page]);
 
   return { workingList, loading };
 }

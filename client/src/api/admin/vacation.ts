@@ -11,27 +11,27 @@ export interface VacationList {
 }
 
 export interface VacationItem {
-    id: number;
+    id: number | null;
     user_id: string;
-    va_year: number;
-    va_current: number;
-    va_carryover: number;
-    va_comp: number;
-    va_long: number;
-    va_official: number;
+    va_year: string; // API 응답: 문자열로 반환됨
+    va_current: string; // API 응답: 문자열로 반환됨
+    va_carryover: string; // API 응답: 문자열로 반환됨
+    va_comp: string; // API 응답: 문자열로 반환됨
+    va_long: string; // API 응답: 문자열로 반환됨
+    va_official: string; // API 응답: 문자열로 반환됨
     va_used?: string; // 사용한 휴가일수
     user_name: string;
     team_id: number;
     user_status: string;
-    hire_date: string;
+    hire_date: string | null;
     profile_image?: string | null; // 프로필 이미지
-    v_current: number; // 기본연차
-    v_carryover: number; //이월연차
-    v_comp: number;  // 특별대휴
-    v_official: number; // 공가
-    v_long: number; // 근속휴가
+    v_current: number; // 기본연차 (숫자, 음수 가능)
+    v_carryover: number; //이월연차 (숫자, 음수 가능)
+    v_comp: number;  // 특별대휴 (숫자, 음수 가능)
+    v_official: number; // 공가 (숫자, 음수 가능)
+    v_long: number; // 근속휴가 (숫자, 음수 가능)
+    daycount: number; // 근무일
 }
-
 export interface VacationLogItem {
     idx: number;
     sch_id: number;

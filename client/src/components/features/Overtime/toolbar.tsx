@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from "@components/ui/button";
 import { MultiSelect } from "@components/multiselect/multi-select";
 import { useAuth } from '@/contexts/AuthContext';
@@ -47,6 +47,9 @@ export default function OvertimeToolbar({
   const [teams, setTeams] = useState<MyTeamItem[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   
+  // 팀 목록 로드 중복 방지 ref
+  const teamsLoadedRef = useRef(false);
+  
   // 추가근무 필터 state
   const [filters, setFilters] = useState<OvertimeFilters>({
     year: new Date().getFullYear().toString(),
@@ -58,6 +61,8 @@ export default function OvertimeToolbar({
 
   // 팀 목록 로드
   const loadTeams = async () => {
+    if (teamsLoadedRef.current) return;
+    
     try {
       if (!user?.user_id) {
         return;
@@ -78,6 +83,7 @@ export default function OvertimeToolbar({
         }));
         
         setTeams(teamItems);
+        teamsLoadedRef.current = true;
         return;
       }
       
@@ -94,6 +100,7 @@ export default function OvertimeToolbar({
       }));
       
       setTeams(teamItems);
+      teamsLoadedRef.current = true;
       
     } catch (error) {
       console.error('팀 목록 로드 실패:', error);
@@ -136,6 +143,8 @@ export default function OvertimeToolbar({
 
   // 초기 팀 목록 로드
   useEffect(() => {
+    // page나 user가 변경되면 리셋
+    teamsLoadedRef.current = false;
     loadTeams();
   }, [user, page]);
 
