@@ -1,5 +1,9 @@
 import type { RouteObject } from 'react-router';
 import Dashboard from '@/pages/Admin';
+
+import FinanceLayout from '@/pages/Admin/Finance/FinanceLayout';
+import Pexpense from '@/pages/Admin/Finance/Pexpense';
+
 import Vacation from '@/pages/Admin/Vacation';
 import VacationDetail from '@/pages/Admin/VacationDetail';
 import AdminWorking from '@/pages/Admin/Working';
@@ -12,15 +16,21 @@ export const adminRoutes: RouteObject = {
   handle: {
     title: '최고관리자',
     nav: [
-      { to: '/admin', label: '대시보드', end: true },
+      // { to: '/admin', label: '대시보드', end: true },
+      { to: '/admin/finance', label: '파이낸스' },
       { to: '/admin/working', label: '근태 관리' },
-      { to: '/admin/vacation', label: '휴가 관리' },
       { to: '/admin/overtime', label: '추가근무 관리' },
+      { to: '/admin/vacation', label: '휴가 관리' },
       { to: '/admin/proposal', label: '기안서 관리' },
     ],
   },
   children: [
-    { index: true, element: <Dashboard /> },
+    // { index: true, element: <Dashboard /> },
+    {
+      path: 'finance',
+      element: <FinanceLayout />,
+      children: [{ index: true, element: <Pexpense /> }],
+    },
     { path: 'vacation', element: <Vacation /> },
     { path: 'vacation/user/:id', element: <VacationDetail /> },
     { path: 'working', element: <AdminWorking /> },
