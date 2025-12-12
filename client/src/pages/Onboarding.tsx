@@ -147,11 +147,11 @@ export default function Onboarding() {
 
           {/* 사진 업로드 영역 */}
           <div className="mt-4 flex flex-col gap-2">
-            <h3 className="font-semibold text-gray-900">개인 사진 업로드</h3>
+            <h3 className="font-semibold text-gray-900">Profile Image Upload</h3>
             <div
               className={cn(
                 'flex size-[350px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors',
-                isDragging ? 'border-primary bg-primary/10' : 'border-gray-300 bg-white/50 hover:bg-white/80',
+                isDragging ? 'border-primary bg-primary/10' : 'border-gray-400 bg-white hover:bg-gray-50',
                 imagePreview && 'border-none bg-black'
               )}
               onDragOver={handleDragOver}
@@ -164,9 +164,9 @@ export default function Onboarding() {
               {imagePreview ? (
                 <img src={imagePreview} alt="Preview" className="size-full object-cover" />
               ) : (
-                <div className="flex flex-col items-center gap-2 text-gray-400">
-                  <Upload className="size-12 opacity-50" />
-                  <p className="text-sm">클릭하거나 이미지를 드래그하세요</p>
+                <div className="flex flex-col items-center gap-2 text-gray-500">
+                  <Upload className="size-12" />
+                  <p className="text-sm font-medium">클릭하거나 이미지를 드래그하세요</p>
                 </div>
               )}
             </div>
