@@ -167,7 +167,7 @@ export default function Header() {
           </li>
           <li>
             <NavLink
-              to="/admin"
+              to="/admin/finance"
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',

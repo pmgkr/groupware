@@ -133,9 +133,9 @@ export default function PexpenseView() {
               user_name: data.header.user_nm,
               noti_target: user_id!,
               noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
-              noti_message: `청구한 비용을 승인했습니다.`,
+              noti_message: `청구한 프로젝트 비용을 승인했습니다.`,
               noti_type: 'expense',
-              noti_url: `/expense/${data.header.exp_id}`,
+              noti_url: `/project/${data.header.project_id}/expense/${data.header.seq}`,
             });
 
             addAlert({
@@ -174,9 +174,9 @@ export default function PexpenseView() {
           user_name: data.header.user_nm,
           noti_target: user_id!,
           noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
-          noti_message: `청구한 비용을 반려했습니다.`,
+          noti_message: `청구한 프로젝트 비용을 반려했습니다.`,
           noti_type: 'expense',
-          noti_url: `/expense/${data.header.exp_id}`,
+          noti_url: `/project/${data.header.project_id}/expense/${data.header.seq}`,
         });
 
         addAlert({
