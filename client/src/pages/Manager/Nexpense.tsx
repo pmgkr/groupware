@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
-
+import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
@@ -195,6 +195,18 @@ export default function Nexpense() {
           const res = await confirmExpense(payload);
 
           if (res.count) {
+            for (const row of selectedRows) {
+              await notificationApi.registerNotification({
+                user_id: row.user_id,
+                user_name: row.user_nm,
+                noti_target: user_id!,
+                noti_title: `${row.exp_id} · ${row.el_title}`,
+                noti_message: `청구한 비용을 승인했습니다.`,
+                noti_type: 'expense',
+                noti_url: `/expense/${row.exp_id}`,
+              });
+            }
+
             addAlert({
               title: '비용 승인이 완료되었습니다.',
               message: `<p><span class="text-primary-blue-500 font-semibold">${res.count}</span>건의 비용이 승인 완료되었습니다.</p>`,

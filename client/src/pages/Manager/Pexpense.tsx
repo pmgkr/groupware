@@ -203,7 +203,7 @@ export default function Pexpense() {
                 noti_title: `${row.exp_id} · ${row.el_title}`,
                 noti_message: `청구한 프로젝트 비용을 승인했습니다.`,
                 noti_type: 'expense',
-                noti_url: `/expense/${row.exp_id}`,
+                noti_url: `/project/${row.project_id}/expense/${row.seq}`,
               });
             }
 
