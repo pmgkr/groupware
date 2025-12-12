@@ -21,10 +21,11 @@ import { Calendar } from '@/assets/images/icons';
 type ProfileFormProps = {
   email: string; // 로그인 409 응답에서 받은 email
   onboardingToken: string; // 로그인 409 응답에서 받은 onboardingToken
+  profileImage?: string | null; // 업로드된 이미지 경로
   className?: string;
 };
 
-export default function ProfileForm({ email, onboardingToken, className }: ProfileFormProps) {
+export default function ProfileForm({ email, onboardingToken, profileImage, className }: ProfileFormProps) {
   const navigate = useNavigate();
 
   const [uinfo, setUinfo] = useState<any>(null); // 초기 데이터 저장용
@@ -51,6 +52,7 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
       hire_date: undefined as Date | undefined,
       address: '',
       emergency_phone: '',
+      profile_image: '',
     },
     mode: 'onChange',
   });
@@ -62,24 +64,12 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
     let alive = true;
 
     async function init() {
-      let final_team_id = 0;
       try {
-        if (!onboardingToken) {
-          console.warn('Token mismatch or invalid');
-          navigate('/', { replace: true });
-          return;
-        }
+        if (!onboardingToken) return;
 
-        // 1. 토큰 디코딩 & 유효성 검사
+        // 1. 토큰 디코딩 & 유효성 검사 (Onboarding 페이지에서 수행하므로 여기선 API 호출을 위해 user_id만 추출)
         const payload = JSON.parse(atob(onboardingToken.split('.')[1]));
         const token_user_id = payload.sub;
-        const token_mode = payload.mode;
-
-        if (token_user_id !== email || token_mode !== 'onboarding') {
-          console.warn('Token mismatch or invalid mode');
-          navigate('/', { replace: true });
-          return;
-        }
 
         setTeamLoading(true);
 
@@ -90,6 +80,9 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
         ]);
 
         if (!alive) return;
+
+        console.log('User:', userData);
+        console.log('Teams:', teamsData);
 
         setUinfo(userData);
         setTeams(teamsData);
@@ -121,14 +114,21 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
             address: userData.address || '',
             emergency_phone: userData.emergency_phone || '',
             team_id: defaultTeamId,
+            profile_image: userData.profile_image || '',
           });
         } else if (teamsData.length > 0) {
           // 사용자 정보는 없지만 팀 목록은 로드된 경우 (예외적 상황)
           form.setValue('team_id', teamsData[0].team_id);
         }
 
-      } catch (e) {
+      } catch (e: any) {
+        if (!alive) return;
         console.error('Profile Init Error:', e);
+        // 401 Unauthorized or other critical errors
+        if (e.status === 401 || (e.message && e.message.includes('expired'))) {
+          alert('지정시간이 만료 되었습니다.\n프로세스를 초기화 합니다.\n다시 시도해 주세요');
+          navigate('/', { replace: true });
+        }
       } finally {
         if (alive) setTeamLoading(false);
       }
@@ -153,6 +153,13 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
   // 생년월일 YYYY-MM-DD 포맷으로 변경
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
 
+  // 부모 컴포넌트(Onboarding)에서 넘겨준 profileImage가 변경되면 form value 업데이트
+  useEffect(() => {
+    if (profileImage) {
+      form.setValue('profile_image', profileImage);
+    }
+  }, [profileImage, form]);
+
   const onSubmit = async (values: ProfileValues) => {
     try {
       setSubmitting(true);
@@ -172,6 +179,12 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
         navigate('/dashboard', { replace: true });
       }
     } catch (e: any) {
+      // 토큰 만료 등 인증 에러 처리
+      if (e.status === 401 || (e.message && e.message.includes('expired'))) {
+        alert('지정시간이 만료 되었습니다.\n프로세스를 초기화 합니다.\n다시 시도해 주세요');
+        navigate('/', { replace: true });
+        return;
+      }
       alert(e.message ?? '프로필 저장 중 오류가 발생했습니다.');
     } finally {
       setSubmitting(false);
@@ -181,6 +194,9 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className={cn('max-w-xl space-y-5', className)} noValidate>
+        {/* 히든 필드: 프로필 이미지 경로 */}
+        <input type="hidden" {...form.register('profile_image')} />
+
         {/* 이메일 (읽기 전용) */}
         <FormField
           control={form.control}
