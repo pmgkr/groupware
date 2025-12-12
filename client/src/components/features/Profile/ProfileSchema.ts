@@ -18,12 +18,13 @@ export const ProfileSchema = z.object({
     .string()
     .transform((v) => v.replace(/\D/g, '')) // 숫자만
     .refine((v) => v.length >= 10 && v.length <= 11, '휴대폰 번호(10~11자리)를 입력해 주세요'),
-  team_id: z.number().optional(),
-  job_role: z.string({ required_error: '포지션을 선택해 주세요' }),
-  birth_date: z.coerce.date().optional(),
-  hire_date: z.coerce.date().optional(),
-  address: z.string().optional(),
+  team_id: z.number({ required_error: '팀을 선택해 주세요' }),
+  job_role: z.string({ required_error: '포지션을 선택해 주세요' }).min(1, '포지션을 선택해 주세요'),
+  birth_date: z.coerce.date({ required_error: '생년월일을 입력해 주세요', invalid_type_error: '생년월일을 입력해 주세요' }),
+  hire_date: z.coerce.date({ required_error: '입사일을 입력해 주세요', invalid_type_error: '입사일을 입력해 주세요' }),
+  address: z.string().trim().min(1, '주소를 입력해 주세요'),
   emergency_phone: z.string().trim().min(5, '비상 연락망을 입력해 주세요'),
+  profile_image: z.string().optional(),
 });
 
 export type ProfileValues = z.infer<typeof ProfileSchema>;
