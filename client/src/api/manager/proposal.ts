@@ -15,15 +15,32 @@ function mapManagerDisplayState(item: any) {
 
   if (state === '반려') return '반려';
   if (state === '대기') return '팀장대기';
-  if (state === '완료') return '팀장결재완료';
+  if (state === '완료') return '팀장완료';
 
   return '';
 }
 
-export async function getReportListManager(): Promise<ManagerReportCard[]> {
-  const res = await http<any>('/manager/report/list?size=100000', { method: 'GET' });
+// 🔥 수정: flag 파라미터를 쿼리스트링으로 전달
+export async function getReportListManager(flag: '대기' | '완료' | '반려' = '대기'): Promise<ManagerReportCard[]> {
+  const url = `/manager/report/list?size=100000&flag=${flag}`;
+
+  const res = await http<any>(url, {
+    method: 'GET',
+  });
 
   const rawItems = res.items ?? [];
+
+  console.log('🔍 API Response:', {
+    flag,
+    totalItems: rawItems.length,
+    allManagerStates: rawItems.map((item: any) => item.manager_state),
+    sample: rawItems.slice(0, 5).map((item: any) => ({
+      id: item.rp_seq,
+      title: item.rp_title,
+      manager_state: item.manager_state,
+      state: item.rp_state,
+    })),
+  });
 
   return rawItems.map((item: any) => {
     const display = mapManagerDisplayState(item);

@@ -184,7 +184,7 @@ export async function getNoticeAttachments(n_seq: number): Promise<Attachment[]>
     name: f.f_name,
     type: f.f_type,
     createdAt: f.reg_date,
-    url: `https://gbend.cafe24.com/uploads/notice/${f.nf_name}`,
+    url: f.url,
   }));
 }
 

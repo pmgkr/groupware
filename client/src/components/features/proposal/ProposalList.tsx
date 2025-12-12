@@ -5,39 +5,79 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatAmount, formatKST } from '@/utils';
 import { useEffect, useState, useMemo } from 'react';
-import { generateReportNumber, type ReportCard } from '@/api/expense/proposal';
+import type { ReportCard } from '@/api/expense/proposal';
 import type { ManagerReportCard } from '@/api/manager/proposal';
+import type { AdminReportCard } from '@/api/admin/proposal';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { SearchGray } from '@/assets/images/icons';
 
 interface ProposalListContentProps {
-  // 🔥 기존 방식 (User, Manager)
-  reports?: ReportCard[] | ManagerReportCard[];
-
+  reports?: ReportCard[] | ManagerReportCard[] | AdminReportCard[];
   onRowClick: (id: number, tab: string) => void;
   onRegister?: () => void;
   pageSize?: number;
-
-  // 매니저용 옵션
   isManager?: boolean;
   showWriterInfo?: boolean;
   showRegisterButton?: boolean;
-
   isAdmin?: boolean;
   adminRole?: 'finance' | 'gm' | null;
-
-  // 🔥 새로운 방식 (Admin) - API 호출 함수
-  onFetchData?: (params: { page: number; size: number; type?: string; q?: string }) => Promise<ReportCard[] | ManagerReportCard[]>;
+  onFetchData?: (params: {
+    page: number;
+    size: number;
+    type?: string;
+    q?: string;
+    status?: 'finance' | 'gm' | 'rejected' | 'completed';
+  }) => Promise<ReportCard[] | ManagerReportCard[] | AdminReportCard[]>;
 }
 
-function isManagerReportCard(report: ReportCard | ManagerReportCard): report is ManagerReportCard {
-  return 'manager_state' in report;
-}
+// 상수 정의
+const tablist = {
+  user: [
+    { key: 'draft', label: '기안 문서' },
+    { key: 'completed', label: '완료 문서' },
+    { key: 'rejected', label: '반려 문서' },
+  ],
+  manager: [
+    { key: 'pending', label: '결재 대기 문서' },
+    { key: 'approved', label: '결재 완료 문서' },
+    { key: 'rejected', label: '반려 문서' },
+  ],
+  finance: [
+    { key: 'all', label: '전체' },
+    { key: 'pending', label: '회계 대기 문서' },
+    { key: 'completed', label: '회계 완료 문서' },
+    { key: 'rejected', label: '반려 문서' },
+  ],
+  gm: [
+    { key: 'all', label: '전체' },
+    { key: 'pending', label: 'GM 대기 문서' },
+    { key: 'completed', label: 'GM 완료 문서' },
+    { key: 'rejected', label: '반려 문서' },
+  ],
+};
+
+const match_state = [
+  { value: 'all', label: '전체' },
+  { value: 'matched', label: '완료' },
+  { value: 'unmatched', label: '매칭전' },
+];
+
+const cost_categories = ['일반비용', '교육비', '프로젝트'];
+
+const badge_status: Record<string, { variant?: string; className?: string; label: string }> = {
+  팀장대기: { variant: 'secondary', label: '팀장대기' },
+  팀장완료: { label: '팀장완료' },
+  회계대기: { variant: 'secondary', className: 'bg-primary-yellow-150 text-primary-orange', label: '회계대기' },
+  회계완료: { variant: 'secondary', className: 'bg-primary-yellow text-white', label: '회계완료' },
+  GM대기: { variant: 'secondary', className: 'bg-primary-purple-150 text-primary-purple', label: 'GM대기' },
+  승인완료: { label: '승인완료' },
+  반려: { className: 'bg-[#FF2200]', label: '반려' },
+};
 
 export default function ProposalList({
-  reports: reportsProp, // 🔥 기존 방식용 props
+  reports: reportsProp,
   pageSize = 10,
   onRowClick,
   onRegister,
@@ -46,44 +86,151 @@ export default function ProposalList({
   isManager,
   isAdmin,
   adminRole,
-  onFetchData, // 🔥 새로운 방식용 props
+  onFetchData,
 }: ProposalListContentProps) {
-  // 🔥 API에서 받아온 데이터 (새로운 방식용)
-  const [fetchedReports, setFetchedReports] = useState<(ReportCard | ManagerReportCard)[]>([]);
+  const [fetchedReports, setFetchedReports] = useState<(ReportCard | ManagerReportCard | AdminReportCard)[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
-  // 검색창 입력값
   const [searchQuery, setSearchQuery] = useState('');
-  // 🔥 실제 검색에 사용되는 값 (엔터나 클릭 시에만 업데이트)
   const [activeSearchQuery, setActiveSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [matchStatus, setMatchStatus] = useState<string | undefined>();
   const [searchParams] = useSearchParams();
-  const initialPage = Number(searchParams.get('page') || 1);
-  const [currentPage, setCurrentPage] = useState(initialPage);
-  const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page') || 1));
   const [activeTab, setActiveTab] = useState('');
-
-  // 🔥 일괄 선택 관련 state
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isAllSelected, setIsAllSelected] = useState(false);
 
-  // 🔥 실제 사용할 reports: reportsProp이 있으면 그것 사용, 없으면 fetchedReports 사용
-  const reports = reportsProp || fetchedReports;
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // 🔥 API 호출 함수 (onFetchData가 있을 때만)
+  const reports = reportsProp || fetchedReports;
+  const isProjectPage = location.pathname.startsWith('/project/proposal');
+  const isManagerPage = location.pathname.startsWith('/manager/proposal');
+  const showBulkApproval = isAdmin && activeTab === 'pending';
+
+  // 유틸리티 함수들
+  const getStatusParam = (): 'finance' | 'gm' | 'rejected' | undefined => {
+    if (!isAdmin) return undefined;
+
+    const statusMap: Record<'gm' | 'finance', Record<string, 'finance' | 'gm' | 'rejected' | undefined>> = {
+      gm: { pending: 'gm', completed: 'gm', rejected: 'rejected' },
+      finance: { pending: 'finance', completed: 'gm', rejected: 'rejected' },
+    };
+
+    return statusMap[adminRole!]?.[activeTab];
+  };
+
+  const getDefaultTab = () => {
+    if (searchParams.get('tab')) return searchParams.get('tab')!;
+    if (isAdmin || isManager) return 'pending';
+    return 'draft';
+  };
+
+  const getUserType = () => {
+    if (isAdmin) return adminRole === 'gm' ? 'gm' : 'finance';
+    if (isManager) return 'manager';
+    return 'user';
+  };
+
+  const getDisplayStatus = (report: ReportCard | ManagerReportCard | AdminReportCard) => {
+    const statusKeys = ['approval_gm_display_state', 'approval_finance_display_state', 'approval_manager_display_state'];
+    for (const key of statusKeys) {
+      if (key in report && report[key as keyof typeof report]) {
+        return report[key as keyof typeof report] as string;
+      }
+    }
+    return report.state;
+  };
+
+  const getCategoryOptions = () => {
+    const baseCategories = [
+      { value: '전체', label: '전체' },
+      { value: '교육비', label: '교육비' },
+      { value: '구매요청', label: '구매요청' },
+      { value: '일반비용', label: '일반비용' },
+    ];
+
+    if (isManagerPage || isAdmin) {
+      baseCategories.push({ value: '프로젝트', label: '프로젝트' });
+    }
+
+    return baseCategories;
+  };
+
+  // 필터 함수
+  const filterByTab = (report: ReportCard | ManagerReportCard | AdminReportCard) => {
+    // 일반 사용자
+    if (!isManager && !isAdmin) {
+      const tabStateMap = {
+        draft: ['진행', '대기'],
+        completed: ['완료', '승인완료'],
+        rejected: ['반려'],
+      };
+      return tabStateMap[activeTab as keyof typeof tabStateMap]?.includes(report.state) ?? true;
+    }
+
+    // 매니저
+    if (isManager && activeTab === 'rejected') {
+      return ['state', 'manager_state', 'finance_state', 'gm_state'].some((key) => report[key as keyof typeof report] === '반려');
+    }
+
+    // Admin
+    if (isAdmin) {
+      if (activeTab === 'rejected') return report.state === '반려';
+      console.log('🔍 Filter Debug:', {
+        activeTab,
+        adminRole,
+        id: report.id,
+        manager_state: report.manager_state,
+        finance_state: report.finance_state,
+        gm_state: report.gm_state,
+      });
+
+      const filterMap = {
+        finance: {
+          pending: () => report.manager_state === '완료' && report.finance_state === '대기',
+          completed: () => report.manager_state === '완료' && report.finance_state === '완료' && report.gm_state === '대기',
+        },
+        gm: {
+          pending: () => report.manager_state === '완료' && report.finance_state === '완료' && report.gm_state === '대기',
+          completed: () => report.manager_state === '완료' && report.finance_state === '완료' && report.gm_state === '완료',
+        },
+      };
+
+      return filterMap[adminRole!]?.[activeTab as 'pending' | 'completed']?.() ?? true;
+    }
+
+    return true;
+  };
+
+  const filterByCategory = (report: ReportCard | ManagerReportCard | AdminReportCard) => {
+    return !selectedCategory || selectedCategory === '전체' || report.category === selectedCategory;
+  };
+
+  const filterByMatchStatus = (report: ReportCard | ManagerReportCard | AdminReportCard) => {
+    if (!matchStatus || matchStatus === 'all') return true;
+    if (report.category === '구매요청') return false;
+    return matchStatus === 'matched' ? !!report.expense_no : !report.expense_no;
+  };
+
+  // API 호출
   const fetchReports = async () => {
     if (!onFetchData) return;
 
     setIsLoading(true);
     try {
-      const data = await onFetchData({
+      const payload: any = {
         page: 1,
-        size: 100000,
+        size: 1000,
         type: activeTab !== 'all' ? activeTab : undefined,
-        q: activeSearchQuery || undefined, // 🔥 searchQuery → activeSearchQuery
-      });
+        q: activeSearchQuery || undefined,
+      };
 
+      if (isAdmin) {
+        payload.status = getStatusParam();
+      }
+
+      const data = await onFetchData(payload);
       setFetchedReports(data);
     } catch (error) {
       console.error('Failed to fetch reports:', error);
@@ -92,38 +239,13 @@ export default function ProposalList({
     }
   };
 
-  // 🔥 검색 실행 (엔터 or 돋보기 클릭 시)
   const handleSearch = () => {
-    setActiveSearchQuery(searchQuery); // 🔥 입력값을 실제 검색어로 반영
+    setActiveSearchQuery(searchQuery);
     setCurrentPage(1);
     navigate(`?tab=${activeTab}&page=1`, { replace: true });
     setSelectedIds([]);
     setIsAllSelected(false);
   };
-
-  useEffect(() => {
-    let defaultTab = '';
-
-    if (searchParams.get('tab')) {
-      defaultTab = searchParams.get('tab')!;
-    } else if (isAdmin) {
-      if (adminRole === 'gm') defaultTab = 'pending';
-      else defaultTab = 'pending';
-    } else if (isManager) {
-      defaultTab = 'pending';
-    } else {
-      defaultTab = 'draft';
-    }
-
-    setActiveTab(defaultTab);
-  }, [searchParams, isAdmin, adminRole, isManager]);
-
-  // 🔥 탭, 페이지, 실제 검색어 변경 시 API 재호출 (onFetchData가 있을 때만)
-  useEffect(() => {
-    if (activeTab && onFetchData) {
-      fetchReports();
-    }
-  }, [activeTab, activeSearchQuery, onFetchData]); // 🔥 searchQuery → activeSearchQuery
 
   const handleTabChange = (key: string) => {
     setActiveTab(key);
@@ -133,186 +255,24 @@ export default function ProposalList({
     setSelectedIds([]);
     setIsAllSelected(false);
     setSearchQuery('');
-
     navigate(`?tab=${key}&page=1`);
   };
-
-  // 탭 필터링
-  const userTabs = [
-    { key: 'draft', label: '기안 문서' },
-    { key: 'complete', label: '완료 문서' },
-  ];
-  const managerTabs = [
-    { key: 'pending', label: '결재 대기 문서' },
-    { key: 'approved', label: '결재 완료 문서' },
-  ];
-  const financeTabs = [
-    { key: 'all', label: '전체' },
-    { key: 'pending', label: '회계 대기 문서' },
-    { key: 'complete', label: '회계 완료 문서' },
-  ];
-  const gmTabs = [
-    { key: 'all', label: '전체' },
-    { key: 'pending', label: 'GM 대기 문서' },
-    { key: 'complete', label: 'GM 완료 문서' },
-  ];
-
-  let usedTabs = userTabs;
-
-  if (isManager) {
-    usedTabs = managerTabs;
-  }
-
-  if (isAdmin) {
-    if (adminRole === 'gm') {
-      usedTabs = gmTabs;
-    } else {
-      usedTabs = financeTabs;
-    }
-  }
-
-  // 🔥 프론트 필터링 (카테고리, 매칭 상태)
-  const tabFiltered = reports.filter((r) => {
-    if (!isManager && !isAdmin) {
-      return activeTab === 'draft'
-        ? r.state === '진행' || r.state === '대기'
-        : activeTab === 'complete'
-          ? ['완료', '반려', '승인완료'].includes(r.state)
-          : true;
-    }
-
-    if (isManager) {
-      if (!isManagerReportCard(r)) return false;
-
-      if (activeTab === 'pending') {
-        return r.manager_state === '대기';
-      }
-
-      if (activeTab === 'approved') {
-        return r.manager_state !== '대기';
-      }
-
-      return true;
-    }
-
-    if (isAdmin) {
-      if (adminRole === 'gm') {
-        if (activeTab === 'all') return true;
-
-        if (activeTab === 'pending') {
-          return r.manager_state === '완료' && r.finance_state === '완료' && r.gm_state === '대기';
-        }
-
-        if (activeTab === 'complete') {
-          return r.gm_state !== '대기';
-        }
-      } else {
-        if (activeTab === 'all') return true;
-
-        if (activeTab === 'pending') {
-          return r.manager_state === '완료' && r.finance_state === '대기';
-        }
-
-        if (activeTab === 'complete') {
-          return r.finance_state !== '대기';
-        }
-      }
-    }
-
-    return true;
-  });
-
-  // 카테고리 필터링
-  const location = useLocation();
-  const path = location.pathname;
-  const isManagerPage = path.startsWith('/manager/proposal');
-  const isProjectPage = path.startsWith('/project/proposal');
-  const isAdminPage = isAdmin;
-  const categories =
-    isManagerPage || isAdminPage
-      ? [
-          { value: '전체', label: '전체' },
-          { value: '교육비', label: '교육비' },
-          { value: '구매요청', label: '구매요청' },
-          { value: '일반비용', label: '일반비용' },
-          { value: '프로젝트', label: '프로젝트' },
-        ]
-      : [
-          { value: '전체', label: '전체' },
-          { value: '교육비', label: '교육비' },
-          { value: '구매요청', label: '구매요청' },
-          { value: '일반비용', label: '일반비용' },
-        ];
-  const categoryFiltered =
-    !selectedCategory || selectedCategory === '전체' ? tabFiltered : tabFiltered.filter((r) => r.category === selectedCategory);
-
-  const matchStatusOptions = [
-    { value: 'all', label: '전체' },
-    { value: 'matched', label: '완료' },
-    { value: 'unmatched', label: '매칭전' },
-  ];
-
-  const matchFiltered = categoryFiltered.filter((r) => {
-    if (!matchStatus || matchStatus === 'all') return true;
-
-    if (r.category === '구매요청') return false;
-
-    if (matchStatus === 'matched') return !!r.expense_no;
-
-    if (matchStatus === 'unmatched') return !r.expense_no;
-
-    return true;
-  });
-
-  // 정렬
-  const filteredReports = matchFiltered.sort((a, b) => b.id - a.id);
-
-  // 페이지네이션
-  const { totalPages, paginatedReports } = useMemo(() => {
-    const total = Math.ceil(filteredReports.length / pageSize);
-    const startIndex = (currentPage - 1) * pageSize;
-    const paginated = filteredReports.slice(startIndex, startIndex + pageSize);
-
-    return {
-      totalPages: total,
-      paginatedReports: paginated,
-    };
-  }, [filteredReports, currentPage, pageSize]);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    setSelectedIds([]);
-    setIsAllSelected(false);
-
-    //navigate(`?tab=${activeTab}&page=${page}`, { replace: true});
-    //window.history.replaceState(null, '', `?tab=${activeTab}&page=${page}`);
-  };
-
-  const showBulkApproval = isAdmin && activeTab === 'pending';
 
   const handleSelectAll = () => {
     if (isAllSelected) {
       setSelectedIds([]);
       setIsAllSelected(false);
     } else {
-      const allIds = paginatedReports.map((r) => r.id);
-      setSelectedIds(allIds);
+      setSelectedIds(paginatedReports.map((r) => r.id));
       setIsAllSelected(true);
     }
   };
 
   const handleSelectOne = (id: number) => {
-    if (selectedIds.includes(id)) {
-      const newIds = selectedIds.filter((selectedId) => selectedId !== id);
-      setSelectedIds(newIds);
-      setIsAllSelected(false);
-    } else {
-      const newIds = [...selectedIds, id];
-      setSelectedIds(newIds);
-      if (newIds.length === paginatedReports.length) {
-        setIsAllSelected(true);
-      }
-    }
+    const newIds = selectedIds.includes(id) ? selectedIds.filter((selectedId) => selectedId !== id) : [...selectedIds, id];
+
+    setSelectedIds(newIds);
+    setIsAllSelected(newIds.length === paginatedReports.length);
   };
 
   const handleBulkApprove = async () => {
@@ -321,27 +281,56 @@ export default function ProposalList({
       return;
     }
 
-    const confirmMessage = `선택한 ${selectedIds.length}개 문서를 승인하시겠습니까?`;
-    if (!confirm(confirmMessage)) return;
+    if (!confirm(`선택한 ${selectedIds.length}개 문서를 승인하시겠습니까?`)) return;
 
     try {
-      console.log('🔥 일괄 승인 요청:', selectedIds);
-      console.log('🔥 adminRole:', adminRole);
-
+      console.log('🔥 일괄 승인 요청:', selectedIds, '🔥 adminRole:', adminRole);
       alert('승인이 완료되었습니다.');
-
       setSelectedIds([]);
       setIsAllSelected(false);
-
-      // 🔥 onFetchData가 있으면 목록 새로고침
-      if (onFetchData) {
-        fetchReports();
-      }
+      if (onFetchData) fetchReports();
     } catch (error) {
       console.error('❌ 일괄 승인 실패:', error);
       alert('승인 처리 중 오류가 발생했습니다.');
     }
   };
+
+  // Effects
+  useEffect(() => {
+    setActiveTab(getDefaultTab());
+  }, [searchParams, isAdmin, adminRole, isManager]);
+
+  useEffect(() => {
+    if (activeTab && onFetchData) {
+      fetchReports();
+    }
+  }, [activeTab, activeSearchQuery, onFetchData]);
+
+  // 필터링 및 페이지네이션
+  const filteredReports = useMemo(() => {
+    return reports
+      .filter(filterByTab)
+      .filter(filterByCategory)
+      .filter(filterByMatchStatus)
+      .sort((a, b) => b.id - a.id);
+  }, [reports, activeTab, selectedCategory, matchStatus, isAdmin, adminRole, isManager]);
+
+  const { totalPages, paginatedReports } = useMemo(() => {
+    const total = Math.ceil(filteredReports.length / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const paginated = filteredReports.slice(startIndex, startIndex + pageSize);
+
+    return { totalPages: total, paginatedReports: paginated };
+  }, [filteredReports, currentPage, pageSize]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setSelectedIds([]);
+    setIsAllSelected(false);
+  };
+
+  const usedTabs = tablist[getUserType()];
+  const categories = getCategoryOptions();
 
   return (
     <div>
@@ -379,12 +368,13 @@ export default function ProposalList({
               </Select>
             </div>
           )}
+
           <Select value={matchStatus || ''} onValueChange={setMatchStatus}>
             <SelectTrigger size="sm" className="w-[120px]">
               <SelectValue placeholder="비용 매칭 상태" />
             </SelectTrigger>
             <SelectContent>
-              {matchStatusOptions.map((m) => (
+              {match_state.map((m) => (
                 <SelectItem key={m.value} value={m.value}>
                   {m.label}
                 </SelectItem>
@@ -393,7 +383,12 @@ export default function ProposalList({
           </Select>
         </div>
 
-        {/* 🔥 검색창 - admin일 때만 표시 */}
+        {showRegisterButton && onRegister && (
+          <Button size="sm" onClick={onRegister}>
+            기안서 작성하기
+          </Button>
+        )}
+
         {isAdmin && (
           <div className="flex gap-x-2">
             <div className="relative w-[175px]">
@@ -413,17 +408,11 @@ export default function ProposalList({
                 <SearchGray className="text-gray-400" />
               </Button>
             </div>
-            {showRegisterButton && onRegister && (
-              <Button size="sm" onClick={onRegister}>
-                기안서 작성하기
-              </Button>
-            )}
+
             {showBulkApproval && (
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleBulkApprove} disabled={selectedIds.length === 0}>
-                  승인 하기
-                </Button>
-              </div>
+              <Button size="sm" onClick={handleBulkApprove} disabled={selectedIds.length === 0}>
+                승인 하기
+              </Button>
             )}
           </div>
         )}
@@ -439,7 +428,6 @@ export default function ProposalList({
             <TableHead className="w-[10%]">금액</TableHead>
             <TableHead className="w-[10%]">비용 매칭</TableHead>
             <TableHead className="w-[8%]">결재 상태</TableHead>
-
             {showWriterInfo && (
               <>
                 <TableHead className="w-[8%]">팀</TableHead>
@@ -466,14 +454,11 @@ export default function ProposalList({
             </TableRow>
           ) : (
             paginatedReports.map((report, index) => {
-              const writer = showWriterInfo ? { team: report.team, name: report.user } : null;
-              const displayStatus = report.approval_manager_display_state ?? report.approval_user_display_state ?? report.state;
-
               const rowNumber = filteredReports.length - ((currentPage - 1) * pageSize + index);
-
-              const isCostCategory = report.category === '일반비용' || report.category === '교육비' || report.category === '프로젝트';
-
+              const isCostCategory = cost_categories.includes(report.category);
               const isSelected = selectedIds.includes(report.id);
+              const displayStatus = getDisplayStatus(report);
+              const badgeConfig = badge_status[displayStatus] || { label: '진행' };
 
               return (
                 <TableRow
@@ -481,74 +466,29 @@ export default function ProposalList({
                   onClick={() => onRowClick(report.id, activeTab)}
                   className="cursor-pointer hover:bg-gray-100 [&_td]:text-[13px]">
                   <TableCell>{rowNumber}</TableCell>
-
                   <TableCell>{report.category}</TableCell>
-
                   <TableCell className="text-left">{report.title}</TableCell>
                   <TableCell className="text-right">{formatAmount(report.price)}원</TableCell>
                   <TableCell>
                     {report.category === '구매요청'
                       ? '-'
-                      : isCostCategory &&
-                        (report.expense_no ? (
-                          <Badge size="table" variant="outline">
-                            완료
+                      : isCostCategory && (
+                          <Badge size="table" variant="outline" className={!report.expense_no ? 'border-gray-600 text-gray-600' : ''}>
+                            {report.expense_no ? '완료' : '매칭전'}
                           </Badge>
-                        ) : (
-                          <Badge size="table" variant="outline" className="border-gray-600 text-gray-600">
-                            매칭전
-                          </Badge>
-                        ))}
+                        )}
                   </TableCell>
                   <TableCell>
-                    {(() => {
-                      switch (displayStatus) {
-                        case '팀장대기':
-                          return (
-                            <Badge variant="secondary" size="table">
-                              팀장대기
-                            </Badge>
-                          );
-                        case '팀장결재완료':
-                          return <Badge size="table">팀장결재완료</Badge>;
-
-                        case '회계대기':
-                          return (
-                            <Badge variant="secondary" size="table" className="bg-primary-yellow-150 text-primary-orange">
-                              회계대기
-                            </Badge>
-                          );
-
-                        case 'GM대기':
-                          return (
-                            <Badge variant="secondary" size="table" className="bg-primary-purple-150 text-primary-purple">
-                              GM대기
-                            </Badge>
-                          );
-
-                        case '승인완료':
-                          return <Badge size="table">승인완료</Badge>;
-
-                        case '반려':
-                          return (
-                            <Badge size="table" className="bg-[#FF2200]">
-                              반려
-                            </Badge>
-                          );
-
-                        default:
-                          return <Badge size="table">진행</Badge>;
-                      }
-                    })()}
+                    <Badge size="table" variant={badgeConfig.variant as any} className={badgeConfig.className}>
+                      {badgeConfig.label}
+                    </Badge>
                   </TableCell>
-
-                  {showWriterInfo && writer && (
+                  {showWriterInfo && (
                     <>
-                      <TableCell>{writer.team}</TableCell>
-                      <TableCell>{writer.name}</TableCell>
+                      <TableCell>{report.team}</TableCell>
+                      <TableCell>{report.user}</TableCell>
                     </>
                   )}
-
                   <TableCell>{formatKST(report.date, true)}</TableCell>
                   {showBulkApproval && (
                     <TableCell onClick={(e) => e.stopPropagation()} className="px-2.5">

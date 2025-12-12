@@ -2,7 +2,7 @@
 import { useNavigate } from 'react-router';
 import { useMemo } from 'react';
 import ProposalListContent from '@/components/features/proposal/ProposalList';
-import { getReportListManager } from '@/api/admin/proposal';
+import { getReportListAdmin } from '@/api/admin/proposal';
 import { useUser } from '@/hooks/useUser';
 
 export default function AdminProposalList() {
@@ -25,7 +25,7 @@ export default function AdminProposalList() {
       showWriterInfo={true}
       onRowClick={(id, tab) => navigate(`/admin/proposal/${id}?tab=${tab}`)}
       onFetchData={async (params) => {
-        return await getReportListManager(params);
+        return await getReportListAdmin(params);
       }}
     />
   );
