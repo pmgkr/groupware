@@ -1,261 +1,258 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PlusIcon, MinusIcon, SettingsIcon, InfoIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { SettingsIcon, InfoIcon } from 'lucide-react';
 import GrantDialog from './grantDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { adminVacationApi, type VacationItem } from '@/api/admin/vacation';
 import { getTeams } from '@/api/admin/teams';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getAvatarFallback } from '@/utils';
 
+/* ===========================================================
+    타입 정의
+=========================================================== */
 
-export interface VacationDayInfo {
-  plusDays?: number; // 추가된 일수
-  minusDays?: number; // 차감된 일수
-}
+type Team = {
+  team_id: number;
+  team_name: string;
+};
 
-export interface UserListItem {
+type DisplayDataItem = {
   id: string;
-  profile_image: string;
+  profile_image: string | null;
   department: string;
   name: string;
   hireDate: string;
-  CountFromHireDate: string;
-  currentYearVacation: VacationDayInfo; // 기본연차
-  carryOverVacation: VacationDayInfo; // 이월연차
-  specialVacation: VacationDayInfo; // 특별대휴
-  officialVacation: VacationDayInfo; // 공가
-  totalVacationDays: VacationDayInfo; // 누적 휴가일수
-  availableVacationDays: number; // 사용가능 휴가일수
-}
+  va_current: string;
+  va_carryover: string;
+  va_comp: string;
+  va_long: string;
+  daycount: number;
+};
 
-export interface UserListProps {
+interface UserListProps {
   year?: number;
   teamIds?: number[];
   userIds?: string[];
 }
 
-export default function UserList({ 
-  year,
-  teamIds = [],
-  userIds = []
-}: UserListProps) {
+/* ===========================================================
+    컴포넌트 시작
+=========================================================== */
+
+export default function UserList({ year, teamIds = [], userIds = [] }: UserListProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // 상세 페이지인지 확인
   const isDetailPage = location.pathname.includes('/vacation/user/');
-  
-  // 데이터 상태
-  const [displayData, setDisplayData] = useState<UserListItem[]>([]);
+
+  const [displayData, setDisplayData] = useState<DisplayDataItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [teams, setTeams] = useState<Array<{ team_id: number; team_name: string }>>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
 
-  // 다이얼로그 상태
   const [isGrantDialogOpen, setIsGrantDialogOpen] = useState(false);
-  const [selectedUserName, setSelectedUserName] = useState<string>('');
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedUserName, setSelectedUserName] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState('');
 
-  // 다이얼로그 열기
   const handleOpenGrantDialog = (userId: string, userName: string) => {
     setSelectedUserId(userId);
     setSelectedUserName(userName);
     setIsGrantDialogOpen(true);
   };
 
-  // 다이얼로그 닫기
   const handleCloseGrantDialog = () => {
     setIsGrantDialogOpen(false);
     setSelectedUserName('');
     setSelectedUserId('');
   };
 
-  // 사용자 상세 페이지로 이동
   const handleRowClick = (userId: string, e: React.MouseEvent) => {
-    // 버튼 클릭 시에는 이동하지 않음
-    if ((e.target as HTMLElement).closest('button')) {
-      return;
-    }    
+    if ((e.target as HTMLElement).closest("button")) return;
     navigate(`/admin/vacation/user/${userId}`);
   };
 
-  // 팀 목록 로드
+  // 팀 목록 로드 여부 추적 ref
+  const teamsLoadedRef = useRef(false);
+  
+  /* 팀 목록 로드 */
   useEffect(() => {
+    if (teamsLoadedRef.current) return;
+    
     const loadTeams = async () => {
       try {
         const teamList = await getTeams({});
-        setTeams(teamList.map(team => ({
-          team_id: team.team_id,
-          team_name: team.team_name
+        setTeams(teamList.map((t) => ({
+          team_id: t.team_id,
+          team_name: t.team_name
         })));
-      } catch (error) {
-        console.error('팀 목록 로드 실패:', error);
+        teamsLoadedRef.current = true;
+      } catch (e) {
+        console.error("팀 목록 로드 실패:", e);
       }
     };
     loadTeams();
   }, []);
 
-  // 휴가 목록 로드 함수
-  const loadVacationList = async () => {
+  /* ===========================================================
+      휴가 목록 로딩
+  ========================================================== */
+  const loadingRef = useRef(false);
+  
+  // teamIds와 userIds를 문자열로 변환하여 안정적인 의존성 생성 (원본 배열 변경 방지)
+  const teamIdsKey = useMemo(() => [...teamIds].sort((a, b) => a - b).join(','), [teamIds]);
+  const userIdsKey = useMemo(() => [...userIds].sort().join(','), [userIds]);
+  
+  const loadVacationList = useCallback(async () => {
+    // 이미 로딩 중이면 중복 호출 방지
+    if (loadingRef.current) return;
+    
+    loadingRef.current = true;
     setLoading(true);
+
     try {
       const currentYear = year || new Date().getFullYear();
-      const response = await adminVacationApi.getVacationList(currentYear);
       
-      // 필터링: 선택된 팀과 유저에 따라
-      let filteredItems = response.rows;
-      
-      if (teamIds.length > 0) {
-        filteredItems = filteredItems.filter(item => teamIds.includes(item.team_id));
-      }
-      
-      if (userIds.length > 0) {
-        filteredItems = filteredItems.filter(item => userIds.includes(item.user_id));
+      // 팀 목록 가져오기 (teams는 클로저로 최신 값 참조)
+      let teamsData = teams;
+      if (teamsData.length === 0 && !teamsLoadedRef.current) {
+        try {
+          const teamList = await getTeams({});
+          teamsData = teamList.map((t) => ({
+            team_id: t.team_id,
+            team_name: t.team_name
+          }));
+          // teams가 비어있을 때만 업데이트 (이미 로드된 경우 재호출 방지)
+          setTeams(prevTeams => {
+            if (prevTeams.length > 0) return prevTeams;
+            teamsLoadedRef.current = true;
+            return teamsData;
+          });
+        } catch (e) {
+          console.error("팀 목록 로드 실패:", e);
+        }
       }
 
-      // VacationItem을 UserListItem으로 변환
-      const convertedData: UserListItem[] = filteredItems.map(item => {
-        const team = teams.find(t => t.team_id === item.team_id);
+      // 모든 데이터를 가져오기 위해 size=100으로 요청
+      const response = await adminVacationApi.getVacationList(currentYear, undefined, undefined, 100);
+
+      let filteredItems = response.rows;
+      
+      // 전체 데이터가 100개를 초과하는 경우 추가 페이지 로드
+      if (response.total > 100) {
+        const totalPages = Math.ceil(response.total / 100);
+        const additionalRequests = [];
         
-        // 입사일로부터 경과 일수 계산
-        let countFromHireDate = '';
-        let formattedHireDate = '';
-        if (item.hire_date) {
-          const hireDate = new Date(item.hire_date);
-          const today = new Date();
-          const diffTime = today.getTime() - hireDate.getTime();
-          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-          countFromHireDate = `${diffDays}일`;
-          
-          // 날짜를 YYYY-MM-DD 형식으로 포맷팅
-          const year = hireDate.getFullYear();
-          const month = String(hireDate.getMonth() + 1).padStart(2, '0');
-          const day = String(hireDate.getDate()).padStart(2, '0');
-          formattedHireDate = `${year}-${month}-${day}`;
+        for (let page = 2; page <= totalPages; page++) {
+          additionalRequests.push(
+            adminVacationApi.getVacationList(currentYear, undefined, page, 100)
+          );
         }
         
-        // 프로필 이미지 URL 생성
-        const profileImageUrl = item.profile_image 
-          ? `${import.meta.env.VITE_API_ORIGIN || 'https://gbend.cafe24.com'}/uploads/mypage/${item.profile_image}`
-          : '';
+        const additionalResponses = await Promise.all(additionalRequests);
+        additionalResponses.forEach(res => {
+          filteredItems = [...filteredItems, ...res.rows];
+        });
+      }
+
+      if (teamIds.length > 0) {
+        filteredItems = filteredItems.filter(i => teamIds.includes(i.team_id));
+      }
+      if (userIds.length > 0) {
+        filteredItems = filteredItems.filter(i => userIds.includes(i.user_id));
+      }
+
+      const converted = filteredItems.map((item) => {
+        const team = teamsData.find(t => t.team_id === item.team_id);
+
+        // 입사일 포맷팅
+        let formattedHireDate = "";
+        if (item.hire_date) {
+          const hire = new Date(item.hire_date);
+          formattedHireDate = `${hire.getFullYear()}-${String(hire.getMonth() + 1).padStart(2, "0")}-${String(hire.getDate()).padStart(2, "0")}`;
+        }
+
+        const profileImageName = item.profile_image && typeof item.profile_image === 'string' 
+          ? item.profile_image.trim() 
+          : null;
         
         return {
           id: item.user_id,
-          profile_image: profileImageUrl,
-          department: team?.team_name || '',
+          profile_image: profileImageName,
+          department: team?.team_name || "",
           name: item.user_name,
-          hireDate: formattedHireDate || item.hire_date || '',
-          CountFromHireDate: countFromHireDate,
-          // 기본연차
-          currentYearVacation: {
-            plusDays: Number((Number(item.va_current) || 0) + (Number(item.v_current) || 0)) || 0,
-            minusDays: Number(-(Number(item.v_current) || 0)) || 0
-          },
-          // 이월연차
-          carryOverVacation: {
-            plusDays: Number((Number(item.va_carryover) || 0) + (Number(item.v_carryover) || 0)) || 0,
-            minusDays: Number(-(Number(item.v_carryover) || 0)) || 0
-          },
-          // 특별대휴
-          specialVacation: {
-            plusDays: Number((Number(item.va_comp) || 0) + (Number(item.v_comp) || 0)) || 0,
-            minusDays: Number(-(Number(item.v_comp) || 0)) || 0
-          },
-          // 공가
-          officialVacation: {
-            plusDays: Number((Number(item.va_official) || 0) + (Number(item.v_official) || 0)) || 0,
-            minusDays: Number(-(Number(item.v_official) || 0)) || 0
-          },
-          // 누적 휴가일수(공가제외)
-          totalVacationDays: {
-            plusDays: Number(
-              ((Number(item.va_current) || 0) + (Number(item.v_current) || 0)) + // 기본연차
-              ((Number(item.va_carryover) || 0) + (Number(item.v_carryover) || 0)) +  // 이월연차
-              ((Number(item.va_comp) || 0) + (Number(item.v_comp) || 0)) // 특별대휴
-            ) || 0,
-            minusDays: Number(-((Number(item.v_current) || 0) + (Number(item.v_carryover) || 0) + (Number(item.v_comp) || 0))) || 0
-          },
-          // 총 잔여 휴가일수(공가 제외)
-          availableVacationDays: Number(
-            (((Number(item.va_current) || 0) + (Number(item.v_current) || 0)) + // 기본연차
-             ((Number(item.va_carryover) || 0) + (Number(item.v_carryover) || 0)) + // 이월연차
-             ((Number(item.va_comp) || 0) + (Number(item.v_comp) || 0))) - // 특별대휴
-            ((Number(item.v_current) || 0) + (Number(item.v_carryover) || 0) + (Number(item.v_comp) || 0))
-          ) || 0,
-
+          hireDate: formattedHireDate,
+          va_current: item.va_current,
+          va_carryover: item.va_carryover,
+          va_comp: item.va_comp,
+          va_long: item.va_long,
+          daycount: (item as any).daycount || 0
         };
       });
-      
-      setDisplayData(convertedData);
-    } catch (error: any) {
-      console.error('휴가 목록 로드 실패:', error);
-      // 404 에러인 경우 서버 라우트가 없는 것으로 간주
-      if (error?.status === 404 || error?.message?.includes('404') || error?.message?.includes('Not Found')) {
-        console.warn('서버에 /admin/vacation/list 엔드포인트가 없습니다. 서버 측 라우트를 확인해주세요.');
-      }
+
+      setDisplayData(converted);
+    } catch (e) {
+      console.error("휴가 목록 로드 실패:", e);
       setDisplayData([]);
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
-  };
+  }, [year, teamIdsKey, userIdsKey]);
 
-  // 휴가 목록 로드
   useEffect(() => {
+    // 초기 마운트 시 또는 의존성이 변경될 때만 호출
     loadVacationList();
-  }, [year, teamIds, userIds, teams, isDetailPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, teamIdsKey, userIdsKey]);
 
-
+  /* ===========================================================
+      렌더링
+  ========================================================== */
   return (
     <Table variant="primary" align="center" className="table-fixed">
       <TableHeader>
-        <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-          <TableHead className="w-[8%] text-center p-0">부서</TableHead>
+        <TableRow>
+          <TableHead className="w-[8%] text-center">부서</TableHead>
           <TableHead className="w-[10%] text-center">이름</TableHead>
           <TableHead className="w-[15%] text-center">입사일</TableHead>
           <TableHead className="w-[10%] text-center">기본연차</TableHead>
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              <span>이월연차</span>
-              <Tooltip> 
+              이월연차
+              <Tooltip>
                 <TooltipTrigger asChild>
-                  <InfoIcon className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
+                  <InfoIcon className="w-3 h-3 text-gray-400" />
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>당해 4월 소멸됨</p>
-                </TooltipContent>
+                <TooltipContent>당해 4월 소멸됨</TooltipContent>
               </Tooltip>
             </div>
           </TableHead>
+
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              <span>특별대휴</span>
-              <Tooltip> 
+              특별대휴
+              <Tooltip>
                 <TooltipTrigger asChild>
-                  <InfoIcon className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
+                  <InfoIcon className="w-3 h-3 text-gray-400" />
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>토요일 근무에 대한 보상휴가</p>
-                </TooltipContent>
+                <TooltipContent>토요일 근무 보상휴가</TooltipContent>
               </Tooltip>
             </div>
           </TableHead>
+
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              <span>공가</span>
-              <Tooltip> 
+              공가
+              <Tooltip>
                 <TooltipTrigger asChild>
-                  <InfoIcon className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
+                  <InfoIcon className="w-3 h-3 text-gray-400" />
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>누적, 총 휴가일수에 포함되지 않음</p>
-                </TooltipContent>
+                <TooltipContent>총 휴가일수, 누적 휴가일수에 포함 안됨</TooltipContent>
               </Tooltip>
             </div>
-            </TableHead>
-            <TableHead className="w-[10%] text-center">누적 휴가일수</TableHead>
-            <TableHead className="w-[10%] text-center">총 잔여 휴가일수</TableHead>
+          </TableHead>
           <TableHead className="w-[10%] text-center">휴가관리</TableHead>
         </TableRow>
       </TableHeader>
@@ -263,118 +260,83 @@ export default function UserList({
       <TableBody>
         {loading ? (
           <TableRow>
-            <TableCell className="h-15 text-gray-500 text-center" colSpan={10}>
-              로딩 중
-            </TableCell>
+            <TableCell colSpan={8} className="text-center">로딩 중…</TableCell>
           </TableRow>
         ) : displayData.length === 0 ? (
           <TableRow>
-            <TableCell className="h-15 text-gray-500 text-center" colSpan={10}>
-              휴가 데이터가 없습니다.
-            </TableCell>
+            <TableCell colSpan={8} className="text-center">데이터 없음</TableCell>
           </TableRow>
         ) : (
-          displayData.map((item) => (
-            <TableRow 
-              key={item.id} 
-              className="[&_td]:text-[13px] cursor-pointer hover:bg-gray-200"
+          displayData.map(item => (
+            <TableRow
+              key={item.id}
+              className="cursor-pointer hover:bg-gray-200"
               onClick={(e) => handleRowClick(item.id, e)}
             >
-              <TableCell className="text-center p-0">{item.department}</TableCell>
-              <TableCell className="py-3 px-5 text-center">
-                <div className="flex items-center gap-1">
-                    <img 
-                      src={item.profile_image || 'https://gbend.cafe24.com/uploads/mypage/migx16tz_ebf4c4a682.webp?t=1764225227211'} 
-                      alt={item.name} 
-                      className="w-10 h-10 rounded-full object-cover"
-                      onError={(e) => {
-                        // 이미지 로드 실패 시 기본 이미지로 대체
-                        (e.target as HTMLImageElement).src = 'https://gbend.cafe24.com/uploads/mypage/migx16tz_ebf4c4a682.webp?t=1764225227211';
-                      }}
+              <TableCell className="text-center">{item.department}</TableCell>
+
+              <TableCell className="text-center">
+                <div className="flex items-center gap-2 justify-center">
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage 
+                      src={item.profile_image 
+                        ? (() => {
+                            const baseUrl = import.meta.env.VITE_API_ORIGIN || "https://gbend.cafe24.com";
+                            const imagePath = item.profile_image.startsWith('/') 
+                              ? item.profile_image.slice(1) 
+                              : item.profile_image;
+                            return `${baseUrl}/uploads/mypage/${imagePath}`;
+                          })()
+                        : undefined
+                      } 
                     />
-                    <div className="inline-flex flex-wrap justify-start align-start text-left flex-col gap-0">
-                        <span className="inline-flex px-2 text-base">{item.name}</span>
-                    </div>
+                    <AvatarFallback>{getAvatarFallback(item.id)}</AvatarFallback>
+                  </Avatar>
+                  {item.name}
                 </div>
               </TableCell>
-              <TableCell className="text-center p-0">
-                <div className="flex flex-col gap-0">
+
+              <TableCell className="text-center">
+                <div className="flex flex-col items-center">
                   <span>{item.hireDate}</span>
-                  <span className="text-sm text-gray-500">{item.CountFromHireDate}</span>
+                  <span className="text-xs text-gray-500">{item.daycount}일</span>
                 </div>
               </TableCell>
-              <TableCell className="py-3 px-5 text-center">
-                <div className="inline-flex items-center gap-1 flex-wrap justify-center flex-col">
-                  <Badge variant="secondary" size="table">
-                    {item.currentYearVacation.plusDays || 0}일
-                  </Badge>
-                  <Badge variant="grayish" size="table">
-                    {item.currentYearVacation.minusDays || 0}일
-                  </Badge>
-                </div>
+
+              {/* 기본연차 */}
+              <TableCell className="text-center">
+                <Badge variant="secondary" size="table">
+                  {item.va_current}일
+                </Badge>
               </TableCell>
-              <TableCell className="py-3 px-5 text-center">
-                <div className="inline-flex items-center gap-1 flex-wrap justify-center flex-col">
-                  <Badge variant="secondary" size="table">
-                    {item.carryOverVacation.plusDays || 0}일
-                  </Badge>
-                  <Badge variant="grayish" size="table">
-                    {item.carryOverVacation.minusDays || 0}일
-                  </Badge>
-                </div>
+
+              {/* 이월 */}
+              <TableCell className="text-center">
+                <Badge variant="secondary" size="table">{item.va_carryover}일</Badge>
               </TableCell>
-              <TableCell className="py-3 px-5 text-center">
-                <div className="inline-flex items-center gap-1 flex-wrap justify-center flex-col">
-                  <Badge variant="secondary" size="table">
-                    {item.specialVacation.plusDays || 0}일
-                  </Badge>
-                  <Badge variant="grayish" size="table">
-                    {item.specialVacation.minusDays || 0}일
-                  </Badge>
-                </div>
+
+              {/* 특별 */}
+              <TableCell className="text-center">
+                <Badge variant="secondary" size="table">{item.va_comp}일</Badge>
               </TableCell>
-              <TableCell className="py-3 px-5 text-center">
-                <div className="inline-flex items-center gap-1 flex-wrap justify-center flex-col">
-                  <Badge variant="secondary" size="table">
-                    {item.officialVacation.plusDays || 0}일
-                  </Badge>
-                  <Badge variant="grayish" size="table">
-                    {item.officialVacation.minusDays || 0}일
-                  </Badge>
-                </div>
+
+              {/* 공가 (근속휴가) */}
+              <TableCell className="text-center">
+                <Badge variant="secondary" size="table">{item.va_long}일</Badge>
               </TableCell>
-              <TableCell className="py-3 px-5 text-center">
-                <div className="inline-flex items-center gap-1 flex-wrap justify-center flex-col">
-                  <Badge variant="secondary" size="table">
-                    {item.totalVacationDays.plusDays || 0}일
-                  </Badge>
-                  <Badge variant="grayish" size="table">
-                    {item.totalVacationDays.minusDays || 0}일
-                  </Badge>
-                </div>
-              </TableCell>
-              <TableCell className="text-center p-0">
-                <div className="inline-flex items-center gap-1 flex-wrap justify-center flex-col">
-                  <Badge variant="default" size="table">
-                    {item.availableVacationDays}일
-                  </Badge>
-                </div>
-              </TableCell>
-              <TableCell className="py-3 px-5 text-center">
-                <Button 
-                  variant="outline" 
-                  size="sm"
+
+              <TableCell className="text-center">
+                <Button size="sm" variant="outline"
                   onClick={() => handleOpenGrantDialog(item.id, item.name)}
                 >
-                  <SettingsIcon className="w-4 h-4"/>
+                  <SettingsIcon className="w-4 h-4" />
                 </Button>
               </TableCell>
             </TableRow>
           ))
         )}
       </TableBody>
-      
-      {/* 휴가 지급 다이얼로그 */}
+
       <GrantDialog
         isOpen={isGrantDialogOpen}
         onClose={handleCloseGrantDialog}
@@ -385,6 +347,7 @@ export default function UserList({
           loadVacationList();
         }}
       />
+
     </Table>
   );
 }

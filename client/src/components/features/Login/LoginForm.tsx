@@ -44,7 +44,24 @@ export function LoginForm() {
     try {
       // 로그인 → 토큰만 세팅 → /dashboard로 이동
       const res = await loginApi({ user_id: values.user_id, user_pw: values.user_pw });
+      // 백엔드에서 202 (또는 Success 계열)로 code: "ONBOARDING"을 줄 때 처리
+      if (res.code === 'ONBOARDING') {
+        const token = res.onboardingToken;
+        if (token) {
+          // 온보딩 값 저장 키
+          const ONBOARDING_EMAIL_KEY = 'onboarding:email';
+          const ONBOARDING_TOKEN_KEY = 'onboarding:token';
 
+          sessionStorage.setItem(ONBOARDING_EMAIL_KEY, values.user_id);
+          sessionStorage.setItem(ONBOARDING_TOKEN_KEY, token);
+
+          navigate('/onboarding', {
+            replace: true,
+            state: { email: values.user_id, onboardingToken: token },
+          });
+          return;
+        }
+      }
       setTokenStore(res.accessToken);
 
       // 이메일 기억하기
@@ -53,24 +70,10 @@ export function LoginForm() {
 
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
+      console.error('Login Failed:', err); // Debug log added
+
       const status = err?.status ?? err?.response?.status;
       const data = err?.data ?? err?.response?.data;
-
-      if (status === 409) {
-        // 온보딩 값 저장 키
-        const ONBOARDING_EMAIL_KEY = 'onboarding:email';
-        const ONBOARDING_TOKEN_KEY = 'onboarding:token';
-
-        // 새로고침/뒤로가기도 버틸 수 있게 sessionStorage에 저장
-        sessionStorage.setItem(ONBOARDING_EMAIL_KEY, data.email);
-        sessionStorage.setItem(ONBOARDING_TOKEN_KEY, data.onboardingToken);
-
-        navigate('/onboarding', {
-          replace: true,
-          state: { email: data.email, onboardingToken: data.onboardingToken },
-        });
-        return;
-      }
 
       form.setError('root', {
         type: 'manual',

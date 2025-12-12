@@ -24,7 +24,7 @@ export default function Layout() {
       <div className="mt-18 ml-60 min-h-200 bg-white px-5 py-8 2xl:px-25">
         {/* 페이지 타이틀 : router의 handle.title 값 노출 */}
         {!hideTitle && title && (
-          <div className="mb-5 flex items-center">
+          <div className="mb-5 flex items-center has-[+nav]:mb-2">
             <h1 className="text-3xl font-bold">{title}</h1>
             {/* 2차 메뉴 노출 */}
             {!hideChildNav && childNav && childNav.length > 0 && (

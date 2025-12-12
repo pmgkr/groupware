@@ -1,44 +1,39 @@
 import { useRef, useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router';
-import * as XLSX from 'xlsx';
-import { cn } from '@/lib/utils';
+import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
-
+import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
-import { Button } from '@components/ui/button';
-import { Checkbox } from '@components/ui/checkbox';
-import { AppPagination } from '@/components/ui/AppPagination';
-import { type MultiSelectOption } from '@components/multiselect/multi-select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
 import { OctagonAlert } from 'lucide-react';
 
 import { getExpenseType } from '@/api';
-import {
-  getManagerExpenseList,
-  getManagerExpenseMine,
-  confirmExpense,
-  type ExpenseListParams,
-  type ExpenseListItems,
-} from '@/api/manager/nexpense';
+import { getManagerExpenseList, getManagerExpenseMine, confirmExpense, type ExpenseListItems } from '@/api/manager/nexpense';
 import { ManagerListFilter } from '@components/features/Expense/_components/ManagerListFilter';
-import { ManagerListRow } from '@components/features/Expense/_components/ManagerListRow';
+import ManagerExpenseList from '@components/features/Expense/ManagerExpenseList';
 
-export default function ExpenseList() {
-  const navigate = useNavigate();
-  const { user_id, user_name, user_level } = useUser();
+export default function Nexpense() {
+  const { user_id } = useUser();
+  const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
   // ============================
-  // ⭐ Filter States
+  // Filter States
   // ============================
-  const [activeTab, setActiveTab] = useState<'all' | 'claimed'>('claimed');
-  const [selectedYear, setSelectedYear] = useState('2025');
-  const [selectedTeam, setSelectedTeam] = useState<string[]>([]);
-  const [selectedType, setSelectedType] = useState<string[]>([]);
-  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
-  const [selectedProof, setSelectedProof] = useState<string[]>([]);
-  const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'all' | 'claimed'>(() => {
+    return (searchParams.get('tab') as 'all' | 'claimed') || 'claimed';
+  });
+  const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || '2025');
+  const [selectedType, setSelectedType] = useState<string[]>(() => searchParams.get('type')?.split(',') ?? []);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('status')?.split(',') ?? []);
+  const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
+  const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>(() => searchParams.get('attach')?.split(',') ?? []);
+  const [page, setPage] = useState<number>(() => Number(searchParams.get('page') || 1));
+
+  const typeRef = useRef<MultiSelectRef>(null);
+  const statusRef = useRef<MultiSelectRef>(null);
+  const proofRef = useRef<MultiSelectRef>(null);
+  const proofStatusRef = useRef<MultiSelectRef>(null);
 
   const [typeOptions, setTypeOptions] = useState<MultiSelectOption[]>([]);
   const [expenseList, setExpenseList] = useState<ExpenseListItems[]>([]);
@@ -55,11 +50,10 @@ export default function ExpenseList() {
   const [loading, setLoading] = useState(true);
 
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const pageSize = 15; // 한 페이지에 보여줄 개수
+  const [pageSize, setPageSize] = useState(15); // 한 페이지에 보여줄 개수
 
   // ============================
-  // ⭐ 비용유형 가져오기
+  // 비용유형 가져오기
   // ============================
   useEffect(() => {
     async function loadExpenseTypes() {
@@ -75,24 +69,29 @@ export default function ExpenseList() {
   }, []);
 
   // ============================
-  // ⭐ 리스트 조회 (팀 선택 완료 후 실행)
+  // 리스트 조회 (팀 선택 완료 후 실행)
   // ============================
   useEffect(() => {
     async function loadList() {
       try {
         setLoading(true);
 
-        const params: Record<string, any> = {
-          type: selectedType.join(',') || undefined,
-          method: selectedProof.join(',') || undefined,
-          attach: selectedProofStatus.join(',') || undefined,
-          status: activeTab === 'claimed' ? activeTab : selectedStatus.join(',') || undefined,
-          page,
-          size: pageSize,
+        const params: Record<string, string> = {
+          tab: activeTab,
+          year: selectedYear,
+          page: String(page),
         };
 
-        console.log('📦 리스트 요청', params);
+        if (activeTab === 'claimed') {
+          params.status = 'claimed';
+        } else {
+          if (selectedStatus.length) params.status = selectedStatus.join(',');
+        }
+        if (selectedType.length) params.type = selectedType.join(',');
+        if (selectedProof.length) params.method = selectedProof.join(',');
+        if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
 
+        setSearchParams(params);
         const res = activeTab === 'claimed' ? await getManagerExpenseMine(params) : await getManagerExpenseList(params);
 
         console.log('📦 리스트 조회', res);
@@ -107,7 +106,7 @@ export default function ExpenseList() {
     }
 
     loadList();
-  }, [activeTab, selectedYear, selectedTeam, selectedType, selectedProof, selectedProofStatus, selectedStatus, page]);
+  }, [activeTab, selectedYear, selectedType, selectedProof, selectedProofStatus, selectedStatus, page]);
 
   // ============================
   // 체크박스 전체선택
@@ -141,30 +140,115 @@ export default function ExpenseList() {
   const handleTabChange = (tab: 'all' | 'claimed') => {
     setActiveTab(tab);
     setPage(1);
+    resetAllFilters();
+  };
 
+  const resetAllFilters = () => {
     setSelectedYear('2025');
     setSelectedType([]);
     setSelectedStatus([]);
     setSelectedProof([]);
     setSelectedProofStatus([]);
     setCheckedItems([]);
+
+    // MultiSelect 내부 상태 초기화
+    typeRef.current?.clear();
+    statusRef.current?.clear();
+    proofRef.current?.clear();
+    proofStatusRef.current?.clear();
   };
 
-  const handleConfirm = () => {};
+  const handleConfirm = () => {
+    if (checkedItems.length === 0) {
+      addAlert({
+        title: '선택된 비용 항목이 없습니다.',
+        message: '승인할 비용 항목을 선택해주세요.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+      return;
+    }
+
+    const selectedRows = expenseList.filter((item) => checkedItems.includes(item.seq));
+    const nonSaved = selectedRows.filter((item) => item.status === 'Saved');
+
+    if (nonSaved.length > 0) {
+      const invalidIds = nonSaved.map((i) => i.exp_id).join(', ');
+
+      addAlert({
+        title: '승인 불가한 비용 항목이 포함되어 있습니다.',
+        message: `임시저장 상태인 항목(${invalidIds})은 승인할 수 없습니다.`,
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+      return;
+    }
+
+    addDialog({
+      title: '선택한 비용 항목을 승인합니다.',
+      message: `<span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 비용을 승인하시겠습니까?`,
+      confirmText: '승인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          const payload = { seqs: checkedItems };
+          const res = await confirmExpense(payload);
+
+          if (res.count) {
+            for (const row of selectedRows) {
+              await notificationApi.registerNotification({
+                user_id: row.user_id,
+                user_name: row.user_nm,
+                noti_target: user_id!,
+                noti_title: `${row.exp_id} · ${row.el_title}`,
+                noti_message: `청구한 비용을 승인했습니다.`,
+                noti_type: 'expense',
+                noti_url: `/expense/${row.exp_id}`,
+              });
+            }
+
+            addAlert({
+              title: '비용 승인이 완료되었습니다.',
+              message: `<p><span class="text-primary-blue-500 font-semibold">${res.count}</span>건의 비용이 승인 완료되었습니다.</p>`,
+              icon: <OctagonAlert />,
+              duration: 2000,
+            });
+          }
+
+          setExpenseList((prev) => prev.filter((item) => !checkedItems.includes(item.seq)));
+          setCheckedItems([]);
+        } catch (err) {
+          console.error('❌ 승인 실패:', err);
+
+          addAlert({
+            title: '비용 승인 실패',
+            message: `승인 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        } finally {
+          setCheckAll(false);
+        }
+      },
+    });
+  };
 
   return (
     <>
       <ManagerListFilter
         activeTab={activeTab}
         onTabChange={(tab) => {
-          setActiveTab(tab);
-          setPage(1);
+          handleTabChange(tab);
         }}
         selectedYear={selectedYear}
         selectedType={selectedType}
         selectedStatus={selectedStatus}
         selectedProof={selectedProof}
         selectedProofStatus={selectedProofStatus}
+        typeRef={typeRef}
+        statusRef={statusRef}
+        proofRef={proofRef}
+        proofStatusRef={typeRef}
         typeOptions={typeOptions}
         checkedItems={checkedItems}
         onYearChange={setSelectedYear}
@@ -172,83 +256,22 @@ export default function ExpenseList() {
         onStatusChange={setSelectedStatus}
         onProofChange={setSelectedProof}
         onProofStatusChange={setSelectedProofStatus}
-        onRefresh={() => handleTabChange(activeTab)}
+        onRefresh={() => resetAllFilters()}
         onConfirm={() => handleConfirm()}
       />
 
-      <Table variant="primary" align="center" className="table-fixed">
-        <TableHeader>
-          <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[8%]">EXP#</TableHead>
-            <TableHead className="w-[6%] whitespace-nowrap">증빙 수단</TableHead>
-            <TableHead className="w-[7%]">비용 용도</TableHead>
-            <TableHead>비용 제목</TableHead>
-            <TableHead className="w-[5%] whitespace-nowrap">증빙 상태</TableHead>
-            <TableHead className="w-[9%]">금액</TableHead>
-            <TableHead className="w-[8%]">세금</TableHead>
-            <TableHead className="w-[9%]">합계</TableHead>
-            <TableHead className="w-[6%]">작성자</TableHead>
-            <TableHead className="w-[6%]">상태</TableHead>
-            <TableHead className="w-[12%]">작성 일시</TableHead>
-            <TableHead className="w-[3%] px-0! transition-all duration-150">
-              <Checkbox
-                id="chk_all"
-                className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
-                checked={checkAll}
-                onCheckedChange={(v) => handleCheckAll(!!v)}
-              />
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
-          {loading ? (
-            <TableRow>
-              <TableCell className="h-100 text-gray-500" colSpan={12}>
-                비용 리스트 불러오는 중 . . .
-              </TableCell>
-            </TableRow>
-          ) : expenseList.length === 0 ? (
-            <TableRow>
-              <TableCell className="h-100 text-gray-500" colSpan={12}>
-                리스트가 없습니다.
-              </TableCell>
-            </TableRow>
-          ) : (
-            expenseList.map((item) => (
-              <ManagerListRow
-                key={item.seq}
-                item={item}
-                activeTab={activeTab}
-                checked={checkedItems.includes(item.seq)}
-                onCheck={handleCheckItem}
-              />
-            ))
-          )}
-        </TableBody>
-      </Table>
-
-      {activeTab === 'claimed' && (
-        <div className="mt-4 flex gap-2">
-          {/* <Button type="button" size="sm" variant="outline" onClick={handleDeleteSelected}>
-            선택 삭제
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={handleClaimSelected}>
-            선택 청구
-          </Button> */}
-        </div>
-      )}
-
-      <div className="mt-5">
-        {expenseList.length !== 0 && (
-          <AppPagination
-            totalPages={Math.ceil(total / pageSize)}
-            initialPage={page}
-            visibleCount={5}
-            onPageChange={(p) => setPage(p)} //부모 state 업데이트
-          />
-        )}
-      </div>
+      <ManagerExpenseList
+        loading={loading}
+        expenseList={expenseList}
+        checkAll={checkAll}
+        checkedItems={checkedItems}
+        handleCheckAll={handleCheckAll}
+        handleCheckItem={handleCheckItem}
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+      />
     </>
   );
 }

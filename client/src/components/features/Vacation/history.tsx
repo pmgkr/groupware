@@ -32,16 +32,26 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
     }
   }, [year]);
   
-  // userId가 변경되면 데이터 초기화
+  // userId가 변경되면 데이터 초기화 및 fetch key 리셋
   useEffect(() => {
     if (userId) {
       setAllData([]);
+      lastFetchKeyRef.current = ''; // fetch key 리셋하여 재호출 가능하게
     }
   }, [userId]);
+  
+  // selectedYear가 변경되면 fetch key 리셋
+  useEffect(() => {
+    lastFetchKeyRef.current = ''; // year 변경 시 재호출 가능하게
+  }, [selectedYear]);
   
   // 데이터 state
   const [allData, setAllData] = useState<VacationItem[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // 중복 호출 방지 ref
+  const loadingRef = useRef(false);
+  const lastFetchKeyRef = useRef<string>('');
 
   // 페이지네이션 state (URL 파라미터와 동기화)
   const [searchParams, setSearchParams] = useSearchParams();
@@ -88,6 +98,14 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
       return;
     }
 
+    // 중복 호출 방지: 같은 파라미터로 이미 호출 중이면 스킵
+    const fetchKey = `${targetUserId}-${selectedYear}`;
+    if (loadingRef.current || lastFetchKeyRef.current === fetchKey) {
+      return;
+    }
+
+    loadingRef.current = true;
+    lastFetchKeyRef.current = fetchKey;
     setLoading(true);
     try {
       let vacationData: VacationItem[];
@@ -142,6 +160,8 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
       console.error('휴가 이력 로드 실패:', error);
       setAllData([]);
       setLoading(false);
+    } finally {
+      loadingRef.current = false;
     }
   }, [userId, user?.user_id, selectedYear, page, pageSize, isAdminView]);
 
@@ -153,12 +173,12 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
   // 원본 항목과 취소된 항목을 그룹핑
   const groupedData = useMemo(() => {
     const result: Array<{ item: VacationItem; cancelledItem?: VacationItem }> = [];
-    const processedIds = new Set<number>();
+    const processedItems = new Set<VacationItem>(); // 처리된 항목을 직접 추적
     
     // 모든 항목을 순회하면서 원본과 취소 항목을 매칭
     allData.forEach(item => {
       // 이미 처리된 항목은 건너뛰기
-      if (processedIds.has(item.sch_id)) {
+      if (processedItems.has(item)) {
         return;
       }
       
@@ -166,12 +186,13 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
       const isCancelled = item.sch_status === 'N' || item.v_type === 'cancel';
       
       if (isCancelled) {
-        // 같은 sch_id를 가진 원본 항목 찾기
+        // 같은 sch_id를 가진 원본 항목 찾기 (아직 처리되지 않은 것만)
         let originalItem = allData.find(
           other => other.sch_id === item.sch_id && 
                    other.sch_status !== 'N' &&
                    other.v_type !== 'cancel' &&
-                   other !== item
+                   other !== item &&
+                   !processedItems.has(other)
         );
         
         // sch_id로 찾지 못한 경우, 같은 기간과 유형을 가진 원본 항목 찾기
@@ -182,7 +203,7 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
                      other.v_type !== 'cancel' &&
                      other.sch_status !== 'N' &&
                      other !== item &&
-                     !processedIds.has(other.sch_id)
+                     !processedItems.has(other)
           );
         }
         
@@ -192,23 +213,24 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
             item: originalItem,
             cancelledItem: item
           });
-          processedIds.add(item.sch_id);
-          processedIds.add(originalItem.sch_id);
+          processedItems.add(item);
+          processedItems.add(originalItem);
         } else {
           // 원본 항목을 찾지 못한 경우 취소 항목만 표시
           result.push({
             item: item,
             cancelledItem: undefined
           });
-          processedIds.add(item.sch_id);
+          processedItems.add(item);
         }
       } else {
         // 원본 항목인 경우
-        // 같은 sch_id를 가진 취소 항목 찾기
+        // 같은 sch_id를 가진 취소 항목 찾기 (아직 처리되지 않은 것만)
         let cancelledItem = allData.find(
           other => other.sch_id === item.sch_id && 
                    (other.sch_status === 'N' || other.v_type === 'cancel') &&
-                   other !== item
+                   other !== item &&
+                   !processedItems.has(other)
         );
         
         // sch_id로 찾지 못한 경우, 같은 기간과 유형을 가진 취소 항목 찾기
@@ -218,7 +240,7 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
                      other.edate === item.edate &&
                      (other.sch_status === 'N' || other.v_type === 'cancel') &&
                      other !== item &&
-                     !processedIds.has(other.sch_id)
+                     !processedItems.has(other)
           );
         }
         
@@ -228,24 +250,32 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
             item: item,
             cancelledItem: cancelledItem
           });
-          processedIds.add(item.sch_id);
-          processedIds.add(cancelledItem.sch_id);
+          processedItems.add(item);
+          processedItems.add(cancelledItem);
         } else {
           // 취소 항목이 없는 경우 원본만 표시
           result.push({
             item: item,
             cancelledItem: undefined
           });
-          processedIds.add(item.sch_id);
+          processedItems.add(item);
         }
       }
     });
     
-    // 승인일 기준으로 정렬 (최신순)
+    // 최근 생성된 데이터가 위로 오도록 정렬 (승인일 최신순, 같으면 sch_id 큰 순)
     result.sort((a, b) => {
       const dateA = dayjs(a.item.wdate);
       const dateB = dayjs(b.item.wdate);
-      return dateB.diff(dateA);
+      const dateDiff = dateB.diff(dateA);
+      
+      // 승인일이 다르면 승인일 기준으로 정렬
+      if (dateDiff !== 0) {
+        return dateDiff;
+      }
+      
+      // 승인일이 같거나 없으면 sch_id가 큰 것(최근 생성된 것)이 위로
+      return (b.item.sch_id || 0) - (a.item.sch_id || 0);
     });
     
     return result;

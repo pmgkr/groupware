@@ -58,7 +58,7 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
       {children}
 
       <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogContent className="flex flex-col sm:max-w-sm">
+        <AlertDialogContent className="z-100 flex flex-col sm:max-w-sm">
           <AlertDialogHeader className="gap-1">
             {dialog?.title && <AlertDialogTitle dangerouslySetInnerHTML={{ __html: dialog.title }}></AlertDialogTitle>}
             {dialog?.message && (

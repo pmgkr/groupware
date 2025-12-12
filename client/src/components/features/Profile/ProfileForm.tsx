@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ProfileSchema, type ProfileValues } from './ProfileSchema';
 import { useNavigate } from 'react-router';
 import { cn } from '@/lib/utils';
-import { onboardingApi } from '@/api';
+import { onboardingApi, initFormApi } from '@/api';
 import { getTeams, type TeamDto } from '@/api/teams';
 import { setToken as setTokenStore } from '@/lib/tokenStore';
 
@@ -21,11 +21,17 @@ import { Calendar } from '@/assets/images/icons';
 type ProfileFormProps = {
   email: string; // 로그인 409 응답에서 받은 email
   onboardingToken: string; // 로그인 409 응답에서 받은 onboardingToken
+  profileImage?: string | null; // 업로드된 이미지 경로
   className?: string;
 };
 
-export default function ProfileForm({ email, onboardingToken, className }: ProfileFormProps) {
+export default function ProfileForm({ email, onboardingToken, profileImage, className }: ProfileFormProps) {
   const navigate = useNavigate();
+
+  const [uinfo, setUinfo] = useState<any>(null); // 초기 데이터 저장용
+
+
+
   const [dobOpen, setDobOpen] = useState(false); // 생년월일 팝오버용
   const [hireOpen, setHireOpen] = useState(false); // 입사일 팝오버용
   const [submitting, setSubmitting] = useState(false);
@@ -37,40 +43,104 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
     resolver: zodResolver(ProfileSchema),
     defaultValues: {
       user_id: email,
+      user_pw: '', // 비밀번호 초기값
       user_name: '',
       user_name_en: '',
       phone: '',
       job_role: '',
-      birth_date: undefined,
-      hire_date: undefined,
+      birth_date: undefined as Date | undefined,
+      hire_date: undefined as Date | undefined,
       address: '',
       emergency_phone: '',
+      profile_image: '',
     },
     mode: 'onChange',
   });
 
   const { setFocus } = form;
-  useEffect(() => {
-    setFocus('user_name'); // 처음 마운트 시 이름 란에 포커스
 
+  // 토큰 검증 및 초기 데이터 로드 (Team List와 User Info를 같이 가져와서 처리)
+  useEffect(() => {
     let alive = true;
-    (async () => {
+
+    async function init() {
       try {
+        if (!onboardingToken) return;
+
+        // 1. 토큰 디코딩 & 유효성 검사 (Onboarding 페이지에서 수행하므로 여기선 API 호출을 위해 user_id만 추출)
+        const payload = JSON.parse(atob(onboardingToken.split('.')[1]));
+        const token_user_id = payload.sub;
+
         setTeamLoading(true);
 
-        const data = await getTeams({ level: 2 }); // 팀 레벨 2만 가져오기 (국 제외)
+        // 2. 데이터 병렬 Fetch (내 정보 + 팀 목록)
+        const [userData, teamsData] = await Promise.all([
+          initFormApi(token_user_id, onboardingToken),
+          getTeams({ level: 1 }),
+        ]);
+
         if (!alive) return;
-        setTeams(data);
+
+        console.log('User:', userData);
+        console.log('Teams:', teamsData);
+
+        setUinfo(userData);
+        setTeams(teamsData);
+
+        console.log('INIT DATA CHECK:', {
+          userData,
+          teamsData,
+          userTeamId: userData?.team_id,
+          teamsLength: teamsData?.length
+        });
+
+        // 3. Form 초기값 설정
+        if (userData) {
+          // 사용자에게 팀 정보가 없으면, 팀 목록의 첫 번째를 기본값으로 사용
+          let defaultTeamId = userData.team_id;
+          if (!defaultTeamId && teamsData.length > 0) {
+            console.log('User has no team_id, using first team as default:', teamsData[0].team_id);
+            defaultTeamId = teamsData[0].team_id;
+          }
+
+          form.reset({
+            user_id: email,
+            user_name: userData.user_name || '',
+            user_name_en: userData.user_name_en || '',
+            phone: userData.phone || '',
+            job_role: userData.job_role || '',
+            birth_date: userData.birth_date ? userData.birth_date : undefined,
+            hire_date: userData.hire_date ? userData.hire_date : undefined,
+            address: userData.address || '',
+            emergency_phone: userData.emergency_phone || '',
+            team_id: defaultTeamId,
+            profile_image: userData.profile_image || '',
+          });
+        } else if (teamsData.length > 0) {
+          // 사용자 정보는 없지만 팀 목록은 로드된 경우 (예외적 상황)
+          form.setValue('team_id', teamsData[0].team_id);
+        }
+
       } catch (e: any) {
         if (!alive) return;
+        console.error('Profile Init Error:', e);
+        // 401 Unauthorized or other critical errors
+        if (e.status === 401 || (e.message && e.message.includes('expired'))) {
+          alert('지정시간이 만료 되었습니다.\n프로세스를 초기화 합니다.\n다시 시도해 주세요');
+          navigate('/', { replace: true });
+        }
       } finally {
         if (alive) setTeamLoading(false);
       }
-    })();
+    }
+
+    init();
+    setFocus('user_name');
+
     return () => {
       alive = false;
     };
-  }, [setFocus]);
+  }, [onboardingToken, email, navigate, form, setFocus]);
 
   // 사용자에게 010-1234-5678 포맷으로 보여주기 (내부 전송은 숫자만)
   const formatPhone = (raw: string) => {
@@ -82,6 +152,13 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
 
   // 생년월일 YYYY-MM-DD 포맷으로 변경
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
+
+  // 부모 컴포넌트(Onboarding)에서 넘겨준 profileImage가 변경되면 form value 업데이트
+  useEffect(() => {
+    if (profileImage) {
+      form.setValue('profile_image', profileImage);
+    }
+  }, [profileImage, form]);
 
   const onSubmit = async (values: ProfileValues) => {
     try {
@@ -102,6 +179,12 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
         navigate('/dashboard', { replace: true });
       }
     } catch (e: any) {
+      // 토큰 만료 등 인증 에러 처리
+      if (e.status === 401 || (e.message && e.message.includes('expired'))) {
+        alert('지정시간이 만료 되었습니다.\n프로세스를 초기화 합니다.\n다시 시도해 주세요');
+        navigate('/', { replace: true });
+        return;
+      }
       alert(e.message ?? '프로필 저장 중 오류가 발생했습니다.');
     } finally {
       setSubmitting(false);
@@ -111,6 +194,9 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className={cn('max-w-xl space-y-5', className)} noValidate>
+        {/* 히든 필드: 프로필 이미지 경로 */}
+        <input type="hidden" {...form.register('profile_image')} />
+
         {/* 이메일 (읽기 전용) */}
         <FormField
           control={form.control}
@@ -120,6 +206,26 @@ export default function ProfileForm({ email, onboardingToken, className }: Profi
               <FormLabel>이메일</FormLabel>
               <FormControl>
                 <Input {...field} disabled />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 비밀번호 */}
+        <FormField
+          control={form.control}
+          name="user_pw"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>비밀번호</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="password"
+                  placeholder="영문+숫자 8자 이상"
+                  autoComplete="new-password"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
