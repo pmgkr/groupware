@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -13,21 +13,12 @@ import { getManagerExpenseList, getManagerExpenseMine, confirmExpense, type Expe
 import { ManagerListFilter } from '@components/features/Expense/_components/ManagerListFilter';
 import ManagerExpenseList from '@components/features/Expense/ManagerExpenseList';
 
-export default function ExpenseList() {
-  const navigate = useNavigate();
-  const { user_id, user_name, user_level } = useUser();
+export default function Nexpense() {
+  const { user_id } = useUser();
   const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
-  // -----------------------------
-  // URL 쿼리 → 초기 상태 복원
-  // -----------------------------
-  const getArrayParam = (key: string) => {
-    const val = searchParams.get(key);
-    return val ? val.split(',') : [];
-  };
-
   // ============================
-  // ⭐ Filter States
+  // Filter States
   // ============================
   const [activeTab, setActiveTab] = useState<'all' | 'claimed'>(() => {
     return (searchParams.get('tab') as 'all' | 'claimed') || 'claimed';
@@ -62,7 +53,7 @@ export default function ExpenseList() {
   const [pageSize, setPageSize] = useState(15); // 한 페이지에 보여줄 개수
 
   // ============================
-  // ⭐ 비용유형 가져오기
+  // 비용유형 가져오기
   // ============================
   useEffect(() => {
     async function loadExpenseTypes() {
@@ -78,7 +69,7 @@ export default function ExpenseList() {
   }, []);
 
   // ============================
-  // ⭐ 리스트 조회 (팀 선택 완료 후 실행)
+  // 리스트 조회 (팀 선택 완료 후 실행)
   // ============================
   useEffect(() => {
     async function loadList() {
@@ -101,9 +92,6 @@ export default function ExpenseList() {
         if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
 
         setSearchParams(params);
-
-        console.log('📦 리스트 요청 파라미터', params);
-
         const res = activeTab === 'claimed' ? await getManagerExpenseMine(params) : await getManagerExpenseList(params);
 
         console.log('📦 리스트 조회', res);
@@ -215,7 +203,6 @@ export default function ExpenseList() {
             });
           }
 
-          // UI 갱신
           setExpenseList((prev) => prev.filter((item) => !checkedItems.includes(item.seq)));
           setCheckedItems([]);
         } catch (err) {

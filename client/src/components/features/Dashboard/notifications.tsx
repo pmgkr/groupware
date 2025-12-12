@@ -99,10 +99,6 @@ export function Notification() {
           type,
         });
 
-        console.log('API 응답:', response);
-        console.log('현재 사용자 ID:', userId);
-        console.log('응답 개수:', response.length);
-
         // 서버에서 이미 필터링을 해주는 경우도 있으므로,
         // 클라이언트에서도 user_id가 일치하는지 확인
         const filteredResponse = response.filter((noti) => {
@@ -116,8 +112,6 @@ export function Notification() {
           }
           return matches;
         });
-
-        console.log('필터링된 알림 개수:', filteredResponse.length);
 
         // 고유한 noti_target user_id 추출
         const uniqueTargetIds = [...new Set(filteredResponse.map((noti) => noti.noti_target))];

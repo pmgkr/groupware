@@ -454,7 +454,7 @@ export default function Expense() {
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
           <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className={cn('w-[3%] px-0 transition-all duration-150', activeTab !== 'saved' && 'hidden')}>
+            <TableHead className={cn('w-[3%] px-0! transition-all duration-150', activeTab !== 'saved' && 'hidden')}>
               <Checkbox
                 id="chk_all"
                 className="mx-auto flex size-4 items-center justify-center bg-white leading-none"

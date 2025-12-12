@@ -1,11 +1,9 @@
 // 📦 일반비용 (Non-Expense) API
 import { http } from '@/lib/http';
 import { cleanParams } from '@/utils';
-import type { ExpenseType, BankList } from '@/api/common/types';
 
 // 매니저 일반비용 목록 팀별 조회
 export interface ExpenseListParams {
-  team_id?: number;
   page?: number;
   size?: number;
   year?: string;

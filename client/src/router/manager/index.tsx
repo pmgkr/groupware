@@ -8,6 +8,7 @@ import Vacation from '@/pages/Manager/Vacation';
 import ManagerProposalList from '@/pages/Manager/Proposal/managerProposalList';
 import ManagerProposalView from '@/pages/Manager/Proposal/managerProposalView';
 
+import PexpenseView from '@components/features/Project/ManagerExpenseView';
 import NexpenseView from '@components/features/Expense/ManagerExpenseView';
 
 export const managerRoutes: RouteObject = {
@@ -30,6 +31,7 @@ export const managerRoutes: RouteObject = {
     { path: 'working', element: <Working /> },
     { path: 'overtime', element: <Overtime /> },
     { path: 'pexpense', element: <Pexpense /> },
+    { path: 'pexpense/:expId', element: <PexpenseView /> },
     {
       path: 'nexpense',
       element: <Nexpense />,
