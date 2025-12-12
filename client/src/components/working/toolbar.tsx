@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from "@components/ui/button";
 import { MultiSelect } from "@components/multiselect/multi-select";
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,9 +43,14 @@ export default function Toolbar({
   // 팀 관련 state
   const [teams, setTeams] = useState<MyTeamItem[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  
+  // 팀 목록 로드 중복 방지 ref
+  const teamsLoadedRef = useRef(false);
 
   // 팀 목록 로드
   const loadTeams = async () => {
+    if (teamsLoadedRef.current) return;
+    
     try {
       if (!user?.user_id) {
         return;
@@ -127,6 +132,8 @@ export default function Toolbar({
   // Manager/Admin 페이지에서만 팀 목록 로드
   useEffect(() => {
     if (page === 'manager' || page === 'admin') {
+      // page나 user가 변경되면 리셋
+      teamsLoadedRef.current = false;
       loadTeams();
     }
   }, [user, page]);

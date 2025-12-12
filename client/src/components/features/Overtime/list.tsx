@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -101,26 +101,43 @@ export default function OvertimeList({
   // 관리자 여부
   const isManager = user?.user_level === 'manager' || user?.user_level === 'admin';
 
+  // 중복 호출 방지 ref
+  const teamsLoadedRef = useRef(false);
+  const loadingRef = useRef(false);
+  const lastTeamIdsKeyRef = useRef<string>('');
+
   // 팀 목록 로드
   useEffect(() => {
+    if (teamsLoadedRef.current) return;
+    
     const loadTeams = async () => {
       try {
         const teamList = isPage === 'admin' 
           ? await getTeams({})
           : await getCommonTeams({});
         setTeams(teamList.map(t => ({ team_id: t.team_id, team_name: t.team_name })));
+        teamsLoadedRef.current = true;
       } catch (error) {
       }
     };
     loadTeams();
   }, [isPage]);
 
-  // 데이터 조회
-  useEffect(() => {
-    fetchOvertimeData();
-  }, [teamIds]);
+  // teamIds를 문자열로 변환하여 안정적인 의존성 생성
+  const teamIdsKey = useMemo(() => [...teamIds].sort((a, b) => a - b).join(','), [teamIds]);
 
-  const fetchOvertimeData = async () => {
+  // 데이터 조회 함수
+  const fetchOvertimeData = useCallback(async () => {
+    // 이미 로딩 중이면 중복 호출 방지
+    if (loadingRef.current) return;
+    
+    // 같은 teamIds 조합이면 스킵
+    if (lastTeamIdsKeyRef.current === teamIdsKey && teamIdsKey !== '') {
+      return;
+    }
+
+    loadingRef.current = true;
+    lastTeamIdsKeyRef.current = teamIdsKey;
     setLoading(true);
     try {
       // teamIds가 없으면 데이터 조회하지 않음 (Toolbar에서 항상 전달해야 함)
@@ -177,8 +194,14 @@ export default function OvertimeList({
       setAllData([]);
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
-  };
+  }, [teamIdsKey, isPage]);
+
+  // 데이터 조회
+  useEffect(() => {
+    fetchOvertimeData();
+  }, [fetchOvertimeData]);
 
   // 필터링된 데이터
   const filteredData = useMemo(() => {
