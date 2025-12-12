@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router';
+import { Outlet, useNavigate, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
 
 import { Button } from '@components/ui/button';
@@ -47,6 +47,7 @@ export default function FinanceLayout() {
           );
         })}
       </nav>
+      <Outlet />
     </>
   );
 }
