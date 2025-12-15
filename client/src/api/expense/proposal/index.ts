@@ -88,6 +88,7 @@ export interface ReportCard {
   gm_state: string;
   approval_user_display_state?: string;
   approval_manager_display_state?: string;
+  approval_admin_display_state?: string;
   expense_no?: string;
 }
 
