@@ -62,7 +62,7 @@ export default function Pexpense() {
   useEffect(() => {
     async function loadExpenseTypes() {
       try {
-        const data = await getExpenseType('nexp_type1');
+        const data = await getExpenseType('exp_type2');
         setTypeOptions(data.map((t: any) => ({ label: t.code, value: t.code })));
       } catch (err) {
         console.error('❌ 비용 유형 호출 실패:', err);
@@ -93,6 +93,7 @@ export default function Pexpense() {
         if (selectedType.length) params.type = selectedType.join(',');
         if (selectedProof.length) params.method = selectedProof.join(',');
         if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
+        if (selectedDdate !== '') params.ddate = selectedDdate;
         if (selectedDateRange?.from) {
           params.sdate = formatDate(selectedDateRange.from.toISOString());
         }
@@ -178,6 +179,7 @@ export default function Pexpense() {
     setSelectedStatus([]);
     setSelectedProof([]);
     setSelectedProofStatus([]);
+    setSelectedDdate('');
     setCheckedItems([]);
     setSelectedDateRange(undefined);
     setDatePickerKey((prev) => prev + 1);
@@ -217,7 +219,7 @@ export default function Pexpense() {
 
     addDialog({
       title: '선택한 비용 항목을 승인합니다.',
-      message: `<span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 비용을 승인하시겠습니까?`,
+      message: `<span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 비용을 지급 완료 처리 하시겠습니까?`,
       confirmText: '승인',
       cancelText: '취소',
       onConfirm: async () => {
@@ -228,7 +230,7 @@ export default function Pexpense() {
           if (res.ok) {
             addAlert({
               title: '비용 승인이 완료되었습니다.',
-              message: `<p><span class="text-primary-blue-500 font-semibold">${res.updated_count}</span>건의 비용이 승인 완료되었습니다.</p>`,
+              message: `<p><span class="text-primary-blue-500 font-semibold">${res.updated_count}</span>건의 비용이 완료 처리되었습니다.</p>`,
               icon: <OctagonAlert />,
               duration: 2000,
             });
@@ -237,11 +239,11 @@ export default function Pexpense() {
           setExpenseList((prev) => prev.filter((item) => !checkedItems.includes(item.seq)));
           setCheckedItems([]);
         } catch (err) {
-          console.error('❌ 승인 실패:', err);
+          console.error('❌ 지급 실패:', err);
 
           addAlert({
             title: '비용 승인 실패',
-            message: `승인 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+            message: `비용 지급 처리 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
             icon: <OctagonAlert />,
             duration: 2000,
           });

@@ -74,7 +74,7 @@ export async function getAdminExpenseView(exp_id: string | undefined): Promise<p
   return http<pExpenseViewDTO>(`/admin/pexpense/info/${exp_id}`, { method: 'GET' });
 }
 
-// 어드민 > 프로젝트 비용 승인하기
+// 어드민 > 프로젝트 비용 승인하기 (Completed 처리)
 export async function confirmExpense(payload: { seqs: number[] }): Promise<{ updated_count: number; ok: boolean }> {
   const res = http<{ updated_count: number; ok: boolean }>(`/admin/pexpense/confirm/`, {
     method: 'POST',

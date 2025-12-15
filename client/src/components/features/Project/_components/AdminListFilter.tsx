@@ -85,7 +85,7 @@ export function AdminListFilter({
     { label: '임시저장', value: 'Saved' },
     { label: '승인대기', value: 'Claimed' },
     { label: '승인완료', value: 'Confirmed' },
-    { label: '지급대기', value: 'Approved' },
+    // { label: '지급대기', value: 'Waiting' },
     { label: '지급완료', value: 'Completed' },
     { label: '반려됨', value: 'Rejected' },
   ];
@@ -115,8 +115,12 @@ export function AdminListFilter({
               <SelectValue placeholder="연도 선택" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="2025">2025</SelectItem>
-              <SelectItem value="2026">2026</SelectItem>
+              <SelectItem size="sm" value="2025">
+                2025
+              </SelectItem>
+              <SelectItem size="sm" value="2026">
+                2026
+              </SelectItem>
             </SelectContent>
           </Select>
 
@@ -130,7 +134,6 @@ export function AdminListFilter({
             defaultValue={selectedType}
             onValueChange={onTypeChange}
             maxCount={0}
-            hideSelectAll={true}
             autoSize={true}
             closeOnSelect={false}
             searchable={false}
@@ -147,7 +150,6 @@ export function AdminListFilter({
             defaultValue={selectedProof}
             onValueChange={onProofChange}
             maxCount={0}
-            hideSelectAll={true}
             autoSize={true}
             closeOnSelect={false}
             searchable={false}
@@ -164,7 +166,6 @@ export function AdminListFilter({
             defaultValue={selectedProofStatus}
             onValueChange={onProofStatusChange}
             maxCount={0}
-            hideSelectAll={true}
             autoSize={true}
             closeOnSelect={false}
             searchable={false}
@@ -181,7 +182,6 @@ export function AdminListFilter({
             defaultValue={selectedStatus}
             onValueChange={onStatusChange}
             maxCount={0}
-            hideSelectAll={true}
             autoSize={true}
             closeOnSelect={false}
             searchable={false}
@@ -194,8 +194,12 @@ export function AdminListFilter({
               <SelectValue placeholder="지급예정일 유무" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Y">있음</SelectItem>
-              <SelectItem value="N">없음</SelectItem>
+              <SelectItem size="sm" value="Y">
+                있음
+              </SelectItem>
+              <SelectItem size="sm" value="N">
+                없음
+              </SelectItem>
             </SelectContent>
           </Select>
 
@@ -218,7 +222,7 @@ export function AdminListFilter({
         </div>
       </div>
 
-      {/* 지급하기 버튼 */}
+      {/* 우측 필터 */}
       <div className="flex gap-2">
         <div className="relative">
           <Input

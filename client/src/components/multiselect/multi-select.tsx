@@ -1060,7 +1060,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                       onSelect={toggleAll}
                       role="option"
                       aria-selected={selectedValues.length === getAllOptions().filter((opt) => !opt.disabled).length}
-                      aria-label={`Select all ${getAllOptions().length} options`}
+                      aria-label={`Select all`}
                       className="cursor-pointer">
                       <div
                         className={cn(
@@ -1074,7 +1074,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                       </div>
                       <span>
                         전체선택
-                        {getAllOptions().length > 20 ? ` - ${getAllOptions().length} options` : ''}
+                        {/* {getAllOptions().length > 20 ? ` - ${getAllOptions().length} options` : ''} */}
                       </span>
                     </CommandItem>
                   </CommandGroup>

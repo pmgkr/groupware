@@ -149,7 +149,7 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate }: ExpenseRo
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="start">
+            <PopoverContent align="center" className="w-auto p-0">
               <DayPicker mode="single" selected={selectedDate} onSelect={handleDateSelect} />
             </PopoverContent>
           </Popover>
