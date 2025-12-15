@@ -98,17 +98,17 @@ export const getReportInfoAdmin = async (rp_seq: string): Promise<ReportInfoResp
 };
 
 // 승인
-export async function approveReport(rp_seq: string, user_id: string) {
+export async function approveReport(seq: number[]) {
   return await http(`/admin/report/confirm`, {
     method: 'POST',
-    body: JSON.stringify({ rp_seq, user_id }),
+    body: JSON.stringify({ seq }),
   });
 }
 
 // 반려
-export async function rejectReport(rp_seq: string, user_id: string) {
+export async function rejectReport(seq: number[]) {
   return await http(`/admin/report/reject`, {
     method: 'POST',
-    body: JSON.stringify({ rp_seq, user_id }),
+    body: JSON.stringify({ seq }),
   });
 }

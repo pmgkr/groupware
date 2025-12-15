@@ -7,11 +7,14 @@ import { formatAmount, formatKST } from '@/utils';
 import { useEffect, useState, useMemo } from 'react';
 import type { ReportCard } from '@/api/expense/proposal';
 import type { ManagerReportCard } from '@/api/manager/proposal';
-import type { AdminReportCard } from '@/api/admin/proposal';
+import { approveReport, type AdminReportCard } from '@/api/admin/proposal';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { SearchGray } from '@/assets/images/icons';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { CircleCheck, CircleX } from 'lucide-react';
 
 interface ProposalListContentProps {
   reports?: ReportCard[] | ManagerReportCard[] | AdminReportCard[];
@@ -212,6 +215,14 @@ export default function ProposalList({
     if (report.category === '구매요청') return false;
     return matchStatus === 'matched' ? !!report.expense_no : !report.expense_no;
   };
+  const filterBySearch = (report: ReportCard | ManagerReportCard | AdminReportCard) => {
+    if (!activeSearchQuery) return true;
+
+    const searchLower = activeSearchQuery.toLowerCase();
+    const searchableFields = [report.title, report.category, report.user, report.team, String(report.id), String(report.expense_no || '')];
+
+    return searchableFields.some((field) => field && String(field).toLowerCase().includes(searchLower));
+  };
 
   // API 호출
   const fetchReports = async () => {
@@ -268,6 +279,9 @@ export default function ProposalList({
     }
   };
 
+  const { addDialog } = useAppDialog();
+  const { addAlert } = useAppAlert();
+
   const handleSelectOne = (id: number) => {
     const newIds = selectedIds.includes(id) ? selectedIds.filter((selectedId) => selectedId !== id) : [...selectedIds, id];
 
@@ -277,22 +291,54 @@ export default function ProposalList({
 
   const handleBulkApprove = async () => {
     if (selectedIds.length === 0) {
-      alert('승인할 문서를 선택해주세요.');
+      addAlert({
+        title: '선택 필요',
+        message: '승인할 문서를 선택해주세요.',
+        icon: <CircleX />,
+        duration: 2000,
+      });
       return;
     }
 
-    if (!confirm(`선택한 ${selectedIds.length}개 문서를 승인하시겠습니까?`)) return;
+    addDialog({
+      title: '<span class="font-semibold">일괄 승인 확인</span>',
+      message: `선택한 <strong>${selectedIds.length}</strong>개 문서를 승인하시겠습니까?`,
+      confirmText: '승인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          console.log('🔥 일괄 승인 요청 seq:', selectedIds);
 
-    try {
-      console.log('🔥 일괄 승인 요청:', selectedIds, '🔥 adminRole:', adminRole);
-      alert('승인이 완료되었습니다.');
-      setSelectedIds([]);
-      setIsAllSelected(false);
-      if (onFetchData) fetchReports();
-    } catch (error) {
-      console.error('❌ 일괄 승인 실패:', error);
-      alert('승인 처리 중 오류가 발생했습니다.');
-    }
+          // Swagger 기준 payload
+          await approveReport(selectedIds.map(Number));
+
+          addAlert({
+            title: '승인 완료',
+            message: `<p>${selectedIds.length}개 문서가 승인되었습니다.</p>`,
+            icon: <CircleCheck />,
+            duration: 2000,
+          });
+
+          // 상태 초기화
+          setSelectedIds([]);
+          setIsAllSelected(false);
+
+          // 목록 재조회
+          if (onFetchData) {
+            await fetchReports();
+          }
+        } catch (error) {
+          console.error('❌ 일괄 승인 실패:', error);
+
+          addAlert({
+            title: '승인 실패',
+            message: '<p>승인 처리 중 오류가 발생했습니다.</p>',
+            icon: <CircleX />,
+            duration: 2000,
+          });
+        }
+      },
+    });
   };
 
   // Effects
@@ -312,6 +358,7 @@ export default function ProposalList({
       .filter(filterByTab)
       .filter(filterByCategory)
       .filter(filterByMatchStatus)
+      .filter(filterBySearch)
       .sort((a, b) => b.id - a.id);
   }, [reports, activeTab, selectedCategory, matchStatus, isAdmin, adminRole, isManager]);
 

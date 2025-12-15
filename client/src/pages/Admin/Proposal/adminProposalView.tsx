@@ -10,7 +10,7 @@ import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { AlertTriangle, CircleCheck, CircleX } from 'lucide-react';
 import type { ReportFileDTO } from '@/api/expense/proposal';
-import { approveReport, getReportInfoManager, rejectReport } from '@/api/manager/proposal';
+import { approveReport, getReportInfoAdmin, rejectReport } from '@/api/admin/proposal';
 
 export default function AdminProposalView() {
   const { id } = useParams<{ id: string }>();
@@ -29,7 +29,7 @@ export default function AdminProposalView() {
 
     (async () => {
       try {
-        const data = await getReportInfoManager(id); // 매니저용 API
+        const data = await getReportInfoAdmin(id); // 매니저용 API
         setReport(data.report);
         setFiles(data.files || []);
 
@@ -80,7 +80,9 @@ export default function AdminProposalView() {
       cancelText: '취소',
       onConfirm: async () => {
         try {
-          const res = await approveReport(id, user.user_id!);
+          //const role: 'finance' | 'gm' = isFinance ? 'finance' : 'gm';
+
+          await approveReport([Number(id)]);
 
           addAlert({
             title: '승인 완료',
@@ -118,7 +120,8 @@ export default function AdminProposalView() {
       cancelText: '취소',
       onConfirm: async () => {
         try {
-          await rejectReport(id, user.user_id!);
+          //const role: 'finance' | 'gm' = isFinance ? 'finance' : 'gm';
+          await rejectReport([Number(id)]);
 
           addAlert({
             title: '반려 완료',
@@ -157,20 +160,20 @@ export default function AdminProposalView() {
     );
   }
 
+  const isFinance = user?.team_id === 5;
+  const isGM = user?.user_level === 'admin' && user?.team_id !== 5;
   // 승인 / 반려 버튼
   const canApprove = (() => {
-    if (!user?.user_id) return false;
+    if (!user) return false;
 
-    if (report.manager_id === user.user_id) {
-      return report.manager_state === '대기';
+    // 1️⃣ Finance 승인
+    if (isFinance) {
+      return report.manager_state === '완료' && report.finance_state === '대기';
     }
 
-    if (report.finance_id === user.user_id) {
-      return report.finance_state === '대기';
-    }
-
-    if (report.gm_id === user.user_id) {
-      return report.gm_state === '대기';
+    // 2️⃣ GM 승인
+    if (isGM) {
+      return report.manager_state === '완료' && report.finance_state === '완료' && report.gm_state === '대기';
     }
 
     return false;
