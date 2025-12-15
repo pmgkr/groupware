@@ -1,17 +1,19 @@
 import { useRef, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
+import { formatDate } from '@/utils';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
+import type { DateRange } from 'react-day-picker';
 import { OctagonAlert } from 'lucide-react';
 
 import { getExpenseType } from '@/api';
-import { getManagerExpenseList, getManagerExpenseMine, confirmExpense, type ExpenseListItems } from '@/api/manager/pexpense';
-import { ManagerListFilter } from '@components/features/Project/_components/ManagerListFilter';
-import ManagerExpenseList from '@components/features/Project/ManagerExpenseList';
+import { getAdminExpenseList, confirmExpense, setDdate, type ExpenseListItems } from '@/api/admin/pexpense';
+import { AdminListFilter } from '@components/features/Project/_components/AdminListFilter';
+import AdminExpenseList from '@components/features/Project/AdminExpenseList';
 
 export default function Pexpense() {
   const { user_id } = useUser();
@@ -20,14 +22,16 @@ export default function Pexpense() {
   // ============================
   // Filter States
   // ============================
-  const [activeTab, setActiveTab] = useState<'all' | 'claimed'>(() => {
-    return (searchParams.get('tab') as 'all' | 'claimed') || 'claimed';
-  });
   const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || '2025');
   const [selectedType, setSelectedType] = useState<string[]>(() => searchParams.get('type')?.split(',') ?? []);
   const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('status')?.split(',') ?? []);
   const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
   const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>(() => searchParams.get('attach')?.split(',') ?? []);
+  const [selectedDdate, setSelectedDdate] = useState(() => searchParams.get('ddate') || '');
+  const [datePickerKey, setDatePickerKey] = useState(0); // DateRange 마운트용 State
+  const [selectedDateRange, setSelectedDateRange] = useState<DateRange | undefined>(undefined);
+  const [searchInput, setSearchInput] = useState(''); // 사용자가 입력중인 Input 저장값
+  const [searchQuery, setSearchQuery] = useState(''); // 실제 검색 Input 저장값
   const [page, setPage] = useState<number>(() => Number(searchParams.get('page') || 1));
 
   const typeRef = useRef<MultiSelectRef>(null);
@@ -77,22 +81,30 @@ export default function Pexpense() {
         setLoading(true);
 
         const params: Record<string, string> = {
-          tab: activeTab,
           year: selectedYear,
           page: String(page),
         };
 
-        if (activeTab === 'claimed') {
-          params.status = 'claimed';
+        if (!selectedStatus.length) {
+          params.status = 'Confirmed';
         } else {
-          if (selectedStatus.length) params.status = selectedStatus.join(',');
+          params.status = selectedStatus.join(',');
         }
         if (selectedType.length) params.type = selectedType.join(',');
         if (selectedProof.length) params.method = selectedProof.join(',');
         if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
+        if (selectedDateRange?.from) {
+          params.sdate = formatDate(selectedDateRange.from.toISOString());
+        }
+        if (selectedDateRange?.to) {
+          params.edate = formatDate(selectedDateRange.to.toISOString());
+        }
+        if (searchQuery) params.q = searchQuery;
+
+        console.log(params);
 
         setSearchParams(params);
-        const res = activeTab === 'claimed' ? await getManagerExpenseMine(params) : await getManagerExpenseList(params);
+        const res = await getAdminExpenseList(params);
 
         console.log('📦 리스트 조회', res);
 
@@ -106,7 +118,28 @@ export default function Pexpense() {
     }
 
     loadList();
-  }, [activeTab, selectedYear, selectedType, selectedProof, selectedProofStatus, selectedStatus, page]);
+  }, [selectedYear, selectedType, selectedProof, selectedProofStatus, selectedStatus, selectedDdate, searchQuery, selectedDateRange, page]);
+
+  // ============================
+  // Input 핸들러
+  // ============================
+  const handleSearchInputChange = (val: string) => {
+    setSearchInput(val);
+  };
+
+  const handleSearchSubmit = () => {
+    setSearchQuery(searchInput);
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setSearchQuery('');
+  };
+
+  const handleDateRange = (range: DateRange | undefined) => {
+    setPage(1); // 날짜 바뀌면 페이지 초기화
+    setSelectedDateRange(range);
+  };
 
   // ============================
   // 체크박스 전체선택
@@ -136,20 +169,18 @@ export default function Pexpense() {
     setCheckAll(selectable.length > 0 && selectable.every((id) => checkedItems.includes(id)));
   }, [checkedItems, expenseList]);
 
-  // 탭 변경 시 필터 초기화
-  const handleTabChange = (tab: 'all' | 'claimed') => {
-    setActiveTab(tab);
-    setPage(1);
-    resetAllFilters();
-  };
-
   const resetAllFilters = () => {
+    setSearchInput('');
+    setSearchQuery('');
+
     setSelectedYear('2025');
     setSelectedType([]);
     setSelectedStatus([]);
     setSelectedProof([]);
     setSelectedProofStatus([]);
     setCheckedItems([]);
+    setSelectedDateRange(undefined);
+    setDatePickerKey((prev) => prev + 1);
 
     // MultiSelect 내부 상태 초기화
     typeRef.current?.clear();
@@ -221,18 +252,51 @@ export default function Pexpense() {
     });
   };
 
+  // 비용 반려 이벤트 핸들러
+  const handleReject = () => {};
+
+  const handleSetDdate = async (seq: number, ddate: Date) => {
+    if (seq === null || ddate === undefined) {
+      addAlert({
+        title: '지급 예정일 지정 실패',
+        message: '지급예정일 지정에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+    }
+
+    try {
+      const payload = [{ seq, ddate }];
+      const res = await setDdate(payload);
+
+      if (res.updatedCount) {
+        addAlert({
+          title: '지급 예정일 지정',
+          message: '지급 예정일이 정상적으로 저장되었습니다.',
+          icon: <OctagonAlert />,
+          duration: 2000,
+        });
+      }
+    } catch (err) {
+      console.error('❌ 지정 실패:', err);
+
+      addAlert({
+        title: '지급 예정일 지정 실패',
+        message: '지급 예정일 지정 중 오류가 발생했습니다.',
+        duration: 2000,
+      });
+    }
+  };
+
   return (
     <>
-      <ManagerListFilter
-        activeTab={activeTab}
-        onTabChange={(tab) => {
-          handleTabChange(tab);
-        }}
+      <AdminListFilter
         selectedYear={selectedYear}
         selectedType={selectedType}
         selectedStatus={selectedStatus}
         selectedProof={selectedProof}
         selectedProofStatus={selectedProofStatus}
+        selectedDdate={selectedDdate}
         typeRef={typeRef}
         statusRef={statusRef}
         proofRef={proofRef}
@@ -244,17 +308,27 @@ export default function Pexpense() {
         onStatusChange={setSelectedStatus}
         onProofChange={setSelectedProof}
         onProofStatusChange={setSelectedProofStatus}
+        onDdateChange={setSelectedDdate}
         onRefresh={() => resetAllFilters()}
         onConfirm={() => handleConfirm()}
+        onReject={() => handleReject()}
+        searchInput={searchInput}
+        onSearchInputChange={handleSearchInputChange}
+        onSearchSubmit={handleSearchSubmit}
+        onClearSearch={handleClearSearch}
+        datePickerKey={datePickerKey}
+        selectedDateRange={selectedDateRange}
+        onDateRangeChange={handleDateRange}
       />
 
-      <ManagerExpenseList
+      <AdminExpenseList
         loading={loading}
         expenseList={expenseList}
         checkAll={checkAll}
         checkedItems={checkedItems}
         handleCheckAll={handleCheckAll}
         handleCheckItem={handleCheckItem}
+        handleSetDdate={handleSetDdate}
         total={total}
         page={page}
         pageSize={pageSize}
