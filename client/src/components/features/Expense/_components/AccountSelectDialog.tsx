@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import React from 'react';
 import type { BankAccount } from '@/api/mypage';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface Props {
   open: boolean;
@@ -15,26 +16,35 @@ interface Props {
 export const AccountSelectDialog: React.FC<Props> = ({ open, onOpenChange, accounts, bankList, onSelect }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-[700px]">
         <DialogHeader>
           <DialogTitle>계좌 선택</DialogTitle>
         </DialogHeader>
 
-        {/* 계좌 리스트 */}
-        <div className="mt-4 max-h-[300px] overflow-y-auto">
-          {accounts.map((acc) => (
-            <Button
-              key={acc.seq}
-              variant="ghost"
-              className="[&]:hover:bg-primary-blue-150 w-full justify-start"
-              onClick={() => onSelect(acc)}>
-              <div className="flex text-left">
-                <div className="text-primary-blue mr-3 font-semibold">{acc.account_alias || acc.account_name}</div>
-                <span className="mr-1 font-light text-gray-700">{acc.bank_account}</span>
-                <span className="font-light text-gray-700">({acc.bank_name})</span>
-              </div>
-            </Button>
-          ))}
+        <div className="mt-4 max-h-[200px] overflow-y-auto">
+          <Table>
+            {/* 테이블 헤더 */}
+            <TableHeader>
+              <TableRow className="text-[13px]">
+                <TableHead className="w-[20%]">계좌 별명</TableHead>
+                <TableHead className="w-[20%]">은행명</TableHead>
+                <TableHead>계좌 번호</TableHead>
+                <TableHead className="w-[20%]">예금주</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            {/* 테이블 바디 */}
+            <TableBody className="overflow-y-scroll">
+              {accounts.map((acc) => (
+                <TableRow key={acc.seq} className="hover:bg-primary-blue-100! cursor-pointer text-[13px]" onClick={() => onSelect(acc)}>
+                  <TableCell className="text-primary-blue font-semibold whitespace-nowrap">{acc.account_alias}</TableCell>
+                  <TableCell className="font-light whitespace-nowrap text-gray-700">{acc.bank_name}</TableCell>
+                  <TableCell className="font-light whitespace-nowrap text-gray-700">{acc.bank_account}</TableCell>
+                  <TableCell className="font-light whitespace-nowrap text-gray-700">{acc.account_name}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </DialogContent>
     </Dialog>

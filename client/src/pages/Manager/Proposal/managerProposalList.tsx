@@ -1,5 +1,5 @@
 // pages/Manager/Proposal/ProposalList.tsx
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useEffect, useState } from 'react';
 import ProposalListContent from '@/components/features/proposal/ProposalList';
 import { getReportListManager, type ManagerReportCard } from '@/api/manager/proposal';
@@ -7,12 +7,28 @@ import { getReportListManager, type ManagerReportCard } from '@/api/manager/prop
 export default function ManagerProposalList() {
   const [reports, setReports] = useState<ManagerReportCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // URL에서 탭 정보 가져오기
+  const activeTab = searchParams.get('tab') || 'pending';
+  const getFlagFromTab = (tab: string): '대기' | '완료' | '반려' => {
+    const flagMap: Record<string, '대기' | '완료' | '반려'> = {
+      pending: '대기',
+      approved: '완료',
+      rejected: '반려',
+    };
+    return flagMap[tab] || '대기';
+  };
 
   useEffect(() => {
     (async () => {
       try {
-        const data = await getReportListManager(); // 🔥 이미 상태 매핑 완료된 리스트
+        setLoading(true);
+        // 🔥 activeTab에 따라 flag 설정
+        const flag = activeTab === 'approved' ? '완료' : '대기';
+        console.log('📡 Fetching reports with flag:', flag);
+        const data = await getReportListManager(flag);
         setReports(data);
       } catch (err) {
         console.error('❌ 매니저용 보고서 목록 불러오기 실패:', err);
@@ -20,19 +36,17 @@ export default function ManagerProposalList() {
         setLoading(false);
       }
     })();
-  }, []);
-
-  if (loading) {
-    return <div className="p-6 text-center">로딩 중...</div>;
-  }
+  }, [activeTab]);
 
   return (
     <ProposalListContent
-      reports={reports}
       isManager={true}
       showWriterInfo={true}
-      showRegisterButton={false}
       onRowClick={(id, tab) => navigate(`view/${id}?tab=${tab}`)}
+      onFetchData={async (params) => {
+        const flag = getFlagFromTab(activeTab);
+        return await getReportListManager(flag);
+      }}
     />
   );
 }

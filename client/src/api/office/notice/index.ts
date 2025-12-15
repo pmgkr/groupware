@@ -144,7 +144,9 @@ export async function uploadNoticeAttachments(n_seq: number, files: File[], subd
         n_seq,
         f_name: f.fname,
         nf_name: f.sname,
-        f_type: ext, //
+        f_type: ext,
+        subdir: f.subdir,
+        url: f.url,
       }),
     });
   }
@@ -182,7 +184,7 @@ export async function getNoticeAttachments(n_seq: number): Promise<Attachment[]>
     name: f.f_name,
     type: f.f_type,
     createdAt: f.reg_date,
-    url: `https://gbend.cafe24.com/uploads/notice/${f.nf_name}`,
+    url: f.url,
   }));
 }
 

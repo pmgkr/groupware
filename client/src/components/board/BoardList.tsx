@@ -25,13 +25,12 @@ export default function BoardList() {
   // ✅ URL에서 page 읽기 (없으면 1)
   const currentPage = Number(searchParams.get('page')) || 1;
   const [page, setPage] = useState(currentPage);
-
-  // ✅ page 변경 시 URL 반영
-  useEffect(() => {
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
     const newParams = new URLSearchParams(searchParams);
-    newParams.set('page', String(page));
+    newParams.set('page', String(newPage));
     setSearchParams(newParams);
-  }, [page]);
+  };
 
   const fetchBoardList = async () => {
     setLoading(true);
@@ -151,7 +150,12 @@ export default function BoardList() {
       </Table>
       {total > 0 && (
         <div className="mt-5">
-          <AppPagination totalPages={Math.ceil(total / normalLimit)} initialPage={page} visibleCount={5} onPageChange={(p) => setPage(p)} />
+          <AppPagination
+            totalPages={Math.ceil(total / normalLimit)}
+            initialPage={page}
+            visibleCount={5}
+            onPageChange={(p) => handlePageChange(p)}
+          />
         </div>
       )}
     </div>

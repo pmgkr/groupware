@@ -1,3 +1,4 @@
+// ===== 1. User ProposalList (기존 방식 유지) =====
 // pages/Proposal/ProposalList.tsx (일반 유저용)
 import { useNavigate } from 'react-router';
 import { useEffect, useState } from 'react';
@@ -9,13 +10,11 @@ export default function ProposalList() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // 데이터 가져오기
   useEffect(() => {
     (async () => {
       try {
         const data = await getReportList();
         const filtered = data.filter((r) => r.category !== '프로젝트');
-
         setReports(filtered);
       } catch (err) {
         console.error('❌ 보고서 목록 불러오기 실패:', err);
@@ -25,7 +24,6 @@ export default function ProposalList() {
     })();
   }, []);
 
-  // 로딩 중
   if (loading) {
     return <div className="p-6 text-center">로딩 중...</div>;
   }
@@ -33,9 +31,9 @@ export default function ProposalList() {
   return (
     <ProposalListContent
       reports={reports}
-      onRowClick={(id, tab) => navigate(`view/${id}?tab=${tab}`)} // 클릭 시 상세 페이지로
-      showRegisterButton={true} // 작성 버튼 보이기
-      onRegister={() => navigate('register')} // 작성 페이지로
+      onRowClick={(id, tab) => navigate(`view/${id}?tab=${tab}`)}
+      showRegisterButton={true}
+      onRegister={() => navigate('register')}
     />
   );
 }
