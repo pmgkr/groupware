@@ -20,7 +20,7 @@ export default function FinanceLayout() {
   return (
     <>
       {/* 탭 메뉴: URL 이동 기반 */}
-      <nav className="flex gap-4">
+      <nav className="mb-4 flex gap-4">
         {tabs.map((tab) => {
           let isActive = false;
 
