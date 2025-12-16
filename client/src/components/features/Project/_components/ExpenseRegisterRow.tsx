@@ -324,9 +324,19 @@ function ExpenseRowComponent({
                         disabled={isDisabled}
                         onCheckedChange={(checked) => {
                           if (checked) {
+                            form.setValue(`expense_items.${index}.pro_id`, p.rp_seq, {
+                              shouldDirty: true,
+                              shouldValidate: false,
+                            });
+
                             setSelectedProposalId(p.rp_seq);
                             setSelectedProposal(p); // ⭐ 전체 객체 저장
                           } else {
+                            form.setValue(`expense_items.${index}.pro_id`, null, {
+                              shouldDirty: true,
+                              shouldValidate: false,
+                            });
+
                             setSelectedProposalId(null);
                             setSelectedProposal(null);
                           }

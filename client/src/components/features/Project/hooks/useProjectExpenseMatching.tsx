@@ -26,7 +26,10 @@ export interface EstimateMatchedItem {
   pl_seq: number;
 }
 
-export const useProjectExpenseMatching = (expId?: string) => {
+// 공통 조회 API 타입
+type GetExpenseViewFn = (expId?: string) => Promise<pExpenseViewDTO>;
+
+export const useProjectExpenseMatching = (expId?: string, getExpenseView?: GetExpenseViewFn) => {
   const [data, setData] = useState<pExpenseViewWithMatch | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,9 +51,13 @@ export const useProjectExpenseMatching = (expId?: string) => {
    *  비용 + 매칭정보 조회
    -------------------------------------- */
   const fetchExpense = async () => {
+    if (!expId || !getExpenseView) return;
+
     try {
       setLoading(true);
-      const res = await getProjectExpenseView(expId);
+      const res = await getExpenseView(expId);
+
+      const normalizedHeader = Array.isArray(res.header) ? res.header[0] : res.header;
 
       const itemsWithMatch = await Promise.all(
         res.items.map(async (item) => {
@@ -64,6 +71,7 @@ export const useProjectExpenseMatching = (expId?: string) => {
 
       setData({
         ...res,
+        header: normalizedHeader,
         items: itemsWithMatch,
       });
     } finally {
@@ -73,7 +81,7 @@ export const useProjectExpenseMatching = (expId?: string) => {
 
   useEffect(() => {
     if (expId) fetchExpense();
-  }, [expId]);
+  }, [expId, getExpenseView]);
 
   /** ---------------------------
    * 외부에서 호출 가능한 refresh()
@@ -187,6 +195,7 @@ export const useProjectExpenseMatching = (expId?: string) => {
     const mapped: EstimateMatchedItem[] = res.list.map((m) => ({
       seq: m.seq,
       target_seq: m.target_seq,
+      est_id: m.est_id,
       ei_name: m.ei_name ?? '',
       alloc_amount: m.alloc_amount ?? 0,
       ava_amount: m.ava_amount ?? 0,
