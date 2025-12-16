@@ -3,6 +3,7 @@ import Dashboard from '@/pages/Admin';
 
 import FinanceLayout from '@/pages/Admin/Finance/FinanceLayout';
 import Pexpense from '@/pages/Admin/Finance/Pexpense';
+import PexpenseView from '@components/features/Project/AdminExpenseView';
 
 import Vacation from '@/pages/Admin/Vacation';
 import VacationDetail from '@/pages/Admin/VacationDetail';
@@ -29,7 +30,10 @@ export const adminRoutes: RouteObject = {
     {
       path: 'finance',
       element: <FinanceLayout />,
-      children: [{ index: true, element: <Pexpense /> }],
+      children: [
+        { index: true, element: <Pexpense /> },
+        { path: 'pexpense/:expId', element: <PexpenseView /> },
+      ],
     },
     { path: 'vacation', element: <Vacation /> },
     { path: 'vacation/user/:id', element: <VacationDetail /> },

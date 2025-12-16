@@ -112,7 +112,7 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate }: ExpenseRo
         </TooltipProvider>
       </TableCell>
       <TableCell className="text-left">
-        <Link to={`/manager/pexpense/${item.seq}${search}`} className="hover:underline">
+        <Link to={`/admin/finance/pexpense/${item.seq}${search}`} className="hover:underline">
           {item.el_title}
         </Link>
       </TableCell>

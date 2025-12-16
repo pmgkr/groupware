@@ -249,9 +249,9 @@ export function AdminListFilter({
           )}
         </div>
 
-        <Button size="sm" variant="destructive" onClick={onReject} disabled={checkedItems.length === 0}>
+        {/* <Button size="sm" variant="destructive" onClick={onReject} disabled={checkedItems.length === 0}>
           반려하기
-        </Button>
+        </Button> */}
         <Button size="sm" onClick={onConfirm} disabled={checkedItems.length === 0}>
           지급하기
         </Button>

@@ -51,7 +51,7 @@ const expenseSchema = z.object({
         price: z.string().optional(),
         tax: z.string().optional(),
         total: z.string().optional(),
-        pro_id: z.string().optional(),
+        pro_id: z.number().nullable().optional(),
       })
     )
     .optional(),
@@ -103,7 +103,7 @@ export default function ProjectExpenseRegister() {
         price: '',
         tax: '',
         total: '',
-        pro_id: '',
+        pro_id: null,
       })),
     },
   });
@@ -171,7 +171,7 @@ export default function ProjectExpenseRegister() {
             price: '',
             tax: '',
             total: '',
-            pro_id: '',
+            pro_id: null,
           })),
         });
       }
@@ -181,7 +181,7 @@ export default function ProjectExpenseRegister() {
   // 항목 추가 버튼 클릭 시
   const handleAddArticle = useCallback(() => {
     setArticleCount((prev) => prev + 1);
-    append({ type: '', title: '', number: '', date: '', price: '', tax: '', total: '', pro_id: '' });
+    append({ type: '', title: '', number: '', date: '', price: '', tax: '', total: '', pro_id: null });
   }, [append]);
 
   // 항목 삭제 버튼 클릭 시
@@ -433,7 +433,7 @@ export default function ProjectExpenseRegister() {
               ei_amount: Number(i.price),
               ei_tax: Number(i.tax || 0),
               ei_total: Number(i.total),
-              pro_id: !i.pro_id || i.pro_id === '0' || isNaN(Number(i.pro_id)) ? null : Number(i.pro_id),
+              pro_id: i.pro_id ?? null,
               attachments: (i.attachments || []).map((att: any) => ({
                 filename: att.fname,
                 savename: att.sname,
@@ -451,6 +451,10 @@ export default function ProjectExpenseRegister() {
 
           if (result.ok) {
             const item_count = result.count_items;
+
+            // 프로젝트 비용 기안서 매칭 API 호출 필요 (혜리 작업 필요)
+            // projectId, result.list_seq 저장해서 API 호출해서 보내면됨
+            // report 테이블에 저장할 때 rp_project_type이 'project'일 때 rp_expense_no가 projectId/list_seq (G26-00002/32)
 
             // 견적서 체크 비용을 작성했다면 매칭 페이지로 이동
             if (projectType === 'est') {
