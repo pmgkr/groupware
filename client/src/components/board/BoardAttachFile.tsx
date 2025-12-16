@@ -3,7 +3,7 @@ import { Button } from '@components/ui/button';
 import { File, CircleX } from '@/assets/images/icons';
 import { validateFiles } from '@/utils';
 
-export type PreviewFile = File | { id: number; name: string; url: string; size?: number; type?: string };
+export type PreviewFile = File | { id: number; name: string; nf_name: string; size?: number; type?: string };
 
 interface BoardAttachFileProps {
   files: PreviewFile[];
@@ -39,17 +39,14 @@ export function BoardAttachFile({ files, setFiles, onRemoveExisting }: BoardAtta
   };
 
   const handleRemove = (file: PreviewFile) => {
-    // 기존 서버 첨부파일이면 콜백 실행
-    if ('id' in file && file.id) {
+    if ('id' in file) {
+      // 🔥 서버 파일 → 반드시 id 기준으로 삭제
       onRemoveExisting?.(file.id);
-    }
-    // UI에서 제거
-    setFiles((prev) => prev.filter((f) => f.name !== file.name));
-    if ('id' in file && file.id) {
-      console.log('🧩 삭제 콜백 호출됨, id:', file.id);
-      onRemoveExisting?.(file.id);
+
+      setFiles((prev) => prev.filter((f) => !('id' in f && f.id === file.id)));
     } else {
-      console.log('⚠️ id 없음:', file);
+      // 🔥 새 파일 → 이름 + 사이즈로 정확한 파일만 제거
+      setFiles((prev) => prev.filter((f) => !(f instanceof File && f.name === file.name && f.size === file.size)));
     }
   };
 

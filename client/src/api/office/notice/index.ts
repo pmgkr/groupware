@@ -143,10 +143,9 @@ export async function uploadNoticeAttachments(n_seq: number, files: File[], subd
       body: JSON.stringify({
         n_seq,
         f_name: f.fname,
-        nf_name: f.sname,
+        nf_name: f.url,
         f_type: ext,
         subdir: f.subdir,
-        url: f.url,
       }),
     });
   }
@@ -174,7 +173,7 @@ export interface Attachment {
 //공지사항 첨부파일 목록 조회
 export async function getNoticeAttachments(n_seq: number): Promise<Attachment[]> {
   const dto = await http<any>(`/user/office/notice/attachment/${n_seq}`, { method: 'GET' });
-  //console.log('📎 첨부파일 API 응답:', dto);
+  console.log('📎 첨부파일 API 응답:', dto);
 
   // 서버가 { items: [...] } 형태로 응답할 때 처리
   const files = Array.isArray(dto) ? dto : Array.isArray(dto.items) ? dto.items : dto.data && Array.isArray(dto.data) ? dto.data : [];
@@ -184,7 +183,7 @@ export async function getNoticeAttachments(n_seq: number): Promise<Attachment[]>
     name: f.f_name,
     type: f.f_type,
     createdAt: f.reg_date,
-    url: f.url,
+    url: f.nf_name,
   }));
 }
 

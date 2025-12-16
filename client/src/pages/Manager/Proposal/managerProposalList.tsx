@@ -27,8 +27,11 @@ export default function ManagerProposalList() {
         setLoading(true);
         // 🔥 activeTab에 따라 flag 설정
         const flag = activeTab === 'approved' ? '완료' : '대기';
-        console.log('📡 Fetching reports with flag:', flag);
+        //console.log('📡 Fetching reports with flag:', flag);
+
         const data = await getReportListManager(flag);
+        //console.log('📥 Manager API 응답 데이터:', data); // ⭐ 2단계 응답 전체 확인
+
         setReports(data);
       } catch (err) {
         console.error('❌ 매니저용 보고서 목록 불러오기 실패:', err);
