@@ -21,8 +21,6 @@ export type UserDTO = {
   emergency_phone?: string | null;
 };
 
-
-
 // 프로필 조회
 export async function getMyProfile(): Promise<UserDTO> {
   const dto = await http<{ base: any; detail: any }>('/mypage/profile', { method: 'POST', body: JSON.stringify({}) });
@@ -50,16 +48,23 @@ export async function editMyProfile(data: {
 
 //프로필 이미지 수정
 export async function uploadProfileImage(file: File, subdir = 'mypage') {
+  // 클라우드에 파일 업로드
   const uploaded = await uploadFilesToServer([file], subdir);
   const f = uploaded[0];
 
-  await http('/mypage/profile/image', {
+  // 백엔드에 URL 저장
+  const payload = {
+    image_name: f.url, //백엔드가 기대하는 필드명: image_name
+  };
+
+  //console.log('🔥 백엔드로 전송하는 payload:', payload);
+
+  const response = await http<{ result: string; image_name: string }>('/mypage/profile/image', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      image_name: f.sname,
-    }),
+    body: JSON.stringify(payload),
   });
+
   return f;
 }
 
@@ -113,8 +118,6 @@ export interface RegisterAccountDTO {
   bank_account: string; // 계좌 번호
   account_name: string; // 예금주
 }
-
-
 
 export async function registerAccount(data: RegisterAccountDTO): Promise<void> {
   await http('/mypage/account/register', {

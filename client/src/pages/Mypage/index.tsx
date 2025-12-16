@@ -30,7 +30,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
-import { Camera, CheckCircle, Crown, CrownIcon, DeleteIcon, OctagonAlert } from 'lucide-react';
+import { Camera, CheckCircle, Crown, CrownIcon, DeleteIcon, Loader2, OctagonAlert } from 'lucide-react';
 import { CheckboxButton } from '@/components/ui/checkboxButton';
 import { DayPicker } from '@components/daypicker';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
@@ -42,6 +42,7 @@ export default function Mypage() {
   const [editedUser, setEditedUser] = useState<UserDTO | null>(null);
   const [isBirthOpen, setIsBirthOpen] = useState(false);
   const [isHireOpen, setIsHireOpen] = useState(false);
+  const [isUploadingProfile, setIsUploadingProfile] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -106,9 +107,24 @@ export default function Mypage() {
   const handleProfileImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // 🔥 파일 크기 체크 (선택사항)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      addAlert({
+        title: '파일 크기 초과',
+        message: `<p>이미지 파일은 5MB 이하로 업로드해주세요.</p>`,
+        icon: <OctagonAlert className="text-red-500" />,
+        duration: 2500,
+      });
+      return;
+    }
+
+    setIsUploadingProfile(true); // 🔥 로딩 시작
 
     try {
       const result = await uploadProfileImage(file, 'mypage');
+      console.log('📸 업로드 결과:', result);
+
       const updatedUser = await getMyProfile();
       setUser(updatedUser);
 
@@ -130,6 +146,8 @@ export default function Mypage() {
         icon: <OctagonAlert className="text-red-500" />,
         duration: 2500,
       });
+    } finally {
+      setIsUploadingProfile(false); // 🔥 로딩 종료
     }
   };
 
@@ -295,17 +313,35 @@ export default function Mypage() {
         <div className="flex items-center gap-x-14 rounded-md border border-gray-300 px-20 py-6">
           <div className="group relative aspect-square w-36 overflow-hidden rounded-[50%]">
             <img
-              src={user?.profile_image ? `https://gbend.cafe24.com/uploads/mypage/${user.profile_image}` : getImageUrl('dummy/profile')}
+              src={user?.profile_image ? `${user.profile_image}` : getImageUrl('dummy/profile')}
               alt="프로필 이미지"
               className="h-full w-full object-cover"
             />
-            {/* hover */}
-            <label
-              htmlFor="profileUpload"
-              className="absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-              <Camera className="size-10 text-white/80" />
-            </label>
-            <input id="profileUpload" type="file" accept="image/*" className="hidden" onChange={handleProfileImage} />
+            {/* 🔥 hover 오버레이 - 업로드 중이 아닐 때만 표시 */}
+            {!isUploadingProfile && (
+              <label
+                htmlFor="profileUpload"
+                className="absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                <Camera className="size-10 text-white/80" />
+              </label>
+            )}
+
+            {/* 🔥 업로드 중 오버레이 - 항상 표시 */}
+            {isUploadingProfile && (
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/70">
+                <Loader2 className="size-10 animate-spin text-white" />
+                <p className="mt-2 text-sm text-white">업로드 중...</p>
+              </div>
+            )}
+
+            <input
+              id="profileUpload"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleProfileImage}
+              disabled={isUploadingProfile} // 🔥 업로드 중 입력 비활성화
+            />
           </div>
 
           <div className="text-base font-medium tracking-tight text-gray-950">

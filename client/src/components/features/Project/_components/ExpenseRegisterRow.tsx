@@ -301,11 +301,11 @@ function ExpenseRowComponent({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]"></TableHead>
                 <TableHead className="w-[100px]">구분</TableHead>
                 <TableHead>제목</TableHead>
                 <TableHead className="w-[120px]">금액</TableHead>
                 <TableHead className="w-[240px]">작성일</TableHead>
+                <TableHead className="w-[40px]"></TableHead>
               </TableRow>
             </TableHeader>
 
@@ -316,6 +316,10 @@ function ExpenseRowComponent({
 
                 return (
                   <TableRow key={p.rp_seq} className="hover:bg-gray-100">
+                    <TableCell>{p.rp_category}</TableCell>
+                    <TableCell className="text-left">{p.rp_title}</TableCell>
+                    <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
+                    <TableCell>{formatKST(p.rp_date)}</TableCell>
                     <TableCell>
                       <Checkbox
                         size="sm"
@@ -330,7 +334,7 @@ function ExpenseRowComponent({
                             });
 
                             setSelectedProposalId(p.rp_seq);
-                            setSelectedProposal(p); // ⭐ 전체 객체 저장
+                            setSelectedProposal(p); // 전체 객체 저장
                           } else {
                             form.setValue(`expense_items.${index}.pro_id`, null, {
                               shouldDirty: true,
@@ -343,11 +347,6 @@ function ExpenseRowComponent({
                         }}
                       />
                     </TableCell>
-
-                    <TableCell>{p.rp_category}</TableCell>
-                    <TableCell className="text-left">{p.rp_title}</TableCell>
-                    <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
-                    <TableCell>{formatKST(p.rp_date)}</TableCell>
                   </TableRow>
                 );
               })}
