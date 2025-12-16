@@ -4,6 +4,7 @@ import { generateReportNumber } from '@/api/expense/proposal';
 import { formatAmount, formatKST } from '@/utils';
 import 'quill/dist/quill.snow.css';
 import { Link } from 'react-router';
+import ProposalAttachFiles from './ProposalAttachFiles';
 
 interface ProposalViewContentProps {
   report: any;
@@ -40,23 +41,6 @@ export default function ProposalView({
   showWriterInfo = false,
   writerTeamName,
 }: ProposalViewContentProps) {
-  const reportNum = generateReportNumber(report.rp_category, report.rp_seq);
-
-  const handleDownload = async (fileUrl: string, fileName: string) => {
-    try {
-      const response = await fetch(fileUrl);
-      const blob = await response.blob();
-
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('❌ 파일 다운로드 실패:', err);
-    }
-  };
   return (
     <div>
       <div className="flex justify-between p-4 pr-1">
@@ -112,20 +96,16 @@ export default function ProposalView({
 
       {/* 첨부파일 */}
       {files.length > 0 && (
-        <div className="mb-4 flex items-center bg-gray-50 py-4">
-          {files.map((file) => {
-            const url = `https://gbend.cafe24.com/uploads/report/${file.rf_sname}`;
-            return (
-              <Button
-                key={file.rf_seq}
-                variant="outline"
-                className="hover:bg-primary-blue-100 mr-2 text-sm text-gray-500 [&]:border-gray-300 [&]:p-4"
-                /* onClick={() => window.open(url, '_blank')} */
-                onClick={() => handleDownload(url, file.rf_name)}>
-                {file.rf_name}
-              </Button>
-            );
-          })}
+        <div className="mb-4 bg-gray-50 py-4">
+          <ProposalAttachFiles
+            mode="view"
+            viewFiles={files
+              .filter((f) => !!f.rf_sname) // ✅ undefined 제거
+              .map((f) => ({
+                name: f.rf_name,
+                url: f.rf_sname!, // ✅ 이제 string 확정
+              }))}
+          />
         </div>
       )}
 

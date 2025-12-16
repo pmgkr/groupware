@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/hooks/useUser';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,7 @@ import { Dashboard, Project, Expense, Calendar, Profile, Logout, Pto, Office, Ma
 
 import { Button } from '@components/ui/button';
 import { Notification } from '@components/features/Dashboard/notifications';
+import { getMyProfile } from '@/api/mypage';
 
 export default function Header() {
   const location = useLocation();
@@ -19,12 +20,57 @@ export default function Header() {
   const { logout } = useAuth();
 
   // profile_image가 변경될 때만 타임스탬프를 업데이트하여 무한 로딩 방지
+  // 프로필 이미지 로컬 상태 추가
+  const [currentProfileImage, setCurrentProfileImage] = useState(profile_image);
+
+  // 프로필 업데이트 이벤트 리스닝
+  useEffect(() => {
+    const handleProfileUpdate = async () => {
+      console.log('🔄 Header: 프로필 업데이트 감지');
+      try {
+        const updatedUser = await getMyProfile();
+        setCurrentProfileImage(updatedUser.profile_image);
+      } catch (error) {
+        console.error('프로필 재조회 실패:', error);
+      }
+    };
+
+    // 다른 탭에서의 업데이트 감지
+    const handleStorageChange = async (e: StorageEvent) => {
+      if (e.key === 'profile_update') {
+        console.log('🔄 Header: 다른 탭에서 프로필 업데이트 감지');
+        try {
+          const updatedUser = await getMyProfile();
+          setCurrentProfileImage(updatedUser.profile_image);
+        } catch (error) {
+          console.error('프로필 재조회 실패:', error);
+        }
+      }
+    };
+
+    window.addEventListener('profile_update', handleProfileUpdate);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('profile_update', handleProfileUpdate);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
+  // profile_image가 변경되면 currentProfileImage도 업데이트
+  useEffect(() => {
+    setCurrentProfileImage(profile_image);
+  }, [profile_image]);
+
   const profileImageUrl = useMemo(() => {
-    if (profile_image) {
-      return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${profile_image}?t=${Date.now()}`;
+    if (currentProfileImage) {
+      if (currentProfileImage.startsWith('http')) {
+        return `${currentProfileImage}?t=${Date.now()}`;
+      }
+      return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${currentProfileImage}?t=${Date.now()}`;
     }
     return getImageUrl('dummy/profile');
-  }, [profile_image]);
+  }, [currentProfileImage]);
 
   const logoutClick = async () => {
     await logout(); // 서버 쿠키 삭제 + 토큰 초기화

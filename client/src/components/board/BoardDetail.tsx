@@ -117,39 +117,12 @@ export default function BoardDetail({ id }: BoardDetailProps) {
   };
 
   //첨부파일 다운로드
-  /* const handleDownload = (fileUrl: string, fileName: string) => {
+  const handleDownload = (fileUrl: string, nf_name: string) => {
     const AfileDown = document.createElement('a');
     AfileDown.href = fileUrl;
-    AfileDown.download = fileName;
+    AfileDown.download = nf_name;
     AfileDown.target = '_blank';
     AfileDown.click();
-  }; */
-  const handleDownload = async (fileUrl: string, fileName: string) => {
-    try {
-      // 파일 확장자 추출
-      const ext = fileName.split('.').pop()?.toLowerCase() || '';
-
-      const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
-
-      // 🔥 이미지면 다운로드하지 않고 브라우저에서 열기
-      if (imageTypes.includes(ext)) {
-        window.open(fileUrl, '_blank');
-        return;
-      }
-
-      // 🔽 이미지가 아니라면 기존 다운로드 실행
-      const response = await fetch(fileUrl);
-      const blob = await response.blob();
-
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('❌ 파일 다운로드 실패:', err);
-    }
   };
 
   // 댓글 등록

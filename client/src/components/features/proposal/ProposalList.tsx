@@ -511,7 +511,7 @@ export default function ProposalList({
                 <TableRow
                   key={report.id}
                   onClick={() => onRowClick(report.id, activeTab)}
-                  className="cursor-pointer hover:bg-gray-100 [&_td]:text-[13px]">
+                  className="cursor-pointer hover:bg-gray-100 [&_td]:text-[13px] [&_td]:leading-[1.3]">
                   <TableCell>{rowNumber}</TableCell>
                   <TableCell>{report.category}</TableCell>
                   <TableCell className="text-left">{report.title}</TableCell>

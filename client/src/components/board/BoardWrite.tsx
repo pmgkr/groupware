@@ -78,7 +78,7 @@ export default function BoardWrite() {
           const previews = attachList.map((a) => ({
             id: a.id,
             name: a.name,
-            url: a.url,
+            nf_name: a.url,
             size: 0,
             type: a.type,
           }));
@@ -140,7 +140,8 @@ export default function BoardWrite() {
         // 신규 업로드만 업로드
         const uploadableFiles = files.filter((f): f is File => f instanceof File);
         if (uploadableFiles.length > 0 && n_seq) {
-          await uploadNoticeAttachments(n_seq, uploadableFiles);
+          const uploaded = await uploadNoticeAttachments(n_seq, uploadableFiles);
+          console.log('📌 업로드 응답:', uploaded);
         }
 
         if (isNotice === 'Y' && n_seq) {
