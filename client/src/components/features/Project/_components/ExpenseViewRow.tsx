@@ -2,16 +2,16 @@
 import { Link } from 'react-router';
 
 import { formatAmount } from '@/utils';
+import { Button } from '@/components/ui/button';
 import { TableRow, TableCell } from '@/components/ui/table';
 import type { pExpenseItemDTO } from '@/api';
 
-import { Link as LinkIcon } from 'lucide-react';
-
 interface ExpenseViewRowProps {
   item: pExpenseItemDTO;
+  onProposal?: () => void;
 }
 
-export default function ExpenseViewRow({ item }: ExpenseViewRowProps) {
+export default function ExpenseViewRow({ item, onProposal }: ExpenseViewRowProps) {
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
     const date = typeof d === 'string' ? new Date(d) : d;
@@ -56,11 +56,14 @@ export default function ExpenseViewRow({ item }: ExpenseViewRowProps) {
       ) : (
         <TableCell>-</TableCell>
       )}
-      <TableCell className="px-1 text-center">
+      <TableCell className="px-1 text-center [&_button]:rounded-xl [&_button]:border [&_button]:text-xs [&_button]:transition-none">
         {item.pro_id ? (
-          <Link to={`/project/proposal/view/${item.pro_id}`} target="_blank" rel="noopener noreferrer">
-            <LinkIcon className="mx-auto size-4" />
-          </Link>
+          // <Link to={`/project/proposal/view/${item.pro_id}`} target="_blank" rel="noopener noreferrer">
+          //   <LinkIcon className="mx-auto size-4" />
+          // </Link>
+          <Button size="xs" variant="outline" onClick={onProposal}>
+            기안서보기
+          </Button>
         ) : (
           <span>-</span>
         )}

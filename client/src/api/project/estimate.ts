@@ -196,6 +196,7 @@ export interface EstimateItemsMatch {
   seq: number; // pexpense_match.seq
   pl_seq: number; // pexpense_item.seq
   target_seq: number; // estimate_item.seq
+  est_id: number; // estimate_item.est_id
   ei_name?: string; // 견적서 항목명
   ava_amount?: number; // 견적서 가용 금액
   alloc_amount: number; // 매칭된 금액

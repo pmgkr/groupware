@@ -24,7 +24,7 @@ export default function Pexpense() {
   // ============================
   const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || '2025');
   const [selectedType, setSelectedType] = useState<string[]>(() => searchParams.get('type')?.split(',') ?? []);
-  const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('status')?.split(',') ?? []);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('status')?.split(',') ?? ['Confirmed']);
   const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
   const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>(() => searchParams.get('attach')?.split(',') ?? []);
   const [selectedDdate, setSelectedDdate] = useState(() => searchParams.get('ddate') || '');
@@ -302,7 +302,7 @@ export default function Pexpense() {
         typeRef={typeRef}
         statusRef={statusRef}
         proofRef={proofRef}
-        proofStatusRef={typeRef}
+        proofStatusRef={proofStatusRef}
         typeOptions={typeOptions}
         checkedItems={checkedItems}
         onYearChange={setSelectedYear}

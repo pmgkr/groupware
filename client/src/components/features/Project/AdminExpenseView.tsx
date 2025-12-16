@@ -1,28 +1,50 @@
-import { useNavigate, useParams, Link } from 'react-router';
+import { useRef, useState } from 'react';
+import { useNavigate, useParams, Link, useLocation } from 'react-router';
 import { formatAmount } from '@/utils';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/hooks/useUser';
 import { format } from 'date-fns';
+import { notificationApi } from '@/api/notification';
+import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
+import { getAdminExpenseView, confirmExpense, rejectExpense } from '@/api/admin/pexpense';
+
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
+import { Textarea } from '@components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Download, Edit } from '@/assets/images/icons';
-import { RotateCcw } from 'lucide-react';
 
-import { getReportInfo } from '@/api/expense/proposal';
-import { getProjectExpenseView } from '@/api/project';
 import { useProjectExpenseMatching } from './hooks/useProjectExpenseMatching';
 
-import EstimateSelectDialog from './_components/EstimateSelectDialog';
 import EstimateMatching from './_components/EstimateMatching';
 import EstimateMatched from './_components/EstimateMatched';
 import ExpenseViewRow from './_components/ExpenseViewRow';
 import ExpenseViewEstRow from './_components/ExpenseViewEstRow';
+import ReportMatched from './_components/ReportMatched';
+
+import { File, Link as LinkIcon, OctagonAlert, Files } from 'lucide-react';
 
 export default function ProjectExpenseView() {
   const { expId, projectId } = useParams();
   const navigate = useNavigate();
+  const { user_id } = useUser();
+  const { search } = useLocation();
+
+  const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
+
+  const [reasonDialogOpen, setReasonDialogOpen] = useState(false); // Dialog State
+  const reasonRef = useRef<HTMLTextAreaElement | null>(null); // 반려 사유에 대한 ref
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // 기안서 조회 State
+  const [selectedProposal, setSelectedProposal] = useState<ReportDTO | null>(null);
+  const [proposalLoading, setProposalLoading] = useState(false);
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
@@ -38,7 +60,6 @@ export default function ProjectExpenseView() {
     loading,
     refresh,
 
-    dialogOpen,
     expenseInfo,
     matchedItems,
     dbMatchedItems,
@@ -46,8 +67,6 @@ export default function ProjectExpenseView() {
 
     openDialog,
     openEstimateDialog,
-    confirmEstimateSelect,
-    closeEstimateDialog,
 
     completeMatching,
     resetMatching,
@@ -57,9 +76,8 @@ export default function ProjectExpenseView() {
     deleteMatching,
 
     selectedExpSeq,
-    selectedEstId,
     setSelectedEstId,
-  } = useProjectExpenseMatching(expId, getProjectExpenseView);
+  } = useProjectExpenseMatching(expId, getAdminExpenseView);
 
   // 로딩 상태
   if (loading) return <div className="flex h-[50vh] items-center justify-center text-gray-500">데이터를 불러오는 중입니다...</div>;
@@ -77,6 +95,8 @@ export default function ProjectExpenseView() {
     );
 
   const { header, items } = data;
+
+  console.log('데이터', items);
 
   /** -----------------------------------------
    *  상태 Badge
@@ -124,11 +144,133 @@ export default function ProjectExpenseView() {
     { amount: 0, tax: 0, total: 0 }
   );
 
+  const handleConfirm = () => {
+    addDialog({
+      title: '비용 지급 승인',
+      message: `<span class="text-primary-blue-500 font-semibold">${data.header.el_title}</span> 비용을 지급 하시겠습니까?`,
+      confirmText: '승인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          const payload = { seqs: [data.header.seq] };
+          const res = await confirmExpense(payload);
+
+          if (res.ok) {
+            await notificationApi.registerNotification({
+              user_id: data.header.user_id,
+              user_name: data.header.user_nm,
+              noti_target: user_id!,
+              noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
+              noti_message: `청구한 비용을 지급 완료했습니다.`,
+              noti_type: 'expense',
+              noti_url: `/project/${data.header.project_id}/expense/${data.header.seq}`,
+            });
+
+            addAlert({
+              title: '비용 지급 승인 완료',
+              message: `<p><span class="text-primary-blue-500 font-semibold">${res.updated_count}</span>건의 비용이 지급 완료되었습니다.</p>`,
+              icon: <OctagonAlert />,
+              duration: 2000,
+            });
+          }
+
+          refresh();
+        } catch (err) {
+          console.error('❌ 승인 실패:', err);
+
+          addAlert({
+            title: '비용 지급 승인 실패',
+            message: `승인 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        }
+      },
+    });
+  };
+
+  const handleReject = async () => {
+    try {
+      const rawReason = reasonRef.current?.value.trim();
+
+      const payload = { seq: data.header.seq, ...(rawReason ? { reason: rawReason } : {}) };
+      const res = await rejectExpense(payload);
+
+      if (res.status === 'Rejected') {
+        await notificationApi.registerNotification({
+          user_id: data.header.user_id,
+          user_name: data.header.user_nm,
+          noti_target: user_id!,
+          noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
+          noti_message: `청구한 비용을 반려했습니다.`,
+          noti_type: 'expense',
+          noti_url: `/project/${data.header.project_id}/expense/${data.header.seq}`,
+        });
+
+        addAlert({
+          title: '비용 반려 완료',
+          message: `<p>비용 반려 처리가 완료되었습니다.</p>`,
+          icon: <OctagonAlert />,
+          duration: 2000,
+        });
+      }
+
+      setReasonDialogOpen(false);
+      refresh();
+    } catch (err) {
+      console.error('❌ 승인 실패:', err);
+
+      addAlert({
+        title: '비용 지급 승인 실패',
+        message: `승인 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+      refresh();
+    }
+  };
+
+  const copyExpId = async (expId: string) => {
+    try {
+      await navigator.clipboard.writeText(expId);
+      addAlert({
+        title: '클립보드 복사',
+        message: `<p>비용 아이디가 클립보드에 복사되었습니다.</p>`,
+        icon: <OctagonAlert />,
+        duration: 1500,
+      });
+    } catch (err) {
+      console.error('클립보드 복사 실패:', err);
+      addAlert({
+        title: '클립보드 복사 실패',
+        message: `<p>클립보드에 복사할 수 없습니다.</p>`,
+        icon: <OctagonAlert />,
+        duration: 1500,
+      });
+    }
+  };
+
+  const setReportInfo = async (pro_id: number | undefined | null) => {
+    if (pro_id == null) {
+      return;
+    }
+
+    try {
+      setProposalLoading(true);
+      const res = await getReportInfo(String(pro_id));
+      setSelectedProposal(res.report);
+
+      console.log('리포트', res);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <>
       <div className="flex min-h-140 flex-wrap justify-between pb-12">
         {/* ---------------------- Left: 비용 정보 ---------------------- */}
-        <div className={`${data.header.is_estimate === 'Y' ? 'w-[74%]' : 'w-full'} tracking-tight`}>
+        <div className="w-[74%] tracking-tight">
           <div className="flex w-full items-end justify-between pb-2">
             <h3 className="text-lg font-bold text-gray-800">비용 정보</h3>
 
@@ -193,10 +335,20 @@ export default function ProjectExpenseView() {
               <TableColumnCell>{header.bank_account}</TableColumnCell>
             </TableColumnBody>
             <TableColumnHeader className="w-[12%]">
-              <TableColumnHeaderCell>입금희망일</TableColumnHeaderCell>
+              <TableColumnHeaderCell>비용 아이디</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>
-              <TableColumnCell>{header.el_deposit ? formatDate(header.el_deposit) : <span>-</span>}</TableColumnCell>
+              <TableColumnCell>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 rounded-[4px] leading-[1.2] hover:bg-gray-200/80 has-[>svg]:px-1.5"
+                  onClick={() => copyExpId(header.exp_id)}>
+                  {header.exp_id}
+                  <Files className="size-3" />
+                </Button>
+              </TableColumnCell>
             </TableColumnBody>
           </TableColumn>
           <TableColumn className="border-t-0 [&_div]:text-[13px]">
@@ -213,10 +365,10 @@ export default function ProjectExpenseView() {
               <TableColumnCell>{header.account_name}</TableColumnCell>
             </TableColumnBody>
             <TableColumnHeader className="w-[12%]">
-              <TableColumnHeaderCell>작성일</TableColumnHeaderCell>
+              <TableColumnHeaderCell>입금희망일</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>
-              <TableColumnCell>{formatDate(header.wdate)}</TableColumnCell>
+              <TableColumnCell>{header.el_deposit ? formatDate(header.el_deposit) : <span>-</span>}</TableColumnCell>
             </TableColumnBody>
           </TableColumn>
           {header.remark && (
@@ -236,7 +388,7 @@ export default function ProjectExpenseView() {
               </TableColumnHeader>
               <TableColumnBody>
                 <TableColumnCell className="text-destructive leading-[1.3]">
-                  {header.rej_reason} {header.rejected_by && <span>- {header.rejected_by}</span>}
+                  {header.rej_reason} {header.rejected_by && `- ${header.rejected_by}`}
                 </TableColumnCell>
               </TableColumnBody>
             </TableColumn>
@@ -292,24 +444,7 @@ export default function ProjectExpenseView() {
                         />
                       );
                     })
-                  : items.map((item) => (
-                      <ExpenseViewRow
-                        key={item.seq}
-                        item={item}
-                        onProposal={async () => {
-                          console.log('✅ 기안서 버튼 클릭됨', item.pro_id);
-
-                          if (item.pro_id == null) {
-                            console.log('⛔ pro_id 없음');
-                            return;
-                          }
-
-                          const res = await getReportInfo(String(item.pro_id));
-
-                          console.log('기안서 정보', res);
-                        }}
-                      />
-                    ))}
+                  : items.map((item) => <ExpenseViewRow key={item.seq} item={item} onProposal={() => setReportInfo(item.pro_id)} />)}
 
                 <TableRow className="bg-primary-blue-50 [&_td]:py-3">
                   <TableCell className="font-semibold" colSpan={3}>
@@ -324,63 +459,82 @@ export default function ProjectExpenseView() {
             </Table>
           </div>
 
-          <div className="mt-4 flex">
+          <div className="mt-8 flex w-full items-center justify-between">
             <Button variant="outline" size="sm" asChild>
-              <Link to={`/project/${projectId}/expense`}>목록</Link>
+              <Link to={`/admin/finance${search}`}>목록</Link>
             </Button>
+
+            <div className="flex gap-2">
+              <Button type="button" size="sm" variant="outline">
+                <Download /> 다운로드
+              </Button>
+              {data.header.status !== 'Saved' && data.header.status !== 'Completed' && data.header.status !== 'Rejected' && (
+                <>
+                  <Button type="button" size="sm" variant="destructive" onClick={() => setReasonDialogOpen(true)}>
+                    반려하기
+                  </Button>
+                  <Button type="button" size="sm" onClick={handleConfirm}>
+                    승인하기
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
         {/* ---------------------- Right: 매칭 영역 ---------------------- */}
-        {data.header.is_estimate === 'Y' && (
-          <div className="w-[24%]">
-            <div className="flex justify-between">
-              <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
+        <div className="w-[24%]">
+          {data.header.is_estimate === 'Y' ? (
+            <>
+              <div className="flex justify-between">
+                <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
+              </div>
 
               {dbMatchedItems.length > 0 ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="svgIcon"
-                  className="h-auto pr-1! text-gray-500"
-                  onClick={() => deleteMatching(selectedExpSeq!)}>
-                  견적 매칭 재설정
-                  <RotateCcw className="size-3" />
-                </Button>
-              ) : matchedItems.length > 0 ? (
-                <Button type="button" size="sm" variant="svgIcon" className="h-auto pr-1! text-gray-500" onClick={clearMatching}>
-                  견적서 매칭취소
-                  <RotateCcw className="size-3" />
-                </Button>
-              ) : null}
-            </div>
+                <EstimateMatched items={dbMatchedItems} project_id={header.project_id} />
+              ) : (
+                <EstimateMatching
+                  matchedItems={matchedItems}
+                  expenseInfo={expenseInfo}
+                  onReset={resetMatching}
+                  onRefresh={() => refresh()}
+                  onMatched={completeMatching}
+                />
+              )}
+            </>
+          ) : (
+            // 기안서 정보
+            <>
+              <div className="flex justify-between">
+                <h2 className="mb-2 text-lg font-bold text-gray-800">기안서 정보</h2>
+              </div>
 
-            {dbMatchedItems.length > 0 ? (
-              <EstimateMatched items={dbMatchedItems} project_id={projectId} />
-            ) : (
-              <EstimateMatching
-                matchedItems={matchedItems}
-                expenseInfo={expenseInfo}
-                onReset={resetMatching}
-                onRefresh={() => refresh()}
-                onMatched={completeMatching}
-              />
-            )}
-          </div>
-        )}
+              <ReportMatched report={selectedProposal} />
+            </>
+          )}
+        </div>
       </div>
 
-      {/* ---------------------- Dialog ---------------------- */}
-      <EstimateSelectDialog
-        open={dialogOpen}
-        onOpenChange={closeEstimateDialog}
-        projectId={projectId}
-        expenseInfo={expenseInfo}
-        onConfirm={(items) => confirmEstimateSelect(items, selectedEstId)}
-        selectingItems={matchedItems}
-        selectedEstId={selectedEstId}
-        setSelectedEstId={setSelectedEstId}
-      />
+      {/* ---------------- 증빙 사유 다이얼로그 ---------------- */}
+      <Dialog open={reasonDialogOpen} onOpenChange={setReasonDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>비용 반려</DialogTitle>
+            <DialogDescription>비용을 반려하기 전에, 필요 시 반려 사유를 입력해 주세요.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <Textarea ref={reasonRef} placeholder="반려 사유를 입력해 주세요" className="h-16 min-h-16" />
+          </div>
+          <DialogFooter className="justify-center">
+            <Button type="button" variant="outline" onClick={() => setReasonDialogOpen(false)}>
+              취소
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleReject}>
+              반려
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
