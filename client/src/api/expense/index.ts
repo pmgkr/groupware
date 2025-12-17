@@ -100,6 +100,7 @@ export interface ExpenseRegisterResponse {
       el_type: string;
       exp_id: string;
       list_seq: number;
+      item_seqs: number[];
       totals: {
         amount: number;
         tax: number;
@@ -139,6 +140,7 @@ export interface ExpenseHeaderDTO extends ExpenseHeaderBase {
 
 export interface ExpenseItemDTO extends Omit<ExpenseItemBase, 'attachments'> {
   seq: number;
+  ei_type: string;
   exp_id: string;
   attachments: ExpenseAttachmentDTO[];
 }

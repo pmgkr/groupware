@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
+import { notificationApi } from '@/api/notification';
 import { useToggleState } from '@/hooks/useToggleState';
 import { useUser } from '@/hooks/useUser';
 import { mapExcelToExpenseItems } from '@/utils';
@@ -433,7 +434,7 @@ export default function ExpenseRegister() {
               ei_amount: Number(i.price),
               ei_tax: Number(i.tax || 0),
               ei_total: Number(i.total),
-              pro_id: !i.pro_id || i.pro_id === '0' || isNaN(Number(i.pro_id)) ? null : Number(i.pro_id),
+              pro_id: i.pro_id ?? null,
               attachments: (i.attachments || []).map((att: any) => ({
                 filename: att.fname,
                 savename: att.sname,
@@ -451,6 +452,22 @@ export default function ExpenseRegister() {
 
           if (result.ok && result.docs?.inserted) {
             const { list_count, item_count } = result.docs.inserted;
+
+            // result.docs.results 에 item_seq값 추가해서 반환
+            // report 테이블에 저장할 때 rp_project_type이 'project'일 때 rp_expense_no가 projectId/list_seq (G26-00002/32)
+            // 같은 pro_id 값이 있으면 패스, pro_id 값이 없으면 패스
+            // payload.items <- 반복문 돌려서 pro_id값이 있으면 report/expense/set API를 호출
+
+            // expenseRegister Result 데이터에 매니저 정보를 추가로 받아와야함
+            // await notificationApi.registerNotification({
+            //   user_id: data.header.user_id,
+            //   user_name: data.header.user_nm,
+            //   noti_target: user_id!,
+            //   noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
+            //   noti_message: `청구한 비용을 승인했습니다.`,
+            //   noti_type: 'expense',
+            //   noti_url: `/expense/${data.header.exp_id}`,
+            // });
 
             addAlert({
               title: '비용 등록이 완료되었습니다.',
