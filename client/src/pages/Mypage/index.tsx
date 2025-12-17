@@ -6,7 +6,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@components/ui/badge';
 import { PlaceMin, MailMin, PhoneMin, Edit, Add, Delete, Calendar } from '@/assets/images/icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   deleteAccount,
   editMyProfile,
@@ -104,6 +104,19 @@ export default function Mypage() {
   };
 
   //프로필 이미지 수정
+  const profileImageUrl = useMemo(() => {
+    if (!user?.profile_image) {
+      return getImageUrl('dummy/profile');
+    }
+
+    // 🔥 Cloud URL인 경우 (http로 시작)
+    if (user.profile_image.startsWith('http')) {
+      return `${user.profile_image}?t=${Date.now()}`;
+    }
+
+    // 🔥 기존 DB 파일명인 경우
+    return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${user.profile_image}?t=${Date.now()}`;
+  }, [user?.profile_image]);
   const handleProfileImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -118,7 +131,6 @@ export default function Mypage() {
       });
       return;
     }
-
     setIsUploadingProfile(true); // 🔥 로딩 시작
 
     try {
@@ -312,12 +324,8 @@ export default function Mypage() {
       <section className="flex flex-col gap-y-5">
         <div className="flex items-center gap-x-14 rounded-md border border-gray-300 px-20 py-6">
           <div className="group relative aspect-square w-36 overflow-hidden rounded-[50%]">
-            <img
-              src={user?.profile_image ? `${user.profile_image}` : getImageUrl('dummy/profile')}
-              alt="프로필 이미지"
-              className="h-full w-full object-cover"
-            />
-            {/* 🔥 hover 오버레이 - 업로드 중이 아닐 때만 표시 */}
+            <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
+            {/* hover 오버레이 - 업로드 중이 아닐 때만 표시 */}
             {!isUploadingProfile && (
               <label
                 htmlFor="profileUpload"

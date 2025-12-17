@@ -20,11 +20,36 @@ export default function AdminProposalList() {
 
   return (
     <ProposalListContent
-      isAdmin={true}
+      isAdmin
       adminRole={adminRole}
-      showWriterInfo={true}
+      showWriterInfo
       onRowClick={(id, tab) => navigate(`/admin/proposal/${id}?tab=${tab}`)}
       onFetchData={async (params) => {
+        // 🔥 전체 탭일 때
+        if (!params.type) {
+          const baseParams = {
+            page: params.page,
+            size: params.size,
+            q: params.q,
+          };
+
+          const [finance, gm, rejected, completed] = await Promise.all([
+            getReportListAdmin({ ...baseParams, status: 'finance' }),
+            getReportListAdmin({ ...baseParams, status: 'gm' }),
+            getReportListAdmin({ ...baseParams, status: 'rejected' }),
+            getReportListAdmin({ ...baseParams, status: 'completed' }), // 🔥 승인완료
+          ]);
+
+          // 🔥 병합 + 중복 제거
+          const merged = [...finance, ...gm, ...rejected, ...completed].reduce((acc, cur) => {
+            acc.set(cur.id, cur);
+            return acc;
+          }, new Map<number, any>());
+
+          return Array.from(merged.values());
+        }
+
+        // pending / completed / rejected 탭
         return await getReportListAdmin(params);
       }}
     />

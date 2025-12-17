@@ -12,7 +12,7 @@ import { formatAmount } from '@/utils';
 import { registerReport } from '@/api/expense/proposal';
 import { uploadFilesToServer } from '@/api';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
-import { Check } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react'; // 🔥 Loader2 추가
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { TableColumn, TableColumnBody, TableColumnCell, TableColumnHeader, TableColumnHeaderCell } from '@/components/ui/tableColumn';
 import ProposalAttachFiles from './ProposalAttachFiles';
@@ -30,8 +30,6 @@ export default function ProposalRegister() {
   const location = useLocation();
   const navigate = useNavigate();
   const isProject = location.pathname.includes('/project');
-
-  /* ---------- form ---------- */
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -54,19 +52,16 @@ export default function ProposalRegister() {
 
   /* ---------- state ---------- */
 
-  // 파일 UI용
   const [files, setFiles] = useState<File[]>([]);
-
-  // 서버 전송용 (업로드 결과)
   const [uploadedFiles, setUploadedFiles] = useState<
     {
       rf_name: string;
       rf_type: string;
-      rf_sname: string; // cloud url
+      rf_sname: string;
     }[]
   >([]);
-
   const [formattedPrice, setFormattedPrice] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   const { addDialog } = useAppDialog();
   const { addAlert } = useAppAlert();
@@ -75,11 +70,14 @@ export default function ProposalRegister() {
     navigate(isProject ? '/project/proposal' : '/expense/proposal');
   };
 
+  /* ---------- file  ---------- */
+
   const handleAddFiles = async (newFiles: File[]) => {
     console.log('📂 selected files', newFiles);
 
     // UI용 파일 상태 업데이트 (즉시 표시)
     setFiles((prev) => [...prev, ...newFiles]);
+    setIsUploading(true); // 🔥 업로드 시작
 
     try {
       const uploaded = await uploadFilesToServer(newFiles, 'report');
@@ -94,6 +92,7 @@ export default function ProposalRegister() {
       console.log('🧾 mapped files', mapped);
 
       setUploadedFiles((prev) => [...prev, ...mapped]);
+      console.log('✅ uploadedFiles 업데이트 완료:', [...uploadedFiles, ...mapped]); // 🔥 확인
     } catch (error) {
       console.error('파일 업로드 실패:', error);
       // 업로드 실패 시 UI에서 추가한 파일 제거
@@ -103,6 +102,8 @@ export default function ProposalRegister() {
         message: '파일 업로드 중 오류가 발생했습니다.',
         duration: 2000,
       });
+    } finally {
+      setIsUploading(false); // 🔥 업로드 완료
     }
   };
 
@@ -111,7 +112,19 @@ export default function ProposalRegister() {
     setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  /* ---------- submit ---------- */
+
   const onSubmit = (data: FormValues) => {
+    // 🔥 업로드 중이면 제출 불가
+    if (isUploading) {
+      addAlert({
+        title: '파일 업로드 중',
+        message: '파일 업로드가 완료될 때까지 기다려주세요.',
+        duration: 2000,
+      });
+      return;
+    }
+
     addDialog({
       title: `<span class="font-semibold">기안서 등록</span>`,
       message: '이 기안서를 제출하시겠습니까?',
@@ -122,6 +135,8 @@ export default function ProposalRegister() {
   };
 
   const handleFinalSubmit = async (data: FormValues) => {
+    console.log('📋 현재 uploadedFiles:', uploadedFiles); // 🔥 디버깅
+
     try {
       const payload = {
         rp_category: isProject ? '프로젝트' : data.category,
@@ -129,17 +144,15 @@ export default function ProposalRegister() {
         rp_state: '진행',
         rp_cost: Number(data.price),
         rp_content: data.content,
-        rp_project_type: 'TBD',
+        rp_project_type: isProject ? 'project' : 'non_project',
         rp_expense_no: '',
         references: [],
-
-        // 🔥 백엔드가 원하는 구조 그대로
         files: uploadedFiles,
       };
 
       console.log('🔥 register payload', payload);
 
-      await registerReport(payload); // ✅ JSON
+      await registerReport(payload);
 
       addAlert({
         title: '기안서 제출 완료',
@@ -153,6 +166,8 @@ export default function ProposalRegister() {
       console.error('등록 실패:', err);
     }
   };
+
+  /* ================= render ================= */
 
   return (
     <Form {...form}>
@@ -274,11 +289,30 @@ export default function ProposalRegister() {
 
         {/* ================= 하단 ================= */}
         <div className="flex items-center justify-between">
-          <ProposalAttachFiles mode="upload" files={files} onAddFiles={handleAddFiles} onRemove={handleRemoveFile} />
+          <div className="flex items-center gap-x-2">
+            <ProposalAttachFiles mode="upload" files={files} onAddFiles={handleAddFiles} onRemove={handleRemoveFile} />
+
+            {/* 🔥 업로드 중 표시 */}
+            {isUploading && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>파일 업로드 중...</span>
+              </div>
+            )}
+          </div>
 
           <div className="flex gap-x-2">
-            <Button type="submit">제출</Button>
-            <Button type="button" variant="secondary" onClick={onBack}>
+            <Button type="submit" disabled={isUploading}>
+              {isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  업로드 중...
+                </>
+              ) : (
+                '제출'
+              )}
+            </Button>
+            <Button type="button" variant="secondary" onClick={onBack} disabled={isUploading}>
               취소
             </Button>
           </div>
