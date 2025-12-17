@@ -84,7 +84,7 @@ export function AdminListFilter({
     { label: '임시저장', value: 'Saved' },
     { label: '승인대기', value: 'Claimed' },
     { label: '승인완료', value: 'Confirmed' },
-    // { label: '지급대기', value: 'Waiting' },
+    // { label: '지급대기', value: 'Approved' },
     { label: '지급완료', value: 'Completed' },
     { label: '반려됨', value: 'Rejected' },
   ];
@@ -114,10 +114,10 @@ export function AdminListFilter({
               <SelectValue placeholder="연도 선택" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem size="sm" value="2025">
+              <SelectItem value="2025" size="sm">
                 2025
               </SelectItem>
-              <SelectItem size="sm" value="2026">
+              <SelectItem value="2026" size="sm">
                 2026
               </SelectItem>
             </SelectContent>

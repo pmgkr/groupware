@@ -1,50 +1,46 @@
-import { useRef, useState } from 'react';
-import { useNavigate, useParams, Link, useLocation } from 'react-router';
-import { formatAmount } from '@/utils';
-import { cn } from '@/lib/utils';
+import { useRef, useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
-import { format } from 'date-fns';
 import { notificationApi } from '@/api/notification';
+import { type ExpenseViewDTO } from '@/api/expense';
 import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
-import { getAdminExpenseView, confirmExpense, rejectExpense } from '@/api/admin/pexpense';
+import { getAdminExpenseView, confirmExpense, rejectExpense } from '@/api/admin/nexpense';
+import ReportMatched from '@components/features/Project/_components/ReportMatched';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
+import { statusIconMap, getLogMessage } from './utils/statusUtils';
+import { formatKST, formatAmount } from '@/utils';
+import { format } from 'date-fns';
 
 import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
 import { Textarea } from '@components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Download, Edit } from '@/assets/images/icons';
+import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
+import { Download } from '@/assets/images/icons';
+import { File, Link as LinkIcon, OctagonAlert, Files } from 'lucide-react';
 
-import { useProjectExpenseMatching } from './hooks/useProjectExpenseMatching';
-
-import EstimateMatching from './_components/EstimateMatching';
-import EstimateMatched from './_components/EstimateMatched';
-import ExpenseViewRow from './_components/ExpenseViewRow';
-import ExpenseViewEstRow from './_components/ExpenseViewEstRow';
-import ReportMatched from './_components/ReportMatched';
-
-import { File, Link as LinkIcon, OctagonAlert, Files, SquareArrowOutUpRight } from 'lucide-react';
-
-export default function ProjectExpenseView() {
-  const { expId, projectId } = useParams();
-  const navigate = useNavigate();
+export default function NexpenseView() {
+  const { expId } = useParams();
   const { user_id } = useUser();
+  const navigate = useNavigate();
   const { search } = useLocation();
 
   const { addAlert } = useAppAlert();
   const { addDialog } = useAppDialog();
 
-  const [reasonDialogOpen, setReasonDialogOpen] = useState(false); // Dialog State
-  const reasonRef = useRef<HTMLTextAreaElement | null>(null); // 반려 사유에 대한 ref
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<ExpenseViewDTO | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // 기안서 조회 State
   const [selectedProposal, setSelectedProposal] = useState<ReportDTO | null>(null);
   const [proposalLoading, setProposalLoading] = useState(false);
+
+  const [dialogOpen, setDialogOpen] = useState(false); // Dialog State
+  const reasonRef = useRef<HTMLTextAreaElement | null>(null); // 반려 사유에 대한 ref
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
@@ -52,34 +48,26 @@ export default function ProjectExpenseView() {
     return format(date, 'yyyy-MM-dd');
   };
 
-  /** -----------------------------------------
-   *  핵심 매칭 로직 공유 훅
-   ----------------------------------------- */
-  const {
-    data,
-    loading,
-    refresh,
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getAdminExpenseView(expId);
+        const normalizedHeader = Array.isArray(res.header) ? res.header[0] : res.header;
 
-    expenseInfo,
-    matchedItems,
-    dbMatchedItems,
-    matchedMap,
+        setData({
+          ...res,
+          header: normalizedHeader,
+        });
 
-    openDialog,
-    openEstimateDialog,
+        console.log('비용 조회', res);
+      } catch (err) {
+        console.error('❌ 비용 상세 조회 실패:', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [expId, refreshKey]);
 
-    completeMatching,
-    resetMatching,
-    clearMatching,
-
-    loadMatchedItems,
-    deleteMatching,
-
-    selectedExpSeq,
-    setSelectedEstId,
-  } = useProjectExpenseMatching(expId, getAdminExpenseView);
-
-  // 로딩 상태
   if (loading) return <div className="flex h-[50vh] items-center justify-center text-gray-500">데이터를 불러오는 중입니다...</div>;
 
   if (!data)
@@ -94,11 +82,20 @@ export default function ProjectExpenseView() {
       </div>
     );
 
-  const { header, items, project } = data;
+  const { header, items } = data;
 
-  /** -----------------------------------------
-   *  상태 Badge
-   ----------------------------------------- */
+  // .총 비용 계산
+  const totals = items.reduce(
+    (acc, item) => {
+      acc.amount += item.ei_amount || 0;
+      acc.tax += item.ei_tax || 0;
+      acc.total += item.ei_total || 0;
+      return acc;
+    },
+    { amount: 0, tax: 0, total: 0 }
+  );
+
+  // 비용 상태별 Badge 맵핑
   const statusMap = {
     Saved: (
       <Badge variant="grayish" size="table">
@@ -110,7 +107,7 @@ export default function ProjectExpenseView() {
         승인대기
       </Badge>
     ),
-    Confirmed: <Badge size="table">승인완료</Badge>,
+    Confirmed: <Badge size="md">승인완료</Badge>,
     Approved: (
       <Badge className="bg-primary-blue/80" size="table">
         지급대기
@@ -127,25 +124,13 @@ export default function ProjectExpenseView() {
       </Badge>
     ),
   };
-  const statusBadge = statusMap[header.status as keyof typeof statusMap];
 
-  /** -----------------------------------------
-   *  합계
-   ----------------------------------------- */
-  const totals = items.reduce(
-    (acc, item) => {
-      acc.amount += item.ei_amount || 0;
-      acc.tax += item.ei_tax || 0;
-      acc.total += item.ei_total || 0;
-      return acc;
-    },
-    { amount: 0, tax: 0, total: 0 }
-  );
+  const status = statusMap[header.status as keyof typeof statusMap];
 
   const handleConfirm = () => {
     addDialog({
-      title: '비용 지급 승인',
-      message: `<span class="text-primary-blue-500 font-semibold">${data.header.el_title}</span> 비용을 지급 하시겠습니까?`,
+      title: '비용 승인',
+      message: `<span class="text-primary-blue-500 font-semibold">${data.header.el_title}</span> 비용을 승인하시겠습니까?`,
       confirmText: '승인',
       cancelText: '취소',
       onConfirm: async () => {
@@ -159,25 +144,25 @@ export default function ProjectExpenseView() {
               user_name: data.header.user_nm,
               noti_target: user_id!,
               noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
-              noti_message: `청구한 비용을 지급 완료했습니다.`,
+              noti_message: `청구한 비용을 승인했습니다.`,
               noti_type: 'expense',
-              noti_url: `/project/${data.header.project_id}/expense/${data.header.seq}`,
+              noti_url: `/expense/${data.header.exp_id}`,
             });
 
             addAlert({
-              title: '비용 지급 승인 완료',
-              message: `<p><span class="text-primary-blue-500 font-semibold">${res.updated_count}</span>건의 비용이 지급 완료되었습니다.</p>`,
+              title: '비용 승인 완료',
+              message: `<p><span class="text-primary-blue-500 font-semibold">${res.updated_count}</span>건의 비용이 승인 완료되었습니다.</p>`,
               icon: <OctagonAlert />,
               duration: 2000,
             });
           }
 
-          refresh();
+          setRefreshKey((prev) => prev + 1);
         } catch (err) {
           console.error('❌ 승인 실패:', err);
 
           addAlert({
-            title: '비용 지급 승인 실패',
+            title: '비용 승인 실패',
             message: `승인 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
             icon: <OctagonAlert />,
             duration: 2000,
@@ -202,7 +187,7 @@ export default function ProjectExpenseView() {
           noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
           noti_message: `청구한 비용을 반려했습니다.`,
           noti_type: 'expense',
-          noti_url: `/project/${data.header.project_id}/expense/${data.header.seq}`,
+          noti_url: `/expense/${data.header.exp_id}`,
         });
 
         addAlert({
@@ -213,18 +198,17 @@ export default function ProjectExpenseView() {
         });
       }
 
-      setReasonDialogOpen(false);
-      refresh();
+      setDialogOpen(false);
+      setRefreshKey((prev) => prev + 1);
     } catch (err) {
       console.error('❌ 승인 실패:', err);
 
       addAlert({
-        title: '비용 지급 승인 실패',
+        title: '비용 승인 실패',
         message: `승인 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
         icon: <OctagonAlert />,
         duration: 2000,
       });
-      refresh();
     }
   };
 
@@ -256,7 +240,19 @@ export default function ProjectExpenseView() {
     try {
       setProposalLoading(true);
       const res = await getReportInfo(String(pro_id));
-      setSelectedProposal(res.report);
+
+      console.log('리포트', res);
+
+      if (res.report) {
+        setSelectedProposal(res.report);
+      } else {
+        addAlert({
+          title: '기안서 조회 실패',
+          message: '기안서를 찾을 수 없습니다.',
+          icon: <OctagonAlert />,
+          duration: 1500,
+        });
+      }
     } catch (e) {
       console.error(e);
     }
@@ -265,11 +261,9 @@ export default function ProjectExpenseView() {
   return (
     <>
       <div className="flex min-h-140 flex-wrap justify-between pb-12">
-        {/* ---------------------- Left: 비용 정보 ---------------------- */}
         <div className="w-[74%] tracking-tight">
           <div className="flex w-full items-end justify-between pb-2">
             <h3 className="text-lg font-bold text-gray-800">비용 정보</h3>
-
             <div className="flex items-center text-sm text-gray-500">
               EXP #.
               <Button
@@ -296,25 +290,6 @@ export default function ProjectExpenseView() {
 
           <TableColumn className="border-t-0 [&_div]:text-[13px]">
             <TableColumnHeader className="w-[12%]">
-              <TableColumnHeaderCell>프로젝트명</TableColumnHeaderCell>
-            </TableColumnHeader>
-            <TableColumnBody>
-              <TableColumnCell>
-                <Link to={`/project/${header.project_id}`} target="_blank" className="flex items-center gap-1 hover:underline">
-                  {project.project_title} <SquareArrowOutUpRight className="size-3" />
-                </Link>
-              </TableColumnCell>
-            </TableColumnBody>
-            <TableColumnHeader className="w-[12%]">
-              <TableColumnHeaderCell>클라이언트</TableColumnHeaderCell>
-            </TableColumnHeader>
-            <TableColumnBody className="w-[21.33%] flex-none">
-              <TableColumnCell>{project.client_nm}</TableColumnCell>
-            </TableColumnBody>
-          </TableColumn>
-
-          <TableColumn className="border-t-0 [&_div]:text-[13px]">
-            <TableColumnHeader className="w-[12%]">
               <TableColumnHeaderCell>비용 유형</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>
@@ -332,10 +307,9 @@ export default function ProjectExpenseView() {
               <TableColumnHeaderCell>비용 상태</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>
-              <TableColumnCell>{statusBadge}</TableColumnCell>
+              <TableColumnCell>{status}</TableColumnCell>
             </TableColumnBody>
           </TableColumn>
-
           <TableColumn className="border-t-0 [&_div]:text-[13px]">
             <TableColumnHeader className="w-[12%]">
               <TableColumnHeaderCell>증빙 수단</TableColumnHeaderCell>
@@ -394,81 +368,87 @@ export default function ProjectExpenseView() {
               </TableColumnHeader>
               <TableColumnBody>
                 <TableColumnCell className="text-destructive leading-[1.3]">
-                  {header.rej_reason} {header.rejected_by && `- ${header.rejected_by}`}
+                  {header.rej_reason} {header.rejected_by && `- ${header.rejected_by} (${formatDate(header.edate)} 반려됨)`}
                 </TableColumnCell>
               </TableColumnBody>
             </TableColumn>
           )}
 
-          {/* ---------------------- 비용 항목 테이블 ---------------------- */}
           <div className="mt-6">
             <h3 className="mb-2 text-lg font-bold text-gray-800">비용 항목</h3>
             <Table variant="primary" align="center" className="table-fixed">
               <TableHeader>
                 <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-                  <TableHead className="w-[10%]">비용 용도</TableHead>
                   <TableHead className="w-[20%]">가맹점명</TableHead>
                   <TableHead className="w-[10%] px-4">매입일자</TableHead>
-                  <TableHead className="w-[14%]">금액 (A)</TableHead>
+                  <TableHead className="w-[14%]">금액</TableHead>
                   <TableHead className="w-[10%]">세금</TableHead>
                   <TableHead className="w-[14%]">합계</TableHead>
-                  <TableHead className="w-[20%]">증빙자료</TableHead>
-                  <TableHead className="w-[8%]">{data.header.is_estimate === 'Y' ? '견적서' : '기안서'}</TableHead>
+                  <TableHead className="w-[24%]">증빙자료</TableHead>
+                  <TableHead className="w-[8%]">기안서</TableHead>
                 </TableRow>
               </TableHeader>
-
               <TableBody>
-                {data.header.is_estimate === 'Y'
-                  ? items.map((item, idx) => {
-                      const alreadyMatched = (item.matchedList?.length ?? 0) > 0;
-                      const isMatched = (matchedMap[item.seq]?.length ?? 0) > 0;
-                      const isMatching = expenseInfo?.seq === item.seq && matchedItems.length > 0;
-                      const isWaiting = Boolean(expenseInfo && expenseInfo.seq !== item.seq && matchedItems.length > 0);
-
-                      return (
-                        <ExpenseViewEstRow
-                          key={item.seq}
-                          item={item}
-                          idx={idx}
-                          onMatched={() => loadMatchedItems(item)}
-                          onMatching={() => {
-                            if (matchedMap[item.seq]?.length) {
-                              // 첫 번째 매칭된 항목의 est_id 사용
-                              const firstItem = matchedMap[item.seq][0];
-                              if (firstItem?.est_id) {
-                                setSelectedEstId(firstItem.est_id);
-                              }
-                            }
-
-                            openDialog();
-                          }}
-                          onSetMatching={() => openEstimateDialog(item.seq, item.ei_amount)}
-                          alreadyMatched={alreadyMatched}
-                          isMatched={isMatched}
-                          isMatching={isMatching}
-                          isWaiting={isWaiting}
-                        />
-                      );
-                    })
-                  : items.map((item) => <ExpenseViewRow key={item.seq} item={item} onProposal={() => setReportInfo(item.pro_id)} />)}
-
-                <TableRow className="bg-primary-blue-50 hover:bg-primary-blue-50 [&_td]:py-3">
-                  <TableCell className="font-semibold" colSpan={3}>
-                    총 비용
-                  </TableCell>
+                {items.map((item) => {
+                  return (
+                    <TableRow key={item.seq} className="[&_td]:text-[13px]">
+                      <TableCell>{item.ei_title}</TableCell>
+                      <TableCell className="px-4">{formatDate(item.ei_pdate)}</TableCell>
+                      <TableCell className="text-right">{formatAmount(item.ei_amount)}원</TableCell>
+                      <TableCell className="text-right">{item.ei_tax === 0 ? 0 : `${formatAmount(item.ei_tax)}원`}</TableCell>
+                      <TableCell className="text-right">{formatAmount(item.ei_total)}원</TableCell>
+                      {item.attachments && item.attachments.length > 0 ? (
+                        <TableCell>
+                          <ul>
+                            {item.attachments.map((att, idx) => (
+                              <li key={idx} className="overflow-hidden text-sm text-gray-800">
+                                <a
+                                  href={`${import.meta.env.VITE_API_ORIGIN}/uploads/nexpense/${att.ea_sname}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center justify-center gap-1">
+                                  <File className="size-3.5 shrink-0" />
+                                  <span className="overflow-hidden text-left text-ellipsis whitespace-nowrap hover:underline">
+                                    {att.ea_fname}
+                                  </span>
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </TableCell>
+                      ) : (
+                        <TableCell>-</TableCell>
+                      )}
+                      <TableCell className="px-1 text-center [&_button]:rounded-xl [&_button]:border [&_button]:text-xs [&_button]:transition-none">
+                        {item.pro_id ? (
+                          <Button size="xs" variant="outline" onClick={() => setReportInfo(item.pro_id)}>
+                            기안서보기
+                          </Button>
+                        ) : (
+                          <span>-</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                <TableRow className="bg-primary-blue-50">
+                  <TableCell className="font-semibold">총 비용</TableCell>
+                  <TableCell className="text-left"></TableCell>
                   <TableCell className="text-right font-semibold">{formatAmount(totals.amount)}원</TableCell>
                   <TableCell className="text-right font-semibold">{formatAmount(totals.tax)}원</TableCell>
                   <TableCell className="text-right font-semibold">{formatAmount(totals.total)}원</TableCell>
-                  <TableCell colSpan={2} />
+                  <TableCell className="text-left"></TableCell>
+                  <TableCell className="text-left"></TableCell>
                 </TableRow>
               </TableBody>
             </Table>
           </div>
-
           <div className="mt-8 flex w-full items-center justify-between">
-            <Button variant="outline" size="sm" asChild>
-              <Link to={`/admin/finance${search}`}>목록</Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/admin/finance/nexpense${search}`)}>
+                목록
+              </Button>
+            </div>
 
             <div className="flex gap-2">
               <Button type="button" size="sm" variant="outline">
@@ -476,7 +456,7 @@ export default function ProjectExpenseView() {
               </Button>
               {header.status !== 'Saved' && header.status !== 'Completed' && header.status !== 'Rejected' && (
                 <>
-                  <Button type="button" size="sm" variant="destructive" onClick={() => setReasonDialogOpen(true)}>
+                  <Button type="button" size="sm" variant="destructive" onClick={() => setDialogOpen(true)}>
                     반려하기
                   </Button>
                   <Button type="button" size="sm" onClick={handleConfirm}>
@@ -487,42 +467,17 @@ export default function ProjectExpenseView() {
             </div>
           </div>
         </div>
-
-        {/* ---------------------- Right: 매칭 영역 ---------------------- */}
         <div className="w-[24%]">
-          {data.header.is_estimate === 'Y' ? (
-            <>
-              <div className="flex justify-between">
-                <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
-              </div>
+          <div className="flex justify-between">
+            <h2 className="mb-2 text-lg font-bold text-gray-800">기안서 정보</h2>
+          </div>
 
-              {dbMatchedItems.length > 0 ? (
-                <EstimateMatched items={dbMatchedItems} project_id={header.project_id} />
-              ) : (
-                <EstimateMatching
-                  matchedItems={matchedItems}
-                  expenseInfo={expenseInfo}
-                  onReset={resetMatching}
-                  onRefresh={() => refresh()}
-                  onMatched={completeMatching}
-                />
-              )}
-            </>
-          ) : (
-            // 기안서 정보
-            <>
-              <div className="flex justify-between">
-                <h2 className="mb-2 text-lg font-bold text-gray-800">기안서 정보</h2>
-              </div>
-
-              <ReportMatched report={selectedProposal} />
-            </>
-          )}
+          <ReportMatched report={selectedProposal} />
         </div>
       </div>
 
       {/* ---------------- 증빙 사유 다이얼로그 ---------------- */}
-      <Dialog open={reasonDialogOpen} onOpenChange={setReasonDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>비용 반려</DialogTitle>
@@ -532,7 +487,7 @@ export default function ProjectExpenseView() {
             <Textarea ref={reasonRef} placeholder="반려 사유를 입력해 주세요" className="h-16 min-h-16" />
           </div>
           <DialogFooter className="justify-center">
-            <Button type="button" variant="outline" onClick={() => setReasonDialogOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
               취소
             </Button>
             <Button type="button" variant="destructive" onClick={handleReject}>

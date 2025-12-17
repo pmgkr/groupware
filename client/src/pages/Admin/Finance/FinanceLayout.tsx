@@ -5,7 +5,7 @@ import { Button } from '@components/ui/button';
 
 const tabs = [
   { key: 'pexpense', label: '프로젝트 비용', path: '' },
-  { key: 'expense', label: '일반 비용', path: 'expense' },
+  { key: 'nexpense', label: '일반 비용', path: 'nexpense' },
   { key: 'invoice', label: '인보이스', path: 'invoice' },
   { key: 'report', label: '프로젝트 리포트', path: 'report' },
 ] as const;

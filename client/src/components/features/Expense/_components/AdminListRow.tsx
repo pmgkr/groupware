@@ -2,7 +2,7 @@
 import { memo, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { formatAmount, formatDate } from '@/utils';
-import { type ExpenseListItems } from '@/api/admin/pexpense';
+import { type ExpenseListItems } from '@/api/admin/nexpense';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,17 +12,16 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { DayPicker } from '@components/daypicker';
 
-import { CalendarIcon, FileDown } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 
 type ExpenseRowProps = {
   item: ExpenseListItems;
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
   onDdate: (seq: number, ddate: Date) => void;
-  handlePDFDownload: (seq: number) => void;
 };
 
-export const AdminListRow = memo(({ item, checked, onCheck, onDdate, handlePDFDownload }: ExpenseRowProps) => {
+export const AdminListRow = memo(({ item, checked, onCheck, onDdate }: ExpenseRowProps) => {
   const { search } = useLocation();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -33,6 +32,8 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate, handlePDFDo
 
     setSelectedDate(date);
     setIsOpen(false);
+
+    console.log(date);
 
     onDdate(item.seq, date);
   };
@@ -66,73 +67,21 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate, handlePDFDo
     ),
   } as const;
 
-  // 비용 용도 슬라이드 유틸함수
-  const parseCategories = (cate: string) => cate?.split('|').filter(Boolean) ?? [];
-  const categories = Array.from(new Set(parseCategories(item.el_type))); // 중복 카테고리 제거
-
-  // 비용 항목 & 견적서 매칭 누락 체크용
-  const matchMissing = item.alloc_status === 'empty' && item.is_estimate === 'Y' && (
-    <span className="absolute -top-1 -right-1 flex size-3">
-      {/* 애니메이션 */}
-      <span className={`bg-destructive absolute inline-flex h-full w-full animate-ping rounded-full opacity-75`}></span>
-      {/* 도트 */}
-      <span className={`bg-destructive relative inline-flex size-3 rounded-full border border-white`}></span>
-    </span>
-  );
-
   return (
-    <TableRow className="[&_td]:px-2 [&_td]:text-sm [&_td]:leading-[1.3] 2xl:[&_td]:text-[13px]">
+    <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]">
       <TableCell className="whitespace-nowrap">
-        <Link to={`/project/${item.project_id}`} target="_blank" className="rounded-[4px] border-1 bg-white p-1 text-[11px] 2xl:text-sm">
-          {item.project_id}
+        <Link to={`/admin/finance/nexpense/${item.seq}${search}`} className="rounded-[4px] border-1 bg-white p-1 text-sm">
+          {item.exp_id}
         </Link>
       </TableCell>
       <TableCell>{item.el_method}</TableCell>
-      <TableCell>
-        <TooltipProvider>
-          <Tooltip>
-            <div className="flex cursor-default items-center justify-center gap-1">
-              {categories.length === 1 ? (
-                <span>{categories[0]}</span>
-              ) : (
-                <>
-                  <span>{categories[0]}</span>
-                  <TooltipTrigger asChild>
-                    <Badge variant="grayish" className="px-1 py-0 text-xs">
-                      +{categories.length - 1}
-                    </Badge>
-                  </TooltipTrigger>
-                </>
-              )}
-            </div>
-            {categories.length > 1 && <TooltipContent>{categories.join(', ')}</TooltipContent>}
-          </Tooltip>
-        </TooltipProvider>
-      </TableCell>
+      <TableCell>{item.el_type}</TableCell>
       <TableCell className="text-left">
-        <Link to={`/admin/finance/pexpense/${item.seq}${search}`} className="hover:underline">
+        <Link to={`/admin/finance/nexpense/${item.seq}${search}`} className="hover:underline">
           {item.el_title}
         </Link>
       </TableCell>
-      {/* <TableCell>
-        <Button
-          type="button"
-          variant="svgIcon"
-          size="xs"
-          onClick={() => handlePDFDownload(item.seq)}
-          className="bg-primary-blue-100 rounded-1 hover:bg-primary-blue-150">
-          <FileDown className="size-3.5" />
-        </Button>
-      </TableCell> */}
       <TableCell>{item.el_attach === 'Y' ? <Badge variant="secondary">제출</Badge> : <Badge variant="grayish">미제출</Badge>}</TableCell>
-      <TableCell>
-        <div className="relative inline-flex justify-center">
-          <Badge variant="grayish" className="border-gray-300 bg-white">
-            {item.is_estimate === 'Y' ? '견적서' : '견적서 외'}
-          </Badge>
-          {matchMissing}
-        </div>
-      </TableCell>
       <TableCell className="text-right">
         {formatAmount(item.el_total)}원
         <div className="mt-0.5 text-[11px] leading-[1.2] text-gray-600">

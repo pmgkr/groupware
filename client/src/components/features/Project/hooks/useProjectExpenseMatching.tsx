@@ -1,6 +1,6 @@
 // /Project/hooks/useProjectExpenseMatching.ts
 import { useEffect, useState, useRef } from 'react';
-import { getProjectExpenseView, type pExpenseViewDTO, type pExpenseItemDTO, type EstimateItemsView } from '@/api';
+import { getProjectView, type pExpenseViewDTO, type pExpenseItemDTO, type EstimateItemsView, type ProjectViewDTO } from '@/api';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
@@ -15,6 +15,7 @@ export interface pExpenseItemWithMatch extends pExpenseItemDTO {
 
 export interface pExpenseViewWithMatch extends pExpenseViewDTO {
   items: pExpenseItemWithMatch[];
+  project: ProjectViewDTO;
 }
 
 export interface EstimateMatchedItem {
@@ -69,10 +70,13 @@ export const useProjectExpenseMatching = (expId?: string, getExpenseView?: GetEx
         })
       );
 
+      const projectInfo = await getProjectView(normalizedHeader.project_id);
+
       setData({
         ...res,
         header: normalizedHeader,
         items: itemsWithMatch,
+        project: projectInfo,
       });
     } finally {
       setLoading(false);
