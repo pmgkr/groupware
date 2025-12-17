@@ -112,11 +112,11 @@ export default function ProposalList({
   const showBulkApproval = isAdmin && activeTab === 'pending';
 
   // 유틸리티 함수들
-  const getStatusParam = (): 'finance' | 'gm' | 'rejected' | undefined => {
+  const getStatusParam = (): 'finance' | 'gm' | 'rejected' | 'completed' | undefined => {
     if (!isAdmin) return undefined;
 
-    const statusMap: Record<'gm' | 'finance', Record<string, 'finance' | 'gm' | 'rejected' | undefined>> = {
-      gm: { pending: 'gm', completed: 'gm', rejected: 'rejected' },
+    const statusMap: Record<'gm' | 'finance', Record<string, 'finance' | 'gm' | 'rejected' | 'completed' | undefined>> = {
+      gm: { pending: 'gm', completed: 'completed', rejected: 'rejected' },
       finance: { pending: 'finance', completed: 'gm', rejected: 'rejected' },
     };
 
@@ -135,14 +135,51 @@ export default function ProposalList({
     return 'user';
   };
 
-  const getDisplayStatus = (report: ReportCard | ManagerReportCard | AdminReportCard) => {
-    const statusKeys = ['approval_gm_display_state', 'approval_finance_display_state', 'approval_manager_display_state'];
-    for (const key of statusKeys) {
-      if (key in report && report[key as keyof typeof report]) {
-        return report[key as keyof typeof report] as string;
-      }
+  type DisplayStateCapable = {
+    state: string;
+    approval_manager_display_state?: string;
+    approval_finance_display_state?: string;
+    approval_gm_display_state?: string;
+  };
+
+  const getDisplayStatus = (report: {
+    state: string;
+    approval_manager_display_state?: string;
+    approval_finance_display_state?: string;
+    approval_gm_display_state?: string;
+  }) => {
+    // 0️⃣ 반려는 무조건 최우선
+    if (
+      report.state === '반려' ||
+      report.approval_manager_display_state === '반려' ||
+      report.approval_finance_display_state === '반려' ||
+      report.approval_gm_display_state === '반려'
+    ) {
+      return '반려';
     }
-    return report.state;
+
+    // 🔥 1️⃣ 단 하나의 예외
+    // 회계 어드민 + "결재 완료 문서" 탭에서만
+    if (isAdmin && adminRole === 'finance' && activeTab === 'completed') {
+      return report.approval_finance_display_state || report.approval_manager_display_state || report.state;
+    }
+
+    // 2️⃣ GM 어드민
+    if (isAdmin && adminRole === 'gm') {
+      return (
+        report.approval_gm_display_state || report.approval_finance_display_state || report.approval_manager_display_state || report.state
+      );
+    }
+
+    // 3️⃣ 매니저
+    if (isManager) {
+      return report.approval_manager_display_state || report.state;
+    }
+
+    // 4️⃣ 기본 (유저, 전체 등)
+    return (
+      report.approval_gm_display_state || report.approval_finance_display_state || report.approval_manager_display_state || report.state
+    );
   };
 
   const getCategoryOptions = () => {
@@ -180,14 +217,6 @@ export default function ProposalList({
     // Admin
     if (isAdmin) {
       if (activeTab === 'rejected') return report.state === '반려';
-      console.log('🔍 Filter Debug:', {
-        activeTab,
-        adminRole,
-        id: report.id,
-        manager_state: report.manager_state,
-        finance_state: report.finance_state,
-        gm_state: report.gm_state,
-      });
 
       const filterMap = {
         finance: {
@@ -398,9 +427,8 @@ export default function ProposalList({
               </Button>
             ))}
           </div>
-
-          {!isProjectPage && (
-            <div className="flex items-center gap-x-2 before:mr-3 before:ml-3 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300">
+          <div className="flex items-center gap-x-2 before:mr-3 before:ml-3 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300">
+            {!isProjectPage && (
               <Select value={selectedCategory || ''} onValueChange={setSelectedCategory}>
                 <SelectTrigger size="sm" className="w-[100px]">
                   <SelectValue placeholder="구분 선택" />
@@ -413,21 +441,20 @@ export default function ProposalList({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          )}
-
-          <Select value={matchStatus || ''} onValueChange={setMatchStatus}>
-            <SelectTrigger size="sm" className="w-[120px]">
-              <SelectValue placeholder="비용 매칭 상태" />
-            </SelectTrigger>
-            <SelectContent>
-              {match_state.map((m) => (
-                <SelectItem key={m.value} value={m.value}>
-                  {m.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            )}
+            <Select value={matchStatus || ''} onValueChange={setMatchStatus}>
+              <SelectTrigger size="sm" className="w-[120px]">
+                <SelectValue placeholder="비용 매칭 상태" />
+              </SelectTrigger>
+              <SelectContent>
+                {match_state.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {showRegisterButton && onRegister && (

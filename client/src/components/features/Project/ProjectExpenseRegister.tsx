@@ -29,6 +29,8 @@ import { UserRound, FileText, OctagonAlert } from 'lucide-react';
 import { format } from 'date-fns';
 import { getMyAccounts, type BankAccount } from '@/api/mypage/profile';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { AccountSelectDialog } from '../Expense/_components/AccountSelectDialog';
+import { matchProjectWithProposal } from '@/api/expense/proposal';
 
 const expenseSchema = z.object({
   el_method: z.string().nonempty('결제 수단을 선택해주세요.'),
@@ -78,6 +80,9 @@ export default function ProjectExpenseRegister() {
   const [hasFiles, setHasFiles] = useState(false); // 추가 업로드 버튼 활성화 State
   const [linkedRows, setLinkedRows] = useState<Record<string, number | null>>({}); // 업로드된 이미지와 연결된 행 번호 저장용
   const [activeFile, setActiveFile] = useState<string | null>(null); // UploadArea & Attachment 연결상태 공유용
+
+  const [selectedProposal, setSelectedProposal] = useState<any>(null); //기안서  번호 확인용
+  const [selectedExpense, setSelectedExpense] = useState<any>(null); //비용 번호 확인용
 
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : ''); // YYYY-MM-DD Date 포맷 변경
 
@@ -450,7 +455,65 @@ export default function ProjectExpenseRegister() {
           console.log('✅ 등록 성공:', result);
 
           if (result.ok) {
+            //console.log('✅ 등록 성공 전체:', result); // 전체 결과 확인
             const item_count = result.count_items;
+            //const projectNumber = result.exp_id;
+            const itemSeqs = result.item_seqs; // 배열: [42, 43, 44] 같은 형태
+
+            //console.log('비용 아이템 번호들:', itemSeqs);
+
+            // payload의 items에서 pro_id 추출 (중복 제거)
+            const uniqueProposalIds = new Set<number>();
+
+            payload.items.forEach((item: any) => {
+              if (item.pro_id) {
+                uniqueProposalIds.add(item.pro_id);
+              }
+            });
+
+            //console.log('매칭할 기안서 번호들:', Array.from(uniqueProposalIds));
+
+            // 각 기안서에 대해 매칭 API 호출
+            if (uniqueProposalIds.size > 0) {
+              try {
+                const matchPromises = Array.from(uniqueProposalIds).map(async (rp_seq) => {
+                  // 해당 기안서(rp_seq)를 가진 항목들의 seq 찾기
+                  const matchingItemSeqs: number[] = [];
+                  payload.items.forEach((item: any, index: number) => {
+                    if (item.pro_id === rp_seq) {
+                      matchingItemSeqs.push(itemSeqs[index]);
+                    }
+                  });
+
+                  // 각 아이템 seq에 대해 개별 API 호출
+                  const itemMatchPromises = matchingItemSeqs.map(async (exp_seq) => {
+                    const matchResult = (await matchProjectWithProposal(
+                      rp_seq, // 기안서 번호
+                      exp_seq // 단일 아이템 번호 (배열 아님!)
+                    )) as { ok: boolean };
+
+                    return { rp_seq, exp_seq, success: matchResult.ok };
+                  });
+
+                  return await Promise.all(itemMatchPromises);
+                });
+
+                const results = await Promise.all(matchPromises);
+                const flatResults = results.flat();
+
+                flatResults.forEach(({ rp_seq, exp_seq, success }) => {
+                  if (success) {
+                    console.log(`✅ 기안서 ${rp_seq} - 아이템 ${exp_seq} 매칭 완료`);
+                  } else {
+                    console.error(`❌ 기안서 ${rp_seq} - 아이템 ${exp_seq} 매칭 실패`);
+                  }
+                });
+              } catch (error) {
+                console.error('❌ 매칭 요청 오류:', error);
+              }
+            } else {
+              console.log('ℹ️ 매칭할 기안서 없음');
+            }
 
             // 프로젝트 비용 기안서 매칭 API 호출 필요 (혜리 작업 필요)
             // projectId, result.list_seq 저장해서 API 호출해서 보내면됨
@@ -582,6 +645,13 @@ export default function ProjectExpenseRegister() {
                         <FormMessage />
                       </FormItem>
                     )}
+                  />
+                  <AccountSelectDialog
+                    open={accountDialogOpen}
+                    onOpenChange={setAccountDialogOpen}
+                    accounts={accountList}
+                    bankList={bankList}
+                    onSelect={handleSelectAccount}
                   />
                 </div>
                 <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
@@ -728,6 +798,9 @@ export default function ProjectExpenseRegister() {
                     files={files}
                     activeFile={activeFile}
                     setActiveFile={setActiveFile}
+                    onSelectProposal={(proposalId) => {
+                      setSelectedProposal(proposalId);
+                    }}
                   />
                 ))}
 

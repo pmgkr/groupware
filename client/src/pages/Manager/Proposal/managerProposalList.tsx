@@ -1,54 +1,47 @@
-// pages/Manager/Proposal/ProposalList.tsx
 import { useNavigate, useSearchParams } from 'react-router';
-import { useEffect, useState } from 'react';
 import ProposalListContent from '@/components/features/proposal/ProposalList';
-import { getReportListManager, type ManagerReportCard } from '@/api/manager/proposal';
+import { getReportListManager } from '@/api/manager/proposal';
 
 export default function ManagerProposalList() {
-  const [reports, setReports] = useState<ManagerReportCard[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // URL에서 탭 정보 가져오기
+  // 현재 탭
   const activeTab = searchParams.get('tab') || 'pending';
+
+  // 탭 → flag 변환
   const getFlagFromTab = (tab: string): '대기' | '완료' | '반려' => {
-    const flagMap: Record<string, '대기' | '완료' | '반려'> = {
-      pending: '대기',
-      approved: '완료',
-      rejected: '반려',
-    };
-    return flagMap[tab] || '대기';
+    switch (tab) {
+      case 'approved':
+        return '완료';
+      case 'rejected':
+        return '반려';
+      default:
+        return '대기';
+    }
   };
-
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        // 🔥 activeTab에 따라 flag 설정
-        const flag = activeTab === 'approved' ? '완료' : '대기';
-        //console.log('📡 Fetching reports with flag:', flag);
-
-        const data = await getReportListManager(flag);
-        //console.log('📥 Manager API 응답 데이터:', data); // ⭐ 2단계 응답 전체 확인
-
-        setReports(data);
-      } catch (err) {
-        console.error('❌ 매니저용 보고서 목록 불러오기 실패:', err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [activeTab]);
 
   return (
     <ProposalListContent
-      isManager={true}
-      showWriterInfo={true}
+      isManager
+      showWriterInfo
       onRowClick={(id, tab) => navigate(`view/${id}?tab=${tab}`)}
-      onFetchData={async (params) => {
+      onFetchData={async () => {
         const flag = getFlagFromTab(activeTab);
-        return await getReportListManager(flag);
+
+        // project / non_project 둘 다 호출
+        const [projectList, nonProjectList] = await Promise.all([
+          getReportListManager(flag, 'project'),
+          getReportListManager(flag, 'non_project'),
+        ]);
+
+        // 병합 + 중복 방지 (안전)
+        const merged = [...projectList, ...nonProjectList].reduce((acc, cur) => {
+          acc.set(cur.id, cur);
+          return acc;
+        }, new Map<number, any>());
+
+        return Array.from(merged.values());
       }}
     />
   );

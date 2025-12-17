@@ -71,18 +71,25 @@ export default function ProposalView({
             <span className="mr-2 text-gray-900">작성일자</span>
             {formatKST(report.rp_date)}
           </div>
-          {report.rp_expense_no && (
-            <div className="px-3">
-              <span className="mr-2 text-gray-900">EXP#</span>
+          {report.rp_expense_no &&
+            (() => {
+              const [projectCode, expenseId] = report.rp_expense_no.split('/');
 
-              <Link
-                to={`/expense/${report.rp_expense_no}`}
-                className="text-primary hover:text-primary/80 underline"
-                onClick={(e) => e.stopPropagation()}>
-                {report.rp_expense_no}
-              </Link>
-            </div>
-          )}
+              if (!projectCode || !expenseId) return null;
+
+              return (
+                <div className="px-3">
+                  <span className="mr-2 text-gray-900">EXP#</span>
+
+                  <Link
+                    to={`/project/${projectCode}/expense/${expenseId}`}
+                    className="text-primary hover:text-primary/80 underline"
+                    onClick={(e) => e.stopPropagation()}>
+                    {report.rp_expense_no}
+                  </Link>
+                </div>
+              );
+            })()}
         </div>
 
         <div className="w-[300px]">

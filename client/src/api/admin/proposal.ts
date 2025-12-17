@@ -6,6 +6,7 @@ export interface AdminReportCard extends ReportCard {
   manager_state: string;
   finance_state: string;
   gm_state: string;
+  approval_manager_display_state?: string;
   approval_finance_display_state?: string;
   approval_gm_display_state?: string;
 }

@@ -34,6 +34,7 @@ type ExpenseRowProps = {
   files: PreviewFile[];
   activeFile: string | null;
   setActiveFile: (id: string | null) => void;
+  onSelectProposal?: (selectedProposalId: Number) => void;
 };
 
 function ExpenseRowComponent({
@@ -47,6 +48,7 @@ function ExpenseRowComponent({
   files,
   activeFile,
   setActiveFile,
+  onSelectProposal,
 }: ExpenseRowProps) {
   const { user_level } = useUser();
   const [expenseTypes, setExpenseTypes] = useState<SingleSelectOption[]>([]);
@@ -310,46 +312,54 @@ function ExpenseRowComponent({
             </TableHeader>
 
             <TableBody>
-              {proposalList.map((p) => {
-                const isSelected = selectedProposalId === p.rp_seq;
-                const isDisabled = selectedProposalId !== null && !isSelected;
+              {proposalList.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-muted-foreground py-8 text-center text-sm">
+                    작성된 기안서가 없습니다.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                proposalList.map((p) => {
+                  const isSelected = selectedProposalId === p.rp_seq;
+                  const isDisabled = selectedProposalId !== null && !isSelected;
 
-                return (
-                  <TableRow key={p.rp_seq} className="hover:bg-gray-100">
-                    <TableCell>{p.rp_category}</TableCell>
-                    <TableCell className="text-left">{p.rp_title}</TableCell>
-                    <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
-                    <TableCell>{formatKST(p.rp_date)}</TableCell>
-                    <TableCell>
-                      <Checkbox
-                        size="sm"
-                        id={`proposal-${p.rp_seq}`}
-                        checked={isSelected}
-                        disabled={isDisabled}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            form.setValue(`expense_items.${index}.pro_id`, p.rp_seq, {
-                              shouldDirty: true,
-                              shouldValidate: false,
-                            });
+                  return (
+                    <TableRow key={p.rp_seq} className="hover:bg-gray-100 [&_td]:text-[13px]">
+                      <TableCell>{p.rp_category}</TableCell>
+                      <TableCell className="text-left">{p.rp_title}</TableCell>
+                      <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
+                      <TableCell>{formatKST(p.rp_date)}</TableCell>
+                      <TableCell className="[&]:pr-3!">
+                        <Checkbox
+                          size="sm"
+                          id={`proposal-${p.rp_seq}`}
+                          checked={isSelected}
+                          disabled={isDisabled}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              form.setValue(`expense_items.${index}.pro_id`, p.rp_seq, {
+                                shouldDirty: true,
+                                shouldValidate: false,
+                              });
 
-                            setSelectedProposalId(p.rp_seq);
-                            setSelectedProposal(p); // 전체 객체 저장
-                          } else {
-                            form.setValue(`expense_items.${index}.pro_id`, null, {
-                              shouldDirty: true,
-                              shouldValidate: false,
-                            });
+                              setSelectedProposalId(p.rp_seq);
+                              setSelectedProposal(p);
+                            } else {
+                              form.setValue(`expense_items.${index}.pro_id`, null, {
+                                shouldDirty: true,
+                                shouldValidate: false,
+                              });
 
-                            setSelectedProposalId(null);
-                            setSelectedProposal(null);
-                          }
-                        }}
-                      />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                              setSelectedProposalId(null);
+                              setSelectedProposal(null);
+                            }
+                          }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
 
@@ -362,6 +372,9 @@ function ExpenseRowComponent({
               onClick={() => {
                 if (!selectedProposalId) return;
                 console.log('선택된 기안서:', selectedProposalId);
+                // 부모 컴포넌트로 선택된 기안서 전달
+                onSelectProposal?.(selectedProposalId);
+
                 setDialogOpen(false);
               }}>
               선택하기
