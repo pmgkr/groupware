@@ -7,7 +7,9 @@ import PexpenseView from '@components/features/Project/AdminExpenseView';
 
 import Vacation from '@/pages/Admin/Vacation';
 import VacationDetail from '@/pages/Admin/VacationDetail';
-import AdminWorking from '@/pages/Admin/Working';
+import WorkingLayout from '@/pages/Admin/Working/WorkingLayout';
+import AdminWorking from '@/pages/Admin/Working/Working';
+import Latecomer from '@/pages/Admin/Working/Latecomer';
 import AdminOvertime from '@/pages/Admin/Overtime';
 import AdminProposalList from '@/pages/Admin/Proposal/adminProposalList';
 import AdminProposalView from '@/pages/Admin/Proposal/adminProposalView';
@@ -37,7 +39,14 @@ export const adminRoutes: RouteObject = {
     },
     { path: 'vacation', element: <Vacation /> },
     { path: 'vacation/user/:id', element: <VacationDetail /> },
-    { path: 'working', element: <AdminWorking /> },
+    {
+      path: 'working',
+      element: <WorkingLayout />,
+      children: [
+        { index: true, element: <AdminWorking /> },
+        { path: 'late', element: <Latecomer /> },
+      ],
+    },
     { path: 'overtime', element: <AdminOvertime /> },
     { path: 'proposal', element: <AdminProposalList /> },
     { path: 'proposal/:id', element: <AdminProposalView /> },
