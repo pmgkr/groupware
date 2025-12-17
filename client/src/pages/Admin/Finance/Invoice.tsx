@@ -5,7 +5,7 @@ import { formatDate, formatAmount, formatKST } from '@/utils';
 
 import { notificationApi } from '@/api/notification';
 import { uploadFilesToServer } from '@/api';
-import { getInvoiceList, type InvoiceListItem } from '@/api/admin/invoice';
+import { getInvoiceList, setInvoiceFile, delInvoiceFile, type InvoiceListItem, type InvoiceAttachment } from '@/api/admin/invoice';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
@@ -82,35 +82,35 @@ export default function Invoice() {
   // ============================
   // 리스트 조회 (팀 선택 완료 후 실행)
   // ============================
-  useEffect(() => {
-    async function loadList() {
-      try {
-        setLoading(true);
+  const loadList = async () => {
+    try {
+      setLoading(true);
 
-        const params: Record<string, any> = {
-          invoice_status: activeTab,
-          page: page,
-          size: pageSize,
-        };
-        if (searchQuery) params.q = searchQuery;
+      const params: Record<string, any> = {
+        invoice_status: activeTab,
+        page: page,
+        size: pageSize,
+      };
+      if (searchQuery) params.q = searchQuery;
 
-        setSearchParams(params);
-        const res = await getInvoiceList(params);
+      setSearchParams(params);
+      const res = await getInvoiceList(params);
 
-        console.log('📦 인보이스 요청 파라미터:', params);
-        console.log('✅ 인보이스 리스트 응답:', res);
+      console.log('📦 인보이스 요청 파라미터:', params);
+      console.log('✅ 인보이스 리스트 응답:', res);
 
-        setInvoiceList(res.items);
-        setTotal(res.total);
-      } catch (err) {
-        console.error('❌ 리스트 조회 실패:', err);
-      } finally {
-        setLoading(false);
-      }
+      setInvoiceList(res.items);
+      setTotal(res.total);
+    } catch (err) {
+      console.error('❌ 리스트 조회 실패:', err);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     loadList();
-  }, [selectedStatus, searchQuery, page, pageSize]);
+  }, [activeTab, searchQuery, page, pageSize]);
 
   // 탭 변경 시 필터 초기화
   const handleTabChange = (tab: 'rejected' | 'claimed' | 'confirmed') => {
@@ -170,17 +170,60 @@ export default function Invoice() {
     setUploadStateMap((prev) => ({ ...prev, [seq]: 'uploading' }));
 
     try {
+      // 성공 시, Invoice DB에 파일 세팅하는 API 호출
       const res = await uploadFilesToServer(fileArr, 'invoice_finance');
 
-      // 성공 시, Invoice DB에 파일 세팅하는 API 호출
-      console.log(res);
+      const payload: InvoiceAttachment = {
+        il_seq: seq,
+        ia_role: 'finance',
+        ia_fname: res[0].fname,
+        ia_sname: res[0].sname,
+        ia_url: res[0].url,
+      };
 
-      setUploadStateMap((prev) => ({ ...prev, [seq]: 'success' }));
-      addAlert({ title: '파일 업로드 성공', message: '메세지' });
+      const fileRes = await setInvoiceFile(payload);
+
+      if (fileRes.ok) {
+        setUploadStateMap((prev) => ({ ...prev, [seq]: 'success' }));
+        addAlert({ title: '파일 업로드', message: '인보이스 증빙자료 업로드가 완료되었습니다.', icon: <OctagonAlert />, duration: 1500 });
+
+        await loadList();
+      }
     } catch (err) {
       console.error(err);
       setUploadStateMap((prev) => ({ ...prev, [seq]: 'error' }));
-      addAlert({ title: '파일 업로드 실패', message: '파일 업로드 실패 1234' });
+      addAlert({
+        title: '파일 업로드 실패',
+        message: '인보이스 증빙자료 업로드를 실패했습니다. 다시 한 번 시도해 주세요.',
+        icon: <OctagonAlert />,
+        duration: 1500,
+      });
+    }
+  };
+
+  const handleDelFile = async (seq: number) => {
+    try {
+      const res = await delInvoiceFile(seq);
+
+      if (res.ok) {
+        addAlert({
+          title: '증빙자료 삭제',
+          message: '인보이스 증빙자료가 삭제되었습니다.',
+          icon: <OctagonAlert />,
+          duration: 1500,
+        });
+
+        await loadList();
+      }
+    } catch (err) {
+      console.error('첨부파일 삭제 실패', err);
+
+      addAlert({
+        title: '증빙자료 삭제 실패',
+        message: '인보이스 증빙자료 삭제에 실패했습니다. 다시 한 번 시도해 주세요.',
+        icon: <OctagonAlert />,
+        duration: 1500,
+      });
     }
   };
 
@@ -352,31 +395,43 @@ export default function Invoice() {
                     />
                   </TableCell>
                 )}
-                {activeTab === 'confirmed' && (
-                  <TableCell className="">
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        handleUploadFile(item.seq, file);
-                        e.currentTarget.value = ''; // 동일 파일 재업로드 허용
-                      }}
-                    />
-                    <div
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const file = e.dataTransfer.files?.[0];
-                        if (file) handleUploadFile(item.seq, file);
-                      }}
-                      className="text-muted-foreground rounded border border-dashed p-2 text-center text-xs">
-                      PDF 드래그 또는 클릭
-                    </div>
-                  </TableCell>
-                )}
+                {activeTab === 'confirmed' &&
+                  (item.attachments.length === 0 ? (
+                    <TableCell className="">
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          handleUploadFile(item.seq, file);
+                          e.currentTarget.value = ''; // 동일 파일 재업로드 허용
+                        }}
+                      />
+                      <div
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const file = e.dataTransfer.files?.[0];
+                          if (file) handleUploadFile(item.seq, file);
+                        }}
+                        className="text-muted-foreground cursor-pointer rounded border border-dashed p-2 text-center text-xs">
+                        PDF 드래그 또는 클릭
+                      </div>
+                    </TableCell>
+                  ) : (
+                    <TableCell>
+                      {item.attachments.map((att) => (
+                        <div className="inline-flex items-center gap-1 text-sm" key={att.ia_sname}>
+                          <Link to={att.ia_url}>{att.ia_fname}</Link>
+                          <Button type="button" variant="svgIcon" size="icon" className="size-4" onClick={() => handleDelFile(item.seq)}>
+                            <X className="size-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </TableCell>
+                  ))}
               </TableRow>
             ))
           ) : (
