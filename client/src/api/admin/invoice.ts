@@ -31,6 +31,7 @@ export type InvoiceListItem = {
   remark: string;
   wdate: string;
   rej_reason?: string | null;
+  attachments: InvoiceAttachment[];
 };
 
 // 인보이스 리스트 가져오기
@@ -42,4 +43,21 @@ export async function getInvoiceList(params: InvoiceListParams) {
   const res = await http<{ items: InvoiceListItem[]; total: number }>(`/admin/invoice/list?${query}`, { method: 'GET' });
 
   return res;
+}
+
+// 파이낸스 > 인보이스 첨부파일 등록 및 삭제
+export type InvoiceAttachment = {
+  il_seq: number;
+  ia_role: 'finance';
+  ia_fname: string;
+  ia_sname: string;
+  ia_url: string;
+};
+
+export async function setInvoiceFile(payload: InvoiceAttachment): Promise<{ ok: boolean; ia_seq: number }> {
+  return http<{ ok: boolean; ia_seq: number }>(`/admin/invoice/set/file`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function delInvoiceFile(il_seq: number): Promise<{ ok: boolean; deleted: number }> {
+  return http<{ ok: boolean; deleted: number }>(`/admin/invoice/del/file?il_seq=${il_seq}`, { method: 'DELETE' });
 }

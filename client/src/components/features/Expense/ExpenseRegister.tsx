@@ -453,10 +453,10 @@ export default function ExpenseRegister() {
           if (result.ok && result.docs?.inserted) {
             const { list_count, item_count } = result.docs.inserted;
 
+            // payload.items <- 반복문 돌려서 pro_id값이 있으면 report/expense/set API를 호출
             // result.docs.results 에 item_seq값 추가해서 반환
             // report 테이블에 저장할 때 rp_project_type이 'project'일 때 rp_expense_no가 projectId/list_seq (G26-00002/32)
             // 같은 pro_id 값이 있으면 패스, pro_id 값이 없으면 패스
-            // payload.items <- 반복문 돌려서 pro_id값이 있으면 report/expense/set API를 호출
 
             // expenseRegister Result 데이터에 매니저 정보를 추가로 받아와야함
             // await notificationApi.registerNotification({
