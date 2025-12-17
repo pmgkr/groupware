@@ -277,7 +277,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
 
               <TableCell className="text-center">
                 <div className="flex items-center gap-2 justify-center">
-                  <Avatar className="w-10 h-10">
+                  <Avatar className="w-8 h-8">
                     <AvatarImage 
                       src={item.profile_image 
                         ? (() => {
@@ -297,32 +297,32 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
               </TableCell>
 
               <TableCell className="text-center">
-                <div className="flex flex-col items-center">
-                  <span>{item.hireDate}</span>
-                  <span className="text-xs text-gray-500">{item.daycount}일</span>
+                <div className="flex items-center justify-center gap-1">
+                  <span className="text-sm">{item.hireDate}</span>
+                  <span className="text-xs text-gray-500">({item.daycount}일)</span>
                 </div>
               </TableCell>
 
               {/* 기본연차 */}
               <TableCell className="text-center">
-                <Badge variant="secondary" size="table">
+                <Badge variant={Number(item.va_current) < 0 ? "lightpink" : Number(item.va_current) === 0 ? "grayish" : "secondary"} size="table">
                   {item.va_current}일
                 </Badge>
               </TableCell>
 
               {/* 이월 */}
               <TableCell className="text-center">
-                <Badge variant="secondary" size="table">{item.va_carryover}일</Badge>
+                <Badge variant={Number(item.va_carryover) < 0 ? "lightpink" : Number(item.va_carryover) === 0 ? "grayish" : "secondary"} size="table">{item.va_carryover}일</Badge>
               </TableCell>
 
               {/* 특별 */}
               <TableCell className="text-center">
-                <Badge variant="secondary" size="table">{item.va_comp}일</Badge>
+                <Badge variant={Number(item.va_comp) < 0 ? "lightpink" : Number(item.va_comp) === 0 ? "grayish" : "secondary"} size="table">{item.va_comp}일</Badge>
               </TableCell>
 
               {/* 공가 (근속휴가) */}
               <TableCell className="text-center">
-                <Badge variant="secondary" size="table">{item.va_long}일</Badge>
+                <Badge variant={Number(item.va_long) < 0 ? "lightpink" : Number(item.va_long) === 0 ? "grayish" : "secondary"} size="table">{item.va_long}일</Badge>
               </TableCell>
 
               <TableCell className="text-center">
