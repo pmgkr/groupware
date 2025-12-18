@@ -7,6 +7,8 @@ import PexpenseView from '@components/features/Project/AdminExpenseView';
 import Nexpense from '@/pages/Admin/Finance/Nexpense';
 import NexpenseView from '@components/features/Expense/AdminExpenseView';
 import Invoice from '@/pages/Admin/Finance/Invoice';
+import InvoiceView from '@/pages/Admin/Finance/InvoiceView';
+import Report from '@/pages/Admin/Finance/Report';
 
 import Vacation from '@/pages/Admin/Vacation';
 import VacationDetail from '@/pages/Admin/VacationDetail';
@@ -41,6 +43,9 @@ export const adminRoutes: RouteObject = {
         { path: 'nexpense/:expId', element: <NexpenseView /> },
 
         { path: 'invoice', element: <Invoice /> },
+        { path: 'invoice/:seq', element: <InvoiceView /> },
+
+        { path: 'report', element: <Report /> },
       ],
     },
     { path: 'vacation', element: <Vacation /> },
