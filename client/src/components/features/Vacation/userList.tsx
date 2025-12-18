@@ -278,18 +278,12 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
               <TableCell className="text-center">
                 <div className="flex items-center gap-2 justify-center">
                   <Avatar className="w-8 h-8">
-                    <AvatarImage 
-                      src={item.profile_image 
-                        ? (() => {
-                            const baseUrl = import.meta.env.VITE_API_ORIGIN || "https://gbend.cafe24.com";
-                            const imagePath = item.profile_image.startsWith('/') 
-                              ? item.profile_image.slice(1) 
-                              : item.profile_image;
-                            return `${baseUrl}/uploads/mypage/${imagePath}`;
-                          })()
-                        : undefined
-                      } 
-                    />
+                    {item.profile_image && (
+                      <AvatarImage
+                        src={`${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${item.profile_image}`}
+                        alt={item.name}
+                      />
+                    )}
                     <AvatarFallback>{getAvatarFallback(item.id)}</AvatarFallback>
                   </Avatar>
                   {item.name}
