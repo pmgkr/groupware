@@ -116,6 +116,7 @@ export interface pExpenseRegisterResponse {
   ok: boolean;
   exp_id: string;
   list_seq: number;
+  item_seqs: number[];
   totals: {
     amount: number;
     tax: number;

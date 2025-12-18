@@ -57,7 +57,7 @@ export async function uploadProfileImage(file: File, subdir = 'mypage') {
     image_name: f.url, //백엔드가 기대하는 필드명: image_name
   };
 
-  //console.log('🔥 백엔드로 전송하는 payload:', payload);
+  //console.log('백엔드로 전송하는 payload:', payload);
 
   const response = await http<{ result: string; image_name: string }>('/mypage/profile/image', {
     method: 'POST',

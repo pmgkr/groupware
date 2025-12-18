@@ -81,7 +81,7 @@ export default function ProposalAttachFiles({ mode, files = [], onAddFiles, onRe
 
       {/* ================= view UI  ================= */}
       {mode === 'view' && viewFiles.length > 0 && (
-        <div className="w-full border-b border-gray-300 bg-gray-50 p-4 pt-0">
+        <div className="flex w-full gap-1.5 border-b border-gray-300 bg-gray-50 p-4 pt-0">
           {viewFiles.map((file, index) => (
             <Button
               key={`${file.url}-${index}`}

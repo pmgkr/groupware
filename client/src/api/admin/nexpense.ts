@@ -1,10 +1,9 @@
-// 📦 프로젝트 비용 API
+// 📦 일반비용 (Non-Expense) API
 import { http } from '@/lib/http';
 import { cleanParams } from '@/utils';
-import { getToken } from '@/lib/tokenStore';
-import type { pExpenseViewDTO } from '@/api/project/expense';
+import type { ExpenseViewDTO } from '@/api/expense';
 
-// 어드민 프로젝트 비용 목록 조회
+// 어드민 일반비용 목록 팀별 조회
 export interface ExpenseListParams {
   team_id?: number; // 팀 아이디
   page?: number;
@@ -20,17 +19,14 @@ export interface ExpenseListParams {
   q?: string; // 검색 Input 키워드 비용 제목 (el_title) or 작성자 (user_nm) 입력
 }
 
-// 어드민 프로젝트 비용 목록 리스폰 타입
+// 어드민 일반비용 목록 리스폰 타입
 export type ExpenseListItems = {
   seq: number;
   exp_id: string;
-  project_id: string;
   user_id: string;
   user_nm: string;
   manager_id: string;
   manager_nm: string;
-  team_id: number;
-  team_name: string;
   el_type: string;
   el_title: string;
   el_method: string;
@@ -50,75 +46,54 @@ export type ExpenseListItems = {
   edate?: string | null;
   cdate?: string | null;
   remark: string;
+  team_id: number;
+  team_name: string;
   reg_year: string;
   rejected_by?: string | null;
-  alloc_status: string; // 매칭 상태
-  match_count?: number | null; // 매칭된 항목 갯수
-  allocated_amount?: number; //매칭된 비용 합계
-  is_estimate: 'Y' | 'N'; // 견적서 비용 체크
 };
 
-// 어드민 > 프로젝트 비용 목록 가져오기
+// 어드민 > 일반 비용 목록 가져오기
 export async function getAdminExpenseList(params: ExpenseListParams) {
   const clean = cleanParams(params);
 
   // 쿼리스트링으로 변환
   const query = new URLSearchParams(clean as Record<string, string>).toString();
-  const res = await http<{ items: ExpenseListItems[]; total: number }>(`/admin/pexpense/list?${query}`, { method: 'GET' });
+  const res = await http<{ items: ExpenseListItems[]; total: number }>(`/admin/nexpense/list?${query}`, { method: 'GET' });
 
   return res;
 }
 
 // 어드민 > 프로젝트 비용 조회
-export async function getAdminExpenseView(exp_id: string | undefined): Promise<pExpenseViewDTO> {
+export async function getAdminExpenseView(exp_id: string | undefined): Promise<ExpenseViewDTO> {
   if (!exp_id) throw new Error('expid가 필요합니다.');
-  return http<pExpenseViewDTO>(`/admin/pexpense/info/${exp_id}`, { method: 'GET' });
+  return http<ExpenseViewDTO>(`/admin/nexpense/info/${exp_id}`, { method: 'GET' });
 }
 
-// 어드민 > 프로젝트 비용 승인하기 (Completed 처리)
+// 어드민 > 일반 비용 승인하기
 export async function confirmExpense(payload: { seqs: number[] }): Promise<{ updated_count: number; ok: boolean }> {
-  const res = http<{ updated_count: number; ok: boolean }>(`/admin/pexpense/confirm/`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  const res = http<{ updated_count: number; ok: boolean }>(`/admin/nexpense/confirm/`, { method: 'POST', body: JSON.stringify(payload) });
 
   return res;
 }
 
-// 어드민 > 프로젝트 비용 반려처리
+// 어드민 > 일반 비용 반려처리
 export async function rejectExpense(payload: { seq: number; reason?: string }): Promise<{ seq: number; status: string }> {
-  const res = http<{ seq: number; status: string }>(`/admin/pexpense/reject/`, { method: 'PATCH', body: JSON.stringify(payload) });
+  const res = http<{ seq: number; status: string }>(`/admin/nexpense/reject/`, { method: 'PATCH', body: JSON.stringify(payload) });
 
   return res;
 }
 
-// 어드민 > 프로젝트 비용 지급예정일 세팅
+// 어드민 > 일반 비용 지급예정일 세팅
 export async function setDdate(
   payload: {
     seq: number;
     ddate: Date;
   }[]
 ): Promise<{ updatedCount: number; rows: [{ seq: number; ddate: string }] }> {
-  const res = http<{ updatedCount: number; rows: [{ seq: number; ddate: string }] }>(`/admin/pexpense/set/ddate`, {
+  const res = http<{ updatedCount: number; rows: [{ seq: number; ddate: string }] }>(`/admin/nexpense/set/ddate`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });
-
-  return res;
-}
-
-// 어드민 > 프로젝트 비용 PDF 다운로드
-export async function getPDFDownload(seq: number): Promise<Response> {
-  if (!seq) throw new Error('seq가 필요합니다.');
-
-  const res = await fetch(`/admin/pexpense/pdf/${seq}`, {
-    method: 'GET',
-    credentials: 'include',
-  });
-
-  if (!res.ok) {
-    throw new Error('PDF 다운로드 실패');
-  }
 
   return res;
 }

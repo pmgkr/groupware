@@ -12,11 +12,11 @@ import type { DateRange } from 'react-day-picker';
 import { OctagonAlert } from 'lucide-react';
 
 import { getExpenseType } from '@/api';
-import { getAdminExpenseList, confirmExpense, setDdate, getPDFDownload, type ExpenseListItems } from '@/api/admin/pexpense';
-import { AdminListFilter } from '@components/features/Project/_components/AdminListFilter';
-import AdminExpenseList from '@components/features/Project/AdminExpenseList';
+import { getAdminExpenseList, confirmExpense, setDdate, type ExpenseListItems } from '@/api/admin/nexpense';
+import { AdminListFilter } from '@components/features/Expense/_components/AdminListFilter';
+import AdminExpenseList from '@components/features/Expense/AdminExpenseList';
 
-export default function Pexpense() {
+export default function Nexpense() {
   const { user_id } = useUser();
   const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
@@ -63,7 +63,7 @@ export default function Pexpense() {
   useEffect(() => {
     async function loadExpenseTypes() {
       try {
-        const data = await getExpenseType('exp_type2');
+        const data = await getExpenseType('nexp_type1');
         setTypeOptions(data.map((t: any) => ({ label: t.code, value: t.code })));
       } catch (err) {
         console.error('❌ 비용 유형 호출 실패:', err);
@@ -226,22 +226,22 @@ export default function Pexpense() {
           const payload = { seqs: checkedItems };
           const res = await confirmExpense(payload);
 
-          for (const row of selectedRows) {
-            await notificationApi.registerNotification({
-              user_id: row.user_id,
-              user_name: row.user_nm,
-              noti_target: user_id!,
-              noti_title: `${row.exp_id} · ${row.el_title}`,
-              noti_message: `청구한 비용을 지급 완료했습니다.`,
-              noti_type: 'expense',
-              noti_url: `/project/${row.project_id}/expense/${row.seq}`,
-            });
-          }
-
           if (res.ok) {
+            for (const row of selectedRows) {
+              await notificationApi.registerNotification({
+                user_id: row.user_id,
+                user_name: row.user_nm,
+                noti_target: user_id!,
+                noti_title: `${row.exp_id} · ${row.el_title}`,
+                noti_message: `청구한 비용을 지급 완료했습니다.`,
+                noti_type: 'expense',
+                noti_url: `/expense/${row.exp_id}`,
+              });
+            }
+
             addAlert({
               title: '비용 승인이 완료되었습니다.',
-              message: `<p><span class="text-primary-blue-500 font-semibold">${res.updated_count}</span>건의 비용이 완료 처리되었습니다.</p>`,
+              message: `<p><span class="text-primary-blue-500 font-semibold">${res.updated_count}</span>건의 비용이 승인 완료되었습니다.</p>`,
               icon: <OctagonAlert />,
               duration: 2000,
             });
@@ -250,11 +250,11 @@ export default function Pexpense() {
           setExpenseList((prev) => prev.filter((item) => !checkedItems.includes(item.seq)));
           setCheckedItems([]);
         } catch (err) {
-          console.error('❌ 지급 실패:', err);
+          console.error('❌ 승인 실패:', err);
 
           addAlert({
             title: '비용 승인 실패',
-            message: `비용 지급 처리 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+            message: `승인 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
             icon: <OctagonAlert />,
             duration: 2000,
           });
@@ -301,44 +301,6 @@ export default function Pexpense() {
     }
   };
 
-  const handlePDFDownload = async (seq: number) => {
-    try {
-      const res = await getPDFDownload(seq);
-
-      console.log('PDF 다운로드', res);
-
-      // 1️⃣ 파일명 추출 (서버 Content-Disposition 우선)
-      const disposition = res.headers.get('content-disposition');
-      let filename = 'expense.pdf';
-
-      if (disposition) {
-        const match = disposition.match(/filename="?([^"]+)"?/);
-        if (match?.[1]) {
-          filename = decodeURIComponent(match[1]);
-        }
-      }
-
-      // 2️⃣ Blob 생성
-      const blob = await res.blob();
-      URL.createObjectURL(blob);
-
-      // 3️⃣ 다운로드 트리거
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-
-      // 4️⃣ 정리
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error('❌ PDF 다운로드 실패:', e);
-    }
-  };
-
   return (
     <>
       <AdminListFilter
@@ -380,7 +342,6 @@ export default function Pexpense() {
         handleCheckAll={handleCheckAll}
         handleCheckItem={handleCheckItem}
         handleSetDdate={handleSetDdate}
-        handlePDFDownload={handlePDFDownload}
         total={total}
         page={page}
         pageSize={pageSize}

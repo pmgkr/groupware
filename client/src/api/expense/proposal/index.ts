@@ -29,6 +29,11 @@ export interface ReportDTO {
   team_name: string;
   manager_id: string;
   manager_name: string;
+  approval_manager_display_state?: string;
+  approval_finance_display_state?: string;
+  approval_gm_display_state?: string;
+
+  expense_no?: string;
 }
 
 /** 결재선 라인 */
@@ -219,3 +224,21 @@ export async function getProposalList(flag: 'P' | 'N'): Promise<ProposalListResp
     method: 'GET',
   });
 }
+
+// 프로젝트 - 기안서 매칭
+export const matchProjectWithProposal = async (
+  rp_seq: number,
+  exp_seq: number // 배열 → 단일 숫자로 변경
+) => {
+  return await http('/user/office/report/expense/set', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      rp_seq,
+      exp_seq,
+      flag: 'P',
+    }),
+  });
+};

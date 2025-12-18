@@ -70,6 +70,8 @@ function ExpenseRowComponent({
     }
   };
 
+  const hasProposalList = proposalList.length === 0;
+
   return (
     <article className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0">
       {/* 상단 영역 */}
@@ -285,36 +287,43 @@ function ExpenseRowComponent({
             </TableHeader>
 
             <TableBody>
-              {proposalList.map((p) => {
-                const isSelected = selectedProposalId === p.rp_seq;
-                const isDisabled = selectedProposalId !== null && !isSelected;
+              {hasProposalList ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-10 text-center text-sm text-gray-500">
+                    등록된 기안서가 없습니다.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                proposalList.map((p) => {
+                  const isSelected = selectedProposalId === p.rp_seq;
+                  const isDisabled = selectedProposalId !== null && !isSelected;
 
-                return (
-                  <TableRow key={p.rp_seq} className="hover:bg-gray-100">
-                    <TableCell>{p.rp_category}</TableCell>
-                    <TableCell className="text-left">{p.rp_title}</TableCell>
-                    <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
-                    <TableCell>{formatKST(p.rp_date)}</TableCell>
-                    <TableCell className="px-2.5">
-                      <Checkbox
-                        size="sm"
-                        id={`proposal-${p.rp_seq}`}
-                        checked={isSelected}
-                        disabled={isDisabled}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedProposalId(p.rp_seq);
-                            setSelectedProposal(p); // ⭐ 전체 객체 저장
-                          } else {
-                            setSelectedProposalId(null);
-                            setSelectedProposal(null);
-                          }
-                        }}
-                      />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                  return (
+                    <TableRow key={p.rp_seq} className="hover:bg-gray-100 [&_td]:text-[13px]">
+                      <TableCell>{p.rp_category}</TableCell>
+                      <TableCell className="text-left">{p.rp_title}</TableCell>
+                      <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
+                      <TableCell>{formatKST(p.rp_date)}</TableCell>
+                      <TableCell className="px-2.5 [&]:pr-3!">
+                        <Checkbox
+                          size="sm"
+                          checked={isSelected}
+                          disabled={isDisabled}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedProposalId(p.rp_seq);
+                              setSelectedProposal(p);
+                            } else {
+                              setSelectedProposalId(null);
+                              setSelectedProposal(null);
+                            }
+                          }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
 

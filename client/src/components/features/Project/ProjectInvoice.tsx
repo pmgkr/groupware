@@ -82,7 +82,6 @@ export default function ProjectInvoice() {
       console.log('✅ 인보이스 리스트 응답:', res);
 
       setInvoiceList(res.list);
-
       setTotal(res.total);
     } catch (err) {
       console.error('❌ 인보이스 리스트 불러오기 실패:', err);

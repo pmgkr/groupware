@@ -4,6 +4,9 @@ import Dashboard from '@/pages/Admin';
 import FinanceLayout from '@/pages/Admin/Finance/FinanceLayout';
 import Pexpense from '@/pages/Admin/Finance/Pexpense';
 import PexpenseView from '@components/features/Project/AdminExpenseView';
+import Nexpense from '@/pages/Admin/Finance/Nexpense';
+import NexpenseView from '@components/features/Expense/AdminExpenseView';
+import Invoice from '@/pages/Admin/Finance/Invoice';
 
 import Vacation from '@/pages/Admin/Vacation';
 import VacationDetail from '@/pages/Admin/VacationDetail';
@@ -15,7 +18,7 @@ import AdminProposalList from '@/pages/Admin/Proposal/adminProposalList';
 import AdminProposalView from '@/pages/Admin/Proposal/adminProposalView';
 
 export const adminRoutes: RouteObject = {
-  path: 'Admin', // → /Admin
+  path: 'admin', // → /Admin
   handle: {
     title: '최고관리자',
     nav: [
@@ -35,6 +38,11 @@ export const adminRoutes: RouteObject = {
       children: [
         { index: true, element: <Pexpense /> },
         { path: 'pexpense/:expId', element: <PexpenseView /> },
+
+        { path: 'nexpense', element: <Nexpense /> },
+        { path: 'nexpense/:expId', element: <NexpenseView /> },
+
+        { path: 'invoice', element: <Invoice /> },
       ],
     },
     { path: 'vacation', element: <Vacation /> },
