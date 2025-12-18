@@ -122,14 +122,11 @@ export default function Report() {
         params.team_id = selectedTeam.join(',');
       }
 
+      if (searchQuery) params.q = searchQuery;
+
       if (sort) {
         params.order = `${sort.key}:${sort.order}`;
       }
-
-      // 검색어
-      if (searchQuery) params.q = searchQuery;
-
-      console.log(searchParams);
 
       setSearchParams(params);
       const res = await getProjectList(params);
@@ -164,22 +161,22 @@ export default function Report() {
 
   const hanldeToggleSort = (key: string) => {
     setSort((prev) => {
-      // 1️⃣ 기존 정렬 없음 → desc로 추가
+      // 기존 정렬 없음 → desc로 추가
       if (!prev) {
         return { key, order: 'desc' };
       }
 
-      // 2️⃣ 다른 컬럼 클릭 → 기존 제거 후 desc
+      // 다른 컬럼 클릭 → 기존 제거 후 desc
       if (prev.key !== key) {
         return { key, order: 'desc' };
       }
 
-      // 3️⃣ 같은 컬럼 + desc → asc
+      // 같은 컬럼 + desc → asc
       if (prev.order === 'desc') {
         return { key, order: 'asc' };
       }
 
-      // 4️⃣ 같은 컬럼 + asc → 제거
+      // 같은 컬럼 + asc → 제거
       return null;
     });
 
