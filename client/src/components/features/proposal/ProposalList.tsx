@@ -7,7 +7,7 @@ import { formatAmount, formatKST } from '@/utils';
 import { useEffect, useState, useMemo } from 'react';
 import type { ReportCard } from '@/api/expense/proposal';
 import type { ManagerReportCard } from '@/api/manager/proposal';
-import { approveReport, type AdminReportCard } from '@/api/admin/proposal';
+import { approveReport, getReportInfoAdmin, type AdminReportCard } from '@/api/admin/proposal';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,8 @@ import { SearchGray } from '@/assets/images/icons';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { CircleCheck, CircleX } from 'lucide-react';
+import { notificationApi } from '@/api/notification';
+import { useUser } from '@/hooks/useUser';
 
 interface ProposalListContentProps {
   reports?: ReportCard[] | ManagerReportCard[] | AdminReportCard[];
@@ -110,6 +112,8 @@ export default function ProposalList({
   const isProjectPage = location.pathname.startsWith('/project/proposal');
   const isManagerPage = location.pathname.startsWith('/manager/proposal');
   const showBulkApproval = isAdmin && activeTab === 'pending';
+  const [lines, setLines] = useState<any[]>([]);
+  const user = useUser();
 
   // 유틸리티 함수들
   const getStatusParam = (): 'finance' | 'gm' | 'rejected' | 'completed' | undefined => {
@@ -318,6 +322,7 @@ export default function ProposalList({
     setIsAllSelected(newIds.length === paginatedReports.length);
   };
 
+  // 일괄승인 핸들러 (Admin 페이지에 추가)
   const handleBulkApprove = async () => {
     if (selectedIds.length === 0) {
       addAlert({
@@ -338,8 +343,88 @@ export default function ProposalList({
         try {
           console.log('🔥 일괄 승인 요청 seq:', selectedIds);
 
-          // Swagger 기준 payload
+          const isFinance = user?.team_id === 5;
+          const isGM = user?.user_level === 'admin' && user?.team_id !== 5;
+
+          // 1. 먼저 승인 처리
           await approveReport(selectedIds.map(Number));
+
+          // 2. 각 기안서에 대해 알림 전송
+          for (const reportId of selectedIds) {
+            try {
+              // 각 기안서 정보 조회
+              const data = await getReportInfoAdmin(String(reportId));
+              const report = data.report;
+              const lines = data.lines || [];
+
+              const isProject = report.rp_project_type === 'project';
+              const userUrl = isProject ? `/project/proposal/view/${reportId}` : `/expense/proposal/view/${reportId}`;
+              const adminUrl = `/admin/proposal/${reportId}`;
+
+              const categoryLabel = (() => {
+                if (isProject) return '프로젝트';
+                return report.rp_category || '';
+              })();
+
+              // Finance가 승인한 경우
+              if (isFinance) {
+                // 작성자에게 알림
+                try {
+                  await notificationApi.registerNotification({
+                    user_id: report.rp_user_id,
+                    user_name: report.rp_user_name,
+                    noti_target: user.user_id!,
+                    noti_title: report.rp_title,
+                    noti_message: `${categoryLabel} 기안서를 승인하였습니다.`,
+                    noti_type: 'proposal',
+                    noti_url: userUrl,
+                  });
+                  console.log(`✅ [${reportId}] 작성자 알림 성공`);
+                } catch (err) {
+                  console.error(`❌ [${reportId}] 작성자 알림 실패:`, err);
+                }
+
+                // GM에게 결재 요청 알림
+                try {
+                  const gmLine = lines.find((line) => line.rl_order === 4);
+
+                  if (gmLine?.rl_approver_id) {
+                    await notificationApi.registerNotification({
+                      user_id: gmLine.rl_approver_id,
+                      user_name: gmLine.rl_approver_name,
+                      noti_target: report.rp_user_id,
+                      noti_title: report.rp_title,
+                      noti_message: `${categoryLabel} 기안서 결재 요청 하였습니다.`,
+                      noti_type: 'proposal',
+                      noti_url: adminUrl,
+                    });
+                    console.log(`✅ [${reportId}] GM 알림 성공`);
+                  }
+                } catch (err) {
+                  console.error(`❌ [${reportId}] GM 알림 실패:`, err);
+                }
+              }
+              // GM이 승인한 경우 (최종 승인)
+              else if (isGM) {
+                try {
+                  await notificationApi.registerNotification({
+                    user_id: report.rp_user_id,
+                    user_name: report.rp_user_name,
+                    noti_target: user.user_id!,
+                    noti_title: report.rp_title,
+                    noti_message: `${categoryLabel} 기안서를 승인하였습니다.`,
+                    noti_type: 'proposal',
+                    noti_url: userUrl,
+                  });
+                  console.log(`✅ [${reportId}] 작성자 알림 성공 (최종)`);
+                } catch (err) {
+                  console.error(`❌ [${reportId}] 작성자 알림 실패:`, err);
+                }
+              }
+            } catch (err) {
+              console.error(`❌ [${reportId}] 기안서 정보 조회 실패:`, err);
+            }
+          }
 
           addAlert({
             title: '승인 완료',
@@ -511,7 +596,7 @@ export default function ProposalList({
             <TableHead className="w-[10%]">작성일</TableHead>
             {showBulkApproval && (
               <TableHead className="w-[50px] px-2.5">
-                <Checkbox size="sm" checked={isAllSelected} onCheckedChange={handleSelectAll} />
+                <Checkbox size="sm" checked={isAllSelected} onCheckedChange={handleSelectAll} className="bg-white" />
               </TableHead>
             )}
           </TableRow>

@@ -225,7 +225,7 @@ export default function ExpenseView() {
                       )}
                       <TableCell>
                         {item.pro_id ? (
-                          <Link to={`/expense/proposal/${item.pro_id}`} target="_blank" rel="noopener noreferrer">
+                          <Link to={`/expense/proposal/view/${item.pro_id}`} target="_blank" rel="noopener noreferrer">
                             <LinkIcon className="mx-auto size-4" />
                           </Link>
                         ) : (
