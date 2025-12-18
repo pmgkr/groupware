@@ -4,10 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { CalendarEvent } from '@/utils/calendarHelper';
 import { validateUser, formatErrorMessage } from '@/utils/calendarHelper';
 import { loadCalendarEvents, createCalendarEvent } from '@/services/calendarService';
-import { getTeamList, type Team } from '@/api/common/team';
 import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { defaultEventTitleMapper } from '@/components/calendar/config';
+import { findManager } from '@/utils/managerHelper';
 
 interface UseCalendarProps {
   filterMyEvents?: boolean;
@@ -67,13 +67,9 @@ export function useCalendar({ filterMyEvents = false }: UseCalendarProps) {
 
       if (user?.team_id != null) {
         try {
-          const teams: Team[] = await getTeamList();
-          const teamIdNum = Number(user.team_id);
-          const myTeam = teams.find((t) => Number(t.team_id) === teamIdNum);
-          const managerId = (myTeam as any)?.manager_id ?? (myTeam as any)?.manage_id ?? null;
-          const managerName = myTeam?.manager_name || '';
+          const manager = await findManager(user.team_id);
 
-          if (managerId) {
+          if (manager.id) {
             const notiTitle =
               typeof eventData.title === 'string' && eventData.title.trim().length > 0
                 ? eventData.title.trim()
@@ -81,8 +77,8 @@ export function useCalendar({ filterMyEvents = false }: UseCalendarProps) {
 
             // 팀장
             await notificationApi.registerNotification({
-              user_id: String(managerId),
-              user_name: managerName,
+              user_id: manager.id,
+              user_name: manager.name,
               noti_target: user!.user_id!,
               noti_title: notiTitle,
               noti_message: `일정을 등록했습니다.`,
