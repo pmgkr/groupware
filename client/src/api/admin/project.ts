@@ -3,7 +3,7 @@ import { cleanParams } from '@/utils';
 
 // 프로젝트 리스트 조회용 파라미터 타입
 export type ProjectListParams = {
-  year?: string | number;
+  year?: string;
   team_id?: number;
   client_id?: number;
   project_status?: string;
