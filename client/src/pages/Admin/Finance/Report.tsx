@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
-import { formatDate, formatAmount, getGrowingYears } from '@/utils';
+import { formatDate, formatAmount, getGrowingYears, SortIcon } from '@/utils';
 
 import { getClientList, getTeamList } from '@/api';
 import { getProjectList } from '@/api/admin/project';
@@ -19,6 +19,11 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
 import { OctagonAlert, X, RefreshCw, ChevronsUpDown } from 'lucide-react';
+
+type SortState = {
+  key: string;
+  order: 'asc' | 'desc';
+} | null;
 
 export default function Report() {
   const { user_id } = useUser();
@@ -40,6 +45,7 @@ export default function Report() {
   const [selectedTeam, setSelectedTeam] = useState<string[]>([]);
   const [searchInput, setSearchInput] = useState(''); // 사용자가 입력중인 Input 저장값
   const [searchQuery, setSearchQuery] = useState(''); // 실제 검색 Input 저장값
+  const [sort, setSort] = useState<SortState>(null);
 
   const [page, setPage] = useState<number>(() => Number(searchParams.get('page') || 1));
   const [total, setTotal] = useState(0);
@@ -107,12 +113,23 @@ export default function Report() {
         size: pageSize,
       };
 
-      if (!selectedStatus.length) {
-        params.status = 'in-progress';
-      } else {
-        params.status = selectedStatus.join(',');
+      params.project_status = selectedStatus.length ? selectedStatus.join(',') : 'in-progress';
+      if (selectedClient.length > 0) {
+        params.client_id = selectedClient.join(',');
       }
+
+      if (selectedTeam.length > 0) {
+        params.team_id = selectedTeam.join(',');
+      }
+
+      if (sort) {
+        params.order = `${sort.key}:${sort.order}`;
+      }
+
+      // 검색어
       if (searchQuery) params.q = searchQuery;
+
+      console.log(searchParams);
 
       setSearchParams(params);
       const res = await getProjectList(params);
@@ -131,11 +148,41 @@ export default function Report() {
 
   useEffect(() => {
     loadList();
-  }, [selectedYear, selectedStatus, selectedClient, selectedTeam, selectedStatus, searchQuery, page, pageSize]);
+  }, [selectedYear, selectedStatus, selectedClient, selectedTeam, selectedStatus, searchQuery, sort, page, pageSize]);
 
   // 필터 변경 시 page 초기화
   const handleFilterChange = (setter: any, value: any) => {
     setter(value);
+    setPage(1);
+  };
+
+  // Order Sorting 핸들러
+  const getSortOrder = (key: string) => {
+    if (!sort) return undefined;
+    return sort.key === key ? sort.order : undefined;
+  };
+
+  const hanldeToggleSort = (key: string) => {
+    setSort((prev) => {
+      // 1️⃣ 기존 정렬 없음 → desc로 추가
+      if (!prev) {
+        return { key, order: 'desc' };
+      }
+
+      // 2️⃣ 다른 컬럼 클릭 → 기존 제거 후 desc
+      if (prev.key !== key) {
+        return { key, order: 'desc' };
+      }
+
+      // 3️⃣ 같은 컬럼 + desc → asc
+      if (prev.order === 'desc') {
+        return { key, order: 'asc' };
+      }
+
+      // 4️⃣ 같은 컬럼 + asc → 제거
+      return null;
+    });
+
     setPage(1);
   };
 
@@ -145,6 +192,7 @@ export default function Report() {
     setSelectedClient([]);
     setSelectedTeam([]);
     setSelectedStatus([]);
+    setSearchInput('');
     setSearchQuery('');
 
     // MultiSelect 내부 상태 초기화
@@ -161,7 +209,7 @@ export default function Report() {
             value={String(pageSize)}
             onValueChange={(value) => {
               setPageSize(Number(value));
-              setPage(1); // 페이지 초기화 (필터 변경과 동일한 개념)
+              setPage(1);
             }}>
             <SelectTrigger size="sm">
               <SelectValue placeholder="Row 선택" />
@@ -188,8 +236,8 @@ export default function Report() {
             </SelectTrigger>
             <SelectContent>
               {yearOptions.map((y) => (
-                <SelectItem size="sm" value={y}>
-                  {y}
+                <SelectItem size="sm" key={y} value={y}>
+                  {y}년
                 </SelectItem>
               ))}
             </SelectContent>
@@ -245,18 +293,29 @@ export default function Report() {
         </div>
 
         <div className="flex gap-x-2">
-          <Input
-            className="max-w-42"
-            size="sm"
-            placeholder="검색어 입력"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                setSearchQuery(searchInput);
-              }
-            }}
-          />
+          <div className="relative">
+            <Input
+              className="max-w-42 pr-6"
+              size="sm"
+              placeholder="검색어를 입력해 주세요."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setSearchQuery(searchInput);
+                }
+              }}
+            />
+            {searchInput && (
+              <Button
+                type="button"
+                variant="svgIcon"
+                className="absolute top-0 right-0 h-full w-6 px-0 text-gray-500"
+                onClick={resetAllFilters}>
+                <X className="size-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -272,16 +331,62 @@ export default function Report() {
               <Button
                 type="button"
                 variant="svgIcon"
-                className="h-full w-full gap-1 text-[13px] has-[>svg]:p-0 [&_svg]:text-gray-600 hover:[&_svg]:text-gray-900">
+                className="h-full w-full gap-1 text-[13px] has-[>svg]:p-0"
+                onClick={() => hanldeToggleSort('est_amount')}>
                 견적서 총액
-                <ChevronsUpDown className="size-3" />
+                <SortIcon order={getSortOrder('est_amount')} />
               </Button>
             </TableHead>
-            <TableHead className="w-[8%]">견적서 가용예산</TableHead>
-            <TableHead className="w-[8%]">인보이스 공급가액</TableHead>
-            <TableHead className="w-[8%]">지출 비용 합계</TableHead>
-            <TableHead className="w-[8%]">순이익</TableHead>
-            <TableHead className="w-[6%]">GPM</TableHead>
+            <TableHead className="w-[8%]">
+              <Button
+                type="button"
+                variant="svgIcon"
+                className="h-full w-full gap-1 text-[13px] has-[>svg]:p-0"
+                onClick={() => hanldeToggleSort('est_budget')}>
+                견적서 가용예산
+                <SortIcon order={getSortOrder('est_budget')} />
+              </Button>
+            </TableHead>
+            <TableHead className="w-[8%]">
+              <Button
+                type="button"
+                variant="svgIcon"
+                className="h-full w-full gap-1 text-[13px] has-[>svg]:p-0"
+                onClick={() => hanldeToggleSort('invoice_amount')}>
+                인보이스 공급가액
+                <SortIcon order={getSortOrder('invoice_amount')} />
+              </Button>
+            </TableHead>
+            <TableHead className="w-[8%]">
+              <Button
+                type="button"
+                variant="svgIcon"
+                className="h-full w-full gap-1 text-[13px] has-[>svg]:p-0"
+                onClick={() => hanldeToggleSort('exp_amount')}>
+                지출 비용 합계
+                <SortIcon order={getSortOrder('exp_amount')} />
+              </Button>
+            </TableHead>
+            <TableHead className="w-[8%]">
+              <Button
+                type="button"
+                variant="svgIcon"
+                className="h-full w-full gap-1 text-[13px] has-[>svg]:p-0"
+                onClick={() => hanldeToggleSort('netprofit')}>
+                순이익
+                <SortIcon order={getSortOrder('netprofit')} />
+              </Button>
+            </TableHead>
+            <TableHead className="w-[6%]">
+              <Button
+                type="button"
+                variant="svgIcon"
+                className="h-full w-full gap-1 text-[13px] has-[>svg]:p-0"
+                onClick={() => hanldeToggleSort('GPM')}>
+                GPM
+                <SortIcon order={getSortOrder('GPM')} />
+              </Button>
+            </TableHead>
             <TableHead className="w-[6%]">상태</TableHead>
           </TableRow>
         </TableHeader>
