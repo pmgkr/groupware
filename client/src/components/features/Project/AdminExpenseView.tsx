@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate, useParams, Link, useLocation } from 'react-router';
 import { formatAmount } from '@/utils';
-import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
 import { format } from 'date-fns';
 import { notificationApi } from '@/api/notification';
@@ -514,7 +513,6 @@ export default function ProjectExpenseView() {
               <div className="flex justify-between">
                 <h2 className="mb-2 text-lg font-bold text-gray-800">기안서 정보</h2>
               </div>
-
               <ReportMatched report={selectedProposal} />
             </>
           )}

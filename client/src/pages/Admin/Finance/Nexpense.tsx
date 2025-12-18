@@ -81,9 +81,9 @@ export default function Nexpense() {
       try {
         setLoading(true);
 
-        const params: Record<string, string> = {
+        const params: Record<string, any> = {
           year: selectedYear,
-          page: String(page),
+          page: page,
         };
 
         if (!selectedStatus.length) {
