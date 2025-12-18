@@ -295,11 +295,11 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
   const getTimeRestriction = () => {
     switch (formData.eventType) {
       case 'vacationHalfMorning':
-        return { startHour: 9, startMinute: 30, endHour: 10, endMinute: 0 };
+        return { startHour: 10, startMinute: 0, endHour: 10, endMinute: 0 };
       case 'vacationQuarterMorning':
-        return { startHour: 9, startMinute: 30, endHour: 10, endMinute: 0 };
+        return { startHour: 10, startMinute: 0, endHour: 10, endMinute: 0 };
       case 'vacationHalfAfternoon':
-        return { startHour: 14, startMinute: 30, endHour: 15, endMinute: 0 };
+        return { startHour: 16, startMinute: 30, endHour: 17, endMinute: 0 };
       case 'vacationQuarterAfternoon':
         return { startHour: 16, startMinute: 30, endHour: 17, endMinute: 0 };
       default:
