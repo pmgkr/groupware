@@ -62,25 +62,20 @@ export function useCalendar({ filterMyEvents = false }: UseCalendarProps) {
         }
       });
 
-      // 이벤트/휴가 공통 라벨 (calendar config 매퍼 사용)
-      const eventLabel = defaultEventTitleMapper(eventData?.eventType || '') || (eventData.title || '일정');
-
+      // 알림 전송
       if (user?.team_id != null) {
         try {
-          const manager = await findManager(user.team_id);
+          const manager = await findManager(user.team_id);              // 이벤트/휴가 공통 라벨 (calendar config 매퍼 사용)
+          const eventLabel = defaultEventTitleMapper(eventData?.eventType || '') || (eventData.title || '일정');
 
           if (manager.id) {
-            const notiTitle =
-              typeof eventData.title === 'string' && eventData.title.trim().length > 0
-                ? eventData.title.trim()
-                : `${eventLabel} (${eventData.startDate}-${eventData.endDate})`;
 
             // 팀장
             await notificationApi.registerNotification({
               user_id: manager.id,
               user_name: manager.name,
               noti_target: user!.user_id!,
-              noti_title: notiTitle,
+              noti_title: `${eventLabel} (${eventData.startDate}-${eventData.endDate})`,
               noti_message: `일정을 등록했습니다.`,
               noti_type: eventData.category,
               noti_url: '/calendar',
@@ -91,7 +86,7 @@ export function useCalendar({ filterMyEvents = false }: UseCalendarProps) {
               user_id: user!.user_id!,
               user_name: user!.user_name || '',
               noti_target: user!.user_id!,
-              noti_title: notiTitle,
+              noti_title: `${eventLabel} (${eventData.startDate}-${eventData.endDate})`,
               noti_message: `일정을 등록했습니다.`,
               noti_type: eventData.category,
               noti_url: '/calendar',
