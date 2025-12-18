@@ -4,6 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { CalendarEvent } from '@/utils/calendarHelper';
 import { validateUser, formatErrorMessage } from '@/utils/calendarHelper';
 import { loadCalendarEvents, createCalendarEvent } from '@/services/calendarService';
+import { notificationApi } from '@/api/notification';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { getTeamList, type Team } from '@/api/common/team';
 
 interface UseCalendarProps {
   filterMyEvents?: boolean;
@@ -12,6 +15,7 @@ interface UseCalendarProps {
 export function useCalendar({ filterMyEvents = false }: UseCalendarProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { addAlert } = useAppAlert();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -53,10 +57,53 @@ export function useCalendar({ filterMyEvents = false }: UseCalendarProps) {
         eventData,
         user: {
           user_id: user!.user_id!,
-          team_id: user!.team_id!
-        }
+          team_id: user!.team_id!,
+        },
       });
-      
+
+      // 일정 등록 성공 시 알림 + 토스트
+      // user_id: 수신인(팀장), noti_target: 발신인(현재 사용자)
+      // team_id 비교 시 number/string 혼합으로 인한 매칭 실패를 방지
+      let managerId: number | null | undefined = null;
+      let managerName = '';
+      if (user?.team_id != null) {
+        try {
+          const teams: Team[] = await getTeamList();
+          const teamIdNum = Number(user.team_id);
+
+          const myTeam = teams.find((t) => Number(t.team_id) === teamIdNum);
+          managerId = myTeam?.manager_id ?? myTeam?.manage_id ?? null;
+          managerName = myTeam?.manager_name || '';
+        } catch (e) {
+          managerId = null;
+          managerName = '';
+        }
+      }
+
+      if (managerId != null) {
+        const notiTitle =
+          typeof eventData.title === 'string' && eventData.title.trim().length > 0
+            ? eventData.title.trim()
+            : '일정 등록';
+
+        await notificationApi.registerNotification({
+          user_id: String(managerId),          // 수신자: 팀장
+          user_name: managerName || '',        // 수신자 이름
+          noti_target: user!.user_id!,         // 발신자: 현재 사용자
+          noti_title: notiTitle,
+          noti_message: '일정을 등록했습니다.',
+          noti_type: eventData.category,
+          noti_url: '/calendar',
+        });
+
+      }
+
+      addAlert({
+        title: '일정 등록 완료',
+        message: `<p><span class="text-primary-blue-500 font-semibold">${eventData.title}</span> 이 등록되었습니다.</p>`,
+        duration: 2000,
+      });
+
       await loadEvents(currentDate, filterMyEvents);
       return true;
     } catch (err: any) {
@@ -76,7 +123,7 @@ export function useCalendar({ filterMyEvents = false }: UseCalendarProps) {
       }
       return true;
     }
-  }, [user, currentDate, filterMyEvents, loadEvents, navigate]);
+  }, [user, currentDate, filterMyEvents, loadEvents, navigate, addAlert]);
 
   const handleDateChange = useCallback((date: Date) => {
     setCurrentDate(date);
