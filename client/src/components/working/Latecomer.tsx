@@ -5,6 +5,7 @@ import { useWorkingData } from '@/hooks/useWorkingData';
 import { getWeekStartDate } from '@/utils/dateHelper';
 import { scheduleApi } from '@/api/calendar';
 import { Badge } from '@/components/ui/badge';
+import { getWorkTypeColor } from '@/utils/workTypeHelper';
 
 export interface LatecomerItem {
   userId: string;
@@ -14,6 +15,7 @@ export interface LatecomerItem {
   checkInTime: string;
   checkOutTime?: string;
   totalTime: string;
+  workType: string;
   hasSchedule: boolean;
 }
 
@@ -154,6 +156,7 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
                     checkInTime,
                     checkOutTime: dayInfo.endTime,
                     totalTime: dayInfo.totalTime,
+                    workType: dayInfo.workType,
                     hasSchedule: false
                   });
                 }
@@ -212,11 +215,12 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
                 <Table variant="primary" align="center" className="table-fixed">
                   <TableHeader>
                     <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-                      <TableHead className="w-[12%] text-center p-0">부서</TableHead>
-                      <TableHead className="w-[18%]">이름</TableHead>
-                      <TableHead className="w-[12%]">출근시간</TableHead>
-                      <TableHead className="w-[12%]">퇴근시간</TableHead>
-                      <TableHead className="w-[12%]">총 근무시간</TableHead>
+                      <TableHead className="w-[8%] text-center p-0">부서</TableHead>
+                      <TableHead className="w-[10%]">이름</TableHead>
+                      <TableHead className="w-[15%]">근무유형</TableHead>
+                      <TableHead className="w-[13%]">출근시간</TableHead>
+                      <TableHead className="w-[13%]">퇴근시간</TableHead>
+                      <TableHead className="w-[13%]">총 근무시간</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -224,6 +228,13 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
                       <TableRow key={`${latecomer.userId}-${date}`} className="[&_td]:text-[13px]">
                         <TableCell className="text-center p-0">{latecomer.department}</TableCell>
                         <TableCell>{latecomer.userName}</TableCell>
+                        <TableCell>
+                          <span 
+                            className={`inline-flex self-center px-2 py-0.5 text-xs font-semibold rounded-full ${getWorkTypeColor(latecomer.workType)}`}
+                          >
+                            {latecomer.workType}
+                          </span>
+                        </TableCell>
                         <TableCell className="text-red-600 font-medium">
                           {latecomer.checkInTime}
                         </TableCell>
