@@ -4,6 +4,7 @@ import { getMemberList, getTeamList } from '@/api';
 import MemberList from '@/components/ui/memberList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getManagerMemberList } from '@/api/manager/member';
 
 export default function Member() {
   const { user_level } = useUser();
@@ -23,14 +24,23 @@ export default function Member() {
 
   // 팀 선택에 따른 멤버 조회 (서버 필터)
   useEffect(() => {
-    getMemberList(selectedTeamId).then(setMembers);
+    getManagerMemberList(selectedTeamId).then(setMembers);
   }, [selectedTeamId]);
 
   // 탭 + 팀 조합 필터
   const filteredMembers = useMemo(() => {
-    const status = activeTab === 'Enable' ? 'active' : 'unactive';
-    return members.filter((m) => m.user_status === status);
+    if (activeTab === 'Enable') {
+      return members.filter((m) => m.user_status === 'active');
+    }
+
+    // Disable 탭
+    return members.filter((m) => m.user_status === 'inactive' || m.user_status === 'suspended');
   }, [members, activeTab]);
+
+  const refreshMembers = async () => {
+    const list = await getManagerMemberList(selectedTeamId);
+    setMembers(list);
+  };
 
   return (
     <div>
@@ -38,8 +48,8 @@ export default function Member() {
         <div className="flex items-center gap-3 border-b border-gray-300 pb-5">
           {/* 상태 탭 */}
           <TabsList>
-            <TabsTrigger value="Enable">Enable</TabsTrigger>
-            <TabsTrigger value="Disable">Disable</TabsTrigger>
+            <TabsTrigger value="Enable">사용중</TabsTrigger>
+            <TabsTrigger value="Disable">비활성화</TabsTrigger>
           </TabsList>
 
           {/* 팀 선택 */}
@@ -71,7 +81,7 @@ export default function Member() {
           ) : (
             <div className="mt-8 grid grid-cols-4 gap-5">
               {filteredMembers.map((member) => (
-                <MemberList key={member.user_id} member={member} />
+                <MemberList key={member.user_id} member={member} onRefresh={refreshMembers} />
               ))}
             </div>
           )}
@@ -84,7 +94,7 @@ export default function Member() {
           ) : (
             <div className="mt-8 grid grid-cols-4 gap-5">
               {filteredMembers.map((member) => (
-                <MemberList key={member.user_id} member={member} />
+                <MemberList key={member.user_id} member={member} onRefresh={refreshMembers} />
               ))}
             </div>
           )}
