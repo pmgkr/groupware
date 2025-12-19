@@ -681,7 +681,7 @@ export default function OvertimeList({
                 :
                 <>
                 <TableCell className="w-[16%] text-center p-2">
-                  {formatTime(item.ot_stime)}-{formatTime(item.ot_etime)} ({formatHours(item.ot_hours)})
+                  {formatTime(item.ot_stime)} - {formatTime(item.ot_etime)} <span className="text-gray-500 text-sm font-normal">({formatHours(item.ot_hours)})</span>
                 </TableCell>
                 <TableCell className="w-[10%] text-center p-2">{getRewardText(item.ot_reward)}</TableCell>
                 </>
