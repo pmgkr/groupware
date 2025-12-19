@@ -60,7 +60,9 @@ export const managerWorkingApi = {
   getManagerWorkLogsWeek: async (params: ManagerWorkLogWeekParams): Promise<WorkLogResponse> => {
     const queryParams = new URLSearchParams();
     
-    queryParams.append('team_id', params.team_id.toString());
+    if (params.team_id !== undefined && params.team_id !== null) {
+      queryParams.append('team_id', params.team_id.toString());
+    }
     queryParams.append('weekno', params.weekno.toString());
     queryParams.append('yearno', params.yearno.toString());
 
