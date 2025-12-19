@@ -26,7 +26,7 @@ export default function Header() {
   // 프로필 업데이트 이벤트 리스닝
   useEffect(() => {
     const handleProfileUpdate = async () => {
-      console.log('🔄 Header: 프로필 업데이트 감지');
+      //console.log('🔄 Header: 프로필 업데이트 감지');
       try {
         const updatedUser = await getMyProfile();
         setCurrentProfileImage(updatedUser.profile_image);
@@ -65,9 +65,9 @@ export default function Header() {
   const profileImageUrl = useMemo(() => {
     if (currentProfileImage) {
       if (currentProfileImage.startsWith('http')) {
-        return `${currentProfileImage}?t=${Date.now()}`;
+        return currentProfileImage;
       }
-      return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${currentProfileImage}?t=${Date.now()}`;
+      return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${currentProfileImage}`;
     }
     return getImageUrl('dummy/profile');
   }, [currentProfileImage]);

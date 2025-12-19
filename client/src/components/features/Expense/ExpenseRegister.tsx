@@ -32,6 +32,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { getMyAccounts, type BankAccount } from '@/api/mypage/profile';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AccountSelectDialog } from './_components/AccountSelectDialog';
+import { matchNonProjectWithProposal } from '@/api/expense/proposal';
 
 const expenseSchema = z.object({
   el_method: z.string().nonempty('결제 수단을 선택해주세요.'),
@@ -54,7 +55,7 @@ const expenseSchema = z.object({
         price: z.string().optional(),
         tax: z.string().optional(),
         total: z.string().optional(),
-        pro_id: z.string().optional(),
+        pro_id: z.number().nullable().optional(),
       })
     )
     .optional(),
@@ -79,6 +80,7 @@ export default function ExpenseRegister() {
   const [hasFiles, setHasFiles] = useState(false); // 추가 업로드 버튼 활성화 State
   const [linkedRows, setLinkedRows] = useState<Record<string, number | null>>({}); // 업로드된 이미지와 연결된 행 번호 저장용
   const [activeFile, setActiveFile] = useState<string | null>(null); // UploadArea & Attachment 연결상태 공유용
+  const [selectedProposal, setSelectedProposal] = useState<any>(null); //기안서  번호 확인용
 
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : ''); // YYYY-MM-DD Date 포맷 변경
 
@@ -101,7 +103,7 @@ export default function ExpenseRegister() {
         price: '',
         tax: '',
         total: '',
-        pro_id: '',
+        pro_id: null,
       })),
     },
   });
@@ -178,7 +180,7 @@ export default function ExpenseRegister() {
             price: '',
             tax: '',
             total: '',
-            pro_id: '',
+            pro_id: null,
           })),
         });
       }
@@ -188,7 +190,7 @@ export default function ExpenseRegister() {
   // 항목 추가 버튼 클릭 시
   const handleAddArticle = useCallback(() => {
     setArticleCount((prev) => prev + 1);
-    append({ type: '', title: '', number: '', date: '', price: '', tax: '', total: '', pro_id: '' });
+    append({ type: '', title: '', number: '', date: '', price: '', tax: '', total: '', pro_id: null });
   }, [append]);
 
   // 항목 삭제 버튼 클릭 시
@@ -453,7 +455,57 @@ export default function ExpenseRegister() {
           if (result.ok && result.docs?.inserted) {
             const { list_count, item_count } = result.docs.inserted;
 
-            // payload.items <- 반복문 돌려서 pro_id값이 있으면 report/expense/set API를 호출
+            // 응답에서 item_seqs 가져오기
+            const itemSeqs = result.docs?.results?.[0]?.item_seqs;
+            const uniqueProposalIds = new Set<number>();
+            payload.items.forEach((item: any) => {
+              if (item.pro_id) {
+                uniqueProposalIds.add(item.pro_id);
+              }
+            });
+
+            // 각 기안서에 대해 매칭 API 호출
+            if (uniqueProposalIds.size > 0) {
+              try {
+                const matchPromises = Array.from(uniqueProposalIds).map(async (rp_seq) => {
+                  // 해당 기안서(rp_seq)를 가진 항목들의 seq 찾기
+                  const matchingItemSeqs: number[] = [];
+                  payload.items.forEach((item: any, index: number) => {
+                    if (item.pro_id === rp_seq) {
+                      matchingItemSeqs.push(itemSeqs[index]);
+                    }
+                  });
+
+                  console.log(`기안서 ${rp_seq}에 매칭될 아이템 seq들:`, matchingItemSeqs);
+
+                  // 각 아이템 seq에 대해 개별 API 호출
+                  const itemMatchPromises = matchingItemSeqs.map(async (exp_seq) => {
+                    console.log(`  → 아이템 ${exp_seq} 매칭 중...`);
+
+                    const matchResult = (await matchNonProjectWithProposal(rp_seq, exp_seq)) as { ok: boolean };
+
+                    return { rp_seq, exp_seq, success: matchResult.ok };
+                  });
+
+                  return await Promise.all(itemMatchPromises);
+                });
+
+                const results = await Promise.all(matchPromises);
+                const flatResults = results.flat();
+
+                flatResults.forEach(({ rp_seq, exp_seq, success }) => {
+                  if (success) {
+                    console.log(`✅ 기안서 ${rp_seq} - 아이템 ${exp_seq} 매칭 완료`);
+                  } else {
+                    //console.error(`❌ 기안서 ${rp_seq} - 아이템 ${exp_seq} 매칭 실패`);
+                  }
+                });
+              } catch (error) {
+                console.error('❌ 매칭 요청 오류:', error);
+              }
+            } else {
+              console.log('ℹ️ 매칭할 기안서 없음');
+            }
             // result.docs.results 에 item_seq값 추가해서 반환
             // report 테이블에 저장할 때 rp_project_type이 'project'일 때 rp_expense_no가 projectId/list_seq (G26-00002/32)
             // 같은 pro_id 값이 있으면 패스, pro_id 값이 없으면 패스
@@ -732,6 +784,9 @@ export default function ExpenseRegister() {
                     files={files}
                     activeFile={activeFile}
                     setActiveFile={setActiveFile}
+                    onSelectProposal={(proposalId) => {
+                      setSelectedProposal(proposalId);
+                    }}
                   />
                 ))}
 

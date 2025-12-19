@@ -7,6 +7,7 @@ import Nexpense from '@/pages/Manager/Nexpense';
 import Vacation from '@/pages/Manager/Vacation';
 import ManagerProposalList from '@/pages/Manager/Proposal/managerProposalList';
 import ManagerProposalView from '@/pages/Manager/Proposal/managerProposalView';
+import Member from '@/pages/Manager/member';
 
 import PexpenseView from '@components/features/Project/ManagerExpenseView';
 import NexpenseView from '@components/features/Expense/ManagerExpenseView';
@@ -40,5 +41,6 @@ export const managerRoutes: RouteObject = {
     { path: 'vacation', element: <Vacation /> },
     { path: 'proposal', element: <ManagerProposalList /> }, // 레이아웃 (index.tsx)
     { path: 'proposal/view/:id', element: <ManagerProposalView /> }, // 상세 + 승인/반려
+    { path: 'member', element: <Member /> },
   ],
 };

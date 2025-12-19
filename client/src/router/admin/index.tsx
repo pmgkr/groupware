@@ -18,6 +18,7 @@ import Latecomer from '@/pages/Admin/Working/Latecomer';
 import AdminOvertime from '@/pages/Admin/Overtime';
 import AdminProposalList from '@/pages/Admin/Proposal/adminProposalList';
 import AdminProposalView from '@/pages/Admin/Proposal/adminProposalView';
+import Member from '@/pages/Admin/Member';
 
 export const adminRoutes: RouteObject = {
   path: 'admin', // → /Admin
@@ -30,6 +31,7 @@ export const adminRoutes: RouteObject = {
       { to: '/admin/overtime', label: '추가근무 관리' },
       { to: '/admin/vacation', label: '휴가 관리' },
       { to: '/admin/proposal', label: '기안서 관리' },
+      { to: '/admin/member', label: '구성원 관리' },
     ],
   },
   children: [
@@ -63,5 +65,6 @@ export const adminRoutes: RouteObject = {
     { path: 'overtime', element: <AdminOvertime /> },
     { path: 'proposal', element: <AdminProposalList /> },
     { path: 'proposal/:id', element: <AdminProposalView /> },
+    { path: 'member', element: <Member /> },
   ],
 };
