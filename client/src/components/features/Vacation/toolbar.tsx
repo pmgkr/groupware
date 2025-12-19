@@ -224,23 +224,7 @@ export default function VacationToolbar({
     loadTeams();
   }, [user, page]);
 
-  // 팀 목록이 로드되면 모든 팀 선택 (상세 페이지가 아닐 때만)
-  useEffect(() => {
-    if (teams.length > 0 && selectedTeams.length === 0 && !isAdminDetailPage) {
-      const allTeamIds = teams.map(team => String(team.team_id));
-      setSelectedTeams(allTeamIds);
-      
-      // 부모 컴포넌트에 알림
-      const teamIds = allTeamIds.map(id => parseInt(id));
-      onTeamSelect(teamIds);
-      
-      // Admin일 때 선택된 팀의 팀원 목록 로드
-      if (page === 'admin' && teamIds.length > 0) {
-        loadTeamMembers(teamIds);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teams, isAdminDetailPage]);
+  // 팀 자동선택 제거: 초기 상태는 선택 없음 유지
   
   // 상세 페이지에서 초기 팀 선택값 설정 (한 번만 실행)
   useEffect(() => {
