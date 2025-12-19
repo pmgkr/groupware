@@ -9,7 +9,6 @@ import { scheduleApi, type Schedule } from '@/api/calendar';
 import { managerVacationApi } from '@/api/manager/vacation';
 import { getTeams } from '@/api/admin/teams';
 import { getTeams as getCommonTeams } from '@/api/teams';
-import { getMemberList } from '@/api/common/team';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import type { VacationFilters } from '@/components/features/Vacation/toolbar';
@@ -30,6 +29,8 @@ import { AppPagination } from '@/components/ui/AppPagination';
 import { notificationApi } from '@/api/notification';
 import { defaultEventTitleMapper } from '@/components/calendar/config';
 import { getDateRangeTextSimple } from '@/utils/dateRangeHelper';
+import { Avatar, AvatarFallback, AvatarImage } from '@components/ui/avatar';
+import { getProfileImageUrl } from '@/utils/profileImageHelper';
 
 dayjs.locale('ko');
 
@@ -172,35 +173,22 @@ export default function VacationList({
         setAllData([]);
       }
       
-      // 각 팀의 멤버 목록 가져오기
-      const memberPromises = teamIdsToQuery.map(async (teamId) => {
-        const members = await getMemberList(teamId);
-        return members.map(member => ({ ...member, team_id: member.team_id || teamId }));
-      });
-      const memberResults = await Promise.all(memberPromises);
-      const allTeamMembers = memberResults.flat();
-      
-      // 중복 제거
-      const teamMembers = allTeamMembers.filter((member, index, self) =>
-        index === self.findIndex(m => m.user_id === member.user_id)
-      );
-      
-      // 각 팀원의 user_id로 스케줄 조회
+      // 팀 단위로 스케줄 조회 (멤버 리스트 호출 제거)
       const allSchedules: Schedule[] = [];
       
       // 1월부터 12월까지 병렬로 조회 (성능 개선)
       const monthPromises = Array.from({ length: 12 }, (_, i) => i + 1).map(async (month) => {
         try {
-          // 각 팀원별로 스케줄 조회 (currentTab에 따라 sch_type 필터링)
-          const schedulePromises = teamMembers.map(member =>
+          // 각 팀별로 스케줄 조회 (currentTab에 따라 sch_type 필터링)
+          const schedulePromises = teamIdsToQuery.map(teamId =>
             scheduleApi.getSchedules({
               year,
               month,
-              user_id: member.user_id,
+              team_id: teamId,
               sch_type: currentTab === 'vacation' ? 'vacation' : 'event'
             }).catch(() => null)
           );
-          
+
           const scheduleResponses = await Promise.all(schedulePromises);
           const monthSchedules: Schedule[] = [];
           
@@ -678,7 +666,25 @@ export default function VacationList({
               onClick={() => handleEventClick(item)}
             >
               <TableCell className="text-center p-2">{getTeamName(item.team_id)}</TableCell>
-              <TableCell className="text-center p-2">{item.user_name || '-'}</TableCell>
+              <TableCell className="text-center p-2">
+                <div className="flex items-center gap-2 justify-center">
+                  <Avatar className="size-8">
+                    {(() => {
+                      const rawProfile = (item as any).profile_image;
+                      const trimmedProfile = typeof rawProfile === 'string' ? rawProfile.trim() : rawProfile;
+                      const profileSrc = getProfileImageUrl(trimmedProfile);
+                      return (
+                        <AvatarImage
+                          src={profileSrc}
+                          alt={item.user_name || ''}
+                        />
+                      );
+                    })()}
+                    <AvatarFallback>{(item.user_name || '-').slice(0, 1)}</AvatarFallback>
+                  </Avatar>
+                  <span>{item.user_name || '-'}</span>
+                </div>
+              </TableCell>
               <TableCell className="text-center p-2">
                 {activeTab === 'vacation' 
                   ? getVacationTypeText(item.sch_vacation_type, item.sch_vacation_time)
