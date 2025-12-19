@@ -1,6 +1,7 @@
 import { Ellipsis, Mail, Phone } from 'lucide-react';
 import { Button } from './button';
 import { Badge } from './badge';
+import { getImageUrl } from '@/utils';
 
 const STATUS_MAP = {
   active: {
@@ -15,6 +16,19 @@ const STATUS_MAP = {
 
 export default function MemberList({ member }: { member: any }) {
   const status = STATUS_MAP[member.user_status as keyof typeof STATUS_MAP];
+
+  const profileImageUrl = (() => {
+    if (member.profile_image) {
+      if (member.profile_image.startsWith('http')) {
+        // 클라우드 주소
+        return member.profile_image;
+      }
+      // 기존 서버에 저장된 파일
+      return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${member.profile_image}`;
+    }
+    // 기본 더미 이미지
+    return getImageUrl('dummy/profile');
+  })();
   return (
     <div className="relative w-[347px] rounded-xl border border-gray-300 px-5 py-8">
       <div className="absolute top-2.5 right-4">
@@ -26,7 +40,7 @@ export default function MemberList({ member }: { member: any }) {
       <div className="flex">
         <div className="mr-5 flex flex-col items-center">
           <div className="mb-2.5 aspect-square w-18 overflow-hidden rounded-full bg-gray-300">
-            {member.profile_image && <img src={member.profile_image} alt={member.user_name} className="h-full w-full object-cover" />}
+            {member.profile_image && <img src={profileImageUrl} alt={member.user_name} className="h-full w-full object-cover" />}
           </div>
 
           {status && <Badge className={status.className}>{status.label}</Badge>}
