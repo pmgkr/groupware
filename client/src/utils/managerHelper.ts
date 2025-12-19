@@ -18,4 +18,3 @@ export async function findManager(teamId?: number | null): Promise<ManagerInfo> 
 
   return { id: managerId ? String(managerId) : null, name: managerName };
 }
-
