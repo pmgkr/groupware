@@ -536,7 +536,7 @@ export default function VacationList({
     
     if ((vacationType === 'half' || vacationType === 'quarter') && vacationTime) {
       const timeText = vacationTime === 'morning' ? '오전' : '오후';
-      return `${baseType}(${timeText})`;
+      return `${timeText} ${baseType}`;
     }
     
     return baseType;
