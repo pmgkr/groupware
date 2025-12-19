@@ -105,7 +105,7 @@ export default function EventViewDialog({
 
               // 알림 전송
               const eventLabel = selectedEvent?.title || defaultEventTitleMapper(selectedEvent?.eventType || '') || '일정';
-              const rangeText = getDateRangeTextSimple(selectedEvent?.startDate, selectedEvent?.endDate, selectedEvent?.startTime, selectedEvent?.endTime, selectedEvent?.allDay);
+              const rangeText = getDateRangeTextSimple(selectedEvent?.startDate, selectedEvent?.endDate, selectedEvent?.allDay);
               if (team_id != null) {
                 try {
                   const manager = await findManager(team_id);              // 이벤트/휴가 공통 라벨 (calendar config 매퍼 사용)
@@ -116,7 +116,7 @@ export default function EventViewDialog({
                       user_name: manager.name,
                       noti_target: user_id!,
                       noti_title: `${eventLabel} (${rangeText})`,
-                      noti_message: `일정 취소를 요청했습니다.`,
+                      noti_message: `일정 취소를 <span class="text-primary-blue-500">요청</span>했습니다.`,
                       noti_type: selectedEvent?.category || '',
                       noti_url: '/manager/vacation',
                     });
@@ -127,7 +127,7 @@ export default function EventViewDialog({
                       user_name: user_name || '',
                       noti_target: user_id!,
                       noti_title: `${eventLabel} (${rangeText})`,
-                      noti_message: `일정 취소를 요청했습니다.`,
+                      noti_message: `일정 취소를 <span class="text-primary-blue-500 font-semibold">요청</span>했습니다.`,
                       noti_type: selectedEvent?.category || '',
                       noti_url: '/calendar',
                     });

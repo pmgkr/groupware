@@ -12,9 +12,10 @@ import { getTeams as getCommonTeams } from '@/api/teams';
 import { getMemberList } from '@/api/common/team';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/components/ui/use-toast';
 import type { VacationFilters } from '@/components/features/Vacation/toolbar';
 import { Badge } from '@/components/ui/badge';
+import { CheckCircle, OctagonAlert } from 'lucide-react';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -26,6 +27,9 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { AppPagination } from '@/components/ui/AppPagination';
+import { notificationApi } from '@/api/notification';
+import { defaultEventTitleMapper } from '@/components/calendar/config';
+import { getDateRangeTextSimple } from '@/utils/dateRangeHelper';
 
 dayjs.locale('ko');
 
@@ -66,7 +70,7 @@ export default function VacationList({
   isPage = 'manager'
 }: VacationListProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { addAlert } = useAppAlert();
   
   // 데이터 state
   const [allData, setAllData] = useState<Schedule[]>([]);
@@ -453,15 +457,18 @@ export default function VacationList({
       await managerVacationApi.approveScheduleCancel(selectedEvent.id);
       fetchScheduleData();
       handleCloseEventDialog();
-      toast({
+      addAlert({
         title: "취소 승인 완료",
-        description: "일정 취소가 승인되었습니다.",
+        message: "일정 취소가 승인되었습니다.",
+        duration: 3000,
+        icon: <CheckCircle />,
       });
     } catch (error) {
-      toast({
+      addAlert({
         title: "승인 실패",
-        description: "취소 승인 중 오류가 발생했습니다.",
-        variant: "destructive",
+        message: "취소 승인 중 오류가 발생했습니다.",
+        duration: 3000,
+        icon: <OctagonAlert />,
       });
       throw error;
     }
@@ -485,9 +492,47 @@ export default function VacationList({
       
       setIsConfirmDialogOpen(false);
       
-      toast({
+      // 알림 전송: 선택된 각 스케줄의 사용자에게 개별 알림
+      const scheduleMap = new Map<number, Schedule>();
+      allData.forEach((s) => scheduleMap.set(s.id, s));
+
+      await Promise.all(
+        checkedItems.map(async (id) => {
+          const schedule = scheduleMap.get(id);
+          if (!schedule?.user_id) return;
+
+          const eventLabel =
+            schedule.sch_title ||
+            defaultEventTitleMapper(schedule.sch_vacation_type || schedule.sch_event_type || '') ||
+            '일정';
+          const rangeText = getDateRangeTextSimple(schedule.sch_sdate, schedule.sch_edate, schedule.sch_isAllday === 'Y');
+
+          await notificationApi.registerNotification({
+            user_id: schedule.user_id,
+            user_name: schedule.user_name || '',
+            noti_target: user?.user_id || '', // 발신자: 현재 사용자(승인자)
+            noti_title: `${eventLabel} (${rangeText})`,
+            noti_message: `일정 취소를 승인했습니다.`,
+            noti_type: schedule.sch_type,
+            noti_url: '/calendar',
+          });
+        })
+      );
+      
+      // 성공 알림 먼저 표시
+      addAlert({
+        title: '승인 완료',
+        message: '일정 취소가 승인되었습니다.',
+        icon: <OctagonAlert />,
+        duration: 3000,
+      });
+
+      
+      addAlert({
         title: "취소 승인 완료",
-        description: `${count}개의 일정 취소가 승인되었습니다.`,
+        message: `${count}개의 일정 취소가 승인되었습니다.`,
+        duration: 3000,
+        icon: <CheckCircle />,
       });
       
       // 체크박스 초기화 및 데이터 새로고침
@@ -496,10 +541,11 @@ export default function VacationList({
       onCheckedItemsChange([]);
       fetchScheduleData();
     } catch (error) {
-      toast({
+      addAlert({
         title: "승인 실패",
-        description: "일괄 승인 중 오류가 발생했습니다.",
-        variant: "destructive",
+        message: "일괄 승인 중 오류가 발생했습니다.",
+        duration: 3000,
+        icon: <OctagonAlert />,
       });
       setIsConfirmDialogOpen(false);
     }
