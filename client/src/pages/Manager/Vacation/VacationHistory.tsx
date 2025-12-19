@@ -1,24 +1,31 @@
 import { useState } from 'react';
-import VacationList from '@components/features/Vacation/list';
+import UserList from '@/components/features/Vacation/userList';
 import Toolbar from '@components/features/Vacation/toolbar';
 import type { VacationFilters } from '@components/features/Vacation/toolbar';
 
-export default function ManagerVacation() {
+export default function VacationHistory() {
   // 선택된 팀 ID 목록
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
+  // 선택된 유저 ID 목록
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   
   // 활성 탭 (휴가 vs 이벤트)
   const [activeTab, setActiveTab] = useState<'vacation' | 'event'>('vacation');
   
   // 필터 상태
   const [filters, setFilters] = useState<VacationFilters>({});
-  
+
   // 체크된 항목들
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
 
   // 팀 선택 핸들러
   const handleTeamSelect = (teamIds: number[]) => {
     setSelectedTeamIds(teamIds);
+  };
+
+  // 유저 선택 핸들러
+  const handleUserSelect = (userIds: string[]) => {
+    setSelectedUserIds(userIds);
   };
   
   // 필터 변경 핸들러
@@ -34,25 +41,25 @@ export default function ManagerVacation() {
     }
   };
 
+  const year = filters.year ? parseInt(filters.year) : new Date().getFullYear();
+
   return (
-    <div>
+    <>
       <Toolbar 
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onTeamSelect={handleTeamSelect}
+        onUserSelect={handleUserSelect}
         onFilterChange={handleFilterChange}
         checkedItems={checkedItems}
         onApproveAll={handleApproveAll}
-        page="manager"
+        page="admin"
       />
-      
-      <VacationList
+      <UserList 
+        year={year}
         teamIds={selectedTeamIds}
-        activeTab={activeTab}
-        filters={filters}
-        onCheckedItemsChange={setCheckedItems}
-        isPage="manager"
+        userIds={selectedUserIds}
       />
-    </div>
+    </>
   );
 }

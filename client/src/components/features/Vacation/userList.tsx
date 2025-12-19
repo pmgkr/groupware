@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { SettingsIcon, InfoIcon } from 'lucide-react';
 import GrantDialog from './grantDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { adminVacationApi, type VacationItem } from '@/api/admin/vacation';
+import { adminVacationApi } from '@/api/admin/vacation';
+import { managerVacationApi } from '@/api/manager/vacation';
 import { getTeams } from '@/api/admin/teams';
+import { getTeams as getManagerTeams } from '@/api/manager/teams';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getAvatarFallback } from '@/utils';
 
@@ -52,11 +54,15 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
   const [loading, setLoading] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
 
+  const isManagerPage = location.pathname.startsWith('/manager');
+  const columnCount = isManagerPage ? 7 : 8;
+
   const [isGrantDialogOpen, setIsGrantDialogOpen] = useState(false);
   const [selectedUserName, setSelectedUserName] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
 
   const handleOpenGrantDialog = (userId: string, userName: string) => {
+    if (isManagerPage) return;
     setSelectedUserId(userId);
     setSelectedUserName(userName);
     setIsGrantDialogOpen(true);
@@ -70,7 +76,9 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
 
   const handleRowClick = (userId: string, e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("button")) return;
-    navigate(`/admin/vacation/user/${userId}`);
+    // manager 페이지에서도 동일 컴포넌트를 사용하므로 경로를 현재 path 기반으로 분기
+    const basePath = location.pathname.startsWith('/manager') ? '/manager' : '/admin';
+    navigate(`${basePath}/vacation/user/${userId}`);
   };
 
   // 팀 목록 로드 여부 추적 ref
@@ -82,7 +90,9 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
     
     const loadTeams = async () => {
       try {
-        const teamList = await getTeams({});
+        const teamList = isManagerPage
+          ? await getManagerTeams({})
+          : await getTeams({});
         setTeams(teamList.map((t) => ({
           team_id: t.team_id,
           team_name: t.team_name
@@ -118,7 +128,9 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
       let teamsData = teams;
       if (teamsData.length === 0 && !teamsLoadedRef.current) {
         try {
-          const teamList = await getTeams({});
+          const teamList = isManagerPage
+            ? await getManagerTeams({})
+            : await getTeams({});
           teamsData = teamList.map((t) => ({
             team_id: t.team_id,
             team_name: t.team_name
@@ -134,30 +146,49 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
         }
       }
 
-      // 모든 데이터를 가져오기 위해 size=100으로 요청
-      const response = await adminVacationApi.getVacationList(currentYear, undefined, undefined, 100);
+      let filteredItems: any[] = [];
 
-      let filteredItems = response.rows;
-      
-      // 전체 데이터가 100개를 초과하는 경우 추가 페이지 로드
-      if (response.total > 100) {
-        const totalPages = Math.ceil(response.total / 100);
-        const additionalRequests = [];
-        
-        for (let page = 2; page <= totalPages; page++) {
-          additionalRequests.push(
-            adminVacationApi.getVacationList(currentYear, undefined, page, 100)
-          );
+      if (isManagerPage) {
+        // 매니저 API: 페이지 기반 -> 모든 페이지 로드
+        const first = await managerVacationApi.getVacationList(currentYear, teamIds.length ? teamIds : undefined, 1, 100);
+        filteredItems = first.list || [];
+
+        if (first.total > first.size) {
+          const totalPages = Math.ceil(first.total / first.size);
+          const requests = [];
+          for (let p = 2; p <= totalPages; p++) {
+            requests.push(managerVacationApi.getVacationList(currentYear, teamIds.length ? teamIds : undefined, p, first.size));
+          }
+          const responses = await Promise.all(requests);
+          responses.forEach(res => {
+            filteredItems = [...filteredItems, ...(res.list || [])];
+          });
         }
-        
-        const additionalResponses = await Promise.all(additionalRequests);
-        additionalResponses.forEach(res => {
-          filteredItems = [...filteredItems, ...res.rows];
-        });
+      } else {
+        // 관리자 API
+        const response = await adminVacationApi.getVacationList(currentYear, undefined, undefined, 100);
+        filteredItems = response.rows;
+
+        // 전체 데이터가 100개를 초과하는 경우 추가 페이지 로드
+        if (response.total > 100) {
+          const totalPages = Math.ceil(response.total / 100);
+          const additionalRequests = [];
+          
+          for (let page = 2; page <= totalPages; page++) {
+            additionalRequests.push(
+              adminVacationApi.getVacationList(currentYear, undefined, page, 100)
+            );
+          }
+          
+          const additionalResponses = await Promise.all(additionalRequests);
+          additionalResponses.forEach(res => {
+            filteredItems = [...filteredItems, ...res.rows];
+          });
+        }
       }
 
       if (teamIds.length > 0) {
-        filteredItems = filteredItems.filter(i => teamIds.includes(i.team_id));
+          filteredItems = filteredItems.filter(i => teamIds.includes(i.team_id));
       }
       if (userIds.length > 0) {
         filteredItems = filteredItems.filter(i => userIds.includes(i.user_id));
@@ -253,18 +284,18 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
               </Tooltip>
             </div>
           </TableHead>
-          <TableHead className="w-[10%] text-center">휴가관리</TableHead>
+          {!isManagerPage && <TableHead className="w-[10%] text-center">휴가관리</TableHead>}
         </TableRow>
       </TableHeader>
 
       <TableBody>
         {loading ? (
           <TableRow>
-            <TableCell colSpan={8} className="text-center">로딩 중…</TableCell>
+            <TableCell colSpan={columnCount} className="text-center">로딩 중…</TableCell>
           </TableRow>
         ) : displayData.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={8} className="text-center">데이터 없음</TableCell>
+            <TableCell colSpan={columnCount} className="text-center">데이터 없음</TableCell>
           </TableRow>
         ) : (
           displayData.map(item => (
@@ -315,32 +346,36 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
               </TableCell>
 
               {/* 공가 (근속휴가) */}
-              <TableCell className="text-center">
+                <TableCell className="text-center">
                 <Badge variant={Number(item.va_long) < 0 ? "lightpink" : Number(item.va_long) === 0 ? "grayish" : "secondary"} size="table">{item.va_long}일</Badge>
               </TableCell>
 
-              <TableCell className="text-center">
-                <Button size="sm" variant="outline"
-                  onClick={() => handleOpenGrantDialog(item.id, item.name)}
-                >
-                  <SettingsIcon className="w-4 h-4" />
-                </Button>
-              </TableCell>
+              {!isManagerPage && (
+                <TableCell className="text-center">
+                  <Button size="sm" variant="outline"
+                    onClick={() => handleOpenGrantDialog(item.id, item.name)}
+                  >
+                    <SettingsIcon className="w-4 h-4" />
+                  </Button>
+                </TableCell>
+              )}
             </TableRow>
           ))
         )}
       </TableBody>
 
-      <GrantDialog
-        isOpen={isGrantDialogOpen}
-        onClose={handleCloseGrantDialog}
-        userId={selectedUserId}
-        userName={selectedUserName}
-        onSuccess={() => {
-          handleCloseGrantDialog();
-          loadVacationList();
-        }}
-      />
+      {!isManagerPage && (
+        <GrantDialog
+          isOpen={isGrantDialogOpen}
+          onClose={handleCloseGrantDialog}
+          userId={selectedUserId}
+          userName={selectedUserName}
+          onSuccess={() => {
+            handleCloseGrantDialog();
+            loadVacationList();
+          }}
+        />
+      )}
 
     </Table>
   );

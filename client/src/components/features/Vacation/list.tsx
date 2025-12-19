@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import EventViewDialog from '@/components/calendar/EventViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { scheduleApi, type Schedule } from '@/api/calendar';
-import { managerVacationApi } from '@/api/manager/vacation';
+import { managerVacationCancelApi } from '@/api/manager/vacation';
 import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams } from '@/api/manager/teams';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -453,7 +453,7 @@ export default function VacationList({
     if (!selectedEvent?.id) return;
     
     try {
-      await managerVacationApi.approveScheduleCancel(selectedEvent.id);
+      await managerVacationCancelApi.approveScheduleCancel(selectedEvent.id);
       fetchScheduleData();
       handleCloseEventDialog();
       addAlert({
@@ -486,7 +486,7 @@ export default function VacationList({
     try {
       // 모든 체크된 항목에 대해 취소 요청 승인 (관리자 API 사용)
       await Promise.all(
-        checkedItems.map(id => managerVacationApi.approveScheduleCancel(id))
+        checkedItems.map(id => managerVacationCancelApi.approveScheduleCancel(id))
       );
       
       setIsConfirmDialogOpen(false);

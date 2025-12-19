@@ -4,12 +4,16 @@ import Working from '@/pages/Manager/Working';
 import Overtime from '@/pages/Manager/Overtime';
 import Pexpense from '@/pages/Manager/Pexpense';
 import Nexpense from '@/pages/Manager/Nexpense';
-import Vacation from '@/pages/Manager/Vacation';
 import ManagerProposalList from '@/pages/Manager/Proposal/managerProposalList';
 import ManagerProposalView from '@/pages/Manager/Proposal/managerProposalView';
 
 import PexpenseView from '@components/features/Project/ManagerExpenseView';
 import NexpenseView from '@components/features/Expense/ManagerExpenseView';
+import VacationLayout from '@/pages/Manager/Vacation/VacationLayout';
+import VacationManage from '@/pages/Manager/Vacation/VacationManage';
+import VacationHistory from '@/pages/Manager/Vacation/VacationHistory';
+import VacationHistoryDetail from '@/pages/Manager/Vacation/VacationHistoryDetail';
+import ManagerHistoryDetail from '@/pages/Manager/Vacation/VacationHistoryDetail';
 
 export const managerRoutes: RouteObject = {
   path: 'manager',
@@ -37,7 +41,15 @@ export const managerRoutes: RouteObject = {
       element: <Nexpense />,
     },
     { path: 'nexpense/:expId', element: <NexpenseView /> },
-    { path: 'vacation', element: <Vacation /> },
+    {
+      path: 'vacation',
+      element: <VacationLayout />,
+      children: [
+        { index: true, element: <VacationManage /> },
+        { path: 'history', element: <VacationHistory /> },
+        { path: 'user/:id', element: <VacationHistoryDetail /> },
+      ],
+    },
     { path: 'proposal', element: <ManagerProposalList /> }, // 레이아웃 (index.tsx)
     { path: 'proposal/view/:id', element: <ManagerProposalView /> }, // 상세 + 승인/반려
   ],

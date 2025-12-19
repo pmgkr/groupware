@@ -52,6 +52,7 @@ export default function VacationToolbar({
 }: VacationToolbarProps) {
   const { user } = useAuth();
   const location = useLocation();
+  const isManagerContext = location.pathname.startsWith('/manager');
   
   // 최고관리자-휴가관리-상세페이지
   const isAdminDetailPage = location.pathname.includes('/vacation/user/');
@@ -83,30 +84,28 @@ export default function VacationToolbar({
         return;
       }
       
-      // page prop에 따라 분기
-      if (page === 'admin') {
-        // admin 페이지: 모든 팀 표시
-        const allTeamDetails = await getTeams({});
+      // 매니저 컨텍스트(경로 기준)면 자신의 팀만, 아니면 page 기준
+      if (isManagerContext || page === 'manager') {
+        const allTeamDetails = await getManagerTeams({});
         const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
           seq: 0,
-          manager_id: user.user_id,
-          manager_name: user.user_name || '',
+          manager_id: team.manager_id || '',
+          manager_name: team.manager_name || '',
           team_id: team.team_id,
           team_name: team.team_name,
           parent_id: team.parent_id || undefined,
           level: team.level,
         }));
-        
         setTeams(teamItems);
         return;
       }
-      
-      // manager 페이지: 권한 상관없이 자기가 팀장인 팀 목록만 조회
-      const allTeamDetails = await getManagerTeams({});
+
+      // 관리자 컨텍스트: 모든 팀
+      const allTeamDetails = await getTeams({});
       const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
         seq: 0,
-        manager_id: team.manager_id || '',
-        manager_name: team.manager_name || '',
+        manager_id: user.user_id,
+        manager_name: user.user_name || '',
         team_id: team.team_id,
         team_name: team.team_name,
         parent_id: team.parent_id || undefined,
