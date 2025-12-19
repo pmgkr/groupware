@@ -462,8 +462,11 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
 
       const res = await expenseUpdate(header.seq, payload);
 
+      console.log(res);
+
       if (res.ok) {
         // ✅  기안서 매칭 (선택된 경우만)
+        // 기안서 매칭이 바뀌지 않았으면 아래 기안서 매칭 API는 돌지 않아야함 (신규로 매칭 or 다른 기안서로 매칭하는 경우에만 API 호출)
         const selectedProId = enrichedItems.find((item) => item.pro_id !== null)?.pro_id ?? null;
         const itemSeq = data?.items?.[0]?.seq;
 
