@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { managerWorkingApi } from '@/api/manager/working';
 import { getTeams as getManagerTeams } from '@/api/manager/teams';
+import { getTeams as getAdminTeams } from '@/api/admin/teams';
 import { useAuth } from '@/contexts/AuthContext';
 import type { WorkData } from '@/types/working';
 import type { WorkingListItem, DayWorkInfo } from '@/components/working/list';
@@ -57,6 +58,22 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
       try {
         const startDate = weekStartDate;
         const endDate = getWeekEndDate(weekStartDate);
+
+        // 팀명 매핑 (team_id -> team_name)
+        const teamNameMap = new Map<number, string>();
+        try {
+          const teamList =
+            page === 'admin'
+              ? await getAdminTeams({})
+              : await getManagerTeams({});
+          teamList.forEach((t: any) => {
+            if (t.team_id != null && t.team_name) {
+              teamNameMap.set(Number(t.team_id), t.team_name);
+            }
+          });
+        } catch {
+          // 실패 시 팀 ID 그대로 사용
+        }
 
         // 팀 선택: 없으면 admin은 전체, manager는 담당 모든 팀
         let teamIdsToQuery: (number | null)[] = [];
@@ -250,7 +267,11 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
 
           transformedData.push({
             id: userInfo.user_id,
-            department: userInfo.team_id ?? '-',
+            department: (() => {
+              const tid = userInfo.team_id;
+              if (tid == null) return '-';
+              return teamNameMap.get(Number(tid)) || String(tid);
+            })(),
             name: userInfo.user_name || userInfo.user_id,
             workResult: userWorkData.some(d => d.totalHours > 0) ? '정상' : '-',
             weeklyTotal: `${weeklyStats.workHours}h ${weeklyStats.workMinutes}m`,
