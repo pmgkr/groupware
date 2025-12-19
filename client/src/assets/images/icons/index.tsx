@@ -52,6 +52,7 @@ const Lazy_Pto = React.lazy(() => import('./pto.svg?react'));
 const Lazy_RightArr = React.lazy(() => import('./right_arr.svg?react'));
 const Lazy_SearchGray = React.lazy(() => import('./search_gray.svg?react'));
 const Lazy_Send = React.lazy(() => import('./send.svg?react'));
+const Lazy_SortArr = React.lazy(() => import('./sort_arr.svg?react'));
 const Lazy_TooltipNoti = React.lazy(() => import('./tooltip_noti.svg?react'));
 const Lazy_Upload = React.lazy(() => import('./upload.svg?react'));
 const Lazy_UpArr = React.lazy(() => import('./up_arr.svg?react'));
@@ -98,6 +99,7 @@ export const Pto: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Pto), { 
 export const RightArr: React.FC<IconProps> = Object.assign(withSuspense(Lazy_RightArr), { displayName: 'RightArr' });
 export const SearchGray: React.FC<IconProps> = Object.assign(withSuspense(Lazy_SearchGray), { displayName: 'SearchGray' });
 export const Send: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Send), { displayName: 'Send' });
+export const SortArr: React.FC<IconProps> = Object.assign(withSuspense(Lazy_SortArr), { displayName: 'SortArr' });
 export const TooltipNoti: React.FC<IconProps> = Object.assign(withSuspense(Lazy_TooltipNoti), { displayName: 'TooltipNoti' });
 export const Upload: React.FC<IconProps> = Object.assign(withSuspense(Lazy_Upload), { displayName: 'Upload' });
 export const UpArr: React.FC<IconProps> = Object.assign(withSuspense(Lazy_UpArr), { displayName: 'UpArr' });

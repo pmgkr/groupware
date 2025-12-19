@@ -1,11 +1,18 @@
 import { useRef, useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
-import { formatDate, formatAmount, formatKST } from '@/utils';
+import { formatDate, formatAmount } from '@/utils';
 
 import { notificationApi } from '@/api/notification';
 import { uploadFilesToServer } from '@/api';
-import { getInvoiceList, setInvoiceFile, delInvoiceFile, type InvoiceListItem, type InvoiceAttachment } from '@/api/admin/invoice';
+import {
+  getInvoiceList,
+  confirmInvoice,
+  setInvoiceFile,
+  delInvoiceFile,
+  type InvoiceListItem,
+  type InvoiceAttachment,
+} from '@/api/admin/invoice';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
@@ -77,6 +84,8 @@ export default function Invoice() {
   // ============================
   type UploadState = 'idle' | 'uploading' | 'success' | 'error';
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [uploadStateMap, setUploadStateMap] = useState<Record<number, UploadState>>({});
 
   // ============================
@@ -94,10 +103,8 @@ export default function Invoice() {
       if (searchQuery) params.q = searchQuery;
 
       setSearchParams(params);
-      const res = await getInvoiceList(params);
 
-      console.log('📦 인보이스 요청 파라미터:', params);
-      console.log('✅ 인보이스 리스트 응답:', res);
+      const res = await getInvoiceList(params);
 
       setInvoiceList(res.items);
       setTotal(res.total);
@@ -117,12 +124,6 @@ export default function Invoice() {
     setActiveTab(tab);
     setPage(1);
     resetAllFilters();
-  };
-
-  // 필터 변경 시 page 초기화
-  const handleFilterChange = (setter: any, value: any) => {
-    setter(value);
-    setPage(1);
   };
 
   // 파라미터 초기화
@@ -164,6 +165,54 @@ export default function Invoice() {
     setCheckAll(selectable.length > 0 && selectable.every((id) => checkedItems.includes(id)));
   }, [checkedItems, invoiceList]);
 
+  // 승인하기 핸들러
+  const handleConfirm = async () => {
+    if (checkedItems.length === 0) {
+      addAlert({
+        title: '선택된 인보이스 항목이 없습니다.',
+        message: '승인할 인보이스 항목을 선택해주세요.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+      return;
+    }
+
+    addDialog({
+      title: '인보이스 승인',
+      message: `<span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 인보이스를 승인하시겠습니까?`,
+      confirmText: '승인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        const payload = { seqs: checkedItems };
+        const res = await confirmInvoice(payload);
+
+        if (res.ok) {
+          const selectedRows = invoiceList.filter((item) => checkedItems.includes(item.seq));
+          for (const row of selectedRows) {
+            await notificationApi.registerNotification({
+              user_id: row.user_id,
+              user_name: row.user_nm,
+              noti_target: user_id!,
+              noti_title: `${row.invoice_title}`,
+              noti_message: `요청한 인보이스를 승인했습니다.`,
+              noti_type: 'invoice',
+              noti_url: `/project/${row.project_id}/invoice`,
+            });
+          }
+
+          addAlert({
+            title: '인보이스 승인 완료',
+            message: `<p><span class="text-primary-blue-500 font-semibold">${res.confirmed_count}</span>건의 인보이스가 승인 완료되었습니다.</p>`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+
+          await loadList();
+        }
+      },
+    });
+  };
+
   // 파일 업로드 핸들러
   const handleUploadFile = async (seq: number, file: File) => {
     const fileArr: File[] = [file];
@@ -203,18 +252,26 @@ export default function Invoice() {
 
   const handleDelFile = async (seq: number) => {
     try {
-      const res = await delInvoiceFile(seq);
+      addDialog({
+        title: '증빙자료 삭제',
+        message: '등록된 증빙자료를 삭제하시겠습니까?',
+        confirmText: '확인',
+        cancelText: '취소',
+        onConfirm: async () => {
+          const res = await delInvoiceFile(seq);
 
-      if (res.ok) {
-        addAlert({
-          title: '증빙자료 삭제',
-          message: '인보이스 증빙자료가 삭제되었습니다.',
-          icon: <OctagonAlert />,
-          duration: 1500,
-        });
+          if (res.ok) {
+            addAlert({
+              title: '증빙자료 삭제',
+              message: '인보이스 증빙자료가 삭제되었습니다.',
+              icon: <OctagonAlert />,
+              duration: 1500,
+            });
 
-        await loadList();
-      }
+            await loadList();
+          }
+        },
+      });
     } catch (err) {
       console.error('첨부파일 삭제 실패', err);
 
@@ -289,23 +346,6 @@ export default function Invoice() {
                 </SelectItem>
               </SelectContent>
             </Select>
-
-            <MultiSelect
-              size="sm"
-              className="max-w-[80px] min-w-auto!"
-              maxCount={0}
-              autoSize={true}
-              placeholder="인보이스 상태"
-              ref={statusRef}
-              options={statusOptions}
-              onValueChange={(v) => {
-                handleFilterChange(setSelectedStatus, v);
-              }}
-              simpleSelect={true}
-              hideSelectAll={true}
-              closeOnSelect={false}
-              searchable={false}
-            />
           </div>
         </div>
 
@@ -314,7 +354,7 @@ export default function Invoice() {
             <Input
               className="max-w-42 pr-6"
               size="sm"
-              placeholder="검색어 입력"
+              placeholder="제목 또는 작성자명 검색"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
@@ -334,12 +374,16 @@ export default function Invoice() {
             )}
           </div>
 
-          <Button size="sm" variant="destructive" onClick={() => {}} disabled={checkedItems.length === 0}>
-            반려하기
-          </Button>
-          <Button size="sm" onClick={() => {}} disabled={checkedItems.length === 0}>
-            승인하기
-          </Button>
+          {activeTab === 'claimed' && (
+            <>
+              {/* <Button size="sm" variant="destructive" onClick={() => {}} disabled={checkedItems.length === 0}>
+                반려하기
+              </Button> */}
+              <Button size="sm" onClick={handleConfirm} disabled={checkedItems.length === 0}>
+                승인하기
+              </Button>
+            </>
+          )}
         </div>
       </div>
       <Table variant="primary" align="center" className="table-fixed">
@@ -376,7 +420,9 @@ export default function Invoice() {
                     {item.invoice_id}
                   </Link>
                 </TableCell>
-                <TableCell className="cursor-pointer px-4! text-left hover:underline">{item.invoice_title}</TableCell>
+                <TableCell className="cursor-pointer px-4! text-left hover:underline">
+                  <Link to={`/admin/finance/invoice/${item.seq}${search}`}>{item.invoice_title}</Link>
+                </TableCell>
                 <TableCell>{item.client_nm}</TableCell>
                 <TableCell className="text-right">{formatAmount(item.invoice_amount)}</TableCell>
                 <TableCell className="text-right">{formatAmount(item.invoice_tax)}</TableCell>
@@ -397,27 +443,43 @@ export default function Invoice() {
                 )}
                 {activeTab === 'confirmed' &&
                   (item.attachments.length === 0 ? (
-                    <TableCell className="">
+                    <TableCell>
                       <input
+                        ref={fileInputRef}
                         type="file"
                         accept="application/pdf"
                         className="hidden"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
+
                           handleUploadFile(item.seq, file);
                           e.currentTarget.value = ''; // 동일 파일 재업로드 허용
                         }}
                       />
+
                       <div
+                        onClick={() => {
+                          if (uploadStateMap[item.seq] !== 'uploading') {
+                            fileInputRef.current?.click();
+                          }
+                        }}
+                        onDragEnter={() => setIsDragging(true)}
+                        onDragLeave={() => setIsDragging(false)}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => {
                           e.preventDefault();
+                          setIsDragging(false);
+
+                          if (uploadStateMap[item.seq] === 'uploading') return;
+
                           const file = e.dataTransfer.files?.[0];
                           if (file) handleUploadFile(item.seq, file);
                         }}
-                        className="text-muted-foreground cursor-pointer rounded border border-dashed p-2 text-center text-xs">
-                        PDF 드래그 또는 클릭
+                        className={`cursor-pointer rounded border border-dashed p-2 text-center text-xs transition-colors ${
+                          isDragging ? 'bg-primary-blue-100 border-primary text-primary' : 'text-muted-foreground'
+                        } `}>
+                        {uploadStateMap[item.seq] === 'uploading' ? '업로드 중...' : 'PDF 드래그 또는 클릭'}
                       </div>
                     </TableCell>
                   ) : (
@@ -436,7 +498,9 @@ export default function Invoice() {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={8} className="py-50 text-center text-gray-500">
+              <TableCell
+                colSpan={activeTab === 'claimed' || activeTab === 'confirmed' ? 10 : 9}
+                className="py-50 text-center text-gray-500">
                 등록된 인보이스가 없습니다.
               </TableCell>
             </TableRow>
@@ -446,12 +510,7 @@ export default function Invoice() {
 
       <div className="mt-5">
         {invoiceList.length !== 0 && (
-          <AppPagination
-            totalPages={Math.ceil(total / pageSize)}
-            initialPage={page}
-            visibleCount={5}
-            onPageChange={setPage} //부모 state 업데이트
-          />
+          <AppPagination totalPages={Math.ceil(total / pageSize)} initialPage={page} visibleCount={5} onPageChange={setPage} />
         )}
       </div>
     </>
