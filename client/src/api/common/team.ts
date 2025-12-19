@@ -6,6 +6,7 @@ export interface Team {
   parent_id: number;
   manager_name: string;
   manage_id: number | null;
+  manager_id: number | null;
   level: number;
   order: number;
 }
