@@ -10,7 +10,6 @@ import { managerOvertimeApi } from '@/api/manager/overtime';
 import { adminOvertimeApi, type overtimeItem } from '@/api/admin/overtime';
 import { getTeams } from '@/api/admin/teams';
 import { getTeams as getCommonTeams } from '@/api/teams';
-import { getMemberList } from '@/api/common/team';
 import type { OvertimeItem } from '@/api/working';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -170,19 +169,18 @@ export default function OvertimeList({
         setAllData(uniqueItems);
       } else {
         // Manager API 사용
-        if (teamIdsToQuery.length === 0) {
-          setAllData([]);
-          setLoading(false);
-          return;
-        }
-        const promises = teamIdsToQuery.map(teamId => 
-          managerOvertimeApi.getManagerOvertimeList({
-            team_id: teamId,
-            page: 1,
-            size: 1000
-          })
-        );
-        const responses = await Promise.all(promises);
+        const responses = teamIdsToQuery.length === 0
+          ? [await managerOvertimeApi.getManagerOvertimeList({ page: 1, size: 1000, flag: '' })]
+          : await Promise.all(
+              teamIdsToQuery.map(teamId =>
+                managerOvertimeApi.getManagerOvertimeList({
+                  team_id: teamId,
+                  page: 1,
+                  size: 1000,
+                  flag: '',
+                })
+              )
+            );
         const allItems = responses.flatMap(response => response.items || []);
         
         // 중복 제거 (같은 id가 여러 번 조회될 수 있음)
