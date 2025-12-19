@@ -29,8 +29,6 @@ import { AppPagination } from '@/components/ui/AppPagination';
 import { notificationApi } from '@/api/notification';
 import { defaultEventTitleMapper } from '@/components/calendar/config';
 import { getDateRangeTextSimple } from '@/utils/dateRangeHelper';
-import { Avatar, AvatarFallback, AvatarImage } from '@components/ui/avatar';
-import { getProfileImageUrl } from '@/utils/profileImageHelper';
 
 dayjs.locale('ko');
 
@@ -679,25 +677,7 @@ export default function VacationList({
               onClick={() => handleEventClick(item)}
             >
               <TableCell className="text-center p-2">{getTeamName(item.team_id)}</TableCell>
-              <TableCell className="text-center p-2">
-                <div className="flex items-center gap-2 justify-center">
-                  <Avatar className="size-8">
-                    {(() => {
-                      const rawProfile = (item as any).profile_image;
-                      const trimmedProfile = typeof rawProfile === 'string' ? rawProfile.trim() : rawProfile;
-                      const profileSrc = getProfileImageUrl(trimmedProfile);
-                      return (
-                        <AvatarImage
-                          src={profileSrc}
-                          alt={item.user_name || ''}
-                        />
-                      );
-                    })()}
-                    <AvatarFallback>{(item.user_name || '-').slice(0, 1)}</AvatarFallback>
-                  </Avatar>
-                  <span>{item.user_name || '-'}</span>
-                </div>
-              </TableCell>
+              <TableCell className="text-center p-2">{item.user_name || '-'}</TableCell>
               <TableCell className="text-center p-2">
                 {activeTab === 'vacation' 
                   ? getVacationTypeText(item.sch_vacation_type, item.sch_vacation_time)
