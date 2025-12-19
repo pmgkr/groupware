@@ -1,10 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import dayjs from 'dayjs';
-import { type OvertimeListResponse } from '@/api/working';
-import { managerOvertimeApi } from '@/api/manager/overtime';
 import { managerWorkingApi } from '@/api/manager/working';
-import { getMemberList } from '@/api/common/team';
-import { getTeams } from '@/api/admin/teams';
 import { useAuth } from '@/contexts/AuthContext';
 import type { WorkData } from '@/types/working';
 import type { WorkingListItem, DayWorkInfo } from '@/components/working/list';
@@ -13,10 +9,7 @@ import { calculateWeeklyStats } from '@/utils/workingStatsHelper';
 import { convertApiDataToWorkData } from '@/services/workingDataConverter';
 
 // 모듈 레벨 캐시 (모든 인스턴스가 공유)
-const scheduleCache = new Map<string, any>();
 const wlogCache = new Map<string, any>();
-const memberCache = new Map<number, any[]>();
-const overtimeCache = new Map<string, OvertimeListResponse>();
 
 // 모듈 레벨 로딩 상태 관리 (중복 호출 방지)
 const loadingStates = new Map<string, Promise<any>>();
@@ -64,336 +57,112 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
         const startDate = weekStartDate;
         const endDate = getWeekEndDate(weekStartDate);
 
-        const sdate = dayjs(startDate).format('YYYY-MM-DD');
-        const edate = dayjs(endDate).format('YYYY-MM-DD');
-
-        // 1. 멤버 목록 가져오기 (team_id 포함)
-        let teamIdsToQuery: number[] = [];
-        
+        // 팀 선택: 없으면 admin은 전체(팀 파라미터 없이 한 번 호출), manager는 본인 팀
+        let teamIdsToQuery: (number | null)[] = [];
         if (selectedTeamIds.length > 0) {
-          // 선택된 팀이 있으면 선택된 팀 사용
           teamIdsToQuery = selectedTeamIds;
         } else if (page === 'admin') {
-          // admin 페이지이고 선택된 팀이 없으면 모든 팀 조회
-          try {
-            const allTeams = await getTeams({});
-            teamIdsToQuery = allTeams.map(team => team.team_id);
-          } catch (error) {
-            console.error('팀 목록 로드 실패:', error);
-            teamIdsToQuery = user?.team_id ? [user.team_id] : [];
-          }
+          teamIdsToQuery = [null]; // 전체 조회
         } else {
-          // manager 페이지이거나 admin이 아닐 때는 사용자의 팀만
           teamIdsToQuery = user?.team_id ? [user.team_id] : [];
         }
-        
+
         if (teamIdsToQuery.length === 0) {
           setWorkingList([]);
           setLoading(false);
           return;
         }
 
-        // 멤버 목록 캐시 사용 (중복 호출 방지)
-        const memberPromises = teamIdsToQuery.map(async (teamId) => {
-          if (memberCache.has(teamId)) {
-            const cached = memberCache.get(teamId)!;
-            return cached.map(member => ({ ...member, team_id: member.team_id || teamId }));
-          }
-          
-          // 같은 teamId로 이미 로딩 중이면 대기
-          const memberCacheKey = `member-${teamId}`;
-          if (loadingStates.has(memberCacheKey)) {
-            try {
-              await loadingStates.get(memberCacheKey);
-              if (memberCache.has(teamId)) {
-                const cached = memberCache.get(teamId)!;
-                return cached.map(member => ({ ...member, team_id: member.team_id || teamId }));
-              }
-            } catch {
-              // 에러 무시
-            }
-          }
-          
-          const loadPromise = (async () => {
-            const members = await getMemberList(teamId);
-            const membersWithTeam = members.map(member => ({ ...member, team_id: member.team_id || teamId }));
-            memberCache.set(teamId, membersWithTeam);
-            return membersWithTeam;
-          })();
-          
-          loadingStates.set(memberCacheKey, loadPromise);
-          try {
-            return await loadPromise;
-          } finally {
-            loadingStates.delete(memberCacheKey);
-          }
-        });
-        const memberResults = await Promise.all(memberPromises);
-        const allTeamMembers = memberResults.flat();
-        
-        // 중복 제거
-        const teamMembers = allTeamMembers.filter((member, index, self) =>
-          index === self.findIndex(m => m.user_id === member.user_id)
-        );
-
-        // 2. 초과근무 목록 조회 (team_id로) - 모든 상태 포함 (H: 승인대기, T: 승인완료, N: 취소완료) - 캐시 사용
-        let allOvertimeResponse: OvertimeListResponse = { items: [], total: 0, page: 1, size: 1000, pages: 0 };
-        
-        try {
-          const flags = ['H', 'T', 'N']; // 승인대기, 승인완료, 취소완료 모두 조회
-          const overtimePromises = teamIdsToQuery.flatMap(teamId => 
-            flags.map(async (flag) => {
-              const cacheKey = `${teamId}-${flag}`;
-              if (overtimeCache.has(cacheKey)) {
-                return overtimeCache.get(cacheKey)!;
-              }
-              
-              // 같은 키로 이미 로딩 중이면 대기
-              if (loadingStates.has(cacheKey)) {
-                try {
-                  await loadingStates.get(cacheKey);
-                  if (overtimeCache.has(cacheKey)) {
-                    return overtimeCache.get(cacheKey)!;
-                  }
-                } catch {
-                  // 에러 무시
-                }
-              }
-              
-              const loadPromise = (async () => {
-                try {
-                  const result = await managerOvertimeApi.getManagerOvertimeList({ team_id: teamId, page: 1, size: 1000, flag });
-                  overtimeCache.set(cacheKey, result);
-                  return result;
-                } catch {
-                  const emptyResult = { items: [], total: 0, page: 1, size: 1000, pages: 0 };
-                  overtimeCache.set(cacheKey, emptyResult);
-                  return emptyResult;
-                }
-              })();
-              
-              loadingStates.set(cacheKey, loadPromise);
-              try {
-                return await loadPromise;
-              } finally {
-                loadingStates.delete(cacheKey);
-              }
-            })
-          );
-          const overtimeResults = await Promise.all(overtimePromises);
-          const allItems = overtimeResults.flatMap(result => result.items || []);
-          
-          // 중복 제거 (같은 id가 여러 번 조회될 수 있음)
-          const uniqueItems = allItems.filter((item, index, self) =>
-            index === self.findIndex(t => t.id === item.id)
-          );
-          
-          allOvertimeResponse = {
-            items: uniqueItems,
-            total: uniqueItems.length,
-            page: 1,
-            size: 1000,
-            pages: 1
-          };
-        } catch (error) {
-          // 초과근무 조회 실패 시 무시
-        }
-
-        // 3. 팀별로 근태 데이터 조회
-        const transformedData: any[] = []; // 정렬을 위해 임시로 any 사용
-
         // 주차 번호 계산
         const { year, week } = getWeekNumber(startDate);
-        
-        // 팀별로 그룹화
-        const teamGroups = new Map<number, typeof teamMembers>();
-        teamMembers.forEach(member => {
-          if (!teamGroups.has(member.team_id)) {
-            teamGroups.set(member.team_id, []);
-          }
-          teamGroups.get(member.team_id)!.push(member);
-        });
-        
-        // 각 팀별로 API 호출
-        for (const [teamId, members] of teamGroups) {
+
+        // 모든 팀(또는 전체) 호출 결과 모으기
+        const aggregatedWlog: any[] = [];
+        const aggregatedVacation: any[] = [];
+
+        for (const teamId of teamIdsToQuery) {
           try {
-            // 관리자 - 근태 로그 주간 조회 (팀별로 조회)
             let workLogResponse: any;
-            
-            // wlog/week API 캐시 사용 (중복 호출 방지)
-            const wlogCacheKey = `${teamId}-${week}-${year}-${page || ''}`;
-            if (wlogCache.has(wlogCacheKey)) {
-              workLogResponse = wlogCache.get(wlogCacheKey)!;
-            } else if (loadingStates.has(wlogCacheKey)) {
-              // 같은 키로 이미 로딩 중이면 대기
+
+            const cacheKey = `${teamId ?? 'all'}-${week}-${year}-${page || ''}`;
+            if (wlogCache.has(cacheKey)) {
+              workLogResponse = wlogCache.get(cacheKey)!;
+            } else if (loadingStates.has(cacheKey)) {
               try {
-                await loadingStates.get(wlogCacheKey);
-                if (wlogCache.has(wlogCacheKey)) {
-                  workLogResponse = wlogCache.get(wlogCacheKey)!;
+                await loadingStates.get(cacheKey);
+                if (wlogCache.has(cacheKey)) {
+                  workLogResponse = wlogCache.get(cacheKey)!;
                 }
               } catch {
-                // 에러 무시
+                // 무시
               }
             }
-            
+
             if (!workLogResponse) {
               const loadPromise = (async () => {
                 if (page === 'admin') {
-                  // Admin API 사용
                   const adminResponse = await managerWorkingApi.getAdminWorkLogsWeek({
-                    team_id: teamId,
+                    // team_id가 null이면 파라미터 없이 전체 조회
+                    ...(teamId != null ? { team_id: teamId } : {}),
                     weekno: week,
-                    yearno: year
-                  });
-                  // Admin API 응답을 WorkLogResponse 형식으로 변환
+                    yearno: year,
+                  } as any);
                   workLogResponse = {
                     wlog: adminResponse.wlog || [],
-                    vacation: adminResponse.vacation || []
+                    vacation: adminResponse.vacation || [],
                   };
                 } else {
-                  // Manager API 사용
                   workLogResponse = await managerWorkingApi.getManagerWorkLogsWeek({
-                    team_id: teamId,
+                    team_id: teamId || user?.team_id || 0,
                     weekno: week,
-                    yearno: year
+                    yearno: year,
                   });
                 }
-                wlogCache.set(wlogCacheKey, workLogResponse);
+                wlogCache.set(cacheKey, workLogResponse);
                 return workLogResponse;
               })();
-              
-              loadingStates.set(wlogCacheKey, loadPromise);
+
+              loadingStates.set(cacheKey, loadPromise);
               try {
                 workLogResponse = await loadPromise;
               } finally {
-                loadingStates.delete(wlogCacheKey);
+                loadingStates.delete(cacheKey);
               }
             }
-            
-            // 각 팀원별로 데이터 처리
-            for (const member of members) {
-              try {
-                // 해당 팀원의 데이터만 필터링
-                const memberWlogs = (workLogResponse.wlog || []).filter((w: any) => 
-                  w.user_id === member.user_id
-                );
-                const memberVacations = (workLogResponse.vacation || []).filter((v: any) => 
-                  v.user_id === member.user_id
-                );
 
-            // 스케줄 API를 통해 이벤트 가져오기 (해당 팀원) - 캐시 사용
-            let scheduleEvents: any[] = [];
-            try {
-              const { scheduleApi } = await import('@/api/calendar');
-              const year = startDate.getFullYear();
-              const month = startDate.getMonth() + 1;
-              
-              // 캐시 키: user_id + year-month
-              const scheduleCacheKey = `${member.user_id}-${year}-${month}`;
-              
-              let response: any;
-              if (scheduleCache.has(scheduleCacheKey)) {
-                response = scheduleCache.get(scheduleCacheKey)!;
-              } else if (loadingStates.has(scheduleCacheKey)) {
-                // 같은 키로 이미 로딩 중이면 대기
-                try {
-                  await loadingStates.get(scheduleCacheKey);
-                  if (scheduleCache.has(scheduleCacheKey)) {
-                    response = scheduleCache.get(scheduleCacheKey)!;
-                  }
-                } catch {
-                  // 에러 무시
-                }
-              }
-              
-              if (!response) {
-                const loadPromise = (async () => {
-                  // 승인완료(Y)와 승인대기(H) 모두 가져오기 위해 sch_status 파라미터 제거
-                  // (API가 배열을 받지 않을 수 있으므로 클라이언트에서 필터링)
-                  const result = await scheduleApi.getSchedules({ 
-                    year, 
-                    month, 
-                    user_id: member.user_id
-                  }) as any;
-                  scheduleCache.set(scheduleCacheKey, result);
-                  return result;
-                })();
-                
-                loadingStates.set(scheduleCacheKey, loadPromise);
-                try {
-                  response = await loadPromise;
-                } finally {
-                  loadingStates.delete(scheduleCacheKey);
-                }
-              }
-              
-              const schedules = Array.isArray(response?.items) ? response.items : (response?.items?.items || []);
-              
-              // 모든 일정(이벤트 + 휴가)을 vacation 형식으로 변환
-              schedules
-                .filter((sch: any) => {
-                  // 승인완료(Y) 또는 승인대기(H)만 + 해당 팀원 일정만
-                  return (sch.sch_status === 'Y' || sch.sch_status === 'H')
-                    && sch.user_id === member.user_id;
-                })
-                .forEach((sch: any) => {
-                  // 시작일부터 종료일까지 각 날짜에 대해 vacation 항목 생성
-                  // dayjs를 사용하여 날짜 문자열을 파싱 (한국 시간대 고려)
-                  const schStartDate = dayjs(sch.sch_sdate).startOf('day');
-                  const schEndDate = dayjs(sch.sch_edate).startOf('day');
-                  const weekStart = dayjs(startDate).startOf('day');
-                  const weekEnd = dayjs(endDate).startOf('day');
-                  
-                  // 시작일부터 종료일까지 반복
-                  let currentDate = schStartDate;
-                  while (currentDate.isBefore(schEndDate, 'day') || currentDate.isSame(schEndDate, 'day')) {
-                    const dateStr = currentDate.format('YYYY-MM-DD');
-                    
-                    // 해당 주간 범위 내에 있는 날짜만 추가
-                    if ((currentDate.isAfter(weekStart, 'day') || currentDate.isSame(weekStart, 'day')) 
-                        && (currentDate.isBefore(weekEnd, 'day') || currentDate.isSame(weekEnd, 'day'))) {
-                      scheduleEvents.push({
-                        user_id: member.user_id,
-                        user_nm: member.user_name || '',
-                        tdate: dateStr,
-                        stime: sch.sch_stime,
-                        etime: sch.sch_etime,
-                        wmin: 0,
-                        kind: sch.sch_type === 'event' 
-                          ? sch.sch_event_type  // 이벤트: remote, field, etc
-                          : sch.sch_vacation_type, // 휴가: day, half, quarter, official
-                        type: sch.sch_type === 'vacation' 
-                          ? sch.sch_vacation_time  // 휴가: morning, afternoon
-                          : '-', // 이벤트는 type 없음
-                        sch_created_at: sch.sch_created_at // created_at 추가
-                      });
-                    }
-                    
-                    // 다음 날로 이동
-                    currentDate = currentDate.add(1, 'day');
-                  }
-                });
-            } catch (err) {
-              // 스케줄 조회 실패 시 무시
-            }
+            // 팀 정보 보존
+            const annotateTeam = (arr: any[] = []) =>
+              arr.map((item) => ({ ...item, team_id: teamId ?? null }));
 
-            // 전체 초과근무 목록에서 해당 팀원의 것만 필터링
-            const memberOvertimes = allOvertimeResponse.items?.filter(
-              ot => ot.user_id === member.user_id
-            ) || [];
-            
-            // schedule API에서 모든 일정(휴가 + 이벤트)을 가져오므로 workLogResponse.vacation은 제외
-            // (중복 방지를 위해 schedule API 데이터만 사용)
-            const combinedVacations = scheduleEvents;
-            
-            // convertApiDataToWorkData로 주간 데이터 생성 (필터링된 데이터 사용)
-            const userWorkData = await convertApiDataToWorkData(
-              memberWlogs,
-              combinedVacations,
-              memberOvertimes,
-              weekStartDate,
-              member.user_id
-            );
+            aggregatedWlog.push(...annotateTeam(workLogResponse.wlog || []));
+            aggregatedVacation.push(...annotateTeam(workLogResponse.vacation || []));
+          } catch (err) {
+            // 실패 시 건너뜀
+          }
+        }
+
+        // 사용자별로 변환
+        const transformedData: any[] = [];
+
+        const uniqueUsers = Array.from(
+          new Map(
+            aggregatedWlog
+              .map((w) => [w.user_id, { user_id: w.user_id, user_name: w.user_nm, team_id: w.team_id }])
+          ).values()
+        );
+
+        for (const userInfo of uniqueUsers) {
+          const memberWlogs = aggregatedWlog.filter((w) => w.user_id === userInfo.user_id);
+          const memberVacations = aggregatedVacation.filter((v) => v.user_id === userInfo.user_id);
+
+          // schedule/초과근무 호출 없이 wlog + vacation만으로 생성
+          const userWorkData = await convertApiDataToWorkData(
+            memberWlogs,
+            memberVacations,
+            [], // overtime 미사용
+            weekStartDate,
+            userInfo.user_id
+          );
 
           // 주간 통계 계산
           const weeklyStats = calculateWeeklyStats(userWorkData);
@@ -469,9 +238,9 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
           };
 
           transformedData.push({
-            id: member.user_id,
-            department: member.team_name || '-',
-            name: member.user_name || member.user_id,
+            id: userInfo.user_id,
+            department: userInfo.team_id ?? '-',
+            name: userInfo.user_name || userInfo.user_id,
             workResult: userWorkData.some(d => d.totalHours > 0) ? '정상' : '-',
             weeklyTotal: `${weeklyStats.workHours}h ${weeklyStats.workMinutes}m`,
             monday: formatDayTime(userWorkData[0]),
@@ -482,15 +251,8 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
             saturday: formatDayTime(userWorkData[5]),
             sunday: formatDayTime(userWorkData[6]),
             note: '',
-            _teamId: member.team_id, // 정렬용 (임시)
+            _teamId: userInfo.team_id, // 정렬용 (임시)
           });
-              } catch (error) {
-                // 근태 로그 로드 실패 시 무시
-              }
-            }
-          } catch (error) {
-            // 팀 근태 로그 조회 실패 시 무시
-          }
         }
 
         // _teamId 제거 (임시 필드)
