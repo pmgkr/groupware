@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { getWorkTypeColor } from '@/utils/workTypeHelper';
 import { adminWlogApi, type LateComerResponse, type LateComerResponseItems } from '@/api/admin/wlog';
 import { useAuth } from '@/contexts/AuthContext';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 export interface LatecomerItem {
   userId: string;
@@ -17,6 +18,7 @@ export interface LatecomerItem {
   totalTime: string;
   workType: string;
   workTypeColorKey: string;
+  workTypes?: Array<{ type: string }>;
 }
 
 interface LatecomerProps {
@@ -46,18 +48,20 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
   const mapWorkType = (wtype?: string): { label: string; colorKey: string } => {
     const code = (wtype || '').trim().toLowerCase();
 
+    // 변형 코드 포괄 매핑 (quarter 오타 포함)
+    if (code.includes('quarter') || code.includes('quater')) {
+      return { label: '반반차', colorKey: '오전반반차' };
+    }
+    if (code.includes('half')) {
+      return { label: '반차', colorKey: '오전반차' };
+    }
+
     switch (code) {
-      case 'half':
-        // 반차 (오전/오후 정보는 latecomer 응답에 없으므로 그냥 "반차"로 표기)
-        return { label: '반차', colorKey: '오전반차' };
-      case 'quarter':
-        // 근태상세/휴가 화면과 동일하게 quarter -> 반반차
-        return { label: '반반차', colorKey: '오전반반차' };
       case '-':
       case '':
         return { label: '일반근무', colorKey: '일반근무' };
       default:
-        // 혹시 모르는 기타 코드(day, official 등)는 원본 그대로 표시, 색상은 기본값
+        // 기타 값은 원본 그대로 표시
         return { label: wtype || '-', colorKey: '-' };
     }
   };
@@ -211,13 +215,42 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
                         <TableCell className="text-center p-0">{latecomer.department}</TableCell>
                         <TableCell>{latecomer.userName}</TableCell>
                         <TableCell>
-                          <span
-                            className={`inline-flex self-center px-2 py-0.5 text-xs font-semibold rounded-full ${getWorkTypeColor(latecomer.workTypeColorKey)}`}
-                          >
-                            {latecomer.workType}
-                          </span>
+                          {(() => {
+                            const hasMultipleWorkTypes = latecomer.workTypes && latecomer.workTypes.length > 1;
+                            const latestWorkType = hasMultipleWorkTypes ? latecomer.workTypes![0].type : null;
+                            const otherWorkTypes = hasMultipleWorkTypes ? latecomer.workTypes!.slice(1) : [];
+                            const displayWorkType = hasMultipleWorkTypes ? latestWorkType! : latecomer.workType;
+
+                            return (
+                              <div className="flex items-center gap-1 justify-center">
+                                <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getWorkTypeColor(displayWorkType)}`}>
+                                  {displayWorkType}
+                                </span>
+                                {hasMultipleWorkTypes && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Badge variant="grayish" className="px-1 py-0 text-xs cursor-pointer">
+                                          +{otherWorkTypes.length}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <div className="flex flex-col gap-1">
+                                          {latecomer.workTypes!.map((wt, idx) => (
+                                            <div key={idx} className="text-sm">
+                                              {wt.type}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </TableCell>
-                        <TableCell className="text-red-600 font-medium">
+                        <TableCell className="text-red-600">
                           {latecomer.checkInTime}
                         </TableCell>
                         <TableCell>
