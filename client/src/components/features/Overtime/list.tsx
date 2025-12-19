@@ -9,8 +9,7 @@ import { workingApi } from '@/api/working';
 import { managerOvertimeApi } from '@/api/manager/overtime';
 import { adminOvertimeApi, type overtimeItem } from '@/api/admin/overtime';
 import { getTeams } from '@/api/admin/teams';
-import { getTeams as getCommonTeams } from '@/api/teams';
-import { getMemberList } from '@/api/common/team';
+import { getTeams as getManagerTeams } from '@/api/manager/teams';
 import type { OvertimeItem } from '@/api/working';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -114,7 +113,7 @@ export default function OvertimeList({
       try {
         const teamList = isPage === 'admin' 
           ? await getTeams({})
-          : await getCommonTeams({});
+          : await getManagerTeams({});
         setTeams(teamList.map(t => ({ team_id: t.team_id, team_name: t.team_name })));
         teamsLoadedRef.current = true;
       } catch (error) {
@@ -124,7 +123,18 @@ export default function OvertimeList({
   }, [isPage]);
 
   // teamIds를 문자열로 변환하여 안정적인 의존성 생성
-  const teamIdsKey = useMemo(() => [...teamIds].sort((a, b) => a - b).join(','), [teamIds]);
+  const resolvedTeamIds = useMemo(() => {
+    if (teamIds.length === 0 && isPage === 'manager') {
+      // 팀 미선택 시: manager는 자신의 모든 팀(teams state) 사용
+      return teams.map((t) => t.team_id);
+    }
+    return teamIds;
+  }, [teamIds, isPage, teams]);
+
+  const teamIdsKey = useMemo(() => {
+    if (resolvedTeamIds.length === 0) return 'all';
+    return [...resolvedTeamIds].sort((a, b) => a - b).join(',');
+  }, [resolvedTeamIds]);
 
   // 데이터 조회 함수
   const fetchOvertimeData = useCallback(async () => {
@@ -132,7 +142,7 @@ export default function OvertimeList({
     if (loadingRef.current) return;
     
     // 같은 teamIds 조합이면 스킵
-    if (lastTeamIdsKeyRef.current === teamIdsKey && teamIdsKey !== '') {
+    if (lastTeamIdsKeyRef.current === teamIdsKey) {
       return;
     }
 
@@ -140,23 +150,17 @@ export default function OvertimeList({
     lastTeamIdsKeyRef.current = teamIdsKey;
     setLoading(true);
     try {
-      // teamIds가 없으면 데이터 조회하지 않음 (Toolbar에서 항상 전달해야 함)
-      if (teamIds.length === 0) {
-        setAllData([]);
-        setLoading(false);
-        return;
-      }
-      
-      const teamIdsToQuery = teamIds;
+      const teamIdsToQuery = resolvedTeamIds;
       
       if (isPage === 'admin') {
         // Admin API 사용: 각 팀별로 데이터 조회
         // flag는 필터 상태에 따라 결정 (H: 승인대기, T: 승인완료/보상대기, Y: 보상완료, N: 취소완료)
         // 모든 상태를 조회하기 위해 빈 문자열 또는 undefined 사용
-        const promises = teamIdsToQuery.map(teamId => 
-          adminOvertimeApi.getOvertimeList(teamId, 1, 1000, '')
-        );
-        const responses = await Promise.all(promises);
+        const responses = teamIdsToQuery.length === 0
+          ? [await adminOvertimeApi.getOvertimeList(0, 1, 1000, '')] // 0이면 전체
+          : await Promise.all(teamIdsToQuery.map(teamId => 
+              adminOvertimeApi.getOvertimeList(teamId, 1, 1000, '')
+            ));
         const allItems = responses.flatMap(response => response.items || []);
         
         // overtimeItem을 OvertimeItem으로 변환 (ot_stime이 null일 수 있음)
@@ -173,14 +177,18 @@ export default function OvertimeList({
         setAllData(uniqueItems);
       } else {
         // Manager API 사용
-        const promises = teamIdsToQuery.map(teamId => 
-          managerOvertimeApi.getManagerOvertimeList({
-            team_id: teamId,
-            page: 1,
-            size: 1000
-          })
-        );
-        const responses = await Promise.all(promises);
+        const responses = teamIdsToQuery.length === 0
+          ? [await managerOvertimeApi.getManagerOvertimeList({ page: 1, size: 1000, flag: '' })]
+          : await Promise.all(
+              teamIdsToQuery.map(teamId =>
+                managerOvertimeApi.getManagerOvertimeList({
+                  team_id: teamId,
+                  page: 1,
+                  size: 1000,
+                  flag: '',
+                })
+              )
+            );
         const allItems = responses.flatMap(response => response.items || []);
         
         // 중복 제거 (같은 id가 여러 번 조회될 수 있음)

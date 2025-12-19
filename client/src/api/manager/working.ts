@@ -26,7 +26,7 @@ export interface WorkLogResponse {
 
 // 관리자 근태 로그 주간 조회 파라미터
 export interface ManagerWorkLogWeekParams {
-  team_id: number;
+  team_id?: number | null;
   weekno: number;
   yearno: number;
 }
@@ -60,7 +60,9 @@ export const managerWorkingApi = {
   getManagerWorkLogsWeek: async (params: ManagerWorkLogWeekParams): Promise<WorkLogResponse> => {
     const queryParams = new URLSearchParams();
     
-    queryParams.append('team_id', params.team_id.toString());
+    if (params.team_id !== undefined && params.team_id !== null) {
+      queryParams.append('team_id', params.team_id.toString());
+    }
     queryParams.append('weekno', params.weekno.toString());
     queryParams.append('yearno', params.yearno.toString());
 
@@ -90,7 +92,7 @@ export const managerWorkingApi = {
 
   // 관리자 - 근태 로그 주간 조회 (어드민)
   getAdminWorkLogsWeek: async (params: ManagerWorkLogWeekParams): Promise<WlogWeekListResponse> => {
-    return await adminWlogApi.getWlogWeekList(params.team_id, params.weekno, params.yearno);
+    return await adminWlogApi.getWlogWeekList(params.team_id ?? null, params.weekno, params.yearno);
   },
 
   // 출퇴근 시간 수정/등록 (어드민)

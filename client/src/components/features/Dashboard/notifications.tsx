@@ -11,6 +11,7 @@ import { notificationApi, type Notification } from '@/api/notification';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getImageUrl, getAvatarFallback } from '@/utils';
+import { getProfileImageUrl } from '@/utils/profileImageHelper';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/ko';
@@ -176,10 +177,8 @@ export function Notification() {
   // 알림 아이템 렌더링 함수
   const renderNotificationItem = (noti: Notification) => {
     const displayName = noti.target_name || noti.noti_target || '';
-    const profileSrc = noti.target_image
-      ? `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${noti.target_image}`
-      : getImageUrl('dummy/profile');
     const fallbackKey = displayName || noti.noti_target || '';
+    const profileSrc = getProfileImageUrl(noti.target_image);
 
     return (
       <li

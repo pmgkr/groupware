@@ -11,7 +11,7 @@ import { workingApi } from '@/api/working';
 import { managerOvertimeApi } from '@/api/manager/overtime';
 import { managerWorkingApi } from '@/api/manager/working';
 import { Settings } from 'lucide-react';
-import { getHolidayNameCached } from '@/services/holidayApi';
+import { getCachedHolidays } from '@/services/holidayApi';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
@@ -102,14 +102,29 @@ export default function WorkingList({
   useEffect(() => {
     const loadHolidayNames = async () => {
       if (!weekStartDate) return;
-      
-      const names = await Promise.all(
-        Array.from({ length: 7 }, async (_, index) => {
-          const date = dayjs(weekStartDate).add(index, 'day').toDate();
-          return await getHolidayNameCached(date);
-        })
-      );
-      
+
+      // 이번 주에 포함된 연도만 추출 (연말/연초跨 가능)
+      const dates = Array.from({ length: 7 }, (_, index) => dayjs(weekStartDate).add(index, 'day'));
+      const years = Array.from(new Set(dates.map((d) => d.year())));
+
+      // 연도별 공휴일을 한 번씩만 호출
+      const holidaysByYear = await Promise.all(years.map((y) => getCachedHolidays(y)));
+      const holidayMap = new Map<string, string>(); // YYYYMMDD -> name
+      holidaysByYear.forEach((holidays) => {
+        holidays.forEach((h) => {
+          if (h.date && (h as any).dateName) {
+            holidayMap.set(h.date, (h as any).dateName);
+          } else if (h.locdate && (h as any).dateName) {
+            holidayMap.set(String(h.locdate), (h as any).dateName);
+          }
+        });
+      });
+
+      const names = dates.map((d) => {
+        const key = d.format('YYYYMMDD');
+        return holidayMap.get(key) || null;
+      });
+
       setHolidayNames(names);
     };
 
