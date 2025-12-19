@@ -760,7 +760,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                           type="button"
                           variant="outlinePrimary"
                           size="xs"
-                          className="border-0"
+                          className="text-primary-blue-500 flex cursor-pointer items-center gap-1 border-0 bg-white! text-sm shadow-none hover:underline"
                           onClick={() => {
                             console.log('🔍 버튼 클릭 - 현재 index:', index);
                             setActiveRowIndex(index); // ✅ 이게 제대로 호출되는지 확인
