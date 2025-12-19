@@ -539,7 +539,7 @@ export default function VacationList({
       setCheckedItems([]);
       setCheckAll(false);
       onCheckedItemsChange([]);
-      fetchScheduleData();
+      await fetchScheduleData();
     } catch (error) {
       addAlert({
         title: "승인 실패",

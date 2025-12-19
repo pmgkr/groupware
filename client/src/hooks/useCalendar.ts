@@ -66,7 +66,7 @@ export function useCalendar({ filterMyEvents = false }: UseCalendarProps) {
       // 알림 전송
       // 라벨 처리 (휴가/이벤트 공통)
       const eventLabel = defaultEventTitleMapper(eventData?.eventType || '') || (eventData.title || '일정');
-      const rangeText = getDateRangeTextSimple(eventData?.startDate, eventData?.endDate, eventData?.startTime, eventData?.endTime, eventData?.allDay);
+      const rangeText = getDateRangeTextSimple(eventData?.startDate, eventData?.endDate, eventData?.allDay);
       if (user?.team_id != null) {
         try {
           const manager = await findManager(user.team_id);
