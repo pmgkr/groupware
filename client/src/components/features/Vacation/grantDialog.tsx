@@ -9,6 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { adminVacationApi } from '@/api/admin/vacation';
 import { useToast } from '@/components/ui/use-toast';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { notificationApi } from '@/api/notification';
+import { useAuth } from '@/contexts/AuthContext';
+
 
 interface GrantDialogProps {
   isOpen: boolean;
@@ -21,6 +24,7 @@ interface GrantDialogProps {
 export default function GrantDialog({ isOpen, onClose, userId, userName, onSuccess }: GrantDialogProps) {
   const { toast } = useToast();
   const { addAlert } = useAppAlert();
+  const { user } = useAuth();
   const [vaYear, setVaYear] = useState<string>('');
   const [vaType, setVaType] = useState<string>('');
   const [vCount, setVCount] = useState<string>('1');
@@ -118,6 +122,17 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
       // 부여 다이얼로그 닫기
       onClose();
       
+      // 알림 전송
+      await notificationApi.registerNotification({
+        user_id: userId!,
+        user_name: userName!,
+        noti_target: user?.user_id!,
+        noti_title: `${parseInt(vaYear)}년도 ${typeName} ${count}일 부여`,
+        noti_message: `휴가를 부여했습니다.`,
+        noti_type: 'vacation',
+        noti_url: '/mypage/vacation',
+      });
+
       // 성공 알림 표시
       addAlert({
         title: '휴가 부여 완료',
