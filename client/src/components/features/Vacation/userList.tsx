@@ -150,14 +150,16 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
 
       if (isManagerPage) {
         // 매니저 API: 페이지 기반 -> 모든 페이지 로드
-        const first = await managerVacationApi.getVacationList(currentYear, teamIds.length ? teamIds : undefined, 1, 100);
+        const myTeamIds = teamsData.map((t) => t.team_id).filter((id) => id != null);
+        const managerTeamIds = teamIds.length ? teamIds : myTeamIds;
+        const first = await managerVacationApi.getVacationList(currentYear, managerTeamIds.length ? managerTeamIds : undefined, 1, 100);
         filteredItems = first.list || [];
 
         if (first.total > first.size) {
           const totalPages = Math.ceil(first.total / first.size);
           const requests = [];
           for (let p = 2; p <= totalPages; p++) {
-            requests.push(managerVacationApi.getVacationList(currentYear, teamIds.length ? teamIds : undefined, p, first.size));
+            requests.push(managerVacationApi.getVacationList(currentYear, managerTeamIds.length ? managerTeamIds : undefined, p, first.size));
           }
           const responses = await Promise.all(requests);
           responses.forEach(res => {
@@ -220,6 +222,15 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
           va_long: item.va_long,
           daycount: (item as any).daycount || 0
         };
+      });
+
+      // 부서 → 이름 순 정렬
+      converted.sort((a, b) => {
+        const depA = a.department || '';
+        const depB = b.department || '';
+        const depDiff = depA.localeCompare(depB, 'ko');
+        if (depDiff !== 0) return depDiff;
+        return (a.name || '').localeCompare(b.name || '', 'ko');
       });
 
       setDisplayData(converted);
