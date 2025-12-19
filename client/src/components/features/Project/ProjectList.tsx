@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation, useSearchParams } from 'react-router';
 import { getProjectList, type ProjectListItem, getClientList, getTeamList, getBookmarkList, addBookmark, removeBookmark } from '@/api';
 import { cn } from '@/lib/utils';
 import { ProjectCreateForm } from './_components/ProjectCreate';
@@ -14,6 +15,9 @@ import { ProjectRow } from './_components/ProjectListRow';
 import { Star, RefreshCw } from 'lucide-react';
 
 export default function ProjectList() {
+  const { search } = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
+
   const [registerDialog, setRegisterDialog] = useState(false);
 
   // 프로젝트 리스트 API 조회용 State
