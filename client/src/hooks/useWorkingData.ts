@@ -255,8 +255,17 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
           });
         }
 
-        // _teamId 제거 (임시 필드)
-        const cleanedData = transformedData.map(({ _teamId, ...rest }: any) => rest);
+        // _teamId 제거 (임시 필드) 후 정렬 (부서 → 이름)
+        const cleanedData = transformedData
+          .map(({ _teamId, ...rest }: any) => rest)
+          .sort((a: any, b: any) => {
+            const depA = String(a.department ?? '');
+            const depB = String(b.department ?? '');
+            if (depA !== depB) return depA.localeCompare(depB, 'ko');
+            const nameA = String(a.name ?? '');
+            const nameB = String(b.name ?? '');
+            return nameA.localeCompare(nameB, 'ko');
+          });
 
         setWorkingList(cleanedData);
       } catch (error) {
