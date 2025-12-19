@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { managerWorkingApi } from '@/api/manager/working';
+import { getTeams as getManagerTeams } from '@/api/manager/teams';
 import { useAuth } from '@/contexts/AuthContext';
 import type { WorkData } from '@/types/working';
 import type { WorkingListItem, DayWorkInfo } from '@/components/working/list';
@@ -57,14 +58,24 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
         const startDate = weekStartDate;
         const endDate = getWeekEndDate(weekStartDate);
 
-        // 팀 선택: 없으면 admin은 전체(팀 파라미터 없이 한 번 호출), manager는 본인 팀
+        // 팀 선택: 없으면 admin은 전체, manager는 담당 모든 팀
         let teamIdsToQuery: (number | null)[] = [];
         if (selectedTeamIds.length > 0) {
           teamIdsToQuery = selectedTeamIds;
         } else if (page === 'admin') {
-          teamIdsToQuery = [null]; // 전체 조회
+          teamIdsToQuery = [0]; // 전체 조회용 team_id=0
         } else {
-          teamIdsToQuery = user?.team_id ? [user.team_id] : [];
+          try {
+            const myTeams = await getManagerTeams({});
+            const ids = myTeams.map((t: any) => t.team_id).filter((id: any) => id != null);
+            if (ids.length > 0) {
+              teamIdsToQuery = ids;
+            } else {
+              teamIdsToQuery = user?.team_id ? [user.team_id] : [];
+            }
+          } catch {
+            teamIdsToQuery = user?.team_id ? [user.team_id] : [];
+          }
         }
 
         if (teamIdsToQuery.length === 0) {
