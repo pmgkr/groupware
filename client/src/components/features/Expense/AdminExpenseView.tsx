@@ -201,11 +201,11 @@ export default function NexpenseView() {
       setDialogOpen(false);
       setRefreshKey((prev) => prev + 1);
     } catch (err) {
-      console.error('❌ 승인 실패:', err);
+      console.error('❌ 반려 실패:', err);
 
       addAlert({
-        title: '비용 승인 실패',
-        message: `승인 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+        title: '비용 반려 실패',
+        message: `반려 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
         icon: <OctagonAlert />,
         duration: 2000,
       });
@@ -476,7 +476,7 @@ export default function NexpenseView() {
         </div>
       </div>
 
-      {/* ---------------- 증빙 사유 다이얼로그 ---------------- */}
+      {/* ---------------- 비용 반려 다이얼로그 ---------------- */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>

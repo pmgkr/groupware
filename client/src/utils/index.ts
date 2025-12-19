@@ -7,3 +7,5 @@ export * from './fileValidator';
 export * from './excelMapper';
 export * from './cleanPrams';
 export * from './queue';
+export * from './yearOptions';
+export * from './sortIcon';

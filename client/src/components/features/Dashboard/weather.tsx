@@ -1,48 +1,51 @@
-// src/components/WeatherCard.tsx
 import { useEffect, useState } from 'react';
-import { fetchGangnamTeheran132, skyText, ptyText, type VilageRow } from '@/types/weather';
+import { getCachedCurrentWeather } from '@/services/weatherApi';
+import type { Weather as WeatherType } from '@/services/weatherApi';
+import { skyText, ptyText } from '@/types/weather';
 
 export default function Weather() {
-  const [rows, setRows] = useState<VilageRow[] | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [weather, setWeather] = useState<WeatherType | null>(null);
 
   useEffect(() => {
-    fetchGangnamTeheran132()
-      .then(setRows)
-      .catch((e) => setErr(String(e)));
+    const fetchWeather = async () => {
+      try {
+        const weatherData = await getCachedCurrentWeather();
+        if (weatherData) {
+          setWeather(weatherData);
+        }
+      } catch (error) {
+        console.error('날씨 정보 조회 실패:', error);
+      }
+    };
+
+    fetchWeather();
   }, []);
 
-  if (err) return <div>날씨를 불러올 수 없어요 😞</div>;
-  if (!rows) return <div>날씨를 불러오는 중…</div>;
-
-  const upcoming = rows.slice(0, 8);
-
   return (
-    <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, maxWidth: 560 }}>
-      <h3 style={{ margin: '0 0 8px' }}>강남구 테헤란로 132 단기예보</h3>
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 10 }}>
-        {upcoming.map((r) => (
-          <li key={`${r.date}${r.time}`} style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: 12 }}>
-            <div>
-              <strong>{r.time.slice(0, 2)}:00</strong>
-              <div style={{ fontSize: 12, opacity: 0.7 }}>
-                {r.date.slice(4, 6)}/{r.date.slice(6, 8)}
-              </div>
-            </div>
-            <div>
-              <div>
-                {r.TMP ?? '-'}℃ · {skyText(r.SKY)}
-                {r.PTY && r.PTY !== '0' ? ` · ${ptyText(r.PTY)}` : ''}
-              </div>
-              <div style={{ fontSize: 12, opacity: 0.7 }}>
-                {r.POP ? `강수확률 ${r.POP}% · ` : ''}
-                {r.REH ? `습도 ${r.REH}% · ` : ''}
-                {r.WSD ? `풍속 ${r.WSD} m/s` : ''}
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+    <div className="flex items-center gap-1">
+      {weather ? (
+        <>
+          <span className="text-gray-800">{weather.locationName || '서울 강남구'}</span>
+          <span>
+            {weather.TMP ? `${weather.TMP}°C` : '-'}
+            {weather.SKY && `, ${skyText(weather.SKY)}`}
+            {weather.PTY && weather.PTY !== '0' && `, ${ptyText(weather.PTY)}`}
+          </span>
+          {weather.SKY === '1' && <span>🌤️</span>} {/* 맑음 */}
+          {weather.SKY === '2' && <span>🌤️</span>} {/* 구름 조금 */}
+          {weather.SKY === '3' && <span>⛅</span>} {/* 구름많음 */}
+          {weather.SKY === '4' && <span>☁️</span>} {/* 흐림 */}
+          {weather.PTY === '1' && <span>☔</span>} {/* 비 */}
+          {weather.PTY === '2' && <span>☔☃️</span>} {/* 비/눈 */}
+          {weather.PTY === '3' && <span>☃️</span>} {/* 눈 */}
+          {weather.PTY === '4' && <span>🌂</span>} {/* 소나기 */}
+          {weather.PTY === '5' && <span>🌧️</span>} {/* 빗방울 */}
+          {weather.PTY === '6' && <span>🌧️🌨️</span>} {/* 빗방울/눈날림 */}
+          {weather.PTY === '7' && <span>️❄️</span>} {/* 눈날림 */}
+        </>
+      ) : (
+        <span>날씨 정보 로딩중</span>
+      )}
     </div>
   );
 }
