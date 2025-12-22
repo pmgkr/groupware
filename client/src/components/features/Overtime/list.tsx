@@ -146,8 +146,7 @@ export default function OvertimeList({
       
       if (isPage === 'admin') {
         // Admin API 사용: 각 팀별로 데이터 조회
-        // flag는 필터 상태에 따라 결정 (H: 승인대기, T: 승인완료/보상대기, Y: 보상완료, N: 취소완료)
-        // 모든 상태를 조회하기 위해 빈 문자열 또는 undefined 사용
+        // teamIds가 비어있으면 전체 조회 (undefined 전달)
         const responses = teamIdsToQuery.length === 0
           ? [await adminOvertimeApi.getOvertimeList(undefined, 1, 1000, '')]
           : await Promise.all(teamIdsToQuery.map(teamId => 
@@ -169,10 +168,15 @@ export default function OvertimeList({
         setAllData(uniqueItems);
       } else {
         // Manager API 사용
-        const responses = teamIdsToQuery.length === 0
+        // teamIds가 비어있으면 (필터 미선택), 관리중인 모든 팀의 데이터를 각각 조회하여 병합
+        const targetTeamIds = teamIdsToQuery.length > 0 
+          ? teamIdsToQuery 
+          : teams.map(t => t.team_id);
+
+        const responses = targetTeamIds.length === 0
           ? [await managerOvertimeApi.getManagerOvertimeList({ page: 1, size: 1000, flag: '' })]
           : await Promise.all(
-              teamIdsToQuery.map(teamId =>
+              targetTeamIds.map(teamId =>
                 managerOvertimeApi.getManagerOvertimeList({
                   team_id: teamId,
                   page: 1,
@@ -196,7 +200,7 @@ export default function OvertimeList({
       setLoading(false);
       loadingRef.current = false;
     }
-  }, [teamIdsKey, isPage]);
+  }, [teamIdsKey, isPage, teams]);
 
   // 데이터 조회
   useEffect(() => {

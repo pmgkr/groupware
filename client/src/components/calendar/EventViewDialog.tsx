@@ -116,7 +116,7 @@ export default function EventViewDialog({
                       user_name: manager.name,
                       noti_target: user_id!,
                       noti_title: `${eventLabel} (${rangeText})`,
-                      noti_message: `일정 취소를 요청했습니다.`,
+                      noti_message: `${user_name}님이 일정 취소를 요청했습니다.`,
                       noti_type: selectedEvent?.category || '',
                       noti_url: '/manager/vacation',
                     });
@@ -194,7 +194,7 @@ export default function EventViewDialog({
             user_name: selectedEvent?.author!,
             noti_target: user_id!, // 발신자: 현재 사용자(승인자)
             noti_title: `${eventLabel} (${rangeText})`,
-            noti_message: `일정 취소를 승인했습니다.`,
+            noti_message: `${user_name}님이 일정 취소를 승인했습니다.`,
             noti_type: selectedEvent?.category || '',
             noti_url: '/calendar',
           });

@@ -26,9 +26,16 @@ import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
 import { Calendar, TooltipNoti, Close } from '@/assets/images/icons';
 import { FileText, UserRound, OctagonAlert } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 import { format, parseISO } from 'date-fns';
 import { statusIconMap, getLogMessage } from '../Expense/utils/statusUtils';
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { getMyAccounts, type BankAccount } from '@/api/mypage';
+import { AccountSelectDialog } from '../Expense/_components/AccountSelectDialog';
+import { getProposalList, matchProjectWithProposal, type ProposalItem } from '@/api/expense/proposal';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // ✅ zod schema
 const editSchema = z.object({
@@ -52,7 +59,7 @@ const editSchema = z.object({
         price: z.string().optional(),
         tax: z.string().optional(),
         total: z.string().optional(),
-        pro_id: z.string().optional(),
+        pro_id: z.string().nullable().optional(),
       })
     )
     .optional(),
@@ -84,6 +91,7 @@ export default function ProjectExpenseEdit() {
   const [data, setData] = useState<ExpenseViewDTO | null>(null);
   const [header, setHeader] = useState<any>(null);
   const [logs, setLogs] = useState<any>(null);
+  const depositPicker = useToggleState();
 
   const [newAttachments, setNewAttachments] = useState<Record<number, PreviewFile[]>>({}); // 새 증빙자료 State
   const [rowAttachments, setRowAttachments] = useState<Record<number, UploadedPreviewFile[]>>({}); // 기존 증빙자료 State
@@ -140,6 +148,51 @@ export default function ProjectExpenseEdit() {
       }
     })();
   }, []);
+  //내계좌 불러오기
+  const [accountList, setAccountList] = useState<BankAccount[]>([]);
+  const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getMyAccounts();
+        setAccountList(data);
+      } catch (err) {
+        console.error('❌ 계좌 목록 불러오기 실패:', err);
+      }
+    })();
+  }, []);
+  const handleFillMyMainAccount = () => {
+    const mainAcc = accountList.find((acc) => acc.flag === 'mine');
+
+    if (!mainAcc) {
+      addAlert({
+        title: '계좌 없음',
+        message: '대표 계좌가 등록되어 있지 않습니다.',
+        icon: <OctagonAlert />,
+        duration: 2500,
+      });
+      return;
+    }
+
+    form.setValue('bank_account', mainAcc.bank_account);
+    form.setValue('bank_code', bankList.find((b) => b.name === mainAcc.bank_name)?.code || '');
+    form.setValue('bank_name', mainAcc.bank_name);
+    form.setValue('account_name', mainAcc.account_name);
+  };
+
+  //계좌 선택
+  const handleOpenAccountDialog = () => {
+    setAccountDialogOpen(true);
+  };
+
+  const handleSelectAccount = (acc: BankAccount) => {
+    form.setValue('bank_account', acc.bank_account);
+    form.setValue('bank_code', bankList.find((b) => b.name === acc.bank_name)?.code || '');
+    form.setValue('bank_name', acc.bank_name);
+    form.setValue('account_name', acc.account_name);
+
+    setAccountDialogOpen(false);
+  };
 
   useEffect(() => {
     (async () => {
@@ -164,6 +217,8 @@ export default function ProjectExpenseEdit() {
           price: i.ei_amount.toString(),
           tax: i.ei_tax.toString(),
           total: i.ei_total.toString(),
+          pro_id: i.pro_id ? String(i.pro_id) : null,
+          rp_title: i.rp_title || null,
         }));
 
         reset({
@@ -235,6 +290,38 @@ export default function ProjectExpenseEdit() {
     }
   };
 
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertDescription, setAlertDescription] = useState('');
+  const [successState, setSuccessState] = useState(false);
+  const [activeRowIndex, setActiveRowIndex] = useState<number | null>(null);
+  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [proposalList, setProposalList] = useState<ProposalItem[]>([]);
+  const [selectedProposalId, setSelectedProposalId] = useState<number | null>(null);
+  const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
+  const [selectedProposalByRow, setSelectedProposalByRow] = useState<Record<number, number>>({});
+
+  const handleOpenMatchingDialog = async () => {
+    setDialogOpen(true);
+
+    const flag = 'P';
+
+    try {
+      // 응답 구조: { ok: boolean, items: ProposalItem[] }
+      const res = await getProposalList(flag);
+
+      const proposals = res.items ?? [];
+
+      const filtered = proposals.filter((p) => ['프로젝트'].includes(p.rp_category) && !p.rp_expense_no);
+
+      setProposalList(filtered);
+    } catch (err) {
+      console.error('기안서 리스트 불러오기 실패:', err);
+    }
+  };
+
+  const hasProposalList = proposalList.length === 0;
+
   const handleConfirmSubmit = async (values: EditFormValues) => {
     try {
       // 새 업로드할 파일 목록 정리
@@ -304,6 +391,7 @@ export default function ProjectExpenseEdit() {
       // 3️⃣ item 병합
       const enrichedItems = (values.expense_items ?? []).map((item, idx) => {
         const rowIdx = idx + 1;
+        const selectedProId = selectedProposalByRow[idx] ?? (item.pro_id ? Number(item.pro_id) : null);
 
         // (1) 기존 서버 첨부파일
         const existingAtt =
@@ -329,7 +417,7 @@ export default function ProjectExpenseEdit() {
           ei_amount: Number(item.price || 0),
           ei_tax: Number(item.tax || 0),
           ei_total: Number(item.total || 0),
-          pro_id: !item.pro_id || item.pro_id === '0' || isNaN(Number(item.pro_id)) ? null : Number(item.pro_id),
+          pro_id: selectedProId ?? item.pro_id,
           attachments: [...existingAtt, ...newAtt],
         };
       });
@@ -361,7 +449,8 @@ export default function ProjectExpenseEdit() {
           ei_amount: item.ei_amount,
           ei_tax: item.ei_tax,
           ei_total: item.ei_total,
-          pro_id: item.pro_id,
+          //pro_id: item.pro_id,
+          pro_id: selectedProposalId,
           attachments: item.attachments.map((att: any) => ({
             filename: att.fname,
             savename: att.sname,
@@ -377,6 +466,74 @@ export default function ProjectExpenseEdit() {
       console.log('반환 타입', res);
 
       if (res.ok) {
+        const itemSeq = (res as any).updated?.item_seqs ?? [];
+
+        if (itemSeq.length === 0) {
+          console.error('❌ 응답에서 item_seqs를 찾을 수 없음');
+          setAlertTitle('수정 실패');
+          setAlertDescription('아이템 정보를 가져오지 못했습니다.');
+          setAlertOpen(true);
+          return;
+        }
+        const selectedProId = enrichedItems.find((item) => item.pro_id !== null)?.pro_id ?? null;
+
+        // 원본 데이터의 기안서 ID와 비교
+        const originalProId = data?.items?.[0]?.pro_id ?? null;
+        const isProposalChanged = selectedProId !== originalProId;
+
+        console.log('🔍 기안서 변경 여부:', {
+          원본: originalProId,
+          현재: selectedProId,
+          변경됨: isProposalChanged,
+        });
+
+        if (selectedProId && isProposalChanged) {
+          try {
+            // enrichedItems와 itemSeqs의 순서가 동일하므로 매핑
+            const matchPromises = enrichedItems
+              .map((item, index) => ({
+                pro_id: item.pro_id,
+                item_seq: itemSeq[index],
+              }))
+              .filter(({ pro_id, item_seq }) => pro_id && item_seq !== undefined) // item_seq가 존재하는지 확인
+              .map(async ({ pro_id, item_seq }) => {
+                const matchResult = (await matchProjectWithProposal(pro_id as number, item_seq as number)) as {
+                  success: boolean;
+                  result: { type: string };
+                };
+
+                if (matchResult.success) {
+                  console.log(`✅ 기안서 ${pro_id} - 아이템 ${item_seq} 매칭 완료`);
+                } else {
+                  console.error(`❌ 기안서 ${pro_id} - 아이템 ${item_seq} 매칭 실패`);
+                }
+
+                return matchResult.success;
+              });
+
+            if (matchPromises.length === 0) {
+              console.log('ℹ️ 매칭할 아이템 없음');
+            } else {
+              const results = await Promise.all(matchPromises);
+              const allSuccess = results.every((r) => r);
+
+              if (!allSuccess) {
+                throw new Error('일부 매칭 실패');
+              }
+
+              console.log('✅ 모든 기안서 매칭 완료');
+            }
+          } catch (e) {
+            console.error('❌ 기안서 매칭 실패:', e);
+            setAlertTitle('부분 실패');
+            setAlertDescription('비용은 수정되었으나 기안서 매칭에 실패했습니다.');
+            setAlertOpen(true);
+            return;
+          }
+        } else if (selectedProId && !isProposalChanged) {
+          console.log('ℹ️ 기안서 변경 없음 - 매칭 API 호출 스킵');
+        }
+
         addAlert({
           title: '비용 수정 완료',
           message: `${res.updated.itemCount} 건의 프로젝트 비용이 수정되었습니다.`,
@@ -493,16 +650,20 @@ export default function ProjectExpenseEdit() {
                           </FormLabel>
                           <div className="flex h-5.5 overflow-hidden rounded-[var(--spacing)] border-1 border-gray-300">
                             <Button
+                              type="button"
                               variant="svgIcon"
                               size="icon"
                               title="내 대표계좌"
+                              onClick={handleFillMyMainAccount}
                               className="bg-primary-blue-500/60 hover:bg-primary-blue-500/80 h-full rounded-none">
                               <UserRound className="size-3.5 text-white" />
                             </Button>
                             <Button
+                              type="button"
                               variant="svgIcon"
                               size="icon"
                               title="내 계좌리스트"
+                              onClick={handleOpenAccountDialog}
                               className="h-full rounded-none bg-gray-400 hover:bg-gray-500/80">
                               <FileText className="size-3.5 text-white" />
                             </Button>
@@ -586,19 +747,26 @@ export default function ProjectExpenseEdit() {
                     )}
                   />
                 </div>
+                <AccountSelectDialog
+                  open={accountDialogOpen}
+                  onOpenChange={setAccountDialogOpen}
+                  accounts={accountList}
+                  bankList={bankList}
+                  onSelect={handleSelectAccount}
+                />
 
                 <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
                   <FormField
                     control={control}
                     name="el_deposit"
                     render={({ field }) => {
-                      const { isOpen, setIsOpen, close } = useToggleState();
+                      //const { isOpen, setIsOpen, close } = useToggleState();
                       return (
                         <FormItem>
                           <div className="flex h-6 justify-between">
                             <FormLabel className="gap-.5 font-bold text-gray-950">입금희망일</FormLabel>
                           </div>
-                          <Popover open={isOpen} onOpenChange={setIsOpen}>
+                          <Popover open={depositPicker.isOpen} onOpenChange={depositPicker.setIsOpen}>
                             <div className="relative w-full">
                               <PopoverTrigger asChild>
                                 <Button
@@ -657,14 +825,27 @@ export default function ProjectExpenseEdit() {
               <SectionHeader title="비용 항목" className="mb-0" />
               <div>
                 {fields.map((field, index) => {
+                  const currentProId = selectedProposalByRow[index] ?? data?.items?.[index]?.pro_id;
+                  const currentProTitle = currentProId
+                    ? proposalList.find((p) => p.rp_seq === currentProId)?.rp_title || data?.items?.[index]?.rp_title
+                    : null;
                   return (
                     <article
                       key={`${field.id}`}
                       className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0 last-of-type:pb-4">
                       {header.is_estimate === 'N' && (
                         <div className="absolute top-2 left-0 flex w-full items-center justify-end gap-2">
-                          <Button type="button" variant="outlinePrimary" size="xs" className="border-0">
-                            <FileText className="size-3.5" /> 기안서 매칭
+                          <Button
+                            type="button"
+                            variant="outlinePrimary"
+                            size="xs"
+                            className="..."
+                            onClick={() => {
+                              setActiveRowIndex(index);
+                              handleOpenMatchingDialog();
+                            }}>
+                            <FileText className="size-3.5" />
+                            {currentProTitle || '기안서 매칭'}
                           </Button>
                         </div>
                       )}
@@ -708,13 +889,13 @@ export default function ProjectExpenseEdit() {
                               control={control}
                               name={`expense_items.${index}.date`}
                               render={({ field }) => {
-                                const { isOpen, setIsOpen, close } = useToggleState();
+                                //const { isOpen, setIsOpen, close } = useToggleState();
                                 return (
                                   <FormItem>
                                     <div className="flex h-6 justify-between">
                                       <FormLabel className="gap-.5 font-bold text-gray-950">매입 일자</FormLabel>
                                     </div>
-                                    <Popover open={isOpen} onOpenChange={setIsOpen}>
+                                    <Popover open={depositPicker.isOpen} onOpenChange={depositPicker.setIsOpen}>
                                       <div className="relative w-full">
                                         <PopoverTrigger asChild>
                                           <FormControl>
@@ -941,6 +1122,99 @@ export default function ProjectExpenseEdit() {
           </div>
         </form>
       </Form>
+
+      {/* 기안서 매칭 다이얼로그 */}
+      <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>기안서 매칭</DialogTitle>
+          </DialogHeader>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[100px]">구분</TableHead>
+                <TableHead>제목</TableHead>
+                <TableHead className="w-[120px]">금액</TableHead>
+                <TableHead className="w-[240px]">작성일</TableHead>
+                <TableHead className="w-[40px]" />
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {hasProposalList ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-10 text-center text-sm text-gray-500">
+                    등록된 기안서가 없습니다.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                proposalList.map((p) => {
+                  const isSelected = selectedProposalId === p.rp_seq;
+                  const isDisabled = selectedProposalId !== null && !isSelected;
+
+                  return (
+                    <TableRow key={p.rp_seq} className="hover:bg-gray-100">
+                      <TableCell>{p.rp_category}</TableCell>
+                      <TableCell className="text-left">{p.rp_title}</TableCell>
+                      <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
+                      <TableCell>{formatKST(p.rp_date)}</TableCell>
+                      <TableCell className="px-2.5">
+                        <Checkbox
+                          size="sm"
+                          checked={isSelected}
+                          disabled={isDisabled}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedProposalId(p.rp_seq);
+                              setSelectedProposal(p);
+                            } else {
+                              setSelectedProposalId(null);
+                              setSelectedProposal(null);
+                            }
+                          }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+
+          <div className="mt-6 flex justify-end gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                // ✅ 취소 시 선택 초기화
+                setSelectedProposalId(null);
+                setSelectedProposal(null);
+                setDialogOpen(false);
+              }}>
+              취소
+            </Button>
+            <Button
+              size="sm"
+              type="button"
+              disabled={!selectedProposalId}
+              onClick={() => {
+                if (activeRowIndex === null || !selectedProposalId) {
+                  console.log('❌ 조건 실패');
+                  return;
+                }
+                setSelectedProposalByRow((prev) => ({
+                  ...prev,
+                  [activeRowIndex]: selectedProposalId,
+                }));
+                //console.log('✅ 기안서 선택됨:', selectedProposalId, '→ row', activeRowIndex);
+                setDialogOpen(false);
+              }}>
+              선택하기
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

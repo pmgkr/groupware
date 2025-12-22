@@ -16,6 +16,7 @@ import { getCachedHolidays } from '@/services/holidayApi';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@components/ui/tooltip';
 import { TooltipIcon } from '@components/ui/tooltip';
 import { getMyVacation, type MyVacationInfo } from '@/api/common/vacation';
+import { Clock } from 'lucide-react';
 
 interface EventDialogProps {
   isOpen: boolean;
@@ -186,10 +187,33 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       if (field === 'eventType' && typeof value === 'string') {
         newData.endDate = newData.startDate;
         
-        // 반차/반반차인 경우 allDay를 false로 설정 (시간은 DateTimePicker에서 선택)
+        // 반차/반반차인 경우 allDay를 false로 설정 및 고정 시간 설정
         if (['vacationHalfMorning', 'vacationHalfAfternoon', 'vacationQuarterMorning', 'vacationQuarterAfternoon'].includes(value)) {
           newData.allDay = false;
-          // startTime은 DateTimePicker에서 선택될 때 설정됨
+          
+          if (value === 'vacationHalfMorning') {
+            newData.startTime = '10:00';
+            newData.endTime = '15:00';
+          } else if (value === 'vacationQuarterMorning') {
+            newData.startTime = '10:00';
+            newData.endTime = '12:00';
+          } else if (value === 'vacationHalfAfternoon') {
+            newData.startTime = '15:00';
+            newData.endTime = '19:00';
+          } else if (value === 'vacationQuarterAfternoon') {
+            newData.startTime = '17:00';
+            newData.endTime = '19:00';
+          }
+
+          // 이미 날짜가 선택되어 있다면 시간도 해당 고정 시간으로 동기화
+          if (newData.selectedDate) {
+            const [h, m] = newData.startTime.split(':').map(Number);
+            const newDate = new Date(newData.selectedDate);
+            newDate.setHours(h);
+            newDate.setMinutes(m);
+            newDate.setSeconds(0);
+            newData.selectedDate = newDate;
+          }
         } else if (value === 'vacationDay' || value === 'vacationOfficial') {
           // 연차/공가는 종일로 설정
           newData.allDay = true;
@@ -220,9 +244,23 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       const day = String(date.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
       
-      // 시간 정보 추출 (HH:mm 형식)
-      const hour = String(date.getHours()).padStart(2, '0');
-      const minute = String(date.getMinutes()).padStart(2, '0');
+      // 시간 제한 확인 (고정 시간이 설정되어 있는지 확인)
+      const restriction = getTimeRestriction();
+      let selectedHour = date.getHours();
+      let selectedMinute = date.getMinutes();
+
+      if (restriction && restriction.startHour === restriction.endHour && restriction.startMinute === restriction.endMinute) {
+        selectedHour = restriction.startHour;
+        selectedMinute = restriction.startMinute;
+        
+        // 넘겨받은 date 객체도 고정 시간으로 업데이트
+        date.setHours(selectedHour);
+        date.setMinutes(selectedMinute);
+        date.setSeconds(0);
+      }
+
+      const hour = String(selectedHour).padStart(2, '0');
+      const minute = String(selectedMinute).padStart(2, '0');
       const timeStr = `${hour}:${minute}`;
       
       setFormData(prev => {
@@ -299,9 +337,9 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       case 'vacationQuarterMorning':
         return { startHour: 10, startMinute: 0, endHour: 10, endMinute: 0 };
       case 'vacationHalfAfternoon':
-        return { startHour: 16, startMinute: 30, endHour: 17, endMinute: 0 };
+        return { startHour: 15, startMinute: 0, endHour: 15, endMinute: 0 };
       case 'vacationQuarterAfternoon':
-        return { startHour: 16, startMinute: 30, endHour: 17, endMinute: 0 };
+        return { startHour: 17, startMinute: 0, endHour: 17, endMinute: 0 };
       default:
         return undefined;
     }
@@ -547,8 +585,8 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
                       placeholder="휴가 사용일과 시간을 선택해주세요"
                       timeRestriction={getTimeRestriction()}
                     />
-                    <div className="text-xs text-gray-600 mt-1">
-                      선택된 시간: {formData.startTime || '없음'}
+                    <div className="text-sm text-gray-600 flex items-center gap-1">
+                      <Clock className="size-3" /> 휴가 적용시간: {formData.startTime} - {formData.endTime}
                     </div>
                     {errors.selectedDate && (
                       <p className="text-sm text-red-500">{errors.selectedDate}</p>
