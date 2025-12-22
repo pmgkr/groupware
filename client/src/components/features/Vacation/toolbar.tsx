@@ -7,6 +7,7 @@ import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams, type MyTeamItem } from '@/api/manager/teams';
 import { getMemberList } from '@/api/common/team';
 import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getGrowingYears } from '@/utils';
 
 // 셀렉트 옵션 타입 정의
 export interface SelectOption {
@@ -69,6 +70,8 @@ export default function VacationToolbar({
   const initialTeamSetRef = useRef(false);
   const initialUserSetRef = useRef(false);
   
+  const yearOptions = getGrowingYears().reverse();
+
   // 일정 필터 state
   const [filters, setFilters] = useState<VacationFilters>({
     year: new Date().getFullYear().toString(),
@@ -334,17 +337,16 @@ export default function VacationToolbar({
           
           {/* 연도 단일 선택 */}
           <Select value={filters.year} onValueChange={(v) => handleSelectChange('year', v)}>
-              <SelectTrigger size="sm">
+              <SelectTrigger size="sm" className="px-2">
                 <SelectValue placeholder="연도 선택" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem size="sm" value="2025">
-                    2025
-                  </SelectItem>
-                  <SelectItem size="sm" value="2024">
-                    2024
-                  </SelectItem>
+                  {yearOptions.map((y) => (
+                    <SelectItem size="sm" key={y} value={y}>
+                      {y}년
+                    </SelectItem>
+                  ))}
                 </SelectGroup>
               </SelectContent>
             </Select>

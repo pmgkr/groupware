@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams, type MyTeamItem } from '@/api/manager/teams';
 import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getGrowingYears } from '@/utils';
 
 // 셀렉트 옵션 타입 정의
 export interface SelectOption {
@@ -50,6 +51,8 @@ export default function OvertimeToolbar({
   // 팀 목록 로드 중복 방지 ref
   const teamsLoadedRef = useRef(false);
   
+  const yearOptions = getGrowingYears().reverse();
+
   // 추가근무 필터 state
   const [filters, setFilters] = useState<OvertimeFilters>({
     year: new Date().getFullYear().toString(),
@@ -253,17 +256,16 @@ export default function OvertimeToolbar({
           
           {/* 연도 단일 선택 */}
           <Select value={filters.year} onValueChange={(v) => handleSelectChange('year', v)}>
-              <SelectTrigger size="sm">
+              <SelectTrigger size="sm" className="px-2">
                 <SelectValue placeholder="연도 선택" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem size="sm" value="2025">
-                    2025
-                  </SelectItem>
-                  <SelectItem size="sm" value="2024">
-                    2024
-                  </SelectItem>
+                  {yearOptions.map((y) => (
+                    <SelectItem size="sm" key={y} value={y}>
+                      {y}년
+                    </SelectItem>
+                  ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
