@@ -3,14 +3,16 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
-import { getAvatarFallback } from '@/utils';
+import { getAvatarFallback, getProfileImageUrl } from '@/utils';
 import { useToggleState } from '@/hooks/useToggleState';
 import { useUser } from '@/hooks/useUser';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { MemberSelect, type Member } from '@components/common/MemberSelect';
+
 import { getClientList, projectCreate } from '@/api';
+import { notificationApi } from '@/api/notification';
 
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
@@ -73,9 +75,13 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
   });
 
   const categoryOptions: MultiSelectOption[] = [
-    { label: 'CAMPAIGN', value: 'CAMPAIGN' },
-    { label: 'Event', value: 'Event' },
     { label: 'Web', value: 'Web' },
+    { label: 'Campaign', value: 'Campaign' },
+    { label: 'Event Promotion', value: 'Event  Promotion' },
+    { label: 'Performance', value: 'Performance' },
+    { label: 'Digital Media', value: 'Digital Media' },
+    { label: 'Production', value: 'Production' },
+    { label: 'Others', value: 'Others' },
   ];
 
   const fetchClients = useCallback(async () => {
@@ -124,6 +130,53 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
     onClose?.();
   };
 
+  // 프로젝트 생성 시 알림 발송 함수
+  const sendProjectCreateNotifications = async ({
+    projectId,
+    projectTitle,
+    owner,
+    members,
+  }: {
+    projectId: string;
+    projectTitle: string;
+    owner: { user_id: string; user_name: string };
+    members: Member[];
+  }) => {
+    const notifications = [];
+
+    // 프로젝트 오너 알림
+    notifications.push(
+      notificationApi.registerNotification({
+        user_id: owner.user_id,
+        user_name: owner.user_name,
+        noti_target: owner.user_id,
+        noti_title: projectTitle,
+        noti_message: '프로젝트 생성이 완료되었습니다.',
+        noti_type: 'project',
+        noti_url: `/project/${projectId}`,
+      })
+    );
+
+    // 프로젝트 멤버 알림 (오너 제외)
+    members
+      .filter((m) => m.user_id !== owner.user_id)
+      .forEach((m) => {
+        notifications.push(
+          notificationApi.registerNotification({
+            user_id: m.user_id, // 보낸 사람 = 생성자
+            user_name: m.user_name,
+            noti_target: owner.user_id,
+            noti_title: projectTitle,
+            noti_message: `${owner.user_name}님이 프로젝트에 초대했습니다.`,
+            noti_type: 'project',
+            noti_url: `/project/${projectId}`,
+          })
+        );
+      });
+
+    await Promise.all(notifications);
+  };
+
   const onSubmit = (v: ProjectFormValues) => {
     addDialog({
       title: '프로젝트를 생성하시겠습니까?',
@@ -151,6 +204,20 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
 
         console.log('✅ 등록 성공:', result);
         if (result.ok) {
+          try {
+            await sendProjectCreateNotifications({
+              projectId: result.project_id,
+              projectTitle: v.project_title,
+              owner: {
+                user_id: user_id!,
+                user_name: user_name!,
+              },
+              members,
+            });
+          } catch (e) {
+            console.error('🔔 알림 전송 실패:', e);
+          }
+
           addAlert({
             title: '프로젝트 생성이 완료되었습니다.',
             message: `<p>프로젝트 아이디 <span class="text-primary-blue-500">${result.project_id}</span>로 생성되었습니다.</p>`,
@@ -303,7 +370,7 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <DayPicker
-                          captionLayout="dropdown"
+                          captionLayout="label"
                           mode="single"
                           selected={field.value ? new Date(field.value) : undefined}
                           onSelect={(date) => {
@@ -346,7 +413,7 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <DayPicker
-                          captionLayout="dropdown"
+                          captionLayout="label"
                           mode="single"
                           selected={field.value ? new Date(field.value) : undefined}
                           onSelect={(date) => {
@@ -394,7 +461,7 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
               {members.map((m) => (
                 <Badge key={m.user_id} variant="grayish" className="flex items-center gap-1 px-1.5 py-1 not-has-[>button]:px-2">
                   <Avatar className="size-5">
-                    <AvatarImage src={`${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${m.profile_image}`} />
+                    <AvatarImage src={getProfileImageUrl(m.profile_image)} />
                     <AvatarFallback className="text-xs">{getAvatarFallback(m.user_id)}</AvatarFallback>
                   </Avatar>
                   {m.user_name}
@@ -441,7 +508,7 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
               <li key={m.user_id}>
                 <Badge key={m.user_id} variant="grayish" className="flex items-center gap-1 px-1.5 py-1 not-has-[>button]:px-2">
                   <Avatar className="size-5">
-                    <AvatarImage src={`${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${m.profile_image}`} />
+                    <AvatarImage src={getProfileImageUrl(m.profile_image)} />
                     <AvatarFallback className="text-xs">{getAvatarFallback(m.user_id)}</AvatarFallback>
                   </Avatar>
                   {m.user_name}

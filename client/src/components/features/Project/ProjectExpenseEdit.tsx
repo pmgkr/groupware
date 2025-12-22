@@ -224,7 +224,7 @@ export default function ProjectExpenseEdit() {
         return updated;
       });
 
-      //await delProjectExpenseAttachment(seq);
+      await delProjectExpenseAttachment(seq);
       console.log(`✅ 첨부파일 #${seq} 삭제 완료`);
     } catch (err) {
       console.error('❌ 삭제 실패, 복구 진행:', err);
@@ -318,7 +318,7 @@ export default function ProjectExpenseEdit() {
           uploadedMap[rowIdx]?.map((f: any) => ({
             fname: f.fname,
             sname: f.sname,
-            ea_url: f.url,
+            url: f.url,
           })) ?? [];
 
         return {

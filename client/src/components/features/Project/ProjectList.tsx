@@ -64,9 +64,13 @@ export default function ProjectList() {
   const [teamOptions, setTeamOptions] = useState<MultiSelectOption[]>([]);
 
   const categoryOptions: MultiSelectOption[] = [
-    { label: 'CAMPAIGN', value: 'CAMPAIGN' },
-    { label: 'Event', value: 'Event' },
     { label: 'Web', value: 'Web' },
+    { label: 'Campaign', value: 'Campaign' },
+    { label: 'Event Promotion', value: 'Event  Promotion' },
+    { label: 'Performance', value: 'Performance' },
+    { label: 'Digital Media', value: 'Digital Media' },
+    { label: 'Production', value: 'Production' },
+    { label: 'Others', value: 'Others' },
   ];
 
   const statusOptions: MultiSelectOption[] = [

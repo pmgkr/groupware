@@ -216,6 +216,21 @@ export async function claimProjectTempExpense(payload: { seqs: number[] }): Prom
   return res;
 }
 
+export interface pExpenseEditPayload {
+  header: pExpenseHeaderBase;
+  items: {
+    ei_type: string;
+    ei_title: string;
+    ei_pdate: string;
+    ei_number?: string | null;
+    ei_amount: number;
+    ei_tax: number;
+    ei_total: number;
+    pro_id?: number | null;
+    attachments?: pExpenseAttachment[];
+  }[];
+}
+
 export interface pExpenseEditResponse {
   ok: boolean;
   updated: {
@@ -226,12 +241,9 @@ export interface pExpenseEditResponse {
 }
 
 // 프로젝트 비용 수정하기
-export async function projectExpenseUpdate(expid: string, payload: pExpenseRegisterPayload) {
+export async function projectExpenseUpdate(expid: string, payload: pExpenseEditPayload) {
   return http<pExpenseEditResponse>(`/user/pexpense/update/${expid}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(payload),
   });
 }
