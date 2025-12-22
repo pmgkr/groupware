@@ -247,7 +247,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
         <input type="hidden" {...form.register('profile_image')} />
 
         {/* 사진 업로드 영역 */}
-        <div className="flex flex-col items-center gap-2 pb-4">
+        <div className="flex flex-col items-center gap-2">
           <div
             className={cn(
               'group relative flex size-32 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-full border-2 border-dashed transition-colors',
