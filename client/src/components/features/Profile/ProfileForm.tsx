@@ -57,6 +57,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
       hire_date: undefined as Date | undefined,
       address: '',
       emergency_phone: '',
+      team_id: undefined,
       profile_image: '',
     },
     mode: 'onChange',
@@ -373,8 +374,9 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
               <FormItem className="mb-auto">
                 <FormLabel>팀</FormLabel>
                 <Select
-                  value={field.value !== undefined ? String(field.value) : ''}
-                  onValueChange={(v) => field.onChange(Number(v))} // value 타입 Number로 변경
+                  onValueChange={(v) => field.onChange(Number(v))}
+                  value={field.value ? String(field.value) : undefined}
+                  key={field.value}
                   name={field.name}
                   disabled={teamLoading}>
                   <FormControl>
