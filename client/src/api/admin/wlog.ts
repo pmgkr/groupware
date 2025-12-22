@@ -20,7 +20,7 @@ export interface WlogWeekListResponse {
   edate: string;
   wlog: WlogItem[];
   vacation: any[];
-  team_id: string;
+  team_id: number;
 }
 
 // 근태 로그 수정 요청 타입
