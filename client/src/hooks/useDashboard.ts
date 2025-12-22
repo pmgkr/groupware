@@ -59,7 +59,8 @@ const getExpenseBadgeColor = (status: string): string => {
 export function useDashboard(selectedDate?: Date) {
   const [wlog, setWlog] = useState<Wlog>({
     wlogWeek: [],
-    wlogToday: []
+    wlogToday: [],
+    wlogSchedule: []
   });
   const [vacation, setVacation] = useState<Vacation | null>(null);
   const [notification, setNotification] = useState<Notification[]>([]);

@@ -14,6 +14,12 @@ export interface Wlog {
     c_stime: string | null;
     c_etime: string | null;
   }[];
+  wlogSchedule: {
+    sch_type: string;
+    sch_vacation_type?: string | null;
+    sch_vacation_time?: string | null;
+    sch_event_type?: string | null;
+  }[];
 }
 
 // 휴가정보
