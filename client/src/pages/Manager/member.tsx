@@ -14,7 +14,10 @@ export default function Member() {
 
   useEffect(() => {
     if (!team_id) return;
-    getManagerMemberList(team_id).then(setMembers);
+
+    getManagerMemberList({
+      team_id,
+    }).then(setMembers);
   }, [team_id]);
 
   // 탭 + 팀 조합 필터
@@ -29,7 +32,10 @@ export default function Member() {
 
   const refreshMembers = async () => {
     if (!team_id) return;
-    const list = await getManagerMemberList(team_id);
+
+    const list = await getManagerMemberList({
+      team_id,
+    });
     setMembers(list);
   };
 
