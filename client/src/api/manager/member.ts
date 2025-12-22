@@ -15,14 +15,18 @@ export interface Member {
   user_status: 'active' | 'inactive' | 'suspended';
 }
 
-export async function getManagerMemberList(team_id?: number): Promise<Member[]> {
-  const params = new URLSearchParams();
+export async function getManagerMemberList(params?: { team_id?: number; q?: string }): Promise<Member[]> {
+  const searchParams = new URLSearchParams();
 
-  if (team_id) {
-    params.append('team_id', String(team_id));
+  if (params?.team_id) {
+    searchParams.append('team_id', String(params.team_id));
   }
 
-  const url = `/user/common/memberlist${params.toString() ? `?${params.toString()}` : ''}`;
+  if (params?.q) {
+    searchParams.append('q', params.q);
+  }
+
+  const url = `/user/common/memberlist${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
   return await http<Member[]>(url, { method: 'GET' });
 }
 
