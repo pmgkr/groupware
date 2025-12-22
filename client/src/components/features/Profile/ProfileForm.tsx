@@ -1,11 +1,11 @@
 // src/features/profile/ProfileForm.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ProfileSchema, type ProfileValues } from './ProfileSchema';
 import { useNavigate } from 'react-router';
 import { cn } from '@/lib/utils';
-import { onboardingApi, initFormApi } from '@/api';
+import { onboardingApi, initFormApi, onboardingUploadApi } from '@/api';
 import { getTeams, type TeamDto } from '@/api/teams';
 import { setToken as setTokenStore } from '@/lib/tokenStore';
 
@@ -16,7 +16,7 @@ import { DayPicker } from '@components/daypicker';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { Select, SelectTrigger, SelectItem, SelectContent, SelectValue } from '@components/ui/select';
 import { format } from 'date-fns';
-import { Calendar } from '@/assets/images/icons';
+import { Calendar, Upload } from '@/assets/images/icons';
 
 type ProfileFormProps = {
   email: string; // 로그인 409 응답에서 받은 email
@@ -38,6 +38,11 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
 
   const [teams, setTeams] = useState<TeamDto[]>([]);
   const [teamLoading, setTeamLoading] = useState(true);
+
+  // 이미지 업로드 관련 상태
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<ProfileValues>({
     resolver: zodResolver(ProfileSchema),
@@ -116,6 +121,11 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
             team_id: defaultTeamId,
             profile_image: userData.profile_image || '',
           });
+
+          // 초기 이미지 프리뷰 설정
+          if (userData.profile_image) {
+            setImagePreview(`${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${userData.profile_image}`);
+          }
         } else if (teamsData.length > 0) {
           // 사용자 정보는 없지만 팀 목록은 로드된 경우 (예외적 상황)
           form.setValue('team_id', teamsData[0].team_id);
@@ -142,6 +152,49 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
     };
   }, [onboardingToken, email, navigate, form, setFocus]);
 
+  // 이미지 드래그 핸들러
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const handleDragLeave = () => setIsDragging(false);
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files && files[0]) handleFile(files[0]);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFile(e.target.files[0]);
+    }
+  };
+
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+
+    try {
+      const res = await onboardingUploadApi(file, onboardingToken);
+      if (res.result && res.path) {
+        form.setValue('profile_image', res.path);
+      } else {
+        alert('이미지 업로드에 실패했습니다.');
+        setImagePreview(null);
+      }
+    } catch (e) {
+      alert('이미지 업로드 중 오류가 발생했습니다.');
+      setImagePreview(null);
+    }
+  };
+
   // 사용자에게 010-1234-5678 포맷으로 보여주기 (내부 전송은 숫자만)
   const formatPhone = (raw: string) => {
     const v = raw.replace(/\D/g, '');
@@ -152,13 +205,6 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
 
   // 생년월일 YYYY-MM-DD 포맷으로 변경
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
-
-  // 부모 컴포넌트(Onboarding)에서 넘겨준 profileImage가 변경되면 form value 업데이트
-  useEffect(() => {
-    if (profileImage) {
-      form.setValue('profile_image', profileImage);
-    }
-  }, [profileImage, form]);
 
   const onSubmit = async (values: ProfileValues) => {
     try {
@@ -197,6 +243,39 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
         {/* 히든 필드: 프로필 이미지 경로 */}
         <input type="hidden" {...form.register('profile_image')} />
 
+        {/* 사진 업로드 영역 */}
+        <div className="flex flex-col items-center gap-2 pb-4">
+          <div
+            className={cn(
+              'group relative flex size-32 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-full border-2 border-dashed transition-colors',
+              isDragging ? 'border-primary bg-primary/10' : 'border-gray-300 bg-gray-50 hover:bg-gray-100',
+              imagePreview && 'border-none'
+            )}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}>
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
+
+            {imagePreview ? (
+              <>
+                <img src={imagePreview} alt="Preview" className="size-full object-cover" />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Upload className="size-8 text-white" />
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-1 text-gray-400">
+                <Upload className="size-8" />
+                <p className="text-[10px] font-medium text-center px-2">이미지 업로드</p>
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            클릭하거나 이미지를 드래그하여 프로필 사진을 등록해 주세요.
+          </p>
+        </div>
+
         {/* 이메일 (읽기 전용) */}
         <FormField
           control={form.control}
@@ -232,35 +311,38 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
           )}
         />
 
-        {/* 이름 */}
-        <FormField
-          control={form.control}
-          name="user_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>이름(한글)</FormLabel>
-              <FormControl>
-                <Input placeholder="홍길동" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="w-full grid grid-cols-2 gap-2">
 
-        {/* 이름 (영문) */}
-        <FormField
-          control={form.control}
-          name="user_name_en"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>이름(영문)</FormLabel>
-              <FormControl>
-                <Input placeholder="Gildong Hong" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* 이름 */}
+          <FormField
+            control={form.control}
+            name="user_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>이름(한글)</FormLabel>
+                <FormControl>
+                  <Input placeholder="홍길동" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* 이름 (영문) */}
+          <FormField
+            control={form.control}
+            name="user_name_en"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>이름(영문)</FormLabel>
+                <FormControl>
+                  <Input placeholder="Gildong Hong" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}
