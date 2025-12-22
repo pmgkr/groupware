@@ -69,7 +69,7 @@ export function mapExcelToExpenseItems(excelData: any[]): any[] {
         price: String(price),
         tax: String(tax),
         total: String(total),
-        pro_id: '',
+        pro_id: null,
         attachments: [],
       };
     })
