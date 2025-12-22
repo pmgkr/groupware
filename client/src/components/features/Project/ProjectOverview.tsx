@@ -1,10 +1,17 @@
 // src/components/features/Project/ProjectOverview
-import { getAvatarFallback } from '@/utils';
+import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router';
-import { type projectMemberDTO, type ProjectViewDTO } from '@/api';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
+import { getAvatarFallback, formatAmount } from '@/utils';
+
+import { type projectOverview } from '@/api';
+import { buildExpenseColorMap, buildPieChartData, type PieItem, type PieChartItem } from './utils/colorMap';
+
+import { HalfDonut } from '@components/charts/HalfDonut';
+import { GapPieChart } from '@components/charts/GapPieChart';
 
 import { Button } from '@components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import { ProjectMember } from './_components/ProjectMember';
 
@@ -12,12 +19,58 @@ import { Edit } from '@/assets/images/icons';
 import { FilePlus } from 'lucide-react';
 import { format } from 'date-fns';
 
-type Props = { data: ProjectViewDTO; members: projectMemberDTO[] };
+type Props = { data: projectOverview };
 
 export default function Overview() {
-  const { data, members } = useOutletContext<ProjectLayoutContext>();
+  const { data, members, summary, expense_data, expense_type, logs } = useOutletContext<ProjectLayoutContext>();
+  const [expenseColorMap, setExpenseColorMap] = useState<Record<string, string>>({});
 
-  console.log(data);
+  const [expenseData, setExpenseData] = useState<PieItem[]>([]);
+  const [expenseChartData, setExpenseChartData] = useState<PieChartItem[]>([]);
+
+  // 비용 유형 컬러맵 생성
+  useEffect(() => {
+    async function loadColors() {
+      const map = await buildExpenseColorMap();
+      setExpenseColorMap(map);
+    }
+    loadColors();
+  }, []);
+
+  // expense_data + colorMap → PieItem[]
+  useEffect(() => {
+    if (!expense_data?.length) return;
+    if (!Object.keys(expenseColorMap).length) return;
+
+    const mapped: PieItem[] = expense_data
+      .filter((item) => item.total > 0)
+      .sort((a, b) => b.total - a.total)
+      .map((item) => ({
+        name: item.type,
+        value: item.total,
+        color: expenseColorMap[item.type] ?? '#E5E7EB',
+      }));
+
+    setExpenseData(mapped);
+  }, [expense_data, expenseColorMap]);
+
+  // 최소 1% 보정된 차트 데이터 생성
+  useEffect(() => {
+    if (!expense_data || expense_data.length === 0) {
+      setExpenseChartData([
+        {
+          name: '등록된 비용이 없습니다.',
+          value: 100,
+          realValue: 100,
+          color: '#ededed',
+        },
+      ]);
+      return;
+    }
+
+    const chartData = buildPieChartData(expenseData);
+    setExpenseChartData(chartData);
+  }, [expenseData]);
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
@@ -32,8 +85,6 @@ export default function Overview() {
         return 0;
       })
     : [];
-
-  console.log(sortedMembers);
 
   return (
     <>
@@ -66,18 +117,77 @@ export default function Overview() {
               </TableColumn>
             </div>
             <div className="mt-8 grid w-full grid-cols-2 grid-rows-2 gap-4">
-              <div className="h-80 rounded-sm border border-gray-300 p-4">
-                <h3 className="mb-2 text-lg font-bold text-gray-800">코스트</h3>
-              </div>
-              <div className="rounded-sm border border-gray-300 p-4">
-                <h3 className="mb-2 text-lg font-bold text-gray-800">비용 차트</h3>
-              </div>
-              <div className="rounded-sm border border-gray-300 p-4">
-                <h3 className="mb-2 text-lg font-bold text-gray-800">인보이스</h3>
-              </div>
-              <div className="rounded-sm border border-gray-300 p-4">
-                <h3 className="mb-2 text-lg font-bold text-gray-800">비용 유형</h3>
-              </div>
+              <Card className="border-0 bg-white text-gray-800">
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold">프로젝트 GPM</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center gap-4">
+                  <div className="relative aspect-square w-[50%]">
+                    <HalfDonut value={summary[0]?.GPM ?? 0} />
+                    <span className="centered absolute text-center text-lg leading-[1.2] font-bold">
+                      GPM <span className="text-primary block text-[1.4em]">{summary[0]?.GPM ?? 0}%</span>
+                    </span>
+                  </div>
+                  <div className="w-[45%]">
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-center gap-2">
+                        <span className="bg-primary-blue h-2.5 w-2.5 rounded-sm" />
+                        <span className="flex-1">인보이스 발행금액</span>{' '}
+                        <span className="text-right font-medium">{formatAmount(summary[0]?.inv_amount ?? 0)}</span>
+                      </li>
+                      <li className="bg-pri flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-sm bg-gray-400" />
+                        <span className="flex-1">지출 비용 합계</span>{' '}
+                        <span className="text-right font-medium">{formatAmount(summary[0]?.exp_amount ?? 0)}</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="bg-primary h-2.5 w-2.5 rounded-sm" />
+                        <span className="flex-1">프로젝트 순이익</span>{' '}
+                        <span className="text-right font-medium">{formatAmount(summary[0]?.netprofit ?? 0)}</span>
+                      </li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-white text-gray-800">
+                <CardHeader>
+                  <CardTitle>비용 차트</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center gap-4">
+                  <div className="relative aspect-square w-[50%]">
+                    <GapPieChart data={expenseChartData} />
+                  </div>
+                  <div className="w-[45%]">
+                    <ul className="space-y-2 text-sm">
+                      {expenseChartData.map((item) => (
+                        <li key={item.name} className="flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
+                          <span className="flex-1">{item.name}</span>
+                          {item.name !== '등록된 비용이 없습니다.' && (
+                            <span className="text-right font-medium">{formatAmount(item.realValue)}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-white text-gray-800">
+                <CardHeader>
+                  <CardTitle>인보이스</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center gap-4">
+                  <div className="relative w-full">UI 준비중 입니다.</div>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-white text-gray-800">
+                <CardHeader>
+                  <CardTitle>비용 유형</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center gap-4">
+                  <div className="relative w-full">UI 준비중 입니다.</div>
+                </CardContent>
+              </Card>
             </div>
           </div>
           <div className="mt-8 flex w-full items-center justify-between">

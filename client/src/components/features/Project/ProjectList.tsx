@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useSearchParams } from 'react-router';
-import { getProjectList, type ProjectListItem, getClientList, getTeamList, getBookmarkList, addBookmark, removeBookmark } from '@/api';
 import { cn } from '@/lib/utils';
+import { getGrowingYears } from '@/utils';
+
 import { ProjectCreateForm } from './_components/ProjectCreate';
+import { getProjectList, type ProjectListItem, getClientList, getTeamList, getBookmarkList, addBookmark, removeBookmark } from '@/api';
+import { ProjectRow } from './_components/ProjectListRow';
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@components/ui/button';
@@ -11,7 +14,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectI
 import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ProjectRow } from './_components/ProjectListRow';
+
 import { Star, RefreshCw } from 'lucide-react';
 
 export default function ProjectList() {
@@ -24,12 +27,17 @@ export default function ProjectList() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState<number>(() => Number(searchParams.get('page') || 1));
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const pageSize = 15;
+  const [pageSize, setPageSize] = useState(15);
 
   // 상단 필터용 state
-  const [activeTab, setActiveTab] = useState<'mine' | 'others'>('mine');
+  const currentYear = String(new Date().getFullYear()); // 올해 구하기
+  const yearOptions = getGrowingYears(); // yearOptions
+  const [activeTab, setActiveTab] = useState<'mine' | 'others'>(() => {
+    return (searchParams.get('tab') as 'mine' | 'others') || 'mine';
+  });
+  const [selectedYear, setSelectedYear] = useState(() => searchParams.get('project_year') || currentYear);
   const [selectedBrand, setSelectedBrand] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string[]>([]);
   const [selectedClient, setSelectedClient] = useState<string[]>([]);
@@ -82,9 +90,14 @@ export default function ProjectList() {
   }, []);
 
   // 필터 변경 시 page 초기화
-  const handleFilterChange = (setter: any, value: any) => {
+  const handleFilterChange = (setter: any, key: string, value: any) => {
     setter(value);
     setPage(1);
+
+    updateSearchParams({
+      page: 1,
+      [key]: value,
+    });
   };
 
   // 탭 변경 시 필터 초기화
@@ -108,6 +121,8 @@ export default function ProjectList() {
     setActiveTab(tab);
     setPage(1);
     resetAllFilters();
+
+    setSearchParams({ tab: tab, page: '1' });
   };
 
   // 즐겨찾기 리스트 불러오기
@@ -139,6 +154,25 @@ export default function ProjectList() {
     [favorites]
   );
 
+  // 파라미터 업데이트 유틸 함수
+  const updateSearchParams = useCallback(
+    (next: Record<string, any>) => {
+      const params = new URLSearchParams(searchParams);
+
+      Object.entries(next).forEach(([key, value]) => {
+        if (!value || (Array.isArray(value) && value.length === 0)) {
+          params.delete(key);
+        } else {
+          params.set(key, Array.isArray(value) ? value.join(',') : String(value));
+        }
+      });
+
+      setSearchParams(params);
+      console.log(searchParams);
+    },
+    [searchParams, setSearchParams]
+  );
+
   // 프로젝트 리스트 가져오기
   const fetchProjects = useCallback(async () => {
     try {
@@ -156,6 +190,8 @@ export default function ProjectList() {
         s: searchQuery,
       };
 
+      if (activeTab === 'others') params.project_year = selectedYear;
+
       // 북마크를 클릭한 경우 추가 파라미터 전달
       if (showFavoritesOnly) {
         params.tagged = 'Y';
@@ -170,7 +206,18 @@ export default function ProjectList() {
     } finally {
       setLoading(false);
     }
-  }, [page, selectedBrand, selectedCategory, selectedClient, selectedTeam, selectedStatus, searchQuery, activeTab, showFavoritesOnly]);
+  }, [
+    page,
+    selectedYear,
+    selectedBrand,
+    selectedCategory,
+    selectedClient,
+    selectedTeam,
+    selectedStatus,
+    searchQuery,
+    activeTab,
+    showFavoritesOnly,
+  ]);
 
   // 마운트 시 호출
   useEffect(() => {
@@ -211,7 +258,22 @@ export default function ProjectList() {
           </div>
 
           <div className="flex items-center gap-x-2 before:mr-3 before:ml-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
-            <Select value={selectedBrand} onValueChange={(v) => handleFilterChange(setSelectedBrand, v)}>
+            {activeTab === 'others' && (
+              <Select value={selectedYear} onValueChange={(v) => handleFilterChange(setSelectedYear, 'project_year', v)}>
+                <SelectTrigger size="sm" className="px-2">
+                  <SelectValue placeholder="년도 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  {yearOptions.map((y) => (
+                    <SelectItem size="sm" key={y} value={y}>
+                      {y}년
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Select value={selectedBrand} onValueChange={(v) => handleFilterChange(setSelectedBrand, 'brand', v)}>
               <SelectTrigger size="sm" className="px-2">
                 <SelectValue placeholder="소속 선택" />
               </SelectTrigger>
@@ -235,7 +297,7 @@ export default function ProjectList() {
               autoSize={true}
               placeholder="카테고리"
               options={categoryOptions}
-              onValueChange={(v) => handleFilterChange(setSelectedCategory, v)}
+              onValueChange={(v) => handleFilterChange(setSelectedCategory, 'category', v)}
               simpleSelect={true}
               hideSelectAll={true}
             />
@@ -248,7 +310,7 @@ export default function ProjectList() {
               autoSize={true}
               placeholder="클라이언트"
               options={clientOptions}
-              onValueChange={(v) => handleFilterChange(setSelectedClient, v)}
+              onValueChange={(v) => handleFilterChange(setSelectedClient, 'client_id', v)}
               simpleSelect={true}
               hideSelectAll={true}
             />
@@ -261,7 +323,7 @@ export default function ProjectList() {
               autoSize={true}
               placeholder="팀 선택"
               options={teamOptions}
-              onValueChange={(v) => handleFilterChange(setSelectedTeam, v)}
+              onValueChange={(v) => handleFilterChange(setSelectedTeam, 'team_id', v)}
               simpleSelect={true}
               hideSelectAll={true}
             />
@@ -274,7 +336,7 @@ export default function ProjectList() {
               autoSize={true}
               placeholder="상태 선택"
               options={statusOptions}
-              onValueChange={(v) => handleFilterChange(setSelectedStatus, v)}
+              onValueChange={(v) => handleFilterChange(setSelectedStatus, 'status', v)}
               simpleSelect={true}
               hideSelectAll={true}
             />
@@ -342,7 +404,13 @@ export default function ProjectList() {
         <TableBody>
           {projects.length > 0 ? (
             projects.map((p) => (
-              <ProjectRow key={p.project_id} item={p} isFavorite={favorites.includes(p.project_id)} onToggleFavorite={toggleFavorite} />
+              <ProjectRow
+                key={p.project_id}
+                item={p}
+                isFavorite={favorites.includes(p.project_id)}
+                onToggleFavorite={toggleFavorite}
+                search={search}
+              />
             ))
           ) : (
             <TableRow>

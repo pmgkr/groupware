@@ -80,13 +80,58 @@ export interface ProjectViewDTO {
 }
 
 // 프로젝트 멤버 타입
-export type projectMemberDTO = {
+export type ProjectMemberDTO = {
   seq: number;
   user_id: string;
   user_nm: string;
   user_type: 'owner' | 'member' | string;
   profile_image?: string;
 };
+
+export type ProjectLogs = {
+  seq: number;
+  project_id: string;
+  user_id: string;
+  user_nm: string;
+  pl_type: string;
+  pl_remark: string;
+  pl_date: string;
+};
+
+export type projectSummary = {
+  est_amount: number; // 견적서 총액
+  est_budget: number; // 견적서 가용예산
+  exp_amount: number; // 지출 비용 합계
+  inv_amount: number; // 인보이스 공급가액
+  inv_total: number; // 인보이스 토탈
+  netprofit: number; // 순이익
+  GPM: number;
+};
+
+export type ProjectExpenseData = {
+  type: string;
+  amount: number;
+  tax: number;
+  total: number;
+};
+
+export type ProjectExpenseType = {
+  est_amount: number;
+  est_tax: number;
+  est_total: number;
+  non_amount: number;
+  non_tax: number;
+  non_total: number;
+};
+
+export interface projectOverview {
+  info: ProjectViewDTO;
+  logs: ProjectLogs[];
+  members: ProjectMemberDTO[];
+  summary: projectSummary[];
+  expense_data: ProjectExpenseData[];
+  expense_type: ProjectExpenseType;
+}
 
 // 즐겨찾기 리스트
 export const getBookmarkList = async () => {
@@ -127,12 +172,12 @@ export async function projectCreate(payload: projectCreatePayload) {
 export async function getProjectView(projectId: string | undefined) {
   if (!projectId) throw new Error('projectId가 필요합니다.');
 
-  return http<ProjectViewDTO>(`/user/project/info/${projectId}`, { method: 'GET' });
+  return http<projectOverview>(`/user/project/overview/${projectId}`, { method: 'GET' });
 }
 
 // 프로젝트 멤버 리스트
 export async function getProjectMember(projectId: string | undefined) {
   if (!projectId) throw new Error('projectId가 필요합니다.');
 
-  return http<projectMemberDTO[]>(`/user/project/member/${projectId}`, { method: 'GET' });
+  return http<ProjectMemberDTO[]>(`/user/project/member/${projectId}`, { method: 'GET' });
 }

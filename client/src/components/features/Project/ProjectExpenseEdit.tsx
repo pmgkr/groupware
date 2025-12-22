@@ -10,7 +10,7 @@ import { AttachmentFieldEdit } from './_components/AttachmentFieldEdit';
 import { useUser } from '@/hooks/useUser';
 import { formatKST, formatAmount } from '@/utils';
 import { getBankList, uploadFilesToServer, type BankList, type ExpenseViewDTO } from '@/api';
-import { getProjectExpenseView, delExpenseAttachment, expenseUpdate } from '@/api/project/expense';
+import { getProjectExpenseView, projectExpenseUpdate, delProjectExpenseAttachment } from '@/api/project/expense';
 
 import {
   AlertDialog,
@@ -223,7 +223,7 @@ export default function ProjectExpenseEdit() {
         return updated;
       });
 
-      await delExpenseAttachment(seq);
+      //await delProjectExpenseAttachment(seq);
       console.log(`✅ 첨부파일 #${seq} 삭제 완료`);
     } catch (err) {
       console.error('❌ 삭제 실패, 복구 진행:', err);
@@ -283,7 +283,7 @@ export default function ProjectExpenseEdit() {
         );
 
         // 3️⃣ 서버 업로드
-        uploadedFiles = await uploadFilesToServer(uploadable, 'nexpense');
+        uploadedFiles = await uploadFilesToServer(uploadable, 'pexpense');
         uploadedFiles = uploadedFiles.map((file, i) => ({
           ...file,
           rowIdx: allNewFiles[i]?.rowIdx ?? 0,
@@ -336,10 +336,14 @@ export default function ProjectExpenseEdit() {
 
       console.log('enrichedItems', enrichedItems);
 
+      const elTypeList = enrichedItems.map((item: any) => String(item.type ?? ''));
+
       // 6️⃣ 최종 payload 구성
       const payload = {
         header: {
           user_id: user_id!,
+          project_id: projectId!,
+          el_type: elTypeList || null,
           el_method: values.el_method,
           el_attach: enrichedItems.some((item) => item.attachments.length > 0) ? 'Y' : 'N',
           el_deposit: values.el_deposit || null,
@@ -350,7 +354,7 @@ export default function ProjectExpenseEdit() {
           remark: values.remark || '',
         },
         items: enrichedItems.map((item: any) => ({
-          el_type: item.el_type ?? '',
+          ei_type: item.ei_type,
           ei_title: item.ei_title,
           ei_pdate: item.ei_pdate,
           ei_number: item.ei_number,
@@ -368,7 +372,7 @@ export default function ProjectExpenseEdit() {
 
       console.log('📦 최종 수정 payload:', payload);
 
-      const res = await expenseUpdate(header.seq, payload);
+      const res = await projectExpenseUpdate(header.seq, payload);
 
       if (res.ok) {
         setAlertTitle('수정 완료');
