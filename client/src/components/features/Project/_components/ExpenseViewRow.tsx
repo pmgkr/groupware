@@ -41,11 +41,7 @@ export default function ExpenseViewRow({ item, onProposal }: ExpenseViewRowProps
           <ul>
             {item.attachments.map((att, idx) => (
               <li key={idx} className="overflow-hidden text-sm text-gray-800">
-                <a
-                  href={`${import.meta.env.VITE_API_ORIGIN}/uploads/pexpense/${att.ea_sname}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1">
+                <a href={att.ea_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1">
                   {/* 파일명 */}
                   <span className="overflow-hidden text-left text-ellipsis whitespace-nowrap hover:underline">{att.ea_fname}</span>
                 </a>
@@ -58,12 +54,9 @@ export default function ExpenseViewRow({ item, onProposal }: ExpenseViewRowProps
       )}
       <TableCell className="px-1 text-center [&_button]:rounded-xl [&_button]:border [&_button]:text-xs [&_button]:transition-none">
         {item.pro_id ? (
-          <Link to={`/project/proposal/view/${item.pro_id}`} target="_blank" rel="noopener noreferrer">
-            {/* <LinkIcon className="mx-auto size-4" /> */}
-            <Button size="xs" variant="outline" onClick={onProposal}>
-              기안서보기
-            </Button>
-          </Link>
+          <Button size="xs" variant="outline" onClick={onProposal}>
+            기안서보기
+          </Button>
         ) : (
           <span>-</span>
         )}

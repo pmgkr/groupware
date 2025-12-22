@@ -146,7 +146,7 @@ export const useProjectExpenseMatching = (expId?: string, getExpenseView?: GetEx
   /** --------------------------------------
    *  견적 매칭 완료
    -------------------------------------- */
-  const completeMatching = (expSeq: number, items: any[]) => {
+  const completeMatching = async (expSeq: number, items: any[]) => {
     setMatchedMap((prev) => ({
       ...prev,
       [expSeq]: items,
@@ -154,6 +154,8 @@ export const useProjectExpenseMatching = (expId?: string, getExpenseView?: GetEx
 
     setDbMatchedItems([]);
     setSelectedExpSeq(null);
+
+    await refresh();
   };
 
   /** --------------------------------------

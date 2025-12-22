@@ -1,4 +1,4 @@
-import { formatAmount } from '@/utils';
+import { formatAmount, normalizeAttachmentUrl } from '@/utils';
 import { format } from 'date-fns';
 import { File } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,7 +52,7 @@ export default function ExpenseViewEstRow({
             {item.attachments.map((att, idx) => (
               <li key={idx} className="overflow-hidden text-sm text-gray-800">
                 <a
-                  href={`${import.meta.env.VITE_API_ORIGIN}/uploads/pexpense/${att.ea_sname}`}
+                  href={normalizeAttachmentUrl(att.ea_url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-1">

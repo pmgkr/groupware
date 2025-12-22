@@ -1,6 +1,6 @@
 // src/components/features/Project/ProjectOverview
 import { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router';
+import { useOutletContext, useLocation, useNavigate } from 'react-router';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { getAvatarFallback, formatAmount } from '@/utils';
 
@@ -22,6 +22,12 @@ import { format } from 'date-fns';
 type Props = { data: projectOverview };
 
 export default function Overview() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const listSearch = (location.state as any)?.fromSearch ?? '';
+  const fallbackListPath = listSearch ? `/project${listSearch}` : '/project';
+
   const { data, members, summary, expense_data, expense_type, logs } = useOutletContext<ProjectLayoutContext>();
   const [expenseColorMap, setExpenseColorMap] = useState<Record<string, string>>({});
 
@@ -191,7 +197,7 @@ export default function Overview() {
             </div>
           </div>
           <div className="mt-8 flex w-full items-center justify-between">
-            <Button type="button" variant="outline" size="sm">
+            <Button type="button" variant="outline" size="sm" onClick={() => navigate(fallbackListPath)}>
               목록
             </Button>
           </div>

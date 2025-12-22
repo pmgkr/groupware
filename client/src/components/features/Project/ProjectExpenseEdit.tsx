@@ -12,16 +12,8 @@ import { formatKST, formatAmount } from '@/utils';
 import { getBankList, uploadFilesToServer, type BankList, type ExpenseViewDTO } from '@/api';
 import { getProjectExpenseView, projectExpenseUpdate, delProjectExpenseAttachment } from '@/api/project/expense';
 
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@components/ui/alert-dialog';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Badge } from '@components/ui/badge';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
@@ -33,7 +25,7 @@ import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
 import { Calendar, TooltipNoti, Close } from '@/assets/images/icons';
-import { FileText, UserRound } from 'lucide-react';
+import { FileText, UserRound, OctagonAlert } from 'lucide-react';
 
 import { format, parseISO } from 'date-fns';
 import { statusIconMap, getLogMessage } from '../Expense/utils/statusUtils';
@@ -71,19 +63,23 @@ type UploadedPreviewFile = {
   ei_seq: number;
   fname: string;
   sname: string;
+  ea_url: string;
 };
 
 type EditFormValues = z.infer<typeof editSchema>;
-
-interface ExpenseEditProps {
-  expId: string;
-}
 
 export default function ProjectExpenseEdit() {
   const { expId, projectId } = useParams();
   const navigate = useNavigate();
   const { user_id } = useUser();
 
+  // Alert & Dialog hooks
+  const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
+
+  type PageState = 'loading' | 'not-found' | 'error' | 'ready';
+
+  const [pageState, setPageState] = useState<PageState>('loading');
   const [bankList, setBankList] = useState<BankList[]>([]);
   const [data, setData] = useState<ExpenseViewDTO | null>(null);
   const [header, setHeader] = useState<any>(null);
@@ -91,12 +87,6 @@ export default function ProjectExpenseEdit() {
 
   const [newAttachments, setNewAttachments] = useState<Record<number, PreviewFile[]>>({}); // 새 증빙자료 State
   const [rowAttachments, setRowAttachments] = useState<Record<number, UploadedPreviewFile[]>>({}); // 기존 증빙자료 State
-
-  const [loading, setLoading] = useState(true);
-  const [alertOpen, setAlertOpen] = useState(false);
-  const [alertTitle, setAlertTitle] = useState('');
-  const [alertDescription, setAlertDescription] = useState('');
-  const [successState, setSuccessState] = useState(false);
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
@@ -118,6 +108,13 @@ export default function ProjectExpenseEdit() {
       expense_items: [],
     },
   });
+
+  useEffect(() => {
+    if (!expId) {
+      setPageState('not-found');
+      return;
+    }
+  }, [expId]);
 
   const { control, reset } = form;
   const { fields, replace } = useFieldArray({ control, name: 'expense_items' });
@@ -148,15 +145,20 @@ export default function ProjectExpenseEdit() {
     (async () => {
       try {
         const res = await getProjectExpenseView(expId);
+
+        if (!res || !res.header) {
+          setPageState('not-found');
+          return;
+        }
+
         setData(res);
         setHeader(res.header);
         setLogs(res.logs || []);
-
-        console.log('📥 비용 상세 데이터:', res);
+        console.log('📥 비용 데이터:', res);
 
         const h = res.header;
         const mappedItems = res.items.map((i) => ({
-          type: h.el_type,
+          type: i.ei_type,
           title: i.ei_title,
           date: formatDate(i.ei_pdate),
           price: i.ei_amount.toString(),
@@ -175,6 +177,8 @@ export default function ProjectExpenseEdit() {
           expense_items: mappedItems,
         });
 
+        replace(mappedItems);
+
         const groupedAttachments: Record<number, UploadedPreviewFile[]> = {};
 
         res.items.forEach((item, idx) => {
@@ -184,19 +188,16 @@ export default function ProjectExpenseEdit() {
               ei_seq: att.ei_seq,
               fname: att.ea_fname,
               sname: att.ea_sname,
+              ea_url: att.ea_url,
               isServerFile: true,
             }));
           }
         });
 
         setRowAttachments(groupedAttachments);
-
-        setLoading(false);
+        setPageState('ready');
       } catch (err) {
         console.error('❌ 상세 조회 실패:', err);
-        setAlertTitle('조회 실패');
-        setAlertDescription('비용 데이터를 불러오지 못했습니다.');
-        setAlertOpen(true);
       }
     })();
   }, [expId, reset, replace]);
@@ -223,7 +224,7 @@ export default function ProjectExpenseEdit() {
         return updated;
       });
 
-      //await delProjectExpenseAttachment(seq);
+      await delProjectExpenseAttachment(seq);
       console.log(`✅ 첨부파일 #${seq} 삭제 완료`);
     } catch (err) {
       console.error('❌ 삭제 실패, 복구 진행:', err);
@@ -234,10 +235,9 @@ export default function ProjectExpenseEdit() {
     }
   };
 
-  // ✅ 폼 제출 (임시)
-  const onSubmit = async (values: EditFormValues) => {
+  const handleConfirmSubmit = async (values: EditFormValues) => {
     try {
-      // 1️⃣ 새 업로드할 파일 목록 정리
+      // 새 업로드할 파일 목록 정리
       const allNewFiles = Object.entries(newAttachments).flatMap(([rowIdx, files]) => files.map((f) => ({ ...f, rowIdx: Number(rowIdx) })));
 
       let uploadedFiles: any[] = [];
@@ -291,7 +291,7 @@ export default function ProjectExpenseEdit() {
         console.log('✅ 업로드 완료:', uploadedFiles);
       }
 
-      // 4️⃣ 업로드된 파일을 항목별로 매핑
+      // 2️⃣ 업로드 파일 row 매핑
       const uploadedMap = uploadedFiles.reduce(
         (acc, file) => {
           if (!acc[file.rowIdx]) acc[file.rowIdx] = [];
@@ -301,7 +301,7 @@ export default function ProjectExpenseEdit() {
         {} as Record<number, any[]>
       );
 
-      // 5️⃣ expense_items 병합
+      // 3️⃣ item 병합
       const enrichedItems = (values.expense_items ?? []).map((item, idx) => {
         const rowIdx = idx + 1;
 
@@ -310,7 +310,7 @@ export default function ProjectExpenseEdit() {
           rowAttachments[rowIdx]?.map((att) => ({
             fname: att.fname,
             sname: att.sname,
-            url: `${import.meta.env.VITE_API_BASE_URL}/uploads/nexpense/${att.sname}`,
+            url: att.ea_url,
           })) ?? [];
 
         // (2) 새 업로드된 파일
@@ -322,7 +322,7 @@ export default function ProjectExpenseEdit() {
           })) ?? [];
 
         return {
-          el_type: item.type,
+          ei_type: item.type,
           ei_title: item.title,
           ei_pdate: item.date,
           ei_number: item.number || null,
@@ -336,9 +336,9 @@ export default function ProjectExpenseEdit() {
 
       console.log('enrichedItems', enrichedItems);
 
-      const elTypeList = enrichedItems.map((item: any) => String(item.type ?? ''));
+      const elTypeList = enrichedItems.map((item: any) => String(item.ei_type ?? ''));
 
-      // 6️⃣ 최종 payload 구성
+      // 4️⃣ payload
       const payload = {
         header: {
           user_id: user_id!,
@@ -372,51 +372,87 @@ export default function ProjectExpenseEdit() {
 
       console.log('📦 최종 수정 payload:', payload);
 
-      const res = await projectExpenseUpdate(header.seq, payload);
+      const res = await projectExpenseUpdate(expId!, payload);
+
+      console.log('반환 타입', res);
 
       if (res.ok) {
-        setAlertTitle('수정 완료');
-        setAlertDescription('비용 정보가 성공적으로 수정되었습니다.');
-        setSuccessState(true);
+        addAlert({
+          title: '비용 수정 완료',
+          message: `${res.updated.itemCount} 건의 프로젝트 비용이 수정되었습니다.`,
+          icon: <OctagonAlert />,
+          duration: 1500,
+        });
+
+        navigate(`/project/${projectId}/expense/${res.updated.requested}`);
       } else {
-        setAlertTitle('수정 실패');
-        setAlertDescription('등록 결과를 가져오지 못했습니다.');
+        addAlert({
+          title: '비용 수정 실패',
+          message: '프로젝트 비용 수정을 실패했습니다. 다시 시도해 주세요.',
+          icon: <OctagonAlert />,
+          duration: 1500,
+        });
       }
-      setAlertOpen(true);
     } catch (err) {
       console.error('❌ 수정 실패:', err);
-      setAlertTitle('수정 실패');
-      setAlertDescription('수정 중 오류가 발생했습니다.');
-      setAlertOpen(true);
+      addAlert({
+        title: '비용 수정 실패',
+        message: '프로젝트 비용 수정을 실패했습니다. 다시 시도해 주세요.',
+        icon: <OctagonAlert />,
+        duration: 1500,
+      });
     }
   };
 
-  if (loading) return <p className="p-10 text-center text-gray-500">로딩 중...</p>;
+  // ✅ 폼 제출 (임시)
+  const onSubmit = async (values: EditFormValues) => {
+    const isEstimate = header.is_estimate === 'Y';
+
+    console.log('폼', values);
+
+    addDialog({
+      title: '프로젝트 비용 수정',
+      message: isEstimate
+        ? `비용을 수정 하시겠습니까?<br />비용 항목의 금액이 달라지면 기존의 매칭된 견적서 항목이 리셋됩니다.`
+        : `비용을 수정 하시겠습니까?`,
+      confirmText: '확인',
+      cancelText: '취소',
+      onConfirm: async () => handleConfirmSubmit(values),
+    });
+  };
+
+  if (pageState === 'loading') {
+    return <p className="p-10 text-center text-gray-500">로딩 중...</p>;
+  }
+
+  if (pageState === 'not-found') {
+    return (
+      <div className="flex min-h-[300px] flex-col items-center justify-center gap-4">
+        <OctagonAlert className="size-10 text-gray-400" />
+        <p className="text-lg font-medium text-gray-700">데이터를 찾을 수 없습니다.</p>
+        <p className="text-sm text-gray-500">존재하지 않거나 접근할 수 없는 비용입니다.</p>
+        <Button asChild variant="outline">
+          <Link to={`/project/${projectId}/expense`}>목록으로 돌아가기</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (pageState === 'error') {
+    return (
+      <div className="flex min-h-[300px] flex-col items-center justify-center gap-4">
+        <OctagonAlert className="text-destructive size-10" />
+        <p className="text-lg font-medium text-gray-700">오류가 발생했습니다.</p>
+        <p className="text-sm text-gray-500">잠시 후 다시 시도해 주세요.</p>
+      </div>
+    );
+  }
 
   return (
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="flex items-end justify-between border-b border-b-gray-300 pb-2">
-            <div>
-              <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-950">
-                [{header.el_method}] {header.el_title}{' '}
-                <Badge variant="grayish" size="md">
-                  임시저장
-                </Badge>
-              </h1>
-              <ul className="itmes-center flex gap-2 text-base text-gray-500">
-                <li className="text-gray-700">{header.exp_id}</li>
-                <li className="before:mr-2 before:inline-flex before:h-[3px] before:w-[3px] before:rounded-[50%] before:bg-gray-400 before:align-middle">
-                  {header.user_nm}
-                </li>
-                <li className="before:mr-2 before:inline-flex before:h-[3px] before:w-[3px] before:rounded-[50%] before:bg-gray-400 before:align-middle">
-                  {formatKST(header.wdate)}
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="flex min-h-140 flex-wrap justify-between pt-6 pb-12">
+          <div className="flex min-h-140 flex-wrap justify-between pb-12">
             <div className="w-[74%] tracking-tight">
               <SectionHeader title="기본 정보" className="mb-4" />
               {/* 기본정보 입력 폼 */}
@@ -625,11 +661,13 @@ export default function ProjectExpenseEdit() {
                     <article
                       key={`${field.id}`}
                       className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0 last-of-type:pb-4">
-                      <div className="absolute top-2 left-0 flex w-full items-center justify-end gap-2">
-                        <Button type="button" variant="outlinePrimary" size="xs" className="border-0">
-                          <FileText className="size-3.5" /> 기안서 매칭
-                        </Button>
-                      </div>
+                      {header.is_estimate === 'N' && (
+                        <div className="absolute top-2 left-0 flex w-full items-center justify-end gap-2">
+                          <Button type="button" variant="outlinePrimary" size="xs" className="border-0">
+                            <FileText className="size-3.5" /> 기안서 매칭
+                          </Button>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <input type="hidden" name={`expense_items.${index}.number`} value="" />
                         <div className="grid w-[66%] grid-cols-3 gap-4 tracking-tight">
@@ -813,7 +851,7 @@ export default function ProjectExpenseEdit() {
                                 seq: att.seq,
                                 name: att.fname,
                                 type: 'image',
-                                preview: `${import.meta.env.VITE_API_BASE_URL}/uploads/nexpense/${att.sname}`,
+                                preview: att.ea_url,
                               })) ?? []),
                               ...(newAttachments[index + 1] ?? []),
                             ]}
@@ -898,32 +936,11 @@ export default function ProjectExpenseEdit() {
               수정
             </Button>
             <Button type="button" variant="outline" className="min-w-[120px]" asChild>
-              <Link to="/expense">취소</Link>
+              <Link to={`/project/${projectId}/expense/${expId}`}>취소</Link>
             </Button>
           </div>
         </form>
       </Form>
-
-      {/* ---------------------- Alert Dialog ---------------------- */}
-      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{alertTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{alertDescription}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            {successState ? (
-              <AlertDialogAction className="h-8 px-3.5 text-sm" onClick={() => navigate(`/expense/${expId}`)}>
-                확인
-              </AlertDialogAction>
-            ) : (
-              <AlertDialogCancel className="h-8 px-3.5 text-sm" onClick={() => setAlertOpen(false)}>
-                닫기
-              </AlertDialogCancel>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
