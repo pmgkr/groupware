@@ -119,10 +119,11 @@ export default function OvertimeViewDialog({
 
   // 승인 확인 다이얼로그
   const handleApproveClick = () => {
+    const isWeekendTab = activeTab === 'weekend';
     addDialog({
-      title: '<span class="text-primary-blue font-semibold">승인 확인</span>',
-      message: '이 추가근무 신청을 승인하시겠습니까?',
-      confirmText: '승인하기',
+      title: `<span class="text-primary-blue font-semibold">${isWeekendTab ? '보상 지급 확인' : '승인 확인'}</span>`,
+      message: isWeekendTab ? '이 보상지급 요청을 승인하시겠습니까?' : '이 추가근무 신청을 승인하시겠습니까?',
+      confirmText: isWeekendTab ? '보상 지급하기' : '승인하기',
       cancelText: '취소',
       onConfirm: async () => {
         try {
@@ -439,7 +440,7 @@ export default function OvertimeViewDialog({
                   <>
                     {onApprove && (
                       <Button variant="default" onClick={handleApproveClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
-                        승인하기
+                        {activeTab === 'weekend' ? '보상 지급하기' : '승인하기'}
                       </Button>
                     )}
                     {onReject && (
