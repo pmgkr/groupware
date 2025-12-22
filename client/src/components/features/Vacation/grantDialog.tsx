@@ -128,7 +128,7 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
         user_name: userName!,
         noti_target: user?.user_id!,
         noti_title: `${parseInt(vaYear)}년도 ${typeName} ${count}일 부여`,
-        noti_message: `휴가를 부여했습니다.`,
+        noti_message: `${user?.user_name}님이 휴가를 부여했습니다.`,
         noti_type: 'vacation',
         noti_url: '/mypage/vacation',
       });
