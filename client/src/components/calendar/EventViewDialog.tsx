@@ -58,11 +58,11 @@ export default function EventViewDialog({
   // 본인의 일정인지 확인 (user_id로 비교)
   const isMyEvent = user_id && selectedEvent?.userId === user_id;
   
-  // manager/admin 권한 확인 (같은 팀 직원의 연차 승인 가능)
+  // manager/admin 권한 확인
   const isManager = user_level === 'manager' || user_level === 'admin';
   
-  // 같은 팀인지 확인
-  const isSameTeam = team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId;
+  // 관리 권한이 있는지 확인 (어드민은 모든 팀, 매니저는 본인 팀)
+  const hasAuthority = user_level === 'admin' || (user_level === 'manager' && team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId);
   
   // 상태 표시: 본인이 보면 "취소 요청됨", 매니저가 보면 "취소 요청됨"
   const status = (() => {
@@ -75,8 +75,8 @@ export default function EventViewDialog({
     
     // "취소 요청됨" 상태인 경우
     if (baseStatus === "취소 요청됨") {
-      // 매니저이면서 같은 팀인 경우 "취소 요청됨"로 표시
-      if (isManager && isSameTeam && !isMyEvent) {
+      // 권한이 있으면서 본인 일정이 아닌 경우 "취소 요청됨"로 표시
+      if (hasAuthority && !isMyEvent) {
         return "취소 요청됨";
       }
     }
@@ -278,26 +278,26 @@ export default function EventViewDialog({
             </div>
           )}
 
-          {/* 일정 상태 - 본인의 일정이거나 매니저가 같은 팀 직원의 일정을 볼 때 표시 */}
-          {(isMyEvent || (isManager && isSameTeam)) && status && (
+          {/* 일정 상태 - 본인의 일정이거나 관리 권한이 있을 때 표시 */}
+          {(isMyEvent || hasAuthority) && status && (
             <div className="space-y-2">
               <Label>진행 상태</Label>
               <div className="px-4 py-2 rounded-lg border border-gray-300 bg-gray-100">
-                  <div>
-                    <span className="text-base font-semibold text-gray-800">
-                      {status}
-                    </span>
-                    {status === "등록 완료" && selectedEvent?.createdAt && (
-                      <p className="text-sm text-gray-800 mt-1">
-                        등록일: {dayjs(selectedEvent.createdAt).format('YYYY년 MM월 DD일')}
-                      </p>
-                    )}
-                    {status === "취소 요청됨" && selectedEvent?.cancelRequestDate && (
-                      <p className="text-sm text-gray-800 mt-1">
-                        요청날짜: {dayjs(selectedEvent.cancelRequestDate).format('YYYY년 MM월 DD일')}
-                      </p>
-                    )}
-                  </div>
+                <div>
+                  <span className="text-base font-semibold text-gray-800">
+                    {status}
+                  </span>
+                  {status === "등록 완료" && selectedEvent?.createdAt && (
+                    <p className="text-sm text-gray-800 mt-1">
+                      등록일: {dayjs(selectedEvent.createdAt).format('YYYY년 MM월 DD일')}
+                    </p>
+                  )}
+                  {status === "취소 요청됨" && selectedEvent?.cancelRequestDate && (
+                    <p className="text-sm text-gray-800 mt-1">
+                      요청날짜: {dayjs(selectedEvent.cancelRequestDate).format('YYYY년 MM월 DD일')}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -305,7 +305,7 @@ export default function EventViewDialog({
         <DialogFooter>
           {status !== "취소 완료" && (
             <>
-              {isManager && isSameTeam && status === "취소 요청됨" && onApproveCancel && (
+              {hasAuthority && status === "취소 요청됨" && onApproveCancel && (
                 <Button variant="destructive" onClick={handleApproveCancel}>취소 요청 승인</Button>
               )}
               {/* 액션 버튼들 - 본인의 일정일 때만 표시 */}
