@@ -905,7 +905,9 @@ export default function OvertimeList({
       <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>승인 확인</AlertDialogTitle>
+            <AlertDialogTitle>
+              {isPage === 'admin' && activeTab === 'weekend' ? '보상 지급 확인' : '승인 확인'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {(() => {
                 if (isPage === 'manager') {
@@ -917,7 +919,7 @@ export default function OvertimeList({
                 } else if (isPage === 'admin') {
                   return (
                     <>
-                      {approveCounts.compensation}개의 보상지급 요청을 승인하시겠습니까?
+                      {approveCounts.compensation}개의 보상지급 요청을 {activeTab === 'weekend' ? '지급' : '승인'}하시겠습니까?
                     </>
                   );
                 } else {
@@ -933,7 +935,7 @@ export default function OvertimeList({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={handleConfirmApprove}>
-              승인하기
+              {isPage === 'admin' && activeTab === 'weekend' ? '보상 지급하기' : '승인하기'}
             </AlertDialogAction>
             <AlertDialogCancel>닫기</AlertDialogCancel>
           </AlertDialogFooter>

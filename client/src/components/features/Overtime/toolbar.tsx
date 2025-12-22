@@ -365,7 +365,9 @@ export default function OvertimeToolbar({
       </div>
       
       {!(page === 'admin' && activeTab === 'weekday') && (
-        <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>승인하기</Button>
+        <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>
+          {page === 'admin' && activeTab === 'weekend' ? '보상 지급하기' : '승인하기'}
+        </Button>
       )}
     </div>
   );
