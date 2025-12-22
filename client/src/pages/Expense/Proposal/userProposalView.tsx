@@ -121,6 +121,12 @@ export default function ProposalView() {
     });
   };
 
+  // 목록으로 돌아가기 - 모든 쿼리 파라미터 유지
+  const handleBack = () => {
+    const queryString = searchParams.toString();
+    navigate(`../proposal${queryString ? `?${queryString}` : ''}`);
+  };
+
   // 로딩 중
   if (loading) {
     return <div className="p-6 text-center">로딩 중...</div>;
@@ -142,7 +148,8 @@ export default function ProposalView() {
       report={report}
       files={files}
       steps={steps}
-      onBack={() => navigate(`../proposal?tab=${currentTab}`)} // 목록으로
+      //onBack={() => navigate(`../proposal?tab=${currentTab}`)} // 목록으로
+      onBack={handleBack} // 목록으로
       showApprovalButtons={false} // 일반 유저는 승인/반려 버튼 없음
       onDelete={canDelete ? handleDelete : undefined} //삭제버튼
     />

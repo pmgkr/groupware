@@ -497,26 +497,14 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
             const matchPromises = enrichedItems
               .map((item, index) => ({
                 pro_id: item.pro_id,
-                item_seq: itemSeq[index], // ⭐ 배열에서 index로 개별 값 가져오기
+                item_seq: itemSeq[index],
               }))
               .filter(({ pro_id, item_seq }) => pro_id && item_seq !== undefined) // item_seq가 존재하는지 확인
               .map(async ({ pro_id, item_seq }) => {
-                console.log('📌 매칭 요청 직전 값', {
-                  rp_seq: pro_id,
-                  exp_seq: item_seq,
-                  rp_type: typeof pro_id,
-                  exp_type: typeof item_seq,
-                });
-
                 const matchResult = (await matchNonProjectWithProposal(pro_id as number, item_seq as number)) as {
                   success: boolean;
                   result: { type: string };
                 };
-
-                // 디버깅 추가
-                console.log('📦 matchResult 전체:', matchResult);
-                console.log('📦 matchResult.ok:', matchResult.success);
-                console.log('📦 matchResult type:', typeof matchResult);
 
                 if (matchResult.success) {
                   console.log(`✅ 기안서 ${pro_id} - 아이템 ${item_seq} 매칭 완료`);

@@ -234,6 +234,11 @@ export default function AdminProposalView() {
       },
     });
   };
+  // 목록으로 돌아가기 - 모든 쿼리 파라미터 유지
+  const handleBack = () => {
+    const queryString = searchParams.toString();
+    navigate(`/admin/proposal${queryString ? `?${queryString}` : ''}`);
+  };
 
   // 로딩 중
   if (loading) {
@@ -278,7 +283,8 @@ export default function AdminProposalView() {
       report={report}
       steps={steps}
       files={files}
-      onBack={() => navigate(`../proposal?tab=${currentTab}`)}
+      //onBack={() => navigate(`../proposal?tab=${currentTab}`)}
+      onBack={handleBack}
       showWriterInfo={true}
       writerTeamName={writerTeamName}
       showApprovalButtons={canApprove}

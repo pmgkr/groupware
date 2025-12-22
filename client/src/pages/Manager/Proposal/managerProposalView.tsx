@@ -98,6 +98,12 @@ export default function ManagerProposalView() {
     }
   };
 
+  // 목록으로 돌아가기 - 모든 쿼리 파라미터 유지
+  const handleBack = () => {
+    const queryString = searchParams.toString();
+    navigate(`/manager/proposal${queryString ? `?${queryString}` : ''}`);
+  };
+
   // 승인 처리
   const handleApprove = async () => {
     if (!id || !user?.user_id) {
@@ -309,7 +315,8 @@ export default function ManagerProposalView() {
       report={report}
       steps={steps}
       files={files}
-      onBack={() => navigate(`../proposal?tab=${currentTab}`)}
+      //onBack={() => navigate(`../proposal?tab=${currentTab}`)}
+      onBack={handleBack}
       showWriterInfo={true}
       writerTeamName={writerTeamName}
       showApprovalButtons={canApprove}

@@ -93,40 +93,35 @@ export default function ProposalList({
   adminRole,
   onFetchData,
 }: ProposalListContentProps) {
+  // ==================== Hooks & State ====================
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const user = useUser();
+  const { addDialog } = useAppDialog();
+  const { addAlert } = useAppAlert();
+
+  // URL에서 초기값 가져오기
+  const [activeTab, setActiveTab] = useState('');
+  const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
+  const [matchStatus, setMatchStatus] = useState(searchParams.get('match') || undefined);
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [activeSearchQuery, setActiveSearchQuery] = useState(searchParams.get('q') || '');
+
+  // 기타 상태
   const [fetchedReports, setFetchedReports] = useState<(ReportCard | ManagerReportCard | AdminReportCard)[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeSearchQuery, setActiveSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [matchStatus, setMatchStatus] = useState<string | undefined>();
-  const [searchParams] = useSearchParams();
-  const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page') || 1));
-  const [activeTab, setActiveTab] = useState('');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isAllSelected, setIsAllSelected] = useState(false);
 
-  const navigate = useNavigate();
-  const location = useLocation();
-
+  // 계산된 값
   const reports = reportsProp || fetchedReports;
   const isProjectPage = location.pathname.startsWith('/project/proposal');
   const isManagerPage = location.pathname.startsWith('/manager/proposal');
   const showBulkApproval = isAdmin && activeTab === 'pending';
-  const [lines, setLines] = useState<any[]>([]);
-  const user = useUser();
 
-  // 유틸리티 함수들
-  const getStatusParam = (): 'finance' | 'gm' | 'rejected' | 'completed' | undefined => {
-    if (!isAdmin) return undefined;
-
-    const statusMap: Record<'gm' | 'finance', Record<string, 'finance' | 'gm' | 'rejected' | 'completed' | undefined>> = {
-      gm: { pending: 'gm', completed: 'completed', rejected: 'rejected' },
-      finance: { pending: 'finance', completed: 'gm', rejected: 'rejected' },
-    };
-
-    return statusMap[adminRole!]?.[activeTab];
-  };
-
+  // ==================== Utility Functions ====================
   const getDefaultTab = () => {
     if (searchParams.get('tab')) return searchParams.get('tab')!;
     if (isAdmin || isManager) return 'pending';
@@ -139,51 +134,13 @@ export default function ProposalList({
     return 'user';
   };
 
-  type DisplayStateCapable = {
-    state: string;
-    approval_manager_display_state?: string;
-    approval_finance_display_state?: string;
-    approval_gm_display_state?: string;
-  };
-
-  const getDisplayStatus = (report: {
-    state: string;
-    approval_manager_display_state?: string;
-    approval_finance_display_state?: string;
-    approval_gm_display_state?: string;
-  }) => {
-    // 0️⃣ 반려는 무조건 최우선
-    if (
-      report.state === '반려' ||
-      report.approval_manager_display_state === '반려' ||
-      report.approval_finance_display_state === '반려' ||
-      report.approval_gm_display_state === '반려'
-    ) {
-      return '반려';
-    }
-
-    // 🔥 1️⃣ 단 하나의 예외
-    // 회계 어드민 + "결재 완료 문서" 탭에서만
-    if (isAdmin && adminRole === 'finance' && activeTab === 'completed') {
-      return report.approval_finance_display_state || report.approval_manager_display_state || report.state;
-    }
-
-    // 2️⃣ GM 어드민
-    if (isAdmin && adminRole === 'gm') {
-      return (
-        report.approval_gm_display_state || report.approval_finance_display_state || report.approval_manager_display_state || report.state
-      );
-    }
-
-    // 3️⃣ 매니저
-    if (isManager) {
-      return report.approval_manager_display_state || report.state;
-    }
-
-    // 4️⃣ 기본 (유저, 전체 등)
-    return (
-      report.approval_gm_display_state || report.approval_finance_display_state || report.approval_manager_display_state || report.state
-    );
+  const getStatusParam = (): 'finance' | 'gm' | 'rejected' | 'completed' | undefined => {
+    if (!isAdmin) return undefined;
+    const statusMap: Record<'gm' | 'finance', Record<string, 'finance' | 'gm' | 'rejected' | 'completed' | undefined>> = {
+      gm: { pending: 'gm', completed: 'completed', rejected: 'rejected' },
+      finance: { pending: 'finance', completed: 'gm', rejected: 'rejected' },
+    };
+    return statusMap[adminRole!]?.[activeTab];
   };
 
   const getCategoryOptions = () => {
@@ -193,17 +150,48 @@ export default function ProposalList({
       { value: '구매요청', label: '구매요청' },
       { value: '일반비용', label: '일반비용' },
     ];
-
     if (isManagerPage || isAdmin) {
       baseCategories.push({ value: '프로젝트', label: '프로젝트' });
     }
-
     return baseCategories;
   };
 
-  // 필터 함수
+  const getDisplayStatus = (report: {
+    state: string;
+    approval_manager_display_state?: string;
+    approval_finance_display_state?: string;
+    approval_gm_display_state?: string;
+  }) => {
+    if (
+      report.state === '반려' ||
+      report.approval_manager_display_state === '반려' ||
+      report.approval_finance_display_state === '반려' ||
+      report.approval_gm_display_state === '반려'
+    ) {
+      return '반려';
+    }
+
+    if (isAdmin && adminRole === 'finance' && activeTab === 'completed') {
+      return report.approval_finance_display_state || report.approval_manager_display_state || report.state;
+    }
+
+    if (isAdmin && adminRole === 'gm') {
+      return (
+        report.approval_gm_display_state || report.approval_finance_display_state || report.approval_manager_display_state || report.state
+      );
+    }
+
+    if (isManager) {
+      return report.approval_manager_display_state || report.state;
+    }
+
+    return (
+      report.approval_gm_display_state || report.approval_finance_display_state || report.approval_manager_display_state || report.state
+    );
+  };
+
+  // ==================== Filter Functions ====================
   const filterByTab = (report: ReportCard | ManagerReportCard | AdminReportCard) => {
-    // 일반 사용자
     if (!isManager && !isAdmin) {
       const tabStateMap = {
         draft: ['진행', '대기'],
@@ -213,15 +201,12 @@ export default function ProposalList({
       return tabStateMap[activeTab as keyof typeof tabStateMap]?.includes(report.state) ?? true;
     }
 
-    // 매니저
     if (isManager && activeTab === 'rejected') {
       return ['state', 'manager_state', 'finance_state', 'gm_state'].some((key) => report[key as keyof typeof report] === '반려');
     }
 
-    // Admin
     if (isAdmin) {
       if (activeTab === 'rejected') return report.state === '반려';
-
       const filterMap = {
         finance: {
           pending: () => report.manager_state === '완료' && report.finance_state === '대기',
@@ -232,7 +217,6 @@ export default function ProposalList({
           completed: () => report.manager_state === '완료' && report.finance_state === '완료' && report.gm_state === '완료',
         },
       };
-
       return filterMap[adminRole!]?.[activeTab as 'pending' | 'completed']?.() ?? true;
     }
 
@@ -248,16 +232,15 @@ export default function ProposalList({
     if (report.category === '구매요청') return false;
     return matchStatus === 'matched' ? !!report.expense_no : !report.expense_no;
   };
+
   const filterBySearch = (report: ReportCard | ManagerReportCard | AdminReportCard) => {
     if (!activeSearchQuery) return true;
-
     const searchLower = activeSearchQuery.toLowerCase();
     const searchableFields = [report.title, report.category, report.user, report.team, String(report.id), String(report.expense_no || '')];
-
     return searchableFields.some((field) => field && String(field).toLowerCase().includes(searchLower));
   };
 
-  // API 호출
+  // ==================== API & Data ====================
   const fetchReports = async () => {
     if (!onFetchData) return;
 
@@ -269,11 +252,9 @@ export default function ProposalList({
         type: activeTab !== 'all' ? activeTab : undefined,
         q: activeSearchQuery || undefined,
       };
-
       if (isAdmin) {
         payload.status = getStatusParam();
       }
-
       const data = await onFetchData(payload);
       setFetchedReports(data);
     } catch (error) {
@@ -283,23 +264,87 @@ export default function ProposalList({
     }
   };
 
-  const handleSearch = () => {
-    setActiveSearchQuery(searchQuery);
-    setCurrentPage(1);
-    navigate(`?tab=${activeTab}&page=1`, { replace: true });
-    setSelectedIds([]);
-    setIsAllSelected(false);
-  };
+  const filteredReports = useMemo(() => {
+    return reports
+      .filter(filterByTab)
+      .filter(filterByCategory)
+      .filter(filterByMatchStatus)
+      .filter(filterBySearch)
+      .sort((a, b) => b.id - a.id);
+  }, [reports, activeTab, selectedCategory, matchStatus, activeSearchQuery, isAdmin, adminRole, isManager]);
 
+  const { totalPages, paginatedReports } = useMemo(() => {
+    const total = Math.ceil(filteredReports.length / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const paginated = filteredReports.slice(startIndex, startIndex + pageSize);
+    return { totalPages: total, paginatedReports: paginated };
+  }, [filteredReports, currentPage, pageSize]);
+
+  // ==================== Event Handlers ====================
   const handleTabChange = (key: string) => {
     setActiveTab(key);
     setSelectedCategory('');
-    setMatchStatus('');
+    setMatchStatus(undefined);
+    setSearchQuery('');
+    setActiveSearchQuery('');
     setCurrentPage(1);
     setSelectedIds([]);
     setIsAllSelected(false);
-    setSearchQuery('');
-    navigate(`?tab=${key}&page=1`);
+    navigate(`?tab=${key}&page=1`, { replace: true });
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
+    setCurrentPage(1);
+
+    const params = new URLSearchParams(searchParams);
+    params.set('page', '1');
+    if (value && value !== '전체') {
+      params.set('category', value);
+    } else {
+      params.delete('category');
+    }
+    navigate(`?${params.toString()}`, { replace: true });
+  };
+
+  const handleMatchStatusChange = (value: string) => {
+    setMatchStatus(value === 'all' ? undefined : value);
+    setCurrentPage(1);
+
+    const params = new URLSearchParams(searchParams);
+    params.set('page', '1');
+    if (value && value !== 'all') {
+      params.set('match', value);
+    } else {
+      params.delete('match');
+    }
+    navigate(`?${params.toString()}`, { replace: true });
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setSelectedIds([]);
+    setIsAllSelected(false);
+
+    const params = new URLSearchParams(searchParams);
+    params.set('page', String(page));
+    navigate(`?${params.toString()}`, { replace: true });
+  };
+
+  const handleSearch = () => {
+    setActiveSearchQuery(searchQuery);
+    setCurrentPage(1);
+
+    const params = new URLSearchParams(searchParams);
+    params.set('page', '1');
+    if (searchQuery) {
+      params.set('q', searchQuery);
+    } else {
+      params.delete('q');
+    }
+    navigate(`?${params.toString()}`, { replace: true });
+    setSelectedIds([]);
+    setIsAllSelected(false);
   };
 
   const handleSelectAll = () => {
@@ -312,17 +357,12 @@ export default function ProposalList({
     }
   };
 
-  const { addDialog } = useAppDialog();
-  const { addAlert } = useAppAlert();
-
   const handleSelectOne = (id: number) => {
     const newIds = selectedIds.includes(id) ? selectedIds.filter((selectedId) => selectedId !== id) : [...selectedIds, id];
-
     setSelectedIds(newIds);
     setIsAllSelected(newIds.length === paginatedReports.length);
   };
 
-  // 일괄승인 핸들러 (Admin 페이지에 추가)
   const handleBulkApprove = async () => {
     if (selectedIds.length === 0) {
       addAlert({
@@ -341,18 +381,13 @@ export default function ProposalList({
       cancelText: '취소',
       onConfirm: async () => {
         try {
-          console.log('🔥 일괄 승인 요청 seq:', selectedIds);
-
           const isFinance = user?.team_id === 5;
           const isGM = user?.user_level === 'admin' && user?.team_id !== 5;
 
-          // 1. 먼저 승인 처리
           await approveReport(selectedIds.map(Number));
 
-          // 2. 각 기안서에 대해 알림 전송
           for (const reportId of selectedIds) {
             try {
-              // 각 기안서 정보 조회
               const data = await getReportInfoAdmin(String(reportId));
               const report = data.report;
               const lines = data.lines || [];
@@ -360,15 +395,9 @@ export default function ProposalList({
               const isProject = report.rp_project_type === 'project';
               const userUrl = isProject ? `/project/proposal/view/${reportId}` : `/expense/proposal/view/${reportId}`;
               const adminUrl = `/admin/proposal/${reportId}`;
+              const categoryLabel = isProject ? '프로젝트' : report.rp_category || '';
 
-              const categoryLabel = (() => {
-                if (isProject) return '프로젝트';
-                return report.rp_category || '';
-              })();
-
-              // Finance가 승인한 경우
               if (isFinance) {
-                // 작성자에게 알림
                 try {
                   await notificationApi.registerNotification({
                     user_id: report.rp_user_id,
@@ -379,15 +408,12 @@ export default function ProposalList({
                     noti_type: 'proposal',
                     noti_url: userUrl,
                   });
-                  console.log(`✅ [${reportId}] 작성자 알림 성공`);
                 } catch (err) {
                   console.error(`❌ [${reportId}] 작성자 알림 실패:`, err);
                 }
 
-                // GM에게 결재 요청 알림
                 try {
                   const gmLine = lines.find((line) => line.rl_order === 4);
-
                   if (gmLine?.rl_approver_id) {
                     await notificationApi.registerNotification({
                       user_id: gmLine.rl_approver_id,
@@ -398,14 +424,11 @@ export default function ProposalList({
                       noti_type: 'proposal',
                       noti_url: adminUrl,
                     });
-                    console.log(`✅ [${reportId}] GM 알림 성공`);
                   }
                 } catch (err) {
                   console.error(`❌ [${reportId}] GM 알림 실패:`, err);
                 }
-              }
-              // GM이 승인한 경우 (최종 승인)
-              else if (isGM) {
+              } else if (isGM) {
                 try {
                   await notificationApi.registerNotification({
                     user_id: report.rp_user_id,
@@ -416,7 +439,6 @@ export default function ProposalList({
                     noti_type: 'proposal',
                     noti_url: userUrl,
                   });
-                  console.log(`✅ [${reportId}] 작성자 알림 성공 (최종)`);
                 } catch (err) {
                   console.error(`❌ [${reportId}] 작성자 알림 실패:`, err);
                 }
@@ -433,17 +455,14 @@ export default function ProposalList({
             duration: 2000,
           });
 
-          // 상태 초기화
           setSelectedIds([]);
           setIsAllSelected(false);
 
-          // 목록 재조회
           if (onFetchData) {
             await fetchReports();
           }
         } catch (error) {
           console.error('❌ 일괄 승인 실패:', error);
-
           addAlert({
             title: '승인 실패',
             message: '<p>승인 처리 중 오류가 발생했습니다.</p>',
@@ -455,41 +474,50 @@ export default function ProposalList({
     });
   };
 
-  // Effects
+  // ==================== Effects ====================
+  // 1. 탭 초기화
   useEffect(() => {
-    setActiveTab(getDefaultTab());
-  }, [searchParams, isAdmin, adminRole, isManager]);
+    const tabFromUrl = searchParams.get('tab');
+    const defaultTab = isAdmin || isManager ? 'pending' : 'draft';
+    const newTab = tabFromUrl || defaultTab;
 
+    if (activeTab !== newTab) {
+      setActiveTab(newTab);
+    }
+  }, [searchParams.get('tab'), isAdmin, isManager]);
+
+  // 2. 세션 스토리지 업데이트만 수행 (초기화 로직 제거)
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    const defaultTab = isAdmin || isManager ? 'pending' : 'draft';
+    const currentUrlTab = tabFromUrl || defaultTab;
+
+    sessionStorage.setItem('lastActiveTab', currentUrlTab);
+  }, [searchParams.get('tab'), isAdmin, isManager]);
+
+  // 3. URL 파라미터 복원 (우선순위 높임)
+  useEffect(() => {
+    const categoryFromUrl = searchParams.get('category') || '';
+    const matchFromUrl = searchParams.get('match') || undefined;
+    const searchFromUrl = searchParams.get('q') || '';
+    const pageFromUrl = Number(searchParams.get('page')) || 1;
+
+    // 🔥 무조건 URL 우선
+    setSelectedCategory(categoryFromUrl);
+    setMatchStatus(matchFromUrl);
+    setSearchQuery(searchFromUrl);
+    setActiveSearchQuery(searchFromUrl);
+    setCurrentPage(pageFromUrl);
+  }, [searchParams.get('category'), searchParams.get('match'), searchParams.get('q'), searchParams.get('page')]);
+
+  // 4. 데이터 fetch
   useEffect(() => {
     if (activeTab && onFetchData) {
       fetchReports();
     }
   }, [activeTab, activeSearchQuery, onFetchData]);
 
-  // 필터링 및 페이지네이션
-  const filteredReports = useMemo(() => {
-    return reports
-      .filter(filterByTab)
-      .filter(filterByCategory)
-      .filter(filterByMatchStatus)
-      .filter(filterBySearch)
-      .sort((a, b) => b.id - a.id);
-  }, [reports, activeTab, selectedCategory, matchStatus, isAdmin, adminRole, isManager]);
-
-  const { totalPages, paginatedReports } = useMemo(() => {
-    const total = Math.ceil(filteredReports.length / pageSize);
-    const startIndex = (currentPage - 1) * pageSize;
-    const paginated = filteredReports.slice(startIndex, startIndex + pageSize);
-
-    return { totalPages: total, paginatedReports: paginated };
-  }, [filteredReports, currentPage, pageSize]);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    setSelectedIds([]);
-    setIsAllSelected(false);
-  };
-
+  // ==================== Render ====================
   const usedTabs = tablist[getUserType()];
   const categories = getCategoryOptions();
 
@@ -514,7 +542,7 @@ export default function ProposalList({
           </div>
           <div className="flex items-center gap-x-2 before:mr-3 before:ml-3 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300">
             {!isProjectPage && (
-              <Select value={selectedCategory || ''} onValueChange={setSelectedCategory}>
+              <Select value={selectedCategory || ''} onValueChange={handleCategoryChange}>
                 <SelectTrigger size="sm" className="w-[100px]">
                   <SelectValue placeholder="구분 선택" />
                 </SelectTrigger>
@@ -527,7 +555,7 @@ export default function ProposalList({
                 </SelectContent>
               </Select>
             )}
-            <Select value={matchStatus || ''} onValueChange={setMatchStatus}>
+            <Select value={matchStatus || ''} onValueChange={handleMatchStatusChange}>
               <SelectTrigger size="sm" className="w-[120px]">
                 <SelectValue placeholder="비용 매칭 상태" />
               </SelectTrigger>
