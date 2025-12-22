@@ -19,6 +19,7 @@ export interface LatecomerItem {
   workType: string;
   workTypeColorKey: string;
   workTypes?: Array<{ type: string }>;
+  workKind?: string;
 }
 
 interface LatecomerProps {
@@ -45,15 +46,24 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
   };
 
   // wtype 코드 -> 표시 텍스트 및 색상 키 매핑
-  const mapWorkType = (wtype?: string): { label: string; colorKey: string } => {
+  const mapWorkType = (wtype?: string, wkind?: string): { label: string; colorKey: string } => {
     const code = (wtype || '').trim().toLowerCase();
+    const rawKind = (wkind || '').trim().toLowerCase();
 
-    // 변형 코드 포괄 매핑 (quarter 오타 포함)
-    if (code.includes('quarter') || code.includes('quater')) {
-      return { label: '반반차', colorKey: '오전반반차' };
+    // wkind 영문 값을 한글로 변환
+    let kind = '';
+    if (rawKind === 'morning') kind = '오전';
+    else if (rawKind === 'afternoon') kind = '오후';
+    else kind = rawKind;
+
+    // 변형 코드 포괄 매핑
+    if (code.includes('quarter')) {
+      const displayKind = kind || '오전'; // 기본값 오전
+      return { label: `${displayKind}반반차`, colorKey: `${displayKind}반반차` };
     }
     if (code.includes('half')) {
-      return { label: '반차', colorKey: '오전반차' };
+      const displayKind = kind || '오전'; // 기본값 오전
+      return { label: `${displayKind}반차`, colorKey: `${displayKind}반차` };
     }
 
     switch (code) {
@@ -108,7 +118,7 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
 
           // 근무유형/근무시간 등 계산은 모두 백엔드에서 오므로
           // 프론트에서는 wtype과 wmin을 단순 매핑/포맷만 수행
-          const mapped = mapWorkType(item.wtype);
+          const mapped = mapWorkType(item.wtype, item.wkind);
           const displayWorkType = mapped.label;
           const colorKey = mapped.colorKey;
 
@@ -123,6 +133,7 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
             totalTime: formatWorkMinutes(item.wmin),
             workType: displayWorkType,
             workTypeColorKey: colorKey,
+            workKind: item.wkind,
           });
           latecomersMap.set(tdate, list);
         };

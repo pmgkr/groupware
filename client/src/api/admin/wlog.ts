@@ -63,6 +63,8 @@ export interface LateComerResponseItems {
   etime: string;
   wmin: number;
   wtype: string;
+  wkind: string;
+
 }
 
 export const adminWlogApi = {
