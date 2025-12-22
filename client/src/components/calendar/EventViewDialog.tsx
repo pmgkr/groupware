@@ -58,8 +58,8 @@ export default function EventViewDialog({
   // 본인의 일정인지 확인 (user_id로 비교)
   const isMyEvent = user_id && selectedEvent?.userId === user_id;
   
-  // manager 권한 확인 (같은 팀 직원의 연차 승인 가능)
-  const isManager = user_level === 'manager';
+  // manager/admin 권한 확인 (같은 팀 직원의 연차 승인 가능)
+  const isManager = user_level === 'manager' || user_level === 'admin';
   
   // 같은 팀인지 확인
   const isSameTeam = team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId;

@@ -66,10 +66,12 @@ export interface LateComerResponseItems {
 }
 
 export const adminWlogApi = {
-  // 주간 근태 로그 조회
-  getWlogWeekList: async (team_id: number, weekno: number, yearno: number): Promise<WlogWeekListResponse> => {
+  // 주간 근태 로그 조회 (team_id 없으면 전체)
+  getWlogWeekList: async (team_id: number | null | undefined, weekno: number, yearno: number): Promise<WlogWeekListResponse> => {
     const queryParams = new URLSearchParams();
-    queryParams.append('team_id', team_id.toString());
+    if (team_id !== null && team_id !== undefined) {
+      queryParams.append('team_id', team_id.toString());
+    }
     queryParams.append('weekno', weekno.toString());
     queryParams.append('yearno', yearno.toString());
     const response = await http<WlogWeekListResponse>(`/admin/wlog/week?${queryParams.toString()}`, {

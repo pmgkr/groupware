@@ -8,10 +8,10 @@ import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescri
 import { Alarm } from '@/assets/images/icons';
 
 import { notificationApi, type Notification } from '@/api/notification';
-import { getMemberList } from '@/api/common/team';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getImageUrl, getAvatarFallback } from '@/utils';
+import { getProfileImageUrl } from '@/utils/profileImageHelper';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/ko';
@@ -80,7 +80,6 @@ export function Notification() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeTab, setActiveTab] = useState<string>('today');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [userProfiles, setUserProfiles] = useState<Map<string, { user_name: string; profile_image?: string }>>(new Map());
   const navigate = useNavigate();
 
   // 알림 목록 조회
@@ -112,31 +111,6 @@ export function Notification() {
           }
           return matches;
         });
-
-        // 고유한 noti_target user_id 추출
-        const uniqueTargetIds = [...new Set(filteredResponse.map((noti) => noti.noti_target))];
-
-        // 전체 멤버 목록 가져오기 (팀 ID 없이 호출하면 전체 멤버 반환)
-        try {
-          const allMembers = await getMemberList();
-          const newProfilesMap = new Map(userProfiles);
-
-          // 멤버 목록에서 noti_target에 해당하는 사용자 정보 찾기
-          uniqueTargetIds.forEach((targetId) => {
-            const member = allMembers.find((m: any) => m.user_id === targetId);
-            if (member) {
-              newProfilesMap.set(targetId, {
-                user_name: member.user_name || '',
-                profile_image: member.profile_image || undefined,
-              });
-            }
-          });
-
-          setUserProfiles(newProfilesMap);
-        } catch (error) {
-          console.error('멤버 목록 조회 실패:', error);
-          // 에러가 발생해도 알림은 표시되도록 함
-        }
 
         setNotifications(filteredResponse);
       } catch (error) {
@@ -202,7 +176,9 @@ export function Notification() {
 
   // 알림 아이템 렌더링 함수
   const renderNotificationItem = (noti: Notification) => {
-    const targetUser = userProfiles.get(noti.noti_target);
+    const displayName = noti.target_name || noti.noti_target || '';
+    const fallbackKey = displayName || noti.noti_target || '';
+    const profileSrc = getProfileImageUrl(noti.target_image);
 
     return (
       <li
@@ -211,24 +187,15 @@ export function Notification() {
           noti.noti_is_read === 'Y' ? 'opacity-50' : ''
         }`}
         onClick={() => handleNotificationClick(noti)}>
-        {targetUser ? (
-          <Avatar className="size-12">
-            <AvatarImage src={`${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${targetUser.profile_image}`} alt={targetUser.user_name} />
-            <AvatarFallback>
-              {targetUser.user_name ? targetUser.user_name.charAt(0).toUpperCase() : getAvatarFallback(noti.noti_target)}
-            </AvatarFallback>
-          </Avatar>
-        ) : (
-          <Avatar className="size-12">
-            <AvatarImage src={getImageUrl('dummy/profile')} alt={noti.noti_target} />
-            <AvatarFallback>{getAvatarFallback(noti.noti_target)}</AvatarFallback>
-          </Avatar>
-        )}
+        <Avatar className="size-12">
+          <AvatarImage src={profileSrc} alt={displayName} />
+          <AvatarFallback>{getAvatarFallback(fallbackKey)}</AvatarFallback>
+        </Avatar>
         <div className="w-66 flex-1">
           <p className="overflow-hidden text-base leading-6">
-            {targetUser?.user_name && (
+            {displayName && (
               <>
-                <strong>{targetUser.user_name}</strong> 님이
+                <strong>{displayName}</strong> 님이
               </>
             )}{' '}
             {formatNotiMessage(noti.noti_message)}

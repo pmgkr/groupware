@@ -214,3 +214,19 @@ export async function claimProjectTempExpense(payload: { seqs: number[] }): Prom
 
   return res;
 }
+
+// 프로젝트 비용 수정하기
+export async function projectExpenseUpdate(expid: string, payload: pExpenseRegisterPayload) {
+  return http<pExpenseRegisterResponse>(`/user/nexpense/update/${expid}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+// 프로젝트 비용 증빙자료 삭제
+export async function delProjectExpenseAttachment(seq: number): Promise<void> {
+  return http<void>(`/user/pexpense/update/attachment/delete/${seq}`, { method: 'DELETE' });
+}

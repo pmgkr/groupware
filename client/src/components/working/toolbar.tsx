@@ -138,16 +138,6 @@ export default function Toolbar({
     }
   }, [user, page]);
 
-  // 팀 목록이 로드되면 기본적으로 모든 팀 선택 (Manager/Admin 페이지에서만)
-  useEffect(() => {
-    if ((page === 'manager' || page === 'admin') && teams.length > 0 && selectedTeams.length === 0) {
-      const allTeamIds = teams.map(team => String(team.team_id));
-      setSelectedTeams(allTeamIds);
-      const teamIds = allTeamIds.map(id => parseInt(id));
-      onTeamSelect(teamIds);
-    }
-  }, [teams, page]);
-
   // 날짜 네비게이션 핸들러
   const handleNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
     const newDate = new Date(currentDate);

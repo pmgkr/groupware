@@ -161,19 +161,6 @@ export default function OvertimeToolbar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 초기 마운트 시에만 실행
 
-  // 팀 목록이 로드되면 모든 팀 선택
-  useEffect(() => {
-    if (teams.length > 0 && selectedTeams.length === 0) {
-      const allTeamIds = teams.map(team => String(team.team_id));
-      setSelectedTeams(allTeamIds);
-      
-      // 부모 컴포넌트에 알림
-      const teamIds = allTeamIds.map(id => parseInt(id));
-      onTeamSelect(teamIds);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teams]);
-
   // 팀 옵션 (알파벳순 정렬)
   const teamOptions = useMemo(() => {
     const sortedTeams = [...teams].sort((a, b) => 

@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { MyVacationHistory as fetchVacationHistory, type MyVacationItem as VacationItem } from '@/api/mypage/vacation';
 import { adminVacationApi } from '@/api/admin/vacation';
+import { managerVacationApi } from '@/api/manager/vacation';
 import { AppPagination } from '@/components/ui/AppPagination';
 
 dayjs.locale('ko');
@@ -55,8 +56,8 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const pageSize = 15;
   
-  // userId가 props로 전달되면 Admin API 사용, 없으면 VacationHistory API 사용
-  const isAdminView = !!userId;
+  // userId가 props로 전달되면 Admin/Manager API 사용, 없으면 MyPage API 사용
+  const isExternalUser = !!userId;
 
   // URL 파라미터와 page state 동기화 (초기 로드 시에만)
   useEffect(() => {
@@ -103,15 +104,18 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
     try {
       let vacationData: VacationItem[];
       
-      if (isAdminView) {
-        // Admin API 사용: /admin/vacation/info - 모든 페이지를 순회해서 데이터 가져오기
+      if (isExternalUser) {
+        // 관리자/매니저 외부 조회 (userId 존재): admin은 /admin/vacation/info, manager는 /manager/vacation/info
         vacationData = [];
         let currentPage = 1;
         const fetchSize = 100; // 한 번에 가져올 데이터 수
         let hasMore = true;
         
         while (hasMore) {
-          const response = await adminVacationApi.getVacationInfo(targetUserId, selectedYear, currentPage, fetchSize);
+          const response = location.pathname.startsWith('/manager')
+            ? await managerVacationApi.getVacationInfo(targetUserId, selectedYear, currentPage, fetchSize)
+            : await adminVacationApi.getVacationInfo(targetUserId, selectedYear, currentPage, fetchSize);
+
           const pageData = (response.body || []).map(item => ({
             sch_id: item.sch_id,
             v_year: item.v_year,
@@ -156,7 +160,7 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
     } finally {
       loadingRef.current = false;
     }
-  }, [userId, user?.user_id, selectedYear, page, pageSize, isAdminView]);
+  }, [userId, user?.user_id, selectedYear, page, pageSize]);
 
   // 데이터 조회
   useEffect(() => {

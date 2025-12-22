@@ -87,9 +87,11 @@ export interface overtimeRejectResponse {
 
 
 export const adminOvertimeApi = {
-  getOvertimeList: async (team_id: number, page: number, size: number, flag: string): Promise<overtimeList> => {
+  getOvertimeList: async (team_id: number | null | undefined, page: number, size: number, flag: string): Promise<overtimeList> => {
     const queryParams = new URLSearchParams();
-    queryParams.append('team_id', team_id.toString());
+    if (team_id !== null && team_id !== undefined) {
+      queryParams.append('team_id', team_id.toString());
+    }
     queryParams.append('page', page.toString());
     queryParams.append('size', size.toString());
     queryParams.append('flag', flag);

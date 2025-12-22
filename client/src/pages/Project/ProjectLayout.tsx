@@ -1,17 +1,10 @@
 // src/pages/Project/ProjectLayout.tsx
 import { useEffect, useState, useCallback } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router';
+import { Outlet, useNavigate, useLocation, useParams } from 'react-router';
 import { cn } from '@/lib/utils';
 
-import {
-  getProjectView,
-  getProjectMember,
-  getBookmarkList,
-  addBookmark,
-  removeBookmark,
-  type ProjectViewDTO,
-  type projectMemberDTO,
-} from '@/api';
+import { getProjectMember, getBookmarkList, addBookmark, removeBookmark, type ProjectMemberDTO } from '@/api';
+import { getProjectView, type projectOverview } from '@/api/project';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
@@ -19,8 +12,12 @@ import { Settings, Star, ArrowLeft } from 'lucide-react';
 
 export type ProjectLayoutContext = {
   projectId?: string;
-  data: ProjectViewDTO;
-  members: projectMemberDTO[];
+  data: projectOverview['info'];
+  logs: projectOverview['logs'];
+  summary: projectOverview['summary'];
+  expense_data: projectOverview['expense_data'];
+  expense_type: projectOverview['expense_type'];
+  members: ProjectMemberDTO[];
 };
 
 const tabs = [
@@ -32,14 +29,16 @@ const tabs = [
 
 export default function ProjectLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { projectId } = useParams();
 
-  const [data, setData] = useState<ProjectViewDTO | null>(null);
-  const [members, setMembers] = useState<projectMemberDTO[]>([]);
+  const [listSearch] = useState<string>(() => (location.state as any)?.fromSearch ?? ''); // ProjectList에서 전달한 필터 파라미터값
+  const [data, setData] = useState<projectOverview | null>(null);
+  const [members, setMembers] = useState<ProjectMemberDTO[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // ✔ 프로젝트 전체 데이터 호출
+  // 프로젝트 전체 데이터 호출
   useEffect(() => {
     if (!projectId) return;
 
@@ -50,6 +49,8 @@ export default function ProjectLayout() {
           getProjectMember(projectId),
           getBookmarkList(),
         ]);
+
+        console.log('리스폰 데이터', projectRes);
 
         const bookmarkIds = bookmarkRes.map((b) => String(b.project_id));
 
@@ -70,7 +71,7 @@ export default function ProjectLayout() {
     })();
   }, [projectId]);
 
-  // ⭐ 즐겨찾기 토글 기능
+  // 즐겨찾기 토글 기능
   const toggleFavorite = useCallback(async () => {
     if (!projectId) return;
 
@@ -115,17 +116,18 @@ export default function ProjectLayout() {
     ),
   };
 
-  const status = statusMap[data.project_status as keyof typeof statusMap];
+  const { info, logs, summary, expense_data, expense_type } = data;
+
+  const status = statusMap[info.project_status as keyof typeof statusMap];
+  const fallbackListPath = listSearch ? `/project${listSearch}` : '/project';
 
   return (
     <section>
-      {/* ⭐ 상단 프로젝트 공통 헤더 */}
+      {/* 상단 프로젝트 공통 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-3xl font-bold text-gray-950">{data.project_title}</h2>
-
+          <h2 className="text-3xl font-bold text-gray-950">{info.project_title}</h2>
           {status}
-
           <Button
             type="button"
             variant="svgIcon"
@@ -139,7 +141,7 @@ export default function ProjectLayout() {
         </div>
 
         <div className="flex items-center gap-1">
-          <Button variant="svgIcon" onClick={() => navigate(-1)} className="text-gray-500">
+          <Button variant="svgIcon" onClick={() => navigate(fallbackListPath)} className="text-gray-500">
             <ArrowLeft className="size-5" />
           </Button>
           <Button variant="svgIcon" className="text-gray-500">
@@ -148,7 +150,7 @@ export default function ProjectLayout() {
         </div>
       </div>
 
-      {/* ⭐ 탭 메뉴: URL 이동 기반 */}
+      {/* 탭 메뉴: URL 이동 기반 */}
       <nav className="flex gap-4">
         {tabs.map((tab) => {
           const basePath = tab.path === '' ? `/project/${projectId}` : `/project/${projectId}/${tab.path}`;
@@ -174,13 +176,17 @@ export default function ProjectLayout() {
         })}
       </nav>
 
-      {/* ⭐ 하위 페이지 Outlet + context 전달 */}
+      {/* 하위 페이지 Outlet + context 전달 */}
       <div className="pt-6">
         <Outlet
           context={
             {
               projectId,
-              data,
+              data: info,
+              logs,
+              summary,
+              expense_data,
+              expense_type,
               members,
             } satisfies ProjectLayoutContext
           }
