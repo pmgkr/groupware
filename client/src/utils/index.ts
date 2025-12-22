@@ -9,3 +9,4 @@ export * from './cleanPrams';
 export * from './queue';
 export * from './yearOptions';
 export * from './sortIcon';
+export * from './normalAttUrl';

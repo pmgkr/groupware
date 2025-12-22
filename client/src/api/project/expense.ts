@@ -73,6 +73,7 @@ export interface pExpenseAttachmentDTO {
   ei_seq: number; // 연결된 item의 seq
   ea_fname: string; // 원본 파일명
   ea_sname: string; // 서버 저장 파일명
+  ea_url: string;
   uploaded_at: string; // 업로드 일시 (ISO)
 }
 
@@ -215,9 +216,18 @@ export async function claimProjectTempExpense(payload: { seqs: number[] }): Prom
   return res;
 }
 
+export interface pExpenseEditResponse {
+  ok: boolean;
+  updated: {
+    itemCount: number;
+    item_seqs: number[];
+    requested: number[];
+  };
+}
+
 // 프로젝트 비용 수정하기
 export async function projectExpenseUpdate(expid: string, payload: pExpenseRegisterPayload) {
-  return http<pExpenseRegisterResponse>(`/user/nexpense/update/${expid}`, {
+  return http<pExpenseEditResponse>(`/user/pexpense/update/${expid}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

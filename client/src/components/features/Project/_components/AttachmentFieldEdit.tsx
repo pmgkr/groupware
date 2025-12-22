@@ -1,9 +1,18 @@
 // src/components/features/expense/AttachmentFieldEdit.tsx
 import { useEffect, useRef, useState } from 'react';
+import { normalizeAttachmentUrl } from '@/utils';
 import { cn } from '@/lib/utils';
 import { Button } from '@components/ui/button';
 import { Close, Upload } from '@/assets/images/icons';
-import type { PreviewFile } from './UploadArea';
+// import type { PreviewFile } from './UploadArea';
+
+export type PreviewFile = {
+  name: string;
+  type: string;
+  preview: string; // ea_url or blob url
+  seq?: number; // ✅ 서버 파일 식별자
+  isServer?: boolean; // ✅ 서버 파일 여부
+};
 
 type Props = {
   rowIndex: number;
@@ -90,7 +99,7 @@ export function AttachmentFieldEdit({ rowIndex, serverFiles = [], onUploadNew, o
               key={file.name}
               className={cn('relative aspect-[1/1.4] w-[calc(33.33%-var(--spacing)*1)] cursor-pointer rounded-xs ring ring-gray-300')}>
               <div className="relative h-full w-full overflow-hidden rounded-xs">
-                <a href={file.preview} target="_blank" rel="noopener noreferrer">
+                <a href={normalizeAttachmentUrl(file.preview)} target="_blank" rel="noopener noreferrer">
                   <img src={file.preview} alt={file.name} className="absolute top-0 left-0 h-full w-full object-cover" />
                 </a>
               </div>

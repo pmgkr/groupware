@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router';
 import { formatAmount } from '@/utils';
 import { cn } from '@/lib/utils';
@@ -8,9 +9,11 @@ import { Button } from '@components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import { Download, Edit } from '@/assets/images/icons';
-import { RotateCcw } from 'lucide-react';
 
-import { getReportInfo } from '@/api/expense/proposal';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
+
+import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
 import { getProjectExpenseView } from '@/api/project';
 import { useProjectExpenseMatching } from './hooks/useProjectExpenseMatching';
 
@@ -19,10 +22,20 @@ import EstimateMatching from './_components/EstimateMatching';
 import EstimateMatched from './_components/EstimateMatched';
 import ExpenseViewRow from './_components/ExpenseViewRow';
 import ExpenseViewEstRow from './_components/ExpenseViewEstRow';
+import ReportMatched from './_components/ReportMatched';
+
+import { RotateCcw, OctagonAlert, Files, File } from 'lucide-react';
 
 export default function ProjectExpenseView() {
   const { expId, projectId } = useParams();
   const navigate = useNavigate();
+
+  const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
+
+  // 기안서 조회 State
+  const [selectedProposal, setSelectedProposal] = useState<ReportDTO | null>(null);
+  const [proposalLoading, setProposalLoading] = useState(false);
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
@@ -124,26 +137,60 @@ export default function ProjectExpenseView() {
     { amount: 0, tax: 0, total: 0 }
   );
 
+  const setReportInfo = async (pro_id: number | undefined | null) => {
+    if (pro_id == null) {
+      return;
+    }
+
+    try {
+      setProposalLoading(true);
+      const res = await getReportInfo(String(pro_id));
+      setSelectedProposal(res.report);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const copyExpId = async (expId: string) => {
+    try {
+      await navigator.clipboard.writeText(expId);
+      addAlert({
+        title: '클립보드 복사',
+        message: `<p>비용 아이디가 클립보드에 복사되었습니다.</p>`,
+        icon: <OctagonAlert />,
+        duration: 1500,
+      });
+    } catch (err) {
+      console.error('클립보드 복사 실패:', err);
+      addAlert({
+        title: '클립보드 복사 실패',
+        message: `<p>클립보드에 복사할 수 없습니다.</p>`,
+        icon: <OctagonAlert />,
+        duration: 1500,
+      });
+    }
+  };
+
   return (
     <>
       <div className="flex min-h-140 flex-wrap justify-between pb-12">
         {/* ---------------------- Left: 비용 정보 ---------------------- */}
-        <div className={`${data.header.is_estimate === 'Y' ? 'w-[74%]' : 'w-full'} tracking-tight`}>
+        <div className="w-[74%] tracking-tight">
           <div className="flex w-full items-end justify-between pb-2">
             <h3 className="text-lg font-bold text-gray-800">비용 정보</h3>
 
-            {header.status === 'Saved' && (
+            <div className="flex items-center text-sm text-gray-500">
+              EXP #.
               <Button
-                asChild
                 type="button"
+                variant="ghost"
                 size="sm"
-                variant="transparent"
-                className="h-auto gap-1 text-gray-600 hover:text-gray-700 has-[>svg]:px-1">
-                <Link to={`/project/${projectId}/expense/edit/${header.seq}`}>
-                  <Edit className="size-4.5" />
-                </Link>
+                className="rounded-1 h-6 leading-[1.2] text-gray-700 hover:bg-white has-[>svg]:px-1.5"
+                onClick={() => copyExpId(header.exp_id)}>
+                {header.exp_id}
+                <Files className="size-3" />
               </Button>
-            )}
+            </div>
           </div>
 
           {/* 기본 정보 테이블 */}
@@ -152,7 +199,24 @@ export default function ProjectExpenseView() {
               <TableColumnHeaderCell>비용 제목</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>
-              <TableColumnCell>{header.el_title}</TableColumnCell>
+              <TableColumnCell>
+                <div className="flex w-full items-center justify-between">
+                  <div className="flex-1 leading-[1.3]">{header.el_title}</div>
+
+                  {header.status === 'Saved' && (
+                    <Button
+                      asChild
+                      type="button"
+                      size="sm"
+                      variant="transparent"
+                      className="h-auto shrink-0 gap-1 text-gray-600 hover:text-gray-700 has-[>svg]:px-1">
+                      <Link to={`/project/${projectId}/expense/edit/${header.seq}`}>
+                        <Edit className="size-4.5" />
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </TableColumnCell>
             </TableColumnBody>
           </TableColumn>
 
@@ -292,24 +356,7 @@ export default function ProjectExpenseView() {
                         />
                       );
                     })
-                  : items.map((item) => (
-                      <ExpenseViewRow
-                        key={item.seq}
-                        item={item}
-                        onProposal={async () => {
-                          console.log('✅ 기안서 버튼 클릭됨', item.pro_id);
-
-                          if (item.pro_id == null) {
-                            console.log('⛔ pro_id 없음');
-                            return;
-                          }
-
-                          const res = await getReportInfo(String(item.pro_id));
-
-                          console.log('기안서 정보', res);
-                        }}
-                      />
-                    ))}
+                  : items.map((item) => <ExpenseViewRow key={item.seq} item={item} onProposal={() => setReportInfo(item.pro_id)} />)}
 
                 <TableRow className="bg-primary-blue-50 [&_td]:py-3">
                   <TableCell className="font-semibold" colSpan={3}>
@@ -332,42 +379,52 @@ export default function ProjectExpenseView() {
         </div>
 
         {/* ---------------------- Right: 매칭 영역 ---------------------- */}
-        {data.header.is_estimate === 'Y' && (
-          <div className="w-[24%]">
-            <div className="flex justify-between">
-              <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
+        <div className="w-[24%]">
+          {data.header.is_estimate === 'Y' ? (
+            <>
+              <div className="flex justify-between">
+                <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
+
+                {dbMatchedItems.length > 0 ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="svgIcon"
+                    className="h-auto pr-1! text-gray-500"
+                    onClick={() => deleteMatching(selectedExpSeq!)}>
+                    견적 매칭 재설정
+                    <RotateCcw className="size-3" />
+                  </Button>
+                ) : matchedItems.length > 0 ? (
+                  <Button type="button" size="sm" variant="svgIcon" className="h-auto pr-1! text-gray-500" onClick={clearMatching}>
+                    견적서 매칭취소
+                    <RotateCcw className="size-3" />
+                  </Button>
+                ) : null}
+              </div>
 
               {dbMatchedItems.length > 0 ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="svgIcon"
-                  className="h-auto pr-1! text-gray-500"
-                  onClick={() => deleteMatching(selectedExpSeq!)}>
-                  견적 매칭 재설정
-                  <RotateCcw className="size-3" />
-                </Button>
-              ) : matchedItems.length > 0 ? (
-                <Button type="button" size="sm" variant="svgIcon" className="h-auto pr-1! text-gray-500" onClick={clearMatching}>
-                  견적서 매칭취소
-                  <RotateCcw className="size-3" />
-                </Button>
-              ) : null}
-            </div>
-
-            {dbMatchedItems.length > 0 ? (
-              <EstimateMatched items={dbMatchedItems} project_id={projectId} />
-            ) : (
-              <EstimateMatching
-                matchedItems={matchedItems}
-                expenseInfo={expenseInfo}
-                onReset={resetMatching}
-                onRefresh={() => refresh()}
-                onMatched={completeMatching}
-              />
-            )}
-          </div>
-        )}
+                <EstimateMatched items={dbMatchedItems} project_id={projectId} />
+              ) : (
+                <EstimateMatching
+                  matchedItems={matchedItems}
+                  expenseInfo={expenseInfo}
+                  onReset={resetMatching}
+                  onRefresh={() => refresh()}
+                  onMatched={completeMatching}
+                />
+              )}
+            </>
+          ) : (
+            // 기안서 정보
+            <>
+              <div className="flex justify-between">
+                <h2 className="mb-2 text-lg font-bold text-gray-800">기안서 정보</h2>
+              </div>
+              <ReportMatched report={selectedProposal} />
+            </>
+          )}
+        </div>
       </div>
 
       {/* ---------------------- Dialog ---------------------- */}
