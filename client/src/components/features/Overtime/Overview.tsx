@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { getGrowingYears } from '@/utils';
 
 interface OverviewProps {
   activeTab?: 'weekday' | 'weekend';
@@ -16,14 +17,7 @@ export default function Overview({
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
 
-  // 2024년부터 현재 연도까지의 연도 배열 생성
-  const yearOptions = useMemo(() => {
-    const years: number[] = [];
-    for (let year = 2024; year <= currentYear; year++) {
-      years.push(year);
-    }
-    return years.reverse(); // 최신 연도부터 표시
-  }, [currentYear]);
+  const yearOptions = getGrowingYears().reverse();
 
   const handleYearChange = (value: string) => {
     setSelectedYear(value);
@@ -54,16 +48,15 @@ export default function Overview({
         </Button>
       </div>
 
-      {/* 연도 단일 선택 */}
       <Select value={selectedYear} onValueChange={handleYearChange}>
-        <SelectTrigger size="sm" className="ml-4">
+        <SelectTrigger size="sm" className="ml-4 w-[120px]">
           <SelectValue placeholder="연도 선택" />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
             {yearOptions.map((year) => (
-              <SelectItem key={year} size="sm" value={year.toString()}>
-                {year}
+              <SelectItem key={year} size="sm" value={year}>
+                {year}년
               </SelectItem>
             ))}
           </SelectGroup>

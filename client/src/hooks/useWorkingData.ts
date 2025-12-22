@@ -80,7 +80,7 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
         if (selectedTeamIds.length > 0) {
           teamIdsToQuery = selectedTeamIds;
         } else if (page === 'admin') {
-          teamIdsToQuery = [0]; // 전체 조회용 team_id=0
+          teamIdsToQuery = [null]; // 전체 조회용 (null 전달 시 team_id 파라미터 제외)
         } else {
           try {
             const myTeams = await getManagerTeams({});
@@ -158,9 +158,9 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
               }
             }
 
-            // 팀 정보 보존
+            // 팀 정보 보존: 기존 item에 team_id가 있으면 유지, 없으면 현재 쿼리한 teamId 사용
             const annotateTeam = (arr: any[] = []) =>
-              arr.map((item) => ({ ...item, team_id: teamId ?? null }));
+              arr.map((item) => ({ ...item, team_id: item.team_id ?? (teamId || null) }));
 
             aggregatedWlog.push(...annotateTeam(workLogResponse.wlog || []));
             aggregatedVacation.push(...annotateTeam(workLogResponse.vacation || []));

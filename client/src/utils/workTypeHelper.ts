@@ -21,3 +21,36 @@ export const getWorkTypeColor = (workType: string): string => {
   }
 };
 
+/**
+ * 근무 타입 코드를 한글 명칭으로 변환
+ * @param schType 'vacation' | 'event' | 'wlog'
+ * @param detailType 'day' | 'half' | 'quarter' | 'official' | 'remote' | 'field' 등
+ * @param time 'morning' | 'afternoon'
+ * @returns 한글 근무 타입 명칭
+ */
+export const getWorkTypeKorean = (
+  schType: string, 
+  detailType?: string | null, 
+  time?: string | null
+): string => {
+  if (schType === 'vacation') {
+    switch (detailType) {
+      case 'day': return '연차';
+      case 'half': return time === 'morning' ? '오전반차' : '오후반차';
+      case 'quarter': return time === 'morning' ? '오전반반차' : '오후반반차';
+      case 'official': return '공가';
+      default: return '연차';
+    }
+  }
+
+  if (schType === 'event') {
+    switch (detailType) {
+      case 'remote': return '재택근무';
+      case 'field': return '외부근무';
+      default: return '이벤트';
+    }
+  }
+
+  return '일반근무';
+};
+

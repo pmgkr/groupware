@@ -25,7 +25,10 @@ export default function ManagerProposalList() {
     <ProposalListContent
       isManager
       showWriterInfo
-      onRowClick={(id, tab) => navigate(`view/${id}?tab=${tab}`)}
+      onRowClick={(id, tab) => {
+        const queryString = searchParams.toString();
+        navigate(`/manager/proposal/view/${id}?${queryString}`);
+      }}
       onFetchData={async () => {
         const flag = getFlagFromTab(activeTab);
 

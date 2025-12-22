@@ -20,6 +20,8 @@ import type { Calendar, Meetingroom, Wlog, Vacation, Notice, Expense } from '@/a
 
 import { getBadgeColor } from '@/utils/calendarHelper';
 import { formatTime, formatMinutes, formatKST } from '@/utils/date';
+import { getWorkTypeColor, getWorkTypeKorean } from '@/utils/workTypeHelper';
+import { cn } from '@/lib/utils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 
@@ -76,6 +78,23 @@ export default function Dashboard() {
   // getWelcomeMessage를 메모이제이션하여 리렌더링 시에도 같은 메시지 유지
   const welcomeMessage = useMemo(() => getWelcomeMessage(user_name, birth_date), [user_name, birth_date]);
 
+  // 근무 타입 결정 로직 (wlogSchedule 기반 - 여러 개일 수 있음)
+  const displayWorkTypes = useMemo(() => {
+    if (!wlog.wlogSchedule || wlog.wlogSchedule.length === 0) return ["일반근무"];
+    
+    const types: string[] = [];
+    wlog.wlogSchedule.forEach(s => {
+      if (s.sch_type === 'vacation') {
+        types.push(getWorkTypeKorean('vacation', s.sch_vacation_type, s.sch_vacation_time));
+      } else if (s.sch_type === 'event') {
+        types.push(getWorkTypeKorean('event', s.sch_event_type));
+      }
+    });
+
+    if (types.length === 0) return ["일반근무"];
+    return types;
+  }, [wlog.wlogSchedule]);
+
   return (
     <>
       <Header />
@@ -96,19 +115,28 @@ export default function Dashboard() {
               buttonHref="/working" 
               className="items-start"
             />
-            <div className="flex items-center justify-center gap-x-10 bg-gray-200 rounded-md p-5 mb-6">
-              <div className="flex flex-col align-center justify-center text-center">
-                <p className="text-gray-500 text-base">출근시간</p>
-                <p className="text-gray-800 text-xl font-medium">{formatTime(wlog.wlogToday[0]?.stime || null)}</p>
+            <div className="bg-gray-100 rounded-md p-5 mb-6 flex flex-col items-center justify-center gap-y-3">
+              <div className="flex flex-wrap justify-center gap-2">
+                {displayWorkTypes.map((type, idx) => (
+                  <div key={idx} className={cn("text-[0.8em] font-bold px-4 py-1.5 rounded-sm", getWorkTypeColor(type))}>
+                    {type}
+                  </div>
+                ))}
               </div>
-              <Icons.arrowRightCustom />
-              <div className="flex flex-col align-center justify-center text-center">
-                <p className="text-gray-500 text-base">퇴근시간</p>
-                <p className="text-gray-800 text-xl font-medium">{formatTime(wlog.wlogToday[0]?.etime || null)}</p>
+              <div className="flex items-center justify-center gap-x-10">
+                <div className="flex flex-col align-center justify-center text-center">
+                  <p className="text-gray-500 text-base">출근시간</p>
+                  <p className="text-gray-800 text-xl font-medium">{formatTime(wlog.wlogToday[0]?.stime || null)}</p>
+                </div>
+                <Icons.arrowRightCustom />
+                <div className="flex flex-col align-center justify-center text-center">
+                  <p className="text-gray-500 text-base">퇴근시간</p>
+                  <p className="text-gray-800 text-xl font-medium">{formatTime(wlog.wlogToday[0]?.etime || null)}</p>
+                </div>
               </div>
             </div>
             <div>
-              <div className="flex flex-col gap-0">
+              <div className="flex flex-col gap-0 mt-1">
                 <div className="flex items-center gap-1 ">
                   <span className="text-gray-800 text-xl font-black">주간누적</span>
                   {(() => {

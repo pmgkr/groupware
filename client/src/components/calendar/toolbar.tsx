@@ -169,7 +169,7 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
         >
           오늘
         </Button>
-        <Button
+        {/* <Button
           onClick={() => onView('month')}
           variant={currentView === 'month' ? 'default' : 'outline'}
           size="sm"
@@ -182,7 +182,7 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
           size="sm"
         >
           전체
-        </Button>
+        </Button> */}
         {/* <Button
           onClick={() => onView('week')}
           variant={currentView === 'week' ? 'default' : 'outline'}
