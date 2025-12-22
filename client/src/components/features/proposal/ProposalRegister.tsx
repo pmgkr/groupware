@@ -76,7 +76,7 @@ export default function ProposalRegister() {
   /* ---------- file  ---------- */
 
   const handleAddFiles = async (newFiles: File[]) => {
-    console.log('📂 selected files', newFiles);
+    //console.log('📂 selected files', newFiles);
 
     // UI용 파일 상태 업데이트 (즉시 표시)
     setFiles((prev) => [...prev, ...newFiles]);
@@ -84,7 +84,7 @@ export default function ProposalRegister() {
 
     try {
       const uploaded = await uploadFilesToServer(newFiles, 'report');
-      console.log('☁️ upload result', uploaded);
+      //console.log('☁️ upload result', uploaded);
 
       const mapped = uploaded.map((f) => ({
         rf_name: f.fname,
@@ -92,10 +92,10 @@ export default function ProposalRegister() {
         rf_sname: f.url,
       }));
 
-      console.log('🧾 mapped files', mapped);
+      //console.log('🧾 mapped files', mapped);
 
       setUploadedFiles((prev) => [...prev, ...mapped]);
-      console.log('✅ uploadedFiles 업데이트 완료:', [...uploadedFiles, ...mapped]);
+      //console.log('✅ uploadedFiles 업데이트 완료:', [...uploadedFiles, ...mapped]);
     } catch (error) {
       console.error('파일 업로드 실패:', error);
       // 업로드 실패 시 UI에서 추가한 파일 제거

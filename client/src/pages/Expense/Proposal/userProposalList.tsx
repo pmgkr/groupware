@@ -1,12 +1,13 @@
 // ===== 1. User ProposalList (기존 방식 유지) =====
 // pages/Proposal/ProposalList.tsx (일반 유저용)
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useEffect, useState } from 'react';
 import { getReportList, type ReportCard } from '@/api/expense/proposal';
 import ProposalListContent from '@/components/features/proposal/ProposalList';
 
 export default function ProposalList() {
   const [reports, setReports] = useState<ReportCard[]>([]);
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -31,7 +32,11 @@ export default function ProposalList() {
   return (
     <ProposalListContent
       reports={reports}
-      onRowClick={(id, tab) => navigate(`view/${id}?tab=${tab}`)}
+      onRowClick={(id, tab) => {
+        const queryString = searchParams.toString();
+        navigate(`view/${id}?${queryString}`);
+      }}
+      //onRowClick={(id, tab) => navigate(`view/${id}?tab=${tab}`)}
       showRegisterButton={true}
       onRegister={() => navigate('register')}
     />

@@ -1,5 +1,5 @@
 // pages/Admin/Proposal/ProposalList.tsx
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useMemo } from 'react';
 import ProposalListContent from '@/components/features/proposal/ProposalList';
 import { getReportListAdmin } from '@/api/admin/proposal';
@@ -7,6 +7,7 @@ import { useUser } from '@/hooks/useUser';
 
 export default function AdminProposalList() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user_id, user_level } = useUser();
 
   const isAdmin = user_level === 'admin';
@@ -23,7 +24,10 @@ export default function AdminProposalList() {
       isAdmin
       adminRole={adminRole}
       showWriterInfo
-      onRowClick={(id, tab) => navigate(`/admin/proposal/${id}?tab=${tab}`)}
+      onRowClick={(id, tab) => {
+        const queryString = searchParams.toString();
+        navigate(`/admin/proposal/${id}?${queryString}`);
+      }}
       onFetchData={async (params) => {
         // 🔥 전체 탭일 때
         if (!params.type) {
