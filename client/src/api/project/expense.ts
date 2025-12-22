@@ -154,6 +154,7 @@ export interface pExpenseItemDTO extends Omit<pExpenseItemBase, 'attachments'> {
   seq: number;
   exp_id: string;
   attachments: pExpenseAttachmentDTO[];
+  rp_title: string;
 }
 
 export interface pExpenseLogDTO {
