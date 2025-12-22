@@ -328,13 +328,14 @@ export default function OvertimeList({
   // 선택 가능한 상태 확인 헬퍼 함수 (isPage prop 기반)
   const isSelectableStatus = useCallback((status: string) => {
     if (isPage === 'admin') {
-      // admin 페이지: 보상대기(T)만 선택 가능
+      // admin 페이지: 평일 추가근무는 선택 불가, 휴일 근무는 보상대기(T)만 선택 가능
+      if (activeTab === 'weekday') return false;
       return status === 'T';
     } else {
       // manager 페이지: 승인대기(H)만 선택 가능
       return status === 'H';
     }
-  }, [isPage]);
+  }, [isPage, activeTab]);
 
   // 전체 선택
   const handleCheckAll = (checked: boolean) => {
@@ -636,27 +637,35 @@ export default function OvertimeList({
             <TableHead className="w-[20%] text-center p-2">작업내용</TableHead>
             <TableHead className="w-[10%] text-center p-2">신청일</TableHead>
             <TableHead className="w-[10%] text-center p-2">상태</TableHead>
-            <TableHead className="w-[5%] text-center p-2">
-              <Checkbox 
-                id="chk_all" 
-                className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkAll && 'bg-primary-blue-150')} 
-                checked={checkAll} 
-                onCheckedChange={handleCheckAll} 
-              />
-            </TableHead>
+            {!(isPage === 'admin' && activeTab === 'weekday') && (
+              <TableHead className="w-[5%] text-center p-2">
+                <Checkbox 
+                  id="chk_all" 
+                  className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkAll && 'bg-primary-blue-150')} 
+                  checked={checkAll} 
+                  onCheckedChange={handleCheckAll} 
+                />
+              </TableHead>
+            )}
           </TableRow>
         </TableHeader>
 
         <TableBody>
         {loading ? (
           <TableRow>
-            <TableCell className="h-100 text-gray-500" colSpan={10}>
+            <TableCell 
+              className="h-100 text-gray-500" 
+              colSpan={activeTab === 'weekday' ? (isPage === 'admin' ? 10 : 11) : (isPage === 'admin' ? 10 : 10)}
+            >
               추가근무 신청 데이터 불러오는 중
             </TableCell>
           </TableRow>
         ) : paginatedData.length === 0 ? (
           <TableRow>
-            <TableCell className="h-100 text-gray-500" colSpan={10}>
+            <TableCell 
+              className="h-100 text-gray-500" 
+              colSpan={activeTab === 'weekday' ? (isPage === 'admin' ? 10 : 11) : (isPage === 'admin' ? 10 : 10)}
+            >
               추가근무 신청 데이터가 없습니다.
             </TableCell>
           </TableRow>
@@ -717,15 +726,17 @@ export default function OvertimeList({
                   </Badge>
                 )}
               </TableCell>
-              <TableCell className="text-center p-2" onClick={(e) => e.stopPropagation()}>
-                <Checkbox 
-                  id={`chk_${item.id}`} 
-                  className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkedItems.includes(item.id) && 'bg-primary-blue-150')} 
-                  checked={checkedItems.includes(item.id)} 
-                  disabled={!isSelectableStatus(item.ot_status)}
-                  onCheckedChange={(checked) => handleCheckItem(item.id, checked as boolean)} 
-                />
-              </TableCell>
+              {!(isPage === 'admin' && activeTab === 'weekday') && (
+                <TableCell className="text-center p-2" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox 
+                    id={`chk_${item.id}`} 
+                    className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkedItems.includes(item.id) && 'bg-primary-blue-150')} 
+                    checked={checkedItems.includes(item.id)} 
+                    disabled={!isSelectableStatus(item.ot_status)}
+                    onCheckedChange={(checked) => handleCheckItem(item.id, checked as boolean)} 
+                  />
+                </TableCell>
+              )}
             </TableRow>
           ))
         )}
