@@ -6,15 +6,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import EventViewDialog from '@/components/calendar/EventViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { scheduleApi, type Schedule } from '@/api/calendar';
-import { managerVacationApi } from '@/api/manager/vacation';
+import { managerVacationCancelApi } from '@/api/manager/vacation';
 import { getTeams } from '@/api/admin/teams';
-import { getTeams as getCommonTeams } from '@/api/teams';
-import { getMemberList } from '@/api/common/team';
+import { getTeams as getManagerTeams } from '@/api/manager/teams';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/components/ui/use-toast';
 import type { VacationFilters } from '@/components/features/Vacation/toolbar';
 import { Badge } from '@/components/ui/badge';
+import { CheckCircle, OctagonAlert } from 'lucide-react';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -26,6 +26,9 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { AppPagination } from '@/components/ui/AppPagination';
+import { notificationApi } from '@/api/notification';
+import { defaultEventTitleMapper } from '@/components/calendar/config';
+import { getDateRangeTextSimple } from '@/utils/dateRangeHelper';
 
 dayjs.locale('ko');
 
@@ -66,7 +69,7 @@ export default function VacationList({
   isPage = 'manager'
 }: VacationListProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { addAlert } = useAppAlert();
   
   // 데이터 state
   const [allData, setAllData] = useState<Schedule[]>([]);
@@ -122,10 +125,10 @@ export default function VacationList({
   useEffect(() => {
     const loadTeams = async () => {
       try {
-        const teamList = isPage === 'admin' 
+        const teamList = isPage === 'admin'
           ? await getTeams({})
-          : await getCommonTeams({});
-        setTeams(teamList.map(t => ({ team_id: t.team_id, team_name: t.team_name })));
+          : await getManagerTeams({});
+        setTeams(teamList.map((t: any) => ({ team_id: t.team_id, team_name: t.team_name })));
       } catch (error) {
       }
     };
@@ -134,6 +137,15 @@ export default function VacationList({
 
   // 현재 요청 추적을 위한 ref (탭 변경 시 이전 요청 취소용)
   const currentRequestRef = useRef<string | null>(null);
+
+  // teamIds 해석: 매니저는 미선택 시 관리팀 전체를 기본으로 사용
+  const resolvedTeamIds = useMemo(() => {
+    if (teamIds.length > 0) return teamIds;
+    if (isPage === 'manager') {
+      return teams.map((t) => t.team_id);
+    }
+    return teamIds; // admin은 빈 배열이면 전체
+  }, [teamIds, isPage, teams]);
 
   // 데이터 조회 함수 (useCallback으로 메모이제이션)
   const fetchScheduleData = useCallback(async () => {
@@ -153,14 +165,15 @@ export default function VacationList({
         return;
       }
       
-      // teamIds가 없으면 데이터 조회하지 않음 (Toolbar에서 항상 전달해야 함)
-      if (teamIds.length === 0) {
-        setAllData([]);
-        setLoading(false);
-        return;
+      // 팀 미선택 시:
+      // - admin: team_id=0으로 전체 조회
+      // - manager: 자신이 관리하는 팀 목록만
+      let teamIdsToQuery: (number | null)[] = [];
+      if (resolvedTeamIds.length > 0) {
+        teamIdsToQuery = resolvedTeamIds;
+      } else if (isPage === 'admin') {
+        teamIdsToQuery = [0];
       }
-      
-      const teamIdsToQuery = teamIds;
       
       // 데이터 조회 시작 전에 기존 데이터 초기화 (팀이 있고 요청이 취소되지 않은 경우에만)
       // 이 시점에서 요청이 취소되지 않았는지 다시 확인
@@ -168,35 +181,25 @@ export default function VacationList({
         setAllData([]);
       }
       
-      // 각 팀의 멤버 목록 가져오기
-      const memberPromises = teamIdsToQuery.map(async (teamId) => {
-        const members = await getMemberList(teamId);
-        return members.map(member => ({ ...member, team_id: member.team_id || teamId }));
-      });
-      const memberResults = await Promise.all(memberPromises);
-      const allTeamMembers = memberResults.flat();
-      
-      // 중복 제거
-      const teamMembers = allTeamMembers.filter((member, index, self) =>
-        index === self.findIndex(m => m.user_id === member.user_id)
-      );
-      
-      // 각 팀원의 user_id로 스케줄 조회
+      // 팀 단위로 스케줄 조회 (멤버 리스트 호출 제거)
       const allSchedules: Schedule[] = [];
       
       // 1월부터 12월까지 병렬로 조회 (성능 개선)
       const monthPromises = Array.from({ length: 12 }, (_, i) => i + 1).map(async (month) => {
         try {
-          // 각 팀원별로 스케줄 조회 (currentTab에 따라 sch_type 필터링)
-          const schedulePromises = teamMembers.map(member =>
-            scheduleApi.getSchedules({
+          // 각 팀별로 스케줄 조회 (currentTab에 따라 sch_type 필터링)
+          const schedulePromises = teamIdsToQuery.map(teamId => {
+            const params: any = {
               year,
               month,
-              user_id: member.user_id,
               sch_type: currentTab === 'vacation' ? 'vacation' : 'event'
-            }).catch(() => null)
-          );
-          
+            };
+            if (teamId !== null && teamId !== undefined) {
+              params.team_id = teamId;
+            }
+            return scheduleApi.getSchedules(params).catch(() => null);
+          });
+
           const scheduleResponses = await Promise.all(schedulePromises);
           const monthSchedules: Schedule[] = [];
           
@@ -274,7 +277,7 @@ export default function VacationList({
       setAllData([]);
       setLoading(false);
     }
-  }, [activeTab, filters.year, teamIds]);
+  }, [activeTab, filters.year, teamIds, resolvedTeamIds, isPage]);
 
   // 데이터 조회 (연도 변경 시에만 API 호출)
   useEffect(() => {
@@ -286,8 +289,8 @@ export default function VacationList({
     let result = [...allData];
     
     // 팀 필터 (가장 먼저 적용)
-    if (teamIds.length > 0) {
-      result = result.filter(item => teamIds.includes(item.team_id));
+    if (resolvedTeamIds.length > 0) {
+      result = result.filter(item => resolvedTeamIds.includes(item.team_id));
     }
     
     // 탭 필터 (휴가 vs 이벤트)
@@ -347,7 +350,7 @@ export default function VacationList({
     });
     
     return result;
-  }, [allData, teamIds, activeTab, filters]);
+  }, [allData, resolvedTeamIds, activeTab, filters]);
 
   // 페이지네이션 적용된 데이터
   const paginatedData = useMemo(() => {
@@ -450,18 +453,21 @@ export default function VacationList({
     if (!selectedEvent?.id) return;
     
     try {
-      await managerVacationApi.approveScheduleCancel(selectedEvent.id);
+      await managerVacationCancelApi.approveScheduleCancel(selectedEvent.id);
       fetchScheduleData();
       handleCloseEventDialog();
-      toast({
+      addAlert({
         title: "취소 승인 완료",
-        description: "일정 취소가 승인되었습니다.",
+        message: "일정 취소가 승인되었습니다.",
+        duration: 3000,
+        icon: <CheckCircle />,
       });
     } catch (error) {
-      toast({
+      addAlert({
         title: "승인 실패",
-        description: "취소 승인 중 오류가 발생했습니다.",
-        variant: "destructive",
+        message: "취소 승인 중 오류가 발생했습니다.",
+        duration: 3000,
+        icon: <OctagonAlert />,
       });
       throw error;
     }
@@ -480,26 +486,65 @@ export default function VacationList({
     try {
       // 모든 체크된 항목에 대해 취소 요청 승인 (관리자 API 사용)
       await Promise.all(
-        checkedItems.map(id => managerVacationApi.approveScheduleCancel(id))
+        checkedItems.map(id => managerVacationCancelApi.approveScheduleCancel(id))
       );
       
       setIsConfirmDialogOpen(false);
       
-      toast({
+      // 알림 전송: 선택된 각 스케줄의 사용자에게 개별 알림
+      const scheduleMap = new Map<number, Schedule>();
+      allData.forEach((s) => scheduleMap.set(s.id, s));
+
+      await Promise.all(
+        checkedItems.map(async (id) => {
+          const schedule = scheduleMap.get(id);
+          if (!schedule?.user_id) return;
+
+          const eventLabel =
+            schedule.sch_title ||
+            defaultEventTitleMapper(schedule.sch_vacation_type || schedule.sch_event_type || '') ||
+            '일정';
+          const rangeText = getDateRangeTextSimple(schedule.sch_sdate, schedule.sch_edate, schedule.sch_isAllday === 'Y');
+
+          await notificationApi.registerNotification({
+            user_id: schedule.user_id,
+            user_name: schedule.user_name || '',
+            noti_target: user?.user_id || '', // 발신자: 현재 사용자(승인자)
+            noti_title: `${eventLabel} (${rangeText})`,
+            noti_message: `일정 취소를 승인했습니다.`,
+            noti_type: schedule.sch_type,
+            noti_url: '/calendar',
+          });
+        })
+      );
+      
+      // 성공 알림 먼저 표시
+      addAlert({
+        title: '승인 완료',
+        message: '일정 취소가 승인되었습니다.',
+        icon: <OctagonAlert />,
+        duration: 3000,
+      });
+
+      
+      addAlert({
         title: "취소 승인 완료",
-        description: `${count}개의 일정 취소가 승인되었습니다.`,
+        message: `${count}개의 일정 취소가 승인되었습니다.`,
+        duration: 3000,
+        icon: <CheckCircle />,
       });
       
       // 체크박스 초기화 및 데이터 새로고침
       setCheckedItems([]);
       setCheckAll(false);
       onCheckedItemsChange([]);
-      fetchScheduleData();
+      await fetchScheduleData();
     } catch (error) {
-      toast({
+      addAlert({
         title: "승인 실패",
-        description: "일괄 승인 중 오류가 발생했습니다.",
-        variant: "destructive",
+        message: "일괄 승인 중 오류가 발생했습니다.",
+        duration: 3000,
+        icon: <OctagonAlert />,
       });
       setIsConfirmDialogOpen(false);
     }
@@ -536,7 +581,7 @@ export default function VacationList({
     
     if ((vacationType === 'half' || vacationType === 'quarter') && vacationTime) {
       const timeText = vacationTime === 'morning' ? '오전' : '오후';
-      return `${baseType}(${timeText})`;
+      return `${timeText} ${baseType}`;
     }
     
     return baseType;

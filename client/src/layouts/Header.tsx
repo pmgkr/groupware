@@ -15,6 +15,8 @@ import { getMyProfile } from '@/api/mypage';
 export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
+  const isManagerSection = location.pathname.startsWith('/manager');
+  const isAdminSection = location.pathname.startsWith('/admin');
 
   const { user_name, job_role, profile_image } = useUser();
   const { logout } = useAuth();
@@ -26,7 +28,7 @@ export default function Header() {
   // 프로필 업데이트 이벤트 리스닝
   useEffect(() => {
     const handleProfileUpdate = async () => {
-      console.log('🔄 Header: 프로필 업데이트 감지');
+      //console.log('🔄 Header: 프로필 업데이트 감지');
       try {
         const updatedUser = await getMyProfile();
         setCurrentProfileImage(updatedUser.profile_image);
@@ -65,9 +67,9 @@ export default function Header() {
   const profileImageUrl = useMemo(() => {
     if (currentProfileImage) {
       if (currentProfileImage.startsWith('http')) {
-        return `${currentProfileImage}?t=${Date.now()}`;
+        return currentProfileImage;
       }
-      return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${currentProfileImage}?t=${Date.now()}`;
+      return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${currentProfileImage}`;
     }
     return getImageUrl('dummy/profile');
   }, [currentProfileImage]);
@@ -204,7 +206,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+                  isActive || isManagerSection ? 'text-primary bg-white font-semibold' : 'text-gray-900'
                 )
               }>
               <Manager />
@@ -217,7 +219,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+                  isActive || isAdminSection ? 'text-primary bg-white font-semibold' : 'text-gray-900'
                 )
               }>
               <Admin />

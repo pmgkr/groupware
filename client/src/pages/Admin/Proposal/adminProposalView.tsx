@@ -11,6 +11,7 @@ import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { AlertTriangle, CircleCheck, CircleX } from 'lucide-react';
 import type { ReportFileDTO } from '@/api/expense/proposal';
 import { approveReport, getReportInfoAdmin, rejectReport } from '@/api/admin/proposal';
+import { notificationApi } from '@/api/notification';
 
 export default function AdminProposalView() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,7 @@ export default function AdminProposalView() {
   const [report, setReport] = useState<any>(null);
   const [files, setFiles] = useState<ReportFileDTO[]>([]);
   const [steps, setSteps] = useState<Step[]>([]);
+  const [lines, setLines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const user = useUser();
   const [searchParams] = useSearchParams();
@@ -29,9 +31,10 @@ export default function AdminProposalView() {
 
     (async () => {
       try {
-        const data = await getReportInfoAdmin(id); // 매니저용 API
+        const data = await getReportInfoAdmin(id);
         setReport(data.report);
         setFiles(data.files || []);
+        setLines(data.lines || []); // ✅ lines 상태 설정 추가!
 
         // Steps 생성
         const roleLabels: Record<number, string> = {
@@ -80,9 +83,73 @@ export default function AdminProposalView() {
       cancelText: '취소',
       onConfirm: async () => {
         try {
-          //const role: 'finance' | 'gm' = isFinance ? 'finance' : 'gm';
-
+          // 1. 먼저 승인 처리
           await approveReport([Number(id)]);
+
+          // 🔔 알림 보내기
+          const isProject = report.rp_project_type === 'project';
+          const userUrl = isProject ? `/project/proposal/view/${id}` : `/expense/proposal/view/${id}`;
+          const adminUrl = `/admin/proposal/${id}`;
+
+          // ✅ 카테고리별 메시지 생성
+          const categoryLabel = (() => {
+            if (isProject) return '프로젝트';
+            return report.rp_category || '';
+          })();
+
+          const isFinance = user?.team_id === 5;
+          const isGM = user?.user_level === 'admin' && user?.team_id !== 5;
+
+          console.log('🔍 현재 결재자:', { isFinance, isGM, userId: user.user_id });
+
+          // 2. 작성자에게 알림
+          try {
+            const notificationData = {
+              user_id: report.rp_user_id,
+              user_name: report.rp_user_name,
+              noti_target: user.user_id!,
+              noti_title: report.rp_title,
+              noti_message: `${categoryLabel} 기안서를 승인하였습니다.`,
+              noti_type: 'proposal',
+              noti_url: userUrl,
+            };
+
+            await notificationApi.registerNotification(notificationData);
+            console.log('✅ 작성자 알림 성공 : report.rp_user_id');
+            console.log('✅ 작성자 알림 성공');
+          } catch (err) {
+            console.error('❌ 작성자 알림 전송 실패:', err);
+          }
+
+          // 3. 다음 결재자에게 알림
+          // Finance가 승인 → GM에게 알림
+          if (isFinance) {
+            try {
+              // lines에서 GM(rl_order=4) 찾기
+              const gmLine = lines.find((line) => line.rl_order === 4);
+
+              if (gmLine?.rl_approver_id) {
+                await notificationApi.registerNotification({
+                  user_id: gmLine.rl_approver_id,
+                  user_name: gmLine.rl_approver_name,
+                  noti_target: report.rp_user_id,
+                  noti_title: report.rp_title,
+                  noti_message: `${categoryLabel} 기안서 결재 요청 하였습니다.`,
+                  noti_type: 'proposal',
+                  noti_url: adminUrl,
+                });
+                console.log('✅ GM 알림 성공:', gmLine.rl_approver_name);
+              } else {
+                console.log('ℹ️ GM 결재자 없음');
+              }
+            } catch (err) {
+              console.error('❌ GM 알림 전송 실패:', err);
+            }
+          }
+          // GM이 승인 → 최종 승인 (추가 알림 없음)
+          else if (isGM) {
+            console.log('ℹ️ GM 최종 승인 완료');
+          }
 
           addAlert({
             title: '승인 완료',
@@ -120,8 +187,31 @@ export default function AdminProposalView() {
       cancelText: '취소',
       onConfirm: async () => {
         try {
-          //const role: 'finance' | 'gm' = isFinance ? 'finance' : 'gm';
           await rejectReport([Number(id)]);
+          console.log('✅ 반려 완료');
+
+          // 🔔 기안서 작성자에게 반려 알림
+          const isProject = report.rp_project_type === 'project';
+          const userUrl = isProject ? `/project/proposal/view/${id}` : `/expense/proposal/view/${id}`;
+          const categoryLabel = (() => {
+            if (isProject) return '프로젝트';
+            return report.rp_category || '';
+          })();
+
+          try {
+            await notificationApi.registerNotification({
+              user_id: report.rp_user_id,
+              user_name: report.rp_user_name,
+              noti_target: user.user_id!,
+              noti_title: report.rp_title,
+              noti_message: `${categoryLabel} 기안서를 반려하였습니다.`,
+              noti_type: 'proposal',
+              noti_url: userUrl,
+            });
+            console.log('✅ 반려 알림 성공');
+          } catch (err) {
+            console.error('❌ 반려 알림 전송 실패:', err);
+          }
 
           addAlert({
             title: '반려 완료',
@@ -162,6 +252,7 @@ export default function AdminProposalView() {
 
   const isFinance = user?.team_id === 5;
   const isGM = user?.user_level === 'admin' && user?.team_id !== 5;
+
   // 승인 / 반려 버튼
   const canApprove = (() => {
     if (!user) return false;
@@ -180,18 +271,19 @@ export default function AdminProposalView() {
   })();
 
   const writerTeamName = report.team_name;
+
   // 실제 렌더링 - 공통 컴포넌트에 데이터 전달
   return (
     <ProposalViewContent
       report={report}
-      steps={steps} //프로그래스바
+      steps={steps}
       files={files}
-      onBack={() => navigate(`../proposal?tab=${currentTab}`)} // 목록으로
+      onBack={() => navigate(`../proposal?tab=${currentTab}`)}
       showWriterInfo={true}
       writerTeamName={writerTeamName}
-      showApprovalButtons={canApprove} // 매니저는 승인/반려 버튼 보이기
-      onApprove={handleApprove} // 승인 핸들러
-      onReject={handleReject} // 반려 핸들러
+      showApprovalButtons={canApprove}
+      onApprove={handleApprove}
+      onReject={handleReject}
     />
   );
 }

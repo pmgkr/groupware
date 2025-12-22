@@ -14,14 +14,12 @@ import getWelcomeMessage from '@components/features/Dashboard/welcome';
 import WorkHoursBar from '@/components/ui/WorkHoursBar';
 import { Icons } from '@components/icons';
 import EventViewDialog from '@/components/calendar/EventViewDialog';  
+import Weather from '@components/features/Dashboard/weather';
 
 import type { Calendar, Meetingroom, Wlog, Vacation, Notice, Expense } from '@/api/dashboard';
 
 import { getBadgeColor } from '@/utils/calendarHelper';
 import { formatTime, formatMinutes, formatKST } from '@/utils/date';
-import { getCachedCurrentWeather } from '@/services/weatherApi';
-import { skyText, ptyText } from '@/types/weather';
-import type { Weather } from '@/services/weatherApi';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 
@@ -45,9 +43,6 @@ export default function Dashboard() {
   // 현재 시간을 실시간으로 업데이트 (초 단위)
   const [currentTime, setCurrentTime] = useState(new Date());
   
-  // 날씨 정보 상태
-  const [weather, setWeather] = useState<Weather | null>(null);
-  
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -56,21 +51,6 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  // 날씨 정보 가져오기
-  useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        const weatherData = await getCachedCurrentWeather();
-        if (weatherData) {
-          setWeather(weatherData);
-        }
-      } catch (error) {
-        console.error('날씨 정보 조회 실패:', error);
-      }
-    };
-    
-    fetchWeather();
-  }, []);
   
   // 선택된 날짜에 따라 캘린더 데이터만 가져오기
   const { 
@@ -102,31 +82,7 @@ export default function Dashboard() {
       <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8">
         <div className="flex items-center justify-between text-base text-gray-800">
           <p>{welcomeMessage}</p>
-          <div className="flex items-center gap-1">
-            {weather ? (
-              <>
-                <span className="text-gray-800">{weather.locationName || '서울 강남구'}</span>
-                <span>
-                  {weather.TMP ? `${weather.TMP}°C` : '-'}
-                  {weather.SKY && `, ${skyText(weather.SKY)}`}
-                  {weather.PTY && weather.PTY !== '0' && `, ${ptyText(weather.PTY)}`}
-                </span>
-                {weather.SKY === '1' && <span>🌤️</span>} {/* 맑음 */} 
-                {weather.SKY === '2' && <span>🌤️</span>} {/* 구름 조금 */} 
-                {weather.SKY === '3' && <span>⛅</span>} {/* 구름많음 */}
-                {weather.SKY === '4' && <span>☁️</span>} {/* 흐림 */}
-                {weather.PTY === '1' && <span>☔</span>} {/* 비 */}
-                {weather.PTY === '2' && <span>☔☃️</span>} {/* 비/눈 */}
-                {weather.PTY === '3' && <span>☃️</span>} {/* 눈 */}
-                {weather.PTY === '4' && <span>🌂</span>} {/* 소나기 */}
-                {weather.PTY === '5' && <span>🌧️</span>} {/* 빗방울 */}
-                {weather.PTY === '6' && <span>🌧️🌨️</span>} {/* 빗방울/눈날림 */}
-                {weather.PTY === '7' && <span>️❄️</span>} {/* 눈날림 */}
-              </>
-            ) : (
-              <span>날씨 정보 로딩중</span>
-            )}
-          </div>
+          <Weather />
         </div>
         <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6">
 

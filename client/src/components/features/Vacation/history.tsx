@@ -3,11 +3,10 @@ import { useSearchParams } from 'react-router';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import EventViewDialog from '@/components/calendar/EventViewDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { MyVacationHistory as fetchVacationHistory, type MyVacationItem as VacationItem } from '@/api/mypage/vacation';
 import { adminVacationApi } from '@/api/admin/vacation';
-import { useToast } from '@/components/ui/use-toast';
+import { managerVacationApi } from '@/api/manager/vacation';
 import { AppPagination } from '@/components/ui/AppPagination';
 
 dayjs.locale('ko');
@@ -19,7 +18,6 @@ export interface VacationHistoryProps {
 
 export default function VacationHistory({ userId, year }: VacationHistoryProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
   
   // 연도 state - props로 받거나 기본값 사용
   const currentYear = new Date().getFullYear();
@@ -58,8 +56,8 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const pageSize = 15;
   
-  // userId가 props로 전달되면 Admin API 사용, 없으면 VacationHistory API 사용
-  const isAdminView = !!userId;
+  // userId가 props로 전달되면 Admin/Manager API 사용, 없으면 MyPage API 사용
+  const isExternalUser = !!userId;
 
   // URL 파라미터와 page state 동기화 (초기 로드 시에만)
   useEffect(() => {
@@ -83,10 +81,6 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
     }
   }, [page, searchParams, setSearchParams]);
   
-  // 일정 다이얼로그 state
-  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<VacationItem | null>(null);
-  const [selectedCancelledItem, setSelectedCancelledItem] = useState<VacationItem | null>(null);
 
   // 데이터 조회 함수
   const fetchScheduleData = useCallback(async () => {
@@ -110,15 +104,18 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
     try {
       let vacationData: VacationItem[];
       
-      if (isAdminView) {
-        // Admin API 사용: /admin/vacation/info - 모든 페이지를 순회해서 데이터 가져오기
+      if (isExternalUser) {
+        // 관리자/매니저 외부 조회 (userId 존재): admin은 /admin/vacation/info, manager는 /manager/vacation/info
         vacationData = [];
         let currentPage = 1;
         const fetchSize = 100; // 한 번에 가져올 데이터 수
         let hasMore = true;
         
         while (hasMore) {
-          const response = await adminVacationApi.getVacationInfo(targetUserId, selectedYear, currentPage, fetchSize);
+          const response = location.pathname.startsWith('/manager')
+            ? await managerVacationApi.getVacationInfo(targetUserId, selectedYear, currentPage, fetchSize)
+            : await adminVacationApi.getVacationInfo(targetUserId, selectedYear, currentPage, fetchSize);
+
           const pageData = (response.body || []).map(item => ({
             sch_id: item.sch_id,
             v_year: item.v_year,
@@ -163,7 +160,7 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
     } finally {
       loadingRef.current = false;
     }
-  }, [userId, user?.user_id, selectedYear, page, pageSize, isAdminView]);
+  }, [userId, user?.user_id, selectedYear, page, pageSize]);
 
   // 데이터 조회
   useEffect(() => {
@@ -309,55 +306,6 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
     return '등록 완료';
   };
 
-  // 일정 클릭 핸들러
-  const handleEventClick = async (item: VacationItem, cancelledItem?: VacationItem) => {
-    setSelectedEvent(item);
-    setSelectedCancelledItem(cancelledItem || null);
-    setIsEventDialogOpen(true);
-  };
-
-  // 일정 다이얼로그 닫기
-  const handleCloseEventDialog = () => {
-    setIsEventDialogOpen(false);
-    setSelectedEvent(null);
-    setSelectedCancelledItem(null);
-  };
-
-  // 취소 요청 핸들러 (사용자가 취소 신청)
-  const handleRequestCancel = async () => {
-    if (!selectedEvent?.sch_id) return;
-    
-    try {
-      // API 호출 제거됨
-      fetchScheduleData();
-      handleCloseEventDialog();
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  // 취소 승인 핸들러 (매니저가 취소 승인)
-  const handleApproveCancel = async () => {
-    if (!selectedEvent?.sch_id) return;
-    
-    try {
-      // API 호출 제거됨
-      fetchScheduleData();
-      handleCloseEventDialog();
-      toast({
-        title: "취소 승인 완료",
-        description: "일정 취소가 승인되었습니다.",
-      });
-    } catch (error) {
-      toast({
-        title: "승인 실패",
-        description: "취소 승인 중 오류가 발생했습니다.",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
 
   // 휴가 유형 텍스트 변환
   const getVacationTypeText = (vacationType?: string | null, vacationTime?: string | null) => {
@@ -419,13 +367,12 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
             return (
               <TableRow 
                 key={`${group.item.sch_id}-${index}`}
-                className={`[&_td]:text-[13px] cursor-pointer ${
+                className={`[&_td]:text-[13px] ${
                   hasCancelled 
                     // ? ' [&_td]:text-gray-400' 
                     ? 'opacity-40' 
                     : ''
                 }`}
-                onClick={() => handleEventClick(group.item, group.cancelledItem)}
               >
                 <TableCell className="text-center p-2">{group.item.sdate} - {group.item.edate}</TableCell>
                 <TableCell className="text-center p-2">
@@ -481,35 +428,6 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
             }} 
           />
         </div>
-      )}
-
-      {/* 일정 다이얼로그 */}
-      {selectedEvent && (
-        <EventViewDialog
-          isOpen={isEventDialogOpen}
-          onClose={handleCloseEventDialog}
-          onRequestCancel={handleRequestCancel}
-          onApproveCancel={handleApproveCancel}
-          selectedEvent={{
-            id: String(selectedEvent.sch_id),
-            title: getVacationTypeText(selectedEvent.v_type) || '',
-            description: selectedEvent.remark || '',
-            startDate: selectedEvent.sdate,
-            endDate: selectedEvent.edate,
-            startTime: '00:00:00',
-            endTime: '00:00:00',
-            allDay: true,
-            category: 'vacation',
-            eventType: getVacationTypeText(selectedEvent.v_type),
-            author: user?.user_name || '-',
-            userId: user?.user_id || '',
-            teamId: user?.team_id || 0,
-            status: selectedCancelledItem 
-              ? '취소 완료' 
-              : getScheduleStatusText(selectedEvent.sch_status),
-            createdAt: selectedEvent.wdate
-          }}
-        />
       )}
 
     </>

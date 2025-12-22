@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useWorkingData } from '@/hooks/useWorkingData';
-import { getWeekStartDate } from '@/utils/dateHelper';
-import { scheduleApi } from '@/api/calendar';
+import { getWeekNumber } from '@/utils/dateHelper';
 import { Badge } from '@/components/ui/badge';
+import { getWorkTypeColor } from '@/utils/workTypeHelper';
+import { adminWlogApi, type LateComerResponse, type LateComerResponseItems } from '@/api/admin/wlog';
+import { useAuth } from '@/contexts/AuthContext';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 export interface LatecomerItem {
   userId: string;
@@ -14,7 +16,9 @@ export interface LatecomerItem {
   checkInTime: string;
   checkOutTime?: string;
   totalTime: string;
-  hasSchedule: boolean;
+  workType: string;
+  workTypeColorKey: string;
+  workTypes?: Array<{ type: string }>;
 }
 
 interface LatecomerProps {
@@ -24,157 +28,142 @@ interface LatecomerProps {
 }
 
 export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin' }: LatecomerProps) {
-  const weekStartDate = useMemo(() => getWeekStartDate(currentDate), [currentDate]);
-  const { workingList, loading } = useWorkingData({ weekStartDate, selectedTeamIds, page });
-  
+  const { user } = useAuth();
+
   const [latecomersByDate, setLatecomersByDate] = useState<Map<string, LatecomerItem[]>>(new Map());
   const [loadingLatecomers, setLoadingLatecomers] = useState(false);
 
-  // 주간 날짜 배열 생성 (월요일 ~ 금요일)
-  const weekDates = useMemo(() => {
-    const dates: string[] = [];
-    for (let i = 0; i < 5; i++) {
-      const date = dayjs(weekStartDate).add(i, 'day');
-      dates.push(date.format('YYYY-MM-DD'));
+  // 분(minute)를 "Xh Ym" 형식으로 변환
+  const formatWorkMinutes = (wmin: number): string => {
+    if (!wmin || wmin <= 0) return '-';
+    const hours = Math.floor(wmin / 60);
+    const minutes = wmin % 60;
+    const parts: string[] = [];
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    return parts.length > 0 ? parts.join(' ') : '-';
+  };
+
+  // wtype 코드 -> 표시 텍스트 및 색상 키 매핑
+  const mapWorkType = (wtype?: string): { label: string; colorKey: string } => {
+    const code = (wtype || '').trim().toLowerCase();
+
+    // 변형 코드 포괄 매핑 (quarter 오타 포함)
+    if (code.includes('quarter') || code.includes('quater')) {
+      return { label: '반반차', colorKey: '오전반반차' };
     }
-    return dates;
-  }, [weekStartDate]);
+    if (code.includes('half')) {
+      return { label: '반차', colorKey: '오전반차' };
+    }
 
-  // 지각자 계산
+    switch (code) {
+      case '-':
+      case '':
+        return { label: '일반근무', colorKey: '일반근무' };
+      default:
+        // 기타 값은 원본 그대로 표시
+        return { label: wtype || '-', colorKey: '-' };
+    }
+  };
+
+  // 지각자 조회
   useEffect(() => {
-    const calculateLatecomers = async () => {
-      if (loading || workingList.length === 0) {
-        setLatecomersByDate(new Map());
-        return;
-      }
-
+    const loadLatecomers = async () => {
       setLoadingLatecomers(true);
       const latecomersMap = new Map<string, LatecomerItem[]>();
 
       try {
-        // 사용자별 스케줄을 한 번에 조회 (성능 최적화)
-        const userSchedulesMap = new Map<string, any[]>();
-        const year = dayjs(weekStartDate).year();
-        const month = dayjs(weekStartDate).month() + 1;
+        const { year, week } = getWeekNumber(currentDate);
 
-        // 모든 사용자의 스케줄을 병렬로 조회
-        const schedulePromises = workingList.map(async (item) => {
-          try {
-            const scheduleResponse = await scheduleApi.getSchedules({
-              year,
-              month,
-              user_id: item.id
-            }) as any;
+        // 조회 대상 팀 결정
+        let teamIdsToQuery: (number | undefined)[] = [];
 
-            const schedules = Array.isArray(scheduleResponse?.items) 
-              ? scheduleResponse.items 
-              : (scheduleResponse?.items?.items || []);
-
-            // 승인된 일정만 필터링
-            const activeSchedules = schedules.filter((sch: any) => 
-              sch.sch_status === 'Y' || sch.sch_status === 'H'
-            );
-
-            userSchedulesMap.set(item.id, activeSchedules);
-          } catch (error) {
-            console.error(`사용자 ${item.id} 스케줄 조회 실패:`, error);
-            userSchedulesMap.set(item.id, []);
+        if (selectedTeamIds.length > 0) {
+          teamIdsToQuery = selectedTeamIds;
+        } else if (page === 'admin') {
+          // admin + 팀 미선택 시: 전체 팀 대상
+          teamIdsToQuery = [undefined];
+        } else {
+          // manager 페이지: 로그인 사용자의 팀 기준
+          const teamId = user?.team_id ?? undefined;
+          if (!teamId) {
+            setLatecomersByDate(new Map());
+            return;
           }
-        });
+          teamIdsToQuery = [teamId];
+        }
 
-        await Promise.all(schedulePromises);
+        const responses = await Promise.all(
+          teamIdsToQuery.map((teamId) =>
+            adminWlogApi.getWlogLateComer(teamId, week, year).catch((err) => {
+              console.error('지각자 조회 실패:', err);
+              return null as LateComerResponse | null;
+            })
+          )
+        );
 
-        // 각 날짜별로 지각자 찾기
-        for (const date of weekDates) {
-          const dateLatecomers: LatecomerItem[] = [];
+        const pushItemToMap = (item: LateComerResponseItems & { tdate?: string }) => {
+          const tdate = item.tdate || dayjs(item.stime).format('YYYY-MM-DD');
+          if (!tdate) return;
 
-          for (const item of workingList) {
-            // 해당 날짜의 근태 정보 가져오기
-            const dayIndex = dayjs(date).diff(dayjs(weekStartDate), 'day');
-            let dayInfo: any = null;
+          // 근무유형/근무시간 등 계산은 모두 백엔드에서 오므로
+          // 프론트에서는 wtype과 wmin을 단순 매핑/포맷만 수행
+          const mapped = mapWorkType(item.wtype);
+          const displayWorkType = mapped.label;
+          const colorKey = mapped.colorKey;
 
-            switch (dayIndex) {
-              case 0:
-                dayInfo = item.monday;
-                break;
-              case 1:
-                dayInfo = item.tuesday;
-                break;
-              case 2:
-                dayInfo = item.wednesday;
-                break;
-              case 3:
-                dayInfo = item.thursday;
-                break;
-              case 4:
-                dayInfo = item.friday;
-                break;
-              case 5:
-                dayInfo = item.saturday;
-                break;
-              case 6:
-                dayInfo = item.sunday;
-                break;
-            }
+          const list = latecomersMap.get(tdate) ?? [];
+          list.push({
+            userId: item.user_id,
+            userName: item.user_name,
+            department: item.team_name,
+            date: tdate,
+            checkInTime: item.stime,
+            checkOutTime: item.etime,
+            totalTime: formatWorkMinutes(item.wmin),
+            workType: displayWorkType,
+            workTypeColorKey: colorKey,
+          });
+          latecomersMap.set(tdate, list);
+        };
 
-            if (!dayInfo) continue;
+        for (const res of responses) {
+          if (!res) continue;
 
-            // 출근 시간이 있고, 근무 타입이 일반근무인 경우만 체크
-            if (dayInfo.startTime && dayInfo.workType === '일반근무') {
-              const checkInTime = dayInfo.startTime;
-              
-              // 시간 파싱 (HH:mm 또는 HH:mm:ss 형식)
-              const timeMatch = checkInTime.match(/(\d{2}):(\d{2})/);
-              if (!timeMatch) continue;
+          // 1) result: [{ tdate, items: LateComerResponseItems[] }]
+          if (Array.isArray(res.result)) {
+            const first = res.result[0] as any;
 
-              const hours = parseInt(timeMatch[1], 10);
-              const minutes = parseInt(timeMatch[2], 10);
-              
-              // 10시 이후 출근인지 확인 (10:00:01부터 지각)
-              if (hours > 10 || (hours === 10 && minutes > 0)) {
-                // 해당 날짜에 스케줄이 있는지 확인
-                const schedules = userSchedulesMap.get(item.id) || [];
-                const targetDate = dayjs(date).format('YYYY-MM-DD');
-                
-                const hasSchedule = schedules.some((sch: any) => {
-                  const schStartDate = dayjs(sch.sch_sdate).format('YYYY-MM-DD');
-                  const schEndDate = dayjs(sch.sch_edate).format('YYYY-MM-DD');
-                  
-                  // 해당 날짜가 일정 범위 내에 있는지 확인
-                  return targetDate >= schStartDate && targetDate <= schEndDate;
-                });
-
-                // 스케줄이 없으면 지각으로 판단
-                if (!hasSchedule) {
-                  dateLatecomers.push({
-                    userId: item.id,
-                    userName: item.name,
-                    department: item.department,
-                    date,
-                    checkInTime,
-                    checkOutTime: dayInfo.endTime,
-                    totalTime: dayInfo.totalTime,
-                    hasSchedule: false
-                  });
-                }
-              }
+            if (first && Array.isArray(first.items)) {
+              // 그룹 형태
+              (res.result as any).forEach((group: { tdate: string; items: LateComerResponseItems[] }) => {
+                group.items?.forEach((item) => pushItemToMap({ ...item, tdate: group.tdate }));
+              });
+            } else {
+              // 평탄 배열
+              (res.result as any).forEach((item: LateComerResponseItems & { tdate?: string }) => {
+                pushItemToMap(item);
+              });
             }
           }
 
-          if (dateLatecomers.length > 0) {
-            latecomersMap.set(date, dateLatecomers);
+          // 2) items: LateComerResponseItems[]
+          if (Array.isArray(res.items)) {
+            (res.items as any).forEach((item: LateComerResponseItems & { tdate?: string }) => {
+              pushItemToMap(item);
+            });
           }
         }
       } catch (error) {
-        console.error('지각자 계산 실패:', error);
+        console.error('지각자 조회 중 오류:', error);
       } finally {
         setLoadingLatecomers(false);
         setLatecomersByDate(latecomersMap);
       }
     };
 
-    calculateLatecomers();
-  }, [workingList, weekDates, weekStartDate, loading]);
+    loadLatecomers();
+  }, [selectedTeamIds, currentDate, page, user?.team_id]);
 
   // 날짜 포맷팅
   const formatDate = (dateStr: string) => {
@@ -185,7 +174,7 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
 
   return (
     <div className="mb-5">
-      {loading || loadingLatecomers ? (
+      {loadingLatecomers ? (
         <div className="text-center py-8 text-gray-500">
           지각현황 데이터를 불러오는 중...
         </div>
@@ -195,7 +184,7 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
         </div>
       ) : (
         <div className="space-y-8">
-          {weekDates.map((date) => {
+          {Array.from(latecomersByDate.keys()).sort().map((date) => {
             const latecomers = latecomersByDate.get(date) || [];
             if (latecomers.length === 0) return null;
 
@@ -212,11 +201,12 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
                 <Table variant="primary" align="center" className="table-fixed">
                   <TableHeader>
                     <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-                      <TableHead className="w-[12%] text-center p-0">부서</TableHead>
-                      <TableHead className="w-[18%]">이름</TableHead>
-                      <TableHead className="w-[12%]">출근시간</TableHead>
-                      <TableHead className="w-[12%]">퇴근시간</TableHead>
-                      <TableHead className="w-[12%]">총 근무시간</TableHead>
+                      <TableHead className="w-[8%] text-center p-0">부서</TableHead>
+                      <TableHead className="w-[10%]">이름</TableHead>
+                      <TableHead className="w-[15%]">근무유형</TableHead>
+                      <TableHead className="w-[13%]">출근시간</TableHead>
+                      <TableHead className="w-[13%]">퇴근시간</TableHead>
+                      <TableHead className="w-[13%]">총 근무시간</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -224,7 +214,43 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
                       <TableRow key={`${latecomer.userId}-${date}`} className="[&_td]:text-[13px]">
                         <TableCell className="text-center p-0">{latecomer.department}</TableCell>
                         <TableCell>{latecomer.userName}</TableCell>
-                        <TableCell className="text-red-600 font-medium">
+                        <TableCell>
+                          {(() => {
+                            const hasMultipleWorkTypes = latecomer.workTypes && latecomer.workTypes.length > 1;
+                            const latestWorkType = hasMultipleWorkTypes ? latecomer.workTypes![0].type : null;
+                            const otherWorkTypes = hasMultipleWorkTypes ? latecomer.workTypes!.slice(1) : [];
+                            const displayWorkType = hasMultipleWorkTypes ? latestWorkType! : latecomer.workType;
+
+                            return (
+                              <div className="flex items-center gap-1 justify-center">
+                                <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getWorkTypeColor(displayWorkType)}`}>
+                                  {displayWorkType}
+                                </span>
+                                {hasMultipleWorkTypes && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Badge variant="grayish" className="px-1 py-0 text-xs cursor-pointer">
+                                          +{otherWorkTypes.length}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <div className="flex flex-col gap-1">
+                                          {latecomer.workTypes!.map((wt, idx) => (
+                                            <div key={idx} className="text-sm">
+                                              {wt.type}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </TableCell>
+                        <TableCell className="text-red-600">
                           {latecomer.checkInTime}
                         </TableCell>
                         <TableCell>

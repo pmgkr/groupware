@@ -19,6 +19,7 @@ export default function ManagerProposalView() {
   const [report, setReport] = useState<any>(null);
   const [files, setFiles] = useState<ReportFileDTO[]>([]);
   const [steps, setSteps] = useState<Step[]>([]);
+  const [lines, setLines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const user = useUser();
   const [searchParams] = useSearchParams();
@@ -33,6 +34,7 @@ export default function ManagerProposalView() {
         const data = await getReportInfoManager(id);
         setReport(data.report);
         setFiles(data.files || []);
+        setLines(data.lines || []);
 
         const roleLabels: Record<number, string> = {
           2: '팀장',
@@ -61,59 +63,37 @@ export default function ManagerProposalView() {
   const { addAlert } = useAppAlert();
 
   // 다음 결재자 찾기
-  const [nextApprover, setNextApprover] = useState<{
-    user_id: string;
-    user_name?: string;
-  } | null>(null);
-  useEffect(() => {
-    if (!id) return;
-
-    (async () => {
-      console.log('[NEXT] 매니저 뷰 진입 – 다음 결재자 조회 시작');
-
-      const approver = await getNextApprover();
-
-      console.log('[NEXT] 최종 nextApprover:', approver);
-      setNextApprover(approver);
-    })();
-  }, [id]);
-  const getNextApprover = async () => {
+  const getNextApprover = () => {
     try {
-      const res = await fetch(`/user/office/report/lines?rp_seq=${id}`);
-
-      console.log('[NEXT] response status:', res.status);
-      console.log('[NEXT] response ok:', res.ok);
-
-      const text = await res.text();
-      console.log('[NEXT] raw response text:', text);
-
-      let lines;
-      try {
-        lines = JSON.parse(text);
-      } catch (e) {
-        console.error('[NEXT] JSON 파싱 실패');
+      if (!Array.isArray(lines) || lines.length === 0) {
         return null;
       }
 
-      console.log('[NEXT] parsed lines:', lines);
+      // 현재 승인한 사람의 order 찾기
+      const currentLine = lines.find((line) => line.rl_approver_id === user?.user_id);
 
-      if (!Array.isArray(lines)) {
-        console.error('[NEXT] lines가 배열이 아님', lines);
+      if (!currentLine) {
+        console.error('[NEXT] 현재 승인자를 결재선에서 찾을 수 없음');
         return null;
       }
 
-      const nextLine = lines.find((line: any) => Number(line.rl_state) === 3);
+      const currentOrder = currentLine.rl_order;
 
-      console.log('[NEXT] nextLine:', nextLine);
+      // 다음 order의 결재자 찾기
+      const nextOrder = currentOrder + 1;
+      const nextLine = lines.find((line) => line.rl_order === nextOrder);
 
-      if (!nextLine) return null;
+      if (!nextLine) {
+        console.log('[NEXT] 다음 결재자 없음 (최종 승인)');
+        return null;
+      }
 
       return {
         user_id: nextLine.rl_approver_id,
         user_name: nextLine.rl_approver_name,
       };
     } catch (e) {
-      console.error('[NEXT] 결재선 조회 실패', e);
+      console.error('[NEXT] 결재선 조회 실패:', e);
       return null;
     }
   };
@@ -137,50 +117,53 @@ export default function ManagerProposalView() {
       cancelText: '취소',
       onConfirm: async () => {
         try {
-          const res = await approveReport(id, user.user_id!);
+          // 1. 먼저 승인 처리
+          await approveReport(id, user.user_id!);
 
           // 🔔 알림 보내기
           // URL 결정: project_type에 따라 분기
           const isProject = report.rp_project_type === 'project';
           const userUrl = isProject ? `/project/proposal/view/${id}` : `/expense/proposal/view/${id}`;
-          const adminUrl = isProject ? `/admin/project/proposal/view/${id}` : `/admin/expense/proposal/view/${id}`;
+          const adminUrl = `/admin/proposal/${id}`;
+
+          // ✅ 카테고리별 메시지 생성
+          const categoryLabel = (() => {
+            if (isProject) return '프로젝트';
+            return report.rp_category || ''; // 일반비용, 교육비, 구매요청 등
+          })();
 
           console.log('🔍 알림 URL:', { userUrl, adminUrl, isProject });
-
+          // 2. 작성자에게 알림
           try {
             const notificationData = {
               user_id: report.rp_user_id,
               user_name: report.rp_user_name,
               noti_target: user.user_id!,
               noti_title: report.rp_title,
-              noti_message: `${report.rp_title} 기안서를 승인하였습니다.`,
+              noti_message: `${categoryLabel} 기안서를 승인하였습니다.`,
               noti_type: 'proposal',
               noti_url: userUrl,
             };
 
             const notiResult1 = await notificationApi.registerNotification(notificationData);
-            console.log('✅ 작성자 알림 성공:', notiResult1);
+            console.log(' 작성자 알림 성공:', notiResult1);
           } catch (err) {
             console.error('❌ 작성자 알림 전송 실패:', err);
             console.error('❌ 에러 상세:', JSON.stringify(err, null, 2));
           }
 
-          // 2. 다음 결재자에게 알림
+          // 3. 다음 결재자 조회 및 알림
           const nextApprover = await getNextApprover();
-          console.log('🔍 다음 결재자:', nextApprover);
+          //console.log('🔍 조회된 다음 결재자:', nextApprover);
 
           if (nextApprover?.user_id) {
-            console.log('📤 다음 결재자 알림 전송 시작');
-            console.log('- 수신자 ID:', nextApprover.user_id);
-            console.log('- 수신자 이름:', nextApprover.user_name);
-
             try {
               const notificationData = {
                 user_id: nextApprover.user_id,
                 user_name: nextApprover.user_name,
-                noti_target: user.user_id!,
+                noti_target: report.rp_user_id,
                 noti_title: report.rp_title,
-                noti_message: `결재 요청이 도착했습니다.`,
+                noti_message: `${categoryLabel} 기안서 결재 요청 하였습니다.`,
                 noti_type: 'proposal',
                 noti_url: adminUrl,
               };
@@ -188,7 +171,7 @@ export default function ManagerProposalView() {
               console.log('📦 알림 데이터:', notificationData);
 
               const notiResult2 = await notificationApi.registerNotification(notificationData);
-              console.log('✅ 다음 결재자 알림 성공:', notiResult2);
+              console.log('다음 결재자 알림 성공:', notiResult2);
             } catch (err) {
               console.error('❌ 다음 결재자 알림 전송 실패:', err);
               console.error('❌ 에러 상세:', JSON.stringify(err, null, 2));
@@ -233,9 +216,6 @@ export default function ManagerProposalView() {
       cancelText: '취소',
       onConfirm: async () => {
         try {
-          console.log('🔍 반려 시작 - report:', report);
-          console.log('🔍 현재 user:', user);
-
           await rejectReport(id, user.user_id!);
           console.log('✅ 반려 완료');
 
@@ -243,9 +223,13 @@ export default function ManagerProposalView() {
           // URL 결정: project_type에 따라 분기
           const isProject = report.rp_project_type === 'project';
           const userUrl = isProject ? `/project/proposal/view/${id}` : `/expense/proposal/view/${id}`;
+          const categoryLabel = (() => {
+            if (isProject) return '프로젝트';
+            return report.rp_category || ''; // 일반비용, 교육비, 구매요청 등
+          })();
 
-          console.log('🔍 반려 알림 URL:', { userUrl, isProject });
-          console.log('📤 작성자 반려 알림 전송 시작 - target:', report.rp_user_id);
+          //console.log('🔍 반려 알림 URL:', { userUrl, isProject });
+          //console.log('📤 작성자 반려 알림 전송 시작 - target:', report.rp_user_id);
 
           try {
             const notiResult = await notificationApi.registerNotification({
@@ -253,7 +237,7 @@ export default function ManagerProposalView() {
               user_name: report.rp_user_name,
               noti_target: user.user_id!,
               noti_title: report.rp_title,
-              noti_message: `${report.rp_title} 기안서를 반려하였습니다.`,
+              noti_message: `${categoryLabel} 기안서를 반려하였습니다.`,
               noti_type: 'proposal',
               noti_url: userUrl,
             });

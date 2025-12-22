@@ -73,22 +73,37 @@ export default function ProposalView({
           </div>
           {report.rp_expense_no &&
             (() => {
-              const [projectCode, expenseId] = report.rp_expense_no.split('/');
+              // `/`가 있으면 프로젝트 비용, 없으면 일반비용
+              if (report.rp_expense_no.includes('/')) {
+                const [projectCode, expenseId] = report.rp_expense_no.split('/');
 
-              if (!projectCode || !expenseId) return null;
+                if (!projectCode || !expenseId) return null;
 
-              return (
-                <div className="px-3">
-                  <span className="mr-2 text-gray-900">EXP#</span>
-
-                  <Link
-                    to={`/project/${projectCode}/expense/${expenseId}`}
-                    className="text-primary hover:text-primary/80 underline"
-                    onClick={(e) => e.stopPropagation()}>
-                    {report.rp_expense_no}
-                  </Link>
-                </div>
-              );
+                return (
+                  <div className="px-3">
+                    <span className="mr-2 text-gray-900">EXP#</span>
+                    <Link
+                      to={`/project/${projectCode}/expense/${expenseId}`}
+                      className="text-primary hover:text-primary/80 underline"
+                      onClick={(e) => e.stopPropagation()}>
+                      {report.rp_expense_no}
+                    </Link>
+                  </div>
+                );
+              } else {
+                // 일반비용 (NE25-00122)
+                return (
+                  <div className="px-3">
+                    <span className="mr-2 text-gray-900">EXP#</span>
+                    <Link
+                      to={`/expense/${report.rp_expense_no}`}
+                      className="text-primary hover:text-primary/80 underline"
+                      onClick={(e) => e.stopPropagation()}>
+                      {report.rp_expense_no}
+                    </Link>
+                  </div>
+                );
+              }
             })()}
         </div>
 

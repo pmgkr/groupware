@@ -30,6 +30,7 @@ type ExpenseRowProps = {
   files: PreviewFile[];
   activeFile: string | null;
   setActiveFile: (id: string | null) => void;
+  onSelectProposal?: (selectedProposalId: Number) => void;
 };
 
 function ExpenseRowComponent({
@@ -43,6 +44,7 @@ function ExpenseRowComponent({
   files,
   activeFile,
   setActiveFile,
+  onSelectProposal,
 }: ExpenseRowProps) {
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
 
@@ -299,7 +301,7 @@ function ExpenseRowComponent({
                   const isDisabled = selectedProposalId !== null && !isSelected;
 
                   return (
-                    <TableRow key={p.rp_seq} className="hover:bg-gray-100 [&_td]:text-[13px]">
+                    <TableRow key={p.rp_seq} className="hover:bg-gray-100">
                       <TableCell>{p.rp_category}</TableCell>
                       <TableCell className="text-left">{p.rp_title}</TableCell>
                       <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
@@ -307,13 +309,24 @@ function ExpenseRowComponent({
                       <TableCell className="px-2.5 [&]:pr-3!">
                         <Checkbox
                           size="sm"
+                          id={`proposal-${p.rp_seq}`}
                           checked={isSelected}
                           disabled={isDisabled}
                           onCheckedChange={(checked) => {
                             if (checked) {
+                              form.setValue(`expense_items.${index}.pro_id`, p.rp_seq, {
+                                shouldDirty: true,
+                                shouldValidate: false,
+                              });
+
                               setSelectedProposalId(p.rp_seq);
                               setSelectedProposal(p);
                             } else {
+                              form.setValue(`expense_items.${index}.pro_id`, null, {
+                                shouldDirty: true,
+                                shouldValidate: false,
+                              });
+
                               setSelectedProposalId(null);
                               setSelectedProposal(null);
                             }
@@ -336,6 +349,9 @@ function ExpenseRowComponent({
               onClick={() => {
                 if (!selectedProposalId) return;
                 console.log('선택된 기안서:', selectedProposalId);
+
+                // 부모 컴포넌트로 선택된 기안서 전달
+                onSelectProposal?.(selectedProposalId);
                 setDialogOpen(false);
               }}>
               선택하기

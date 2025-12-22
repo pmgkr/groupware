@@ -52,6 +52,7 @@ export default function VacationToolbar({
 }: VacationToolbarProps) {
   const { user } = useAuth();
   const location = useLocation();
+  const isManagerContext = location.pathname.startsWith('/manager');
   
   // 최고관리자-휴가관리-상세페이지
   const isAdminDetailPage = location.pathname.includes('/vacation/user/');
@@ -83,30 +84,28 @@ export default function VacationToolbar({
         return;
       }
       
-      // page prop에 따라 분기
-      if (page === 'admin') {
-        // admin 페이지: 모든 팀 표시
-        const allTeamDetails = await getTeams({});
+      // 매니저 컨텍스트(경로 기준)면 자신의 팀만, 아니면 page 기준
+      if (isManagerContext || page === 'manager') {
+        const allTeamDetails = await getManagerTeams({});
         const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
           seq: 0,
-          manager_id: user.user_id,
-          manager_name: user.user_name || '',
+          manager_id: team.manager_id || '',
+          manager_name: team.manager_name || '',
           team_id: team.team_id,
           team_name: team.team_name,
           parent_id: team.parent_id || undefined,
           level: team.level,
         }));
-        
         setTeams(teamItems);
         return;
       }
-      
-      // manager 페이지: 권한 상관없이 자기가 팀장인 팀 목록만 조회
-      const allTeamDetails = await getManagerTeams({});
+
+      // 관리자 컨텍스트: 모든 팀
+      const allTeamDetails = await getTeams({});
       const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
         seq: 0,
-        manager_id: team.manager_id || '',
-        manager_name: team.manager_name || '',
+        manager_id: user.user_id,
+        manager_name: user.user_name || '',
         team_id: team.team_id,
         team_name: team.team_name,
         parent_id: team.parent_id || undefined,
@@ -224,23 +223,7 @@ export default function VacationToolbar({
     loadTeams();
   }, [user, page]);
 
-  // 팀 목록이 로드되면 모든 팀 선택 (상세 페이지가 아닐 때만)
-  useEffect(() => {
-    if (teams.length > 0 && selectedTeams.length === 0 && !isAdminDetailPage) {
-      const allTeamIds = teams.map(team => String(team.team_id));
-      setSelectedTeams(allTeamIds);
-      
-      // 부모 컴포넌트에 알림
-      const teamIds = allTeamIds.map(id => parseInt(id));
-      onTeamSelect(teamIds);
-      
-      // Admin일 때 선택된 팀의 팀원 목록 로드
-      if (page === 'admin' && teamIds.length > 0) {
-        loadTeamMembers(teamIds);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teams, isAdminDetailPage]);
+  // 팀 자동선택 제거: 초기 상태는 선택 없음 유지
   
   // 상세 페이지에서 초기 팀 선택값 설정 (한 번만 실행)
   useEffect(() => {

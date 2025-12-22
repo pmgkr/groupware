@@ -242,3 +242,33 @@ export const matchProjectWithProposal = async (
     }),
   });
 };
+
+//일반비용 - 기안서 매칭
+export const matchNonProjectWithProposal = async (
+  rp_seq: number,
+  exp_seq: number // 배열 → 단일 숫자로 변경
+) => {
+  console.log('📡 POST /user/office/report/expense/set 요청 시작');
+  return await http('/user/office/report/expense/set', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      rp_seq,
+      exp_seq,
+      flag: 'N',
+    }),
+  });
+};
+
+//기안서 알림 결재선 정보 조회 API 함수 추가
+export async function getReportLines(): Promise<{
+  team_manager: { id: string; name: string };
+  finance: { id: string; name: string };
+  gm: { id: string; name: string };
+}> {
+  return await http('/user/office/report/lines', {
+    method: 'GET',
+  });
+}

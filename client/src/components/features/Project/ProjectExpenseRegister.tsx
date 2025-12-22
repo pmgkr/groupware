@@ -82,7 +82,6 @@ export default function ProjectExpenseRegister() {
   const [activeFile, setActiveFile] = useState<string | null>(null); // UploadArea & Attachment 연결상태 공유용
 
   const [selectedProposal, setSelectedProposal] = useState<any>(null); //기안서  번호 확인용
-  const [selectedExpense, setSelectedExpense] = useState<any>(null); //비용 번호 확인용
 
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : ''); // YYYY-MM-DD Date 포맷 변경
 
@@ -514,10 +513,6 @@ export default function ProjectExpenseRegister() {
             } else {
               console.log('ℹ️ 매칭할 기안서 없음');
             }
-
-            // 프로젝트 비용 기안서 매칭 API 호출 필요 (혜리 작업 필요)
-            // projectId, result.list_seq 저장해서 API 호출해서 보내면됨
-            // report 테이블에 저장할 때 rp_project_type이 'project'일 때 rp_expense_no가 projectId/list_seq (G26-00002/32)
 
             // 견적서 체크 비용을 작성했다면 매칭 페이지로 이동
             if (projectType === 'est') {
