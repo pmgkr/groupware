@@ -7,13 +7,18 @@ import PexpenseView from '@components/features/Project/AdminExpenseView';
 import Nexpense from '@/pages/Admin/Finance/Nexpense';
 import NexpenseView from '@components/features/Expense/AdminExpenseView';
 import Invoice from '@/pages/Admin/Finance/Invoice';
+import InvoiceView from '@/pages/Admin/Finance/InvoiceView';
+import Report from '@/pages/Admin/Finance/Report';
 
 import Vacation from '@/pages/Admin/Vacation';
 import VacationDetail from '@/pages/Admin/VacationDetail';
-import AdminWorking from '@/pages/Admin/Working';
+import WorkingLayout from '@/pages/Admin/Working/WorkingLayout';
+import AdminWorking from '@/pages/Admin/Working/Working';
+import Latecomer from '@/pages/Admin/Working/Latecomer';
 import AdminOvertime from '@/pages/Admin/Overtime';
 import AdminProposalList from '@/pages/Admin/Proposal/adminProposalList';
 import AdminProposalView from '@/pages/Admin/Proposal/adminProposalView';
+import Member from '@/pages/Admin/Member';
 
 export const adminRoutes: RouteObject = {
   path: 'admin', // → /Admin
@@ -26,6 +31,7 @@ export const adminRoutes: RouteObject = {
       { to: '/admin/overtime', label: '추가근무 관리' },
       { to: '/admin/vacation', label: '휴가 관리' },
       { to: '/admin/proposal', label: '기안서 관리' },
+      { to: '/admin/member', label: '구성원 관리' },
     ],
   },
   children: [
@@ -41,13 +47,24 @@ export const adminRoutes: RouteObject = {
         { path: 'nexpense/:expId', element: <NexpenseView /> },
 
         { path: 'invoice', element: <Invoice /> },
+        { path: 'invoice/:seq', element: <InvoiceView /> },
+
+        { path: 'report', element: <Report /> },
       ],
     },
     { path: 'vacation', element: <Vacation /> },
     { path: 'vacation/user/:id', element: <VacationDetail /> },
-    { path: 'working', element: <AdminWorking /> },
+    {
+      path: 'working',
+      element: <WorkingLayout />,
+      children: [
+        { index: true, element: <AdminWorking /> },
+        { path: 'late', element: <Latecomer /> },
+      ],
+    },
     { path: 'overtime', element: <AdminOvertime /> },
     { path: 'proposal', element: <AdminProposalList /> },
     { path: 'proposal/:id', element: <AdminProposalView /> },
+    { path: 'member', element: <Member /> },
   ],
 };

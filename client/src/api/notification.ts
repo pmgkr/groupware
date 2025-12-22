@@ -7,9 +7,9 @@ export type NotificationParams = {
 };
 
 export type NotificationRegisterDto = {
-  user_id: string; // 유저아이디
-  user_name: string; // 유저이름
-  noti_target: string; // 알림대상
+  user_id: string; // 발신인
+  user_name: string; // 발신인 이름
+  noti_target: string; // 수신인
   noti_title: string; // 제목
   noti_message: string; // 내용
   noti_type: string; // 유형
@@ -26,9 +26,11 @@ export type NotificationReadResponse = {
 
 export interface Notification {
   noti_id: number;
-  user_id: string; // 수신인 (알림을 받는 사람)
-  user_name: string; // 수신인 이름
-  noti_target: string; // 발신인 (알림을 보낸 사람)
+  user_id: string; // 발신인 (로그인된 이)
+  user_name: string; // 발신인 이름
+  noti_target: string; // 수신인 (알림을 받는 사람)
+  target_name: string; // 수신인 이름
+  target_image: string; // 수신인 이미지
   noti_title: string;
   noti_type: string;
   noti_message: string;

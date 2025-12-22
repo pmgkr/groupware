@@ -2,14 +2,18 @@ import React from 'react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@components/ui/dialog';
-
-dayjs.locale('ko');
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
 import { useUser } from '@/hooks/useUser';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { OctagonAlert } from 'lucide-react';
+import { notificationApi } from '@/api/notification';
+import { defaultEventTitleMapper } from '@/components/calendar/config';
+import { findManager } from '@/utils/managerHelper';
+import { getDateRangeTextSimple, getDateRangeTextFull } from '@/utils/dateRangeHelper';
+
+dayjs.locale('ko');
 
 interface EventData {
   id?: string;
@@ -47,15 +51,15 @@ export default function EventViewDialog({
   selectedEvent,
   isPage
 }: EventViewDialogProps) {
-  const { user_id, user_level, team_id } = useUser();
+  const { user_id, user_level, team_id, user_name } = useUser();
   const { addDialog } = useAppDialog();
   const { addAlert } = useAppAlert();
   
   // 본인의 일정인지 확인 (user_id로 비교)
   const isMyEvent = user_id && selectedEvent?.userId === user_id;
   
-  // manager 권한 확인 (같은 팀 직원의 연차 승인 가능)
-  const isManager = user_level === 'manager';
+  // manager/admin 권한 확인 (같은 팀 직원의 연차 승인 가능)
+  const isManager = user_level === 'manager' || user_level === 'admin';
   
   // 같은 팀인지 확인
   const isSameTeam = team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId;
@@ -98,6 +102,40 @@ export default function EventViewDialog({
           if (isUser) {
             if (onRequestCancel) {
               await onRequestCancel();
+
+              // 알림 전송
+              const eventLabel = selectedEvent?.title || defaultEventTitleMapper(selectedEvent?.eventType || '') || '일정';
+              const rangeText = getDateRangeTextSimple(selectedEvent?.startDate, selectedEvent?.endDate, selectedEvent?.allDay);
+              if (team_id != null) {
+                try {
+                  const manager = await findManager(team_id);              // 이벤트/휴가 공통 라벨 (calendar config 매퍼 사용)
+                  if (manager.id) {
+                    // 팀장 알림 (사용자 취소 요청 시)
+                    await notificationApi.registerNotification({
+                      user_id: manager.id,
+                      user_name: manager.name,
+                      noti_target: user_id!,
+                      noti_title: `${eventLabel} (${rangeText})`,
+                      noti_message: `일정 취소를 요청했습니다.`,
+                      noti_type: selectedEvent?.category || '',
+                      noti_url: '/manager/vacation',
+                    });
+
+                    // 본인
+                    await notificationApi.registerNotification({
+                      user_id: user_id!,
+                      user_name: user_name || '',
+                      noti_target: user_id!,
+                      noti_title: `${eventLabel} (${rangeText})`,
+                      noti_message: `일정 취소를 요청했습니다.`,
+                      noti_type: selectedEvent?.category || '',
+                      noti_url: '/calendar',
+                    });
+                  }
+                } catch (e) {
+                  console.error('알림 전송 실패:', e);
+                }
+              }
             }
           } else {
             if (onApproveCancel) {
@@ -148,6 +186,19 @@ export default function EventViewDialog({
             await onApproveCancel();
           }
           
+          // 알림 전송
+          const eventLabel = selectedEvent?.title || defaultEventTitleMapper(selectedEvent?.eventType || '') || '일정';
+          const rangeText = getDateRangeTextSimple(selectedEvent?.startDate, selectedEvent?.endDate, selectedEvent?.allDay);
+          await notificationApi.registerNotification({
+            user_id: selectedEvent?.userId!,
+            user_name: selectedEvent?.author!,
+            noti_target: user_id!, // 발신자: 현재 사용자(승인자)
+            noti_title: `${eventLabel} (${rangeText})`,
+            noti_message: `일정 취소를 승인했습니다.`,
+            noti_type: selectedEvent?.category || '',
+            noti_url: '/calendar',
+          });
+          
           // 성공 알림 먼저 표시
           addAlert({
             title: '승인 완료',
@@ -175,46 +226,17 @@ export default function EventViewDialog({
     });
   };
 
-  // 날짜 범위 포맷팅
-  const getDateRangeText = () => {
-    if (!selectedEvent) return '';
-    
-    const startDate = dayjs(selectedEvent.startDate);
-    const endDate = dayjs(selectedEvent.endDate);
-    const { startTime, endTime, allDay } = selectedEvent;
-    
-    // 시간에서 초 제거 (HH:mm:ss -> HH:mm)
-    const formatTime = (time: string) => time?.substring(0, 5) || time;
-    
-    // 종일 이벤트인 경우
-    if (allDay) {
-      if (startDate.isSame(endDate, 'day')) {
-        return startDate.format('YYYY년 MM월 DD일 ddd요일');
-      } else {
-        return `${startDate.format('YYYY년 MM월 DD일 ddd요일')} - ${endDate.format('YYYY년 MM월 DD일 ddd요일')}`;
-      }
-    }
-    
-    // 종일이 아닌 경우 시간도 포함 (초 제거)
-    if (startDate.isSame(endDate, 'day')) {
-      return `${startDate.format('YYYY년 MM월 DD일 ddd요일')} ${formatTime(startTime)} - ${formatTime(endTime)}`;
-    } else {
-      return `${startDate.format('YYYY년 MM월 DD일 ddd요일')} ${formatTime(startTime)} - ${endDate.format('YYYY년 MM월 DD일 ddd요일')} ${formatTime(endTime)}`;
-    }
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>일정 상세 정보</DialogTitle>
-          {/* <DialogDescription> 
-            {selectedEvent && (
-              <>
-                {getDateRangeText()}
-              </>
-            )}
-          </DialogDescription> */}
+          <DialogDescription>
+            {selectedEvent
+              ? getDateRangeTextFull(selectedEvent.startDate, selectedEvent.endDate, selectedEvent.startTime, selectedEvent.endTime, selectedEvent.allDay)
+              : ''}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
             
@@ -241,7 +263,7 @@ export default function EventViewDialog({
             <Label>기간</Label>
             <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
               <span className="text-base">
-                {getDateRangeText()}
+                {getDateRangeTextFull(selectedEvent?.startDate, selectedEvent?.endDate, selectedEvent?.startTime, selectedEvent?.endTime, selectedEvent?.allDay)}
               </span>
             </div>
           </div>

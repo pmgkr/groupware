@@ -15,6 +15,8 @@ import { getMyProfile } from '@/api/mypage';
 export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
+  const isManagerSection = location.pathname.startsWith('/manager');
+  const isAdminSection = location.pathname.startsWith('/admin');
 
   const { user_name, job_role, profile_image } = useUser();
   const { logout } = useAuth();
@@ -204,7 +206,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+                  isActive || isManagerSection ? 'text-primary bg-white font-semibold' : 'text-gray-900'
                 )
               }>
               <Manager />
@@ -217,7 +219,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+                  isActive || isAdminSection ? 'text-primary bg-white font-semibold' : 'text-gray-900'
                 )
               }>
               <Admin />

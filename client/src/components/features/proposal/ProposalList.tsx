@@ -520,7 +520,7 @@ export default function ProposalList({
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
+                    <SelectItem key={c.value} value={c.value} size="sm">
                       {c.label}
                     </SelectItem>
                   ))}
@@ -533,7 +533,7 @@ export default function ProposalList({
               </SelectTrigger>
               <SelectContent>
                 {match_state.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
+                  <SelectItem key={m.value} value={m.value} size="sm">
                     {m.label}
                   </SelectItem>
                 ))}

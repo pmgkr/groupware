@@ -40,11 +40,38 @@ export interface WlogUpdateResponse {
   ended: string;
 }
 
+// 지각자 조회 응답 타입
+//wtype이 "-"이면 일반, "half" 이면 반차, "quarter"이면 반반차임
+//stime이 "00:00:00" 인 데이터는 출근시간 태깅을 안한 사람
+export interface LateComerResponse {
+  ok: boolean;
+  total?: number;
+  startYMD?: string;
+  endYMD?: string;
+  result?: {
+    tdate: string;
+    items: LateComerResponseItems[];
+  }[] | LateComerResponseItems[];
+  items?: LateComerResponseItems[];
+}
+export interface LateComerResponseItems {
+  tdate?: string;
+  user_name: string;
+  team_name: string;
+  user_id: string;
+  stime: string;
+  etime: string;
+  wmin: number;
+  wtype: string;
+}
+
 export const adminWlogApi = {
-  // 주간 근태 로그 조회
-  getWlogWeekList: async (team_id: number, weekno: number, yearno: number): Promise<WlogWeekListResponse> => {
+  // 주간 근태 로그 조회 (team_id 없으면 전체)
+  getWlogWeekList: async (team_id: number | null | undefined, weekno: number, yearno: number): Promise<WlogWeekListResponse> => {
     const queryParams = new URLSearchParams();
-    queryParams.append('team_id', team_id.toString());
+    if (team_id !== null && team_id !== undefined) {
+      queryParams.append('team_id', team_id.toString());
+    }
     queryParams.append('weekno', weekno.toString());
     queryParams.append('yearno', yearno.toString());
     const response = await http<WlogWeekListResponse>(`/admin/wlog/week?${queryParams.toString()}`, {
@@ -74,5 +101,20 @@ export const adminWlogApi = {
       }),
     });
     return response;
-  }
+  },
+
+  // 지각자 조회
+  // team_id를 전달하지 않으면 전체 팀 대상으로 조회
+  getWlogLateComer: async (team_id: number | undefined, weekno: number, yearno: number): Promise<LateComerResponse> => {
+    const queryParams = new URLSearchParams();
+    if (team_id !== undefined && team_id !== null) {
+      queryParams.append('team_id', team_id.toString());
+    }
+    queryParams.append('weekno', weekno.toString());
+    queryParams.append('yearno', yearno.toString());
+    const response = await http<LateComerResponse>(`/admin/wlog/latecomer?${queryParams.toString()}`, {
+      method: 'GET'
+    });
+    return response;
+  },
 };

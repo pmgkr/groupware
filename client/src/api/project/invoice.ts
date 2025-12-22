@@ -82,6 +82,10 @@ export type InvoiceDetailItem = InvoiceRegisterPayload['items'][number] & {
 export type InvoiceDetailAttachment = NonNullable<InvoiceRegisterPayload['attachments']>[number] & {
   ia_seq: number;
   il_seq: number;
+  ia_role?: 'user' | 'finance';
+  ia_fname?: string;
+  ia_sname?: string;
+  ia_url?: string;
   uploader: string;
 };
 
