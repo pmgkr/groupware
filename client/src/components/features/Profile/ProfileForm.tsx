@@ -17,6 +17,8 @@ import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover'
 import { Select, SelectTrigger, SelectItem, SelectContent, SelectValue } from '@components/ui/select';
 import { format } from 'date-fns';
 import { Calendar, Upload } from '@/assets/images/icons';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 
 type ProfileFormProps = {
   email: string; // 로그인 409 응답에서 받은 email
@@ -404,7 +406,15 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
             name="job_role"
             render={({ field }) => (
               <FormItem className="mb-auto">
-                <FormLabel>포지션</FormLabel>
+                <FormLabel className="flex items-center gap-1">
+                  포지션
+                  <Tooltip>
+                    <TooltipTrigger><Info className="size-3.5 text-gray-500" /></TooltipTrigger>
+                    <TooltipContent>
+                      <p>Microsoft에서 사용하는 포지션 이름을 선택해주세요.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  </FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   value={field.value || undefined}
