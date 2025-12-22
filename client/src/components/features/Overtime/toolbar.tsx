@@ -87,11 +87,6 @@ export default function OvertimeToolbar({
         
         setTeams(teamItems);
         teamsLoadedRef.current = true;
-
-        // 초기 로드 시 모든 팀 선택
-        const teamIds = teamItems.map((team) => team.team_id);
-        setSelectedTeams(teamIds.map(String));
-        onTeamSelect(teamIds);
         return;
       }
       
@@ -109,11 +104,6 @@ export default function OvertimeToolbar({
       
       setTeams(teamItems);
       teamsLoadedRef.current = true;
-
-      // 초기 로드 시 모든 팀 선택
-      const teamIds = teamItems.map((team) => team.team_id);
-      setSelectedTeams(teamIds.map(String));
-      onTeamSelect(teamIds);
       
     } catch (error) {
       console.error('팀 목록 로드 실패:', error);
