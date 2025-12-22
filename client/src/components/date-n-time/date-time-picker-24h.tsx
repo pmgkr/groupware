@@ -34,6 +34,11 @@ export function DateTimePicker24h({
   const [date, setDate] = React.useState<Date | undefined>(selected);
   const [isOpen, setIsOpen] = React.useState(false);
 
+  // 외부에서 selected 값이 변경되면 내부 상태도 업데이트
+  React.useEffect(() => {
+    setDate(selected);
+  }, [selected]);
+
   // 시간 제한이 있는 경우 해당 시간대만 표시
   const getAvailableHours = () => {
     if (timeRestriction) {
@@ -79,7 +84,12 @@ export function DateTimePicker24h({
       const currentHour = date.getHours();
       const minutes = [];
       
-      if (currentHour === timeRestriction.startHour) {
+      if (currentHour === timeRestriction.startHour && currentHour === timeRestriction.endHour) {
+        // 시작 시간과 종료 시간이 같은 시간대인 경우
+        for (let min = timeRestriction.startMinute; min <= timeRestriction.endMinute; min += 5) {
+          minutes.push(min);
+        }
+      } else if (currentHour === timeRestriction.startHour) {
         // 시작 시간인 경우 시작 분부터 60분까지
         for (let min = timeRestriction.startMinute; min < 60; min += 5) {
           minutes.push(min);
