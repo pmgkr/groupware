@@ -24,9 +24,10 @@ type Props = {
   item: ProjectListItem;
   isFavorite?: boolean;
   onToggleFavorite?: (id: string) => void;
+  search: string;
 };
 
-export const ProjectRow = memo(({ item, isFavorite = false, onToggleFavorite }: Props) => {
+export const ProjectRow = memo(({ item, isFavorite = false, onToggleFavorite, search }: Props) => {
   const categories = parseCategories(item.project_cate);
   const status = statusMap[item.project_status] ?? { label: item.project_status, variant: 'grayish' };
 
@@ -45,7 +46,7 @@ export const ProjectRow = memo(({ item, isFavorite = false, onToggleFavorite }: 
 
       {/* 프로젝트 ID */}
       <TableCell className="px-0!">
-        <Link to={`/project/${item.project_id}`} className="rounded-[4px] border bg-white px-2 py-1 text-sm">
+        <Link to={`/project/${item.project_id}`} state={{ fromSearch: search }} className="rounded-[4px] border bg-white px-2 py-1 text-sm">
           {item.project_id}
         </Link>
       </TableCell>
@@ -75,7 +76,7 @@ export const ProjectRow = memo(({ item, isFavorite = false, onToggleFavorite }: 
         </TooltipProvider>
       </TableCell>
       <TableCell className="text-left leading-[1.2]">
-        <Link to={`/project/${item.project_id}`} className="hover:underline">
+        <Link to={`/project/${item.project_id}`} state={{ fromSearch: search }} className="hover:underline">
           {item.project_title}
         </Link>
       </TableCell>

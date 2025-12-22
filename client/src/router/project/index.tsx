@@ -5,6 +5,7 @@ import ProjectOverview from '@components/features/Project/ProjectOverview';
 import ProjectExpense from '@/components/features/Project/ProjectExpense';
 import ProjectExpenseView from '@/components/features/Project/ProjectExpenseView';
 import ProjectExpenseRegister from '@/components/features/Project/ProjectExpenseRegister';
+import ProjectExpenseEdit from '@/components/features/Project/ProjectExpenseEdit';
 import ProjectEstimate from '@/components/features/Project/ProjectEstimate';
 import EstimatePreview from '@/components/features/Project/EstimatePreview';
 import EstimateView from '@/components/features/Project/EstimateView';
@@ -38,6 +39,11 @@ export const projectRoutes: RouteObject = {
           handle: { hideNav: true, hideTitle: true },
         },
         { path: 'expense/register', element: <ProjectExpenseRegister />, handle: { hideNav: true, hideTitle: true } },
+        {
+          path: 'expense/edit/:expId',
+          element: <ProjectExpenseEdit />,
+          handle: { hideNav: true, hideTitle: true },
+        },
         { path: 'estimate', element: <ProjectEstimate />, handle: { hideNav: true, hideTitle: true } },
         { path: 'estimate/preview', element: <EstimatePreview />, handle: { hideNav: true, hideTitle: true } },
         { path: 'estimate/:estId', element: <EstimateView />, handle: { hideNav: true, hideTitle: true } },

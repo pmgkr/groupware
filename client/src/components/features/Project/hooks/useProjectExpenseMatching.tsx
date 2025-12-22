@@ -76,7 +76,7 @@ export const useProjectExpenseMatching = (expId?: string, getExpenseView?: GetEx
         ...res,
         header: normalizedHeader,
         items: itemsWithMatch,
-        project: projectInfo,
+        project: projectInfo.info,
       });
     } finally {
       setLoading(false);

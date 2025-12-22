@@ -1,11 +1,11 @@
 import { getAvatarFallback } from '@/utils';
-import { type projectMemberDTO } from '@/api';
+import { type ProjectMemberDTO } from '@/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@components/ui/avatar';
 
 import { Badge } from '@components/ui/badge';
 
 type ProjectMemberProps = {
-  member: projectMemberDTO;
+  member: ProjectMemberDTO;
 };
 
 export const ProjectMember = ({ member }: ProjectMemberProps) => {
