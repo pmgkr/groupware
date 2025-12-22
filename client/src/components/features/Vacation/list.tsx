@@ -511,7 +511,7 @@ export default function VacationList({
             user_name: schedule.user_name || '',
             noti_target: user?.user_id || '', // 발신자: 현재 사용자(승인자)
             noti_title: `${eventLabel} (${rangeText})`,
-            noti_message: `일정 취소를 승인했습니다.`,
+            noti_message: `${user?.user_name}님이 일정 취소를 승인했습니다.`,
             noti_type: schedule.sch_type,
             noti_url: '/calendar',
           });
