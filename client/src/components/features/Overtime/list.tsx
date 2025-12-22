@@ -9,7 +9,7 @@ import { workingApi } from '@/api/working';
 import { managerOvertimeApi } from '@/api/manager/overtime';
 import { adminOvertimeApi, type overtimeItem } from '@/api/admin/overtime';
 import { getTeams } from '@/api/admin/teams';
-import { getTeams as getManagerTeams } from '@/api/manager/teams';
+import { getTeams as getCommonTeams } from '@/api/teams';
 import type { OvertimeItem } from '@/api/working';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -113,7 +113,7 @@ export default function OvertimeList({
       try {
         const teamList = isPage === 'admin' 
           ? await getTeams({})
-          : await getManagerTeams({});
+          : await getCommonTeams({});
         setTeams(teamList.map(t => ({ team_id: t.team_id, team_name: t.team_name })));
         teamsLoadedRef.current = true;
       } catch (error) {
@@ -123,18 +123,10 @@ export default function OvertimeList({
   }, [isPage]);
 
   // teamIds를 문자열로 변환하여 안정적인 의존성 생성
-  const resolvedTeamIds = useMemo(() => {
-    if (teamIds.length === 0 && isPage === 'manager') {
-      // 팀 미선택 시: manager는 자신의 모든 팀(teams state) 사용
-      return teams.map((t) => t.team_id);
-    }
-    return teamIds;
-  }, [teamIds, isPage, teams]);
-
   const teamIdsKey = useMemo(() => {
-    if (resolvedTeamIds.length === 0) return 'all';
-    return [...resolvedTeamIds].sort((a, b) => a - b).join(',');
-  }, [resolvedTeamIds]);
+    if (teamIds.length === 0) return 'all';
+    return [...teamIds].sort((a, b) => a - b).join(',');
+  }, [teamIds]);
 
   // 데이터 조회 함수
   const fetchOvertimeData = useCallback(async () => {
@@ -150,14 +142,14 @@ export default function OvertimeList({
     lastTeamIdsKeyRef.current = teamIdsKey;
     setLoading(true);
     try {
-      const teamIdsToQuery = resolvedTeamIds;
+      const teamIdsToQuery = teamIds;
       
       if (isPage === 'admin') {
         // Admin API 사용: 각 팀별로 데이터 조회
         // flag는 필터 상태에 따라 결정 (H: 승인대기, T: 승인완료/보상대기, Y: 보상완료, N: 취소완료)
         // 모든 상태를 조회하기 위해 빈 문자열 또는 undefined 사용
         const responses = teamIdsToQuery.length === 0
-          ? [await adminOvertimeApi.getOvertimeList(0, 1, 1000, '')] // 0이면 전체
+          ? [await adminOvertimeApi.getOvertimeList(undefined, 1, 1000, '')]
           : await Promise.all(teamIdsToQuery.map(teamId => 
               adminOvertimeApi.getOvertimeList(teamId, 1, 1000, '')
             ));
@@ -336,13 +328,14 @@ export default function OvertimeList({
   // 선택 가능한 상태 확인 헬퍼 함수 (isPage prop 기반)
   const isSelectableStatus = useCallback((status: string) => {
     if (isPage === 'admin') {
-      // admin 페이지: 보상대기(T)만 선택 가능
+      // admin 페이지: 평일 추가근무는 선택 불가, 휴일 근무는 보상대기(T)만 선택 가능
+      if (activeTab === 'weekday') return false;
       return status === 'T';
     } else {
       // manager 페이지: 승인대기(H)만 선택 가능
       return status === 'H';
     }
-  }, [isPage]);
+  }, [isPage, activeTab]);
 
   // 전체 선택
   const handleCheckAll = (checked: boolean) => {
@@ -644,27 +637,35 @@ export default function OvertimeList({
             <TableHead className="w-[20%] text-center p-2">작업내용</TableHead>
             <TableHead className="w-[10%] text-center p-2">신청일</TableHead>
             <TableHead className="w-[10%] text-center p-2">상태</TableHead>
-            <TableHead className="w-[5%] text-center p-2">
-              <Checkbox 
-                id="chk_all" 
-                className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkAll && 'bg-primary-blue-150')} 
-                checked={checkAll} 
-                onCheckedChange={handleCheckAll} 
-              />
-            </TableHead>
+            {!(isPage === 'admin' && activeTab === 'weekday') && (
+              <TableHead className="w-[5%] text-center p-2">
+                <Checkbox 
+                  id="chk_all" 
+                  className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkAll && 'bg-primary-blue-150')} 
+                  checked={checkAll} 
+                  onCheckedChange={handleCheckAll} 
+                />
+              </TableHead>
+            )}
           </TableRow>
         </TableHeader>
 
         <TableBody>
         {loading ? (
           <TableRow>
-            <TableCell className="h-100 text-gray-500" colSpan={10}>
+            <TableCell 
+              className="h-100 text-gray-500" 
+              colSpan={activeTab === 'weekday' ? (isPage === 'admin' ? 10 : 11) : (isPage === 'admin' ? 10 : 10)}
+            >
               추가근무 신청 데이터 불러오는 중
             </TableCell>
           </TableRow>
         ) : paginatedData.length === 0 ? (
           <TableRow>
-            <TableCell className="h-100 text-gray-500" colSpan={10}>
+            <TableCell 
+              className="h-100 text-gray-500" 
+              colSpan={activeTab === 'weekday' ? (isPage === 'admin' ? 10 : 11) : (isPage === 'admin' ? 10 : 10)}
+            >
               추가근무 신청 데이터가 없습니다.
             </TableCell>
           </TableRow>
@@ -725,15 +726,17 @@ export default function OvertimeList({
                   </Badge>
                 )}
               </TableCell>
-              <TableCell className="text-center p-2" onClick={(e) => e.stopPropagation()}>
-                <Checkbox 
-                  id={`chk_${item.id}`} 
-                  className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkedItems.includes(item.id) && 'bg-primary-blue-150')} 
-                  checked={checkedItems.includes(item.id)} 
-                  disabled={!isSelectableStatus(item.ot_status)}
-                  onCheckedChange={(checked) => handleCheckItem(item.id, checked as boolean)} 
-                />
-              </TableCell>
+              {!(isPage === 'admin' && activeTab === 'weekday') && (
+                <TableCell className="text-center p-2" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox 
+                    id={`chk_${item.id}`} 
+                    className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkedItems.includes(item.id) && 'bg-primary-blue-150')} 
+                    checked={checkedItems.includes(item.id)} 
+                    disabled={!isSelectableStatus(item.ot_status)}
+                    onCheckedChange={(checked) => handleCheckItem(item.id, checked as boolean)} 
+                  />
+                </TableCell>
+              )}
             </TableRow>
           ))
         )}
@@ -902,7 +905,9 @@ export default function OvertimeList({
       <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>승인 확인</AlertDialogTitle>
+            <AlertDialogTitle>
+              {isPage === 'admin' && activeTab === 'weekend' ? '보상 지급 확인' : '승인 확인'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {(() => {
                 if (isPage === 'manager') {
@@ -914,7 +919,7 @@ export default function OvertimeList({
                 } else if (isPage === 'admin') {
                   return (
                     <>
-                      {approveCounts.compensation}개의 보상지급 요청을 승인하시겠습니까?
+                      {approveCounts.compensation}개의 보상지급 요청을 {activeTab === 'weekend' ? '지급' : '승인'}하시겠습니까?
                     </>
                   );
                 } else {
@@ -930,7 +935,7 @@ export default function OvertimeList({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={handleConfirmApprove}>
-              승인하기
+              {isPage === 'admin' && activeTab === 'weekend' ? '보상 지급하기' : '승인하기'}
             </AlertDialogAction>
             <AlertDialogCancel>닫기</AlertDialogCancel>
           </AlertDialogFooter>

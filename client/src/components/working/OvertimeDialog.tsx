@@ -11,9 +11,13 @@ import type { WorkData } from '@/types/working';
 import { useAuth } from '@/contexts/AuthContext';
 import { workingApi } from '@/api/working';
 import { managerOvertimeApi } from '@/api/manager/overtime';
+import { notificationApi } from '@/api/notification';
 import { buildOvertimeApiParams } from '@/utils/overtimeHelper';
 import { getClientList, type ClientList } from '@/api/common/project';
+import { findManager } from '@/utils/managerHelper';
 import { SearchableSelect } from '@components/ui/SearchableSelect';
+import { useAppAlert } from '@components/common/ui/AppAlert/AppAlert';
+import { CheckCircle, OctagonAlert } from 'lucide-react';
 
 interface OvertimeDialogProps {
   isOpen: boolean;
@@ -55,6 +59,7 @@ const initialFormData: OvertimeData = {
 
 export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, selectedDay }: OvertimeDialogProps) {
   const { user } = useAuth();
+  const { addAlert } = useAppAlert();
   const [formData, setFormData] = useState<OvertimeData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof OvertimeData, string>>>({});
   const [clientList, setClientList] = useState<ClientList[]>([]);
@@ -161,14 +166,27 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
           }
         }
       }
-      
+
+      await sendOvertimeNotifications();
+
       onSave(formData);
+      addAlert({
+        title: '추가근무 신청 완료',
+        message: '추가근무 신청이 성공적으로 완료되었습니다.',
+        icon: <CheckCircle />,
+        duration: 3000,
+      });
       onClose();
       setFormData(initialFormData);
       setErrors({});
     } catch (error: any) {
       const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
-      alert(`추가근무 신청에 실패했습니다.\n오류: ${errorMessage}`);
+      addAlert({
+        title: '추가근무 신청 실패',
+        message: `추가근무 신청에 실패했습니다.\n오류: ${errorMessage}`,
+        icon: <OctagonAlert />,
+        duration: 3000,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -187,6 +205,57 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
   const isSaturday = (dayOfWeek: string) => dayOfWeek === '토';
   const isSundayOrHoliday = (dayOfWeek: string, workType: string) => {
     return dayOfWeek === '일' || workType === '공휴일';
+  };
+
+  const formatTimeText = (hour?: string, minute?: string) => {
+    if (!hour) return '';
+    const hh = hour.padStart(2, '0');
+    const mm = (minute ?? '0').padStart(2, '0');
+    return `${hh}:${mm}`;
+  };
+
+  const sendOvertimeNotifications = async () => {
+    if (!selectedDay || !user?.user_id) return;
+
+    const overtimeDateText = dayjs(selectedDay.date).format('YYYY-MM-DD');
+    const isWeekendOrHolidayDay = isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType);
+    const startText = formatTimeText(formData.expectedStartTime, formData.expectedStartTimeMinute);
+    const endText = formatTimeText(formData.expectedEndTime, formData.expectedEndMinute);
+    const timeRange = isWeekendOrHolidayDay
+      ? (startText && endText ? `${startText}~${endText}` : startText || endText || '')
+      : (endText ? `~${endText}` : '');
+    const notiTitle = `${isWeekendOrHolidayDay ? '주말근무' : '평일근무'} (${overtimeDateText}${timeRange ? ` ${timeRange}` : ''})`;
+
+    const selfUrl = (user.user_level === 'manager' || user.user_level === 'admin') ? '/manager/overtime' : '/mypage/overtime';
+    const managerUrl = '/manager/overtime';
+
+    try {
+      if (user.team_id != null) {
+        const manager = await findManager(user.team_id);
+        if (manager.id && manager.id !== user.user_id) {
+          await notificationApi.registerNotification({
+            user_id: manager.id,
+            user_name: manager.name,
+            noti_target: user.user_id,
+            noti_title: notiTitle,
+            noti_message: `추가근무를 신청했습니다.`,
+            noti_type: 'overtime',
+            noti_url: '/manager/overtime',
+          });
+        }
+      }
+      await notificationApi.registerNotification({
+        user_id: user.user_id,
+        user_name: user.user_name || '',
+        noti_target: user.user_id,
+        noti_title: notiTitle,
+        noti_message: `추가근무를 신청했습니다.`,
+        noti_type: 'overtime',
+        noti_url: selfUrl,
+      });
+    } catch (notifyErr) {
+      console.error('추가근무 알림 전송 실패:', notifyErr);
+    }
   };
 
   useEffect(() => {
