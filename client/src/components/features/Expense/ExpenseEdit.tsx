@@ -303,6 +303,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
   const [proposalList, setProposalList] = useState<ProposalItem[]>([]);
   const [selectedProposalId, setSelectedProposalId] = useState<number | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
+  const [selectedProposalByRow, setSelectedProposalByRow] = useState<Record<number, number>>({});
 
   const handleOpenMatchingDialog = async () => {
     setDialogOpen(true);
@@ -395,6 +396,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
       // 5️⃣ expense_items 병합
       const enrichedItems = (values.expense_items ?? []).map((item, idx) => {
         const rowIdx = idx + 1;
+        const selectedProId = selectedProposalByRow[idx] ?? (item.pro_id ? Number(item.pro_id) : null);
 
         // (1) 기존 서버 첨부파일
         const existingAtt =
@@ -420,7 +422,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
           ei_amount: Number(item.price || 0),
           ei_tax: Number(item.tax || 0),
           ei_total: Number(item.total || 0),
-          pro_id: !item.pro_id || item.pro_id === '0' || isNaN(Number(item.pro_id)) ? null : Number(item.pro_id),
+          pro_id: selectedProId ?? item.pro_id,
           attachments: [...existingAtt, ...newAtt],
         };
       });
@@ -467,26 +469,76 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
       if (res.ok) {
         // ✅  기안서 매칭 (선택된 경우만)
         // 기안서 매칭이 바뀌지 않았으면 아래 기안서 매칭 API는 돌지 않아야함 (신규로 매칭 or 다른 기안서로 매칭하는 경우에만 API 호출)
-        const selectedProId = enrichedItems.find((item) => item.pro_id !== null)?.pro_id ?? null;
-        const itemSeq = data?.items?.[0]?.seq;
 
-        if (!itemSeq) {
-          console.error('❌ item seq 없음');
+        const itemSeq = (res as any).updated?.item_seqs ?? [];
+
+        if (itemSeq.length === 0) {
+          console.error('❌ 응답에서 item_seqs를 찾을 수 없음');
+          setAlertTitle('수정 실패');
+          setAlertDescription('아이템 정보를 가져오지 못했습니다.');
+          setAlertOpen(true);
           return;
         }
-        if (selectedProId) {
+        const selectedProId = enrichedItems.find((item) => item.pro_id !== null)?.pro_id ?? null;
+
+        // 원본 데이터의 기안서 ID와 비교
+        const originalProId = data?.items?.[0]?.pro_id ?? null;
+        const isProposalChanged = selectedProId !== originalProId;
+
+        console.log('🔍 기안서 변경 여부:', {
+          원본: originalProId,
+          현재: selectedProId,
+          변경됨: isProposalChanged,
+        });
+
+        if (selectedProId && isProposalChanged) {
           try {
-            console.log('📌 매칭 요청 직전 값', {
-              rp_seq: selectedProId,
-              exp_seq: itemSeq,
-              rp_type: typeof selectedProId,
-              exp_type: typeof itemSeq,
-            });
-            await matchNonProjectWithProposal(
-              selectedProId, // rp_seq
-              itemSeq // exp_seq
-            );
-            console.log('✅ 기안서 매칭 완료:', selectedProId, '→', itemSeq);
+            // enrichedItems와 itemSeqs의 순서가 동일하므로 매핑
+            const matchPromises = enrichedItems
+              .map((item, index) => ({
+                pro_id: item.pro_id,
+                item_seq: itemSeq[index], // ⭐ 배열에서 index로 개별 값 가져오기
+              }))
+              .filter(({ pro_id, item_seq }) => pro_id && item_seq !== undefined) // item_seq가 존재하는지 확인
+              .map(async ({ pro_id, item_seq }) => {
+                console.log('📌 매칭 요청 직전 값', {
+                  rp_seq: pro_id,
+                  exp_seq: item_seq,
+                  rp_type: typeof pro_id,
+                  exp_type: typeof item_seq,
+                });
+
+                const matchResult = (await matchNonProjectWithProposal(pro_id as number, item_seq as number)) as {
+                  success: boolean;
+                  result: { type: string };
+                };
+
+                // 디버깅 추가
+                console.log('📦 matchResult 전체:', matchResult);
+                console.log('📦 matchResult.ok:', matchResult.success);
+                console.log('📦 matchResult type:', typeof matchResult);
+
+                if (matchResult.success) {
+                  console.log(`✅ 기안서 ${pro_id} - 아이템 ${item_seq} 매칭 완료`);
+                } else {
+                  console.error(`❌ 기안서 ${pro_id} - 아이템 ${item_seq} 매칭 실패`);
+                }
+
+                return matchResult.success;
+              });
+
+            if (matchPromises.length === 0) {
+              console.log('ℹ️ 매칭할 아이템 없음');
+            } else {
+              const results = await Promise.all(matchPromises);
+              const allSuccess = results.every((r) => r);
+
+              if (!allSuccess) {
+                throw new Error('일부 매칭 실패');
+              }
+
+              console.log('✅ 모든 기안서 매칭 완료');
+            }
           } catch (e) {
             console.error('❌ 기안서 매칭 실패:', e);
             setAlertTitle('부분 실패');
@@ -494,6 +546,8 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
             setAlertOpen(true);
             return;
           }
+        } else if (selectedProId && !isProposalChanged) {
+          console.log('ℹ️ 기안서 변경 없음 - 매칭 API 호출 스킵');
         }
 
         setAlertTitle('수정 완료');
@@ -754,6 +808,10 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
               <SectionHeader title="비용 항목" className="mb-0" />
               <div>
                 {fields.map((field, index) => {
+                  const currentProId = selectedProposalByRow[index] ?? data?.items?.[index]?.pro_id;
+                  const currentProTitle = currentProId
+                    ? proposalList.find((p) => p.rp_seq === currentProId)?.rp_title || data?.items?.[index]?.rp_title
+                    : null;
                   return (
                     <article
                       key={`${field.id}`}
@@ -763,13 +821,13 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                           type="button"
                           variant="outlinePrimary"
                           size="xs"
-                          className="text-primary-blue-500 flex cursor-pointer items-center gap-1 border-0 bg-white! text-sm shadow-none hover:underline"
+                          className="..."
                           onClick={() => {
-                            console.log('🔍 버튼 클릭 - 현재 index:', index);
-                            setActiveRowIndex(index); // ✅ 이게 제대로 호출되는지 확인
+                            setActiveRowIndex(index);
                             handleOpenMatchingDialog();
                           }}>
-                          <FileText className="size-3.5" /> {selectedProposal ? `${selectedProposal.rp_title}` : '기안서 매칭'}
+                          <FileText className="size-3.5" />
+                          {currentProTitle || '기안서 매칭'}
                         </Button>
                       </div>
                       <div className="flex justify-between">
@@ -1130,6 +1188,10 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                   console.log('❌ 조건 실패');
                   return;
                 }
+                setSelectedProposalByRow((prev) => ({
+                  ...prev,
+                  [activeRowIndex]: selectedProposalId,
+                }));
                 console.log('✅ 기안서 선택됨:', selectedProposalId, '→ row', activeRowIndex);
                 setDialogOpen(false);
               }}>

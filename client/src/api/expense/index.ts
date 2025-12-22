@@ -143,6 +143,7 @@ export interface ExpenseItemDTO extends Omit<ExpenseItemBase, 'attachments'> {
   ei_type: string;
   exp_id: string;
   attachments: ExpenseAttachmentDTO[];
+  rp_title: string;
 }
 
 export interface ExpenseLogDTO {
