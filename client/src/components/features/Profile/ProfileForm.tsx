@@ -405,7 +405,11 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
             render={({ field }) => (
               <FormItem className="mb-auto">
                 <FormLabel>포지션</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value || undefined}
+                  key={field.value}
+                  name={field.name}>
                   <FormControl>
                     <SelectTrigger className="aria-[invalid=true]:border-destructive w-full">
                       <SelectValue placeholder="포지션 선택" />
@@ -414,14 +418,17 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
                   <SelectContent className="max-h-80 w-full">
                     <SelectItem value="Account Executive">Account Executive</SelectItem>
                     <SelectItem value="Account Manager">Account Manager</SelectItem>
+                    <SelectItem value="Operations Director">Operations Director</SelectItem>
+                    <SelectItem value="Senior Project Manager">Senior Project Manager</SelectItem>
                     <SelectItem value="Senior Account Manager">Senior Account Manager</SelectItem>
-                    <SelectItem value="Designer">Designer</SelectItem>
-                    <SelectItem value="Senior Designer">Senior Designer</SelectItem>
                     <SelectItem value="Creative Director">Creative Director</SelectItem>
+                    <SelectItem value="Senior Designer">Senior Designer</SelectItem>
+                    <SelectItem value="Designer">Designer</SelectItem>
                     <SelectItem value="Front-end Developer">Front-end Developer</SelectItem>
                     <SelectItem value="Back-end Developer">Back-end Developer</SelectItem>
                     <SelectItem value="Producer">Producer</SelectItem>
                     <SelectItem value="Copywriter">Copywriter</SelectItem>
+                    <SelectItem value="General Manager">General Manager</SelectItem>
                     <SelectItem value="Finance Manager">Finance Manager</SelectItem>
                     <SelectItem value="GA Specialist">GA Specialist</SelectItem>
                   </SelectContent>
