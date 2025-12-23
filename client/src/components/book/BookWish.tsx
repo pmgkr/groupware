@@ -31,7 +31,8 @@ export default function BookWish() {
   const [posts, setPosts] = useState<Book[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState(''); // 검색어 상태 추가
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [loading, setLoading] = useState(false);
 
   const pageSize = 10;
@@ -50,7 +51,8 @@ export default function BookWish() {
 
   const handleSearch = () => {
     setPage(1);
-    fetchBookWishList(1, searchQuery);
+    setSearchQuery(searchInput);
+    fetchBookWishList(1, searchInput);
   };
 
   // 페이지 변경
@@ -100,7 +102,7 @@ export default function BookWish() {
   };
 
   //  완료 처리
-  const Administrator = 'test@test.com';
+  const Administrator = 'admin';
   const handleCompleteClick = async () => {
     if (selected.length === 0) {
       addAlert({
@@ -324,8 +326,8 @@ export default function BookWish() {
           <Input
             className="h-[32px] px-4 [&]:bg-white"
             placeholder="검색어 입력"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
           <Button
@@ -392,7 +394,7 @@ export default function BookWish() {
       <Table className="table-fixed">
         <TableHeader>
           <TableRow>
-            {user?.user_id === Administrator && (
+            {user?.user_level === Administrator && (
               <TableHead className="w-[40px] [&>[role=checkbox]]:translate-x-[2px]">
                 <Checkbox checked={allChecked} onCheckedChange={toggleAll} />
               </TableHead>
@@ -412,7 +414,7 @@ export default function BookWish() {
           {posts.length > 0 ? (
             posts.map((post) => (
               <TableRow key={post.id} onClick={() => handleRowClick(post)} className="cursor-pointer">
-                {user?.user_id === Administrator && (
+                {user?.user_level === Administrator && (
                   <TableCell className="[&:has([role=checkbox])]:pr-auto">
                     <Checkbox
                       checked={selected.includes(post.id)}
@@ -516,9 +518,9 @@ export default function BookWish() {
         </DialogContent>
       </Dialog>
 
-      {user?.user_id === Administrator && (
+      {user?.user_level === Administrator && (
         <div className="mt-5 flex justify-end">
-          <Button onClick={handleCompleteClick} variant="outline">
+          <Button onClick={handleCompleteClick} variant="outline" size="sm">
             완료 처리
           </Button>
         </div>
