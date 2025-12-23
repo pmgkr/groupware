@@ -935,7 +935,9 @@ export default function OvertimeList({
             selectedDay={{
               date: dayjs(selectedOvertime.ot_date).format('YYYY-MM-DD'),
               dayOfWeek: dayjs(selectedOvertime.ot_date).format('ddd') as '월' | '화' | '수' | '목' | '금' | '토' | '일',
-              workType: "-" as const,
+              workType: overtimeDetailData?.info?.ot_type === 'holiday' ? '공휴일' : "-" as const,
+              isHoliday: overtimeDetailData?.info?.ot_type === 'holiday',
+              holidayName: overtimeDetailData?.info?.holiday_name || null,
               startTime: '-',
               endTime: '-',
               basicHours: 0,

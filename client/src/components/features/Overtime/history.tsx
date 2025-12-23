@@ -230,10 +230,15 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
     const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
     const dayOfWeek = daysOfWeek[date.day()] as '월' | '화' | '수' | '목' | '금' | '토' | '일';
     
+    const isHoliday = item.ot_type === 'holiday';
+    const workType = isHoliday ? '공휴일' : '-';
+
     return {
       date: item.ot_date,
       dayOfWeek: dayOfWeek,
-      workType: '-',
+      workType,
+      isHoliday,
+      holidayName: null,
       startTime: item.ot_stime ? formatTime(item.ot_stime) : '-',
       endTime: item.ot_etime ? formatTime(item.ot_etime) : '-',
       basicHours: 0,

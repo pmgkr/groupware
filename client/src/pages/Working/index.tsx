@@ -115,7 +115,7 @@ export default function WorkHoursTable() {
       // API 데이터를 WorkData 형식으로 변환
       const apiData = await convertApiDataToWorkData(
         wlogWeekResponse.wlog || [], 
-        [...(wlogWeekResponse.vacation || []), ...scheduleEvents],
+        [...(wlogWeekResponse.vacation || []), ...(wlogWeekResponse.event || []), ...scheduleEvents],
         overtimeResponse.items || [],
         weekStartDate,
         user.user_id

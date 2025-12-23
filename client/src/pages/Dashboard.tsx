@@ -16,7 +16,7 @@ import { Icons } from '@components/icons';
 import EventViewDialog from '@/components/calendar/EventViewDialog';  
 import Weather from '@components/features/Dashboard/weather';
 
-import type { Calendar, Meetingroom, Wlog, Vacation, Notice, Expense } from '@/api/dashboard';
+import type { Calendar, Meetingroom, Wlog, VacationSummaryItem, Notice, Expense } from '@/api/dashboard';
 
 import { getBadgeColor } from '@/utils/calendarHelper';
 import { formatTime, formatMinutes, formatKST } from '@/utils/date';
@@ -170,25 +170,29 @@ export default function Dashboard() {
           <div className="row-span-2 flex flex-col gap-4">
             <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
               <SectionHeader
-                  title="휴가 현황 ⛱️"
+                  title="잔여 휴가 ⛱️"
                   buttonText="전체보기"
                   buttonVariant="outline"
                   buttonSize="sm"
                   buttonHref="/mypage/vacation"
                   className="mb-4"
                 />
-                <ul className="grid grid-cols-3">
+                <ul className="grid grid-cols-4">
                   <li className="flex flex-col text-center text-base">
-                    <span>지급휴가</span>
-                    <strong className="text-[1.4em]">{vacation?.given || 0}</strong>
+                    <span>기본연차</span>
+                    <strong className="text-[1.4em]">{vacation?.va_current || 0}</strong>
                   </li>
                   <li className="short-v-divider flex flex-col text-center text-base">
-                    <span>사용휴가</span>
-                    <strong className="text-[1.4em]">{vacation?.used || 0}</strong>
+                    <span>이월연차</span>
+                    <strong className="text-[1.4em]">{vacation?.va_carryover || 0}</strong>
                   </li>
                   <li className="short-v-divider flex flex-col text-center text-base">
-                    <span>잔여휴가</span>
-                    <strong className="text-[1.4em]">{vacation?.lefts || 0}</strong>
+                    <span>특별대휴</span>
+                    <strong className="text-[1.4em]">{vacation?.va_comp || 0}</strong>
+                  </li>
+                  <li className="short-v-divider flex flex-col text-center text-base">
+                    <span>총 사용</span>
+                    <strong className="text-[1.4em]">{vacation?.va_used || 0}</strong>
                   </li>
                 </ul>
             </div>

@@ -107,6 +107,7 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
         // 모든 팀(또는 전체) 호출 결과 모으기
         const aggregatedWlog: any[] = [];
         const aggregatedVacation: any[] = [];
+        const aggregatedEvent: any[] = [];
 
         for (const teamId of teamIdsToQuery) {
           try {
@@ -138,6 +139,7 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
                   workLogResponse = {
                     wlog: adminResponse.wlog || [],
                     vacation: adminResponse.vacation || [],
+                    event: adminResponse.event || [],
                   };
                 } else {
                   workLogResponse = await managerWorkingApi.getManagerWorkLogsWeek({
@@ -164,6 +166,7 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
 
             aggregatedWlog.push(...annotateTeam(workLogResponse.wlog || []));
             aggregatedVacation.push(...annotateTeam(workLogResponse.vacation || []));
+            aggregatedEvent.push(...annotateTeam(workLogResponse.event || []));
           } catch (err) {
             // 실패 시 건너뜀
           }
@@ -174,7 +177,7 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
 
         const uniqueUsers = Array.from(
           new Map(
-            aggregatedWlog
+            [...aggregatedWlog, ...aggregatedVacation, ...aggregatedEvent]
               .map((w) => [w.user_id, { user_id: w.user_id, user_name: w.user_nm, team_id: w.team_id }])
           ).values()
         );
@@ -182,11 +185,12 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
         for (const userInfo of uniqueUsers) {
           const memberWlogs = aggregatedWlog.filter((w) => w.user_id === userInfo.user_id);
           const memberVacations = aggregatedVacation.filter((v) => v.user_id === userInfo.user_id);
+          const memberEvents = aggregatedEvent.filter((e) => e.user_id === userInfo.user_id);
 
           // schedule/초과근무 호출 없이 wlog + vacation만으로 생성
           const userWorkData = await convertApiDataToWorkData(
             memberWlogs,
-            memberVacations,
+            [...memberVacations, ...memberEvents],
             [], // overtime 미사용
             weekStartDate,
             userInfo.user_id

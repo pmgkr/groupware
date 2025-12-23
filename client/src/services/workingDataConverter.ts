@@ -9,6 +9,7 @@ const getOvertimeStatus = (status: string): WorkData['overtimeStatus'] => {
   switch (status) {
     case 'H': return '승인대기';
     case 'T': return '승인완료';
+    case 'Y': return '보상완료';
     case 'N': return '취소완료';
     default: return '신청하기';
   }
@@ -42,12 +43,38 @@ const extractTimeFromISO = (timeString: string): { hour: string; minute: string 
 };
 
 /**
+ * 휴가/이벤트 kind, time 보정
+ */
+const resolveVacationKind = (vacation: any): string => {
+  const candidates = [
+    vacation?.kind,
+    vacation?.sch_vacation_type,
+    vacation?.sch_event_type,
+    vacation?.type,
+  ];
+  const found = candidates.find((k) => k && k !== '-');
+  return found || '-';
+};
+
+const resolveVacationTime = (vacation: any): string | undefined => {
+  return (
+    vacation?.sch_vacation_time ||
+    (vacation?.type === 'morning' || vacation?.type === 'afternoon' ? vacation.type : undefined)
+  );
+};
+
+/**
  * vacation 타입을 workType으로 변환
  */
 const getWorkTypeFromVacation = (vacation: any, hasWlog: boolean): WorkData['workType'] => {
-  // kind 필드 확인 (API 응답에 따라 다를 수 있음)
-  const kind = vacation.kind || vacation.sch_vacation_type || vacation.sch_event_type;
-  const type = vacation.type || vacation.sch_vacation_time;
+  const rawKind = resolveVacationKind(vacation);
+  const type = resolveVacationTime(vacation);
+
+  // kind 정보가 없고 이벤트 타입만 내려오는 경우(type: remote/field 등) 처리
+  const kind =
+    rawKind === '-' && vacation?.type && vacation.type !== '-'
+      ? vacation.type
+      : rawKind;
   
   // kind가 없거나 "-"인 경우
   if (!kind || kind === '-') {
@@ -76,12 +103,10 @@ const getWorkTypeFromVacation = (vacation: any, hasWlog: boolean): WorkData['wor
     }
   } else if (kind === 'official') {
     return '공가';
-  } else if (kind === 'field') {
+  } else if (kind === 'field' || kind === 'etc') {
     return '외부근무';
   } else if (kind === 'remote') {
     return '재택근무';
-  } else if (kind === 'etc') {
-    return '외부근무'; // etc도 외부근무로 처리
   }
   
   // wlog가 있으면 일반근무, 없으면 "-"
@@ -139,7 +164,7 @@ const selectPriorityVacation = (vacationsForDate: any[]): any | null => {
   
   const priorityOrder = ['day', 'half', 'quarter', 'field', 'remote', 'official'];
   for (const kind of priorityOrder) {
-    const found = vacationsForDate.find((vac: any) => vac.kind === kind);
+    const found = vacationsForDate.find((vac: any) => resolveVacationKind(vac) === kind);
     if (found) return found;
   }
   
@@ -231,6 +256,11 @@ export const convertApiDataToWorkData = async (
 ): Promise<WorkData[]> => {
   const daysOfWeek = ['월', '화', '수', '목', '금', '토', '일'];
   const weekData: WorkData[] = [];
+  // sch_status가 존재하면 승인완료(Y)만 사용, 없으면 그대로 유지
+  const filteredVacations = (vacations || []).filter((vac: any) => {
+    if (vac?.sch_status === undefined) return true;
+    return vac.sch_status === 'Y';
+  });
   
   for (let i = 0; i < 7; i++) {
     const currentDate = new Date(startDate);
@@ -244,7 +274,7 @@ export const convertApiDataToWorkData = async (
     
     // 해당 날짜의 데이터 찾기
     const wlog = wlogs.find((log: any) => log.tdate === dateString);
-    const vacationsForDate = vacations.filter((vac: any) => vac.tdate === dateString);
+    const vacationsForDate = filteredVacations.filter((vac: any) => vac.tdate === dateString);
     const overtime = overtimes.find((ot: any) => {
       const otDate = dayjs(ot.ot_date).format('YYYY-MM-DD');
       return otDate === dateString && ot.user_id === userId;
@@ -281,7 +311,7 @@ export const convertApiDataToWorkData = async (
     
     // 실제 이벤트가 있는지 확인 (kind가 있고 '-'가 아닌 경우)
     const hasRealEvent = sortedVacations.some((vacation) => {
-      const kind = vacation.kind || vacation.sch_vacation_type || vacation.sch_event_type;
+      const kind = resolveVacationKind(vacation);
       return kind && kind !== '-';
     });
     

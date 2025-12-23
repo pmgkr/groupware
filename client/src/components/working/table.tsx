@@ -32,6 +32,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
       case "신청하기": return "default";
       case "승인대기": return "secondary";
       case "승인완료": return "outline";
+      case "보상완료": return "outline";
       case "취소완료": return "destructive";
       default: return "secondary";
     }
@@ -43,7 +44,12 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
     
     if (workData.overtimeStatus === "신청하기") {
       setDialogOpen(true);
-    } else if (workData.overtimeStatus === "승인대기" || workData.overtimeStatus === "승인완료" || workData.overtimeStatus === "취소완료") {
+    } else if (
+      workData.overtimeStatus === "승인대기" ||
+      workData.overtimeStatus === "승인완료" ||
+      workData.overtimeStatus === "취소완료" ||
+      workData.overtimeStatus === "보상완료"
+    ) {
       setViewDialogOpen(true);
     }
   };
@@ -69,11 +75,11 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
     const selectedDay = data[selectedIndex];
     
     if (!selectedDay.overtimeId) {
-      throw new Error('추가근무 ID를 찾을 수 없습니다.');
+      throw new Error('연장근무 ID를 찾을 수 없습니다.');
     }
     
     if (selectedDay.overtimeStatus !== "승인대기") {
-      throw new Error('승인대기 상태의 추가근무만 취소할 수 있습니다.');
+      throw new Error('승인대기 상태의 연장근무만 취소할 수 있습니다.');
     }
     
     try {
@@ -85,7 +91,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
       setViewDialogOpen(false);
       setSelectedIndex(null);
     } catch (error: any) {
-      console.error('추가근무 취소 실패:', error);
+      console.error('연장근무 취소 실패:', error);
       throw error;
     }
   };
@@ -105,21 +111,22 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               {/* 항목 */}
             </th>
             {data.map((row, index) => {
-              const getDayColor = (dayOfWeek: string) => {
-                // if (dayOfWeek === '토') return 'text-primary-blue-500';
-                // if (dayOfWeek === '일') return 'text-[var(--negative-base)]';
+              const getDayColor = (dayOfWeek: string, holidayName?: string) => {
+                if (holidayName) return 'text-red-600';
+                if (dayOfWeek === '토') return 'text-primary-blue-500';
+                if (dayOfWeek === '일') return 'text-red-600';
                 return 'text-gray-800';
               };
               
               return (
                 <th key={index} className={`w-[185px] px-6 py-3 text-center text-[13px] font-medium text-gray-500 uppercase tracking-wider ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                   <div className="flex flex-col">
-                    <span className={`text-[13px] ${row.holidayName ? 'text-red-600' : 'text-gray-800'}`}>
-                      {row.holidayName 
+                    <p className={`flex flex-col items-center text-[13px] ${getDayColor(row.dayOfWeek, row.holidayName ?? undefined)}`}>
+                      {row.holidayName
                         ? `${dayjs(row.date).format("MM/DD")} ${row.holidayName}`
                         : dayjs(row.date).format("MM/DD")}
-                    </span>
-                    <span className={`text-[13px] font-semibold ${getDayColor(row.dayOfWeek)}`}>{row.dayOfWeek}요일</span>
+                      <span className={`font-semibold ${getDayColor(row.dayOfWeek, row.holidayName ?? undefined)}`}>{row.dayOfWeek}요일</span>
+                    </p>
                   </div>
                 </th>
               );
@@ -137,10 +144,23 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               const latestWorkType = hasMultipleWorkTypes ? row.workTypes![0] : null;
               const otherWorkTypes = hasMultipleWorkTypes ? row.workTypes!.slice(1) : [];
               
-              // 승인완료된 추가근무가 있으면 뱃지에는 항상 "추가근무"로 표시
-              const displayWorkType = row.overtimeStatus === '승인완료' 
-                ? '추가근무' 
-                : (hasMultipleWorkTypes ? latestWorkType!.type : row.workType);
+              const isHolidayOrWeekend =
+                row.holidayName != null ||
+                row.isHoliday === true ||
+                row.dayOfWeek === '토' ||
+                row.dayOfWeek === '일' ||
+                row.workType === '공휴일';
+
+              let displayWorkType: string =
+                hasMultipleWorkTypes ? latestWorkType!.type : row.workType;
+
+              const isApprovedOrPaid =
+                row.overtimeStatus === '승인완료' ||
+                row.overtimeStatus === '보상완료';
+
+              if (isApprovedOrPaid) {
+                displayWorkType = isHolidayOrWeekend ? '휴일근무' : '연장근무';
+              }
               
               return (
                 <td key={index} className={`h-[65px] px-6 py-4 whitespace-nowrap text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
@@ -221,7 +241,10 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>휴게시간은 근무시간에서 제외 (12:00-13:00)</p>
+                    <p>
+                      평일 휴게시간은 근무시간에서 제외 (12:00-13:00)<br />
+                      주말, 공휴일 휴게시간은 주간/야간/휴일 여부와 무관하게 ‘총 근로시간’을 기준으로 결정됨
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </div>

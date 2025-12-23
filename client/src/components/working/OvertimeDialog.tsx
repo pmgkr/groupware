@@ -17,7 +17,8 @@ import { getClientList, type ClientList } from '@/api/common/project';
 import { findManager } from '@/utils/managerHelper';
 import { SearchableSelect } from '@components/ui/SearchableSelect';
 import { useAppAlert } from '@components/common/ui/AppAlert/AppAlert';
-import { CheckCircle, OctagonAlert } from 'lucide-react';
+import { CheckCircle, InfoIcon, OctagonAlert } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@components/ui/tooltip';
 
 interface OvertimeDialogProps {
   isOpen: boolean;
@@ -85,10 +86,15 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
       newErrors.clientName = "클라이언트명을 선택해주세요.";
     }
     if (!formData.workDescription.trim()) {
-      newErrors.workDescription = "작업 내용을 입력해주세요.";
+      newErrors.workDescription = "업무 내용을 입력해주세요.";
     }
     
-    if (selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType)) {
+    if (selectedDay && !isWeekendOrHoliday(
+      selectedDay.dayOfWeek,
+      selectedDay.workType,
+      selectedDay.isHoliday,
+      selectedDay.holidayName
+    )) {
       // 평일: 퇴근 시간만 검증
       if (!formData.expectedEndTime) newErrors.expectedEndTime = "예상 퇴근 시간을 선택해주세요.";
       if (!formData.expectedEndMinute) newErrors.expectedEndMinute = "예상 퇴근 분을 선택해주세요.";
@@ -96,7 +102,12 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
       if (!formData.transportationAllowance) newErrors.transportationAllowance = "교통비 사용여부를 선택해주세요.";
     }
     
-    if (selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType)) {
+    if (selectedDay && isWeekendOrHoliday(
+      selectedDay.dayOfWeek,
+      selectedDay.workType,
+      selectedDay.isHoliday,
+      selectedDay.holidayName
+    )) {
       // 주말/공휴일: 출근 시간과 퇴근 시간 검증 (ot_hours는 자동 계산)
       if (!formData.expectedStartTime) newErrors.expectedStartTime = "예상 출근 시간을 선택해주세요.";
       if (!formData.expectedStartTimeMinute) newErrors.expectedStartTimeMinute = "예상 출근 분을 선택해주세요.";
@@ -116,6 +127,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     
     try {
       const apiParams = buildOvertimeApiParams(selectedDay, formData, clientList);
+      
       const response = await workingApi.requestOvertime(apiParams);
       
       const isManagerOrAdmin = user?.user_level === 'manager' || user?.user_level === 'admin';
@@ -171,8 +183,8 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
 
       onSave(formData);
       addAlert({
-        title: '추가근무 신청 완료',
-        message: '추가근무 신청이 완료되었습니다.',
+        title: `${getOvertimeLabel()} 신청 완료`,
+        message: `${getOvertimeLabel()} 신청이 완료되었습니다.`,
         icon: <CheckCircle />,
         duration: 3000,
       });
@@ -182,8 +194,8 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     } catch (error: any) {
       const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
       addAlert({
-        title: '추가근무 신청 실패',
-        message: `추가근무 신청에 실패했습니다.\n오류: ${errorMessage}`,
+        title: `${getOvertimeLabel()} 신청 실패`,
+        message: `${getOvertimeLabel()} 신청에 실패했습니다.\n오류: ${errorMessage}`,
         icon: <OctagonAlert />,
         duration: 3000,
       });
@@ -198,14 +210,32 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     setErrors({});
   };
 
-  const isWeekendOrHoliday = (dayOfWeek: string, workType: string) => {
+  
+  const isSaturday = (dayOfWeek: string) => dayOfWeek === '토';
+  const isSundayOrHoliday = (dayOfWeek: string, workType: string, isHoliday?: boolean, holidayName?: string | null) => {
+    if (isHoliday || holidayName) return true;
+    return dayOfWeek === '일' || workType === '공휴일';
+  };
+
+  const isWeekendOrHoliday = (dayOfWeek: string, workType: string, isHoliday?: boolean, holidayName?: string | null) => {
+    if (isHoliday || holidayName) return true;
     return dayOfWeek === '토' || dayOfWeek === '일' || workType === '공휴일';
   };
 
-  const isSaturday = (dayOfWeek: string) => dayOfWeek === '토';
-  const isSundayOrHoliday = (dayOfWeek: string, workType: string) => {
-    return dayOfWeek === '일' || workType === '공휴일';
+  const getOvertimeLabel = () => {
+    if (selectedDay) {
+      return isWeekendOrHoliday(
+        selectedDay.dayOfWeek,
+        selectedDay.workType,
+        selectedDay.isHoliday,
+        selectedDay.holidayName
+      )
+        ? '휴일근무'
+        : '연장근무';
+    }
+    return '연장근무';
   };
+
 
   const formatTimeText = (hour?: string, minute?: string) => {
     if (!hour) return '';
@@ -218,13 +248,18 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     if (!selectedDay || !user?.user_id) return;
 
     const overtimeDateText = dayjs(selectedDay.date).format('YYYY-MM-DD');
-    const isWeekendOrHolidayDay = isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType);
+    const isWeekendOrHolidayDay = isWeekendOrHoliday(
+      selectedDay.dayOfWeek,
+      selectedDay.workType,
+      selectedDay.isHoliday,
+      selectedDay.holidayName
+    );
     const startText = formatTimeText(formData.expectedStartTime, formData.expectedStartTimeMinute);
     const endText = formatTimeText(formData.expectedEndTime, formData.expectedEndMinute);
     const timeRange = isWeekendOrHolidayDay
       ? (startText && endText ? `${startText}~${endText}` : startText || endText || '')
       : (endText ? `~${endText}` : '');
-    const notiTitle = `${isWeekendOrHolidayDay ? '주말근무' : '평일근무'} (${overtimeDateText}${timeRange ? ` ${timeRange}` : ''})`;
+    const notiTitle = `${isWeekendOrHolidayDay ? '휴일근무' : '언장근무'} (${overtimeDateText}${timeRange ? ` ${timeRange}` : ''})`;
 
     const selfUrl = (user.user_level === 'manager' || user.user_level === 'admin') ? '/manager/overtime' : '/mypage/overtime';
     const managerUrl = '/manager/overtime';
@@ -238,7 +273,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
             user_name: manager.name,
             noti_target: user.user_id,
             noti_title: notiTitle,
-            noti_message: `${user?.user_name}님이 추가근무를 신청했습니다.`,
+            noti_message: `${user?.user_name}님이 ${getOvertimeLabel()}를 신청했습니다.`,
             noti_type: 'overtime',
             noti_url: '/manager/overtime',
           });
@@ -249,12 +284,12 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
         user_name: user.user_name || '',
         noti_target: user.user_id,
         noti_title: notiTitle,
-        noti_message: `추가근무를 신청했습니다.`,
+        noti_message: `${getOvertimeLabel()}를 신청했습니다.`,
         noti_type: 'overtime',
         noti_url: selfUrl,
       });
     } catch (notifyErr) {
-      console.error('추가근무 알림 전송 실패:', notifyErr);
+      console.error('${getOvertimeLabel()} 알림 전송 실패:', notifyErr);
     }
   };
 
@@ -282,34 +317,34 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     }
   }, [isOpen, selectedDay]);
 
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>추가근무 신청</DialogTitle>
+          <DialogTitle>
+            {`${getOvertimeLabel()} 신청`}
+          </DialogTitle>
           <DialogDescription>
-            {selectedDay && `${dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} ${selectedDay.dayOfWeek}요일의 추가근무를 신청합니다.`}
+            {selectedDay && `${dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} ${selectedDay.dayOfWeek}요일의 ${getOvertimeLabel()}를 신청합니다.`}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           {/* 평일 (월-금) 신청 시 표시되는 내용 */}
-          {selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
+            {selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
             <>
               <div className="space-y-3">
                 <Label htmlFor="expected-end-time">예상 퇴근 시간을 선택해주세요.</Label>
                 <div className="flex gap-2">
                   <Select
                     key="expected-end-time"
-                    value={formData.expectedEndTime ? formData.expectedEndTime : undefined}
+                    value={formData.expectedEndTime || ''}
                     onValueChange={(value) => handleInputChange('expectedEndTime', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndTime ? 'border-red-500' : ''}`}>
                       <SelectValue placeholder="시간을 선택하세요" />
                     </SelectTrigger>
                     <SelectContent className="z-[200]">
-                      <SelectItem value="18">18시</SelectItem>
-                      <SelectItem value="19">19시</SelectItem>
-                      <SelectItem value="20">20시</SelectItem>
                       <SelectItem value="21">21시</SelectItem>
                       <SelectItem value="22">22시</SelectItem>
                       <SelectItem value="23">23시</SelectItem>
@@ -324,7 +359,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                   </Select>
                   <Select
                     key="expected-end-minute"
-                    value={formData.expectedEndMinute ? formData.expectedEndMinute : undefined}
+                    value={formData.expectedEndMinute || ''}
                     onValueChange={(value) => handleInputChange('expectedEndMinute', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndMinute ? 'border-red-500' : ''}`}>
@@ -410,14 +445,14 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
           )}
 
           {/* 주말 (토, 일) 또는 공휴일 신청 시 표시되는 내용 */}
-          {selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
+          {selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
             <>
               <div className="space-y-3">
-                <Label htmlFor="expected-start-time">예상 출근 시간을 선택해주세요.</Label>
+                <Label htmlFor="expected-start-time">출근 시간을 선택해주세요.</Label>
                 <div className="flex gap-2">
                   <Select
                     key="expected-start-time"
-                    value={formData.expectedStartTime ? formData.expectedStartTime : undefined}
+                    value={formData.expectedStartTime || ''}
                     onValueChange={(value) => handleInputChange('expectedStartTime', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedStartTime ? 'border-red-500' : ''}`}>
@@ -446,7 +481,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                   </Select>
                   <Select
                     key="expected-start-minute"
-                    value={formData.expectedStartTimeMinute ? formData.expectedStartTimeMinute : undefined}
+                    value={formData.expectedStartTimeMinute || ''}
                     onValueChange={(value) => handleInputChange('expectedStartTimeMinute', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedStartTimeMinute ? 'border-red-500' : ''}`}>
@@ -475,11 +510,21 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                 )}
               </div>
               <div className="space-y-3">
-                <Label htmlFor="expected-end-time">예상 퇴근 시간을 선택해주세요.</Label>
+                <Label htmlFor="expected-end-time">
+                  퇴근 시간을 선택해주세요.
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                    <InfoIcon className="w-4 h-4 text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>주말, 공휴일 휴게시간은 주간/야간/휴일 여부와 무관하게 ‘총 근로시간’을 기준으로 결정됨</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </Label>
                 <div className="flex gap-2">
                   <Select
                     key="expected-end-time"
-                    value={formData.expectedEndTime ? formData.expectedEndTime : undefined}
+                    value={formData.expectedEndTime || ''}
                     onValueChange={(value) => handleInputChange('expectedEndTime', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndTime ? 'border-red-500' : ''}`}>
@@ -509,7 +554,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                   </Select>
                   <Select
                     key="expected-end-minute"
-                    value={formData.expectedEndMinute ? formData.expectedEndMinute : undefined}
+                    value={formData.expectedEndMinute || ''}
                     onValueChange={(value) => handleInputChange('expectedEndMinute', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndMinute ? 'border-red-500' : ''}`}>
@@ -557,7 +602,12 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                   )}
                   
                   {/* 일요일 또는 공휴일인 경우: 보상휴가, 수당지급 표시 */}
-                  {isSundayOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
+                  {isSundayOrHoliday(
+                    selectedDay.dayOfWeek,
+                    selectedDay.workType,
+                    selectedDay.isHoliday,
+                    selectedDay.holidayName
+                  ) && (
                     <>
                       <RadioButton
                         value="compensation_vacation"
@@ -601,10 +651,10 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
           </div>
           
           <div className="space-y-3">
-            <Label htmlFor="work-description">작업 내용을 작성해주세요.</Label>
+            <Label htmlFor="work-description">업무 내용을 작성해주세요.</Label>
             <Textarea
               id="work-description"
-              placeholder="작업 내용을 입력하세요"
+              placeholder="업무 내용을 입력하세요"
               maxLength={500}
               value={formData.workDescription}
               onChange={(e) => handleInputChange('workDescription', e.target.value)}
