@@ -849,6 +849,7 @@ export default function OvertimeList({
             isManager={isManager}
             isOwnRequest={isOwnRequest}
             activeTab={activeTab}
+            isPage={isPage}
             user={user ? { user_level: user.user_level, team_id: user.team_id ?? undefined } : undefined}
             selectedDay={{
               date: dayjs(selectedOvertime.ot_date).format('YYYY-MM-DD'),
