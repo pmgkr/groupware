@@ -75,11 +75,11 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
     const selectedDay = data[selectedIndex];
     
     if (!selectedDay.overtimeId) {
-      throw new Error('추가근무 ID를 찾을 수 없습니다.');
+      throw new Error('연장근무 ID를 찾을 수 없습니다.');
     }
     
     if (selectedDay.overtimeStatus !== "승인대기") {
-      throw new Error('승인대기 상태의 추가근무만 취소할 수 있습니다.');
+      throw new Error('승인대기 상태의 연장근무만 취소할 수 있습니다.');
     }
     
     try {
@@ -91,7 +91,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
       setViewDialogOpen(false);
       setSelectedIndex(null);
     } catch (error: any) {
-      console.error('추가근무 취소 실패:', error);
+      console.error('연장근무 취소 실패:', error);
       throw error;
     }
   };
@@ -144,10 +144,23 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               const latestWorkType = hasMultipleWorkTypes ? row.workTypes![0] : null;
               const otherWorkTypes = hasMultipleWorkTypes ? row.workTypes!.slice(1) : [];
               
-              // 승인완료된 추가근무가 있으면 뱃지에는 항상 "추가근무"로 표시
-              const displayWorkType = row.overtimeStatus === '승인완료' 
-                ? '추가근무' 
-                : (hasMultipleWorkTypes ? latestWorkType!.type : row.workType);
+              const isHolidayOrWeekend =
+                row.holidayName != null ||
+                row.isHoliday === true ||
+                row.dayOfWeek === '토' ||
+                row.dayOfWeek === '일' ||
+                row.workType === '공휴일';
+
+              let displayWorkType: string =
+                hasMultipleWorkTypes ? latestWorkType!.type : row.workType;
+
+              const isApprovedOrPaid =
+                row.overtimeStatus === '승인완료' ||
+                row.overtimeStatus === '보상완료';
+
+              if (isApprovedOrPaid) {
+                displayWorkType = isHolidayOrWeekend ? '휴일근무' : '연장근무';
+              }
               
               return (
                 <td key={index} className={`h-[65px] px-6 py-4 whitespace-nowrap text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>

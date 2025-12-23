@@ -7,7 +7,8 @@ export const getWorkTypeColor = (workType: string): string => {
   switch (workType) {
     case "-": return "bg-gray-50 text-gray-400";
     case "일반근무": return "bg-gray-300 text-gray-900";
-    case "추가근무": return "bg-gray-700 text-white";
+    case "연장근무": return "bg-gray-700 text-white";
+    case "휴일근무": return "bg-red-700 text-white";
     case "연차": return "bg-primary-blue-150 text-primary-blue";
     case "오전반차": return "bg-primary-purple-100 text-primary-pink-500";
     case "오전반반차": return "bg-primary-purple-100 text-primary-purple-500";
