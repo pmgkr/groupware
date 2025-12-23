@@ -77,6 +77,8 @@ export interface ProjectViewDTO {
   team_id: number;
   team_name: string;
   project_status: string;
+  est_amount?: string;
+  est_budget?: string;
 }
 
 // 프로젝트 멤버 타입

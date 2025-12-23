@@ -32,6 +32,9 @@ export default function ProjectList() {
   const [pageSize, setPageSize] = useState(15);
 
   // 상단 필터용 state
+  const getParam = (key: string) => searchParams.get(key) ?? '';
+  const getArrayParam = (key: string) => searchParams.get(key)?.split(',') ?? [];
+
   const currentYear = String(new Date().getFullYear()); // 올해 구하기
   const yearOptions = getGrowingYears(); // yearOptions
   const [activeTab, setActiveTab] = useState<'mine' | 'others'>(() => {
@@ -80,6 +83,7 @@ export default function ProjectList() {
     { label: '취소됨', value: 'cancelled' },
   ];
 
+  // MultiSelect Select 옵션 복구
   useEffect(() => {
     const fetchFilterOptions = async () => {
       try {
@@ -92,6 +96,37 @@ export default function ProjectList() {
     };
     fetchFilterOptions();
   }, []);
+
+  // params에 따라 상단 필터 복구
+  useEffect(() => {
+    if (!search) return;
+
+    // 1. 탭
+    const tab = (getParam('tab') as 'mine' | 'others') || 'mine';
+    setActiveTab(tab);
+
+    // 2. year (others만)
+    if (tab === 'others') {
+      setSelectedYear(getParam('project_year') || currentYear);
+    }
+
+    // 3. 단일 Select
+    setSelectedBrand(getParam('brand'));
+
+    // 4. MultiSelect state
+    const categories = getArrayParam('category');
+    const clients = getArrayParam('client_id');
+    const teams = getArrayParam('team_id');
+    const statuses = getArrayParam('status');
+
+    setSelectedCategory(categories);
+    setSelectedClient(clients);
+    setSelectedTeam(teams);
+    setSelectedStatus(statuses);
+
+    // 6. 페이지
+    setPage(Number(getParam('page') || 1));
+  }, []); // 🔥 반드시 1회
 
   // 필터 변경 시 page 초기화
   const handleFilterChange = (setter: any, key: string, value: any) => {
@@ -176,6 +211,20 @@ export default function ProjectList() {
     },
     [searchParams, setSearchParams]
   );
+
+  useEffect(() => {
+    const brand = searchParams.get('brand') ?? '';
+    if (brand !== selectedBrand) {
+      setSelectedBrand(brand);
+    }
+
+    if (activeTab === 'others') {
+      const year = searchParams.get('project_year') ?? currentYear;
+      if (year !== selectedYear) {
+        setSelectedYear(year);
+      }
+    }
+  }, [searchParams, activeTab]);
 
   // 프로젝트 리스트 가져오기
   const fetchProjects = useCallback(async () => {
@@ -300,6 +349,7 @@ export default function ProjectList() {
               maxCount={0}
               autoSize={true}
               placeholder="카테고리"
+              defaultValue={selectedCategory}
               options={categoryOptions}
               onValueChange={(v) => handleFilterChange(setSelectedCategory, 'category', v)}
               simpleSelect={true}
@@ -313,6 +363,7 @@ export default function ProjectList() {
               maxCount={0}
               autoSize={true}
               placeholder="클라이언트"
+              defaultValue={selectedClient}
               options={clientOptions}
               onValueChange={(v) => handleFilterChange(setSelectedClient, 'client_id', v)}
               simpleSelect={true}
@@ -326,6 +377,7 @@ export default function ProjectList() {
               maxCount={0}
               autoSize={true}
               placeholder="팀 선택"
+              defaultValue={selectedTeam}
               options={teamOptions}
               onValueChange={(v) => handleFilterChange(setSelectedTeam, 'team_id', v)}
               simpleSelect={true}
@@ -339,6 +391,7 @@ export default function ProjectList() {
               maxCount={0}
               autoSize={true}
               placeholder="상태 선택"
+              defaultValue={selectedStatus}
               options={statusOptions}
               onValueChange={(v) => handleFilterChange(setSelectedStatus, 'status', v)}
               simpleSelect={true}
