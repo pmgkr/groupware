@@ -28,6 +28,7 @@ export interface WlogWeek {
       wmin: number;
       kind: string;
       type: string;
+      team_id?: number;
     }
   ];
   vacation: [
@@ -37,8 +38,26 @@ export interface WlogWeek {
       tdate: string;
       stime: string;
       etime: string;
+      wmin?: number;
+      kind?: string;
+      type?: string;
+      team_id?: number;
     }
   ];
+  event?: [
+    {
+      user_id: string;
+      user_nm: string;
+      tdate: string;
+      stime: string;
+      etime: string;
+      wmin: number;
+      kind: string;
+      type: string;
+      team_id: number;
+    }
+  ];
+  team_id?: number | string;
 }
 
 export interface Vacation {
@@ -49,6 +68,7 @@ export interface Vacation {
 export interface WorkLogResponse {
   wlog: WorkLog[];
   vacation: Vacation[];
+  event?: any[];
 }
 
 // 근태 로그 조회 파라미터

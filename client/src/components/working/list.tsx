@@ -620,6 +620,7 @@ export default function WorkingList({
         const mapStatus = (status: string) => {
           if (status === 'H') return '승인대기';
           if (status === 'T') return '승인완료';
+          if (status === 'Y') return '보상완료';
           if (status === 'N') return '취소완료';
           return '신청하기';
         };
@@ -642,6 +643,8 @@ export default function WorkingList({
               date: dayjs(weekStartDate).add(dayIndex, 'day').format('YYYY-MM-DD'),
               dayOfWeek: ['월', '화', '수', '목', '금', '토', '일'][dayIndex],
               workType: (selectedDayInfo?.workType || '-') as "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가" | "공휴일",
+              isHoliday: selectedDayInfo?.workType === '공휴일' ? true : undefined,
+              holidayName: selectedDayInfo?.workType === '공휴일' ? selectedDayInfo?.holidayName || null : null,
               startTime: selectedDayInfo?.startTime || '-',
               endTime: selectedDayInfo?.endTime || '-',
               basicHours: 0,
@@ -651,7 +654,7 @@ export default function WorkingList({
               totalHours: 0,
               totalMinutes: 0,
               overtimeStatus: overtimeDetailData?.info ? mapStatus(overtimeDetailData.info.ot_status) : 
-                            (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "취소완료",
+                            (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "보상완료" | "취소완료" | "보상대기",
               overtimeData: convertOvertimeData()
             }}
           />

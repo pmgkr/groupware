@@ -28,6 +28,9 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { notificationApi } from '@/api/notification';
+import { CheckCircle, OctagonAlert } from 'lucide-react';
 import { AppPagination } from '@/components/ui/AppPagination';
 
 dayjs.locale('ko');
@@ -72,6 +75,7 @@ export default function OvertimeList({
 }: OvertimeListProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addAlert } = useAppAlert();
   
   // 데이터 state
   const [allData, setAllData] = useState<OvertimeItem[]>([]);
@@ -136,12 +140,12 @@ export default function OvertimeList({
   }, [teamIds, teams]);
 
   // 데이터 조회 함수
-  const fetchOvertimeData = useCallback(async () => {
+  const fetchOvertimeData = useCallback(async (force = false) => {
     // 이미 로딩 중이면 중복 호출 방지
     if (loadingRef.current) return;
     
     // 같은 teamIds 조합이면 스킵
-    if (lastTeamIdsKeyRef.current === teamIdsKey) {
+    if (lastTeamIdsKeyRef.current === teamIdsKey && !force) {
       return;
     }
 
@@ -211,7 +215,7 @@ export default function OvertimeList({
 
   // 데이터 조회
   useEffect(() => {
-    fetchOvertimeData();
+    fetchOvertimeData(true);
   }, [fetchOvertimeData]);
 
   // 필터링된 데이터
@@ -402,6 +406,34 @@ export default function OvertimeList({
     setOvertimeDetailData(null);
   };
 
+  // 신청자에게 알림 전송
+  const notifyApplicant = async (
+    item: OvertimeItem | overtimeItem | null | undefined,
+    kind: 'approve' | 'compensation'
+  ) => {
+    if (!item?.user_id) return;
+    const dateText = item.ot_date ? dayjs(item.ot_date).format('YYYY-MM-DD') : '';
+    const isComp = kind === 'compensation';
+    const notiTitle = `${isComp ? '보상 지급 완료' : '추가근무 승인'}${dateText ? ` (${dateText})` : ''}`;
+    const notiMessage = isComp
+      ? '보상 지급이 승인되었습니다.'
+      : '추가근무가 승인되었습니다.';
+
+    try {
+      await notificationApi.registerNotification({
+        user_id: item.user_id,
+        user_name: item.user_name || '',
+        noti_target: user?.user_id || '',
+        noti_title: notiTitle,
+        noti_message: notiMessage,
+        noti_type: 'overtime',
+        noti_url: '/mypage/overtime',
+      });
+    } catch (e) {
+      console.error('추가근무 알림 전송 실패:', e);
+    }
+  };
+
   // 추가근무 승인 핸들러
   const handleApproveOvertime = async () => {
     if (!selectedOvertime?.id) return;
@@ -412,9 +444,22 @@ export default function OvertimeList({
       } else {
         await managerOvertimeApi.approveOvertime(selectedOvertime.id);
       }
-      fetchOvertimeData(); // 데이터 새로고침
+      await notifyApplicant(selectedOvertime, 'approve');
+      addAlert({
+        title: '승인 완료',
+        message: '추가근무 요청을 승인했했습니다.',
+        icon: <CheckCircle />,
+        duration: 3000,
+      });
+      fetchOvertimeData(true); // 데이터 새로고침 강제
       handleCloseOvertimeDialog();
     } catch (error) {
+      addAlert({
+        title: '승인 실패',
+        message: '추가근무 승인 중 오류가 발생했습니다.',
+        icon: <OctagonAlert />,
+        duration: 3000,
+      });
       throw error;
     }
   };
@@ -430,7 +475,7 @@ export default function OvertimeList({
       } else {
         await managerOvertimeApi.rejectOvertime(selectedOvertime.id, reason);
       }
-      fetchOvertimeData(); // 데이터 새로고침
+      fetchOvertimeData(true); // 데이터 새로고침
       handleCloseOvertimeDialog();
     } catch (error) {
       throw error;
@@ -448,9 +493,22 @@ export default function OvertimeList({
       } else {
         await managerOvertimeApi.confirmOvertimeCompensation({ ot_seq: selectedOvertime.id });
       }
-      fetchOvertimeData(); // 데이터 새로고침
+      await notifyApplicant(selectedOvertime, 'compensation');
+      addAlert({
+        title: '보상 지급 완료',
+        message: '보상지급 요청을 승인했습니다.',
+        icon: <CheckCircle />,
+        duration: 3000,
+      });
+      fetchOvertimeData(true); // 데이터 새로고침 강제
       handleCloseOvertimeDialog();
     } catch (error) {
+      addAlert({
+        title: '보상 지급 실패',
+        message: '보상 지급 처리 중 오류가 발생했습니다.',
+        icon: <OctagonAlert />,
+        duration: 3000,
+      });
       throw error;
     }
   };
@@ -488,7 +546,7 @@ export default function OvertimeList({
       // await workingApi.requestOvertime(apiParams);
       
       // 성공 시 데이터 다시 로드
-      fetchOvertimeData();
+      fetchOvertimeData(true);
       
       handleCloseReapplyDialog();
     } catch (error: any) {
@@ -530,6 +588,17 @@ export default function OvertimeList({
           checkedItems.map(id => managerOvertimeApi.approveOvertime(id))
         );
       }
+      // 알림 전송 (신청자에게만)
+      const dataMap = new Map<number, OvertimeItem>();
+      allData.forEach(item => dataMap.set(item.id, item));
+      await Promise.all(
+        checkedItems.map(async (id) => {
+          const item = dataMap.get(id);
+          if (!item) return;
+          const kind: 'approve' | 'compensation' = item.ot_status === 'T' ? 'compensation' : 'approve';
+          await notifyApplicant(item, kind);
+        })
+      );
       
       // 확인 모달 닫기
       setIsConfirmDialogOpen(false);
@@ -549,17 +618,29 @@ export default function OvertimeList({
         title: "승인 완료",
         description,
       });
+      addAlert({
+        title: '승인 완료',
+        message: description || '요청을 승인했습니다.',
+        icon: <CheckCircle />,
+        duration: 3000,
+      });
       
       // 체크박스 초기화 및 데이터 새로고침
       setCheckedItems([]);
       setCheckAll(false);
       onCheckedItemsChange([]);
-      fetchOvertimeData();
+      fetchOvertimeData(true);
     } catch (error) {
       toast({
         title: "승인 실패",
         description: "일괄 승인 중 오류가 발생했습니다.",
         variant: "destructive",
+      });
+      addAlert({
+        title: '승인 실패',
+        message: '일괄 승인 중 오류가 발생했습니다.',
+        icon: <OctagonAlert />,
+        duration: 3000,
       });
       setIsConfirmDialogOpen(false);
     }
@@ -825,7 +906,7 @@ export default function OvertimeList({
             onCancel={async () => {
               if (selectedOvertime.id) {
                 await workingApi.cancelOvertime(selectedOvertime.id);
-                fetchOvertimeData();
+                fetchOvertimeData(true);
                 handleCloseOvertimeDialog();
               }
             }}
@@ -849,11 +930,14 @@ export default function OvertimeList({
             isManager={isManager}
             isOwnRequest={isOwnRequest}
             activeTab={activeTab}
+            isPage={isPage}
             user={user ? { user_level: user.user_level, team_id: user.team_id ?? undefined } : undefined}
             selectedDay={{
               date: dayjs(selectedOvertime.ot_date).format('YYYY-MM-DD'),
               dayOfWeek: dayjs(selectedOvertime.ot_date).format('ddd') as '월' | '화' | '수' | '목' | '금' | '토' | '일',
-              workType: "-" as const,
+              workType: overtimeDetailData?.info?.ot_type === 'holiday' ? '공휴일' : "-" as const,
+              isHoliday: overtimeDetailData?.info?.ot_type === 'holiday',
+              holidayName: overtimeDetailData?.info?.holiday_name || null,
               startTime: '-',
               endTime: '-',
               basicHours: 0,

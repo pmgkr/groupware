@@ -17,7 +17,8 @@ export default function BookList() {
   const navigate = useNavigate();
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState(''); // 검색어 상태 추가
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [pageInfo, setPageInfo] = useState({
     page: 1,
     totalPages: 1,
@@ -41,7 +42,8 @@ export default function BookList() {
 
   const handleSearch = () => {
     setPage(1);
-    fetchBookList(1, searchQuery);
+    setSearchQuery(searchInput);
+    fetchBookList(1, searchInput);
   };
   // 화면에서 보여줄 번호 (페이지 기준 연속 번호)
   const startNo = (page - 1) * pageSize;
@@ -136,7 +138,7 @@ export default function BookList() {
     setConfirmState({ open: true, title, action });
   };
 
-  const Administrator = 'test@test.com';
+  const Administrator = 'admin';
   return (
     <div className="relative">
       {/* 검색창 */}
@@ -145,8 +147,8 @@ export default function BookList() {
           <Input
             className="h-[32px] px-4 [&]:bg-white"
             placeholder="검색어 입력"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
           <Button
@@ -158,7 +160,7 @@ export default function BookList() {
             <SearchGray className="text-gray-400" />
           </Button>
         </div>
-        {user?.user_id === Administrator && (
+        {user?.user_level === Administrator && (
           <Dialog
             open={open}
             onOpenChange={(open) => {

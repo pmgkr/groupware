@@ -20,6 +20,7 @@ export interface WlogWeekListResponse {
   edate: string;
   wlog: WlogItem[];
   vacation: any[];
+  event?: any[];
   team_id: number;
 }
 

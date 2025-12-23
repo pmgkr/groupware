@@ -178,13 +178,14 @@ export default function ProposalRegister() {
             // 5. 매니저에게 알림 전송
             const managerUrl = `/manager/proposal/view/${reportId}`;
             const categoryLabel = isProject ? '프로젝트' : data.category || '';
+            const writerName = report.rp_user_name;
 
             await notificationApi.registerNotification({
               user_id: report.manager_id,
               user_name: report.manager_name,
               noti_target: user?.user_id || '',
               noti_title: data.title,
-              noti_message: `${categoryLabel} 기안서 결재 요청 하였습니다.`,
+              noti_message: `${writerName}님이 ${categoryLabel} 기안서 결재 요청 하였습니다.`,
               noti_type: 'proposal',
               noti_url: managerUrl,
             });

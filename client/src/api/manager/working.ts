@@ -22,6 +22,7 @@ export interface Vacation {
 export interface WorkLogResponse {
   wlog: WorkLog[];
   vacation: Vacation[];
+  event?: any[];
 }
 
 // 관리자 근태 로그 주간 조회 파라미터
@@ -77,14 +78,15 @@ export const managerWorkingApi = {
         if (response.wlog !== undefined) {
           return {
             wlog: Array.isArray(response.wlog) ? response.wlog : [],
-            vacation: Array.isArray(response.vacation) ? response.vacation : []
+            vacation: Array.isArray(response.vacation) ? response.vacation : [],
+            event: Array.isArray(response.event) ? response.event : []
           };
         }
         // 다른 형식일 수 있으므로 그대로 반환 (호환성 유지)
         return response as WorkLogResponse;
       }
       
-      return { wlog: [], vacation: [] };
+      return { wlog: [], vacation: [], event: [] };
     } catch (error) {
       throw error;
     }

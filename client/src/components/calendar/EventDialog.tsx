@@ -178,12 +178,12 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
         [field]: value
       };
       
-      // 카테고리가 변경되면 이벤트 타입도 초기화
+      // 카테고리가 변경되면 기타일정 타입도 초기화
       if (field === 'category') {
         newData.eventType = '';
       }
       
-      // 이벤트 타입이 변경되면 설정
+      // 기타일정 타입이 변경되면 설정
       if (field === 'eventType' && typeof value === 'string') {
         newData.endDate = newData.startDate;
         
@@ -325,7 +325,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     }
   };
 
-  // 시간 선택이 필요한 이벤트 타입인지 확인 (반차/반반차일때 시간 필요)
+  // 시간 선택이 필요한 기타일정 타입인지 확인 (반차/반반차일때 시간 필요)
   const isTimeRequired = formData.eventType && 
     ['vacationHalfMorning', 'vacationHalfAfternoon', 'vacationQuarterMorning', 'vacationQuarterAfternoon'].includes(formData.eventType);
 
@@ -366,7 +366,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
         newErrors.selectedDate = "시작일 및 시간을 선택해주세요.";
       }
     } else {
-      // 연차/공가/이벤트인 경우 날짜 범위 선택 필요
+      // 연차/공가/기타일정인 경우 날짜 범위 선택 필요
       if (!formData.selectedDateRange || !formData.selectedDateRange.from || !formData.selectedDateRange.to) {
         newErrors.selectedDateRange = "기간을 선택해주세요.";
       }
@@ -510,7 +510,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
               />
               <RadioButton
                 value="event"
-                label="이벤트"
+                label="기타일정"
                 variant="dynamic"
                 size='md'
                 className='mb-0'

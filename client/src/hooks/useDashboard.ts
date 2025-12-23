@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { dashboardApi, type Vacation, type Calendar, type Meetingroom, type Notification, type Wlog, type Notice, type Expense } from '@/api/dashboard';
+import { dashboardApi, type VacationSummaryItem, type Calendar, type Meetingroom, type Notification, type Wlog, type Notice, type Expense } from '@/api/dashboard';
 import { formatKST, timeToMinutes } from '@/utils/date';
 import dayjs from 'dayjs';
 
@@ -62,7 +62,7 @@ export function useDashboard(selectedDate?: Date) {
     wlogToday: [],
     wlogSchedule: []
   });
-  const [vacation, setVacation] = useState<Vacation | null>(null);
+  const [vacation, setVacation] = useState<VacationSummaryItem | null>(null);
   const [notification, setNotification] = useState<Notification[]>([]);
   const [calendar, setCalendar] = useState<Calendar[]>([]);
   const [meetingroom, setMeetingroom] = useState<Meetingroom[]>([]);
@@ -84,7 +84,8 @@ export function useDashboard(selectedDate?: Date) {
       try {
         const currentYear = new Date().getFullYear();
         const data = await dashboardApi.getVacation(currentYear);
-        setVacation(data);
+        const summaryItem = Array.isArray(data?.summary) ? data.summary[0] : null;
+        setVacation(summaryItem || null);
       } catch (error) {
         console.error('휴가 정보 조회 실패:', error);
       }
