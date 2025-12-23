@@ -89,7 +89,12 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
       newErrors.workDescription = "업무 내용을 입력해주세요.";
     }
     
-    if (selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType)) {
+    if (selectedDay && !isWeekendOrHoliday(
+      selectedDay.dayOfWeek,
+      selectedDay.workType,
+      selectedDay.isHoliday,
+      selectedDay.holidayName
+    )) {
       // 평일: 퇴근 시간만 검증
       if (!formData.expectedEndTime) newErrors.expectedEndTime = "예상 퇴근 시간을 선택해주세요.";
       if (!formData.expectedEndMinute) newErrors.expectedEndMinute = "예상 퇴근 분을 선택해주세요.";
@@ -97,7 +102,12 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
       if (!formData.transportationAllowance) newErrors.transportationAllowance = "교통비 사용여부를 선택해주세요.";
     }
     
-    if (selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType)) {
+    if (selectedDay && isWeekendOrHoliday(
+      selectedDay.dayOfWeek,
+      selectedDay.workType,
+      selectedDay.isHoliday,
+      selectedDay.holidayName
+    )) {
       // 주말/공휴일: 출근 시간과 퇴근 시간 검증 (ot_hours는 자동 계산)
       if (!formData.expectedStartTime) newErrors.expectedStartTime = "예상 출근 시간을 선택해주세요.";
       if (!formData.expectedStartTimeMinute) newErrors.expectedStartTimeMinute = "예상 출근 분을 선택해주세요.";
@@ -117,6 +127,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     
     try {
       const apiParams = buildOvertimeApiParams(selectedDay, formData, clientList);
+      
       const response = await workingApi.requestOvertime(apiParams);
       
       const isManagerOrAdmin = user?.user_level === 'manager' || user?.user_level === 'admin';
@@ -306,6 +317,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     }
   }, [isOpen, selectedDay]);
 
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -326,7 +338,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                 <div className="flex gap-2">
                   <Select
                     key="expected-end-time"
-                    value={formData.expectedEndTime ? formData.expectedEndTime : undefined}
+                    value={formData.expectedEndTime || ''}
                     onValueChange={(value) => handleInputChange('expectedEndTime', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndTime ? 'border-red-500' : ''}`}>
@@ -347,7 +359,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                   </Select>
                   <Select
                     key="expected-end-minute"
-                    value={formData.expectedEndMinute ? formData.expectedEndMinute : undefined}
+                    value={formData.expectedEndMinute || ''}
                     onValueChange={(value) => handleInputChange('expectedEndMinute', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndMinute ? 'border-red-500' : ''}`}>
@@ -440,7 +452,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                 <div className="flex gap-2">
                   <Select
                     key="expected-start-time"
-                    value={formData.expectedStartTime ? formData.expectedStartTime : undefined}
+                    value={formData.expectedStartTime || ''}
                     onValueChange={(value) => handleInputChange('expectedStartTime', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedStartTime ? 'border-red-500' : ''}`}>
@@ -469,7 +481,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                   </Select>
                   <Select
                     key="expected-start-minute"
-                    value={formData.expectedStartTimeMinute ? formData.expectedStartTimeMinute : undefined}
+                    value={formData.expectedStartTimeMinute || ''}
                     onValueChange={(value) => handleInputChange('expectedStartTimeMinute', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedStartTimeMinute ? 'border-red-500' : ''}`}>
@@ -512,7 +524,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                 <div className="flex gap-2">
                   <Select
                     key="expected-end-time"
-                    value={formData.expectedEndTime ? formData.expectedEndTime : undefined}
+                    value={formData.expectedEndTime || ''}
                     onValueChange={(value) => handleInputChange('expectedEndTime', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndTime ? 'border-red-500' : ''}`}>
@@ -542,7 +554,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                   </Select>
                   <Select
                     key="expected-end-minute"
-                    value={formData.expectedEndMinute ? formData.expectedEndMinute : undefined}
+                    value={formData.expectedEndMinute || ''}
                     onValueChange={(value) => handleInputChange('expectedEndMinute', value)}
                   >
                     <SelectTrigger className={`flex-1 ${errors.expectedEndMinute ? 'border-red-500' : ''}`}>

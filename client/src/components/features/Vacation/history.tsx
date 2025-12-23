@@ -319,6 +319,7 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
       'current': '기본연차',
       'carryover': '이월연차',
       'comp': '특별대휴',
+      'special': '특별대휴',
       'long': '근속휴가',
       'cancel': '취소완료'
     }[vacationType] || vacationType;

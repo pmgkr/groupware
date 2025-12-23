@@ -642,6 +642,8 @@ export default function WorkingList({
               date: dayjs(weekStartDate).add(dayIndex, 'day').format('YYYY-MM-DD'),
               dayOfWeek: ['월', '화', '수', '목', '금', '토', '일'][dayIndex],
               workType: (selectedDayInfo?.workType || '-') as "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가" | "공휴일",
+              isHoliday: selectedDayInfo?.workType === '공휴일' ? true : undefined,
+              holidayName: selectedDayInfo?.workType === '공휴일' ? selectedDayInfo?.holidayName || null : null,
               startTime: selectedDayInfo?.startTime || '-',
               endTime: selectedDayInfo?.endTime || '-',
               basicHours: 0,

@@ -78,6 +78,14 @@ export default function OvertimeViewDialog({
   
   // selectedDay에서 상태 가져오기
   const status = selectedDay?.overtimeStatus || "신청하기";
+  const isWeekendOrHolidayDay = selectedDay
+    ? isWeekendOrHoliday(
+        selectedDay.dayOfWeek,
+        selectedDay.workType,
+        selectedDay.isHoliday,
+        selectedDay.holidayName
+      )
+    : false;
   
   // HR팀 또는 Finance팀 관리자/관리자 권한 확인 함수
   const isHrOrFinanceTeam = () => {
@@ -86,7 +94,7 @@ export default function OvertimeViewDialog({
   };
   
   // 보상 지급 가능 여부 확인 (HR/Finance팀이고 휴일 근무 탭이며 보상대기 상태일 때)
-  const canShowCompensation = isHrOrFinanceTeam() && activeTab === 'weekend' && status === '보상대기';
+  const canShowCompensation = isHrOrFinanceTeam() && isWeekendOrHolidayDay && status === '보상대기';
   
   // 신청 취소하기 확인 다이얼로그
   const handleCancelClick = () => {
@@ -127,8 +135,7 @@ export default function OvertimeViewDialog({
 
   // 승인 확인 다이얼로그
   const handleApproveClick = () => {
-    const isWeekendTab = activeTab === 'weekend';
-    const isCompensation = isPage === 'admin' && isWeekendTab && (user?.team_id === 1 || user?.team_id === 5);
+    const isCompensation = isPage === 'admin' && isWeekendOrHolidayDay && (user?.team_id === 1 || user?.team_id === 5);
     
     addDialog({
       title: `<span class="text-primary-blue font-semibold">${isCompensation ? '보상 지급 확인' : '승인 확인'}</span>`,
@@ -204,7 +211,7 @@ export default function OvertimeViewDialog({
 
   // 보상 지급 확인 다이얼로그
   const handleCompensationClick = () => {
-    const isCompensation = isPage === 'admin' && activeTab === 'weekend' && (user?.team_id === 1 || user?.team_id === 5);
+    const isCompensation = isPage === 'admin' && isWeekendOrHolidayDay && (user?.team_id === 1 || user?.team_id === 5);
     
     addDialog({
       title: `<span class="text-primary-blue font-semibold">${isCompensation ? '보상 지급 확인' : '승인 확인'}</span>`,
@@ -469,7 +476,7 @@ export default function OvertimeViewDialog({
                   <>
                     {onApprove && (
                       <Button variant="default" onClick={handleApproveClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
-                        {isPage === 'admin' && activeTab === 'weekend' && (user?.team_id === 1 || user?.team_id === 5) ? '보상 지급하기' : '승인하기'}
+                        {isPage === 'admin' && isWeekendOrHolidayDay && (user?.team_id === 1 || user?.team_id === 5) ? '보상 지급하기' : '승인하기'}
                       </Button>
                     )}
                     {onReject && (
@@ -495,13 +502,13 @@ export default function OvertimeViewDialog({
             )}
 
             {/* 보상대기 상태일 때 보상 지급하기 + 반려하기 버튼 (admin이고 휴일 근무일 때만) */}
-            {isManager && !isOwnRequest && status === "보상대기" && (onCompensation || onReject) && (
+            {isManager && !isOwnRequest && status === "보상대기" && isWeekendOrHolidayDay && (onCompensation || onReject) && (
               <>
                 {!showRejectInput ? (
                   <>
                     {onCompensation && (
                       <Button variant="default" onClick={handleCompensationClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
-                        {isPage === 'admin' && activeTab === 'weekend' && (user?.team_id === 1 || user?.team_id === 5) ? '보상 지급하기' : '승인하기'}
+                        {isPage === 'admin' && isWeekendOrHolidayDay && (user?.team_id === 1 || user?.team_id === 5) ? '보상 지급하기' : '승인하기'}
                       </Button>
                     )}
                     {onReject && (
