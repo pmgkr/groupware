@@ -6,7 +6,6 @@ import { z } from 'zod';
 import { useToggleState } from '@/hooks/useToggleState';
 import { useUser } from '@/hooks/useUser';
 import { mapExcelToExpenseItems } from '@/utils';
-import { notificationApi } from '@/api/notification';
 import { uploadFilesToServer, projectExpenseRegister, getBankList, type BankList } from '@/api';
 import { ExpenseRow } from './_components/ExpenseRegisterRow';
 import { UploadArea, type UploadAreaHandle, type PreviewFile } from '../Expense/_components/UploadArea';
@@ -63,7 +62,7 @@ const expenseSchema = z.object({
 export default function ProjectExpenseRegister() {
   const navigate = useNavigate();
   const { projectId } = useParams();
-  const { user_id, user_name, user_level } = useUser();
+  const { user_id, user_name, team_id, user_level } = useUser();
   const uploadRef = useRef<UploadAreaHandle>(null);
 
   // Alert & Dialog hooks

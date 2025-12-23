@@ -273,7 +273,7 @@ export default function MeetingRoomsAllPage() {
             </div>
             <PopoverContent className="w-auto p-0" align="start">
               <DayPicker
-                captionLayout="dropdown"
+                captionLayout="label"
                 mode="single"
                 selected={date}
                 onSelect={(d) => {

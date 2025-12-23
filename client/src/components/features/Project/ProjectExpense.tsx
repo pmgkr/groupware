@@ -1,8 +1,11 @@
 import { useRef, useState, useEffect } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useOutletContext, useNavigate, useParams } from 'react-router';
+import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import * as XLSX from 'xlsx';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
+import { findManager } from '@/utils';
+import { notificationApi } from '@/api/notification';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
@@ -22,7 +25,8 @@ import { ExpenseRow } from './_components/ExpenseListRow';
 export default function Expense() {
   const navigate = useNavigate();
   const { projectId } = useParams();
-  const { user_level } = useUser();
+  const { user_id, user_name, team_id, user_level } = useUser();
+  const { data } = useOutletContext<ProjectLayoutContext>();
 
   // 상단 필터용 state
   const [activeTab, setActiveTab] = useState<'all' | 'saved'>('all');
@@ -149,6 +153,33 @@ export default function Expense() {
           const res = await claimProjectTempExpense(payload);
 
           if (res.ok) {
+            const manager = await findManager(team_id);
+            if (manager.id) {
+              if (user_id === manager.id) {
+                // 접속한 계정이 매니저 아이디와 동일한 경우,
+                await notificationApi.registerNotification({
+                  user_id: user_id,
+                  user_name: user_name!,
+                  noti_target: user_id!,
+                  noti_title: `${projectId} · ${data.project_title}`,
+                  noti_message: `${checkedItems.length}건의 비용을 청구했습니다.`,
+                  noti_type: 'pexpense',
+                  noti_url: `/project/${projectId}/expense`,
+                });
+              } else {
+                // 팀원이 매니저에게 승인 요청한 경우,
+                await notificationApi.registerNotification({
+                  user_id: manager.id!,
+                  user_name: manager.name,
+                  noti_target: user_id!,
+                  noti_title: `${projectId} · ${data.project_title}`,
+                  noti_message: `${user_name}님이 ${checkedItems.length}건의 비용을 청구했습니다.`,
+                  noti_type: 'pexpense',
+                  noti_url: `/manager/pexpense`,
+                });
+              }
+            }
+
             addAlert({
               title: '비용 청구가 완료되었습니다.',
               message: `<p><span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 임시저장 비용이 청구되었습니다.</p>`,
