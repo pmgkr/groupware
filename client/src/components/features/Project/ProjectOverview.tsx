@@ -108,7 +108,7 @@ export default function Overview() {
                 <TableColumnBody>
                   <TableColumnCell>{data.project_id}</TableColumnCell>
                   <TableColumnCell>{data.owner_nm}</TableColumnCell>
-                  <TableColumnCell>300,000,000</TableColumnCell>
+                  <TableColumnCell>{formatAmount(data.est_amount) ?? 0}</TableColumnCell>
                 </TableColumnBody>
                 <TableColumnHeader className="w-[15%]">
                   <TableColumnHeaderCell>클라이언트</TableColumnHeaderCell>
@@ -118,7 +118,7 @@ export default function Overview() {
                 <TableColumnBody>
                   <TableColumnCell>{data.client_nm}</TableColumnCell>
                   <TableColumnCell>{`${formatDate(data.project_sdate)} ~ ${formatDate(data.project_edate)}`}</TableColumnCell>
-                  <TableColumnCell>182,000,000</TableColumnCell>
+                  <TableColumnCell>{formatAmount(data.est_budget) ?? 0}</TableColumnCell>
                 </TableColumnBody>
               </TableColumn>
             </div>
