@@ -15,7 +15,6 @@ export default function WorkHoursTable() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [data, setData] = useState<WorkData[]>([]);
-  const [weeklyTotalMinutes, setWeeklyTotalMinutes] = useState<number>(0);
   
   // 현재 주의 시작일 계산
   const weekStartDate = useMemo(() => getWeekStartDate(currentDate), [currentDate]);
@@ -112,10 +111,6 @@ export default function WorkHoursTable() {
         })()
       ]);
       
-      // wlog 배열에서 wmin 합계 계산 (주간누적)
-      const totalWmin = (wlogWeekResponse.wlog || []).reduce((sum, wlog) => sum + (wlog.wmin || 0), 0);
-      setWeeklyTotalMinutes(totalWmin);
-      
       // schedule API에서 모든 일정(휴가 + 이벤트)을 가져오므로 wlogWeekResponse.vacation과 병합
       // API 데이터를 WorkData 형식으로 변환
       const apiData = await convertApiDataToWorkData(
@@ -129,7 +124,6 @@ export default function WorkHoursTable() {
     } catch (error) {
       console.error('근태 로그 로드 실패:', error);
       setData([]);
-      setWeeklyTotalMinutes(0);
     }
   };
   
@@ -140,23 +134,32 @@ export default function WorkHoursTable() {
     }
   }, [currentDate, weekStartDate, user?.user_id, week, year]);
 
-  // 주간 근무시간 통계 계산 (wmin 합계 사용)
+  // 주간 근무시간 통계 계산 (data 배열의 합계 사용)
   const weeklyStats = useMemo(() => {
-    const { hours, minutes } = formatMinutes(weeklyTotalMinutes);
-    const remainingMinutes = Math.max(0, (52 * 60) - weeklyTotalMinutes);
+    // 각 항목의 시간들을 분 단위로 합산
+    const totalBasicMinutes = data.reduce((sum, day) => sum + (day.basicHours * 60) + (day.basicMinutes || 0), 0);
+    const totalOvertimeMinutes = data.reduce((sum, day) => sum + (day.overtimeHours * 60) + (day.overtimeMinutes || 0), 0);
+    const totalWorkMinutes = data.reduce((sum, day) => sum + (day.totalHours * 60) + (day.totalMinutes || 0), 0);
+
+    const { hours: basicWorkHours, minutes: basicWorkMinutes } = formatMinutes(totalBasicMinutes);
+    const { hours: overtimeWorkHours, minutes: overtimeWorkMinutes } = formatMinutes(totalOvertimeMinutes);
+    const { hours: workHours, minutes: workMinutes } = formatMinutes(totalWorkMinutes);
+    
+    // 남은 시간 계산 (52시간 기준)
+    const remainingMinutes = Math.max(0, (52 * 60) - totalWorkMinutes);
     const { hours: remainingHours, minutes: remainingMins } = formatMinutes(remainingMinutes);
     
     return {
-      workHours: hours,
-      workMinutes: minutes,
+      workHours,
+      workMinutes,
       remainingHours,
       remainingMinutes: remainingMins,
-      basicWorkHours: 0, // WlogWeek API에는 기본/연장 구분이 없으므로 0
-      basicWorkMinutes: 0,
-      overtimeWorkHours: 0,
-      overtimeWorkMinutes: 0,
+      basicWorkHours,
+      basicWorkMinutes,
+      overtimeWorkHours,
+      overtimeWorkMinutes,
     };
-  }, [weeklyTotalMinutes]);
+  }, [data]);
 
   return (
     <div>
