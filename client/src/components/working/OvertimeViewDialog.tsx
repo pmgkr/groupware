@@ -8,6 +8,8 @@ import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { OctagonAlert, CheckCircle } from 'lucide-react';
 import type { WorkData } from '@/types/working';
+import { useAuth } from '@/contexts/AuthContext';
+import { findManager } from '@/utils/managerHelper';
 import { notificationApi } from '@/api/notification';
 
 interface OvertimeViewDialogProps {
@@ -23,6 +25,7 @@ interface OvertimeViewDialogProps {
   isManager?: boolean;
   isOwnRequest?: boolean;
   activeTab?: 'weekday' | 'weekend';
+  isPage?: 'manager' | 'admin';
   user?: { user_level?: string; team_id?: number };
 }
 
@@ -59,8 +62,10 @@ export default function OvertimeViewDialog({
   isManager = false,
   isOwnRequest = false,
   activeTab = 'weekday',
+  isPage = 'manager',
   user
 }: OvertimeViewDialogProps) {
+  const { user: currentUser } = useAuth();
   // Hook 호출
   const { addDialog } = useAppDialog();
   const { addAlert } = useAppAlert();
@@ -121,10 +126,12 @@ export default function OvertimeViewDialog({
   // 승인 확인 다이얼로그
   const handleApproveClick = () => {
     const isWeekendTab = activeTab === 'weekend';
+    const isCompensation = isPage === 'admin' && isWeekendTab && (user?.team_id === 1 || user?.team_id === 5);
+    
     addDialog({
-      title: `<span class="text-primary-blue font-semibold">${isWeekendTab ? '보상 지급 확인' : '승인 확인'}</span>`,
-      message: isWeekendTab ? '이 보상지급 요청을 승인하시겠습니까?' : '이 추가근무 신청을 승인하시겠습니까?',
-      confirmText: isWeekendTab ? '보상 지급하기' : '승인하기',
+      title: `<span class="text-primary-blue font-semibold">${isCompensation ? '보상 지급 확인' : '승인 확인'}</span>`,
+      message: isCompensation ? '이 보상지급 요청을 승인하시겠습니까?' : '이 추가근무 신청을 승인하시겠습니까?',
+      confirmText: isCompensation ? '보상 지급하기' : '승인하기',
       cancelText: '취소',
       onConfirm: async () => {
         try {
@@ -195,10 +202,12 @@ export default function OvertimeViewDialog({
 
   // 보상 지급 확인 다이얼로그
   const handleCompensationClick = () => {
+    const isCompensation = isPage === 'admin' && activeTab === 'weekend' && (user?.team_id === 1 || user?.team_id === 5);
+    
     addDialog({
-      title: '<span class="text-primary-blue font-semibold">보상 지급 확인</span>',
-      message: '이 보상지급 요청을 승인하시겠습니까?',
-      confirmText: '보상 지급하기',
+      title: `<span class="text-primary-blue font-semibold">${isCompensation ? '보상 지급 확인' : '승인 확인'}</span>`,
+      message: isCompensation ? '이 보상지급 요청을 승인하시겠습니까?' : '이 추가근무 신청을 승인하시겠습니까?',
+      confirmText: isCompensation ? '보상 지급하기' : '승인하기',
       cancelText: '취소',
       onConfirm: async () => {
         try {
@@ -441,7 +450,7 @@ export default function OvertimeViewDialog({
                   <>
                     {onApprove && (
                       <Button variant="default" onClick={handleApproveClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
-                        {activeTab === 'weekend' ? '보상 지급하기' : '승인하기'}
+                        {isPage === 'admin' && activeTab === 'weekend' && (user?.team_id === 1 || user?.team_id === 5) ? '보상 지급하기' : '승인하기'}
                       </Button>
                     )}
                     {onReject && (
@@ -473,7 +482,7 @@ export default function OvertimeViewDialog({
                   <>
                     {onCompensation && (
                       <Button variant="default" onClick={handleCompensationClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
-                        보상 지급하기
+                        {isPage === 'admin' && activeTab === 'weekend' && (user?.team_id === 1 || user?.team_id === 5) ? '보상 지급하기' : '승인하기'}
                       </Button>
                     )}
                     {onReject && (
