@@ -22,15 +22,19 @@ export interface Wlog {
   }[];
 }
 
-// 휴가정보
-export interface Vacation {
-  user_id: string;
-  user_name: string;
-  job_role: string;
-  profile_image: string;
-  given: number;
-  used: number;
-  lefts: number;
+// 휴가정보 (요약)
+export interface VacationSummaryItem {
+  id: number;
+  va_year: number;
+  va_used: string;
+  va_current: string;
+  va_carryover: string;
+  va_comp: string;
+  va_long: string;
+}
+
+export interface VacationSummaryResponse {
+  summary: VacationSummaryItem[];
 }
 
 // 알림, 사용X
@@ -99,8 +103,8 @@ export const dashboardApi = {
   },
 
   // 휴가정보
-  getVacation: async (v_year: number): Promise<Vacation> => {
-    const response = await http<Vacation>(`/dashboard/vacation?v_year=${v_year}`, {
+  getVacation: async (v_year: number): Promise<VacationSummaryResponse> => {
+    const response = await http<VacationSummaryResponse>(`/dashboard/vacation?v_year=${v_year}`, {
       method: 'POST',
     });
     return response;
