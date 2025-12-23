@@ -8,6 +8,7 @@ import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { OctagonAlert, CheckCircle } from 'lucide-react';
 import type { WorkData } from '@/types/working';
+import { notificationApi } from '@/api/notification';
 
 interface OvertimeViewDialogProps {
   isOpen: boolean;
