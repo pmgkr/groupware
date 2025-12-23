@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { useToggleState } from '@/hooks/useToggleState';
 import { useUser } from '@/hooks/useUser';
 import { mapExcelToExpenseItems } from '@/utils';
-import { uploadFilesToServer, projectExpenseRegister, getBankList, type BankList, getExpenseType, type ExpenseType } from '@/api';
+import { uploadFilesToServer, projectExpenseRegister, getBankList, type BankList } from '@/api';
 import { ExpenseRow } from './_components/ExpenseRegisterRow';
 import { UploadArea, type UploadAreaHandle, type PreviewFile } from '../Expense/_components/UploadArea';
 
@@ -23,7 +23,7 @@ import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
 
-import { Add, Calendar, TooltipNoti, Delete, Close } from '@/assets/images/icons';
+import { Calendar, TooltipNoti } from '@/assets/images/icons';
 import { UserRound, FileText, OctagonAlert } from 'lucide-react';
 
 import { format } from 'date-fns';
@@ -62,7 +62,7 @@ const expenseSchema = z.object({
 export default function ProjectExpenseRegister() {
   const navigate = useNavigate();
   const { projectId } = useParams();
-  const { user_id, user_name, user_level } = useUser();
+  const { user_id, user_name, team_id, user_level } = useUser();
   const uploadRef = useRef<UploadAreaHandle>(null);
 
   // Alert & Dialog hooks
@@ -154,7 +154,7 @@ export default function ProjectExpenseRegister() {
   // Excel 업로드 시 전달받은 rowCount 반영
   useEffect(() => {
     if (state?.excelData && Array.isArray(state.excelData)) {
-      const mapped = mapExcelToExpenseItems(state.excelData);
+      const mapped = mapExcelToExpenseItems(state.excelData).filter((row) => row.title || row.price || row.total);
 
       if (mapped.length > 0) {
         setArticleCount(mapped.length);
@@ -454,12 +454,8 @@ export default function ProjectExpenseRegister() {
           console.log('✅ 등록 성공:', result);
 
           if (result.ok) {
-            //console.log('✅ 등록 성공 전체:', result); // 전체 결과 확인
             const item_count = result.count_items;
-            //const projectNumber = result.exp_id;
-            const itemSeqs = result.item_seqs; // 배열: [42, 43, 44] 같은 형태
-
-            //console.log('비용 아이템 번호들:', itemSeqs);
+            const itemSeqs = result.item_seqs; // [42, 43, 44]
 
             // payload의 items에서 pro_id 추출 (중복 제거)
             const uniqueProposalIds = new Set<number>();
@@ -469,8 +465,6 @@ export default function ProjectExpenseRegister() {
                 uniqueProposalIds.add(item.pro_id);
               }
             });
-
-            //console.log('매칭할 기안서 번호들:', Array.from(uniqueProposalIds));
 
             // 각 기안서에 대해 매칭 API 호출
             if (uniqueProposalIds.size > 0) {
@@ -510,8 +504,6 @@ export default function ProjectExpenseRegister() {
               } catch (error) {
                 console.error('❌ 매칭 요청 오류:', error);
               }
-            } else {
-              console.log('ℹ️ 매칭할 기안서 없음');
             }
 
             // 견적서 체크 비용을 작성했다면 매칭 페이지로 이동

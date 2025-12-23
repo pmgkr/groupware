@@ -1,7 +1,7 @@
 // components/ExpenseViewRow.tsx
 import { Link } from 'react-router';
 
-import { formatAmount } from '@/utils';
+import { formatAmount, normalizeAttachmentUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { TableRow, TableCell } from '@/components/ui/table';
 import type { pExpenseItemDTO } from '@/api';
@@ -41,7 +41,11 @@ export default function ExpenseViewRow({ item, onProposal }: ExpenseViewRowProps
           <ul>
             {item.attachments.map((att, idx) => (
               <li key={idx} className="overflow-hidden text-sm text-gray-800">
-                <a href={att.ea_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1">
+                <a
+                  href={normalizeAttachmentUrl(att.ea_url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1">
                   {/* 파일명 */}
                   <span className="overflow-hidden text-left text-ellipsis whitespace-nowrap hover:underline">{att.ea_fname}</span>
                 </a>
