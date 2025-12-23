@@ -103,13 +103,14 @@ export default function AdminProposalView() {
           console.log('🔍 현재 결재자:', { isFinance, isGM, userId: user.user_id });
 
           // 2. 작성자에게 알림
+          const approverName = user.user_name;
           try {
             const notificationData = {
               user_id: report.rp_user_id,
               user_name: report.rp_user_name,
               noti_target: user.user_id!,
               noti_title: report.rp_title,
-              noti_message: `${categoryLabel} 기안서를 승인하였습니다.`,
+              noti_message: `${approverName}님이 ${categoryLabel} 기안서를 승인하였습니다.`,
               noti_type: 'proposal',
               noti_url: userUrl,
             };
@@ -127,6 +128,7 @@ export default function AdminProposalView() {
             try {
               // lines에서 GM(rl_order=4) 찾기
               const gmLine = lines.find((line) => line.rl_order === 4);
+              const writerName = report.rp_user_name;
 
               if (gmLine?.rl_approver_id) {
                 await notificationApi.registerNotification({
@@ -134,7 +136,7 @@ export default function AdminProposalView() {
                   user_name: gmLine.rl_approver_name,
                   noti_target: report.rp_user_id,
                   noti_title: report.rp_title,
-                  noti_message: `${categoryLabel} 기안서 결재 요청 하였습니다.`,
+                  noti_message: `${writerName}님이 ${categoryLabel} 기안서 결재 요청 하였습니다.`,
                   noti_type: 'proposal',
                   noti_url: adminUrl,
                 });
@@ -197,14 +199,14 @@ export default function AdminProposalView() {
             if (isProject) return '프로젝트';
             return report.rp_category || '';
           })();
-
+          const approverName = user.user_name;
           try {
             await notificationApi.registerNotification({
               user_id: report.rp_user_id,
               user_name: report.rp_user_name,
               noti_target: user.user_id!,
               noti_title: report.rp_title,
-              noti_message: `${categoryLabel} 기안서를 반려하였습니다.`,
+              noti_message: `${approverName}님이 ${categoryLabel} 기안서를 반려하였습니다.`,
               noti_type: 'proposal',
               noti_url: userUrl,
             });
