@@ -9,6 +9,7 @@ const getOvertimeStatus = (status: string): WorkData['overtimeStatus'] => {
   switch (status) {
     case 'H': return '승인대기';
     case 'T': return '승인완료';
+    case 'Y': return '보상완료';
     case 'N': return '취소완료';
     default: return '신청하기';
   }

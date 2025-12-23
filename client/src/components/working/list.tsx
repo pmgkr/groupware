@@ -620,6 +620,7 @@ export default function WorkingList({
         const mapStatus = (status: string) => {
           if (status === 'H') return '승인대기';
           if (status === 'T') return '승인완료';
+          if (status === 'Y') return '보상완료';
           if (status === 'N') return '취소완료';
           return '신청하기';
         };
@@ -653,7 +654,7 @@ export default function WorkingList({
               totalHours: 0,
               totalMinutes: 0,
               overtimeStatus: overtimeDetailData?.info ? mapStatus(overtimeDetailData.info.ot_status) : 
-                            (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "취소완료",
+                            (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "보상완료" | "취소완료" | "보상대기",
               overtimeData: convertOvertimeData()
             }}
           />

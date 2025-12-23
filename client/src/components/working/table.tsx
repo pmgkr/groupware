@@ -32,6 +32,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
       case "신청하기": return "default";
       case "승인대기": return "secondary";
       case "승인완료": return "outline";
+      case "보상완료": return "outline";
       case "취소완료": return "destructive";
       default: return "secondary";
     }
@@ -43,7 +44,12 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
     
     if (workData.overtimeStatus === "신청하기") {
       setDialogOpen(true);
-    } else if (workData.overtimeStatus === "승인대기" || workData.overtimeStatus === "승인완료" || workData.overtimeStatus === "취소완료") {
+    } else if (
+      workData.overtimeStatus === "승인대기" ||
+      workData.overtimeStatus === "승인완료" ||
+      workData.overtimeStatus === "취소완료" ||
+      workData.overtimeStatus === "보상완료"
+    ) {
       setViewDialogOpen(true);
     }
   };
