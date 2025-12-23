@@ -3,7 +3,9 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { notificationApi } from '@/api/notification';
 import { getExpenseView, type ExpenseViewDTO } from '@/api/expense';
+import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
 import { confirmExpense, rejectExpense } from '@/api/manager/nexpense';
+import ReportMatched from '@components/features/Project/_components/ReportMatched';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
@@ -33,6 +35,9 @@ export default function NexpenseView() {
   const [data, setData] = useState<ExpenseViewDTO | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // 기안서 조회 State
+  const [selectedProposal, setSelectedProposal] = useState<ReportDTO | null>(null);
+  const [proposalLoading, setProposalLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false); // Dialog State
   const reasonRef = useRef<HTMLTextAreaElement | null>(null); // 반려 사유에 대한 ref
 
@@ -219,28 +224,50 @@ export default function NexpenseView() {
     }
   };
 
+  const setReportInfo = async (pro_id: number | undefined | null) => {
+    if (pro_id == null) {
+      return;
+    }
+
+    try {
+      setProposalLoading(true);
+      const res = await getReportInfo(String(pro_id));
+
+      console.log('리포트', res);
+
+      if (res.report) {
+        setSelectedProposal(res.report);
+      } else {
+        addAlert({
+          title: '기안서 조회 실패',
+          message: '기안서를 찾을 수 없습니다.',
+          icon: <OctagonAlert />,
+          duration: 1500,
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <>
-      <div className="flex items-end justify-between border-b border-b-gray-300 pb-2">
-        <div>
-          <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-950">
-            [{header.el_method}] {header.el_title} {status}
-          </h1>
-          <ul className="itmes-center flex gap-2 text-base text-gray-500">
-            <li className="text-gray-700">{header.exp_id}</li>
-            <li className="before:mr-2 before:inline-flex before:h-[3px] before:w-[3px] before:rounded-[50%] before:bg-gray-400 before:align-middle">
-              {header.user_nm}
-            </li>
-            <li className="before:mr-2 before:inline-flex before:h-[3px] before:w-[3px] before:rounded-[50%] before:bg-gray-400 before:align-middle">
-              {formatKST(header.wdate)}
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div className="flex min-h-140 flex-wrap justify-between pt-6 pb-12">
+      <div className="flex min-h-140 flex-wrap justify-between pb-12">
         <div className="w-[74%] tracking-tight">
-          <div className="w-full items-end justify-between pb-2">
+          <div className="flex w-full items-end justify-between pb-2">
             <h3 className="text-lg font-bold text-gray-800">비용 정보</h3>
+            <div className="flex items-center text-sm text-gray-500">
+              EXP #.
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="rounded-1 h-6 leading-[1.2] text-gray-700 hover:bg-white has-[>svg]:px-1.5"
+                onClick={() => copyExpId(header.exp_id)}>
+                {header.exp_id}
+                <Files className="size-3" />
+              </Button>
+            </div>
           </div>
 
           {/* 기본 정보 테이블 */}
@@ -290,20 +317,10 @@ export default function NexpenseView() {
               <TableColumnCell>{header.bank_account}</TableColumnCell>
             </TableColumnBody>
             <TableColumnHeader className="w-[12%]">
-              <TableColumnHeaderCell>비용 아이디</TableColumnHeaderCell>
+              <TableColumnHeaderCell>작성일</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>
-              <TableColumnCell>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 rounded-[4px] leading-[1.2] hover:bg-gray-200/80 has-[>svg]:px-1.5"
-                  onClick={() => copyExpId(header.exp_id)}>
-                  {header.exp_id}
-                  <Files className="size-3" />
-                </Button>
-              </TableColumnCell>
+              <TableColumnCell>{formatDate(header.wdate)}</TableColumnCell>
             </TableColumnBody>
           </TableColumn>
           <TableColumn className="border-t-0 [&_div]:text-[13px]">
@@ -336,7 +353,21 @@ export default function NexpenseView() {
               </TableColumnBody>
             </TableColumn>
           )}
-          <div className="mt-12">
+          {header.rej_reason && (
+            <TableColumn className="border-t-0 [&_div]:text-[13px]">
+              <TableColumnHeader className="w-[12%]">
+                <TableColumnHeaderCell>반려 사유</TableColumnHeaderCell>
+              </TableColumnHeader>
+              <TableColumnBody>
+                <TableColumnCell className="text-destructive leading-[1.3]">
+                  {header.rej_reason}{' '}
+                  {header.rejected_by && `- ${header.rejected_by} (${formatDate(header.edate ? header.edate : header.cdate)} 반려됨)`}
+                </TableColumnCell>
+              </TableColumnBody>
+            </TableColumn>
+          )}
+
+          <div className="mt-6">
             <h3 className="mb-2 text-lg font-bold text-gray-800">비용 항목</h3>
             <Table variant="primary" align="center" className="table-fixed">
               <TableHeader>
@@ -381,11 +412,11 @@ export default function NexpenseView() {
                       ) : (
                         <TableCell>-</TableCell>
                       )}
-                      <TableCell>
+                      <TableCell className="px-1 text-center [&_button]:rounded-xl [&_button]:border [&_button]:text-xs [&_button]:transition-none">
                         {item.pro_id ? (
-                          <Link to={`/expense/proposal/${item.pro_id}`} target="_blank" rel="noopener noreferrer">
-                            <LinkIcon className="mx-auto size-4" />
-                          </Link>
+                          <Button size="xs" variant="outline" onClick={() => setReportInfo(item.pro_id)}>
+                            기안서보기
+                          </Button>
                         ) : (
                           <span>-</span>
                         )}
@@ -429,8 +460,17 @@ export default function NexpenseView() {
             </div>
           </div>
         </div>
-        <div className="w-[24%] px-4">
-          <h2 className="mb-2 text-lg font-bold text-gray-800">로그</h2>
+        <div className="w-[24%]">
+          <div className="flex justify-between">
+            <h2 className="mb-2 text-lg font-bold text-gray-800">기안서 정보</h2>
+          </div>
+
+          <ReportMatched report={selectedProposal} />
+        </div>
+      </div>
+      {/*<div className="w-[24%] px-4">
+          
+           <h2 className="mb-2 text-lg font-bold text-gray-800">로그</h2>
           <div className="flex flex-col gap-8">
             {logs.map((log) => (
               <div
@@ -460,8 +500,8 @@ export default function NexpenseView() {
               </div>
             ))}
           </div>
-        </div>
-      </div>
+        </div> 
+      </div>*/}
 
       {/* ---------------- 증빙 사유 다이얼로그 ---------------- */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

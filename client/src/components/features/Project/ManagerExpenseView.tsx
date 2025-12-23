@@ -1,15 +1,23 @@
 import { useRef, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
+import { formatAmount } from '@/utils';
+import { format } from 'date-fns';
+
 import { notificationApi } from '@/api/notification';
-import { type pExpenseViewDTO } from '@/api/project/expense';
+import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
 import { getManagerExpenseView, confirmExpense, rejectExpense } from '@/api/manager/pexpense';
+
+import { useProjectExpenseMatching } from './hooks/useProjectExpenseMatching';
+
+import EstimateMatching from './_components/EstimateMatching';
+import EstimateMatched from './_components/EstimateMatched';
+import ExpenseViewRow from './_components/ExpenseViewRow';
+import ExpenseViewEstRow from './_components/ExpenseViewEstRow';
+import ReportMatched from './_components/ReportMatched';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
-import { statusIconMap, getLogMessage } from '@/components/features/Expense/utils/statusUtils';
-import { formatKST, formatAmount } from '@/utils';
-import { format } from 'date-fns';
 
 import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
@@ -18,44 +26,56 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import { Download } from '@/assets/images/icons';
-import { File, Link as LinkIcon, OctagonAlert, Files } from 'lucide-react';
+import { File, Link as LinkIcon, OctagonAlert, Files, SquareArrowOutUpRight } from 'lucide-react';
 
 export default function PexpenseView() {
   const { expId } = useParams();
-  const { user_id } = useUser();
   const navigate = useNavigate();
+  const { user_id } = useUser();
   const { search } = useLocation();
 
   const { addAlert } = useAppAlert();
   const { addDialog } = useAppDialog();
 
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<pExpenseViewDTO | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-
   const [dialogOpen, setDialogOpen] = useState(false); // Dialog State
   const reasonRef = useRef<HTMLTextAreaElement | null>(null); // 반려 사유에 대한 ref
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // 기안서 조회 State
+  const [selectedProposal, setSelectedProposal] = useState<ReportDTO | null>(null);
+  const [proposalLoading, setProposalLoading] = useState(false);
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
     const date = typeof d === 'string' ? new Date(d) : d;
     return format(date, 'yyyy-MM-dd');
   };
+  /** -----------------------------------------
+     *  핵심 매칭 로직 공유 훅
+     ----------------------------------------- */
+  const {
+    data,
+    loading,
+    refresh,
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await getManagerExpenseView(expId);
+    expenseInfo,
+    matchedItems,
+    dbMatchedItems,
+    matchedMap,
 
-        console.log(res);
-        setData(res);
-      } catch (err) {
-        console.error('❌ 비용 상세 조회 실패:', err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [expId, refreshKey]);
+    openDialog,
+    openEstimateDialog,
+
+    completeMatching,
+    resetMatching,
+    clearMatching,
+
+    loadMatchedItems,
+    deleteMatching,
+
+    selectedExpSeq,
+    setSelectedEstId,
+  } = useProjectExpenseMatching(expId, getManagerExpenseView);
 
   if (loading) return <div className="flex h-[50vh] items-center justify-center text-gray-500">데이터를 불러오는 중입니다...</div>;
 
@@ -71,7 +91,7 @@ export default function PexpenseView() {
       </div>
     );
 
-  const { header, items, logs } = data;
+  const { header, items, project } = data;
 
   // .총 비용 계산
   const totals = items.reduce(
@@ -156,6 +176,8 @@ export default function PexpenseView() {
             icon: <OctagonAlert />,
             duration: 2000,
           });
+        } finally {
+          refresh();
         }
       },
     });
@@ -198,6 +220,8 @@ export default function PexpenseView() {
         icon: <OctagonAlert />,
         duration: 2000,
       });
+    } finally {
+      refresh();
     }
   };
 
@@ -221,28 +245,39 @@ export default function PexpenseView() {
     }
   };
 
+  const setReportInfo = async (pro_id: number | undefined | null) => {
+    if (pro_id == null) {
+      return;
+    }
+
+    try {
+      setProposalLoading(true);
+      const res = await getReportInfo(String(pro_id));
+      setSelectedProposal(res.report);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <>
-      <div className="flex items-end justify-between border-b border-b-gray-300 pb-2">
-        <div>
-          <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-950">
-            [{header.el_method}] {header.el_title} {status}
-          </h1>
-          <ul className="itmes-center flex gap-2 text-base text-gray-500">
-            <li className="text-gray-700">{header.exp_id}</li>
-            <li className="before:mr-2 before:inline-flex before:h-[3px] before:w-[3px] before:rounded-[50%] before:bg-gray-400 before:align-middle">
-              {header.user_nm}
-            </li>
-            <li className="before:mr-2 before:inline-flex before:h-[3px] before:w-[3px] before:rounded-[50%] before:bg-gray-400 before:align-middle">
-              {formatKST(header.wdate)}
-            </li>
-          </ul>
-        </div>
-      </div>
       <div className="flex min-h-140 flex-wrap justify-between pt-6 pb-12">
         <div className="w-[74%] tracking-tight">
-          <div className="w-full items-end justify-between pb-2">
+          <div className="flex w-full items-end justify-between pb-2">
             <h3 className="text-lg font-bold text-gray-800">비용 정보</h3>
+
+            <div className="flex items-center text-sm text-gray-500">
+              EXP #.
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="rounded-1 h-6 leading-[1.2] text-gray-700 hover:bg-white has-[>svg]:px-1.5"
+                onClick={() => copyExpId(header.exp_id)}>
+                {header.exp_id}
+                <Files className="size-3" />
+              </Button>
+            </div>
           </div>
 
           {/* 기본 정보 테이블 */}
@@ -252,6 +287,25 @@ export default function PexpenseView() {
             </TableColumnHeader>
             <TableColumnBody>
               <TableColumnCell>{header.el_title}</TableColumnCell>
+            </TableColumnBody>
+          </TableColumn>
+
+          <TableColumn className="border-t-0 [&_div]:text-[13px]">
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>프로젝트명</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>
+                <Link to={`/project/${header.project_id}`} target="_blank" className="flex items-center gap-1 hover:underline">
+                  {project.project_title} <SquareArrowOutUpRight className="size-3" />
+                </Link>
+              </TableColumnCell>
+            </TableColumnBody>
+            <TableColumnHeader className="w-[12%]">
+              <TableColumnHeaderCell>클라이언트</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody className="w-[21.33%] flex-none">
+              <TableColumnCell>{project.client_nm}</TableColumnCell>
             </TableColumnBody>
           </TableColumn>
 
@@ -277,6 +331,7 @@ export default function PexpenseView() {
               <TableColumnCell>{status}</TableColumnCell>
             </TableColumnBody>
           </TableColumn>
+
           <TableColumn className="border-t-0 [&_div]:text-[13px]">
             <TableColumnHeader className="w-[12%]">
               <TableColumnHeaderCell>증빙 수단</TableColumnHeaderCell>
@@ -292,20 +347,10 @@ export default function PexpenseView() {
               <TableColumnCell>{header.bank_account}</TableColumnCell>
             </TableColumnBody>
             <TableColumnHeader className="w-[12%]">
-              <TableColumnHeaderCell>비용 아이디</TableColumnHeaderCell>
+              <TableColumnHeaderCell>작성일</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>
-              <TableColumnCell>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 rounded-[4px] leading-[1.2] hover:bg-gray-200/80 has-[>svg]:px-1.5"
-                  onClick={() => copyExpId(header.exp_id)}>
-                  {header.exp_id}
-                  <Files className="size-3" />
-                </Button>
-              </TableColumnCell>
+              <TableColumnCell>{formatDate(header.wdate)}</TableColumnCell>
             </TableColumnBody>
           </TableColumn>
           <TableColumn className="border-t-0 [&_div]:text-[13px]">
@@ -338,78 +383,86 @@ export default function PexpenseView() {
               </TableColumnBody>
             </TableColumn>
           )}
-          <div className="mt-12">
+          {header.rej_reason && (
+            <TableColumn className="border-t-0 [&_div]:text-[13px]">
+              <TableColumnHeader className="w-[12%]">
+                <TableColumnHeaderCell>반려 사유</TableColumnHeaderCell>
+              </TableColumnHeader>
+              <TableColumnBody>
+                <TableColumnCell className="text-destructive leading-[1.3]">
+                  {header.rej_reason} {header.rejected_by && `- ${header.rejected_by}`}
+                </TableColumnCell>
+              </TableColumnBody>
+            </TableColumn>
+          )}
+
+          <div className="mt-6">
             <h3 className="mb-2 text-lg font-bold text-gray-800">비용 항목</h3>
             <Table variant="primary" align="center" className="table-fixed">
               <TableHeader>
                 <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+                  <TableHead className="w-[10%]">비용 용도</TableHead>
                   <TableHead className="w-[20%]">가맹점명</TableHead>
                   <TableHead className="w-[10%] px-4">매입일자</TableHead>
-                  <TableHead className="w-[14%]">금액</TableHead>
+                  <TableHead className="w-[14%]">금액 (A)</TableHead>
                   <TableHead className="w-[10%]">세금</TableHead>
                   <TableHead className="w-[14%]">합계</TableHead>
-                  <TableHead className="w-[24%]">증빙자료</TableHead>
-                  <TableHead className="w-[8%]">기안서</TableHead>
+                  <TableHead className="w-[20%]">증빙자료</TableHead>
+                  <TableHead className="w-[8%]">{data.header.is_estimate === 'Y' ? '견적서' : '기안서'}</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
-                {items.map((item) => {
-                  return (
-                    <TableRow key={item.seq} className="[&_td]:text-[13px]">
-                      <TableCell>{item.ei_title}</TableCell>
-                      <TableCell className="px-4">{formatDate(item.ei_pdate)}</TableCell>
-                      <TableCell className="text-right">{formatAmount(item.ei_amount)}원</TableCell>
-                      <TableCell className="text-right">{item.ei_tax === 0 ? 0 : `${formatAmount(item.ei_tax)}원`}</TableCell>
-                      <TableCell className="text-right">{formatAmount(item.ei_total)}원</TableCell>
-                      {item.attachments && item.attachments.length > 0 ? (
-                        <TableCell>
-                          <ul>
-                            {item.attachments.map((att, idx) => (
-                              <li key={idx} className="overflow-hidden text-sm text-gray-800">
-                                <a
-                                  href={`${import.meta.env.VITE_API_ORIGIN}/uploads/nexpense/${att.ea_sname}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center justify-center gap-1">
-                                  <File className="size-3.5 shrink-0" />
-                                  <span className="overflow-hidden text-left text-ellipsis whitespace-nowrap hover:underline">
-                                    {att.ea_fname}
-                                  </span>
-                                </a>
-                              </li>
-                            ))}
-                          </ul>
-                        </TableCell>
-                      ) : (
-                        <TableCell>-</TableCell>
-                      )}
-                      <TableCell>
-                        {item.pro_id ? (
-                          <Link to={`/expense/proposal/${item.pro_id}`} target="_blank" rel="noopener noreferrer">
-                            <LinkIcon className="mx-auto size-4" />
-                          </Link>
-                        ) : (
-                          <span>-</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                <TableRow className="bg-primary-blue-50">
-                  <TableCell className="font-semibold">총 비용</TableCell>
-                  <TableCell className="text-left"></TableCell>
+                {data.header.is_estimate === 'Y'
+                  ? items.map((item, idx) => {
+                      const alreadyMatched = (item.matchedList?.length ?? 0) > 0;
+                      const isMatched = (matchedMap[item.seq]?.length ?? 0) > 0;
+                      const isMatching = expenseInfo?.seq === item.seq && matchedItems.length > 0;
+                      const isWaiting = Boolean(expenseInfo && expenseInfo.seq !== item.seq && matchedItems.length > 0);
+
+                      return (
+                        <ExpenseViewEstRow
+                          key={item.seq}
+                          item={item}
+                          idx={idx}
+                          onMatched={() => loadMatchedItems(item)}
+                          onMatching={() => {
+                            if (matchedMap[item.seq]?.length) {
+                              // 첫 번째 매칭된 항목의 est_id 사용
+                              const firstItem = matchedMap[item.seq][0];
+                              if (firstItem?.est_id) {
+                                setSelectedEstId(firstItem.est_id);
+                              }
+                            }
+
+                            openDialog();
+                          }}
+                          onSetMatching={() => openEstimateDialog(item.seq, item.ei_amount)}
+                          alreadyMatched={alreadyMatched}
+                          isMatched={isMatched}
+                          isMatching={isMatching}
+                          isWaiting={isWaiting}
+                        />
+                      );
+                    })
+                  : items.map((item) => <ExpenseViewRow key={item.seq} item={item} onProposal={() => setReportInfo(item.pro_id)} />)}
+
+                <TableRow className="bg-primary-blue-50 hover:bg-primary-blue-50 [&_td]:py-3">
+                  <TableCell className="font-semibold" colSpan={3}>
+                    총 비용
+                  </TableCell>
                   <TableCell className="text-right font-semibold">{formatAmount(totals.amount)}원</TableCell>
                   <TableCell className="text-right font-semibold">{formatAmount(totals.tax)}원</TableCell>
                   <TableCell className="text-right font-semibold">{formatAmount(totals.total)}원</TableCell>
-                  <TableCell className="text-left"></TableCell>
-                  <TableCell className="text-left"></TableCell>
+                  <TableCell colSpan={2} />
                 </TableRow>
               </TableBody>
             </Table>
           </div>
+
           <div className="mt-8 flex w-full items-center justify-between">
             <div className="flex gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/manager/nexpense${search}`)}>
+              <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/manager/pexpense${search}`)}>
                 목록
               </Button>
             </div>
@@ -430,6 +483,37 @@ export default function PexpenseView() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* ---------------------- Right: 매칭 영역 ---------------------- */}
+        <div className="w-[24%]">
+          {data.header.is_estimate === 'Y' ? (
+            <>
+              <div className="flex justify-between">
+                <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 매칭</h2>
+              </div>
+
+              {dbMatchedItems.length > 0 ? (
+                <EstimateMatched items={dbMatchedItems} project_id={header.project_id} />
+              ) : (
+                <EstimateMatching
+                  matchedItems={matchedItems}
+                  expenseInfo={expenseInfo}
+                  onReset={resetMatching}
+                  onRefresh={() => refresh()}
+                  onMatched={completeMatching}
+                />
+              )}
+            </>
+          ) : (
+            // 기안서 정보
+            <>
+              <div className="flex justify-between">
+                <h2 className="mb-2 text-lg font-bold text-gray-800">기안서 정보</h2>
+              </div>
+              <ReportMatched report={selectedProposal} />
+            </>
+          )}
         </div>
       </div>
 
