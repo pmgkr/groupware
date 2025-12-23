@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Button } from '@components/ui/button';
-import { File, CircleX } from '@/assets/images/icons';
+import { File as FileIcon, CircleX } from '@/assets/images/icons';
 import { validateFiles } from '@/utils';
 
 export type PreviewFile = File | { id: number; name: string; nf_name: string; size?: number; type?: string };
@@ -53,7 +53,7 @@ export function BoardAttachFile({ files, setFiles, onRemoveExisting }: BoardAtta
   return (
     <div className="flex gap-1.5">
       <Button type="button" variant="outline" className="[&]:border-primary-blue-500 text-primary-blue-500" onClick={handleAttachFile}>
-        <File className="mr-1 size-6" />
+        {/* <File className="mr-1 size-6" /> */}
         파일 첨부
       </Button>
 
@@ -63,7 +63,16 @@ export function BoardAttachFile({ files, setFiles, onRemoveExisting }: BoardAtta
         {files.map((file) => (
           <div key={file.name} className="flex items-center rounded-md border border-gray-300 p-1 pl-4">
             <span className="text-base text-gray-500">{file.name}</span>
-            <Button variant="svgIcon" size="icon" onClick={() => handleRemove(file)}>
+            <Button
+              type="button"
+              variant="svgIcon"
+              size="icon"
+              onClick={(e) => {
+                console.log('button type:', (e.target as HTMLButtonElement).type);
+                e.preventDefault();
+                e.stopPropagation();
+                handleRemove(file);
+              }}>
               <CircleX className="size-4" />
             </Button>
           </div>
