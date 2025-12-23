@@ -1,6 +1,8 @@
 import { useRef, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
+import { getGrowingYears } from '@/utils';
+
 import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
@@ -20,10 +22,12 @@ export default function Nexpense() {
   // ============================
   // Filter States
   // ============================
+  const currentYear = String(new Date().getFullYear()); // 올해 구하기
+  const yearOptions = getGrowingYears(); // yearOptions
+  const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || currentYear);
   const [activeTab, setActiveTab] = useState<'all' | 'claimed'>(() => {
     return (searchParams.get('tab') as 'all' | 'claimed') || 'claimed';
   });
-  const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || '2025');
   const [selectedType, setSelectedType] = useState<string[]>(() => searchParams.get('type')?.split(',') ?? []);
   const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('status')?.split(',') ?? []);
   const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
@@ -144,7 +148,7 @@ export default function Nexpense() {
   };
 
   const resetAllFilters = () => {
-    setSelectedYear('2025');
+    setSelectedYear(currentYear);
     setSelectedType([]);
     setSelectedStatus([]);
     setSelectedProof([]);
@@ -241,6 +245,7 @@ export default function Nexpense() {
           handleTabChange(tab);
         }}
         selectedYear={selectedYear}
+        yearOptions={yearOptions}
         selectedType={selectedType}
         selectedStatus={selectedStatus}
         selectedProof={selectedProof}
