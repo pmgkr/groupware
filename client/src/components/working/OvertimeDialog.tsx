@@ -17,7 +17,8 @@ import { getClientList, type ClientList } from '@/api/common/project';
 import { findManager } from '@/utils/managerHelper';
 import { SearchableSelect } from '@components/ui/SearchableSelect';
 import { useAppAlert } from '@components/common/ui/AppAlert/AppAlert';
-import { CheckCircle, OctagonAlert } from 'lucide-react';
+import { CheckCircle, InfoIcon, OctagonAlert } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@components/ui/tooltip';
 
 interface OvertimeDialogProps {
   isOpen: boolean;
@@ -198,21 +199,32 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     setErrors({});
   };
 
-  const isWeekendOrHoliday = (dayOfWeek: string, workType: string) => {
+  
+  const isSaturday = (dayOfWeek: string) => dayOfWeek === '토';
+  const isSundayOrHoliday = (dayOfWeek: string, workType: string, isHoliday?: boolean, holidayName?: string | null) => {
+    if (isHoliday || holidayName) return true;
+    return dayOfWeek === '일' || workType === '공휴일';
+  };
+
+  const isWeekendOrHoliday = (dayOfWeek: string, workType: string, isHoliday?: boolean, holidayName?: string | null) => {
+    if (isHoliday || holidayName) return true;
     return dayOfWeek === '토' || dayOfWeek === '일' || workType === '공휴일';
   };
 
   const getOvertimeLabel = () => {
     if (selectedDay) {
-      return isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) ? '휴일근무' : '연장근무';
+      return isWeekendOrHoliday(
+        selectedDay.dayOfWeek,
+        selectedDay.workType,
+        selectedDay.isHoliday,
+        selectedDay.holidayName
+      )
+        ? '휴일근무'
+        : '연장근무';
     }
     return '연장근무';
   };
 
-  const isSaturday = (dayOfWeek: string) => dayOfWeek === '토';
-  const isSundayOrHoliday = (dayOfWeek: string, workType: string) => {
-    return dayOfWeek === '일' || workType === '공휴일';
-  };
 
   const formatTimeText = (hour?: string, minute?: string) => {
     if (!hour) return '';
@@ -225,7 +237,12 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     if (!selectedDay || !user?.user_id) return;
 
     const overtimeDateText = dayjs(selectedDay.date).format('YYYY-MM-DD');
-    const isWeekendOrHolidayDay = isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType);
+    const isWeekendOrHolidayDay = isWeekendOrHoliday(
+      selectedDay.dayOfWeek,
+      selectedDay.workType,
+      selectedDay.isHoliday,
+      selectedDay.holidayName
+    );
     const startText = formatTimeText(formData.expectedStartTime, formData.expectedStartTimeMinute);
     const endText = formatTimeText(formData.expectedEndTime, formData.expectedEndMinute);
     const timeRange = isWeekendOrHolidayDay
@@ -302,7 +319,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
         </DialogHeader>
         <div className="space-y-4 py-4">
           {/* 평일 (월-금) 신청 시 표시되는 내용 */}
-          {selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
+            {selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
             <>
               <div className="space-y-3">
                 <Label htmlFor="expected-end-time">예상 퇴근 시간을 선택해주세요.</Label>
@@ -416,10 +433,10 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
           )}
 
           {/* 주말 (토, 일) 또는 공휴일 신청 시 표시되는 내용 */}
-          {selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
+          {selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
             <>
               <div className="space-y-3">
-                <Label htmlFor="expected-start-time">예상 출근 시간을 선택해주세요.</Label>
+                <Label htmlFor="expected-start-time">출근 시간을 선택해주세요.</Label>
                 <div className="flex gap-2">
                   <Select
                     key="expected-start-time"
@@ -481,7 +498,17 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                 )}
               </div>
               <div className="space-y-3">
-                <Label htmlFor="expected-end-time">예상 퇴근 시간을 선택해주세요.</Label>
+                <Label htmlFor="expected-end-time">
+                  퇴근 시간을 선택해주세요.
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                    <InfoIcon className="w-4 h-4 text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>주말, 공휴일 휴게시간은 주간/야간/휴일 여부와 무관하게 ‘총 근로시간’을 기준으로 결정됨</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </Label>
                 <div className="flex gap-2">
                   <Select
                     key="expected-end-time"
@@ -563,7 +590,12 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                   )}
                   
                   {/* 일요일 또는 공휴일인 경우: 보상휴가, 수당지급 표시 */}
-                  {isSundayOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
+                  {isSundayOrHoliday(
+                    selectedDay.dayOfWeek,
+                    selectedDay.workType,
+                    selectedDay.isHoliday,
+                    selectedDay.holidayName
+                  ) && (
                     <>
                       <RadioButton
                         value="compensation_vacation"

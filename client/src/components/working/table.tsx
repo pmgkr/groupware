@@ -222,7 +222,10 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>휴게시간은 근무시간에서 제외 (12:00-13:00)</p>
+                    <p>
+                      평일 휴게시간은 근무시간에서 제외 (12:00-13:00)<br />
+                      주말, 공휴일 휴게시간은 주간/야간/휴일 여부와 무관하게 ‘총 근로시간’을 기준으로 결정됨
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </div>

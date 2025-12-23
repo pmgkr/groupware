@@ -35,7 +35,8 @@ const isWeekend = (dayOfWeek: string) => {
 };
 
 // 주말 또는 공휴일 여부 확인 함수 (폼 표시 제어용)
-const isWeekendOrHoliday = (dayOfWeek: string, workType: string) => {
+const isWeekendOrHoliday = (dayOfWeek: string, workType: string, isHoliday?: boolean, holidayName?: string | null) => {
+  if (isHoliday || holidayName) return true;
   return dayOfWeek === '토' || dayOfWeek === '일' || workType === '공휴일';
 };
 
@@ -45,7 +46,8 @@ const isSaturday = (dayOfWeek: string) => {
 };
 
 // 일요일 또는 공휴일 여부 확인 함수
-const isSundayOrHoliday = (dayOfWeek: string, workType: string) => {
+const isSundayOrHoliday = (dayOfWeek: string, workType: string, isHoliday?: boolean, holidayName?: string | null) => {
+  if (isHoliday || holidayName) return true;
   return dayOfWeek === '일' || workType === '공휴일';
 };
 
@@ -90,7 +92,7 @@ export default function OvertimeViewDialog({
   const handleCancelClick = () => {
     addDialog({
       title: '<span class="text-primary-blue-500 font-semibold">삭제 확인</span>',
-      message: '이 추가근무 신청을 정말 취소하시겠습니까?',
+      message: `이 ${getOvertimeLabel()} 신청을 정말 취소하시겠습니까?`,
       confirmText: '신청 취소하기',
       cancelText: '닫기',
       onConfirm: async () => {
@@ -99,7 +101,7 @@ export default function OvertimeViewDialog({
           
           addAlert({
             title: '삭제 완료',
-            message: '추가근무 신청이 성공적으로 취소되었습니다.',
+            message: `${getOvertimeLabel()} 신청이 성공적으로 취소되었습니다.`,
             icon: <OctagonAlert />,
             duration: 3000,
           });
@@ -130,7 +132,7 @@ export default function OvertimeViewDialog({
     
     addDialog({
       title: `<span class="text-primary-blue font-semibold">${isCompensation ? '보상 지급 확인' : '승인 확인'}</span>`,
-      message: isCompensation ? '이 보상지급 요청을 승인하시겠습니까?' : '이 추가근무 신청을 승인하시겠습니까?',
+      message: isCompensation ? '이 보상지급 요청을 승인하시겠습니까?' : `이 ${getOvertimeLabel()} 신청을 승인하시겠습니까?`,
       confirmText: isCompensation ? '보상 지급하기' : '승인하기',
       cancelText: '취소',
       onConfirm: async () => {
@@ -139,7 +141,7 @@ export default function OvertimeViewDialog({
             await onApprove();
             addAlert({
               title: '승인 완료',
-              message: '추가근무 신청이 승인되었습니다.',
+              message: `${getOvertimeLabel()} 신청이 승인되었습니다.`,
               icon: <CheckCircle />,
               duration: 3000,
             });
@@ -178,7 +180,7 @@ export default function OvertimeViewDialog({
         await onReject(rejectReason);
         addAlert({
           title: '반려 완료',
-          message: '추가근무 신청이 반려되었습니다.',
+          message: `${getOvertimeLabel()} 신청이 반려되었습니다.`,
           icon: <OctagonAlert />,
           duration: 3000,
         });
@@ -206,7 +208,7 @@ export default function OvertimeViewDialog({
     
     addDialog({
       title: `<span class="text-primary-blue font-semibold">${isCompensation ? '보상 지급 확인' : '승인 확인'}</span>`,
-      message: isCompensation ? '이 보상지급 요청을 승인하시겠습니까?' : '이 추가근무 신청을 승인하시겠습니까?',
+      message: isCompensation ? '이 보상지급 요청을 승인하시겠습니까?' : `이 ${getOvertimeLabel()} 신청을 승인하시겠습니까?`,
       confirmText: isCompensation ? '보상 지급하기' : '승인하기',
       cancelText: '취소',
       onConfirm: async () => {
@@ -252,22 +254,36 @@ export default function OvertimeViewDialog({
     workDescription: ""
   };
 
+  const getOvertimeLabel = () => {
+    if (selectedDay) {
+      return isWeekendOrHoliday(
+        selectedDay.dayOfWeek,
+        selectedDay.workType,
+        selectedDay.isHoliday,
+        selectedDay.holidayName
+      )
+        ? '휴일근무'
+        : '연장근무';
+    }
+    return '연장근무';
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>추가근무 신청 내역</DialogTitle>
+          <DialogTitle>{`${getOvertimeLabel()} 신청 내역`}</DialogTitle>
           <DialogDescription>
             {selectedDay && (
               <>
-                {dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} {selectedDay.dayOfWeek}요일의 추가근무 신청 내역입니다.
+                {dayjs(selectedDay.date).format('YYYY년 MM월 DD일')} {selectedDay.dayOfWeek}요일의 {getOvertimeLabel()} 신청 내역입니다.
               </>
             )}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           {/* 평일 (월-금) 신청 내역 */}
-          {selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
+          {selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="expected-end-time">예상 퇴근 시간</Label>
@@ -324,17 +340,20 @@ export default function OvertimeViewDialog({
           )}
 
           {/* 주말 (토, 일) 또는 공휴일 신청 내역 */}
-          {selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
+          {selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="expected-start-time">예상 업무 시간</Label>
-                <div className="flex-1 flex gap-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
+                <Label htmlFor="expected-start-time">근무 시간</Label>
+                <div className="flex-1 flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
                   <span className="text-base">
                     {overtimeData.expectedStartTime}시 {overtimeData.expectedStartTimeMinute}분
                   </span>
                   -
                   <span className="text-base">
                     {overtimeData.expectedEndTime}시 {overtimeData.expectedEndMinute}분
+                  </span>
+                  <span className="text-base text-gray-600">
+                    (인정 근무시간: <span className="text-primary-blue-500">{overtimeData.overtimeHours}시간 {overtimeData.overtimeMinutes}분</span>)
                   </span>
                 </div>
               </div>
@@ -354,7 +373,7 @@ export default function OvertimeViewDialog({
                   )}
                   
                   {/* 일요일 또는 공휴일인 경우: 보상휴가, 수당지급 표시 */}
-                  {isSundayOrHoliday(selectedDay.dayOfWeek, selectedDay.workType) && (
+                  {isSundayOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
                     <>
                       <div className={`px-4 py-2 rounded-md border ${
                         overtimeData.overtimeType === 'compensation_vacation' 
@@ -386,7 +405,7 @@ export default function OvertimeViewDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="work-description">작업 내용</Label>
+            <Label htmlFor="work-description">업무 내용</Label>
             <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100 min-h-[80px] break-all whitespace-pre-wrap">
               <span className="text-base">{overtimeData.workDescription}</span>
             </div>
