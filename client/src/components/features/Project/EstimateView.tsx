@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } fr
 import { Link, useOutletContext, useNavigate, useParams } from 'react-router';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { getEstimateView, type EstimateViewDTO } from '@/api';
-import { formatKST, formatAmount, displayUnitPrice } from '@/utils';
+import { formatKST, formatAmount, displayUnitPrice, normalizeAttachmentUrl } from '@/utils';
 
 import ExpenseItemDialog from './_components/ExpenseItemDialog';
 
@@ -190,9 +190,8 @@ export default function EstimateView() {
                       </span>
                       <div className="flex flex-1 flex-col items-stretch overflow-hidden">
                         <a
-                          href={`${import.meta.env.VITE_API_ORIGIN}/uploads/est_evidence/${e.ee_sname}`}
+                          href={normalizeAttachmentUrl(e.ee_sname)}
                           target="_blank"
-                          download={e.ee_fname}
                           className="block overflow-hidden text-ellipsis whitespace-nowrap hover:underline">
                           {e.ee_fname}
                         </a>
