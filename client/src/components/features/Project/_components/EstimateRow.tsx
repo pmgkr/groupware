@@ -54,8 +54,6 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
 
   const initialRow = (initialItems ?? []).find((r) => r.seq === row.seq);
 
-  console.log(initialRow, row);
-
   const normalizeValue = (v: any) => {
     if (v === null || v === undefined) return '';
     return v.toString().trim();
