@@ -48,7 +48,7 @@ export const getWorkTypeKorean = (
     switch (detailType) {
       case 'remote': return '재택근무';
       case 'field': return '외부근무';
-      default: return '이벤트';
+      default: return '기타일정';
     }
   }
 
