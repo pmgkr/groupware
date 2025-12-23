@@ -22,6 +22,7 @@ export const projectRoutes: RouteObject = {
     nav: [
       { to: '/project', label: '프로젝트 관리', end: true },
       { to: '/project/proposal', label: '프로젝트 기안' },
+      { to: '/project/exp_mine', label: '프로젝트 비용 내역' },
     ],
   },
   children: [

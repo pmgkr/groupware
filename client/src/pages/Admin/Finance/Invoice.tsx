@@ -391,7 +391,7 @@ export default function Invoice() {
           <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className="w-[8%]">인보이스 #</TableHead>
             <TableHead>인보이스 제목</TableHead>
-            <TableHead className="w-[10%]">클라이언트</TableHead>
+            <TableHead className="w-[10%]">인보이스 수신</TableHead>
             <TableHead className="w-[8%]">공급가액</TableHead>
             <TableHead className="w-[8%]">세금</TableHead>
             <TableHead className="w-[9%]">합계</TableHead>

@@ -68,6 +68,7 @@ function buildInvoicePayload(v: InvoiceFormValues, projectId: string, clientId: 
       project_id: projectId,
       invoice_title: v.invoice_title,
       client_id: clientId,
+      client_nm: v.client_nm,
       contact_nm: v.contact_nm,
       contact_email: v.contact_email,
       contact_tel: v.contact_tel ?? null,
@@ -97,6 +98,8 @@ export default function InvoiceCreateForm({ onClose, onSuccess }: Props) {
   type RegisterStep = 'info' | 'items' | 'confirm';
   const [registerStep, setRegisterStep] = useState<RegisterStep>('info');
   const [attachments, setAttachments] = useState<PreviewFile[]>([]);
+
+  console.log(data);
 
   const form = useForm<InvoiceFormValues>({
     mode: 'onSubmit',
