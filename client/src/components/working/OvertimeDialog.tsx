@@ -172,7 +172,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
       onSave(formData);
       addAlert({
         title: '추가근무 신청 완료',
-        message: '추가근무 신청이 성공적으로 완료되었습니다.',
+        message: '추가근무 신청이 완료되었습니다.',
         icon: <CheckCircle />,
         duration: 3000,
       });
@@ -238,7 +238,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
             user_name: manager.name,
             noti_target: user.user_id,
             noti_title: notiTitle,
-            noti_message: `추가근무를 신청했습니다.`,
+            noti_message: `${user?.user_name}님이 추가근무를 신청했습니다.`,
             noti_type: 'overtime',
             noti_url: '/manager/overtime',
           });

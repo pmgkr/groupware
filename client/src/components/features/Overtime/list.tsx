@@ -9,6 +9,7 @@ import { workingApi } from '@/api/working';
 import { managerOvertimeApi } from '@/api/manager/overtime';
 import { adminOvertimeApi, type overtimeItem } from '@/api/admin/overtime';
 import { getTeams } from '@/api/admin/teams';
+import { getTeams as getManagerTeams } from '@/api/manager/teams';
 import { getTeams as getCommonTeams } from '@/api/teams';
 import type { OvertimeItem } from '@/api/working';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -113,7 +114,7 @@ export default function OvertimeList({
       try {
         const teamList = isPage === 'admin' 
           ? await getTeams({})
-          : await getCommonTeams({});
+          : await getManagerTeams({});
         setTeams(teamList.map(t => ({ team_id: t.team_id, team_name: t.team_name })));
         teamsLoadedRef.current = true;
       } catch (error) {
@@ -124,9 +125,15 @@ export default function OvertimeList({
 
   // teamIds를 문자열로 변환하여 안정적인 의존성 생성
   const teamIdsKey = useMemo(() => {
-    if (teamIds.length === 0) return 'all';
-    return [...teamIds].sort((a, b) => a - b).join(',');
-  }, [teamIds]);
+    const ids = [...teamIds].sort((a, b) => a - b).join(',');
+    // 팀 미선택 시, 관리중인 팀 목록이 로드된 상태라면 그 목록을 키에 포함시킴
+    // 이렇게 해야 초기 로딩 시 teams가 로드된 후 데이터를 다시 페치함
+    if (teamIds.length === 0 && teams.length > 0) {
+      const managedIds = teams.map(t => t.team_id).sort((a, b) => a - b).join(',');
+      return `all-${managedIds}`;
+    }
+    return ids || 'all';
+  }, [teamIds, teams]);
 
   // 데이터 조회 함수
   const fetchOvertimeData = useCallback(async () => {
