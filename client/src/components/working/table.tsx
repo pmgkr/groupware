@@ -105,21 +105,22 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               {/* 항목 */}
             </th>
             {data.map((row, index) => {
-              const getDayColor = (dayOfWeek: string) => {
-                // if (dayOfWeek === '토') return 'text-primary-blue-500';
-                // if (dayOfWeek === '일') return 'text-[var(--negative-base)]';
+              const getDayColor = (dayOfWeek: string, holidayName?: string) => {
+                if (holidayName) return 'text-red-600';
+                if (dayOfWeek === '토') return 'text-primary-blue-500';
+                if (dayOfWeek === '일') return 'text-red-600';
                 return 'text-gray-800';
               };
               
               return (
                 <th key={index} className={`w-[185px] px-6 py-3 text-center text-[13px] font-medium text-gray-500 uppercase tracking-wider ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                   <div className="flex flex-col">
-                    <span className={`text-[13px] ${row.holidayName ? 'text-red-600' : 'text-gray-800'}`}>
-                      {row.holidayName 
+                    <p className={`flex flex-col items-center text-[13px] ${getDayColor(row.dayOfWeek, row.holidayName ?? undefined)}`}>
+                      {row.holidayName
                         ? `${dayjs(row.date).format("MM/DD")} ${row.holidayName}`
                         : dayjs(row.date).format("MM/DD")}
-                    </span>
-                    <span className={`text-[13px] font-semibold ${getDayColor(row.dayOfWeek)}`}>{row.dayOfWeek}요일</span>
+                      <span className={`font-semibold ${getDayColor(row.dayOfWeek, row.holidayName ?? undefined)}`}>{row.dayOfWeek}요일</span>
+                    </p>
                   </div>
                 </th>
               );
