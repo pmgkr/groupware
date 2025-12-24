@@ -188,7 +188,7 @@ export default function EstimatePreview() {
 
                 return {
                   ee_fname: f.fname,
-                  ee_sname: f.sname,
+                  ee_sname: f.url,
                   ee_size: file.size,
                   ee_type: file.type,
                 };

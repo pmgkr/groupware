@@ -1,11 +1,12 @@
+// components/ExpenseListFilter.tsx
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@/components/multiselect/multi-select';
 import { RefreshCw } from 'lucide-react';
 
 interface ExpenseListFilterProps {
-  activeTab: 'all' | 'claimed';
-  onTabChange: (tab: 'all' | 'claimed') => void;
+  activeTab: 'pexpense' | 'nexpense';
+  onTabChange: (tab: 'pexpense' | 'nexpense') => void;
 
   selectedYear: string;
   yearOptions: string[];
@@ -20,7 +21,6 @@ interface ExpenseListFilterProps {
   proofStatusRef: React.RefObject<MultiSelectRef | null>;
 
   typeOptions: MultiSelectOption[];
-  checkedItems: number[];
 
   onYearChange: (val: string) => void;
   onTypeChange: (val: string[]) => void;
@@ -29,16 +29,14 @@ interface ExpenseListFilterProps {
   onProofStatusChange: (val: string[]) => void;
 
   onRefresh: () => void;
-  onConfirm: () => void;
 }
 
-export function ManagerListFilter({
+export function ExpenseMineFilter({
   activeTab,
   onTabChange,
 
   selectedYear,
   yearOptions,
-
   selectedType,
   selectedStatus,
   selectedProof,
@@ -50,8 +48,6 @@ export function ManagerListFilter({
 
   typeOptions,
 
-  checkedItems,
-
   onYearChange,
   onTypeChange,
   onStatusChange,
@@ -59,7 +55,6 @@ export function ManagerListFilter({
   onProofStatusChange,
 
   onRefresh,
-  onConfirm,
 }: ExpenseListFilterProps) {
   // 필터 옵션 정의
   const statusOptions: MultiSelectOption[] = [
@@ -91,23 +86,23 @@ export function ManagerListFilter({
         {/* Tabs */}
         <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
           <Button
-            onClick={() => onTabChange('claimed')}
+            onClick={() => onTabChange('pexpense')}
             className={`h-8 w-18 rounded-sm p-0 text-sm ${
-              activeTab === 'claimed'
+              activeTab === 'pexpense'
                 ? 'bg-primary hover:bg-primary active:bg-primary text-white'
                 : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
             }`}>
-            승인 대기
+            프로젝트 비용
           </Button>
 
           <Button
-            onClick={() => onTabChange('all')}
+            onClick={() => onTabChange('nexpense')}
             className={`h-8 w-18 rounded-sm p-0 text-sm ${
-              activeTab === 'all'
+              activeTab === 'nexpense'
                 ? 'bg-primary hover:bg-primary active:bg-primary text-white'
                 : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
             }`}>
-            전체
+            일반 비용
           </Button>
         </div>
 
@@ -130,11 +125,10 @@ export function ManagerListFilter({
           {/* 용도 */}
           <MultiSelect
             size="sm"
-            className="max-w-[88px] min-w-auto!"
+            className="max-w-[80px] min-w-auto!"
             placeholder="비용 용도"
             ref={typeRef}
             options={typeOptions}
-            defaultValue={selectedType}
             onValueChange={onTypeChange}
             maxCount={0}
             hideSelectAll={true}
@@ -147,11 +141,10 @@ export function ManagerListFilter({
           {/* 증빙수단 */}
           <MultiSelect
             size="sm"
-            className="max-w-[88px] min-w-auto!"
+            className="max-w-[80px] min-w-auto!"
             placeholder="증빙 수단"
             ref={proofRef}
             options={proofMethod}
-            defaultValue={selectedProof}
             onValueChange={onProofChange}
             maxCount={0}
             hideSelectAll={true}
@@ -164,11 +157,10 @@ export function ManagerListFilter({
           {/* 증빙상태 */}
           <MultiSelect
             size="sm"
-            className="max-w-[88px] min-w-auto!"
+            className="max-w-[80px] min-w-auto!"
             placeholder="증빙 상태"
             ref={proofStatusRef}
             options={proofStatusOptions}
-            defaultValue={selectedProofStatus}
             onValueChange={onProofStatusChange}
             maxCount={0}
             hideSelectAll={true}
@@ -179,23 +171,20 @@ export function ManagerListFilter({
           />
 
           {/* 상태 */}
-          {activeTab === 'all' && (
-            <MultiSelect
-              size="sm"
-              className="max-w-[88px] min-w-auto!"
-              placeholder="비용 상태"
-              ref={statusRef}
-              options={statusOptions}
-              defaultValue={selectedStatus}
-              onValueChange={onStatusChange}
-              maxCount={0}
-              hideSelectAll={true}
-              autoSize={true}
-              closeOnSelect={false}
-              searchable={false}
-              simpleSelect={true}
-            />
-          )}
+          <MultiSelect
+            size="sm"
+            className="max-w-[80px] min-w-auto!"
+            placeholder="비용 상태"
+            ref={statusRef}
+            options={statusOptions}
+            onValueChange={onStatusChange}
+            maxCount={0}
+            hideSelectAll={true}
+            autoSize={true}
+            closeOnSelect={false}
+            searchable={false}
+            simpleSelect={true}
+          />
 
           {/* 새로고침 */}
           <Button
@@ -208,11 +197,6 @@ export function ManagerListFilter({
           </Button>
         </div>
       </div>
-
-      {/* 승인하기 버튼 */}
-      <Button size="sm" onClick={onConfirm} disabled={checkedItems.length === 0}>
-        승인하기
-      </Button>
     </div>
   );
 }

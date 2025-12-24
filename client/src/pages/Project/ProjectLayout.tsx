@@ -8,6 +8,8 @@ import { getProjectView, type projectOverview } from '@/api/project';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Settings, Star, ArrowLeft } from 'lucide-react';
 
 export type ProjectLayoutContext = {
@@ -27,15 +29,27 @@ const tabs = [
   { key: 'invoice', label: '인보이스', path: 'invoice' },
 ] as const;
 
+type ProjectEditForm = {
+  project_title: string;
+  project_brand: string;
+  project_sdate: string;
+  project_edate: string;
+  client_id: number | null;
+  project_cate: string[];
+  project_status: 'in-progress' | 'closed' | 'cancelled' | 'completed' | string;
+};
+
 export default function ProjectLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { projectId } = useParams();
 
+  const [editForm, setEditForm] = useState<ProjectEditForm | null>(null); // 프로젝트 수정 폼 타입
   const [listSearch] = useState<string>(() => (location.state as any)?.fromSearch ?? ''); // ProjectList에서 전달한 필터 파라미터값
   const [data, setData] = useState<projectOverview | null>(null);
   const [members, setMembers] = useState<ProjectMemberDTO[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [projectDialog, setProjectDialog] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // 프로젝트 전체 데이터 호출
@@ -55,6 +69,7 @@ export default function ProjectLayout() {
         const bookmarkIds = bookmarkRes.map((b) => String(b.project_id));
 
         setData(projectRes);
+
         setMembers(memberRes);
         setIsFavorite(bookmarkIds.includes(projectId));
       } catch (err) {
@@ -70,6 +85,23 @@ export default function ProjectLayout() {
       }
     })();
   }, [projectId]);
+
+  // 프로젝트 상태 수정 다이얼로그 오픈 시 세팅
+  useEffect(() => {
+    if (!projectDialog || !data) return;
+
+    const { info } = data;
+
+    setEditForm({
+      project_title: info.project_title,
+      project_brand: info.project_brand,
+      project_sdate: info.project_sdate,
+      project_edate: info.project_edate,
+      client_id: info.client_id,
+      project_cate: info.project_cate ?? [],
+      project_status: info.project_status,
+    });
+  }, [projectDialog, data]);
 
   // 즐겨찾기 토글 기능
   const toggleFavorite = useCallback(async () => {
@@ -144,7 +176,12 @@ export default function ProjectLayout() {
           <Button variant="svgIcon" onClick={() => navigate(fallbackListPath)} className="text-gray-500">
             <ArrowLeft className="size-5" />
           </Button>
-          <Button variant="svgIcon" className="text-gray-500">
+          <Button
+            variant="svgIcon"
+            className="text-gray-500"
+            onClick={() => {
+              setProjectDialog(true);
+            }}>
             <Settings className="size-5" />
           </Button>
         </div>
@@ -192,6 +229,21 @@ export default function ProjectLayout() {
           }
         />
       </div>
+
+      <Dialog open={projectDialog} onOpenChange={setProjectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>프로젝트 수정</DialogTitle>
+            <DialogDescription className="leading-[1.3] break-keep">진행중인 프로젝트에 한해서 수정할 수 있습니다.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 items-start gap-4">UI 준비중</div>
+          <DialogFooter>
+            <Button type="submit" onClick={() => {}}>
+              변경사항 저장
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

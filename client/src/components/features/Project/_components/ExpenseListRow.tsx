@@ -33,7 +33,7 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
   const categories = Array.from(new Set(parseCategories(item.el_type))); // 중복 카테고리 제거
 
   // 비용 항목 & 견적서 매칭 누락 체크용
-  const matchMissing = item.alloc_status === 'empty' && item.is_estimate === 'Y' && (
+  const matchMissing = item.alloc_status === 'empty' && item.is_estimate === 'Y' && item.status !== 'Rejected' && (
     <span className="absolute -top-1 -right-1 flex size-3">
       {/* 애니메이션 */}
       <span className={`absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-500 opacity-75`}></span>

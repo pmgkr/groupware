@@ -233,7 +233,6 @@ export default function EstimateEdit() {
     if (evidenceFiles.length > 0) {
       // File 객체만 추출
       const onlyFiles = evidenceFiles.map((f) => f.file ?? f);
-      console.log(onlyFiles);
       const uploaded = await uploadFilesToServer(onlyFiles, 'est_evidence');
 
       console.log('✅ 업로드 완료:', uploaded);
@@ -244,7 +243,7 @@ export default function EstimateEdit() {
 
         return {
           ee_fname: f.fname,
-          ee_sname: f.sname,
+          ee_sname: f.url,
           ee_size: file.size,
           ee_type: file.type,
         };

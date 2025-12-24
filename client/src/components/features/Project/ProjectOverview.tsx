@@ -206,10 +206,6 @@ export default function Overview() {
           <div className="flex h-[45%] flex-col pb-4">
             <div className="mb-2 flex shrink-0 items-center justify-between">
               <h2 className="text-lg font-bold text-gray-800">프로젝트 멤버</h2>
-              <Button type="button" variant="outline" size="sm">
-                <Edit />
-                수정
-              </Button>
             </div>
             <div className="overflow-y-auto pr-2">
               <ul className="flex flex-col gap-4">
