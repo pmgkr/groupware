@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/hooks/useUser';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,75 @@ export default function Header() {
 
   const { user_name, job_role, profile_image } = useUser();
   const { logout } = useAuth();
+
+  const subMenus: Record<string, { label: string; to: string }[]> = {
+    project: [
+      { label: '프로젝트 관리', to: '/project' },
+      { label: '프로젝트 기안', to: '/project/proposal' },
+      { label: '프로젝트 비용 내역', to: '/project/exp_mine' },
+    ],
+    expense: [
+      { label: '비용 내역', to: '/expense' },
+      { label: '지출 기안', to: '/expense/proposal' },
+    ],
+    calendar: [
+      { label: '전체', to: '/calendar' },
+      { label: '내 일정', to: '/calendar/my' },
+    ],
+    office: [
+      { label: '공지사항', to: '/notice' },
+      { label: '미팅룸', to: '/meetingroom' },
+      { label: 'IT디바이스', to: '/itdevice' },
+      { label: '도서', to: '/book' },
+    ],
+    manager: [
+      { label: '근태 관리', to: '/manager/working' },
+      { label: '추가근무 관리', to: '/manager/overtime' },
+      { label: '프로젝트 비용 관리', to: '/manager/pexpense' },
+      { label: '일반 비용 관리', to: '/manager/nexpense' },
+      { label: '휴가 관리', to: '/manager/vacation' },
+      { label: '기안서 관리', to: '/manager/proposal' },
+      { label: '구성원 관리', to: '/manager/member' },
+    ],
+    admin: [
+      { label: '파이낸스', to: '/admin/finance' },
+      { label: '근태 관리', to: '/admin/working' },
+      { label: '추가근무 관리', to: '/admin/overtime' },
+      { label: '휴가 관리', to: '/admin/vacation' },
+      { label: '기안서 관리', to: '/admin/proposal' },
+      { label: '구성원 관리', to: '/admin/member' },
+    ],
+  };
+  const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
+  const [submenuTop, setSubmenuTop] = useState<number | null>(null);
+  const [submenuMaxHeight, setSubmenuMaxHeight] = useState<number | null>(null);
+  const submenuRef = useRef<HTMLDivElement | null>(null);
+  const handleMenuEnter = (key: string | null) => (e: React.MouseEvent) => {
+    setHoveredMenu(key);
+    if (key && e.currentTarget) {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      setSubmenuTop(rect.top + window.scrollY);
+      const available = window.innerHeight - rect.top - 12; // 하단 여백 확보
+      setSubmenuMaxHeight(Math.max(available, 160));
+    } else {
+      setSubmenuTop(null);
+      setSubmenuMaxHeight(null);
+    }
+  };
+
+  useLayoutEffect(() => {
+    if (!hoveredMenu || !submenuRef.current) return;
+    const rect = submenuRef.current.getBoundingClientRect();
+    const bottomLimit = window.innerHeight - 10;
+    const overflow = rect.bottom - bottomLimit;
+    if (overflow > 0) {
+      setSubmenuTop((prev) => {
+        const baseTop = prev ?? rect.top + window.scrollY;
+        const adjusted = Math.max(0, baseTop - overflow);
+        return adjusted;
+      });
+    }
+  }, [hoveredMenu, submenuTop]);
 
   // profile_image가 변경될 때만 타임스탬프를 업데이트하여 무한 로딩 방지
   // 프로필 이미지 로컬 상태 추가
@@ -109,8 +178,8 @@ export default function Header() {
           </li>
         </ul>
       </header>
-      <div className="bg-primary-blue-100 fixed top-18 left-0 h-full w-60">
-        <div className="my-8.5 px-8">
+      <div className="bg-primary-blue-100 fixed top-18 left-0 h-full w-60 max-[1440px]:w-50">
+        <div className="my-8.5 px-8" onMouseLeave={() => setHoveredMenu(null)}>
           <Link to="/mypage">
             <div className="relative mx-auto mb-2.5 aspect-square w-25 overflow-hidden rounded-[50%]">
               <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
@@ -127,6 +196,7 @@ export default function Header() {
           <li>
             <NavLink
               to="/dashboard"
+              onMouseEnter={handleMenuEnter(null)}
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
@@ -140,6 +210,7 @@ export default function Header() {
           <li>
             <NavLink
               to="/project"
+              onMouseEnter={handleMenuEnter('project')}
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
@@ -153,6 +224,7 @@ export default function Header() {
           <li>
             <NavLink
               to="/expense"
+              onMouseEnter={handleMenuEnter('expense')}
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
@@ -166,6 +238,7 @@ export default function Header() {
           <li>
             <NavLink
               to="/calendar"
+              onMouseEnter={handleMenuEnter('calendar')}
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
@@ -179,6 +252,7 @@ export default function Header() {
           <li>
             <NavLink
               to="/working"
+              onMouseEnter={handleMenuEnter('null')}
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
@@ -192,6 +266,7 @@ export default function Header() {
           <li>
             <NavLink
               to="/notice"
+              onMouseEnter={handleMenuEnter('office')}
               className={cn(
                 'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
                 isOfficeActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
@@ -203,6 +278,7 @@ export default function Header() {
           <li>
             <NavLink
               to="/manager/working"
+              onMouseEnter={handleMenuEnter('manager')}
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
@@ -216,6 +292,7 @@ export default function Header() {
           <li>
             <NavLink
               to="/admin/finance"
+              onMouseEnter={handleMenuEnter('admin')}
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
@@ -227,7 +304,37 @@ export default function Header() {
             </NavLink>
           </li>
         </ul>
+        <ul>
+          
+        </ul>
       </div>
+      {hoveredMenu && subMenus[hoveredMenu] && subMenus[hoveredMenu].length > 0 && (
+        <div
+          ref={submenuRef}
+          className="fixed left-64 rounded-sm z-8 w-auto border border-primary-blue-150 bg-primary-blue-100 max-[1440px]:left-54"
+          style={{ top: submenuTop ?? 0 }}
+          onMouseEnter={() => setHoveredMenu(hoveredMenu)}
+          onMouseLeave={() => setHoveredMenu(null)}
+        >
+          <ul className="flex flex-col gap-y-1 p-1.5">
+            {subMenus[hoveredMenu].map((item) => (
+              <li key={item.to}>
+                <NavLink
+                  to={item.to}
+                  className={({ isActive }) =>
+                    cn(
+                      'flex h-10 items-center rounded-sm px-3 text-base text-gray-900 hover:bg-white hover:text-primary max-[1440px]:px-2.5 max-[1440px]:h-9',
+                      isActive && 'bg-primary-blue-50 text-primary font-semibold'
+                    )
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </>
   );
 }

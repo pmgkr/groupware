@@ -30,7 +30,7 @@ export default function Overview({ weeklyStats, className }: OverviewProps) {
         </div>
         <WorkHoursBar 
           hours={(weeklyStats?.workHours || 0) + ((weeklyStats?.workMinutes || 0) / 60)} 
-          className="w-[400px]" 
+          className="w-[400px] max-[1440px]:w-[300px]" 
         />
       </div>
       <div className="flex flex-col justify-center border-r border-gray-300 pr-10 mr-10 w-[180px]">
