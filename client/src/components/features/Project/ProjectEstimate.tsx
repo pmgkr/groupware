@@ -164,21 +164,32 @@ export default function ProjectEstimate() {
           <DialogHeader>
             <DialogTitle>신규 견적서 등록</DialogTitle>
             <DialogDescription className="leading-[1.3]">
-              견적서 비용 혹은 견적서 외 비용을 등록할 수 있습니다.
+              신규 견적서 혹은 추가 견적서 (서브 견적서)를 등록할 수 있습니다.
               <br />
-              등록된 견적서가 있는데 신규 견적서를 등록하는 경우 매칭된 비용이 리셋됩니다.
+              <span className="text-primary">신규 견적서를 재등록하는 경우 최종견적과 매칭된 비용이 리셋</span>됩니다.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-4">
+          <div className="relative py-4">
+            <input ref={fileInputRef} type="file" accept=".xlsx, .xls" className="absolute h-0 w-0 text-[0]" onChange={handleExcelUpload} />
             <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" onClick={() => setRegisterType('Y')}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setRegisterType('Y');
+                  openFileDialog();
+                }}>
                 신규 견적서 등록
               </Button>
-              <Button variant="outline" onClick={() => setRegisterType('S')}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setRegisterType('S');
+                  openFileDialog();
+                }}>
                 추가 견적서 등록
               </Button>
             </div>
-            {registerType && (
+            {/* {registerType && (
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <Button variant="outline" onClick={openFileDialog}>
@@ -188,9 +199,9 @@ export default function ProjectEstimate() {
                     수기 입력
                   </Button>
                 </div>
-                <input ref={fileInputRef} type="file" accept=".xlsx, .xls" className="h-0 w-0 text-[0]" onChange={handleExcelUpload} />
+                
               </>
-            )}
+            )} */}
           </div>
         </DialogContent>
       </Dialog>

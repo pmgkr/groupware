@@ -131,17 +131,17 @@ export default function ProjectLayout() {
         진행중
       </Badge>
     ),
-    closed: (
+    Closed: (
       <Badge className="bg-primary-blue" size="md">
         종료됨
       </Badge>
     ),
-    completed: (
+    Completed: (
       <Badge variant="grayish" size="md">
         정산완료
       </Badge>
     ),
-    cancelled: (
+    Cancelled: (
       <Badge className="bg-destructive" size="md">
         취소됨
       </Badge>

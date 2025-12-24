@@ -1,5 +1,6 @@
-// components/features/Project/utils/colorMap.ts
+// components/features/Project/utils/chartMap.ts
 import { getProjectExpenseType } from '@/api';
+import type { InvoiceListItem } from '@/api'; // 인보이스용
 import { PIE_COLORS } from '@components/charts/colors';
 
 type ExpenseTypeDTO = {
@@ -38,6 +39,7 @@ export type PieChartItem = {
   value: number; // 차트용 값
   realValue: number; // 실제 값 (표시용)
   color: string;
+  count?: number;
 };
 
 export function buildPieChartData(data: PieItem[]): PieChartItem[] {
@@ -74,4 +76,51 @@ export function buildPieChartData(data: PieItem[]): PieChartItem[] {
   }
 
   return adjusted;
+}
+
+// 상위 6개의 리스트만 우선으로 보이고, 6개 초과되는 리스트는 '그 외'로 묶어서 보이기
+export function groupExpenseForChart(data: PieChartItem[], maxItems = 6): PieChartItem[] {
+  if (data.length <= maxItems) return data;
+
+  // realValue 기준 내림차순
+  const sorted = [...data].sort((a, b) => b.realValue - a.realValue);
+
+  const visible = sorted.slice(0, maxItems);
+  const rest = sorted.slice(maxItems);
+
+  const restTotal = rest.reduce((sum, item) => sum + item.realValue, 0);
+
+  return [
+    ...visible,
+    {
+      name: `그 외 ${rest.length}개 항목`,
+      value: restTotal,
+      realValue: restTotal,
+      color: '#aaa', // gray-400 정도 권장
+      count: rest.length,
+    },
+  ];
+}
+
+// 인보이스용 파이차트 데이터 정제
+export function buildInvoicePieChartData(invoices: InvoiceListItem[]): PieChartItem[] {
+  if (!invoices.length) return [];
+
+  // client_nm 기준 합산
+  const map = invoices.reduce<Record<string, number>>((acc, cur) => {
+    const key = cur.client_nm || '기타';
+    acc[key] = (acc[key] || 0) + Number(cur.invoice_amount || 0);
+    return acc;
+  }, {});
+
+  // 2. 금액 기준 내림차순 정렬 (색 배치 안정화)
+  const entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
+
+  // 3. PIE_COLORS를 순서대로 할당
+  return entries.map(([name, total], idx) => ({
+    name,
+    value: total,
+    realValue: total,
+    color: PIE_COLORS[idx % PIE_COLORS.length],
+  }));
 }

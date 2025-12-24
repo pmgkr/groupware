@@ -167,7 +167,7 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
             user_name: m.user_name,
             noti_target: owner.user_id,
             noti_title: projectTitle,
-            noti_message: `${owner.user_name}님이 프로젝트에 초대했습니다.`,
+            noti_message: `${owner.user_name}님의 프로젝트에 초대되었습니다.`,
             noti_type: 'project',
             noti_url: `/project/${projectId}`,
           })
