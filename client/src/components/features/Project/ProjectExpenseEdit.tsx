@@ -9,7 +9,7 @@ import { UploadArea, type UploadAreaHandle, type PreviewFile } from './_componen
 import { AttachmentFieldEdit } from './_components/AttachmentFieldEdit';
 import { useUser } from '@/hooks/useUser';
 import { formatKST, formatAmount } from '@/utils';
-import { getBankList, uploadFilesToServer, type BankList, type ExpenseViewDTO } from '@/api';
+import { getBankList, uploadFilesToServer, type BankList, type pExpenseViewDTO } from '@/api';
 import { getProjectExpenseView, projectExpenseUpdate, delProjectExpenseAttachment } from '@/api/project/expense';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -88,7 +88,7 @@ export default function ProjectExpenseEdit() {
 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [bankList, setBankList] = useState<BankList[]>([]);
-  const [data, setData] = useState<ExpenseViewDTO | null>(null);
+  const [data, setData] = useState<pExpenseViewDTO | null>(null);
   const [header, setHeader] = useState<any>(null);
   const [logs, setLogs] = useState<any>(null);
   const depositPicker = useToggleState();

@@ -136,6 +136,22 @@ export default function Overview() {
     const nonTotal = Number(expense_type.non_total || 0);
     const proposalTotal = Math.max(nonTotal - nightExpenseTotal, 0);
 
+    // 1. 전체 합계 체크
+    const totalSum = estTotal + proposalTotal + nightExpenseTotal;
+
+    // 2. 전부 0이면 placeholder 차트
+    if (totalSum === 0) {
+      setExpenseTypeChartData([
+        {
+          name: '등록된 비용 없음',
+          value: 100,
+          realValue: 0,
+          color: '#E5E7EB',
+        },
+      ]);
+      return;
+    }
+
     const items: PieItem[] = [
       {
         name: '견적서',
@@ -298,7 +314,7 @@ export default function Overview() {
                         <li key={item.name} className="flex items-center gap-2">
                           <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
                           <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{item.name}</span>
-                          {item.name !== '인보이스 없음' && (
+                          {item.name !== '등록된 비용 없음' && (
                             <span className="shrink-0 text-right font-medium">{formatAmount(item.realValue)}원</span>
                           )}
                         </li>
