@@ -107,7 +107,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
       <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-6 py-3 text-left text-[13px] font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-[13px] font-medium text-gray-500 uppercase">
               {/* 항목 */}
             </th>
             {data.map((row, index) => {
@@ -119,7 +119,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               };
               
               return (
-                <th key={index} className={`w-[185px] px-6 py-3 text-center text-[13px] font-medium text-gray-500 uppercase tracking-wider ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                <th key={index} className={`w-[185px] px-6 py-3 text-center text-[13px] font-medium text-gray-500 uppercase ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
                   <div className="flex flex-col">
                     <p className={`flex flex-col items-center text-[13px] ${getDayColor(row.dayOfWeek, row.holidayName ?? undefined)}`}>
                       {row.holidayName
