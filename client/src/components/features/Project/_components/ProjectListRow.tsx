@@ -9,12 +9,11 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { type ProjectListItem } from '@/api';
 
 // 상태 라벨/색상 매핑
-const statusMap: Record<string, { label: string; variant?: 'secondary' | 'grayish' | 'default' }> = {
-  'in-progress': { label: '진행중', variant: 'secondary' },
-  completed: { label: '종료됨', variant: 'secondary' },
-  closed: { label: '종료됨', variant: 'grayish' },
-  cancelled: { label: '취소됨', variant: 'default' },
-  done: { label: '정산완료', variant: 'grayish' },
+const statusMap = {
+  'in-progress': <Badge variant="secondary">진행중</Badge>,
+  Closed: <Badge className="bg-primary-blue">종료됨</Badge>,
+  Completed: <Badge variant="grayish">정산완료</Badge>,
+  Cancelled: <Badge className="bg-destructive">취소됨</Badge>,
 };
 
 // 카테고리 분리 유틸
@@ -29,7 +28,7 @@ type Props = {
 
 export const ProjectRow = memo(({ item, isFavorite = false, onToggleFavorite, search }: Props) => {
   const categories = parseCategories(item.project_cate);
-  const status = statusMap[item.project_status] ?? { label: item.project_status, variant: 'grayish' };
+  const status = statusMap[item.project_status as keyof typeof statusMap];
 
   return (
     <TableRow key={item.project_id} className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]">
@@ -83,9 +82,7 @@ export const ProjectRow = memo(({ item, isFavorite = false, onToggleFavorite, se
       <TableCell className="leading-[1.2]">{item.client_nm}</TableCell>
       <TableCell>{item.owner_nm}</TableCell>
       <TableCell>{item.team_name}</TableCell>
-      <TableCell>
-        <Badge variant={status.variant}>{status.label}</Badge>
-      </TableCell>
+      <TableCell>{status}</TableCell>
       <TableCell>{format(new Date(item.project_sdate), 'yyyy-MM-dd')}</TableCell>
     </TableRow>
   );

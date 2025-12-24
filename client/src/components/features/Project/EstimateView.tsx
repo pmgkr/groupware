@@ -329,7 +329,22 @@ export default function EstimateView() {
                     <TableCell className="text-right">{row.unit_price && displayUnitPrice(row.unit_price)}</TableCell>
                     <TableCell></TableCell>
                     <TableCell className="text-right font-semibold">{formatAmount(row.amount)}</TableCell>
-                    <TableCell className="text-right">{formatAmount(row.ava_amount)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {formatAmount(row.ava_amount)}{' '}
+                        <Button
+                          type="button"
+                          variant="svgIcon"
+                          size="xs"
+                          className="gap-0.5 text-xs font-normal text-gray-600 hover:text-gray-700"
+                          title="매칭된 비용 갯수"
+                          onClick={() => getExpenseItemDialog(row.seq)}
+                          disabled={row.match_count === 0}>
+                          <LinkIcon className="size-3" />
+                          {row.match_count}
+                        </Button>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">{formatAmount(row.exp_cost)}</TableCell>
                     <TableCell className="text-left">{row.remark}</TableCell>
                   </>
