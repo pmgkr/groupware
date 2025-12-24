@@ -318,7 +318,7 @@ export default function Dashboard() {
               buttonText="전체보기"
               buttonVariant="outline"
               buttonSize="sm"
-              buttonHref="/expense"
+              buttonHref="/mypage/expense"
               className="shrink-0"
             />
             <div className="overflow-y-auto">
