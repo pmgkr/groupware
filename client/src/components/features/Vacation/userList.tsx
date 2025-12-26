@@ -261,7 +261,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
           <TableHead className="w-[15%] text-center">입사일</TableHead>
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              기본연차
+              잔여기본연차
               <Tooltip>
                 <TooltipTrigger asChild>
                   <InfoIcon className="w-3 h-3 text-gray-400" />
@@ -272,7 +272,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
           </TableHead>
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              이월연차
+              잔여이월연차
               <Tooltip>
                 <TooltipTrigger asChild>
                   <InfoIcon className="w-3 h-3 text-gray-400" />
@@ -284,7 +284,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
 
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              특별대휴
+              잔여특별대휴
               <Tooltip>
                 <TooltipTrigger asChild>
                   <InfoIcon className="w-3 h-3 text-gray-400" />
@@ -296,7 +296,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
 
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              공가
+              잔여공가
               {/* <Tooltip>
                 <TooltipTrigger asChild>
                   <InfoIcon className="w-3 h-3 text-gray-400" />
