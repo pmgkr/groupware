@@ -5,6 +5,16 @@ export interface VacationLog {
   [key: string]: any;
 }
 
+// 휴가 유형 옵션 (history 등에서 재사용)
+export const SPECIAL_VACATION_TYPES = ['special', 'comp'];
+export const VACATION_TYPE_OPTIONS = [
+  { value: 'current', label: '기본연차' },
+  { value: 'carryover', label: '이월연차' },
+  { value: 'special', label: '특별대휴' },
+  { value: 'long', label: '근속휴가' },
+  { value: 'cancel', label: '취소완료' },
+];
+
 /**
  * 특정 휴가 타입들의 부여/사용 계산
  * 여러 페이지에서 재사용 가능
@@ -73,7 +83,7 @@ export function calcCurrentYear(logs: VacationLog[]) {
 export function calcAllVacation(logs: VacationLog[]) {
   const current = calcCurrentYear(logs);
   const carry = calcType(logs, ["carryover"]);
-  const special = calcType(logs, ["special"]);
+  const special = calcType(logs, SPECIAL_VACATION_TYPES);
   const official = calcType(logs, ["official"]);
 
   const totalPlus =

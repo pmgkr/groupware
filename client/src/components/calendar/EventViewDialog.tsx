@@ -63,6 +63,8 @@ export default function EventViewDialog({
   
   // 관리 권한이 있는지 확인 (어드민은 모든 팀, 매니저는 본인 팀)
   const hasAuthority = user_level === 'admin' || (user_level === 'manager' && team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId);
+  // 취소 요청 승인 버튼 노출 조건: 같은 팀의 매니저만 가능
+  const isSameTeamManager = (user_level === 'manager' || user_level === 'admin') && team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId;
   
   // 상태 표시: 본인이 보면 "취소 요청됨", 매니저가 보면 "취소 요청됨"
   const status = (() => {
@@ -305,7 +307,7 @@ export default function EventViewDialog({
         <DialogFooter>
           {status !== "취소 완료" && (
             <>
-              {hasAuthority && status === "취소 요청됨" && onApproveCancel && (
+              {isSameTeamManager && status === "취소 요청됨" && onApproveCancel && (
                 <Button variant="destructive" onClick={handleApproveCancel}>취소 요청 승인</Button>
               )}
               {/* 액션 버튼들 - 본인의 일정일 때만 표시 */}
