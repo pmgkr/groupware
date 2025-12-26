@@ -9,7 +9,7 @@ import {
   BanknoteArrowDown,
   XCircle,
   BanknoteArrowUp,
-  RefreshCcw,
+  Repeat,
   UserCheck,
   UserPlus,
   UserMinus,
@@ -70,7 +70,7 @@ export default function ProjectHistory({ logs }: Props) {
         return <FileCheck className="text-primary-blue size-4.5" />;
 
       case 'status_changed':
-        return <RefreshCcw className="text-primary-blue size-4.5" />;
+        return <Repeat className="text-primary-blue size-4.5" />;
 
       case 'owner_changed':
         return <UserCheck className="text-primary-blue size-4.5" />;
@@ -133,7 +133,7 @@ export default function ProjectHistory({ logs }: Props) {
   };
 
   if (!filteredLogs || filteredLogs.length === 0) {
-    return <div className="flex items-center justify-center py-8 text-sm text-gray-400">프로젝트 히스토리가 없습니다.</div>;
+    return <div className="flex items-center justify-center py-8 text-sm text-gray-400">프로젝트 히스토리 로딩중 . . .</div>;
   }
 
   return (

@@ -64,9 +64,9 @@ export default function Overview() {
     async function getLogs() {
       try {
         const res = await getProjectLogs(data.project_id);
+        const reverseRes = res.reverse();
 
-        console.log('로그 조회', res);
-        setLogs(res);
+        setLogs(reverseRes);
       } catch (err) {
         console.error('프로젝트 로그 조회 실패', err);
       }

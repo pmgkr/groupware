@@ -190,3 +190,10 @@ export async function getProjectLogs(projectId: string | undefined) {
 
   return http<ProjectLogs[]>(`/user/project/log/${projectId}`, { method: 'GET' });
 }
+
+// 프로젝트 상태 변경 API
+export async function ProjectStatusChange(projectId: string | undefined, status: string) {
+  if (!projectId) throw new Error('projectId가 필요합니다.');
+
+  return http<{ ok: boolean }>(`/user/project/status?project_id=${projectId}&project_status=${status}`, { method: 'GET' });
+}

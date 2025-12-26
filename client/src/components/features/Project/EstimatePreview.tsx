@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation, useOutletContext, useNavigate, useParams } from 'react-router';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { useUser } from '@/hooks/useUser';
+import { notificationApi } from '@/api/notification';
 import { mapExcelToQuotationItems, formatAmount, displayUnitPrice } from '@/utils';
 import { uploadFilesToServer, estimateRegister } from '@/api';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
@@ -228,6 +229,16 @@ export default function EstimatePreview() {
 
             if (result.ok) {
               const item_count = result.counts.items;
+
+              // await notificationApi.registerNotification({
+              //   user_id: data.header.user_id,
+              //   user_name: data.header.user_nm,
+              //   noti_target: user_id!,
+              //   noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
+              //   noti_message: `청구한 비용을 지급 완료했습니다.`,
+              //   noti_type: 'expense',
+              //   noti_url: `/project/${data.header.project_id}/expense/${data.header.seq}`,
+              // });
 
               addAlert({
                 title: '견적서 등록이 완료되었습니다.',
