@@ -82,7 +82,7 @@ export default function WorkTimeEditDialog({
             {userName} - {dayjs(date).format('YYYY년 MM월 DD일 (ddd)')}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex gap-2 justify-between w-full">
+        <div className="flex flex-col gap-4 w-full">
           <div className="space-y-2 w-full">
             <Label htmlFor="start-time">출근 시간</Label>
             <Input
