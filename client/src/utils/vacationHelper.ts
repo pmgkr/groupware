@@ -7,11 +7,12 @@ export interface VacationLog {
 
 // 휴가 유형 옵션 (history 등에서 재사용)
 export const SPECIAL_VACATION_TYPES = ['special', 'comp'];
+export const OFFICIAL_VACATION_TYPES = ['official', 'long'];
 export const VACATION_TYPE_OPTIONS = [
   { value: 'current', label: '기본연차' },
   { value: 'carryover', label: '이월연차' },
   { value: 'special', label: '특별대휴' },
-  { value: 'long', label: '근속휴가' },
+  { value: 'official', label: '공가' },
   { value: 'cancel', label: '취소완료' },
 ];
 

@@ -9,7 +9,7 @@ import { adminVacationApi } from '@/api/admin/vacation';
 import { managerVacationApi } from '@/api/manager/vacation';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { MultiSelect } from '@components/multiselect/multi-select';
-import { VACATION_TYPE_OPTIONS, SPECIAL_VACATION_TYPES } from '@/utils/vacationHelper';
+import { VACATION_TYPE_OPTIONS, SPECIAL_VACATION_TYPES, OFFICIAL_VACATION_TYPES } from '@/utils/vacationHelper';
 
 dayjs.locale('ko');
 
@@ -57,7 +57,7 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
   const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const pageSize = 15;
-  const [typeFilter, setTypeFilter] = useState<string[]>(['all']);
+  const [typeFilter, setTypeFilter] = useState<string[]>([]);
   
   // userId가 props로 전달되면 Admin/Manager API 사용, 없으면 MyPage API 사용
   const isExternalUser = !!userId;
@@ -290,7 +290,7 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
   const filteredGroupedData = useMemo(() => {
     const activeType = typeFilter.includes('all') ? 'all' : (typeFilter[0] || 'all');
     if (activeType === 'all') return groupedData;
-    const matchTypes = activeType === 'special' ? SPECIAL_VACATION_TYPES : [activeType];
+    const matchTypes = activeType === 'special' ? SPECIAL_VACATION_TYPES : activeType === 'official' ? OFFICIAL_VACATION_TYPES : [activeType];
     return groupedData.filter(group => 
       matchTypes.includes(group.item.v_type) || (group.cancelledItem && matchTypes.includes(group.cancelledItem.v_type))
     );
@@ -368,12 +368,9 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
           onValueChange={(value) => {
             let next = Array.isArray(value) ? value : [value];
 
-            // 옵션 선택 시 전체 해제, 비우면 전체 선택
+            // 옵션 선택 시 '전체'는 단일 선택만 허용
             if (next.includes('all') && next.length > 1) {
               next = next.filter(v => v !== 'all');
-            }
-            if (next.length === 0) {
-              next = ['all'];
             }
 
             setTypeFilter(next);
