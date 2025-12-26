@@ -288,11 +288,22 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
 
   // 유형 필터 적용
   const filteredGroupedData = useMemo(() => {
-    const activeType = typeFilter.includes('all') ? 'all' : (typeFilter[0] || 'all');
-    if (activeType === 'all') return groupedData;
-    const matchTypes = activeType === 'special' ? SPECIAL_VACATION_TYPES : activeType === 'official' ? OFFICIAL_VACATION_TYPES : [activeType];
+    if (typeFilter.length === 0 || typeFilter.includes('all')) return groupedData;
+
+    // 선택된 유형들을 모두 풀어서 매칭 목록 생성
+    const matchSet = typeFilter.reduce<Set<string>>((set, type) => {
+      if (type === 'special') {
+        SPECIAL_VACATION_TYPES.forEach(t => set.add(t));
+      } else if (type === 'official') {
+        OFFICIAL_VACATION_TYPES.forEach(t => set.add(t));
+      } else {
+        set.add(type);
+      }
+      return set;
+    }, new Set<string>());
+
     return groupedData.filter(group => 
-      matchTypes.includes(group.item.v_type) || (group.cancelledItem && matchTypes.includes(group.cancelledItem.v_type))
+      matchSet.has(group.item.v_type) || (group.cancelledItem && matchSet.has(group.cancelledItem.v_type))
     );
   }, [groupedData, typeFilter]);
 
