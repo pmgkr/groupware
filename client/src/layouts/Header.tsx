@@ -200,7 +200,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
                 )
               }>
               <Dashboard className="size-6" />
@@ -214,7 +214,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
                 )
               }>
               <Project />
@@ -228,7 +228,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
                 )
               }>
               <Expense />
@@ -242,7 +242,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
                 )
               }>
               <Calendar />
@@ -256,7 +256,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
                 )
               }>
               <Pto />
@@ -269,7 +269,7 @@ export default function Header() {
               onMouseEnter={handleMenuEnter('office')}
               className={cn(
                 'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                isOfficeActive ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+                isOfficeActive ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
               )}>
               <Office />
               <span>오피스</span>
@@ -282,7 +282,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive || isManagerSection ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+                  isActive || isManagerSection ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
                 )
               }>
               <Manager />
@@ -296,7 +296,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive || isAdminSection ? 'text-primary bg-white font-semibold' : 'text-gray-900'
+                  isActive || isAdminSection ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
                 )
               }>
               <Admin />
@@ -323,8 +323,8 @@ export default function Header() {
                   to={item.to}
                   className={({ isActive }) =>
                     cn(
-                      'flex h-10 items-center rounded-sm px-3 text-base text-gray-900 hover:bg-white hover:text-primary max-[1440px]:px-2.5 max-[1440px]:h-9',
-                      isActive && 'bg-primary-blue-50 text-primary font-semibold'
+                      'flex h-10 items-center rounded-sm px-3 text-base text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500 max-[1440px]:px-2.5 max-[1440px]:h-9',
+                      isActive && 'bg-white text-primary-blue-500 font-semibold'
                     )
                   }
                 >
