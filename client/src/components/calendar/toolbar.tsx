@@ -107,6 +107,7 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
         {/* 동적 셀렉트 렌더링 */}
         {selectConfigs.map((config) => (
           <MultiSelect
+            simpleSelect={true}
             key={config.id}
             options={config.options}
             onValueChange={(value) => onSelectChange(config.id, value)}
