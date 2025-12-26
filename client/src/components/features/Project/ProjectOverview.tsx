@@ -1,11 +1,12 @@
 // src/components/features/Project/ProjectOverview
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useOutletContext, useLocation, useNavigate } from 'react-router';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { formatAmount } from '@/utils';
 
 import { type projectOverview } from '@/api';
 import { getInvoiceList, type InvoiceListItem } from '@/api';
+import { getProjectLogs, type ProjectLogs } from '@/api/project';
 import { buildExpenseColorMap, buildPieChartData, groupExpenseForChart, buildInvoicePieChartData } from './utils/chartMap';
 import type { PieItem, PieChartItem } from './utils/chartMap';
 
@@ -30,9 +31,9 @@ export default function Overview() {
   const listSearch = (location.state as any)?.fromSearch ?? '';
   const fallbackListPath = listSearch ? `/project${listSearch}` : '/project';
 
-  const { data, members, summary, expense_data, expense_type, logs } = useOutletContext<ProjectLayoutContext>();
+  const { data, members, summary, expense_data, expense_type } = useOutletContext<ProjectLayoutContext>();
   const [expenseColorMap, setExpenseColorMap] = useState<Record<string, string>>({}); // 비용유형 컬러맵
-
+  const [logs, setLogs] = useState<ProjectLogs[]>([]);
   const [expenseData, setExpenseData] = useState<PieItem[]>([]); // 비용 용도별 데이터 State
   const [expenseChartData, setExpenseChartData] = useState<PieChartItem[]>([]); // 비용 용도 차트 데이터 State
 
@@ -60,6 +61,18 @@ export default function Overview() {
       setInvoiceList(res.list);
     }
 
+    async function getLogs() {
+      try {
+        const res = await getProjectLogs(data.project_id);
+
+        console.log('로그 조회', res);
+        setLogs(res);
+      } catch (err) {
+        console.error('프로젝트 로그 조회 실패', err);
+      }
+    }
+
+    getLogs();
     getInvoideList();
   }, []);
 
@@ -351,7 +364,7 @@ export default function Overview() {
               <h2 className="text-lg font-bold text-gray-800">프로젝트 히스토리</h2>
             </div>
             <div className="overflow-y-auto pr-2">
-              <ProjectHistory ProjectLog={logs} />
+              <ProjectHistory logs={logs} />
             </div>
           </div>
         </div>

@@ -15,7 +15,6 @@ import { Settings, Star, ArrowLeft } from 'lucide-react';
 export type ProjectLayoutContext = {
   projectId?: string;
   data: projectOverview['info'];
-  logs: projectOverview['logs'];
   summary: projectOverview['summary'];
   expense_data: projectOverview['expense_data'];
   expense_type: projectOverview['expense_type'];
@@ -48,6 +47,7 @@ export default function ProjectLayout() {
   const [listSearch] = useState<string>(() => (location.state as any)?.fromSearch ?? ''); // ProjectList에서 전달한 필터 파라미터값
   const [data, setData] = useState<projectOverview | null>(null);
   const [members, setMembers] = useState<ProjectMemberDTO[]>([]);
+
   const [isFavorite, setIsFavorite] = useState(false);
   const [projectDialog, setProjectDialog] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -66,11 +66,10 @@ export default function ProjectLayout() {
 
         console.log('리스폰 데이터', projectRes);
 
-        const bookmarkIds = bookmarkRes.map((b) => String(b.project_id));
-
         setData(projectRes);
-
         setMembers(memberRes);
+
+        const bookmarkIds = bookmarkRes.map((b) => String(b.project_id));
         setIsFavorite(bookmarkIds.includes(projectId));
       } catch (err) {
         console.error(err);
@@ -148,7 +147,7 @@ export default function ProjectLayout() {
     ),
   };
 
-  const { info, logs, summary, expense_data, expense_type } = data;
+  const { info, summary, expense_data, expense_type } = data;
 
   const status = statusMap[info.project_status as keyof typeof statusMap];
   const fallbackListPath = listSearch ? `/project${listSearch}` : '/project';
@@ -220,7 +219,6 @@ export default function ProjectLayout() {
             {
               projectId,
               data: info,
-              logs,
               summary,
               expense_data,
               expense_type,
