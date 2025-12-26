@@ -297,9 +297,9 @@ export default function EstimateEdit() {
 
           addAlert({
             title: '견적서 수정이 완료되었습니다.',
-            message,
+            message: `총 ${message[0]} ${message[1]} ${message[2]} 되었습니다.`,
             icon: <OctagonAlert />,
-            duration: 2000,
+            // duration: 2000,
           });
 
           navigate(`/project/${projectId}/estimate/${estId}`);

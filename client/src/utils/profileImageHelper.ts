@@ -7,10 +7,10 @@ import { getImageUrl } from '@/utils';
  * - 값이 없으면 더미 이미지 반환
  */
 export function getProfileImageUrl(image?: string) {
-  if (!image) return getImageUrl('dummy/profile');
+  if (!image) return undefined;
   if (image.startsWith('http://') || image.startsWith('https://')) {
     return image;
   }
+
   return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${image}`;
 }
-

@@ -183,3 +183,10 @@ export async function getProjectMember(projectId: string | undefined) {
 
   return http<ProjectMemberDTO[]>(`/user/project/member/${projectId}`, { method: 'GET' });
 }
+
+// 프로젝트 로그 조회
+export async function getProjectLogs(projectId: string | undefined) {
+  if (!projectId) throw new Error('projectId가 필요합니다.');
+
+  return http<ProjectLogs[]>(`/user/project/log/${projectId}`, { method: 'GET' });
+}
