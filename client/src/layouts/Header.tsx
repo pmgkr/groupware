@@ -368,40 +368,7 @@ export default function Header() {
               </NavLink>
             </li>
           )}
-          <li>
-            <NavLink
-              to="/manager/working"
-              onMouseEnter={handleMenuEnter('manager')}
-              className={({ isActive }) =>
-                cn(
-                  'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive || isManagerSection
-                    ? 'text-primary bg-white font-semibold'
-                    : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
-                )
-              }>
-              <Manager />
-              <span>관리자</span>
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/admin/finance"
-              onMouseEnter={handleMenuEnter('admin')}
-              className={({ isActive }) =>
-                cn(
-                  'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive || isAdminSection
-                    ? 'text-primary bg-white font-semibold'
-                    : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
-                )
-              }>
-              <Admin />
-              <span>최고관리자</span>
-            </NavLink>
-          </li>
         </ul>
-        <ul></ul>
       </div>
       {hoveredMenu && subMenus[hoveredMenu] && subMenus[hoveredMenu].length > 0 && (
         <div
