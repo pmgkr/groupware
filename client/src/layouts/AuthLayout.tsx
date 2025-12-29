@@ -1,6 +1,6 @@
 // src/layouts/AuthLayout.tsx
 import { Navigate, Outlet, useLocation } from 'react-router';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * AuthLayout은 인증이 필요한 라우트 전용 레이아웃
@@ -27,9 +27,5 @@ function AuthGuard() {
 }
 
 export default function AuthLayout() {
-  return (
-    <AuthProvider>
-      <AuthGuard />
-    </AuthProvider>
-  );
+  return <AuthGuard />;
 }
