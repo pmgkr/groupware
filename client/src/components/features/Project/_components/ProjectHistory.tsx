@@ -9,9 +9,9 @@ import {
   BanknoteArrowDown,
   XCircle,
   BanknoteArrowUp,
-  RefreshCcw,
+  Repeat,
   UserCheck,
-  UserPlus,
+  User,
   UserMinus,
   BanknoteX,
 } from 'lucide-react';
@@ -29,7 +29,7 @@ type Props = {
   logs: ProjectLog[];
 };
 
-export default function ProjectHistory({ logs }: Props) {
+export const ProjectHistory = ({ logs }: Props) => {
   const ALLOWED_LOG_TYPES = [
     // project
     'created',
@@ -58,52 +58,52 @@ export default function ProjectHistory({ logs }: Props) {
     switch (type) {
       // project
       case 'created':
-        return <FilePlus className="text-primary-blue size-4.5" />;
+        return <FilePlus className="text-primary-blue size-4" />;
 
       case 'updated':
-        return <FilePen className="text-primary-blue size-4.5" />;
+        return <FilePen className="text-primary-blue size-4" />;
 
       case 'cancelled':
-        return <FileMinus className="text-primary-blue size-4.5" />;
+        return <FileMinus className="text-primary-blue size-4" />;
 
       case 'closed':
-        return <FileCheck className="text-primary-blue size-4.5" />;
+        return <FileCheck className="text-primary-blue size-4" />;
 
       case 'status_changed':
-        return <RefreshCcw className="text-primary-blue size-4.5" />;
+        return <Repeat className="text-primary-blue size-4" />;
 
       case 'owner_changed':
-        return <UserCheck className="text-primary-blue size-4.5" />;
+        return <Repeat className="text-primary-blue size-4" />;
 
       case 'member_added':
-        return <UserPlus className="text-primary-blue size-4.5" />;
+        return <User className="text-primary-blue size-4" />;
 
       case 'member_removed':
-        return <UserMinus className="text-primary-blue size-4.5" />;
+        return <User className="text-primary-blue size-4" />;
 
       // estimate
       case 'est_created':
       case 'est_added':
-        return <FilePlus className="text-primary-blue size-4.5" />;
+        return <FilePlus className="text-primary-blue size-4" />;
 
       case 'est_updated':
-        return <FileText className="text-primary-blue size-4.5" />;
+        return <FileText className="text-primary-blue size-4" />;
 
       case 'est_deactivated':
-        return <FileText className="text-primary-blue size-4.5" />;
+        return <FileText className="text-primary-blue size-4" />;
 
       // invoice
       case 'inv_created':
-        return <BanknoteArrowDown className="text-primary-blue size-4.5" />;
+        return <BanknoteArrowDown className="text-primary-blue size-4" />;
 
       case 'inv_completed':
-        return <BanknoteArrowUp className="text-primary-blue size-4.5" />;
+        return <BanknoteArrowUp className="text-primary-blue size-4" />;
 
       case 'inv_rejected':
-        return <BanknoteX className="text-primary-blue size-4.5" />;
+        return <BanknoteX className="text-primary-blue size-4" />;
 
       default:
-        return <Info className="text-primary-blue size-4.5" />;
+        return <Info className="text-primary-blue size-4" />;
     }
   };
 
@@ -133,21 +133,21 @@ export default function ProjectHistory({ logs }: Props) {
   };
 
   if (!filteredLogs || filteredLogs.length === 0) {
-    return <div className="flex items-center justify-center py-8 text-sm text-gray-400">프로젝트 히스토리가 없습니다.</div>;
+    return <div className="flex items-center justify-center py-8 text-sm text-gray-400">프로젝트 히스토리 로딩중 . . .</div>;
   }
 
   return (
     <ul className="flex flex-col gap-4">
       {filteredLogs.map((log, idx) => (
         <li key={log.seq}>
-          <div className="relative before:absolute before:bottom-[100%] before:left-[15.5px] before:mb-1 before:h-6 before:w-[1px] before:bg-gray-400/80 first:before:hidden">
-            <div className="flex items-center gap-4">
-              <span className="flex size-8 items-center justify-center rounded-full bg-white ring-1 ring-gray-300">
+          <div className="relative px-1">
+            <div className="flex items-start gap-3">
+              <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-gray-300">
                 {getLogIcon(log.pl_type)}
               </span>
               <dl className="text-base leading-[1.3] text-gray-800">
-                <dt>{renderRemark(log.pl_remark)}</dt>
-                <dd className="text-[.88em] text-gray-500">{formatKST(log.pl_date)}</dd>
+                <dt className="break-keep">{renderRemark(log.pl_remark)}</dt>
+                <dd className="text-xs text-gray-500">{formatKST(log.pl_date)}</dd>
               </dl>
             </div>
           </div>
@@ -155,4 +155,4 @@ export default function ProjectHistory({ logs }: Props) {
       ))}
     </ul>
   );
-}
+};

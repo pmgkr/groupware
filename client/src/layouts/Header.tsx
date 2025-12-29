@@ -20,13 +20,12 @@ export default function Header() {
   const isAdminSection = location.pathname.startsWith('/admin');
 
   const { user_id, user_name, job_role, profile_image } = useUser();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
   const subMenus: Record<string, { label: string; to: string }[]> = {
     project: [
       { label: '프로젝트 관리', to: '/project' },
       { label: '프로젝트 기안', to: '/project/proposal' },
-      { label: '프로젝트 비용 내역', to: '/project/exp_mine' },
     ],
     expense: [
       { label: '비용 내역', to: '/expense' },
@@ -331,40 +330,43 @@ export default function Header() {
               <span>오피스</span>
             </NavLink>
           </li>
-          <li>
-            <NavLink
-              to="/manager/working"
-              onMouseEnter={handleMenuEnter('manager')}
-              className={({ isActive }) =>
-                cn(
-                  'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive || isManagerSection
-                    ? 'text-primary bg-white font-semibold'
-                    : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
-                )
-              }>
-              <Manager />
-              <span>관리자</span>
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/admin/finance"
-              onMouseEnter={handleMenuEnter('admin')}
-              className={({ isActive }) =>
-                cn(
-                  'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive || isAdminSection
-                    ? 'text-primary bg-white font-semibold'
-                    : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
-                )
-              }>
-              <Admin />
-              <span>최고관리자</span>
-            </NavLink>
-          </li>
+          {(user?.user_level === 'manager' || user?.user_level === 'admin') && (
+            <li>
+              <NavLink
+                to="/manager/working"
+                onMouseEnter={handleMenuEnter('manager')}
+                className={({ isActive }) =>
+                  cn(
+                    'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
+                    isActive || isManagerSection
+                      ? 'text-primary bg-white font-semibold'
+                      : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
+                  )
+                }>
+                <Manager />
+                <span>관리자</span>
+              </NavLink>
+            </li>
+          )}
+          {user?.user_level === 'admin' && (
+            <li>
+              <NavLink
+                to="/admin/finance"
+                onMouseEnter={handleMenuEnter('admin')}
+                className={({ isActive }) =>
+                  cn(
+                    'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
+                    isActive || isAdminSection
+                      ? 'text-primary bg-white font-semibold'
+                      : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
+                  )
+                }>
+                <Admin />
+                <span>최고관리자</span>
+              </NavLink>
+            </li>
+          )}
         </ul>
-        <ul></ul>
       </div>
       {hoveredMenu && subMenus[hoveredMenu] && subMenus[hoveredMenu].length > 0 && (
         <div

@@ -1,6 +1,7 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router';
 import type { RouteObject } from 'react-router';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, type ReactElement } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Lazy loading for layouts
 const AuthLayout = lazy(() => import('@/layouts/AuthLayout'));
@@ -13,6 +14,14 @@ const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Onboarding = lazy(() => import('@/pages/Onboarding'));
 const ErrorPage = lazy(() => import('@/pages/ErrorPage'));
 
+// 로그인 상태면 대시보드로 리다이렉트, 아니면 로그인 페이지 표시
+const PublicIndex = () => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (user?.user_id) return <Navigate to="/dashboard" replace />;
+  return <Login />;
+};
+
 import { projectRoutes } from './project';
 import { expenseRoutes } from './expense';
 import { calendarRoutes } from './calendar';
@@ -22,8 +31,40 @@ import { mypageRoutes } from './mypage';
 import { managerRoutes } from './manager';
 import { adminRoutes } from './admin';
 
+// 권한별 리다이렉팅
+const ManagerAuth = () => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  const level = user?.user_level;
+  if (level === 'manager' || level === 'admin') return <Outlet />;
+  return <Navigate to="/" replace />;
+};
+
+const AdminAuth = () => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (user?.user_level === 'admin') return <Outlet />;
+  return <Navigate to="/" replace />;
+};
+
+const withAuth = (route: RouteObject, AuthElement: ReactElement): RouteObject => ({
+  path: route.path,
+  id: route.id,
+  caseSensitive: route.caseSensitive,
+  loader: route.loader,
+  action: route.action,
+  shouldRevalidate: route.shouldRevalidate,
+  handle: route.handle,
+  element: AuthElement,
+  errorElement: route.errorElement,
+  children: route.children ?? [],
+});
+
+const AuthManagerRoutes: RouteObject = withAuth(managerRoutes, <ManagerAuth />);
+const AuthAdminRoutes: RouteObject = withAuth(adminRoutes, <AdminAuth />);
+
 // 인증 후 Layout 하위의 자식 라우트들
-const authedChildren: RouteObject[] = [
+const AuthChildren: RouteObject[] = [
   // 필요 순서대로
   projectRoutes,
   expenseRoutes,
@@ -31,8 +72,8 @@ const authedChildren: RouteObject[] = [
   workingRoutes,
   officeRoutes,
   mypageRoutes,
-  managerRoutes,
-  adminRoutes,
+  AuthManagerRoutes,
+  AuthAdminRoutes,
 ];
 
 // 로딩 컴포넌트
@@ -55,7 +96,7 @@ export const router = createBrowserRouter([
         path: '/',
         element: (
           <Suspense fallback={<LoadingSpinner />}>
-            <Login />
+            <PublicIndex />
           </Suspense>
         ),
       },
@@ -100,7 +141,7 @@ export const router = createBrowserRouter([
         ),
         children: [
           // 섹션별 라우트 합치기
-          ...authedChildren,
+          ...AuthChildren,
         ],
       },
     ],

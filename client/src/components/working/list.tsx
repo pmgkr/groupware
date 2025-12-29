@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { getWorkTypeColor } from '@/utils/workTypeHelper';
+import { SortIcon } from '@/utils';
 
 export interface DayWorkInfo {
   workType: string;
@@ -98,6 +99,7 @@ export default function WorkingList({
 
   // 각 요일의 공휴일 이름 가져오기
   const [holidayNames, setHolidayNames] = useState<(string | null)[]>([]);
+  const [sortState, setSortState] = useState<{ key: string; order: 'asc' | 'desc' } | null>(null);
 
   useEffect(() => {
     const loadHolidayNames = async () => {
@@ -289,6 +291,48 @@ export default function WorkingList({
     return hours + minutes / 60;
   };
 
+  const timeToMinutes = (t?: string) => {
+    if (!t || t === '-' || !t.includes(':')) return Number.POSITIVE_INFINITY;
+    const [h, m] = t.split(':').map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return Number.POSITIVE_INFINITY;
+    return h * 60 + m;
+  };
+
+  const getSortValue = (item: WorkingListItem, key: string) => {
+    if (key === 'weekly') return parseWeeklyTotal(item.weeklyTotal);
+    const dayMap: Record<string, keyof WorkingListItem> = {
+      monday: 'monday',
+      tuesday: 'tuesday',
+      wednesday: 'wednesday',
+      thursday: 'thursday',
+      friday: 'friday',
+      saturday: 'saturday',
+      sunday: 'sunday',
+    };
+    const dayKey = dayMap[key];
+    if (!dayKey) return 0;
+    const dayInfo = item[dayKey] as DayWorkInfo;
+    return timeToMinutes(dayInfo?.startTime);
+  };
+
+  const sortedData = useMemo(() => {
+    if (!sortState) return data;
+    const cloned = [...data];
+    cloned.sort((a, b) => {
+      const diff = getSortValue(a, sortState.key) - getSortValue(b, sortState.key);
+      return sortState.order === 'asc' ? diff : -diff;
+    });
+    return cloned;
+  }, [data, sortState]);
+
+  const toggleSort = (key: string) => {
+    setSortState((prev) => {
+      if (!prev || prev.key !== key) return { key, order: 'desc' };
+      if (prev.order === 'desc') return { key, order: 'asc' };
+      return null;
+    });
+  };
+
 
   // 추가근무 도트 색상 함수
   const getOvertimeDotColor = (overtimeStatus?: string) => {
@@ -460,7 +504,17 @@ export default function WorkingList({
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className="w-[8%] text-center p-0">부서</TableHead>
             <TableHead className="w-[6%]">이름</TableHead>
-            <TableHead className="w-[15%]">주간 누적시간</TableHead>
+            <TableHead className="w-[15%]">
+              <Button
+                type="button"
+                variant="svgIcon"
+                className="h-full w-full gap-1 text-[13px] has-[>svg]:p-0"
+                onClick={() => toggleSort('weekly')}
+              >
+                주간 누적시간
+                <SortIcon order={sortState?.key === 'weekly' ? sortState.order : undefined} />
+              </Button>
+            </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
                 <span className={`text-sm ${holidayNames[0] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(0)}(월)</span>
@@ -521,7 +575,7 @@ export default function WorkingList({
             </TableCell>
           </TableRow>
         ) : (
-            data.map((item) => (
+            sortedData.map((item) => (
               <TableRow key={item.id} className="[&_td]:text-[13px]">
                 <TableCell className="text-center p-0">{item.department}</TableCell>
                 <TableCell>{item.name}</TableCell>

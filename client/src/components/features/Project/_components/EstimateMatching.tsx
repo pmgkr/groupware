@@ -53,16 +53,17 @@ export default function EstimateMatching({
   const handleCost = (idx: number, ava_amount: number) => {
     if (!expenseInfo) return;
 
-    if (ava_amount <= 0) {
-      addAlert({
-        title: '매칭 실패',
-        message: '가용 금액이 0원 이하인 항목은 매칭할 수 없습니다.',
-        icon: <OctagonAlert />,
-        duration: 1500,
-      });
-    }
+    // if (ava_amount <= 0) {
+    //   addAlert({
+    //     title: '매칭 실패',
+    //     message: '가용 금액이 0원 이하인 항목은 매칭할 수 없습니다.',
+    //     icon: <OctagonAlert />,
+    //     duration: 1500,
+    //   });
+    // }
 
-    const maxMatch = Math.min(resultAmount, ava_amount);
+    const available = Math.abs(ava_amount);
+    const maxMatch = Math.min(resultAmount, available);
 
     setMatchValues((prev) => {
       const next = [...prev];
@@ -174,7 +175,12 @@ export default function EstimateMatching({
                 <TableCell className="text-left">{item.ei_name}</TableCell>
                 <TableCell className="text-right">{formatAmount(item.ava_amount)}</TableCell>
                 <TableCell className="px-0!">
-                  <Button type="button" variant="svgIcon" className="size-4 p-0!" onClick={() => handleCost(idx, item.ava_amount ?? 0)}>
+                  <Button
+                    type="button"
+                    variant="svgIcon"
+                    className="size-4 p-0!"
+                    onClick={() => handleCost(idx, item.ava_amount ?? 0)}
+                    tabIndex={-1}>
                     <Link2 className="mx-auto size-3 text-gray-500" />
                   </Button>
                 </TableCell>
@@ -220,7 +226,7 @@ export default function EstimateMatching({
             <Button type="button" size="sm" variant="outline" onClick={() => setMatchValues(matchedItems.map(() => 0))}>
               금액 초기화
             </Button>
-            <Button type="button" size="sm" onClick={handleMatchSubmit} disabled={totalMatch !== (expenseInfo?.ei_amount ?? 0)}>
+            <Button type="button" size="sm" onClick={handleMatchSubmit} disabled={resultAmount !== 0}>
               매칭하기
             </Button>
           </div>

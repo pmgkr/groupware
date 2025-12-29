@@ -11,7 +11,7 @@ import { managerVacationApi } from '@/api/manager/vacation';
 import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams } from '@/api/manager/teams';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { getAvatarFallback } from '@/utils';
+import { getAvatarFallback, SortIcon } from '@/utils';
 
 /* ===========================================================
     타입 정의
@@ -53,6 +53,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
   const [displayData, setDisplayData] = useState<DisplayDataItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [sortState, setSortState] = useState<{ key: string; order: 'asc' | 'desc' } | null>(null);
 
   const isManagerPage = location.pathname.startsWith('/manager');
   const columnCount = isManagerPage ? 7 : 8;
@@ -252,57 +253,157 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
   /* ===========================================================
       렌더링
   ========================================================== */
+  const parseNumeric = (val: string) => {
+    const n = Number(val);
+    return Number.isNaN(n) ? Number.NEGATIVE_INFINITY : n;
+  };
+
+  const parseHireDate = (val: string) => {
+    if (!val) return Number.POSITIVE_INFINITY;
+    const t = new Date(val).getTime();
+    return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
+  };
+
+  const getSortValue = (item: DisplayDataItem, key: string) => {
+    switch (key) {
+      case 'hireDate':
+        return parseHireDate(item.hireDate);
+      case 'va_current':
+        return parseNumeric(item.va_current);
+      case 'va_carryover':
+        return parseNumeric(item.va_carryover);
+      case 'va_comp':
+        return parseNumeric(item.va_comp);
+      case 'va_long':
+        return parseNumeric(item.va_long);
+      default:
+        return 0;
+    }
+  };
+
+  const sortedDisplayData = useMemo(() => {
+    if (!sortState) return displayData;
+    const cloned = [...displayData];
+    cloned.sort((a, b) => {
+      const diff = getSortValue(a, sortState.key) - getSortValue(b, sortState.key);
+      return sortState.order === 'asc' ? diff : -diff;
+    });
+    return cloned;
+  }, [displayData, sortState]);
+
+  const toggleSort = (key: string) => {
+    setSortState((prev) => {
+      if (!prev || prev.key !== key) return { key, order: 'desc' };
+      if (prev.order === 'desc') return { key, order: 'asc' };
+      return null;
+    });
+  };
+
   return (
     <Table variant="primary" align="center" className="table-fixed">
       <TableHeader>
         <TableRow>
           <TableHead className="w-[8%] text-center">부서</TableHead>
           <TableHead className="w-[10%] text-center">이름</TableHead>
-          <TableHead className="w-[15%] text-center">입사일</TableHead>
+          <TableHead className="w-[15%] text-center">
+            <div className="flex items-center justify-center gap-1">
+              <span className="text-[13px]">입사일</span>
+              <Button
+                type="button"
+                variant="svgIcon"
+                size="icon"
+                className="p-0"
+                aria-label="입사일 정렬"
+                onClick={() => toggleSort('hireDate')}
+              >
+                <SortIcon order={sortState?.key === 'hireDate' ? sortState.order : undefined} />
+              </Button>
+            </div>
+          </TableHead>
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              잔여기본연차
+              <span className="text-[13px]">잔여기본연차</span>
               <Tooltip>
-                <TooltipTrigger asChild>
+                <TooltipTrigger
+                  asChild
+                >
                   <InfoIcon className="w-3 h-3 text-gray-400" />
                 </TooltipTrigger>
                 <TooltipContent>당해 지급 연차 + 주말&공휴일 보상휴가</TooltipContent>
               </Tooltip>
+              <Button
+                type="button"
+                variant="svgIcon"
+                size="icon"
+                className="p-0"
+                aria-label="잔여기본연차 정렬"
+                onClick={() => toggleSort('va_current')}
+              >
+                <SortIcon order={sortState?.key === 'va_current' ? sortState.order : undefined} />
+              </Button>
             </div>
           </TableHead>
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              잔여이월연차
+              <span className="text-[13px]">잔여이월연차</span>
               <Tooltip>
-                <TooltipTrigger asChild>
+                <TooltipTrigger
+                  asChild
+                >
                   <InfoIcon className="w-3 h-3 text-gray-400" />
                 </TooltipTrigger>
                 <TooltipContent>당해 4월 소멸됨</TooltipContent>
               </Tooltip>
+              <Button
+                type="button"
+                variant="svgIcon"
+                size="icon"
+                className="p-0"
+                aria-label="잔여이월연차 정렬"
+                onClick={() => toggleSort('va_carryover')}
+              >
+                <SortIcon order={sortState?.key === 'va_carryover' ? sortState.order : undefined} />
+              </Button>
             </div>
           </TableHead>
 
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              잔여특별대휴
+              <span className="text-[13px]">잔여특별대휴</span>
               <Tooltip>
-                <TooltipTrigger asChild>
+                <TooltipTrigger
+                  asChild
+                >
                   <InfoIcon className="w-3 h-3 text-gray-400" />
                 </TooltipTrigger>
                 <TooltipContent>토요일 근무 보상휴가</TooltipContent>
               </Tooltip>
+              <Button
+                type="button"
+                variant="svgIcon"
+                size="icon"
+                className="p-0"
+                aria-label="잔여특별대휴 정렬"
+                onClick={() => toggleSort('va_comp')}
+              >
+                <SortIcon order={sortState?.key === 'va_comp' ? sortState.order : undefined} />
+              </Button>
             </div>
           </TableHead>
 
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              잔여공가
-              {/* <Tooltip>
-                <TooltipTrigger asChild>
-                  <InfoIcon className="w-3 h-3 text-gray-400" />
-                </TooltipTrigger>
-                <TooltipContent></TooltipContent>
-              </Tooltip> */}
+              <span className="text-[13px]">잔여공가</span>
+              <Button
+                type="button"
+                variant="svgIcon"
+                size="icon"
+                className="p-0"
+                aria-label="잔여공가 정렬"
+                onClick={() => toggleSort('va_long')}
+              >
+                <SortIcon order={sortState?.key === 'va_long' ? sortState.order : undefined} />
+              </Button>
             </div>
           </TableHead>
           {!isManagerPage && <TableHead className="w-[10%] text-center">휴가관리</TableHead>}
@@ -314,12 +415,12 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
           <TableRow>
             <TableCell colSpan={columnCount} className="text-center">로딩 중…</TableCell>
           </TableRow>
-        ) : displayData.length === 0 ? (
+        ) : sortedDisplayData.length === 0 ? (
           <TableRow>
             <TableCell colSpan={columnCount} className="text-center">데이터 없음</TableCell>
           </TableRow>
         ) : (
-          displayData.map(item => (
+          sortedDisplayData.map(item => (
             <TableRow
               key={item.id}
               className="cursor-pointer hover:bg-gray-200"

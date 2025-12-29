@@ -1,10 +1,10 @@
 import { useRef, useState, useEffect } from 'react';
-import { useOutletContext, useNavigate, useParams } from 'react-router';
+import { useOutletContext, useNavigate, useParams, useSearchParams } from 'react-router';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import * as XLSX from 'xlsx';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
-import { findManager } from '@/utils';
+import { findManager, getGrowingYears } from '@/utils';
 import { notificationApi } from '@/api/notification';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -27,14 +27,17 @@ export default function Expense() {
   const { projectId } = useParams();
   const { user_id, user_name, team_id, user_level } = useUser();
   const { data } = useOutletContext<ProjectLayoutContext>();
+  const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
   // 상단 필터용 state
   const [activeTab, setActiveTab] = useState<'all' | 'saved'>('all');
-  const [selectedYear, setSelectedYear] = useState('2025');
-  const [selectedType, setSelectedType] = useState<string[]>([]);
-  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
-  const [selectedProof, setSelectedProof] = useState<string[]>([]);
-  const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>([]);
+  const currentYear = String(new Date().getFullYear()); // 올해 구하기
+  const yearOptions = getGrowingYears(); // yearOptions
+  const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || currentYear);
+  const [selectedType, setSelectedType] = useState<string[]>(() => searchParams.get('type')?.split(',') ?? []);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('status')?.split(',') ?? []);
+  const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
+  const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>(() => searchParams.get('attach')?.split(',') ?? []);
   const [registerDialog, setRegisterDialog] = useState(false); // Dialog용 State
   const [registerType, setRegisterType] = useState<'est' | 'pro' | null>(null); // Dialog Type용 State
 
@@ -94,7 +97,7 @@ export default function Expense() {
     setActiveTab(tab);
     setPage(1);
 
-    setSelectedYear('2025');
+    setSelectedYear(currentYear);
     setSelectedType([]);
     setSelectedStatus([]);
     setSelectedProof([]);
@@ -102,10 +105,23 @@ export default function Expense() {
     setCheckedItems([]);
   };
 
+  // 체크박스 활성화 여부
+  const isCheckable = (item: pExpenseListItem) => {
+    return item.status === 'Saved' && item.user_id === user_id;
+  };
+
   // 전체 선택 체크박스 핸들러
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
-    setCheckedItems(checked ? expenseList.map((item) => item.seq) : []);
+
+    if (!checked) {
+      setCheckedItems([]);
+      return;
+    }
+
+    const selectableSeqs = expenseList.filter(isCheckable).map((item) => item.seq);
+
+    setCheckedItems(selectableSeqs);
   };
 
   // 개별 체크박스 핸들러
@@ -329,14 +345,23 @@ export default function Expense() {
         setLoading(true);
         const params: Record<string, any> = {
           project_id: projectId,
-          type: selectedType.join(',') || undefined,
-          method: selectedProof.join(',') || undefined,
-          attach: selectedProofStatus.join(',') || undefined,
-          status: activeTab === 'all' ? selectedStatus.join(',') || undefined : activeTab, // 탭 선택 시 강제 상태
+          year: selectedYear,
           page,
-          size: pageSize,
         };
 
+        if (!selectedStatus.length) {
+          if (activeTab === 'saved') {
+            params.status = 'Saved';
+          }
+        } else {
+          params.status = selectedStatus.join(',');
+        }
+
+        if (selectedType.length) params.type = selectedType.join(',');
+        if (selectedProof.length) params.method = selectedProof.join(',');
+        if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
+
+        setSearchParams(params);
         const res = await getProjectExpense(params);
 
         console.log('📦 비용 리스트 요청 파라미터:', params);
@@ -354,9 +379,14 @@ export default function Expense() {
 
   // 전체 선택 상태 반영
   useEffect(() => {
-    if (expenseList.length === 0) return;
-    const allSeq = expenseList.map((item) => item.seq);
-    setCheckAll(allSeq.length > 0 && allSeq.every((seq) => checkedItems.includes(seq)));
+    const selectableSeqs = expenseList.filter(isCheckable).map((item) => item.seq);
+
+    if (selectableSeqs.length === 0) {
+      setCheckAll(false);
+      return;
+    }
+
+    setCheckAll(selectableSeqs.every((seq) => checkedItems.includes(seq)));
   }, [checkedItems, expenseList]);
 
   return (
@@ -387,18 +417,15 @@ export default function Expense() {
           <div className="flex items-center gap-x-2 before:mr-3 before:ml-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
             {/* 연도 단일 선택 */}
             <Select value={selectedYear} onValueChange={(v) => handleFilterChange(setSelectedYear, v)}>
-              <SelectTrigger size="sm">
+              <SelectTrigger size="sm" className="px-2">
                 <SelectValue placeholder="연도 선택" />
               </SelectTrigger>
               <SelectContent>
-                <SelectGroup>
-                  <SelectItem size="sm" value="2025">
-                    2025
+                {yearOptions.map((y) => (
+                  <SelectItem key={y} value={y} size="sm">
+                    {y}년
                   </SelectItem>
-                  <SelectItem size="sm" value="2024">
-                    2024
-                  </SelectItem>
-                </SelectGroup>
+                ))}
               </SelectContent>
             </Select>
 
@@ -473,13 +500,15 @@ export default function Expense() {
           </div>
         </div>
 
-        <Button
-          size="sm"
-          onClick={() => {
-            setRegisterDialog(true);
-          }}>
-          비용 작성하기
-        </Button>
+        {data.project_status === 'in-progress' && (
+          <Button
+            size="sm"
+            onClick={() => {
+              setRegisterDialog(true);
+            }}>
+            비용 작성하기
+          </Button>
+        )}
       </div>
 
       <Table variant="primary" align="center" className="table-fixed">
@@ -493,30 +522,29 @@ export default function Expense() {
                 onCheckedChange={(v) => handleCheckAll(!!v)}
               />
             </TableHead>
+            <TableHead className="w-[8%]">EXP#</TableHead>
             <TableHead className="w-[6%]">증빙 수단</TableHead>
             <TableHead className="w-[8%]">비용 용도</TableHead>
             <TableHead>비용 제목</TableHead>
             <TableHead className="w-[6%]">증빙 상태</TableHead>
             <TableHead className="w-[7%]">비용 유형</TableHead>
-            <TableHead className="w-[9%]">금액</TableHead>
-            <TableHead className="w-[6%]">세금</TableHead>
-            <TableHead className="w-[9%]">합계</TableHead>
+            <TableHead className="w-[11%]">금액</TableHead>
             <TableHead className="w-[7%]">작성자</TableHead>
             <TableHead className="w-[7%]">상태</TableHead>
-            <TableHead className="w-[12%]">작성 일시</TableHead>
+            <TableHead className="w-[12%]">작성일시</TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 12 : 11}>
+              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 11 : 10}>
                 비용 리스트 불러오는 중 . . .
               </TableCell>
             </TableRow>
           ) : expenseList.length === 0 ? (
             <TableRow>
-              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 12 : 11}>
+              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 11 : 10}>
                 리스트가 없습니다.
               </TableCell>
             </TableRow>
