@@ -29,7 +29,7 @@ type Props = {
   logs: ProjectLog[];
 };
 
-export default function ProjectHistory({ logs }: Props) {
+export const ProjectHistory = ({ logs }: Props) => {
   const ALLOWED_LOG_TYPES = [
     // project
     'created',
@@ -58,52 +58,52 @@ export default function ProjectHistory({ logs }: Props) {
     switch (type) {
       // project
       case 'created':
-        return <FilePlus className="text-primary-blue size-4.5" />;
+        return <FilePlus className="text-primary-blue size-4" />;
 
       case 'updated':
-        return <FilePen className="text-primary-blue size-4.5" />;
+        return <FilePen className="text-primary-blue size-4" />;
 
       case 'cancelled':
-        return <FileMinus className="text-primary-blue size-4.5" />;
+        return <FileMinus className="text-primary-blue size-4" />;
 
       case 'closed':
-        return <FileCheck className="text-primary-blue size-4.5" />;
+        return <FileCheck className="text-primary-blue size-4" />;
 
       case 'status_changed':
-        return <Repeat className="text-primary-blue size-4.5" />;
+        return <Repeat className="text-primary-blue size-4" />;
 
       case 'owner_changed':
-        return <UserCheck className="text-primary-blue size-4.5" />;
+        return <UserCheck className="text-primary-blue size-4" />;
 
       case 'member_added':
-        return <UserPlus className="text-primary-blue size-4.5" />;
+        return <UserPlus className="text-primary-blue size-4" />;
 
       case 'member_removed':
-        return <UserMinus className="text-primary-blue size-4.5" />;
+        return <UserMinus className="text-primary-blue size-4" />;
 
       // estimate
       case 'est_created':
       case 'est_added':
-        return <FilePlus className="text-primary-blue size-4.5" />;
+        return <FilePlus className="text-primary-blue size-4" />;
 
       case 'est_updated':
-        return <FileText className="text-primary-blue size-4.5" />;
+        return <FileText className="text-primary-blue size-4" />;
 
       case 'est_deactivated':
-        return <FileText className="text-primary-blue size-4.5" />;
+        return <FileText className="text-primary-blue size-4" />;
 
       // invoice
       case 'inv_created':
-        return <BanknoteArrowDown className="text-primary-blue size-4.5" />;
+        return <BanknoteArrowDown className="text-primary-blue size-4" />;
 
       case 'inv_completed':
-        return <BanknoteArrowUp className="text-primary-blue size-4.5" />;
+        return <BanknoteArrowUp className="text-primary-blue size-4" />;
 
       case 'inv_rejected':
-        return <BanknoteX className="text-primary-blue size-4.5" />;
+        return <BanknoteX className="text-primary-blue size-4" />;
 
       default:
-        return <Info className="text-primary-blue size-4.5" />;
+        return <Info className="text-primary-blue size-4" />;
     }
   };
 
@@ -155,4 +155,4 @@ export default function ProjectHistory({ logs }: Props) {
       ))}
     </ul>
   );
-}
+};

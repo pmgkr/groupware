@@ -8,7 +8,7 @@ import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { getProjectMember, getBookmarkList, addBookmark, removeBookmark, type ProjectMemberDTO } from '@/api';
-import { getProjectView, type projectOverview, ProjectStatusChange } from '@/api/project';
+import { getProjectView, type projectOverview, ProjectStatusChange, getProjectLogs, type ProjectLogs } from '@/api/project';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
@@ -23,6 +23,8 @@ export type ProjectLayoutContext = {
   expense_data: projectOverview['expense_data'];
   expense_type: projectOverview['expense_type'];
   members: ProjectMemberDTO[];
+  logs: ProjectLogs[];
+  refetch: () => Promise<void>;
 };
 
 const tabs = [
@@ -84,29 +86,36 @@ export default function ProjectLayout() {
   const [listSearch] = useState<string>(() => (location.state as any)?.fromSearch ?? ''); // ProjectList에서 전달한 필터 파라미터값
   const [data, setData] = useState<projectOverview | null>(null);
   const [members, setMembers] = useState<ProjectMemberDTO[]>([]);
+  const [logs, setLogs] = useState<ProjectLogs[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<ProjectStatus | null>(null);
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [projectDialog, setProjectDialog] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // 프로젝트 전체 데이터 호출
+  const fetchProject = useCallback(async () => {
+    if (!projectId) return;
+
+    const [projectRes, memberRes, logRes] = await Promise.all([
+      getProjectView(projectId),
+      getProjectMember(projectId),
+      getProjectLogs(projectId),
+    ]);
+
+    setData(projectRes);
+    setMembers(memberRes);
+    setLogs(logRes.reverse());
+  }, [projectId]);
+
+  // 프로젝트 초기 로딩
   useEffect(() => {
     if (!projectId) return;
 
     (async () => {
       try {
-        const [projectRes, memberRes, bookmarkRes] = await Promise.all([
-          getProjectView(projectId),
-          getProjectMember(projectId),
-          getBookmarkList(),
-        ]);
+        await fetchProject();
 
-        console.log('리스폰 데이터', projectRes);
-
-        setData(projectRes);
-        setMembers(memberRes);
-
+        const bookmarkRes = await getBookmarkList();
         const bookmarkIds = bookmarkRes.map((b) => String(b.project_id));
         setIsFavorite(bookmarkIds.includes(projectId));
       } catch (err) {
@@ -121,7 +130,7 @@ export default function ProjectLayout() {
         setLoading(false);
       }
     })();
-  }, [projectId]);
+  }, [projectId, fetchProject, navigate]);
 
   // 프로젝트 상태 수정 다이얼로그 오픈 시 세팅
   useEffect(() => {
@@ -299,14 +308,16 @@ export default function ProjectLayout() {
           <Button variant="svgIcon" onClick={() => navigate(fallbackListPath)} className="text-gray-500">
             <ArrowLeft className="size-5" />
           </Button>
-          <Button
-            variant="svgIcon"
-            className="text-gray-500"
-            onClick={() => {
-              setProjectDialog(true);
-            }}>
-            <Settings className="size-5" />
-          </Button>
+          {info.project_status === 'in-progress' && (
+            <Button
+              variant="svgIcon"
+              className="text-gray-500"
+              onClick={() => {
+                setProjectDialog(true);
+              }}>
+              <Settings className="size-5" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -347,6 +358,8 @@ export default function ProjectLayout() {
               expense_data,
               expense_type,
               members,
+              logs,
+              refetch: fetchProject,
             } satisfies ProjectLayoutContext
           }
         />

@@ -15,9 +15,18 @@ type Props = {
   onChange?: (selectedMembers: Member[]) => void;
   resetOnTeamChange?: boolean;
   currentUserId?: string; // 로그인한 사용자 아이디
+  excludeUserIds?: string[]; // 제외하고 싶은 유저 아이디 배열
+  mode?: 'single' | 'multiple'; // 단일 선택 or 다중 선택 모드
 };
 
-export function MemberSelect({ value = [], onChange, resetOnTeamChange = false, currentUserId }: Props) {
+export function MemberSelect({
+  value = [],
+  onChange,
+  resetOnTeamChange = false,
+  currentUserId,
+  excludeUserIds = [],
+  mode = 'multiple',
+}: Props) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [members, setMembers] = useState<Member[]>([]); // 현재 선택된 팀의 멤버만
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
@@ -48,13 +57,18 @@ export function MemberSelect({ value = [], onChange, resetOnTeamChange = false, 
       return;
     }
 
+    if (mode === 'single') {
+      onChange?.([]);
+      setSelectedIds([]);
+    }
+
     const loadMembers = async () => {
       try {
         setLoadingMembers(true);
         const res = await getMemberList(selectedTeam);
 
-        // 로그인한 유저(owner)는 멤버 선택에서 제외
-        const filtered = res.filter((m: any) => String(m.user_id) !== String(currentUserId));
+        // 제외 대상 필터링
+        const filtered = res.filter((m: any) => !isExcludedUser(String(m.user_id)));
 
         const normalized = filtered.map(
           (m: any): Member => ({
@@ -100,11 +114,17 @@ export function MemberSelect({ value = [], onChange, resetOnTeamChange = false, 
     const withoutCurrentTeam = value.filter((v) => !members.some((m) => m.user_id === v.user_id));
 
     // owner 아이디가 중복으로 추가되지 않게끔 필터링
-    const merged = [...withoutCurrentTeam, ...selectedInThisTeam].filter(
-      (m, i, arr) => arr.findIndex((x) => x.user_id === m.user_id) === i && m.user_id !== currentUserId
-    );
+    const merged = [...withoutCurrentTeam, ...selectedInThisTeam]
+      .filter((m, i, arr) => arr.findIndex((x) => x.user_id === m.user_id) === i)
+      .filter((m) => !isExcludedUser(String(m.user_id)));
 
     onChange?.(merged);
+  };
+
+  const isExcludedUser = (userId: string) => {
+    if (mode !== 'single' && currentUserId && String(userId) === String(currentUserId)) return true;
+    if (excludeUserIds.includes(String(userId))) return true;
+    return false;
   };
 
   return (
@@ -136,10 +156,20 @@ export function MemberSelect({ value = [], onChange, resetOnTeamChange = false, 
           className="w-full"
           simpleSelect
           modalPopover
-          maxCount={0}
           options={options}
           value={selectedIds}
-          onValueChange={handleChange}
+          onValueChange={(values) => {
+            if (mode === 'single') {
+              // 항상 하나만 유지
+              const next = values.slice(-1);
+              handleChange(next);
+            } else {
+              handleChange(values);
+            }
+          }}
+          maxCount={mode === 'single' ? 1 : 0}
+          hideSelectAll={mode === 'single'}
+          closeOnSelect={mode === 'single'}
           placeholder={loadingMembers ? '멤버 불러오는 중...' : members.length === 0 ? '등록된 멤버가 없습니다' : '멤버를 선택하세요'}
           disabled={loadingMembers || members.length === 0}
         />

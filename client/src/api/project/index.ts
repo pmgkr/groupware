@@ -184,6 +184,30 @@ export async function getProjectMember(projectId: string | undefined) {
   return http<ProjectMemberDTO[]>(`/user/project/member/${projectId}`, { method: 'GET' });
 }
 
+export type ProjectMemberUpdatePayload = {
+  owner?: {
+    user_id: string;
+    user_nm: string;
+  };
+  member_add?: {
+    user_id: string;
+    user_nm: string;
+  }[];
+  member_remove?: {
+    user_id: string;
+  }[];
+};
+
+// 프로젝트 멤버 업데이트
+export async function updateProjectMember(projectId: string, payload: ProjectMemberUpdatePayload) {
+  if (!projectId) throw new Error('projectId가 필요합니다.');
+
+  return http<{ ok: boolean }>(`/user/project/member/update/${projectId}`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 // 프로젝트 로그 조회
 export async function getProjectLogs(projectId: string | undefined) {
   if (!projectId) throw new Error('projectId가 필요합니다.');

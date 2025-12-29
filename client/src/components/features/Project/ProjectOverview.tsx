@@ -4,7 +4,6 @@ import { useOutletContext, useLocation, useNavigate } from 'react-router';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { formatAmount } from '@/utils';
 
-import { type projectOverview } from '@/api';
 import { getInvoiceList, type InvoiceListItem } from '@/api';
 import { getProjectLogs, type ProjectLogs } from '@/api/project';
 import { buildExpenseColorMap, buildPieChartData, groupExpenseForChart, buildInvoicePieChartData } from './utils/chartMap';
@@ -16,13 +15,13 @@ import { GapPieChart } from '@components/charts/GapPieChart';
 import { Button } from '@components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
-import ProjectHistory from './_components/ProjectHistory';
+
+import { ProjectHistory } from './_components/ProjectHistory';
 import { ProjectMember } from './_components/ProjectMember';
+import { ProjectMemberUpdate } from './_components/ProjectMemberUpdate';
 
 import { Edit } from '@/assets/images/icons';
 import { format } from 'date-fns';
-
-type Props = { data: projectOverview };
 
 export default function Overview() {
   const location = useLocation();
@@ -31,9 +30,8 @@ export default function Overview() {
   const listSearch = (location.state as any)?.fromSearch ?? '';
   const fallbackListPath = listSearch ? `/project${listSearch}` : '/project';
 
-  const { data, members, summary, expense_data, expense_type } = useOutletContext<ProjectLayoutContext>();
+  const { data, members, summary, expense_data, expense_type, logs, refetch } = useOutletContext<ProjectLayoutContext>();
   const [expenseColorMap, setExpenseColorMap] = useState<Record<string, string>>({}); // 비용유형 컬러맵
-  const [logs, setLogs] = useState<ProjectLogs[]>([]);
   const [expenseData, setExpenseData] = useState<PieItem[]>([]); // 비용 용도별 데이터 State
   const [expenseChartData, setExpenseChartData] = useState<PieChartItem[]>([]); // 비용 용도 차트 데이터 State
 
@@ -41,6 +39,7 @@ export default function Overview() {
   const [invoiceChartData, setInvoiceChartData] = useState<PieChartItem[]>([]); // 인보이스 차트 데이터 State
 
   const [expenseTypeChartData, setExpenseTypeChartData] = useState<PieChartItem[]>([]); // 비용 유형 차트 데이터 State
+  const [memberDialogOpen, setMemberDialogOpen] = useState(false); // 프로젝트 멤버 변경 Dialog State
 
   // 페이지 렌더 시 비용 유형 컬러맵 생성 & 인보이스 데이터 조회
   useEffect(() => {
@@ -61,20 +60,8 @@ export default function Overview() {
       setInvoiceList(res.list);
     }
 
-    async function getLogs() {
-      try {
-        const res = await getProjectLogs(data.project_id);
-        const reverseRes = res.reverse();
-
-        setLogs(reverseRes);
-      } catch (err) {
-        console.error('프로젝트 로그 조회 실패', err);
-      }
-    }
-
-    getLogs();
     getInvoideList();
-  }, []);
+  }, [refetch, data.project_id]);
 
   // 비용 용도별 데이터 받아와서 파이차트 데이터로 정제
   useEffect(() => {
@@ -206,7 +193,14 @@ export default function Overview() {
         <div className="w-[76%] tracking-tight">
           <div className="flex flex-wrap gap-[3%]">
             <div className="w-full">
-              <h3 className="mb-2 text-lg font-bold text-gray-800">프로젝트 정보</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="mb-2 text-lg font-bold text-gray-800">프로젝트 정보</h3>
+                {data.project_status === 'in-progress' && (
+                  <Button type="button" variant="svgIcon" size="sm" className="text-gray-600 hover:text-gray-700" onClick={() => {}}>
+                    <Edit className="size-4" />
+                  </Button>
+                )}
+              </div>
               <TableColumn>
                 <TableColumnHeader className="w-[15%]">
                   <TableColumnHeaderCell>프로젝트 #</TableColumnHeaderCell>
@@ -348,6 +342,17 @@ export default function Overview() {
           <div className="flex h-[45%] flex-col pb-4">
             <div className="mb-2 flex shrink-0 items-center justify-between">
               <h2 className="text-lg font-bold text-gray-800">프로젝트 멤버</h2>
+
+              {data.project_status === 'in-progress' && (
+                <Button
+                  type="button"
+                  variant="svgIcon"
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-700"
+                  onClick={() => setMemberDialogOpen(true)}>
+                  <Edit className="size-4" />
+                </Button>
+              )}
             </div>
             <div className="overflow-y-auto pr-2">
               <ul className="flex flex-col gap-4">
@@ -369,6 +374,16 @@ export default function Overview() {
           </div>
         </div>
       </div>
+
+      <ProjectMemberUpdate
+        open={memberDialogOpen}
+        onOpenChange={setMemberDialogOpen}
+        projectId={data.project_id}
+        projectTitle={data.project_title}
+        members={sortedMembers}
+        ownerId={data.owner_id}
+        onSuccess={refetch}
+      />
     </>
   );
 }

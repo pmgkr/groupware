@@ -268,6 +268,11 @@ interface MultiSelectProps
    * 값 검증 옵션
    */
   invalid?: boolean;
+
+  /**
+   * 외부에서 선택된 값 제어를 위한 prop
+   */
+  value?: string[];
 }
 
 /**
@@ -326,6 +331,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
       closeOnSelect = false,
       simpleSelect = false,
       invalid = false,
+      value,
       ...props
     },
     ref
@@ -395,6 +401,12 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 
       return () => resizeObserver.disconnect();
     }, []);
+
+    // 외부에서 value prop으로 선택값 제어
+    React.useEffect(() => {
+      if (value === undefined) return;
+      setSelectedValues(value);
+    }, [value]);
 
     React.useImperativeHandle(
       ref,
