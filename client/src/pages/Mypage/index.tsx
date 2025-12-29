@@ -663,10 +663,10 @@ export default function Mypage() {
                   <TableHead className="w-[5%] pr-0"></TableHead>
                   <TableHead className="w-[15%]">계좌 별명</TableHead>
                   <TableHead className="w-[16%]">은행명</TableHead>
-                  <TableHead className="w-[16%]">계좌 번호</TableHead>
+                  <TableHead className="">계좌 번호</TableHead>
                   <TableHead className="w-[18%]">예금주</TableHead>
-                  <TableHead className="w-[22%]">등록일시</TableHead>
-                  <TableHead></TableHead>
+                  <TableHead className="w-[20%]">등록일시</TableHead>
+                  <TableHead className="w-[10%]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -609,19 +609,19 @@ export default function ProposalList({
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[5%]">번호</TableHead>
+            <TableHead className="w-[8%]">번호</TableHead>
             <TableHead className="w-[10%]">구분</TableHead>
             <TableHead>제목</TableHead>
             <TableHead className="w-[10%]">금액</TableHead>
             <TableHead className="w-[10%]">비용 매칭</TableHead>
-            <TableHead className="w-[8%]">결재 상태</TableHead>
+            <TableHead className="w-[10%]">결재 상태</TableHead>
             {showWriterInfo && (
               <>
                 <TableHead className="w-[8%]">팀</TableHead>
                 <TableHead className="w-[8%]">작성자</TableHead>
               </>
             )}
-            <TableHead className="w-[10%]">작성일</TableHead>
+            <TableHead className="w-[12%]">작성일</TableHead>
             {showBulkApproval && (
               <TableHead className="w-[50px] px-2.5">
                 <Checkbox size="sm" checked={isAllSelected} onCheckedChange={handleSelectAll} className="bg-white" />

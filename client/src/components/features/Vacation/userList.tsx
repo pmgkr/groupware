@@ -259,10 +259,20 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
           <TableHead className="w-[8%] text-center">부서</TableHead>
           <TableHead className="w-[10%] text-center">이름</TableHead>
           <TableHead className="w-[15%] text-center">입사일</TableHead>
-          <TableHead className="w-[10%] text-center">기본연차</TableHead>
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              이월연차
+              잔여기본연차
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <InfoIcon className="w-3 h-3 text-gray-400" />
+                </TooltipTrigger>
+                <TooltipContent>당해 지급 연차 + 주말&공휴일 보상휴가</TooltipContent>
+              </Tooltip>
+            </div>
+          </TableHead>
+          <TableHead className="w-[10%] text-center">
+            <div className="flex items-center justify-center gap-1">
+              잔여이월연차
               <Tooltip>
                 <TooltipTrigger asChild>
                   <InfoIcon className="w-3 h-3 text-gray-400" />
@@ -274,7 +284,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
 
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              특별대휴
+              잔여특별대휴
               <Tooltip>
                 <TooltipTrigger asChild>
                   <InfoIcon className="w-3 h-3 text-gray-400" />
@@ -286,13 +296,13 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
 
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              공가
-              <Tooltip>
+              잔여공가
+              {/* <Tooltip>
                 <TooltipTrigger asChild>
                   <InfoIcon className="w-3 h-3 text-gray-400" />
                 </TooltipTrigger>
-                <TooltipContent>총 휴가일수, 누적 휴가일수에 포함 안됨</TooltipContent>
-              </Tooltip>
+                <TooltipContent></TooltipContent>
+              </Tooltip> */}
             </div>
           </TableHead>
           {!isManagerPage && <TableHead className="w-[10%] text-center">휴가관리</TableHead>}

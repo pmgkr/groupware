@@ -8,6 +8,8 @@ import { MyVacationHistory as fetchVacationHistory, type MyVacationItem as Vacat
 import { adminVacationApi } from '@/api/admin/vacation';
 import { managerVacationApi } from '@/api/manager/vacation';
 import { AppPagination } from '@/components/ui/AppPagination';
+import { MultiSelect } from '@components/multiselect/multi-select';
+import { VACATION_TYPE_OPTIONS, SPECIAL_VACATION_TYPES, OFFICIAL_VACATION_TYPES } from '@/utils/vacationHelper';
 
 dayjs.locale('ko');
 
@@ -55,6 +57,7 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
   const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const pageSize = 15;
+  const [typeFilter, setTypeFilter] = useState<string[]>([]);
   
   // userId가 props로 전달되면 Admin/Manager API 사용, 없으면 MyPage API 사용
   const isExternalUser = !!userId;
@@ -80,6 +83,11 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
       setSearchParams(newParams, { replace: true });
     }
   }, [page, searchParams, setSearchParams]);
+  
+  // 필터 변경 시 첫 페이지로 이동
+  useEffect(() => {
+    setPage(1);
+  }, [typeFilter]);
   
 
   // 데이터 조회 함수
@@ -278,12 +286,33 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
     return result;
   }, [allData]);
 
+  // 유형 필터 적용
+  const filteredGroupedData = useMemo(() => {
+    if (typeFilter.length === 0 || typeFilter.includes('all')) return groupedData;
+
+    // 선택된 유형들을 모두 풀어서 매칭 목록 생성
+    const matchSet = typeFilter.reduce<Set<string>>((set, type) => {
+      if (type === 'special') {
+        SPECIAL_VACATION_TYPES.forEach(t => set.add(t));
+      } else if (type === 'official') {
+        OFFICIAL_VACATION_TYPES.forEach(t => set.add(t));
+      } else {
+        set.add(type);
+      }
+      return set;
+    }, new Set<string>());
+
+    return groupedData.filter(group => 
+      matchSet.has(group.item.v_type) || (group.cancelledItem && matchSet.has(group.cancelledItem.v_type))
+    );
+  }, [groupedData, typeFilter]);
+
   // 페이지네이션 적용된 데이터
   const paginatedData = useMemo(() => {
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    return groupedData.slice(startIndex, endIndex);
-  }, [groupedData, page, pageSize]);
+    return filteredGroupedData.slice(startIndex, endIndex);
+  }, [filteredGroupedData, page, pageSize]);
 
   // 페이지 변경 시 테이블을 맨 위로 스크롤
   const tableRef = React.useRef<HTMLDivElement>(null);
@@ -294,7 +323,7 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
   }, [page]);
 
   // 전체 데이터 개수 및 페이지 수
-  const total = groupedData.length;
+  const total = filteredGroupedData.length;
   const totalPages = Math.ceil(total / pageSize);
 
   // sch_status를 상태 텍스트로 변환하는 함수
@@ -332,10 +361,40 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
     return baseType;
   };
 
-  
+  // 기간 표기: 동일 날짜면 한 번만 표시
+  const formatPeriod = (start?: string | null, end?: string | null) => {
+    if (!start && !end) return '-';
+    if (!start) return end || '-';
+    if (!end) return start;
+    return start === end ? start : `${start} - ${end}`;
+  };
 
   return (
     <>
+      <div className="w-full mb-3 flex items-center gap-2">
+        <MultiSelect
+          simpleSelect={true}
+          options={VACATION_TYPE_OPTIONS}
+          defaultValue={typeFilter}
+          onValueChange={(value) => {
+            let next = Array.isArray(value) ? value : [value];
+
+            // 옵션 선택 시 '전체'는 단일 선택만 허용
+            if (next.includes('all') && next.length > 1) {
+              next = next.filter(v => v !== 'all');
+            }
+
+            setTypeFilter(next);
+          }}
+          placeholder="유형 선택"
+          size="sm"
+          maxCount={0}
+          searchable={false}
+          hideSelectAll={false}
+          autoSize={true}
+          className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+        />
+      </div>
       <div ref={tableRef} className="w-full">
       <Table key={`table-${page}`} variant="primary" align="center" className="table-fixed w-full">
         <TableHeader>
@@ -375,7 +434,7 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
                     : ''
                 }`}
               >
-                <TableCell className="text-center p-2">{group.item.sdate} - {group.item.edate}</TableCell>
+                <TableCell className="text-center p-2">{formatPeriod(group.item.sdate, group.item.edate)}</TableCell>
                 <TableCell className="text-center p-2">
                   <div className="flex flex-col gap-0.5">
                     <span>{getVacationTypeText(group.item.v_type)}</span>
