@@ -158,7 +158,7 @@ export default function ProjectExpenseView() {
               user_name: data.header.user_nm,
               noti_target: user_id!,
               noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
-              noti_message: `청구한 비용을 지급 완료했습니다.`,
+              noti_message: `청구한 비용이 지급 완료됐습니다.`,
               noti_type: 'expense',
               noti_url: `/project/${data.header.project_id}/expense/${data.header.seq}`,
             });
@@ -199,7 +199,7 @@ export default function ProjectExpenseView() {
           user_name: data.header.user_nm,
           noti_target: user_id!,
           noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
-          noti_message: `청구한 비용을 반려했습니다.`,
+          noti_message: `청구한 비용이 반려됐습니다.`,
           noti_type: 'expense',
           noti_url: `/project/${data.header.project_id}/expense/${data.header.seq}`,
         });

@@ -181,9 +181,11 @@ export default function ProjectInvoice() {
             )}
           </div>
 
-          <Button size="sm" onClick={() => setRegisterDialog(true)}>
-            인보이스 작성
-          </Button>
+          {data.project_status === 'in-progress' && (
+            <Button size="sm" onClick={() => setRegisterDialog(true)}>
+              인보이스 작성
+            </Button>
+          )}
         </div>
       </div>
       <Table variant="primary" align="center" className="table-fixed">

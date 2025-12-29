@@ -193,7 +193,7 @@ export default function BookList() {
           <TableRow>
             <TableHead className="w-[80px]">번호</TableHead>
             <TableHead className="w-[130px]">카테고리</TableHead>
-            <TableHead className="w-[400px]">도서명</TableHead>
+            <TableHead className="">도서명</TableHead>
             <TableHead className="w-[200px]">저자</TableHead>
             <TableHead className="w-[130px]">출판사</TableHead>
             <TableHead className="w-[130px]">팀</TableHead>
