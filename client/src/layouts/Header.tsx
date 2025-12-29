@@ -116,20 +116,15 @@ export default function Header() {
     if (!user_id) return;
 
     try {
-      const [todayRes, recentRes] = await Promise.all([
+      const [todayRes] = await Promise.all([
         notificationApi.getNotification({
           user_id,
           type: 'today',
           is_read: 'N',
         }),
-        notificationApi.getNotification({
-          user_id,
-          type: 'recent',
-          is_read: 'N',
-        }),
       ]);
 
-      const totalUnread = todayRes.length + recentRes.length;
+      const totalUnread = todayRes.length;
       // 디버깅
       /* console.group('[Unread Debug]');
       console.log('today unread:', todayRes.length);
