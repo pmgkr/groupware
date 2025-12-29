@@ -1,6 +1,7 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router';
 import type { RouteObject } from 'react-router';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, type ReactElement } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Lazy loading for layouts
 const AuthLayout = lazy(() => import('@/layouts/AuthLayout'));
@@ -22,8 +23,40 @@ import { mypageRoutes } from './mypage';
 import { managerRoutes } from './manager';
 import { adminRoutes } from './admin';
 
+// 권한별 리다이렉팅
+const ManagerAuth = () => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  const level = user?.user_level;
+  if (level === 'manager' || level === 'admin') return <Outlet />;
+  return <Navigate to="/" replace />;
+};
+
+const AdminAuth = () => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (user?.user_level === 'admin') return <Outlet />;
+  return <Navigate to="/" replace />;
+};
+
+const withAuth = (route: RouteObject, AuthElement: ReactElement): RouteObject => ({
+  path: route.path,
+  id: route.id,
+  caseSensitive: route.caseSensitive,
+  loader: route.loader,
+  action: route.action,
+  shouldRevalidate: route.shouldRevalidate,
+  handle: route.handle,
+  element: AuthElement,
+  errorElement: route.errorElement,
+  children: route.children ?? [],
+});
+
+const AuthManagerRoutes: RouteObject = withAuth(managerRoutes, <ManagerAuth />);
+const AuthAdminRoutes: RouteObject = withAuth(adminRoutes, <AdminAuth />);
+
 // 인증 후 Layout 하위의 자식 라우트들
-const authedChildren: RouteObject[] = [
+const AuthChildren: RouteObject[] = [
   // 필요 순서대로
   projectRoutes,
   expenseRoutes,
@@ -31,8 +64,8 @@ const authedChildren: RouteObject[] = [
   workingRoutes,
   officeRoutes,
   mypageRoutes,
-  managerRoutes,
-  adminRoutes,
+  AuthManagerRoutes,
+  AuthAdminRoutes,
 ];
 
 // 로딩 컴포넌트
@@ -100,7 +133,7 @@ export const router = createBrowserRouter([
         ),
         children: [
           // 섹션별 라우트 합치기
-          ...authedChildren,
+          ...AuthChildren,
         ],
       },
     ],
