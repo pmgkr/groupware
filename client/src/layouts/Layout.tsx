@@ -21,7 +21,7 @@ export default function Layout() {
   return (
     <>
       <Header />
-      <div className="mt-18 ml-60 min-h-200 bg-white px-5 py-8 2xl:px-25">
+      <div className="mt-18 ml-60 max-[1440px]:ml-50 min-h-200 bg-white px-5 py-8 2xl:px-25">
         {/* 페이지 타이틀 : router의 handle.title 값 노출 */}
         {!hideTitle && title && (
           <div className="mb-5 flex items-center has-[+nav]:mb-2">

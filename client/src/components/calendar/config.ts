@@ -71,6 +71,7 @@ export const defaultSelectConfigs: SelectConfig[] = [
       { value: 'type_vacation', label: '연차' },
       { value: 'type_halfday', label: '반차' },
       { value: 'type_quarter', label: '반반차' },
+      { value: 'type_official', label: '공가' },
       { value: 'type_remote', label: '재택' },
       { value: 'type_field', label: '외부 일정' },
     ],
@@ -123,6 +124,8 @@ export const defaultEventFilter: EventFilter = (events, selectConfigs) => {
             return eventType === 'vacation' && vacationType === 'half';
           case 'type_quarter':
             return eventType === 'vacation' && vacationType === 'quarter';
+          case 'type_official':
+            return eventType === 'vacation' && vacationType === 'official';
           case 'type_remote':
             return eventType === 'event' && event.resource.schEventType === 'remote';
           case 'type_field':
@@ -146,6 +149,7 @@ export const customSelectConfigs: SelectConfig[] = [
       { value: 'type_vacation', label: '연차' },
       { value: 'type_halfday', label: '반차' },
       { value: 'type_quarter', label: '반반차' },
+      { value: 'type_official', label: '공가' },
       { value: 'type_remote', label: '재택' },
       { value: 'type_field', label: '외부 일정' },
     ],
@@ -200,6 +204,8 @@ export const customEventFilter: EventFilter = (events: CalendarEvent[], selectCo
             return eventType === 'vacation' && vacationType === 'half';
           case 'type_quarter':
             return eventType === 'vacation' && vacationType === 'quarter';
+          case 'type_official':
+            return eventType === 'vacation' && vacationType === 'official';
           case 'type_remote':
             return eventType === 'event' && event.resource.schEventType === 'remote';
           case 'type_field':

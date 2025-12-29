@@ -1,11 +1,12 @@
 // src/components/features/Project/ProjectOverview
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useOutletContext, useLocation, useNavigate } from 'react-router';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { formatAmount } from '@/utils';
 
 import { type projectOverview } from '@/api';
 import { getInvoiceList, type InvoiceListItem } from '@/api';
+import { getProjectLogs, type ProjectLogs } from '@/api/project';
 import { buildExpenseColorMap, buildPieChartData, groupExpenseForChart, buildInvoicePieChartData } from './utils/chartMap';
 import type { PieItem, PieChartItem } from './utils/chartMap';
 
@@ -15,10 +16,10 @@ import { GapPieChart } from '@components/charts/GapPieChart';
 import { Button } from '@components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
+import ProjectHistory from './_components/ProjectHistory';
 import { ProjectMember } from './_components/ProjectMember';
 
 import { Edit } from '@/assets/images/icons';
-import { FilePlus } from 'lucide-react';
 import { format } from 'date-fns';
 
 type Props = { data: projectOverview };
@@ -30,9 +31,9 @@ export default function Overview() {
   const listSearch = (location.state as any)?.fromSearch ?? '';
   const fallbackListPath = listSearch ? `/project${listSearch}` : '/project';
 
-  const { data, members, summary, expense_data, expense_type, logs } = useOutletContext<ProjectLayoutContext>();
+  const { data, members, summary, expense_data, expense_type } = useOutletContext<ProjectLayoutContext>();
   const [expenseColorMap, setExpenseColorMap] = useState<Record<string, string>>({}); // 비용유형 컬러맵
-
+  const [logs, setLogs] = useState<ProjectLogs[]>([]);
   const [expenseData, setExpenseData] = useState<PieItem[]>([]); // 비용 용도별 데이터 State
   const [expenseChartData, setExpenseChartData] = useState<PieChartItem[]>([]); // 비용 용도 차트 데이터 State
 
@@ -60,6 +61,18 @@ export default function Overview() {
       setInvoiceList(res.list);
     }
 
+    async function getLogs() {
+      try {
+        const res = await getProjectLogs(data.project_id);
+
+        console.log('로그 조회', res);
+        setLogs(res);
+      } catch (err) {
+        console.error('프로젝트 로그 조회 실패', err);
+      }
+    }
+
+    getLogs();
     getInvoideList();
   }, []);
 
@@ -161,12 +174,12 @@ export default function Overview() {
       {
         name: '기안서',
         value: proposalTotal,
-        color: '#999',
+        color: '#ccc',
       },
       {
         name: '야근교통·식대비',
         value: nightExpenseTotal,
-        color: '#6366F1',
+        color: '#F4CBE1',
       },
     ].filter((i) => i.value > 0);
 
@@ -351,23 +364,7 @@ export default function Overview() {
               <h2 className="text-lg font-bold text-gray-800">프로젝트 히스토리</h2>
             </div>
             <div className="overflow-y-auto pr-2">
-              <ul className="flex flex-col gap-4">
-                <li>
-                  <div className="relative before:absolute before:bottom-[100%] before:left-[15.5px] before:mb-1 before:h-6 before:w-[1px] before:bg-gray-400/80 first:before:hidden">
-                    <div className="flex items-center gap-4">
-                      <span className="flex size-8 items-center justify-center rounded-full bg-white ring-1 ring-gray-300">
-                        <FilePlus className="text-primary-blue size-4.5" />
-                      </span>
-                      <dl className="text-base leading-[1.3] text-gray-800">
-                        <dt>
-                          <strong className="font-semibold text-gray-900">홍길동</strong>님이 프로젝트를 생성했습니다.
-                        </dt>
-                        <dd className="text-[.88em] text-gray-500">2025-11-13 19:00:00</dd>
-                      </dl>
-                    </div>
-                  </div>
-                </li>
-              </ul>
+              <ProjectHistory logs={logs} />
             </div>
           </div>
         </div>

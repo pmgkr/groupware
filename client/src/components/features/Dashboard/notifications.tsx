@@ -55,7 +55,7 @@ const formatRelativeTime = (dateString?: string): string => {
 };
 
 function formatNotiMessage(msg: string) {
-  return msg.split(/(승인|반려|등록|요청|초대|변경|수정)/g).map((part, i) => {
+  return msg.split(/(승인|반려|등록|초대|변경|수정)/g).map((part, i) => {
     if (part === '승인') {
       return (
         <span key={i} className="text-green-600">
@@ -70,7 +70,7 @@ function formatNotiMessage(msg: string) {
         </span>
       );
     }
-    if (part === '요청' || part === '등록' || part === '초대' || part === '변경' || part === '수정') {
+    if (part === '등록' || part === '초대' || part === '변경' || part === '수정') {
       return (
         <span key={i} className="text-primary">
           {part}

@@ -1,4 +1,4 @@
-import { getAvatarFallback } from '@/utils';
+import { getAvatarFallback, getProfileImageUrl } from '@/utils';
 import { type ProjectMemberDTO } from '@/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@components/ui/avatar';
 
@@ -12,7 +12,7 @@ export const ProjectMember = ({ member }: ProjectMemberProps) => {
   return (
     <>
       <Avatar className="size-10">
-        <AvatarImage src={`${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${member.profile_image}`} />
+        <AvatarImage src={getProfileImageUrl(member.profile_image)} />
         <AvatarFallback>{getAvatarFallback(member.user_id)}</AvatarFallback>
       </Avatar>
       <div className="text-base leading-[1.3] text-gray-800">
