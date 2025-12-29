@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { loginApi } from '@/api';
 import { setToken as setTokenStore } from '@/lib/tokenStore';
+import { useAuth } from '@/contexts/AuthContext';
 
 import { Button } from '@components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@components/ui/form';
@@ -24,6 +25,7 @@ export type LoginValues = z.infer<typeof LoginSchema>;
 export function LoginForm() {
   const navigate = useNavigate();
   const storageRemember = 'remember_email'; // 로컬스토리지 이메일 기억하기 key 값
+  const { setUserState } = useAuth();
 
   const remembered = localStorage.getItem(storageRemember) ?? '';
 
@@ -63,6 +65,8 @@ export function LoginForm() {
         }
       }
       setTokenStore(res.accessToken);
+      setUserState(res.user ?? null);
+      sessionStorage.removeItem('auth:logged_out');
 
       // 이메일 기억하기
       if (values.remember) localStorage.setItem(storageRemember, values.user_id);

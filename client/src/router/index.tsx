@@ -14,6 +14,14 @@ const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Onboarding = lazy(() => import('@/pages/Onboarding'));
 const ErrorPage = lazy(() => import('@/pages/ErrorPage'));
 
+// 로그인 상태면 대시보드로 리다이렉트, 아니면 로그인 페이지 표시
+const PublicIndex = () => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (user?.user_id) return <Navigate to="/dashboard" replace />;
+  return <Login />;
+};
+
 import { projectRoutes } from './project';
 import { expenseRoutes } from './expense';
 import { calendarRoutes } from './calendar';
@@ -88,7 +96,7 @@ export const router = createBrowserRouter([
         path: '/',
         element: (
           <Suspense fallback={<LoadingSpinner />}>
-            <Login />
+            <PublicIndex />
           </Suspense>
         ),
       },
