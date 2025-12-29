@@ -26,7 +26,6 @@ export default function Header() {
     project: [
       { label: '프로젝트 관리', to: '/project' },
       { label: '프로젝트 기안', to: '/project/proposal' },
-      { label: '프로젝트 비용 내역', to: '/project/exp_mine' },
     ],
     expense: [
       { label: '비용 내역', to: '/expense' },
@@ -344,7 +343,9 @@ export default function Header() {
                 className={({ isActive }) =>
                   cn(
                     'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                    isActive || isManagerSection ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
+                    isActive || isManagerSection
+                      ? 'text-primary bg-white font-semibold'
+                      : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
                   )
                 }>
                 <Manager />
@@ -360,7 +361,9 @@ export default function Header() {
                 className={({ isActive }) =>
                   cn(
                     'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                    isActive || isAdminSection ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
+                    isActive || isAdminSection
+                      ? 'text-primary bg-white font-semibold'
+                      : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
                   )
                 }>
                 <Admin />

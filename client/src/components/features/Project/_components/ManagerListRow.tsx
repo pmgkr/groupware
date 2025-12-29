@@ -78,6 +78,14 @@ export const ManagerListRow = memo(({ item, checked, onCheck }: ExpenseRowProps)
           {item.project_id}
         </Link>
       </TableCell>
+      <TableCell className="whitespace-nowrap">
+        <Link
+          to={`/project/${item.project_id}/expense/${item.seq}`}
+          target="_blank"
+          className="rounded-[4px] border-1 bg-white p-1 text-[11px] 2xl:text-sm">
+          {item.exp_id}
+        </Link>
+      </TableCell>
       <TableCell>{item.el_method}</TableCell>
       <TableCell>
         <TooltipProvider>
@@ -114,9 +122,10 @@ export const ManagerListRow = memo(({ item, checked, onCheck }: ExpenseRowProps)
           {matchMissing}
         </div>
       </TableCell>
-      <TableCell className="text-right">{formatAmount(item.el_amount)}원</TableCell>
-      <TableCell className="text-right">{item.el_tax === 0 ? 0 : `${formatAmount(item.el_tax)}원`}</TableCell>
-      <TableCell className="text-right">{formatAmount(item.el_total)}원</TableCell>
+      <TableCell className="text-right">
+        {formatAmount(item.el_total)}원
+        {item.el_tax !== 0 && <div className="mt-0.5 text-[11px] leading-[1.2] text-gray-600">세금 {formatAmount(item.el_tax)}원</div>}
+      </TableCell>
       <TableCell>{item.user_nm}</TableCell>
       <TableCell>{statusMap[item.status as keyof typeof statusMap]}</TableCell>
       <TableCell>{formatDate(item.wdate)}</TableCell>

@@ -11,7 +11,7 @@ import {
   BanknoteArrowUp,
   Repeat,
   UserCheck,
-  UserPlus,
+  User,
   UserMinus,
   BanknoteX,
 } from 'lucide-react';
@@ -73,13 +73,13 @@ export const ProjectHistory = ({ logs }: Props) => {
         return <Repeat className="text-primary-blue size-4" />;
 
       case 'owner_changed':
-        return <UserCheck className="text-primary-blue size-4" />;
+        return <Repeat className="text-primary-blue size-4" />;
 
       case 'member_added':
-        return <UserPlus className="text-primary-blue size-4" />;
+        return <User className="text-primary-blue size-4" />;
 
       case 'member_removed':
-        return <UserMinus className="text-primary-blue size-4" />;
+        return <User className="text-primary-blue size-4" />;
 
       // estimate
       case 'est_created':
@@ -140,14 +140,14 @@ export const ProjectHistory = ({ logs }: Props) => {
     <ul className="flex flex-col gap-4">
       {filteredLogs.map((log, idx) => (
         <li key={log.seq}>
-          <div className="relative before:absolute before:bottom-[100%] before:left-[15.5px] before:mb-1 before:h-6 before:w-[1px] before:bg-gray-400/80 first:before:hidden">
-            <div className="flex items-center gap-4">
-              <span className="flex size-8 items-center justify-center rounded-full bg-white ring-1 ring-gray-300">
+          <div className="relative px-1">
+            <div className="flex items-start gap-3">
+              <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-gray-300">
                 {getLogIcon(log.pl_type)}
               </span>
               <dl className="text-base leading-[1.3] text-gray-800">
-                <dt>{renderRemark(log.pl_remark)}</dt>
-                <dd className="text-[.88em] text-gray-500">{formatKST(log.pl_date)}</dd>
+                <dt className="break-keep">{renderRemark(log.pl_remark)}</dt>
+                <dd className="text-xs text-gray-500">{formatKST(log.pl_date)}</dd>
               </dl>
             </div>
           </div>

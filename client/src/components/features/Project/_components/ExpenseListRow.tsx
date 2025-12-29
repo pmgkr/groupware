@@ -2,6 +2,7 @@
 import { memo } from 'react';
 import { Link, useParams } from 'react-router';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/hooks/useUser';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,7 @@ type ExpenseRowProps = {
 };
 
 export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRowProps) => {
+  const { user_id } = useUser();
   const { projectId } = useParams();
 
   const statusMap = {
@@ -50,7 +52,15 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
           className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
           checked={checked}
           onCheckedChange={(v) => onCheck(item.seq, !!v)}
+          disabled={item.user_id !== user_id}
         />
+      </TableCell>
+      <TableCell>
+        <Link
+          to={`/project/${item.project_id}/expense/${item.seq}`}
+          className="rounded-[4px] border-1 bg-white p-1 text-[11px] 2xl:text-sm">
+          {item.exp_id}
+        </Link>
       </TableCell>
       <TableCell>{item.el_method}</TableCell>
       <TableCell>
@@ -88,9 +98,10 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
           {matchMissing}
         </div>
       </TableCell>
-      <TableCell className="text-right">{formatAmount(item.el_amount)}원</TableCell>
-      <TableCell className="text-right">{item.el_tax === 0 ? 0 : `${formatAmount(item.el_tax)}원`}</TableCell>
-      <TableCell className="text-right">{formatAmount(item.el_total)}원</TableCell>
+      <TableCell className="text-right">
+        {formatAmount(item.el_total)}원
+        {item.el_tax !== 0 && <div className="mt-0.5 text-[11px] leading-[1.2] text-gray-600">세금 {formatAmount(item.el_tax)}원</div>}
+      </TableCell>
       <TableCell>{item.user_nm}</TableCell>
       <TableCell>{statusMap[item.status as keyof typeof statusMap]}</TableCell>
       <TableCell>{formatKST(item.wdate)}</TableCell>

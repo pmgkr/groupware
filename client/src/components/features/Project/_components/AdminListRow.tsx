@@ -87,6 +87,11 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate, handlePDFDo
           {item.project_id}
         </Link>
       </TableCell>
+      <TableCell className="whitespace-nowrap">
+        <Link to={`/admin/finance/pexpense/${item.seq}${search}`} className="rounded-[4px] border-1 bg-white p-1 text-[11px] 2xl:text-sm">
+          {item.project_id}
+        </Link>
+      </TableCell>
       <TableCell>{item.el_method}</TableCell>
       <TableCell>
         <TooltipProvider>
@@ -162,6 +167,7 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate, handlePDFDo
             </PopoverContent>
           </Popover>
         )}
+        {item.edate && <span className="block text-[11px] leading-[1.2] text-gray-600">지급일 {formatDate(item.edate)}</span>}
       </TableCell>
       <TableCell className="px-0!">
         <Checkbox

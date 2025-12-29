@@ -293,14 +293,21 @@ export default function EstimateEdit() {
           const deleteData = result.deleted_items.length;
           const updateData = result.updated_items.length;
 
+          const parts = [];
           const message = buildResultMessage(insertData, deleteData, updateData);
 
-          addAlert({
-            title: '견적서 수정이 완료되었습니다.',
-            message: `총 ${message[0]} ${message[1]} ${message[2]} 되었습니다.`,
-            icon: <OctagonAlert />,
-            // duration: 2000,
-          });
+          if (message[0]) parts.push(message[0]);
+          if (message[1]) parts.push(message[1]);
+          if (message[2]) parts.push(message[2]);
+
+          if (parts.length > 0) {
+            addAlert({
+              title: '견적서 수정이 완료되었습니다.',
+              message: `<p className="break-keep">총 ${parts.join(',')} 되었습니다.</p>`,
+              icon: <OctagonAlert />,
+              duration: 2000,
+            });
+          }
 
           navigate(`/project/${projectId}/estimate/${estId}`);
         } else {
