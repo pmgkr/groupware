@@ -91,6 +91,58 @@ export default function Header() {
     }
   }, [hoveredMenu, submenuTop]);
 
+  /* 알림 도트  */
+  useEffect(() => {
+    if (!user_id) return;
+    fetchUnreadNotification();
+  }, [user_id]);
+
+  const [hasUnreadNoti, setHasUnreadNoti] = useState(false);
+  useEffect(() => {
+    if (!user_id) return;
+
+    const handleNotiUpdate = () => {
+      fetchUnreadNotification();
+    };
+
+    window.addEventListener('notification:update', handleNotiUpdate);
+
+    return () => {
+      window.removeEventListener('notification:update', handleNotiUpdate);
+    };
+  }, [user_id]);
+
+  const fetchUnreadNotification = async () => {
+    if (!user_id) return;
+
+    try {
+      const [todayRes, recentRes] = await Promise.all([
+        notificationApi.getNotification({
+          user_id,
+          type: 'today',
+          is_read: 'N',
+        }),
+        notificationApi.getNotification({
+          user_id,
+          type: 'recent',
+          is_read: 'N',
+        }),
+      ]);
+
+      const totalUnread = todayRes.length + recentRes.length;
+      // 디버깅
+      /* console.group('[Unread Debug]');
+      console.log('today unread:', todayRes.length);
+      console.log('recent unread:', recentRes.length);
+      console.log('total unread:', totalUnread);
+      console.groupEnd(); */
+
+      setHasUnreadNoti(totalUnread > 0);
+    } catch (e) {
+      console.error('알림 unread 조회 실패', e);
+    }
+  };
+
   // profile_image가 변경될 때만 타임스탬프를 업데이트하여 무한 로딩 방지
   // 프로필 이미지 로컬 상태 추가
   const [currentProfileImage, setCurrentProfileImage] = useState(profile_image);
