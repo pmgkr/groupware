@@ -11,6 +11,7 @@ import { Dashboard, Project, Expense, Calendar, Profile, Logout, Pto, Office, Ma
 import { Button } from '@components/ui/button';
 import { Notification } from '@components/features/Dashboard/notifications';
 import { getMyProfile } from '@/api/mypage';
+import { notificationApi } from '@/api/notification';
 
 export default function Header() {
   const location = useLocation();
@@ -18,7 +19,7 @@ export default function Header() {
   const isManagerSection = location.pathname.startsWith('/manager');
   const isAdminSection = location.pathname.startsWith('/admin');
 
-  const { user_name, job_role, profile_image } = useUser();
+  const { user_id, user_name, job_role, profile_image } = useUser();
   const { logout } = useAuth();
 
   const subMenus: Record<string, { label: string; to: string }[]> = {
@@ -89,6 +90,58 @@ export default function Header() {
       });
     }
   }, [hoveredMenu, submenuTop]);
+
+  /* 알림 도트  */
+  useEffect(() => {
+    if (!user_id) return;
+    fetchUnreadNotification();
+  }, [user_id]);
+
+  const [hasUnreadNoti, setHasUnreadNoti] = useState(false);
+  useEffect(() => {
+    if (!user_id) return;
+
+    const handleNotiUpdate = () => {
+      fetchUnreadNotification();
+    };
+
+    window.addEventListener('notification:update', handleNotiUpdate);
+
+    return () => {
+      window.removeEventListener('notification:update', handleNotiUpdate);
+    };
+  }, [user_id]);
+
+  const fetchUnreadNotification = async () => {
+    if (!user_id) return;
+
+    try {
+      const [todayRes, recentRes] = await Promise.all([
+        notificationApi.getNotification({
+          user_id,
+          type: 'today',
+          is_read: 'N',
+        }),
+        notificationApi.getNotification({
+          user_id,
+          type: 'recent',
+          is_read: 'N',
+        }),
+      ]);
+
+      const totalUnread = todayRes.length + recentRes.length;
+      // 디버깅
+      /* console.group('[Unread Debug]');
+      console.log('today unread:', todayRes.length);
+      console.log('recent unread:', recentRes.length);
+      console.log('total unread:', totalUnread);
+      console.groupEnd(); */
+
+      setHasUnreadNoti(totalUnread > 0);
+    } catch (e) {
+      console.error('알림 unread 조회 실패', e);
+    }
+  };
 
   // profile_image가 변경될 때만 타임스탬프를 업데이트하여 무한 로딩 방지
   // 프로필 이미지 로컬 상태 추가
@@ -161,8 +214,14 @@ export default function Header() {
           </Link>
         </h1>
         <ul className="text-primary-blue-300 flex items-center gap-x-4">
-          <li>
+          <li className="relative">
             <Notification />
+            {hasUnreadNoti && (
+              <span className="absolute top-0.5 right-0 flex size-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-500 opacity-75"></span>
+                <span className="relative inline-flex size-2 rounded-full border border-white bg-orange-500"></span>
+              </span>
+            )}
           </li>
           <li>
             <Button asChild variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="마이페이지">
@@ -200,7 +259,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
+                  isActive ? 'text-primary bg-white font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
                 )
               }>
               <Dashboard className="size-6" />
@@ -214,7 +273,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
+                  isActive ? 'text-primary bg-white font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
                 )
               }>
               <Project />
@@ -228,7 +287,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
+                  isActive ? 'text-primary bg-white font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
                 )
               }>
               <Expense />
@@ -242,7 +301,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
+                  isActive ? 'text-primary bg-white font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
                 )
               }>
               <Calendar />
@@ -256,7 +315,7 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
+                  isActive ? 'text-primary bg-white font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
                 )
               }>
               <Pto />
@@ -269,7 +328,9 @@ export default function Header() {
               onMouseEnter={handleMenuEnter('office')}
               className={cn(
                 'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                isOfficeActive ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
+                isOfficeActive
+                  ? 'text-primary bg-white font-semibold'
+                  : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
               )}>
               <Office />
               <span>오피스</span>
@@ -282,7 +343,9 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive || isManagerSection ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
+                  isActive || isManagerSection
+                    ? 'text-primary bg-white font-semibold'
+                    : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
                 )
               }>
               <Manager />
@@ -296,7 +359,9 @@ export default function Header() {
               className={({ isActive }) =>
                 cn(
                   'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive || isAdminSection ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
+                  isActive || isAdminSection
+                    ? 'text-primary bg-white font-semibold'
+                    : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
                 )
               }>
               <Admin />
@@ -304,18 +369,15 @@ export default function Header() {
             </NavLink>
           </li>
         </ul>
-        <ul>
-          
-        </ul>
+        <ul></ul>
       </div>
       {hoveredMenu && subMenus[hoveredMenu] && subMenus[hoveredMenu].length > 0 && (
         <div
           ref={submenuRef}
-          className="fixed left-64 rounded-sm z-8 w-auto border border-primary-blue-150 bg-primary-blue-100 max-[1440px]:left-54"
+          className="border-primary-blue-150 bg-primary-blue-100 fixed left-64 z-8 w-auto rounded-sm border max-[1440px]:left-54"
           style={{ top: submenuTop ?? 0 }}
           onMouseEnter={() => setHoveredMenu(hoveredMenu)}
-          onMouseLeave={() => setHoveredMenu(null)}
-        >
+          onMouseLeave={() => setHoveredMenu(null)}>
           <ul className="flex flex-col gap-y-1 p-1.5">
             {subMenus[hoveredMenu].map((item) => (
               <li key={item.to}>
@@ -323,11 +385,10 @@ export default function Header() {
                   to={item.to}
                   className={({ isActive }) =>
                     cn(
-                      'flex h-10 items-center rounded-sm px-3 text-base text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500 max-[1440px]:px-2.5 max-[1440px]:h-9',
-                      isActive && 'bg-white text-primary-blue-500 font-semibold'
+                      'hover:bg-primary-blue-50 hover:text-primary-blue-500 flex h-10 items-center rounded-sm px-3 text-base text-gray-900 max-[1440px]:h-9 max-[1440px]:px-2.5',
+                      isActive && 'text-primary-blue-500 bg-white font-semibold'
                     )
-                  }
-                >
+                  }>
                   {item.label}
                 </NavLink>
               </li>

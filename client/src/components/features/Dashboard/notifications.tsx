@@ -146,6 +146,10 @@ export function Notification() {
     if (noti.noti_is_read === 'N') {
       try {
         await notificationApi.readNotification(noti.noti_id);
+
+        // 🔔 Header 도트 갱신 이벤트
+        window.dispatchEvent(new Event('notification:update'));
+
         // 읽음 상태 업데이트
         setNotifications((prev) => prev.map((n) => (n.noti_id === noti.noti_id ? { ...n, noti_is_read: 'Y' } : n)));
       } catch (error) {
@@ -190,7 +194,7 @@ export function Notification() {
     return (
       <li
         key={noti.noti_id}
-        className={`flex cursor-pointer items-center gap-x-4 border-b-1 border-b-gray-300 px-1 py-3.5 last:border-b-0 hover:bg-gray-50 ${
+        className={`flex w-full cursor-pointer items-center gap-x-4 truncate border-b-1 border-b-gray-300 px-1 py-3.5 tracking-tight last:border-b-0 hover:bg-gray-50 ${
           noti.noti_is_read === 'Y' ? 'opacity-50' : ''
         }`}
         onClick={() => handleNotificationClick(noti)}>
@@ -198,9 +202,9 @@ export function Notification() {
           <AvatarImage src={profileSrc} alt={displayName} />
           <AvatarFallback>{getAvatarFallback(fallbackKey)}</AvatarFallback>
         </Avatar>
-        <div className="w-66 flex-1">
-          <p className="overflow-hidden text-base leading-6">{formatNotiMessage(noti.noti_message)}</p>
-          <p className="overflow-hidden text-sm overflow-ellipsis whitespace-nowrap text-gray-500">
+        <div className="w-66 min-w-0 flex-1">
+          <p className="truncate overflow-hidden text-base leading-6">{formatNotiMessage(noti.noti_message)}</p>
+          <p className="truncate overflow-hidden text-sm text-gray-500">
             {noti.noti_created_at && (
               <>
                 <span>{formatRelativeTime(noti.noti_created_at)}</span>
