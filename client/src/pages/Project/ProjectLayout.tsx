@@ -1,16 +1,20 @@
 // src/pages/Project/ProjectLayout.tsx
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation, useParams } from 'react-router';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/hooks/useUser';
+import { notificationApi } from '@/api/notification';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { getProjectMember, getBookmarkList, addBookmark, removeBookmark, type ProjectMemberDTO } from '@/api';
-import { getProjectView, type projectOverview } from '@/api/project';
+import { getProjectView, type projectOverview, ProjectStatusChange, getProjectLogs, type ProjectLogs } from '@/api/project';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { RadioGroup, RadioButton } from '@components/ui/radioButton';
 import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Settings, Star, ArrowLeft } from 'lucide-react';
+import { Settings, Star, ArrowLeft, OctagonAlert } from 'lucide-react';
 
 export type ProjectLayoutContext = {
   projectId?: string;
@@ -19,6 +23,8 @@ export type ProjectLayoutContext = {
   expense_data: projectOverview['expense_data'];
   expense_type: projectOverview['expense_type'];
   members: ProjectMemberDTO[];
+  logs: ProjectLogs[];
+  refetch: () => Promise<void>;
 };
 
 const tabs = [
@@ -28,6 +34,35 @@ const tabs = [
   { key: 'invoice', label: '인보이스', path: 'invoice' },
 ] as const;
 
+const STATUS_META = {
+  Closed: {
+    dialogTitle: '프로젝트 종료',
+    dialogMessage: '프로젝트를 종료처리 하시겠습니까?<br />프로젝트 종료 시 견적서, 비용, 인보이스 등록이 불가합니다.',
+    confirmText: '변경',
+    alertTitle: '프로젝트 종료',
+    alertMessage: '프로젝트가 종료처리 되었습니다.',
+    notiMessage: (actor: string) => `${actor}님이 프로젝트를 종료했습니다.`,
+  },
+  Cancelled: {
+    dialogTitle: '프로젝트 취소',
+    dialogMessage: '프로젝트를 취소처리 하시겠습니까?',
+    confirmText: '변경',
+    alertTitle: '프로젝트 취소',
+    alertMessage: '프로젝트가 취소처리 되었습니다.',
+    notiMessage: (actor: string) => `${actor}님이 프로젝트를 취소했습니다.`,
+  },
+  'in-progress': {
+    dialogTitle: '프로젝트 재개',
+    dialogMessage: '프로젝트를 진행중으로 변경 하시겠습니까?<br />종료된 프로젝트 재개 시 파이낸스에 문의해 주세요.',
+    confirmText: '변경',
+    alertTitle: '프로젝트 변경',
+    alertMessage: '프로젝트가 진행처리 되었습니다.',
+    notiMessage: (actor: string) => `${actor}님이 프로젝트를 진행중으로 변경했습니다.`,
+  },
+} as const;
+
+type ProjectStatus = 'in-progress' | 'Closed' | 'Cancelled';
+
 type ProjectEditForm = {
   project_title: string;
   project_brand: string;
@@ -35,40 +70,52 @@ type ProjectEditForm = {
   project_edate: string;
   client_id: number | null;
   project_cate: string[];
-  project_status: 'in-progress' | 'closed' | 'cancelled' | 'completed' | string;
+  project_status: ProjectStatus;
 };
 
 export default function ProjectLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { projectId } = useParams();
+  const { user_id, user_name } = useUser();
+
+  const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
 
   const [editForm, setEditForm] = useState<ProjectEditForm | null>(null); // 프로젝트 수정 폼 타입
   const [listSearch] = useState<string>(() => (location.state as any)?.fromSearch ?? ''); // ProjectList에서 전달한 필터 파라미터값
   const [data, setData] = useState<projectOverview | null>(null);
   const [members, setMembers] = useState<ProjectMemberDTO[]>([]);
+  const [logs, setLogs] = useState<ProjectLogs[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<ProjectStatus | null>(null);
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [projectDialog, setProjectDialog] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // 프로젝트 전체 데이터 호출
+  const fetchProject = useCallback(async () => {
+    if (!projectId) return;
+
+    const [projectRes, memberRes, logRes] = await Promise.all([
+      getProjectView(projectId),
+      getProjectMember(projectId),
+      getProjectLogs(projectId),
+    ]);
+
+    setData(projectRes);
+    setMembers(memberRes);
+    setLogs(logRes.reverse());
+  }, [projectId]);
+
+  // 프로젝트 초기 로딩
   useEffect(() => {
     if (!projectId) return;
 
     (async () => {
       try {
-        const [projectRes, memberRes, bookmarkRes] = await Promise.all([
-          getProjectView(projectId),
-          getProjectMember(projectId),
-          getBookmarkList(),
-        ]);
+        await fetchProject();
 
-        console.log('리스폰 데이터', projectRes);
-
-        setData(projectRes);
-        setMembers(memberRes);
-
+        const bookmarkRes = await getBookmarkList();
         const bookmarkIds = bookmarkRes.map((b) => String(b.project_id));
         setIsFavorite(bookmarkIds.includes(projectId));
       } catch (err) {
@@ -83,7 +130,7 @@ export default function ProjectLayout() {
         setLoading(false);
       }
     })();
-  }, [projectId]);
+  }, [projectId, fetchProject, navigate]);
 
   // 프로젝트 상태 수정 다이얼로그 오픈 시 세팅
   useEffect(() => {
@@ -98,7 +145,7 @@ export default function ProjectLayout() {
       project_edate: info.project_edate,
       client_id: info.client_id,
       project_cate: info.project_cate ?? [],
-      project_status: info.project_status,
+      project_status: info.project_status as ProjectStatus,
     });
   }, [projectDialog, data]);
 
@@ -118,6 +165,8 @@ export default function ProjectLayout() {
       console.error('즐겨찾기 토글 실패:', err);
     }
   }, [isFavorite, projectId]);
+
+  const isProjectMember = useMemo(() => members.some((m) => m.user_id === user_id), [members, user_id]);
 
   if (loading) return <div className="flex h-[50vh] items-center justify-center text-gray-500">로딩 중...</div>;
 
@@ -152,6 +201,92 @@ export default function ProjectLayout() {
   const status = statusMap[info.project_status as keyof typeof statusMap];
   const fallbackListPath = listSearch ? `/project${listSearch}` : '/project';
 
+  const statusOptions = [
+    { id: 'in-progress', label: '프로젝트 진행중', value: 'in-progress' },
+    { id: 'Closed', label: '프로젝트 종료', value: 'Closed' },
+    { id: 'Cancelled', label: '프로젝트 취소', value: 'Cancelled' },
+  ];
+
+  // 알림 생성 전용 API
+  const notifyProjectMembers = async (status: 'in-progress' | 'Closed' | 'Cancelled') => {
+    if (!user_id || !user_name || !projectId || !info) return;
+
+    const meta = STATUS_META[status];
+
+    // 프로젝트 상태 변경한 본인은 알림 제외
+    const notifications = members
+      .filter((m) => m.user_id !== user_id)
+      .map((m) =>
+        notificationApi.registerNotification({
+          user_id: m.user_id, // 받는 사람 (프로젝트 멤버)
+          user_name: m.user_nm, // 받는 사람 이름
+          noti_target: user_id, // 상태 변경한 사람
+          noti_title: info.project_title ?? '프로젝트',
+          noti_message: meta.notiMessage(user_name),
+          noti_type: 'project',
+          noti_url: `/project/${projectId}`,
+        })
+      );
+
+    // 보낼 대상이 없으면 API 호출 안 함
+    if (notifications.length === 0) return;
+
+    await Promise.all(notifications);
+  };
+
+  // 프로젝트 상태 변경 API
+  const applyStatusChange = async (status: 'in-progress' | 'Closed' | 'Cancelled') => {
+    if (!projectId) return;
+
+    console.log(status);
+    await ProjectStatusChange(projectId, status);
+
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            info: {
+              ...prev.info,
+              project_status: status,
+            },
+          }
+        : prev
+    );
+
+    setProjectDialog(false);
+
+    try {
+      await notifyProjectMembers(status);
+    } catch (e) {
+      console.error('프로젝트 상태 변경 알림 실패:', e);
+    }
+
+    const meta = STATUS_META[status];
+
+    addAlert({
+      title: meta.alertTitle,
+      message: meta.alertMessage,
+      icon: <OctagonAlert />,
+      duration: 1500,
+    });
+  };
+
+  // 프로젝트 상태 변경 다이얼로그 핸들러
+  const handleStatusChange = async () => {
+    if (!projectId || !selectedStatus) return;
+    if (selectedStatus !== 'Closed' && selectedStatus !== 'Cancelled' && selectedStatus !== 'in-progress') return;
+
+    const meta = STATUS_META[selectedStatus];
+
+    addDialog({
+      title: meta.dialogTitle,
+      message: meta.dialogMessage,
+      confirmText: meta.confirmText,
+      cancelText: '취소',
+      onConfirm: () => applyStatusChange(selectedStatus),
+    });
+  };
+
   return (
     <section>
       {/* 상단 프로젝트 공통 헤더 */}
@@ -175,14 +310,16 @@ export default function ProjectLayout() {
           <Button variant="svgIcon" onClick={() => navigate(fallbackListPath)} className="text-gray-500">
             <ArrowLeft className="size-5" />
           </Button>
-          <Button
-            variant="svgIcon"
-            className="text-gray-500"
-            onClick={() => {
-              setProjectDialog(true);
-            }}>
-            <Settings className="size-5" />
-          </Button>
+          {info.project_status === 'in-progress' && isProjectMember && (
+            <Button
+              variant="svgIcon"
+              className="text-gray-500"
+              onClick={() => {
+                setProjectDialog(true);
+              }}>
+              <Settings className="size-5" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -223,20 +360,42 @@ export default function ProjectLayout() {
               expense_data,
               expense_type,
               members,
+              logs,
+              refetch: fetchProject,
             } satisfies ProjectLayoutContext
           }
         />
       </div>
 
       <Dialog open={projectDialog} onOpenChange={setProjectDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>프로젝트 수정</DialogTitle>
-            <DialogDescription className="leading-[1.3] break-keep">진행중인 프로젝트에 한해서 수정할 수 있습니다.</DialogDescription>
+            <DialogTitle>프로젝트 상태 변경</DialogTitle>
+            <DialogDescription className="leading-[1.3] break-keep">
+              진행중인 프로젝트에 한해서 수정할 수 있습니다.
+              <br />
+              프로젝트가 종료되면 견적서, 비용, 인보이스 등록이 불가합니다.
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 items-start gap-4">UI 준비중</div>
+          <RadioGroup value={selectedStatus ?? undefined} onValueChange={(value) => setSelectedStatus(value as ProjectStatus)}>
+            <div className="grid grid-cols-2 items-start gap-2">
+              {statusOptions
+                .filter((option) => option.value !== info.project_status)
+                .map((option) => (
+                  <RadioButton
+                    key={option.id}
+                    id={option.id}
+                    variant="dynamic"
+                    label={option.label}
+                    value={option.value}
+                    size="md"
+                    iconHide={true}
+                  />
+                ))}
+            </div>
+          </RadioGroup>
           <DialogFooter>
-            <Button type="submit" onClick={() => {}}>
+            <Button type="button" onClick={handleStatusChange}>
               변경사항 저장
             </Button>
           </DialogFooter>

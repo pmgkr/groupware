@@ -473,13 +473,15 @@ export default function Expense() {
           </div>
         </div>
 
-        <Button
-          size="sm"
-          onClick={() => {
-            setRegisterDialog(true);
-          }}>
-          비용 작성하기
-        </Button>
+        {data.project_status === 'in-progress' && (
+          <Button
+            size="sm"
+            onClick={() => {
+              setRegisterDialog(true);
+            }}>
+            비용 작성하기
+          </Button>
+        )}
       </div>
 
       <Table variant="primary" align="center" className="table-fixed">

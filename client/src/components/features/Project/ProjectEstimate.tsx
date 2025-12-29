@@ -99,13 +99,15 @@ export default function ProjectEstimate() {
   return (
     <>
       <div className="mb-4 flex justify-end">
-        <Button
-          size="sm"
-          onClick={() => {
-            setRegisterDialog(true);
-          }}>
-          견적서 등록
-        </Button>
+        {data.project_status === 'in-progress' && (
+          <Button
+            size="sm"
+            onClick={() => {
+              setRegisterDialog(true);
+            }}>
+            견적서 등록
+          </Button>
+        )}
       </div>
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
