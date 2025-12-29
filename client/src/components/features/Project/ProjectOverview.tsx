@@ -1,8 +1,9 @@
 // src/components/features/Project/ProjectOverview
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useOutletContext, useLocation, useNavigate } from 'react-router';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { formatAmount } from '@/utils';
+import { useUser } from '@/hooks/useUser';
 
 import { getInvoiceList, type InvoiceListItem } from '@/api';
 import { getProjectLogs, type ProjectLogs } from '@/api/project';
@@ -24,6 +25,7 @@ import { Edit } from '@/assets/images/icons';
 import { format } from 'date-fns';
 
 export default function Overview() {
+  const { user_id } = useUser();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -187,15 +189,17 @@ export default function Overview() {
       })
     : [];
 
+  const isProjectMember = useMemo(() => members.some((m) => m.user_id === user_id), [members, user_id]);
+
   return (
     <>
-      <div className="flex min-h-160 flex-wrap justify-between py-2">
+      <div className="flex min-h-240 flex-wrap justify-between py-2">
         <div className="w-[76%] tracking-tight">
           <div className="flex flex-wrap gap-[3%]">
             <div className="w-full">
               <div className="flex items-center justify-between">
                 <h3 className="mb-2 text-lg font-bold text-gray-800">프로젝트 정보</h3>
-                {data.project_status === 'in-progress' && (
+                {data.project_status === 'in-progress' && isProjectMember && (
                   <Button type="button" variant="svgIcon" size="sm" className="text-gray-600 hover:text-gray-700" onClick={() => {}}>
                     <Edit className="size-4" />
                   </Button>
@@ -338,12 +342,12 @@ export default function Overview() {
             </Button>
           </div>
         </div>
-        <div className="flex w-[20%] flex-col gap-4">
-          <div className="flex h-[45%] flex-col pb-4">
+        <div className="flex w-[20%] flex-col gap-8">
+          <div className="flex h-auto max-h-120 flex-col pb-4">
             <div className="mb-2 flex shrink-0 items-center justify-between">
               <h2 className="text-lg font-bold text-gray-800">프로젝트 멤버</h2>
 
-              {data.project_status === 'in-progress' && (
+              {data.project_status === 'in-progress' && isProjectMember && (
                 <Button
                   type="button"
                   variant="svgIcon"
@@ -364,7 +368,7 @@ export default function Overview() {
               </ul>
             </div>
           </div>
-          <div className="flex h-[45%] flex-col pb-4">
+          <div className="flex h-auto max-h-120 flex-col pb-4">
             <div className="mb-2 flex shrink-0 items-center justify-between">
               <h2 className="text-lg font-bold text-gray-800">프로젝트 히스토리</h2>
             </div>

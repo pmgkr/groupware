@@ -1,5 +1,5 @@
 // src/pages/Project/ProjectLayout.tsx
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation, useParams } from 'react-router';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
@@ -166,6 +166,8 @@ export default function ProjectLayout() {
     }
   }, [isFavorite, projectId]);
 
+  const isProjectMember = useMemo(() => members.some((m) => m.user_id === user_id), [members, user_id]);
+
   if (loading) return <div className="flex h-[50vh] items-center justify-center text-gray-500">로딩 중...</div>;
 
   if (!data) return <div className="p-6 text-center">데이터 없음</div>;
@@ -308,7 +310,7 @@ export default function ProjectLayout() {
           <Button variant="svgIcon" onClick={() => navigate(fallbackListPath)} className="text-gray-500">
             <ArrowLeft className="size-5" />
           </Button>
-          {info.project_status === 'in-progress' && (
+          {info.project_status === 'in-progress' && isProjectMember && (
             <Button
               variant="svgIcon"
               className="text-gray-500"
