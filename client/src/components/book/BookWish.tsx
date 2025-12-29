@@ -402,7 +402,7 @@ export default function BookWish() {
             <TableHead className="w-[100px]">상태</TableHead>
             <TableHead className="w-[130px]">날짜</TableHead>
             <TableHead className="w-[130px]">카테고리</TableHead>
-            <TableHead className="w-[400px]">도서명</TableHead>
+            <TableHead className="">도서명</TableHead>
             <TableHead className="w-[200px]">저자</TableHead>
             <TableHead className="w-[150px]">출판사</TableHead>
             <TableHead className="w-[120px]">팀</TableHead>
