@@ -28,6 +28,8 @@ export default function ManagerWorking() {
         onDateChange={setCurrentDate} 
         onTeamSelect={handleTeamSelect}
         page="manager"
+        workingList={workingList}
+        weekStartDate={weekStartDate}
       />
       
       <WorkingList
