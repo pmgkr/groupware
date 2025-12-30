@@ -9,6 +9,7 @@ import { RefreshCw, X } from 'lucide-react';
 
 interface ExpenseListFilterProps {
   selectedYear: string;
+  yearOptions: string[];
   selectedType: string[];
   selectedStatus: string[];
   selectedProof: string[];
@@ -46,6 +47,7 @@ interface ExpenseListFilterProps {
 
 export function AdminListFilter({
   selectedYear,
+  yearOptions,
   selectedType,
   selectedStatus,
   selectedProof,
@@ -110,16 +112,15 @@ export function AdminListFilter({
         <div className="flex items-center gap-x-2">
           {/* 연도 */}
           <Select value={selectedYear} onValueChange={onYearChange}>
-            <SelectTrigger size="sm">
+            <SelectTrigger size="sm" className="px-2">
               <SelectValue placeholder="연도 선택" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="2025" size="sm">
-                2025
-              </SelectItem>
-              <SelectItem value="2026" size="sm">
-                2026
-              </SelectItem>
+              {yearOptions.map((y) => (
+                <SelectItem key={y} value={y} size="sm">
+                  {y}년
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 

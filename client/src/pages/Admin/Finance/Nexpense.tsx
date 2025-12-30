@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
-import { formatDate } from '@/utils';
+import { formatDate, getGrowingYears } from '@/utils';
 
 import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -23,7 +23,9 @@ export default function Nexpense() {
   // ============================
   // Filter States
   // ============================
-  const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || '2025');
+  const currentYear = String(new Date().getFullYear()); // 올해 구하기
+  const yearOptions = getGrowingYears(); // yearOptions
+  const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || currentYear);
   const [selectedType, setSelectedType] = useState<string[]>(() => searchParams.get('type')?.split(',') ?? []);
   const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('status')?.split(',') ?? ['Confirmed']);
   const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
@@ -147,13 +149,7 @@ export default function Nexpense() {
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
 
-    setCheckedItems(
-      checked
-        ? expenseList
-            .filter((item) => user_id !== item.user_id) // disabled 대상 제외
-            .map((item) => item.seq)
-        : []
-    );
+    setCheckedItems(checked ? expenseList.map((item) => item.seq) : []);
   };
 
   // 개별 체크박스 핸들러
@@ -173,7 +169,7 @@ export default function Nexpense() {
     setSearchInput('');
     setSearchQuery('');
 
-    setSelectedYear('2025');
+    setSelectedYear(currentYear);
     setSelectedType([]);
     setSelectedStatus([]);
     setSelectedProof([]);
@@ -305,6 +301,7 @@ export default function Nexpense() {
     <>
       <AdminListFilter
         selectedYear={selectedYear}
+        yearOptions={yearOptions}
         selectedType={selectedType}
         selectedStatus={selectedStatus}
         selectedProof={selectedProof}
