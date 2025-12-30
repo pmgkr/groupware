@@ -1,11 +1,11 @@
 // src/components/features/Expense/_components/ExpensListeRow.tsx
 import { memo } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { formatAmount, formatKST } from '@/utils';
+import { formatAmount, formatDate } from '@/utils';
 import type { ExpenseListItem } from '@/api';
 
 type ExpenseRowProps = {
@@ -17,6 +17,8 @@ type ExpenseRowProps = {
 };
 
 export const ExpenseRow = memo(({ item, activeTab, checked, onCheck, manager }: ExpenseRowProps) => {
+  const { search } = useLocation();
+
   const statusMap = {
     Saved: <Badge variant="grayish">임시저장</Badge>,
     Claimed: <Badge variant="secondary">승인대기</Badge>,
@@ -38,23 +40,26 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck, manager }: 
       </TableCell>
 
       <TableCell className="whitespace-nowrap">
-        <Link to={`/expense/${item.exp_id}`} className="rounded-[4px] border-1 bg-white p-1 text-sm">
+        <Link to={`/expense/${item.exp_id}${search}`} className="rounded-[4px] border-1 bg-white p-1 text-sm">
           {item.exp_id}
         </Link>
       </TableCell>
       <TableCell>{item.el_method}</TableCell>
       <TableCell>{item.el_type}</TableCell>
       <TableCell className="text-left">
-        <Link to={`/expense/${item.exp_id}`} className="hover:underline">
+        <Link to={`/expense/${item.exp_id}${search}`} className="hover:underline">
           {item.el_title}
         </Link>
       </TableCell>
       <TableCell>{item.el_attach === 'Y' ? <Badge variant="secondary">제출</Badge> : <Badge variant="grayish">미제출</Badge>}</TableCell>
-      <TableCell className="text-right">{formatAmount(item.el_amount)}원</TableCell>
-      <TableCell className="text-right">{item.el_tax === 0 ? 0 : `${formatAmount(item.el_tax)}원`}</TableCell>
-      <TableCell className="text-right">{formatAmount(item.el_total)}원</TableCell>
+      <TableCell className="text-right">
+        {formatAmount(item.el_total)}원
+        {item.el_tax !== 0 && <div className="mt-0.5 text-[11px] leading-[1.2] text-gray-600">세금 {formatAmount(item.el_tax)}원</div>}
+      </TableCell>
       <TableCell>{statusMap[item.status as keyof typeof statusMap]}</TableCell>
-      <TableCell>{formatKST(item.wdate)}</TableCell>
+      <TableCell>{formatDate(item.wdate)}</TableCell>
+      <TableCell>{(item.status !== 'Rejected' && formatDate(item.ddate)) || '-'}</TableCell>
+      <TableCell>{(item.status !== 'Rejected' && formatDate(item.edate)) || '-'}</TableCell>
     </TableRow>
   );
 });
