@@ -9,6 +9,7 @@ interface ExpenseListFilterProps {
   onTabChange: (tab: 'all' | 'saved') => void;
 
   selectedYear: string;
+  yearOptions: string[];
   selectedType: string[];
   selectedStatus: string[];
   selectedProof: string[];
@@ -31,6 +32,8 @@ export function ExpenseListFilter({
   onTabChange,
 
   selectedYear,
+  yearOptions,
+
   selectedType,
   selectedStatus,
   selectedProof,
@@ -105,8 +108,11 @@ export function ExpenseListFilter({
               <SelectValue placeholder="연도 선택" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="2026">2026</SelectItem>
-              <SelectItem value="2025">2025</SelectItem>
+              {yearOptions.map((y) => (
+                <SelectItem key={y} value={y} size="sm">
+                  {y}년
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 

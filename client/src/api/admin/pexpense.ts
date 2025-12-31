@@ -1,5 +1,6 @@
 // 📦 프로젝트 비용 API
 import { http } from '@/lib/http';
+import { httpFile } from '@/lib/httpFile';
 import { cleanParams } from '@/utils';
 import { getToken } from '@/lib/tokenStore';
 import type { pExpenseViewDTO } from '@/api/project/expense';
@@ -111,14 +112,28 @@ export async function setDdate(
 export async function getPDFDownload(seq: number): Promise<Response> {
   if (!seq) throw new Error('seq가 필요합니다.');
 
-  const res = await fetch(`/admin/pexpense/pdf/${seq}`, {
+  const res = await httpFile(`/admin/pexpense/pdf/${seq}`, {
     method: 'GET',
-    credentials: 'include',
+    headers: {
+      Accept: 'application/zip',
+    },
   });
 
-  if (!res.ok) {
-    throw new Error('PDF 다운로드 실패');
-  }
-
   return res;
+}
+
+// 어드민 > 선택한 프로젝트 비용 PDF 다운로드
+export async function getMultiPDFDownload(seqs: number[]) {
+  if (!seqs.length) throw new Error('비용이 선택되지 않았습니다.');
+
+  const seqParam = seqs.join(',');
+
+  const res = await httpFile(`/admin/pexpense/download?seqs=${seqParam}`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/zip',
+    },
+  });
+
+  return res.blob();
 }

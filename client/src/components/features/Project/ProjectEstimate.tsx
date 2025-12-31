@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useOutletContext } from 'react-router';
 import * as XLSX from 'xlsx';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { getEstimateList, type EstimateListItem, type projectEstimateParams } from '@/api';
-import { formatKST, formatAmount } from '@/utils';
+import { formatDate, formatAmount } from '@/utils';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@components/ui/button';
@@ -119,7 +119,7 @@ export default function ProjectEstimate() {
             <TableHead className="w-[10%]">가용 예산</TableHead>
             <TableHead className="w-[8%]">작성자</TableHead>
             <TableHead className="w-[8%]">상태</TableHead>
-            <TableHead className="w-[14%]">작성일시</TableHead>
+            <TableHead className="w-[12%]">작성일</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -137,7 +137,7 @@ export default function ProjectEstimate() {
                 <TableCell>{formatAmount(item.est_budget)}</TableCell>
                 <TableCell>{item.user_nm}</TableCell>
                 <TableCell>{statusMap[item.est_valid as keyof typeof statusMap]}</TableCell>
-                <TableCell>{formatKST(item.wdate)}</TableCell>
+                <TableCell>{formatDate(item.wdate)}</TableCell>
               </TableRow>
             ))
           ) : (

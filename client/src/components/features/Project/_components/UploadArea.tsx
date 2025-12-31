@@ -109,12 +109,29 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
 
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         const page = await pdf.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 1.6 });
+        const dpr = window.devicePixelRatio || 1;
+        const scale = 2.5;
+
+        const viewport = page.getViewport({ scale });
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d')!;
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+
+        // 🔥 실제 픽셀 크기
+        canvas.width = Math.floor(viewport.width * dpr);
+        canvas.height = Math.floor(viewport.height * dpr);
+
+        // 🔥 CSS 크기 (미리보기 크기)
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
+
+        // 🔥 스케일 보정
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        await page.render({
+          canvasContext: ctx,
+          viewport,
+          canvas,
+        }).promise;
 
         const halfWidth = canvas.width / 2;
         const crop = async (x: number) => {

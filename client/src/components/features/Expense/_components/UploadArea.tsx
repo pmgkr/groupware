@@ -4,8 +4,12 @@ import { cn } from '@/lib/utils';
 import { useDropzone } from 'react-dropzone';
 import * as pdfjsLib from 'pdfjs-dist';
 import 'pdfjs-dist/legacy/build/pdf.worker.min.mjs';
+import { cropHalfCanvas, cropWhitespace } from '../utils/cropPDF';
+import { useZoomBoundary } from '../context/ZoomContext';
+import { ImageZoomPreview } from './ImageZoom';
 import { Button } from '@components/ui/button';
 import { Upload, Delete } from '@/assets/images/icons';
+import { ZoomIn } from 'lucide-react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
 
@@ -43,6 +47,8 @@ const FileCard = memo(
     onRemove,
     onDragStart,
     onDragEnd,
+    onZoomEnter,
+    onZoomLeave,
   }: {
     file: PreviewFile;
     rowLinked: number | null;
@@ -52,6 +58,8 @@ const FileCard = memo(
     onRemove: () => void;
     onDragStart: (e: React.DragEvent<HTMLImageElement>) => void;
     onDragEnd: () => void;
+    onZoomEnter: (e: React.MouseEvent) => void;
+    onZoomLeave: () => void;
   }) => {
     return (
       <div
@@ -70,13 +78,17 @@ const FileCard = memo(
             loading="lazy"
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
-            className="absolute top-0 left-0 w-[350%] max-w-none translate-x-[-12.5%] translate-y-[-2.5%]"
+            className="absolute top-0 left-0 w-[280%] max-w-none"
           />
         </div>
 
         <div className="absolute bottom-0 flex h-6.5 w-full items-center justify-between bg-gray-700/50 px-1 text-xs text-white">
           <div>{rowLinked ? `증빙자료 #${rowLinked}` : ''}</div>
           <div className="flex gap-0.5">
+            <Button type="button" variant="svgIcon" size="icon" onMouseEnter={onZoomEnter} onMouseLeave={onZoomLeave} className="size-5">
+              <ZoomIn />
+            </Button>
+
             <Button
               type="button"
               variant="svgIcon"
@@ -101,6 +113,9 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
   ({ files, setFiles, onFilesChange, linkedRows, activeFile, setActiveFile }, ref) => {
     const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
+    const [zoomSrc, setZoomSrc] = useState<string | null>(null);
+    const zoomBoundary = useZoomBoundary();
+
     // ✅ PDF → Blob URL 로 변환 (비동기 + 메모리 절약)
     const splitPdfToImages = async (file: File): Promise<PreviewFile[]> => {
       const arrayBuffer = await file.arrayBuffer();
@@ -109,29 +124,60 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
 
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         const page = await pdf.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 1.6 });
+        const dpr = window.devicePixelRatio || 1;
+        const scale = 2.5;
+
+        const viewport = page.getViewport({ scale });
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d')!;
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: ctx, viewport, canvas }).promise;
 
-        const halfWidth = canvas.width / 2;
-        const crop = async (x: number) => {
-          const temp = document.createElement('canvas');
-          const tctx = temp.getContext('2d')!;
-          temp.width = halfWidth;
-          temp.height = canvas.height;
-          tctx.drawImage(canvas, x, 0, halfWidth, canvas.height, 0, 0, halfWidth, canvas.height);
-          return new Promise<string>((resolve) => {
-            temp.toBlob((blob) => {
+        // 🔥 실제 픽셀 크기
+        canvas.width = Math.floor(viewport.width * dpr);
+        canvas.height = Math.floor(viewport.height * dpr);
+
+        // 🔥 CSS 크기 (미리보기 크기)
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
+
+        // 🔥 스케일 보정
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        await page.render({
+          canvasContext: ctx,
+          viewport,
+          canvas,
+        }).promise;
+
+        const halfWidth = Math.floor(canvas.width / 2);
+
+        // 좌 / 우 분리
+        const leftCanvas = cropHalfCanvas(canvas, 0, halfWidth);
+        const rightCanvas = cropHalfCanvas(canvas, halfWidth, halfWidth);
+
+        // 각각 여백 제거
+        const croppedLeft = cropWhitespace(leftCanvas);
+        const croppedRight = cropWhitespace(rightCanvas);
+
+        // Blob URL 생성
+        const toBlobUrl = (c: HTMLCanvasElement) =>
+          new Promise<string>((resolve) => {
+            c.toBlob((blob) => {
               if (blob) resolve(URL.createObjectURL(blob));
             }, 'image/png');
           });
-        };
 
-        allImages.push({ name: `${file.name}_${pageNum}_l.png`, type: 'image/png', preview: await crop(0) });
-        allImages.push({ name: `${file.name}_${pageNum}_r.png`, type: 'image/png', preview: await crop(halfWidth) });
+        allImages.push(
+          {
+            name: `${file.name}_${pageNum}_l.png`,
+            type: 'image/png',
+            preview: await toBlobUrl(croppedLeft),
+          },
+          {
+            name: `${file.name}_${pageNum}_r.png`,
+            type: 'image/png',
+            preview: await toBlobUrl(croppedRight),
+          }
+        );
       }
 
       return allImages;
@@ -212,49 +258,60 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
     );
 
     return (
-      <div
-        className={cn(
-          'h-full w-full flex-1 overflow-y-auto rounded-md transition-colors',
-          isDragActive ? 'bg-primary-blue-500/10' : 'bg-gray-400/30'
-        )}>
-        <input {...getInputProps()} />
-        {files.length === 0 ? (
-          <div {...getRootProps()} className="flex h-full w-full cursor-pointer flex-col items-center justify-center gap-4">
-            <Upload className="size-15" />
-            <p className="text-lg font-bold">매출전표 PDF 파일 혹은 이미지를 이곳에 드래그 해 주세요.</p>
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-4 p-4">
-            {files.map((file) => {
-              const rowLinked = linkedRows?.[file.name] ?? null;
-              const isLinkedActive = activeFile === file.name;
-              const isSelected = selectedFiles.includes(file.name);
+      <>
+        <div
+          className={cn(
+            'h-full w-full flex-1 overflow-y-auto rounded-md transition-colors',
+            isDragActive ? 'bg-primary-blue-500/10' : 'bg-gray-400/30'
+          )}>
+          <input {...getInputProps()} />
+          {files.length === 0 ? (
+            <div {...getRootProps()} className="flex h-full w-full cursor-pointer flex-col items-center justify-center gap-4">
+              <Upload className="size-15" />
+              <p className="text-lg font-bold">매출전표 PDF 파일 혹은 이미지를 이곳에 드래그 해 주세요.</p>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-4 p-4">
+              {files.map((file) => {
+                const rowLinked = linkedRows?.[file.name] ?? null;
+                const isLinkedActive = activeFile === file.name;
+                const isSelected = selectedFiles.includes(file.name);
 
-              return (
-                <FileCard
-                  key={file.name}
-                  file={file}
-                  rowLinked={rowLinked}
-                  isLinkedActive={isLinkedActive}
-                  isSelected={isSelected}
-                  onToggle={() => toggleSelect(file.name)}
-                  onRemove={() => removeFile(file.name)}
-                  onDragStart={(e) => {
-                    if (!isSelected) {
-                      e.preventDefault();
-                      return;
-                    }
-                    const draggedFiles = files.filter((f) => selectedFiles.includes(f.name));
-                    e.dataTransfer.setData('application/json', JSON.stringify(draggedFiles));
-                    e.dataTransfer.effectAllowed = 'copy';
-                  }}
-                  onDragEnd={() => setSelectedFiles([])}
-                />
-              );
-            })}
-          </div>
-        )}
-      </div>
+                return (
+                  <FileCard
+                    key={file.name}
+                    file={file}
+                    rowLinked={rowLinked}
+                    isLinkedActive={isLinkedActive}
+                    isSelected={isSelected}
+                    onToggle={() => toggleSelect(file.name)}
+                    onRemove={() => removeFile(file.name)}
+                    onDragStart={(e) => {
+                      if (!isSelected) {
+                        e.preventDefault();
+                        return;
+                      }
+                      const draggedFiles = files.filter((f) => selectedFiles.includes(f.name));
+                      e.dataTransfer.setData('application/json', JSON.stringify(draggedFiles));
+                      e.dataTransfer.effectAllowed = 'copy';
+                    }}
+                    onDragEnd={() => setSelectedFiles([])}
+                    onZoomEnter={(e) => {
+                      e.stopPropagation();
+                      if (!zoomBoundary) return;
+                      setZoomSrc(file.preview);
+                    }}
+                    onZoomLeave={() => {
+                      setZoomSrc(null);
+                    }}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+        {zoomSrc && zoomBoundary && <ImageZoomPreview src={zoomSrc} boundary={zoomBoundary} />}
+      </>
     );
   }
 );
