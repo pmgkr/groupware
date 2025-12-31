@@ -14,7 +14,8 @@ import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { getClientList } from '@/api';
-import { getProjectInfo, projectUpdate, type ProjectViewDTO } from '@/api/project';
+import { notificationApi } from '@/api/notification';
+import { getProjectInfo, projectUpdate, type ProjectViewDTO, type ProjectMemberDTO } from '@/api/project';
 
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
@@ -41,8 +42,6 @@ const categoryOptions: MultiSelectOption[] = [
   { label: 'Others', value: 'Others' },
 ];
 
-const yearOptions = getGrowingYears();
-
 /* ---------------- schema ---------------- */
 
 const projectUpdateSchema = z.object({
@@ -62,6 +61,7 @@ type ProjectUpdateFormValues = z.infer<typeof projectUpdateSchema>;
 interface Props {
   open: boolean;
   projectId: string;
+  projectMembers: ProjectMemberDTO[];
   onOpenChange: (v: boolean) => void;
   onSuccess?: () => void;
 }
@@ -81,7 +81,7 @@ function normalizePipeArray(value?: string | string[] | null): string[] {
   return [];
 }
 
-export function ProjectUpdate({ open, projectId, onOpenChange, onSuccess }: Props) {
+export function ProjectUpdate({ open, projectId, projectMembers, onOpenChange, onSuccess }: Props) {
   const { user_id, user_name, team_id, profile_image } = useUser();
 
   const { addAlert } = useAppAlert();
@@ -91,6 +91,8 @@ export function ProjectUpdate({ open, projectId, onOpenChange, onSuccess }: Prop
   const [clientOptions, setClientOptions] = useState<SingleSelectOption[]>([]);
 
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : null);
+
+  console.log(projectMembers);
 
   /* ---------- form ---------- */
 
@@ -169,19 +171,37 @@ export function ProjectUpdate({ open, projectId, onOpenChange, onSuccess }: Prop
 
         const res = await projectUpdate(projectId, payload);
 
-        addAlert({
-          title: '프로젝트 수정이 완료되었습니다.',
-          icon: <OctagonAlert />,
-          duration: 2000,
-        });
+        if (res.ok) {
+          const notifications = projectMembers
+            .filter((m) => m.user_id !== user_id) // 수정한 본인은 제외하고 알림
+            .map((m) =>
+              notificationApi.registerNotification({
+                user_id: m.user_id,
+                user_name: m.user_nm,
+                noti_target: user_id!,
+                noti_title: `${projectId} · ${payload.project_title}`,
+                noti_message: `${user_name}님이 프로젝트 정보를 수정했습니다.`,
+                noti_type: 'project',
+                noti_url: `/project/${projectId}`,
+              })
+            );
+
+          if (notifications.length > 0) {
+            await Promise.all(notifications);
+          }
+
+          addAlert({
+            title: '프로젝트 수정이 완료되었습니다.',
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        }
 
         onSuccess?.();
         onOpenChange(false);
       },
     });
   };
-
-  /* ---------- UI ---------- */
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
