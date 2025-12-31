@@ -109,13 +109,13 @@ export default function WorkTimeDownload({
     };
   };
 
-  const buildMonthSheetRows = async (monthIndex: number) => {
+  const buildMonthSheetRows = async (monthIndex: number): Promise<{ rows: (string | number)[][]; dayKeys: string[] }> => {
     const year = currentDate.getFullYear();
     const monthStart = new Date(year, monthIndex, 1);
     const monthEnd = new Date(year, monthIndex + 1, 0);
 
     const teamIdsToQuery = await resolveTeamIdsToQuery();
-    if (teamIdsToQuery.length === 0) return [['팀 정보가 없습니다.']];
+    if (teamIdsToQuery.length === 0) return { rows: [['팀 정보가 없습니다.']], dayKeys: [] };
 
     const teamNameMap = await resolveTeamNameMap();
 
@@ -203,14 +203,18 @@ export default function WorkTimeDownload({
                 d.totalHours != null && d.totalMinutes != null
                   ? `${d.totalHours}h ${d.totalMinutes}m`
                   : '';
-              const holiday = d.holidayName ? `[${d.holidayName}]` : '';
+              const holidayLabel = d.holidayName ? `[${d.holidayName}]` : '';
 
-              const workTypeLine = d.workType && d.workType !== '-' ? d.workType : '-';
+              const workTypeLine = d.holidayName
+                ? holidayLabel
+                : d.workType && d.workType !== '-'
+                  ? d.workType
+                  : '-';
               const timeLine = timeRange
                 ? `${timeRange}${totalStr ? `(${totalStr})` : ''}`
                 : totalStr;
 
-              const cellParts = [workTypeLine, timeLine, holiday]
+              const cellParts = [workTypeLine, timeLine, d.holidayName ? holidayLabel : '']
                 .map((v) => v || '')
                 .filter((v) => v.trim() !== '')
                 .join('\n');
@@ -244,7 +248,7 @@ export default function WorkTimeDownload({
 
     if (userMap.size === 0) {
       rows.push(['데이터가 없습니다.']);
-      return rows;
+      return { rows, dayKeys };
     }
 
     const screenOrder = workingList.map((w) => w.id);
@@ -271,19 +275,25 @@ export default function WorkTimeDownload({
       rows.push(row);
     });
 
-    return rows;
+    return { rows, dayKeys };
   };
 
   const applySheetStyles = (worksheet: XLSX.WorkSheet, dayKeys: string[]) => {
     const encode = XLSX.utils.encode_cell;
     const headerRow = 3; // 0-based
+    const range = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
+    if (!range) return;
 
-    dayKeys.forEach((key, idx) => {
-      const date = parseDayKey(key);
-      const dow = date.getDay();
-      const col = 2 + idx;
-      const cell = worksheet[encode({ r: headerRow, c: col })];
-      const fontColor = dow === 0 ? 'FFFF3B30' : dow === 6 ? 'FF0A84FF' : null;
+    // 컬럼별 요일/색상 계산 (헤더 문자열 기준)
+    const colColors: Record<number, string | null> = {};
+    for (let c = 2; c <= range.e.c; c++) {
+      const cell = worksheet[encode({ r: headerRow, c })];
+      const text = cell?.v ? String(cell.v) : '';
+      const dowChar = text.match(/\((.)\)/)?.[1];
+      const dowIndex = ['일', '월', '화', '수', '목', '금', '토'].indexOf(dowChar || '');
+      const fontColor = dowIndex === 0 ? 'FFFF3B30' : dowIndex === 6 ? 'FF0A84FF' : null;
+      colColors[c] = fontColor;
+
       if (cell) {
         cell.s = {
           ...(cell.s || {}),
@@ -291,26 +301,18 @@ export default function WorkTimeDownload({
           alignment: { ...(cell.s?.alignment || {}), wrapText: true, vertical: 'top' },
         };
       }
-    });
+    }
 
-    const dataRange = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
-    if (!dataRange) return;
-
-    for (let r = headerRow + 1; r <= dataRange.e.r; r++) {
-      dayKeys.forEach((key, idx) => {
-        const date = parseDayKey(key);
-        const dow = date.getDay();
-        const col = 2 + idx;
-        const cell = worksheet[encode({ r, c: col })];
-        if (!cell) return;
+    for (let r = headerRow + 1; r <= range.e.r; r++) {
+      for (let c = 2; c <= range.e.c; c++) {
+        const cell = worksheet[encode({ r, c })];
+        if (!cell) continue;
 
         let fontColor: string | null = null;
         if (typeof cell.v === 'string' && cell.v.includes('[')) {
-          fontColor = 'FFFF3B30';
-        } else if (dow === 0) {
-          fontColor = 'FFFF3B30';
-        } else if (dow === 6) {
-          fontColor = 'FF0A84FF';
+          fontColor = 'FFFF3B30'; // 공휴일
+        } else {
+          fontColor = colColors[c] || null; // 요일 색상
         }
 
         cell.s = {
@@ -322,7 +324,7 @@ export default function WorkTimeDownload({
           },
           alignment: { ...(cell.s?.alignment || {}), wrapText: true, vertical: 'top' },
         };
-      });
+      }
     }
 
     // 컬럼 너비 설정: 부서/이름 조금 넓게, 날짜 컬럼 균일 적용
@@ -355,9 +357,9 @@ export default function WorkTimeDownload({
     const workbook = XLSX.utils.book_new();
     for (const monthLabel of selectedMonths) {
       const monthIndex = Math.max(0, Math.min(11, parseInt(monthLabel.replace('월', ''), 10) - 1));
-      const rows = await buildMonthSheetRows(monthIndex);
+      const { rows, dayKeys } = await buildMonthSheetRows(monthIndex);
       const worksheet = XLSX.utils.aoa_to_sheet(rows);
-      applySheetStyles(worksheet, rows.length >= 4 ? (rows[3].slice(2) as string[]) : []);
+      applySheetStyles(worksheet, dayKeys);
       XLSX.utils.book_append_sheet(workbook, worksheet, monthLabel);
     }
 
