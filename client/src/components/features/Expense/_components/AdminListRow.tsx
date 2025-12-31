@@ -12,16 +12,17 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { DayPicker } from '@components/daypicker';
 
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Download } from 'lucide-react';
 
 type ExpenseRowProps = {
   item: ExpenseListItems;
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
   onDdate: (seq: number, ddate: Date) => void;
+  handlePDFDownload: (seq: number, expId: string, userName: string) => void;
 };
 
-export const AdminListRow = memo(({ item, checked, onCheck, onDdate }: ExpenseRowProps) => {
+export const AdminListRow = memo(({ item, checked, onCheck, onDdate, handlePDFDownload }: ExpenseRowProps) => {
   const { search } = useLocation();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -69,10 +70,18 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate }: ExpenseRo
 
   return (
     <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]">
-      <TableCell className="whitespace-nowrap">
-        <Link to={`/admin/finance/nexpense/${item.seq}${search}`} className="rounded-[4px] border-1 bg-white p-1 text-sm">
+      <TableCell className="px-0! whitespace-nowrap">
+        <Link to={`/admin/finance/nexpense/${item.seq}${search}`} className="rounded-[4px] border-1 bg-white p-1 text-[11px] 2xl:text-sm">
           {item.exp_id}
         </Link>
+        <Button
+          type="button"
+          variant="outline"
+          size="xs"
+          onClick={() => handlePDFDownload(item.seq, item.exp_id, item.user_nm)}
+          className="ml-1 h-6 w-auto rounded-[4px] p-0.5! align-middle">
+          <Download className="size-3" />
+        </Button>
       </TableCell>
       <TableCell>{item.el_method}</TableCell>
       <TableCell>{item.el_type}</TableCell>

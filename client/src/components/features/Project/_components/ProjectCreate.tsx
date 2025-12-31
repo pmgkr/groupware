@@ -321,6 +321,7 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
                       value={field.value}
                       onChange={(v) => field.onChange(v)}
                       invalid={fieldState.invalid}
+                      className="w-full overflow-hidden"
                     />
                   </FormControl>
                 </FormItem>

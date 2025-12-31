@@ -62,6 +62,15 @@ export function ProjectUpdate({ open, projectInfo, onOpenChange, onSuccess }: Pr
   /* ---------- client ---------- */
 
   const [clientOptions, setClientOptions] = useState<SingleSelectOption[]>([]);
+  const categoryOptions: MultiSelectOption[] = [
+    { label: 'Web', value: 'Web' },
+    { label: 'Campaign', value: 'Campaign' },
+    { label: 'Event Promotion', value: 'Event  Promotion' },
+    { label: 'Performance', value: 'Performance' },
+    { label: 'Digital Media', value: 'Digital Media' },
+    { label: 'Production', value: 'Production' },
+    { label: 'Others', value: 'Others' },
+  ];
 
   useEffect(() => {
     getClientList().then((res) => {
@@ -132,33 +141,219 @@ export function ProjectUpdate({ open, projectInfo, onOpenChange, onSuccess }: Pr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>프로젝트 수정</DialogTitle>
           <DialogDescription className="leading-[1.3] break-keep">프로젝트 정보를 수정할 수 있습니다.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pt-4">
-            {/* 생성년도 */}
+            <div className="grid grid-cols-2 items-start gap-4">
+              {/* 생성년도 */}
+              <FormField
+                control={form.control}
+                name="year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>생성년도</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTriggerFull className="w-full">
+                          <SelectValue placeholder="년도 선택" />
+                        </SelectTriggerFull>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="2025">2025</SelectItem>
+                        <SelectItem value="2026">2026</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+
+              {/* 브랜드 */}
+              <FormField
+                control={form.control}
+                name="brand"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>ICG 브랜드</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTriggerFull className={cn('w-full', fieldState.invalid && 'border-destructive ring-destructive/20')}>
+                          <SelectValue placeholder="브랜드 선택" />
+                        </SelectTriggerFull>
+                        <SelectContent>
+                          <SelectItem value="PMG">PMG</SelectItem>
+                          <SelectItem value="MCS">MCS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {/* 카테고리 */}
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>카테고리</FormLabel>
+                    <FormControl>
+                      <MultiSelect
+                        placeholder="카테고리 선택"
+                        options={categoryOptions}
+                        value={field.value}
+                        onValueChange={(v) => field.onChange(v)}
+                        invalid={fieldState.invalid}
+                        modalPopover={true}
+                        maxCount={0}
+                        hideSelectAll={true}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {/* 클라이언트 */}
+              <FormField
+                control={form.control}
+                name="client"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>클라이언트</FormLabel>
+                    <FormControl>
+                      <SearchableSelect
+                        placeholder="클라이언트 선택"
+                        options={clientOptions}
+                        value={field.value}
+                        onChange={(v) => field.onChange(v)}
+                        invalid={fieldState.invalid}
+                        className="w-full overflow-hidden"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* 프로젝트 이름 */}
             <FormField
               control={form.control}
-              name="year"
+              name="project_title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>생성년도</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTriggerFull>
-                        <SelectValue placeholder="년도 선택" />
-                      </SelectTriggerFull>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="2025">2025</SelectItem>
-                      <SelectItem value="2026">2026</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>프로젝트 이름</FormLabel>
+                  <FormControl>
+                    <Input placeholder="프로젝트 이름을 입력해 주세요" {...field} />
+                  </FormControl>
                 </FormItem>
               )}
+            />
+
+            {/* 날짜 */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="project_sdate"
+                render={({ field }) => {
+                  const { isOpen, setIsOpen, close } = useToggleState();
+
+                  return (
+                    <FormItem>
+                      <FormLabel>프로젝트 시작일</FormLabel>
+                      <Popover open={isOpen} onOpenChange={setIsOpen} modal={true}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'border-input focus-visible:border-primary-blue-300 h-11 w-full px-3 text-left text-base font-normal text-gray-800 hover:bg-[none]',
+                                !field.value && 'text-muted-foreground hover:text-muted-foreground',
+                                isOpen && 'border-primary-blue-300'
+                              )}>
+                              {field.value ? String(field.value) : <span>날짜 선택</span>}
+                              <CalendarIcon className="ml-auto size-4.5 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <DayPicker
+                            captionLayout="label"
+                            mode="single"
+                            selected={field.value ? new Date(field.value) : undefined}
+                            onSelect={(date) => {
+                              const formattedDate = date ? formatDate(date) : null;
+                              field.onChange(formattedDate);
+
+                              if (date) close();
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </FormItem>
+                  );
+                }}
+              />
+
+              <FormField
+                control={form.control}
+                name="project_edate"
+                render={({ field }) => {
+                  const { isOpen, setIsOpen, close } = useToggleState();
+
+                  return (
+                    <FormItem>
+                      <FormLabel>프로젝트 종료일</FormLabel>
+                      <Popover open={isOpen} onOpenChange={setIsOpen} modal={true}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'border-input focus-visible:border-primary-blue-300 h-11 w-full px-3 text-left text-base font-normal text-gray-800 hover:bg-[none]',
+                                !field.value && 'text-muted-foreground hover:text-muted-foreground',
+                                isOpen && 'border-primary-blue-300'
+                              )}>
+                              {field.value ? String(field.value) : <span>날짜 선택</span>}
+                              <CalendarIcon className="ml-auto size-4.5 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <DayPicker
+                            captionLayout="label"
+                            mode="single"
+                            selected={field.value ? new Date(field.value) : undefined}
+                            onSelect={(date) => {
+                              const formattedDate = date ? formatDate(date) : null;
+                              field.onChange(formattedDate);
+
+                              if (date) close();
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </FormItem>
+                  );
+                }}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="remark"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>비고</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="추가 기입할 정보가 있으면 입력해 주세요." className="h-16 min-h-16" {...field} />
+                    </FormControl>
+                  </FormItem>
+                );
+              }}
             />
 
             <div className="flex justify-end gap-3 pt-3">
