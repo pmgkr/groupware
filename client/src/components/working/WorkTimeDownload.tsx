@@ -15,7 +15,12 @@ import { getWeekStartDate, getWeekNumber } from '@/utils/dateHelper';
 import { convertApiDataToWorkData } from '@/services/workingDataConverter';
 import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams } from '@/api/manager/teams';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
+
+const parseDayKey = (key: string) => {
+  const [y, m, d] = key.split('-').map((v) => Number(v));
+  return new Date(y, (m || 1) - 1, d || 1);
+};
 
 interface WorkTimeDownloadProps {
   currentDate: Date;
@@ -200,10 +205,15 @@ export default function WorkTimeDownload({
                   : '';
               const holiday = d.holidayName ? `[${d.holidayName}]` : '';
 
-              const cellParts = [d.workType && d.workType !== '-' ? d.workType : '-', timeRange, totalStr, holiday]
+              const workTypeLine = d.workType && d.workType !== '-' ? d.workType : '-';
+              const timeLine = timeRange
+                ? `${timeRange}${totalStr ? `(${totalStr})` : ''}`
+                : totalStr;
+
+              const cellParts = [workTypeLine, timeLine, holiday]
                 .map((v) => v || '')
                 .filter((v) => v.trim() !== '')
-                .join(' ');
+                .join('\n');
 
               accum.department = dept;
               accum.cells[d.date] = cellParts || '-';
@@ -224,9 +234,11 @@ export default function WorkTimeDownload({
     rows.push([]);
 
     const dayHeaders = dayKeys.map((k) => {
-      const d = new Date(k);
+      const d = parseDayKey(k);
       const dow = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
-      return `${k}(${dow})`;
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${mm}-${dd}(${dow})`;
     });
     rows.push(['부서', '이름', ...dayHeaders]);
 
@@ -267,32 +279,33 @@ export default function WorkTimeDownload({
     const headerRow = 3; // 0-based
 
     dayKeys.forEach((key, idx) => {
-      const date = new Date(key);
+      const date = parseDayKey(key);
       const dow = date.getDay();
       const col = 2 + idx;
       const cell = worksheet[encode({ r: headerRow, c: col })];
       const fontColor = dow === 0 ? 'FFFF3B30' : dow === 6 ? 'FF0A84FF' : null;
-      if (cell && fontColor) {
+      if (cell) {
         cell.s = {
           ...(cell.s || {}),
-          font: { ...(cell.s?.font || {}), bold: true, color: { rgb: fontColor } },
+          font: { ...(cell.s?.font || {}), bold: true, sz: 9, ...(fontColor ? { color: { rgb: fontColor } } : {}) },
+          alignment: { ...(cell.s?.alignment || {}), wrapText: true, vertical: 'top' },
         };
       }
     });
 
-    const range = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
-    if (!range) return;
+    const dataRange = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
+    if (!dataRange) return;
 
-    for (let r = headerRow + 1; r <= range.e.r; r++) {
+    for (let r = headerRow + 1; r <= dataRange.e.r; r++) {
       dayKeys.forEach((key, idx) => {
-        const date = new Date(key);
+        const date = parseDayKey(key);
         const dow = date.getDay();
         const col = 2 + idx;
         const cell = worksheet[encode({ r, c: col })];
         if (!cell) return;
 
         let fontColor: string | null = null;
-        if (typeof cell.v === 'string' && cell.v.includes('[공휴일]')) {
+        if (typeof cell.v === 'string' && cell.v.includes('[')) {
           fontColor = 'FFFF3B30';
         } else if (dow === 0) {
           fontColor = 'FFFF3B30';
@@ -300,13 +313,38 @@ export default function WorkTimeDownload({
           fontColor = 'FF0A84FF';
         }
 
-        if (fontColor) {
-          cell.s = {
-            ...(cell.s || {}),
-            font: { ...(cell.s?.font || {}), color: { rgb: fontColor } },
-          };
-        }
+        cell.s = {
+          ...(cell.s || {}),
+          font: {
+            ...(cell.s?.font || {}),
+            sz: 9,
+            ...(fontColor ? { color: { rgb: fontColor } } : {}),
+          },
+          alignment: { ...(cell.s?.alignment || {}), wrapText: true, vertical: 'top' },
+        };
       });
+    }
+
+    // 컬럼 너비 설정: 부서/이름 조금 넓게, 날짜 컬럼 균일 적용
+    const cols = [
+      { wch: 14 }, // 부서
+      { wch: 12 }, // 이름
+      ...dayKeys.map(() => ({ wch: 16 })), // 날짜들
+    ];
+    worksheet['!cols'] = cols;
+
+    // 행 높이 설정: 헤더 아래 데이터 행은 여유 있게
+    const heightRange = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
+    if (heightRange) {
+      const rows: XLSX.RowInfo[] = [];
+      for (let r = 0; r <= heightRange.e.r; r++) {
+        if (r <= headerRow) {
+          rows.push({ hpt: 18 });
+        } else {
+          rows.push({ hpt: 30 });
+        }
+      }
+      worksheet['!rows'] = rows;
     }
   };
 
