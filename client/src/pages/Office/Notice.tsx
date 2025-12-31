@@ -1,10 +1,20 @@
 import { Outlet } from 'react-router';
+import { createContext } from 'react';
+import { BOARD_ID_MAP } from '@/api';
 
-export default function Notice() {
+export const BoardContext = createContext<{
+  boardType: 'notice' | 'suggest';
+  boardId: number;
+} | null>(null);
+
+export default function BoardLayout({ boardType }: { boardType: 'notice' | 'suggest' }) {
   return (
-    <div>
-      {/* Outlet -> 자녀 라우트 요소들 렌더링 */}
+    <BoardContext.Provider
+      value={{
+        boardType,
+        boardId: BOARD_ID_MAP[boardType],
+      }}>
       <Outlet />
-    </div>
+    </BoardContext.Provider>
   );
 }

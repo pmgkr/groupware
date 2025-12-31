@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/board';
@@ -10,8 +10,13 @@ import { SearchGray } from '@/assets/images/icons';
 
 import { getBoardList } from '@/api/office/notice';
 import type { BoardDTO } from '@/api/office/notice';
+import { BoardContext } from '@/pages/Office/Notice';
 
 export default function BoardList() {
+  const boardCtx = useContext(BoardContext);
+  if (!boardCtx) return null;
+
+  const { boardId } = boardCtx;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<BoardDTO[]>([]);
@@ -35,7 +40,7 @@ export default function BoardList() {
   const fetchBoardList = async () => {
     setLoading(true);
     try {
-      const data = await getBoardList(1, 1000);
+      const data = await getBoardList(boardId, 1, 1000);
       setPosts(data.items);
     } catch (err) {
       setPosts([]);
@@ -70,6 +75,8 @@ export default function BoardList() {
   const total = filteredNormals.length;
   const startNo = (page - 1) * normalLimit;
   const paginatedNormals = normals.slice(startNo, startNo + normalLimit);
+
+  console.log('[Board]', boardId, posts);
 
   return (
     <div>

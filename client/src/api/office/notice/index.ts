@@ -21,10 +21,17 @@ export type BoardListResponse = {
   page: number;
 };
 
-//페이지 네이션
-export async function getBoardList(page = 1, size = 10, q?: string) {
+export type BoardType = 'notice' | 'suggest';
+
+export const BOARD_ID_MAP: Record<BoardType, number> = {
+  notice: 1,
+  suggest: 2,
+};
+
+//게시글 리스트
+export async function getBoardList(boardId: number, page = 1, size = 10, q?: string) {
   const query = q && q.trim() ? `&q=${encodeURIComponent(q)}` : '';
-  return http<BoardListResponse>(`/user/office/notice/list?page=${page}&size=${size}${query}`, {
+  return http<BoardListResponse>(`/user/office/notice/list?board_id=${boardId}page=${page}&size=${size}${query}`, {
     method: 'GET',
   });
 }

@@ -11,6 +11,8 @@ import BookList from '@/components/book/BookList';
 import BookWish from '@/components/book/BookWish';
 import Report from '@/pages/Office/Report';
 import ReportDetail from '@/components/report/ReportDetail';
+import SuggestBoard from '@/pages/Office/SuggestBoard';
+import BoardLayout from '@/pages/Office/Notice';
 
 export const officeRoutes: RouteObject = {
   handle: {
@@ -20,13 +22,14 @@ export const officeRoutes: RouteObject = {
       { to: '/meetingroom', label: '미팅룸' },
       { to: '/itdevice', label: 'IT디바이스' },
       { to: '/book', label: '도서' },
+      { to: '/suggest', label: '제보 게시판' },
       //{ to: '/report', label: '기안서' },
     ],
   },
   children: [
     {
       path: 'notice',
-      element: <Notice />,
+      element: <BoardLayout boardType="notice" />,
       children: [
         { index: true, element: <BoardList /> }, // /notice
         { path: 'write', element: <BoardWrite /> }, // /notice/write
@@ -45,6 +48,15 @@ export const officeRoutes: RouteObject = {
       children: [
         { index: true, element: <BookList /> }, // /book
         { path: 'wish', element: <BookWish /> }, // /book/wish
+      ],
+    },
+    {
+      path: 'suggest',
+      element: <BoardLayout boardType="suggest" />,
+      children: [
+        { index: true, element: <BoardList /> }, // /notice
+        { path: 'write', element: <BoardWrite /> }, // /notice/write
+        { path: ':id', element: <BoardDetail /> }, // /notice/:id
       ],
     },
     /* { path: 'report', element: <Report /> },
