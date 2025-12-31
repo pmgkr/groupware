@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
-import { getAvatarFallback, getProfileImageUrl } from '@/utils';
+import { getAvatarFallback, getProfileImageUrl, getGrowingYears } from '@/utils';
 import { useToggleState } from '@/hooks/useToggleState';
 import { useUser } from '@/hooks/useUser';
 
@@ -58,6 +58,7 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
 
   // API 데이터 State
+  const yearOptions = getGrowingYears(); // yearOptions
   const [clientOptions, setClientOptions] = useState<SingleSelectOption[]>([]);
 
   const form = useForm<ProjectFormValues>({
@@ -76,7 +77,7 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
 
   const categoryOptions: MultiSelectOption[] = [
     { label: 'Web', value: 'Web' },
-    { label: 'Campaign', value: 'Campaign' },
+    { label: 'Campaign', value: 'CAMPAIGN' },
     { label: 'Event Promotion', value: 'Event  Promotion' },
     { label: 'Performance', value: 'Performance' },
     { label: 'Digital Media', value: 'Digital Media' },
@@ -254,8 +255,11 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
                       </SelectTriggerFull>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="2025">2025</SelectItem>
-                      <SelectItem value="2026">2026</SelectItem>
+                      {yearOptions.map((y) => (
+                        <SelectItem key={y} value={y}>
+                          {y}년
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </FormItem>
@@ -321,6 +325,7 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
                       value={field.value}
                       onChange={(v) => field.onChange(v)}
                       invalid={fieldState.invalid}
+                      className="w-full overflow-hidden"
                     />
                   </FormControl>
                 </FormItem>
@@ -431,7 +436,7 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
             />
           </div>
 
-          <FormField
+          {/* <FormField
             control={form.control}
             name="remark"
             render={({ field }) => {
@@ -444,7 +449,7 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
                 </FormItem>
               );
             }}
-          />
+          /> */}
 
           {/* 프로젝트 멤버 */}
           <FormItem>

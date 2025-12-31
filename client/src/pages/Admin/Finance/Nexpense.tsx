@@ -1,7 +1,8 @@
 import { useRef, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
-import { formatDate, getGrowingYears } from '@/utils';
+import { formatDate, getGrowingYears, sanitizeFilename, formatYYMMDD } from '@/utils';
+import { triggerDownload } from '@components/features/Project/utils/download';
 
 import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -12,7 +13,14 @@ import type { DateRange } from 'react-day-picker';
 import { OctagonAlert } from 'lucide-react';
 
 import { getExpenseType } from '@/api';
-import { getAdminExpenseList, confirmExpense, setDdate, type ExpenseListItems } from '@/api/admin/nexpense';
+import {
+  getAdminExpenseList,
+  confirmExpense,
+  setDdate,
+  getPDFDownload,
+  getMultiPDFDownload,
+  type ExpenseListItems,
+} from '@/api/admin/nexpense';
 import { AdminListFilter } from '@components/features/Expense/_components/AdminListFilter';
 import AdminExpenseList from '@components/features/Expense/AdminExpenseList';
 
@@ -297,6 +305,32 @@ export default function Nexpense() {
     }
   };
 
+  const handlePDFDownload = async (seq: number, expId: string, userName: string) => {
+    try {
+      const res = await getPDFDownload(seq);
+
+      const rawFilename = `${expId}_${userName}.pdf`;
+      const filename = sanitizeFilename(rawFilename);
+
+      const blob = await res.blob();
+      triggerDownload(blob, filename);
+    } catch (e) {
+      console.error('❌ PDF 다운로드 실패:', e);
+    }
+  };
+
+  const handleMultiPDFDownload = async (seqs: number[]) => {
+    try {
+      const blob = await getMultiPDFDownload(seqs);
+      const date = formatYYMMDD();
+      const filename = `프로젝트 비용_${date}.zip`;
+
+      triggerDownload(blob, filename);
+    } catch (e) {
+      console.error('❌ 선택 PDF 다운로드 실패:', e);
+    }
+  };
+
   return (
     <>
       <AdminListFilter
@@ -339,6 +373,8 @@ export default function Nexpense() {
         handleCheckAll={handleCheckAll}
         handleCheckItem={handleCheckItem}
         handleSetDdate={handleSetDdate}
+        handlePDFDownload={handlePDFDownload}
+        handleMultiPDFDownload={handleMultiPDFDownload}
         total={total}
         page={page}
         pageSize={pageSize}
