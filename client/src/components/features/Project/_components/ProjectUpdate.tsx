@@ -4,15 +4,17 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
+import { useUser } from '@/hooks/useUser';
 
 import { cn } from '@/lib/utils';
+import { getGrowingYears } from '@/utils';
 import { useToggleState } from '@/hooks/useToggleState';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { getClientList } from '@/api';
-import type { projectOverview } from '@/api/project';
+import { getProjectInfo, projectUpdate, type ProjectViewDTO } from '@/api/project';
 
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
@@ -23,9 +25,23 @@ import { Form, FormField, FormItem, FormLabel, FormControl } from '@components/u
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { DayPicker } from '@components/daypicker';
 import { MultiSelect, type MultiSelectOption } from '@/components/multiselect/multi-select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 import { CalendarIcon, OctagonAlert } from 'lucide-react';
+
+/* ---------------- constants ---------------- */
+
+const categoryOptions: MultiSelectOption[] = [
+  { label: 'Web', value: 'Web' },
+  { label: 'Campaign', value: 'CAMPAIGN' },
+  { label: 'Event Promotion', value: 'Event  Promotion' },
+  { label: 'Performance', value: 'Performance' },
+  { label: 'Digital Media', value: 'Digital Media' },
+  { label: 'Production', value: 'Production' },
+  { label: 'Others', value: 'Others' },
+];
+
+const yearOptions = getGrowingYears();
 
 /* ---------------- schema ---------------- */
 
@@ -37,7 +53,6 @@ const projectUpdateSchema = z.object({
   project_title: z.string().min(2),
   project_sdate: z.string().nullable(),
   project_edate: z.string().nullable(),
-  remark: z.string().optional(),
 });
 
 type ProjectUpdateFormValues = z.infer<typeof projectUpdateSchema>;
@@ -46,31 +61,54 @@ type ProjectUpdateFormValues = z.infer<typeof projectUpdateSchema>;
 
 interface Props {
   open: boolean;
-  projectInfo: projectOverview['info'];
-  onSuccess?: () => void;
+  projectId: string;
   onOpenChange: (v: boolean) => void;
+  onSuccess?: () => void;
 }
 
 /* ---------------- component ---------------- */
 
-export function ProjectUpdate({ open, projectInfo, onOpenChange, onSuccess }: Props) {
+function normalizePipeArray(value?: string | string[] | null): string[] {
+  if (Array.isArray(value)) return value;
+
+  if (typeof value === 'string') {
+    return value
+      .split('|')
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+export function ProjectUpdate({ open, projectId, onOpenChange, onSuccess }: Props) {
+  const { user_id, user_name, team_id, profile_image } = useUser();
+
   const { addAlert } = useAppAlert();
   const { addDialog } = useAppDialog();
 
+  const [projectInfo, setProjectInfo] = useState<ProjectViewDTO | null>(null);
+  const [clientOptions, setClientOptions] = useState<SingleSelectOption[]>([]);
+
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : null);
 
-  /* ---------- client ---------- */
+  /* ---------- form ---------- */
 
-  const [clientOptions, setClientOptions] = useState<SingleSelectOption[]>([]);
-  const categoryOptions: MultiSelectOption[] = [
-    { label: 'Web', value: 'Web' },
-    { label: 'Campaign', value: 'Campaign' },
-    { label: 'Event Promotion', value: 'Event  Promotion' },
-    { label: 'Performance', value: 'Performance' },
-    { label: 'Digital Media', value: 'Digital Media' },
-    { label: 'Production', value: 'Production' },
-    { label: 'Others', value: 'Others' },
-  ];
+  const form = useForm<ProjectUpdateFormValues>({
+    resolver: zodResolver(projectUpdateSchema),
+    mode: 'onSubmit',
+    defaultValues: {
+      year: '',
+      brand: '',
+      category: [],
+      client: '',
+      project_title: '',
+      project_sdate: null,
+      project_edate: null,
+    },
+  });
+
+  /* ---------- load clients (1회) ---------- */
 
   useEffect(() => {
     getClientList().then((res) => {
@@ -83,26 +121,34 @@ export function ProjectUpdate({ open, projectInfo, onOpenChange, onSuccess }: Pr
     });
   }, []);
 
-  /* ---------- form ---------- */
+  /* ---------- load project when open ---------- */
 
-  const form = useForm<ProjectUpdateFormValues>({
-    resolver: zodResolver(projectUpdateSchema),
-    mode: 'onSubmit',
-    defaultValues: {
-      year: projectInfo.project_year,
-      brand: projectInfo.project_brand,
-      category: projectInfo.project_cate,
-      client: String(projectInfo.client_id),
-      project_title: projectInfo.project_title,
-      project_sdate: projectInfo.project_sdate,
-      project_edate: projectInfo.project_edate,
-      //   remark: projectInfo.remark ?? '',
-    },
-  });
+  useEffect(() => {
+    if (!open || !projectId) return;
+
+    (async () => {
+      const res = await getProjectInfo(projectId);
+      setProjectInfo(res);
+
+      console.log('플젝 정보', res);
+
+      form.reset({
+        year: res.project_year,
+        brand: res.project_brand,
+        category: normalizePipeArray(res.project_cate),
+        client: String(res.client_id),
+        project_title: res.project_title,
+        project_sdate: formatDate(new Date(res.project_sdate)) ?? null,
+        project_edate: formatDate(new Date(res.project_edate)) ?? null,
+      });
+    })();
+  }, [open, projectId, form]);
 
   /* ---------- submit ---------- */
 
   const onSubmit = (v: ProjectUpdateFormValues) => {
+    if (!projectInfo) return;
+
     addDialog({
       title: '프로젝트 수정',
       message: `<span class="text-primary-blue-500 font-semibold">${v.project_title}</span> 프로젝트를 수정합니다.`,
@@ -114,25 +160,23 @@ export function ProjectUpdate({ open, projectInfo, onOpenChange, onSuccess }: Pr
           project_year: v.year,
           project_brand: v.brand,
           project_cate: v.category,
+          team_id: team_id,
           client_id: Number(v.client),
           project_title: v.project_title,
           project_sdate: v.project_sdate,
           project_edate: v.project_edate,
-          remark: v.remark,
         };
 
-        // const result = await projectUpdate(payload);
+        const res = await projectUpdate(projectId, payload);
 
-        // if (result?.ok) {
-        //   addAlert({
-        //     title: '프로젝트 수정이 완료되었습니다.',
-        //     icon: <OctagonAlert />,
-        //     duration: 2000,
-        //   });
+        addAlert({
+          title: '프로젝트 수정이 완료되었습니다.',
+          icon: <OctagonAlert />,
+          duration: 2000,
+        });
 
-        //   onSuccess?.();
-        //   onClose();
-        // }
+        onSuccess?.();
+        onOpenChange(false);
       },
     });
   };
@@ -156,17 +200,14 @@ export function ProjectUpdate({ open, projectInfo, onOpenChange, onSuccess }: Pr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>생성년도</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTriggerFull className="w-full">
-                          <SelectValue placeholder="년도 선택" />
-                        </SelectTriggerFull>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="2025">2025</SelectItem>
-                        <SelectItem value="2026">2026</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className="focus-visible:border-input cursor-default bg-gray-100 text-gray-600"
+                        tabIndex={-1}
+                        readOnly
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />
@@ -179,7 +220,7 @@ export function ProjectUpdate({ open, projectInfo, onOpenChange, onSuccess }: Pr
                   <FormItem>
                     <FormLabel>ICG 브랜드</FormLabel>
                     <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <SelectTriggerFull className={cn('w-full', fieldState.invalid && 'border-destructive ring-destructive/20')}>
                           <SelectValue placeholder="브랜드 선택" />
                         </SelectTriggerFull>
@@ -340,21 +381,6 @@ export function ProjectUpdate({ open, projectInfo, onOpenChange, onSuccess }: Pr
                 }}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name="remark"
-              render={({ field }) => {
-                return (
-                  <FormItem>
-                    <FormLabel>비고</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="추가 기입할 정보가 있으면 입력해 주세요." className="h-16 min-h-16" {...field} />
-                    </FormControl>
-                  </FormItem>
-                );
-              }}
-            />
 
             <div className="flex justify-end gap-3 pt-3">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

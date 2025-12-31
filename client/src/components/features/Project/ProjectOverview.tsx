@@ -386,7 +386,7 @@ export default function Overview() {
         </div>
       </div>
 
-      <ProjectUpdate open={updateDialogOpen} onOpenChange={setUpdateDialogOpen} projectInfo={data} onSuccess={refetch} />
+      <ProjectUpdate open={updateDialogOpen} onOpenChange={setUpdateDialogOpen} projectId={data.project_id} onSuccess={refetch} />
 
       <ProjectMemberUpdate
         open={memberDialogOpen}

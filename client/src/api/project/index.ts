@@ -45,7 +45,7 @@ export interface projectCreatePayload {
   project_cate: string | string[];
   client_id: number;
   project_title: string;
-  members: {
+  members?: {
     user_id: string;
     user_nm: string;
     user_type: 'owner' | 'member' | string;
@@ -65,7 +65,7 @@ export interface projectCreateResponse {
 export interface ProjectViewDTO {
   project_id: string;
   project_title: string;
-  project_year: string;
+  project_year?: string;
   project_brand: string;
   project_cate: string[];
   project_sdate: string;
@@ -177,6 +177,13 @@ export async function getProjectView(projectId: string | undefined) {
   return http<projectOverview>(`/user/project/overview/${projectId}`, { method: 'GET' });
 }
 
+// 프로젝트 조회 (프로젝트 정보만)
+export async function getProjectInfo(projectId: string | undefined) {
+  if (!projectId) throw new Error('projectId가 필요합니다.');
+
+  return http<ProjectViewDTO>(`/user/project/info/${projectId}`, { method: 'GET' });
+}
+
 // 프로젝트 멤버 리스트
 export async function getProjectMember(projectId: string | undefined) {
   if (!projectId) throw new Error('projectId가 필요합니다.');
@@ -215,9 +222,19 @@ export async function getProjectLogs(projectId: string | undefined) {
   return http<ProjectLogs[]>(`/user/project/log/${projectId}`, { method: 'GET' });
 }
 
-// 프로젝트 상태 변경 API
+// 프로젝트 상태 변경
 export async function ProjectStatusChange(projectId: string | undefined, status: string) {
   if (!projectId) throw new Error('projectId가 필요합니다.');
 
   return http<{ ok: boolean }>(`/user/project/status?project_id=${projectId}&project_status=${status}`, { method: 'GET' });
+}
+
+// 프로젝트 정보 업데이트
+export async function projectUpdate(projectId: string | undefined, payload: projectCreatePayload) {
+  if (!projectId) throw new Error('projectId가 필요합니다.');
+
+  return http<any>(`/user/project/update/${projectId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
 }
