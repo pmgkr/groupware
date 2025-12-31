@@ -23,12 +23,11 @@ interface Props {
   projectId: string;
   projectTitle: string;
   members: ProjectMemberDTO[];
-  ownerId: string;
   onOpenChange: (v: boolean) => void;
   onSuccess?: () => void;
 }
 
-export function ProjectMemberUpdate({ open, projectId, projectTitle, members, ownerId, onOpenChange, onSuccess }: Props) {
+export function ProjectMemberUpdate({ open, projectId, projectTitle, members, onOpenChange, onSuccess }: Props) {
   const { user_id } = useUser();
 
   const { addAlert } = useAppAlert();

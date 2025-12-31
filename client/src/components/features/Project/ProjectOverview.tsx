@@ -19,6 +19,7 @@ import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody,
 
 import { ProjectHistory } from './_components/ProjectHistory';
 import { ProjectMember } from './_components/ProjectMember';
+import { ProjectUpdate } from './_components/ProjectUpdate';
 import { ProjectMemberUpdate } from './_components/ProjectMemberUpdate';
 
 import { Edit } from '@/assets/images/icons';
@@ -42,6 +43,7 @@ export default function Overview() {
 
   const [expenseTypeChartData, setExpenseTypeChartData] = useState<PieChartItem[]>([]); // 비용 유형 차트 데이터 State
   const [memberDialogOpen, setMemberDialogOpen] = useState(false); // 프로젝트 멤버 변경 Dialog State
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false); // 프로젝트 업데이트 Dialog State
 
   // 페이지 렌더 시 비용 유형 컬러맵 생성 & 인보이스 데이터 조회
   useEffect(() => {
@@ -200,7 +202,12 @@ export default function Overview() {
               <div className="flex items-center justify-between">
                 <h3 className="mb-2 text-lg font-bold text-gray-800">프로젝트 정보</h3>
                 {data.project_status === 'in-progress' && isProjectMember && (
-                  <Button type="button" variant="svgIcon" size="sm" className="text-gray-600 hover:text-gray-700" onClick={() => {}}>
+                  <Button
+                    type="button"
+                    variant="svgIcon"
+                    size="sm"
+                    className="text-gray-600 hover:text-gray-700"
+                    onClick={() => setUpdateDialogOpen(true)}>
                     <Edit className="size-4" />
                   </Button>
                 )}
@@ -379,13 +386,14 @@ export default function Overview() {
         </div>
       </div>
 
+      <ProjectUpdate open={updateDialogOpen} onOpenChange={setUpdateDialogOpen} projectInfo={data} onSuccess={refetch} />
+
       <ProjectMemberUpdate
         open={memberDialogOpen}
         onOpenChange={setMemberDialogOpen}
         projectId={data.project_id}
         projectTitle={data.project_title}
         members={sortedMembers}
-        ownerId={data.owner_id}
         onSuccess={refetch}
       />
     </>
