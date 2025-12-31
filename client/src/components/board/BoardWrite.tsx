@@ -13,6 +13,7 @@ import {
   registerBoard,
   updateBoard,
   uploadNoticeAttachments,
+  BOARD_ID_MAP,
 } from '@/api/office/notice';
 import { BoardAttachFile, type PreviewFile } from './BoardAttachFile';
 import ReactQuillEditor from './ReactQuillEditor';
@@ -35,6 +36,11 @@ export default function BoardWrite() {
 
   const { addDialog } = useAppDialog();
   const { addAlert } = useAppAlert();
+
+  // 현재 게시판 타입 판단
+  const boardType = location.pathname.includes('/suggest') ? 'suggest' : 'notice';
+  const boardId = BOARD_ID_MAP[boardType];
+  const isSuggestBoard = boardType === 'suggest';
 
   const confirmAction = (label: string, message: string, action: () => Promise<void> | void) => {
     addDialog({
@@ -91,11 +97,11 @@ export default function BoardWrite() {
       // 신규 작성일 때 초기화
       setTitle('');
       setContent('');
-      setCategory('');
+      setCategory(isSuggestBoard ? '제보' : ''); // 제보게시판은 기본 카테고리 설정
       setIsNotice('N');
       setFiles([]);
     }
-  }, [editMode, post]);
+  }, [editMode, post, isSuggestBoard]);
 
   // 게시글 등록/수정
   const handleSubmit = async () => {
@@ -107,16 +113,20 @@ export default function BoardWrite() {
     try {
       if (editMode && post) {
         // 수정 모드
-        await updateBoard(post.n_seq, { category, title, content });
+        await updateBoard(post.n_seq, {
+          board_id: boardId,
+          category: isSuggestBoard ? '제보' : category,
+          title,
+          content,
+        });
 
         if (isNotice !== post.pinned) {
           await pinBoard(post.n_seq, isNotice);
         }
         // 첨부파일 삭제 반영
-        if (setDeletedFileIds.length > 0) {
+        if (deletedFileIds.length > 0) {
           await Promise.all(deletedFileIds.map((id) => deleteNoticeAttachment(id)));
         }
-        console.log('삭제 대상 ID 목록:', deletedFileIds);
 
         // File 객체만 업로드 (기존 파일 제외)
         const uploadableFiles = files.filter((f): f is File => f instanceof File);
@@ -124,11 +134,12 @@ export default function BoardWrite() {
           await uploadNoticeAttachments(post.n_seq, uploadableFiles);
         }
 
-        navigate(`/notice/${post.n_seq}`);
+        navigate(`../${post.n_seq}`);
       } else {
         // 등록 모드
         const res = await registerBoard({
-          category,
+          board_id: boardId,
+          category: isSuggestBoard ? '제보' : category,
           title,
           content,
           user_id: user.user_id,
@@ -163,20 +174,23 @@ export default function BoardWrite() {
       </div>
 
       <div className="mb-3 flex gap-x-2.5">
-        <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="!h-[50px] w-[180px]">
-            <SelectValue placeholder="카테고리" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="전체공지">전체공지</SelectItem>
-              <SelectItem value="일반">일반</SelectItem>
-              <SelectItem value="프로젝트">프로젝트</SelectItem>
-              <SelectItem value="복지">복지</SelectItem>
-              <SelectItem value="기타">기타</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        {/* 제보게시판이 아닐 때만 카테고리 선택 표시 */}
+        {!isSuggestBoard && (
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger className="!h-[50px] w-[180px]">
+              <SelectValue placeholder="카테고리" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="전체공지">전체공지</SelectItem>
+                <SelectItem value="일반">일반</SelectItem>
+                <SelectItem value="프로젝트">프로젝트</SelectItem>
+                <SelectItem value="복지">복지</SelectItem>
+                <SelectItem value="기타">기타</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        )}
 
         <Input
           className="h-[50px] [&]:bg-white [&]:text-lg"
@@ -200,10 +214,11 @@ export default function BoardWrite() {
             onClick={() => {
               const isEmptyContent = !content || content.trim() === '' || content === '<p><br></p>' || content === '<p></p>';
 
-              if (!category.trim() || !title.trim() || isEmptyContent) {
+              // 제보게시판은 카테고리 검증 제외
+              if ((!isSuggestBoard && !category.trim()) || !title.trim() || isEmptyContent) {
                 addAlert({
                   title: '입력오류',
-                  message: '카테고리, 제목, 내용을 모두 입력해주세요.',
+                  message: isSuggestBoard ? '제목과 내용을 모두 입력해주세요.' : '카테고리, 제목, 내용을 모두 입력해주세요.',
                   icon: <OctagonAlert />,
                   duration: 2000,
                 });

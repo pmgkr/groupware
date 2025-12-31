@@ -31,7 +31,7 @@ export const BOARD_ID_MAP: Record<BoardType, number> = {
 //게시글 리스트
 export async function getBoardList(boardId: number, page = 1, size = 10, q?: string) {
   const query = q && q.trim() ? `&q=${encodeURIComponent(q)}` : '';
-  return http<BoardListResponse>(`/user/office/notice/list?board_id=${boardId}page=${page}&size=${size}${query}`, {
+  return http<BoardListResponse>(`/user/office/notice/list?board_id=${boardId}&page=${page}&size=${size}${query}`, {
     method: 'GET',
   });
 }
@@ -46,7 +46,14 @@ export async function getBoardDetail(n_seq: number) {
 }
 
 // 게시글 등록
-export async function registerBoard(data: { category: string; title: string; content: string; user_id: string; user_name: string }) {
+export async function registerBoard(data: {
+  category: string;
+  title: string;
+  content: string;
+  user_id: string;
+  user_name: string;
+  board_id: number;
+}) {
   // 반환 타입 명시: { n_seq: number }
   return http<{ n_seq: number }>(`/user/office/notice/register`, {
     method: 'POST',

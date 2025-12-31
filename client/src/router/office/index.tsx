@@ -9,8 +9,6 @@ import ItDeviceDetail from '@/components/itdevice/ItDeviceDetail';
 import Book from '@/pages/Office/Book';
 import BookList from '@/components/book/BookList';
 import BookWish from '@/components/book/BookWish';
-import Report from '@/pages/Office/Report';
-import ReportDetail from '@/components/report/ReportDetail';
 import SuggestBoard from '@/pages/Office/SuggestBoard';
 import BoardLayout from '@/pages/Office/Notice';
 
@@ -22,18 +20,17 @@ export const officeRoutes: RouteObject = {
       { to: '/meetingroom', label: '미팅룸' },
       { to: '/itdevice', label: 'IT디바이스' },
       { to: '/book', label: '도서' },
-      { to: '/suggest', label: '제보 게시판' },
-      //{ to: '/report', label: '기안서' },
+      { to: '/suggest', label: '제보게시판' },
     ],
   },
   children: [
     {
       path: 'notice',
-      element: <BoardLayout boardType="notice" />,
+      element: <Notice />,
       children: [
-        { index: true, element: <BoardList /> }, // /notice
-        { path: 'write', element: <BoardWrite /> }, // /notice/write
-        { path: ':id', element: <BoardDetail /> }, // /notice/:id
+        { index: true, element: <BoardList /> },
+        { path: 'write', element: <BoardWrite /> },
+        { path: ':id', element: <BoardDetail /> },
       ],
     },
     { path: 'meetingroom', element: <Meetingroom /> },
@@ -52,17 +49,12 @@ export const officeRoutes: RouteObject = {
     },
     {
       path: 'suggest',
-      element: <BoardLayout boardType="suggest" />,
+      element: <SuggestBoard />,
       children: [
-        { index: true, element: <BoardList /> }, // /notice
-        { path: 'write', element: <BoardWrite /> }, // /notice/write
-        { path: ':id', element: <BoardDetail /> }, // /notice/:id
+        { index: true, element: <BoardList /> },
+        { path: 'write', element: <BoardWrite /> },
+        { path: ':id', element: <BoardDetail /> },
       ],
     },
-    /* { path: 'report', element: <Report /> },
-    {
-      path: 'report/:id',
-      element: <ReportDetail />,
-    }, */
   ],
 };

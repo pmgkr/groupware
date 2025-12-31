@@ -40,6 +40,7 @@ export default function Header() {
       { label: '미팅룸', to: '/meetingroom' },
       { label: 'IT디바이스', to: '/itdevice' },
       { label: '도서', to: '/book' },
+      { label: '제보게시판', to: '/suggest' },
     ],
     manager: [
       { label: '근태 관리', to: '/manager/working' },
@@ -196,7 +197,7 @@ export default function Header() {
   };
 
   // 오피스 하위 경로들 (오피스는 /office 라우트가 없음)
-  const officePaths = ['/notice', '/meetingroom', '/seating', '/itdevice', '/book', '/report'];
+  const officePaths = ['/notice', '/meetingroom', '/seating', '/itdevice', '/book', '/suggest'];
   const isOfficeActive = officePaths.some((path) => location.pathname.startsWith(path));
 
   return (
