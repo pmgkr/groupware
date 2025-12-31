@@ -1104,7 +1104,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
             <DialogTitle>기안서 매칭</DialogTitle>
           </DialogHeader>
 
-          <Table>
+          <Table variant="primary">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[100px]">구분</TableHead>
@@ -1118,7 +1118,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
             <TableBody>
               {hasProposalList ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center text-sm text-gray-500">
+                  <TableCell colSpan={5} className="py-10 text-center text-[13px] text-gray-500">
                     등록된 기안서가 없습니다.
                   </TableCell>
                 </TableRow>
@@ -1173,10 +1173,6 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
               type="button"
               disabled={!selectedProposalId}
               onClick={() => {
-                console.log('🔍 디버그 - activeRowIndex:', activeRowIndex);
-                console.log('🔍 디버그 - selectedProposalId:', selectedProposalId);
-                console.log('🔍 디버그 - selectedProposal:', selectedProposal);
-
                 if (activeRowIndex === null || !selectedProposalId) {
                   console.log('❌ 조건 실패');
                   return;

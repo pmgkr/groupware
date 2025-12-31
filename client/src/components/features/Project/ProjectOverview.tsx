@@ -206,7 +206,7 @@ export default function Overview() {
                 )}
               </div>
               <TableColumn>
-                <TableColumnHeader className="w-[15%]">
+                <TableColumnHeader className="w-[15%] max-[1441px]:w-[18%]">
                   <TableColumnHeaderCell>프로젝트 #</TableColumnHeaderCell>
                   <TableColumnHeaderCell>프로젝트 오너</TableColumnHeaderCell>
                   <TableColumnHeaderCell>프로젝트 견적</TableColumnHeaderCell>
@@ -216,7 +216,7 @@ export default function Overview() {
                   <TableColumnCell>{data.owner_nm}</TableColumnCell>
                   <TableColumnCell>{formatAmount(data.est_amount) ?? 0} 원</TableColumnCell>
                 </TableColumnBody>
-                <TableColumnHeader className="w-[15%]">
+                <TableColumnHeader className="w-[15%] max-[1441px]:w-[18%]">
                   <TableColumnHeaderCell>클라이언트</TableColumnHeaderCell>
                   <TableColumnHeaderCell>프로젝트 기간</TableColumnHeaderCell>
                   <TableColumnHeaderCell>프로젝트 예상 지출</TableColumnHeaderCell>

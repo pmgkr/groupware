@@ -184,7 +184,24 @@ export default function ExpenseView() {
               <TableColumnHeaderCell>비용 제목</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>
-              <TableColumnCell>{header.el_title}</TableColumnCell>
+              <TableColumnCell>
+                <div className="flex w-full items-center justify-between">
+                  <div className="flex-1 leading-[1.3]">{header.el_title}</div>
+
+                  {header.status === 'Saved' && (
+                    <Button
+                      asChild
+                      type="button"
+                      size="sm"
+                      variant="transparent"
+                      className="h-auto shrink-0 gap-1 text-gray-600 hover:text-gray-700 has-[>svg]:px-1">
+                      <Link to={`/expense/edit/${header.exp_id}`}>
+                        <Edit className="size-4.5" />
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </TableColumnCell>
             </TableColumnBody>
           </TableColumn>
 
