@@ -15,6 +15,7 @@ import { getWeekStartDate, getWeekNumber } from '@/utils/dateHelper';
 import { convertApiDataToWorkData } from '@/services/workingDataConverter';
 import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams } from '@/api/manager/teams';
+import { workingApi } from '@/api/working';
 import * as XLSX from 'xlsx-js-style';
 
 const parseDayKey = (key: string) => {
@@ -53,6 +54,7 @@ export default function WorkTimeDownload({
   };
 
   const resolveTeamIdsToQuery = async () => {
+    if (!page) return [null]; // 사용자(working) 페이지: 팀 구분 없이 단일 조회
     if (selectedTeamIds.length > 0) return selectedTeamIds;
     if (page === 'admin') return [null];
 
@@ -68,6 +70,7 @@ export default function WorkTimeDownload({
   };
 
   const resolveTeamNameMap = async () => {
+    if (!page) return new Map<number, string>();
     const map = new Map<number, string>();
     try {
       const teamList = page === 'admin' ? await getTeams({}) : await getManagerTeams({});
@@ -84,6 +87,7 @@ export default function WorkTimeDownload({
 
   const fetchWeekData = async (teamId: number | null, weekStart: Date) => {
     const { year, week } = getWeekNumber(weekStart);
+
     if (page === 'admin') {
       const adminResp = await (await import('@/api/manager/working')).managerWorkingApi.getAdminWorkLogsWeek({
         team_id: teamId ?? null,
@@ -97,15 +101,25 @@ export default function WorkTimeDownload({
       };
     }
 
-    const resp = await (await import('@/api/manager/working')).managerWorkingApi.getManagerWorkLogsWeek({
-      team_id: teamId ?? user?.team_id ?? 0,
-      weekno: week,
-      yearno: year,
-    });
+    if (page === 'manager') {
+      const resp = await (await import('@/api/manager/working')).managerWorkingApi.getManagerWorkLogsWeek({
+        team_id: teamId ?? user?.team_id ?? 0,
+        weekno: week,
+        yearno: year,
+      });
+      return {
+        wlog: resp.wlog || [],
+        vacation: resp.vacation || [],
+        event: resp.event || [],
+      };
+    }
+
+    // 기본(사용자 /working) 페이지: 본인 주간 데이터
+    const userResp = await workingApi.getWlogWeek({ weekno: week, yearno: year });
     return {
-      wlog: resp.wlog || [],
-      vacation: resp.vacation || [],
-      event: resp.event || [],
+      wlog: userResp.wlog || [],
+      vacation: userResp.vacation || [],
+      event: userResp.event || [],
     };
   };
 
