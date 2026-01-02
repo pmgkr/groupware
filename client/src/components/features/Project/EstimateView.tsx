@@ -130,13 +130,13 @@ export default function EstimateView() {
             <TableColumnHeader className="w-[18%]">
               <TableColumnHeaderCell>견적서 제목</TableColumnHeaderCell>
             </TableColumnHeader>
-            <TableColumnBody>
-              <TableColumnCell className="leading-[1.3]">{estData.header.est_title}</TableColumnCell>
+            <TableColumnBody className="w-[32%]">
+              <TableColumnCell className="leading-[1.3] break-all">{estData.header.est_title}</TableColumnCell>
             </TableColumnBody>
             <TableColumnHeader className="w-[18%]">
               <TableColumnHeaderCell>오너 · 작성자</TableColumnHeaderCell>
             </TableColumnHeader>
-            <TableColumnBody>
+            <TableColumnBody className="w-[32%]">
               <TableColumnCell>
                 {data.owner_nm} · {estData.header.user_nm}
               </TableColumnCell>

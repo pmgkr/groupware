@@ -156,22 +156,20 @@ export default function Pexpense() {
   // ============================
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
+    if (!checked) {
+      setCheckedItems([]);
+      return;
+    }
 
-    setCheckedItems(checked ? expenseList.map((item) => item.seq) : []);
+    const selectableSeqs = expenseList.filter((item) => item.status !== 'Saved' && item.status !== 'Rejected').map((item) => item.seq);
+
+    setCheckedItems(selectableSeqs);
   };
 
   // 개별 체크박스 핸들러
   const handleCheckItem = (seq: number, checked: boolean) => {
     setCheckedItems((prev) => (checked ? [...prev, seq] : prev.filter((id) => id !== seq)));
   };
-
-  // 전체 선택 상태 반영
-  useEffect(() => {
-    if (expenseList.length === 0) return;
-    const selectable = expenseList.filter((i) => i.user_id !== user_id).map((i) => i.seq);
-
-    setCheckAll(selectable.length > 0 && selectable.every((id) => checkedItems.includes(id)));
-  }, [checkedItems, expenseList]);
 
   const resetAllFilters = () => {
     setSearchInput('');

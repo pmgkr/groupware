@@ -75,7 +75,7 @@ export const ManagerListRow = memo(({ item, checked, onCheck }: ExpenseRowProps)
           className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
           checked={checked}
           onCheckedChange={(v) => onCheck(item.seq, !!v)}
-          disabled={user_id === item.user_id || item.status !== 'Claimed'}
+          disabled={item.status !== 'Claimed'}
         />
       </TableCell>
     </TableRow>

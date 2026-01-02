@@ -395,8 +395,8 @@ export default function InvoiceView() {
                   return (
                     <TableRow className="text-gray-700 [&_td]:px-2 [&_td]:text-sm">
                       <TableCell className="text-left">
-                        <Link to={att.ia_url} target="_blank" className="flex items-center gap-1 hover:underline">
-                          {att.ia_fname} <SquareArrowOutUpRight className="size-3" />
+                        <Link to={att.ia_url} target="_blank" className="leading-[1.3] hover:underline">
+                          {att.ia_fname} <SquareArrowOutUpRight className="inline size-3" />
                         </Link>
                       </TableCell>
                       <TableCell className="text-center">{att.uploader}</TableCell>
