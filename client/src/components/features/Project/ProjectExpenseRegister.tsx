@@ -19,6 +19,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Input } from '@components/ui/input';
 import { Textarea } from '@components/ui/textarea';
 import { Button } from '@components/ui/button';
+import { Spinner } from '@components/ui/spinner';
 
 import { DayPicker } from '@components/daypicker';
 import { RadioButton, RadioGroup } from '@components/ui/radioButton';
@@ -85,6 +86,7 @@ export default function ProjectExpenseRegister() {
   const [hasFiles, setHasFiles] = useState(false); // 추가 업로드 버튼 활성화 State
   const [linkedRows, setLinkedRows] = useState<Record<string, number | null>>({}); // 업로드된 이미지와 연결된 행 번호 저장용
   const [activeFile, setActiveFile] = useState<string | null>(null); // UploadArea & Attachment 연결상태 공유용
+  const [isSubmitting, setIsSubmitting] = useState(false); // 비용 작성 등록 블로킹
 
   const [selectedProposal, setSelectedProposal] = useState<any>(null); //기안서  번호 확인용
 
@@ -326,6 +328,8 @@ export default function ProjectExpenseRegister() {
         confirmText: '확인',
         cancelText: '취소',
         onConfirm: async () => {
+          setIsSubmitting(true);
+
           // [1] 연결된 파일 업로드
           const linkedFiles = files.filter((f) => linkedRows[f.name] !== null);
           let uploadedFiles: any[] = [];
@@ -556,6 +560,8 @@ export default function ProjectExpenseRegister() {
         duration: 2000,
       });
       return;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -579,6 +585,16 @@ export default function ProjectExpenseRegister() {
 
   return (
     <>
+      {isSubmitting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="flex w-full max-w-sm flex-col items-center rounded-lg bg-white px-4 py-8 leading-[1.3] shadow-lg">
+            <Spinner className="text-primary-blue-500 mb-3 size-12" />
+            <p className="text-lg font-bold text-gray-800">작성한 비용을 등록하고 있습니다</p>
+            <p className="text-base text-gray-500">잠시만 기다려 주세요</p>
+          </div>
+        </div>
+      )}
+
       <ZoomBoundaryContext.Provider value={zoomBoundary}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
