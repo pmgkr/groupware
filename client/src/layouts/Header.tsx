@@ -91,6 +91,11 @@ export default function Header() {
     }
   }, [hoveredMenu, submenuTop]);
 
+  // 라우트 이동 시 서브메뉴 닫기
+  useEffect(() => {
+    setHoveredMenu(null);
+  }, [location.pathname]);
+
   /* 알림 도트  */
   useEffect(() => {
     if (!user_id) return;
@@ -376,12 +381,21 @@ export default function Header() {
           className="border-primary-blue-150 bg-primary-blue-100 fixed left-64 z-8 w-auto rounded-sm border max-[1440px]:left-54"
           style={{ top: submenuTop ?? 0 }}
           onMouseEnter={() => setHoveredMenu(hoveredMenu)}
-          onMouseLeave={() => setHoveredMenu(null)}>
+      onMouseLeave={() => setHoveredMenu(null)}>
           <ul className="flex flex-col gap-y-1 p-1.5">
             {subMenus[hoveredMenu].map((item) => (
               <li key={item.to}>
                 <NavLink
                   to={item.to}
+                  onClick={() => {
+                    setHoveredMenu(null);
+                    // 포커스가 NavLink에 남아있는 상태에서도 메뉴가 닫히도록 blur
+                    requestAnimationFrame(() => {
+                      try {
+                        (document.activeElement as HTMLElement | null)?.blur?.();
+                      } catch {}
+                    });
+                  }}
                   className={({ isActive }) =>
                     cn(
                       'hover:bg-primary-blue-50 hover:text-primary-blue-500 flex h-10 items-center rounded-sm px-3 text-base text-gray-900 max-[1440px]:h-9 max-[1440px]:px-2.5',
