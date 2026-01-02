@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
-import { notificationApi } from '@/api/notification';
 import { useToggleState } from '@/hooks/useToggleState';
 import { useUser } from '@/hooks/useUser';
 import { mapExcelToExpenseItems } from '@/utils';
@@ -19,6 +18,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Input } from '@components/ui/input';
 import { Textarea } from '@components/ui/textarea';
 import { Button } from '@components/ui/button';
+import { Spinner } from '@components/ui/spinner';
 
 import { DayPicker } from '@components/daypicker';
 import { RadioButton, RadioGroup } from '@components/ui/radioButton';
@@ -85,6 +85,7 @@ export default function ExpenseRegister() {
   const [linkedRows, setLinkedRows] = useState<Record<string, number | null>>({}); // 업로드된 이미지와 연결된 행 번호 저장용
   const [activeFile, setActiveFile] = useState<string | null>(null); // UploadArea & Attachment 연결상태 공유용
   const [selectedProposal, setSelectedProposal] = useState<any>(null); //기안서  번호 확인용
+  const [isSubmitting, setIsSubmitting] = useState(false); // 비용 작성 등록 블로킹
 
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : ''); // YYYY-MM-DD Date 포맷 변경
 
@@ -330,6 +331,8 @@ export default function ExpenseRegister() {
         confirmText: '확인',
         cancelText: '취소',
         onConfirm: async () => {
+          setIsSubmitting(true);
+
           // [1] 연결된 파일 업로드
           const linkedFiles = files.filter((f) => linkedRows[f.name] !== null);
           let uploadedFiles: any[] = [];
@@ -501,7 +504,7 @@ export default function ExpenseRegister() {
                   if (success) {
                     console.log(`✅ 기안서 ${rp_seq} - 아이템 ${exp_seq} 매칭 완료`);
                   } else {
-                    //console.error(`❌ 기안서 ${rp_seq} - 아이템 ${exp_seq} 매칭 실패`);
+                    console.error(`❌ 기안서 ${rp_seq} - 아이템 ${exp_seq} 매칭 실패`);
                   }
                 });
               } catch (error) {
@@ -510,20 +513,6 @@ export default function ExpenseRegister() {
             } else {
               console.log('ℹ️ 매칭할 기안서 없음');
             }
-            // result.docs.results 에 item_seq값 추가해서 반환
-            // report 테이블에 저장할 때 rp_project_type이 'project'일 때 rp_expense_no가 projectId/list_seq (G26-00002/32)
-            // 같은 pro_id 값이 있으면 패스, pro_id 값이 없으면 패스
-
-            // expenseRegister Result 데이터에 매니저 정보를 추가로 받아와야함
-            // await notificationApi.registerNotification({
-            //   user_id: data.header.user_id,
-            //   user_name: data.header.user_nm,
-            //   noti_target: user_id!,
-            //   noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
-            //   noti_message: `청구한 비용을 승인했습니다.`,
-            //   noti_type: 'expense',
-            //   noti_url: `/expense/${data.header.exp_id}`,
-            // });
 
             addAlert({
               title: '비용 등록이 완료되었습니다.',
@@ -553,6 +542,8 @@ export default function ExpenseRegister() {
         duration: 2000,
       });
       return;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -576,6 +567,15 @@ export default function ExpenseRegister() {
 
   return (
     <>
+      {isSubmitting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="flex w-full max-w-sm flex-col items-center rounded-lg bg-white px-4 py-8 leading-[1.3] shadow-lg">
+            <Spinner className="text-primary-blue-500 mb-3 size-12" />
+            <p className="text-lg font-bold text-gray-800">작성한 비용을 등록하고 있습니다</p>
+            <p className="text-base text-gray-500">잠시만 기다려 주세요</p>
+          </div>
+        </div>
+      )}
       <ZoomBoundaryContext.Provider value={zoomBoundary}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>

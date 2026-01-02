@@ -39,6 +39,7 @@ import { Input } from '@components/ui/input';
 import { Textarea } from '@components/ui/textarea';
 import { Button } from '@components/ui/button';
 import { DayPicker } from '@components/daypicker';
+import { Spinner } from '@components/ui/spinner';
 import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
@@ -87,6 +88,7 @@ type UploadedPreviewFile = {
   ei_seq: number;
   fname: string;
   sname: string;
+  ea_url: string;
 };
 
 type EditFormValues = z.infer<typeof editSchema>;
@@ -113,6 +115,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
   const [alertTitle, setAlertTitle] = useState('');
   const [alertDescription, setAlertDescription] = useState('');
   const [successState, setSuccessState] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // 비용 작성 등록 블로킹
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
@@ -248,6 +251,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
               ei_seq: att.ei_seq,
               fname: att.ea_fname,
               sname: att.ea_sname,
+              ea_url: att.ea_url,
               isServerFile: true,
             }));
           }
@@ -326,238 +330,271 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
 
   const hasProposalList = proposalList.length === 0;
 
-  // ✅ 폼 제출 (임시)
+  // 폼 제출
   const onSubmit = async (values: EditFormValues) => {
-    try {
-      // 1️⃣ 새 업로드할 파일 목록 정리
-      const allNewFiles = Object.entries(newAttachments).flatMap(([rowIdx, files]) => files.map((f) => ({ ...f, rowIdx: Number(rowIdx) })));
+    addDialog({
+      title: '일반 비용 수정',
+      message: `비용을 수정하시겠습니까?`,
+      confirmText: '확인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          setIsSubmitting(true);
+          // 1️⃣ 새 업로드할 파일 목록 정리
+          const allNewFiles = Object.entries(newAttachments).flatMap(([rowIdx, files]) =>
+            files.map((f) => ({ ...f, rowIdx: Number(rowIdx) }))
+          );
 
-      let uploadedFiles: any[] = [];
+          let uploadedFiles: any[] = [];
 
-      if (allNewFiles.length > 0) {
-        const uploadable = await Promise.all(
-          allNewFiles.map(async (f, idx) => {
-            const res = await fetch(f.preview);
-            const blob = await res.blob();
+          if (allNewFiles.length > 0) {
+            const uploadable = await Promise.all(
+              allNewFiles.map(async (f, idx) => {
+                const res = await fetch(f.preview);
+                const blob = await res.blob();
 
-            const ext = f.name.split('.').pop() || 'jpg';
+                const ext = f.name.split('.').pop() || 'jpg';
 
-            const item = values.expense_items?.[f.rowIdx - 1];
-            const purchaseDate = item?.date ? format(new Date(item.date), 'yyyyMMdd') : format(new Date(), 'yyyyMMdd');
+                const item = values.expense_items?.[f.rowIdx - 1];
+                const purchaseDate = item?.date ? format(new Date(item.date), 'yyyyMMdd') : format(new Date(), 'yyyyMMdd');
 
-            const safeUserNm = (header.user_nm || 'unknown').replace(/[^\w가-힣]/g, '');
-            const safeElType = (header.el_type || '기타').replace(/[^\w가-힣]/g, '');
+                const safeUserNm = (header.user_nm || 'unknown').replace(/[^\w가-힣]/g, '');
+                const safeElType = (header.el_type || '기타').replace(/[^\w가-힣]/g, '');
 
-            // ✅ 1️⃣ 기존 첨부파일 중 가장 큰 인덱스 찾기
-            const existingFiles = rowAttachments[f.rowIdx] ?? [];
-            let maxIndex = -1;
+                // ✅ 1️⃣ 기존 첨부파일 중 가장 큰 인덱스 찾기
+                const existingFiles = rowAttachments[f.rowIdx] ?? [];
+                let maxIndex = -1;
 
-            existingFiles.forEach((att) => {
-              const match = att.fname.match(/_(\d+)\.[^.]+$/); // 예: _3.jpg
-              if (match) {
-                const num = parseInt(match[1], 10);
-                if (!isNaN(num) && num > maxIndex) maxIndex = num;
-              }
+                existingFiles.forEach((att) => {
+                  const match = att.fname.match(/_(\d+)\.[^.]+$/); // 예: _3.jpg
+                  if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (!isNaN(num) && num > maxIndex) maxIndex = num;
+                  }
+                });
+
+                // ✅ 2️⃣ 같은 rowIdx의 새 파일 중 순서(index)
+                const newFilesInRow = allNewFiles.filter((nf) => nf.rowIdx === f.rowIdx);
+                const localIndex = newFilesInRow.indexOf(f);
+
+                // ✅ 3️⃣ 최종 인덱스 = (기존 파일 중 최대 인덱스 + 1) + 로컬 인덱스
+                const nextIndex = maxIndex + 1 + localIndex;
+
+                // ✅ 4️⃣ 최종 파일명
+                const newFileName = `${safeUserNm}_${safeElType}_${purchaseDate}_${nextIndex}.${ext}`;
+
+                return new File([blob], newFileName, { type: f.type || 'image/png' });
+              })
+            );
+
+            // 3️⃣ 서버 업로드
+            uploadedFiles = await uploadFilesToServer(uploadable, 'nexpense');
+            uploadedFiles = uploadedFiles.map((file, i) => ({
+              ...file,
+              rowIdx: allNewFiles[i]?.rowIdx ?? 0,
+            }));
+            console.log('✅ 업로드 완료:', uploadedFiles);
+          }
+
+          // 4️⃣ 업로드된 파일을 항목별로 매핑
+          const uploadedMap = uploadedFiles.reduce(
+            (acc, file) => {
+              if (!acc[file.rowIdx]) acc[file.rowIdx] = [];
+              acc[file.rowIdx].push(file);
+              return acc;
+            },
+            {} as Record<number, any[]>
+          );
+
+          // 5️⃣ expense_items 병합
+          const enrichedItems = (values.expense_items ?? []).map((item, idx) => {
+            const rowIdx = idx + 1;
+            const selectedProId = selectedProposalByRow[idx] ?? (item.pro_id ? Number(item.pro_id) : null);
+
+            // (1) 기존 서버 첨부파일
+            const existingAtt =
+              rowAttachments[rowIdx]?.map((att) => ({
+                fname: att.fname,
+                sname: att.sname,
+                url: att.ea_url,
+              })) ?? [];
+
+            // (2) 새 업로드된 파일
+            const newAtt =
+              uploadedMap[rowIdx]?.map((f: any) => ({
+                fname: f.fname,
+                sname: f.sname,
+                url: f.url,
+              })) ?? [];
+
+            return {
+              el_type: item.type,
+              ei_title: item.title,
+              ei_pdate: item.date,
+              ei_number: item.number || null,
+              ei_amount: Number(item.price || 0),
+              ei_tax: Number(item.tax || 0),
+              ei_total: Number(item.total || 0),
+              pro_id: selectedProId ?? item.pro_id,
+              attachments: [...existingAtt, ...newAtt],
+            };
+          });
+
+          console.log('enrichedItems', enrichedItems);
+
+          // 6️⃣ 최종 payload 구성
+          const payload = {
+            header: {
+              user_id: user_id!,
+              el_method: values.el_method,
+              el_attach: enrichedItems.some((item) => item.attachments.length > 0) ? 'Y' : 'N',
+              el_deposit: values.el_deposit || null,
+              bank_account: values.bank_account.replace(/-/g, ''),
+              bank_name: values.bank_name || '',
+              bank_code: values.bank_code,
+              account_name: values.account_name,
+              remark: values.remark || '',
+            },
+            items: enrichedItems.map((item: any) => ({
+              el_type: item.el_type ?? '',
+              ei_title: item.ei_title,
+              ei_pdate: item.ei_pdate,
+              ei_number: item.ei_number,
+              ei_amount: item.ei_amount,
+              ei_tax: item.ei_tax,
+              ei_total: item.ei_total,
+              pro_id: selectedProposalId,
+              attachments: item.attachments.map((att: any) => ({
+                filename: att.fname,
+                savename: att.sname,
+                url: att.url,
+              })),
+            })),
+          };
+
+          console.log('📦 최종 수정 payload:', payload);
+
+          const res = await expenseUpdate(header.seq, payload);
+
+          console.log(res);
+
+          if (res.ok) {
+            // ✅  기안서 매칭 (선택된 경우만)
+            // 기안서 매칭이 바뀌지 않았으면 아래 기안서 매칭 API는 돌지 않아야함 (신규로 매칭 or 다른 기안서로 매칭하는 경우에만 API 호출)
+
+            const itemSeq = (res as any).updated?.item_seqs ?? [];
+
+            if (itemSeq.length === 0) {
+              console.error('❌ 응답에서 item_seqs를 찾을 수 없음');
+              setAlertTitle('수정 실패');
+              setAlertDescription('아이템 정보를 가져오지 못했습니다.');
+              setAlertOpen(true);
+              return;
+            }
+            const selectedProId = enrichedItems.find((item) => item.pro_id !== null)?.pro_id ?? null;
+
+            // 원본 데이터의 기안서 ID와 비교
+            const originalProId = data?.items?.[0]?.pro_id ?? null;
+            const isProposalChanged = selectedProId !== originalProId;
+
+            console.log('🔍 기안서 변경 여부:', {
+              원본: originalProId,
+              현재: selectedProId,
+              변경됨: isProposalChanged,
             });
 
-            // ✅ 2️⃣ 같은 rowIdx의 새 파일 중 순서(index)
-            const newFilesInRow = allNewFiles.filter((nf) => nf.rowIdx === f.rowIdx);
-            const localIndex = newFilesInRow.indexOf(f);
+            if (selectedProId && isProposalChanged) {
+              try {
+                // enrichedItems와 itemSeqs의 순서가 동일하므로 매핑
+                const matchPromises = enrichedItems
+                  .map((item, index) => ({
+                    pro_id: item.pro_id,
+                    item_seq: itemSeq[index],
+                  }))
+                  .filter(({ pro_id, item_seq }) => pro_id && item_seq !== undefined) // item_seq가 존재하는지 확인
+                  .map(async ({ pro_id, item_seq }) => {
+                    const matchResult = (await matchNonProjectWithProposal(pro_id as number, item_seq as number)) as {
+                      success: boolean;
+                      result: { type: string };
+                    };
 
-            // ✅ 3️⃣ 최종 인덱스 = (기존 파일 중 최대 인덱스 + 1) + 로컬 인덱스
-            const nextIndex = maxIndex + 1 + localIndex;
+                    if (matchResult.success) {
+                      console.log(`✅ 기안서 ${pro_id} - 아이템 ${item_seq} 매칭 완료`);
+                    } else {
+                      console.error(`❌ 기안서 ${pro_id} - 아이템 ${item_seq} 매칭 실패`);
+                    }
 
-            // ✅ 4️⃣ 최종 파일명
-            const newFileName = `${safeUserNm}_${safeElType}_${purchaseDate}_${nextIndex}.${ext}`;
+                    return matchResult.success;
+                  });
 
-            return new File([blob], newFileName, { type: f.type || 'image/png' });
-          })
-        );
-
-        // 3️⃣ 서버 업로드
-        uploadedFiles = await uploadFilesToServer(uploadable, 'nexpense');
-        uploadedFiles = uploadedFiles.map((file, i) => ({
-          ...file,
-          rowIdx: allNewFiles[i]?.rowIdx ?? 0,
-        }));
-        console.log('✅ 업로드 완료:', uploadedFiles);
-      }
-
-      // 4️⃣ 업로드된 파일을 항목별로 매핑
-      const uploadedMap = uploadedFiles.reduce(
-        (acc, file) => {
-          if (!acc[file.rowIdx]) acc[file.rowIdx] = [];
-          acc[file.rowIdx].push(file);
-          return acc;
-        },
-        {} as Record<number, any[]>
-      );
-
-      // 5️⃣ expense_items 병합
-      const enrichedItems = (values.expense_items ?? []).map((item, idx) => {
-        const rowIdx = idx + 1;
-        const selectedProId = selectedProposalByRow[idx] ?? (item.pro_id ? Number(item.pro_id) : null);
-
-        // (1) 기존 서버 첨부파일
-        const existingAtt =
-          rowAttachments[rowIdx]?.map((att) => ({
-            fname: att.fname,
-            sname: att.sname,
-            url: `${import.meta.env.VITE_API_BASE_URL}/uploads/nexpense/${att.sname}`,
-          })) ?? [];
-
-        // (2) 새 업로드된 파일
-        const newAtt =
-          uploadedMap[rowIdx]?.map((f: any) => ({
-            fname: f.fname,
-            sname: f.sname,
-            url: f.url,
-          })) ?? [];
-
-        return {
-          el_type: item.type,
-          ei_title: item.title,
-          ei_pdate: item.date,
-          ei_number: item.number || null,
-          ei_amount: Number(item.price || 0),
-          ei_tax: Number(item.tax || 0),
-          ei_total: Number(item.total || 0),
-          pro_id: selectedProId ?? item.pro_id,
-          attachments: [...existingAtt, ...newAtt],
-        };
-      });
-
-      console.log('enrichedItems', enrichedItems);
-
-      // 6️⃣ 최종 payload 구성
-      const payload = {
-        header: {
-          user_id: user_id!,
-          el_method: values.el_method,
-          el_attach: enrichedItems.some((item) => item.attachments.length > 0) ? 'Y' : 'N',
-          el_deposit: values.el_deposit || null,
-          bank_account: values.bank_account.replace(/-/g, ''),
-          bank_name: values.bank_name || '',
-          bank_code: values.bank_code,
-          account_name: values.account_name,
-          remark: values.remark || '',
-        },
-        items: enrichedItems.map((item: any) => ({
-          el_type: item.el_type ?? '',
-          ei_title: item.ei_title,
-          ei_pdate: item.ei_pdate,
-          ei_number: item.ei_number,
-          ei_amount: item.ei_amount,
-          ei_tax: item.ei_tax,
-          ei_total: item.ei_total,
-          //pro_id: item.pro_id,
-          pro_id: selectedProposalId,
-          attachments: item.attachments.map((att: any) => ({
-            filename: att.fname,
-            savename: att.sname,
-            url: att.url,
-          })),
-        })),
-      };
-
-      console.log('📦 최종 수정 payload:', payload);
-
-      const res = await expenseUpdate(header.seq, payload);
-
-      console.log(res);
-
-      if (res.ok) {
-        // ✅  기안서 매칭 (선택된 경우만)
-        // 기안서 매칭이 바뀌지 않았으면 아래 기안서 매칭 API는 돌지 않아야함 (신규로 매칭 or 다른 기안서로 매칭하는 경우에만 API 호출)
-
-        const itemSeq = (res as any).updated?.item_seqs ?? [];
-
-        if (itemSeq.length === 0) {
-          console.error('❌ 응답에서 item_seqs를 찾을 수 없음');
-          setAlertTitle('수정 실패');
-          setAlertDescription('아이템 정보를 가져오지 못했습니다.');
-          setAlertOpen(true);
-          return;
-        }
-        const selectedProId = enrichedItems.find((item) => item.pro_id !== null)?.pro_id ?? null;
-
-        // 원본 데이터의 기안서 ID와 비교
-        const originalProId = data?.items?.[0]?.pro_id ?? null;
-        const isProposalChanged = selectedProId !== originalProId;
-
-        console.log('🔍 기안서 변경 여부:', {
-          원본: originalProId,
-          현재: selectedProId,
-          변경됨: isProposalChanged,
-        });
-
-        if (selectedProId && isProposalChanged) {
-          try {
-            // enrichedItems와 itemSeqs의 순서가 동일하므로 매핑
-            const matchPromises = enrichedItems
-              .map((item, index) => ({
-                pro_id: item.pro_id,
-                item_seq: itemSeq[index],
-              }))
-              .filter(({ pro_id, item_seq }) => pro_id && item_seq !== undefined) // item_seq가 존재하는지 확인
-              .map(async ({ pro_id, item_seq }) => {
-                const matchResult = (await matchNonProjectWithProposal(pro_id as number, item_seq as number)) as {
-                  success: boolean;
-                  result: { type: string };
-                };
-
-                if (matchResult.success) {
-                  console.log(`✅ 기안서 ${pro_id} - 아이템 ${item_seq} 매칭 완료`);
+                if (matchPromises.length === 0) {
+                  console.log('ℹ️ 매칭할 아이템 없음');
                 } else {
-                  console.error(`❌ 기안서 ${pro_id} - 아이템 ${item_seq} 매칭 실패`);
+                  const results = await Promise.all(matchPromises);
+                  const allSuccess = results.every((r) => r);
+
+                  if (!allSuccess) {
+                    throw new Error('일부 매칭 실패');
+                  }
+
+                  console.log('✅ 모든 기안서 매칭 완료');
                 }
-
-                return matchResult.success;
-              });
-
-            if (matchPromises.length === 0) {
-              console.log('ℹ️ 매칭할 아이템 없음');
-            } else {
-              const results = await Promise.all(matchPromises);
-              const allSuccess = results.every((r) => r);
-
-              if (!allSuccess) {
-                throw new Error('일부 매칭 실패');
+              } catch (e) {
+                console.error('❌ 기안서 매칭 실패:', e);
+                setAlertTitle('부분 실패');
+                setAlertDescription('비용은 수정되었으나 기안서 매칭에 실패했습니다.');
+                setAlertOpen(true);
+                return;
               }
-
-              console.log('✅ 모든 기안서 매칭 완료');
+            } else if (selectedProId && !isProposalChanged) {
+              console.log('ℹ️ 기안서 변경 없음 - 매칭 API 호출 스킵');
             }
-          } catch (e) {
-            console.error('❌ 기안서 매칭 실패:', e);
-            setAlertTitle('부분 실패');
-            setAlertDescription('비용은 수정되었으나 기안서 매칭에 실패했습니다.');
-            setAlertOpen(true);
-            return;
-          }
-        } else if (selectedProId && !isProposalChanged) {
-          console.log('ℹ️ 기안서 변경 없음 - 매칭 API 호출 스킵');
-        }
 
-        setAlertTitle('수정 완료');
-        setAlertDescription('비용 정보가 성공적으로 수정되었습니다.');
-        setSuccessState(true);
-      } else {
-        setAlertTitle('수정 실패');
-        setAlertDescription('등록 결과를 가져오지 못했습니다.');
-      }
-      setAlertOpen(true);
-    } catch (err) {
-      console.error('❌ 수정 실패:', err);
-      setAlertTitle('수정 실패');
-      setAlertDescription('수정 중 오류가 발생했습니다.');
-      setAlertOpen(true);
-    }
+            addAlert({
+              title: '비용 수정 완료',
+              message: `${res.updated.itemCount} 건의 일반 비용이 수정되었습니다.`,
+              icon: <OctagonAlert />,
+              duration: 1500,
+            });
+
+            navigate(`/expense/${expId}`);
+          } else {
+            addAlert({
+              title: '비용 수정 실패',
+              message: '일반 비용 수정을 실패했습니다. 다시 시도해 주세요.',
+              icon: <OctagonAlert />,
+              duration: 1500,
+            });
+          }
+        } catch (err) {
+          console.error('❌ 수정 실패:', err);
+          addAlert({
+            title: '비용 수정 실패',
+            message: '일반 비용 수정을 실패했습니다. 다시 시도해 주세요.',
+            icon: <OctagonAlert />,
+            duration: 1500,
+          });
+        } finally {
+          setIsSubmitting(false);
+        }
+      },
+    });
   };
 
   if (loading) return <p className="p-10 text-center text-gray-500">로딩 중...</p>;
 
   return (
     <>
+      {isSubmitting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="flex w-full max-w-sm flex-col items-center rounded-lg bg-white px-4 py-8 leading-[1.3] shadow-lg">
+            <Spinner className="text-primary-blue-500 mb-3 size-12" />
+            <p className="text-lg font-bold text-gray-800">작성한 비용을 등록하고 있습니다</p>
+            <p className="text-base text-gray-500">잠시만 기다려 주세요</p>
+          </div>
+        </div>
+      )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="flex items-end justify-between border-b border-b-gray-300 pb-2">
@@ -1007,7 +1044,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                                 seq: att.seq,
                                 name: att.fname,
                                 type: 'image',
-                                preview: `${import.meta.env.VITE_API_BASE_URL}/uploads/nexpense/${att.sname}`,
+                                preview: att.ea_url,
                               })) ?? []),
                               ...(newAttachments[index + 1] ?? []),
                             ]}
