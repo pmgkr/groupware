@@ -98,12 +98,12 @@ export default function Dashboard() {
   return (
     <>
       <Header />
-      <section className="bg-primary-blue-100/50 mt-18 ml-60 max-[1440px]:ml-50 flex min-h-200 flex-col gap-y-2 px-16 max-[1440px]:px-6 py-8">
+      <section className="bg-primary-blue-100/50 mt-18 ml-60 max-[1441px]:ml-50 flex min-h-200 flex-col gap-y-2 px-16 max-[1441px]:px-6 py-8">
         <div className="flex items-center justify-between text-base text-gray-800">
           <p>{welcomeMessage}</p>
           <Weather />
         </div>
-        <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6 max-[1440px]:gap-4">
+        <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6 max-[1441px]:gap-4">
 
           <div className="row-span-2 flex flex-col justify-start rounded-md border border-gray-300 bg-white p-6">
             <SectionHeader
@@ -237,7 +237,7 @@ export default function Dashboard() {
             <div className="shrink-0">
               <DayPicker mode="single" variant="dashboard" selected={selected} onSelect={setSelected} />
             </div>
-            <ul className="flex items-center justify-end gap-x-1.5 px-4 py-2 max-[1440px]:flex-wrap">
+            <ul className="flex items-center justify-end gap-x-1.5 px-4 py-2 max-[1441px]:flex-wrap">
               {calendarBadges.map((label) => (
                 <li key={label}>
                   <Badge variant="dot" className={getBadgeColor(label)}>
@@ -246,8 +246,8 @@ export default function Dashboard() {
                 </li>
               ))}
             </ul>
-            <div className="overflow-y-auto rounded-xl p-4 max-[1440px]:p-2">
-              <ul className="grid grid-cols-3 gap-2 gap-y-4 max-[1440px]:grid-cols-2 max-[1440px]:gap-x-1 max-[1440px]:gap-y-2">
+            <div className="overflow-y-auto rounded-xl p-4 max-[1441px]:p-2">
+              <ul className="grid grid-cols-3 gap-2 gap-y-4 max-[1441px]:grid-cols-2 max-[1441px]:gap-x-1 max-[1441px]:gap-y-2">
                 {calendarData.length === 0 ? (
                   <span className=" text-gray-500 text-base">등록된 일정이 없습니다.</span>
                 ) : (
