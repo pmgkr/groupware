@@ -452,24 +452,24 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
 
               {/* 기본연차 */}
               <TableCell className="text-center">
-                <Badge variant={Number(item.va_current) < 0 ? "lightpink" : Number(item.va_current) === 0 ? "grayish" : "secondary"} size="table">
+                <Badge variant={Number(item.va_current) < 0 ? "lightpink2" : Number(item.va_current) === 0 ? "grayish" : "secondary"} size="table">
                   {item.va_current}일
                 </Badge>
               </TableCell>
 
               {/* 이월 */}
               <TableCell className="text-center">
-                <Badge variant={Number(item.va_carryover) < 0 ? "lightpink" : Number(item.va_carryover) === 0 ? "grayish" : "secondary"} size="table">{item.va_carryover}일</Badge>
+                <Badge variant={Number(item.va_carryover) < 0 ? "lightpink2" : Number(item.va_carryover) === 0 ? "grayish" : "secondary"} size="table">{item.va_carryover}일</Badge>
               </TableCell>
 
               {/* 특별 */}
               <TableCell className="text-center">
-                <Badge variant={Number(item.va_comp) < 0 ? "lightpink" : Number(item.va_comp) === 0 ? "grayish" : "secondary"} size="table">{item.va_comp}일</Badge>
+                <Badge variant={Number(item.va_comp) < 0 ? "lightpink2" : Number(item.va_comp) === 0 ? "grayish" : "secondary"} size="table">{item.va_comp}일</Badge>
               </TableCell>
 
               {/* 공가 (근속휴가) */}
                 <TableCell className="text-center">
-                <Badge variant={Number(item.va_long) < 0 ? "lightpink" : Number(item.va_long) === 0 ? "grayish" : "secondary"} size="table">{item.va_long}일</Badge>
+                <Badge variant={Number(item.va_long) < 0 ? "lightpink2" : Number(item.va_long) === 0 ? "grayish" : "secondary"} size="table">{item.va_long}일</Badge>
               </TableCell>
 
               {!isManagerPage && (
