@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
-import { formatKST, formatAmount } from '@/utils';
+import { formatKST, formatAmount, normalizeAttachmentUrl } from '@/utils';
 import { getExpenseView } from '@/api/expense';
 import type { ExpenseViewDTO } from '@/api/expense';
 import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
@@ -321,7 +321,7 @@ export default function ExpenseView() {
                             {item.attachments.map((att, idx) => (
                               <li key={idx} className="overflow-hidden text-sm text-gray-800">
                                 <a
-                                  href={`${import.meta.env.VITE_API_ORIGIN}/uploads/nexpense/${att.ea_sname}`}
+                                  href={normalizeAttachmentUrl(att.ea_url)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="flex items-center justify-center gap-1">

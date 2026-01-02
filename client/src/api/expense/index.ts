@@ -59,6 +59,7 @@ export interface ExpenseAttachmentDTO {
   ei_seq: number; // 연결된 item의 seq
   ea_fname: string; // 원본 파일명
   ea_sname: string; // 서버 저장 파일명
+  ea_url: string; // 파일 URL
   uploaded_at: string; // 업로드 일시 (ISO)
 }
 
@@ -165,6 +166,28 @@ export interface ExpenseViewDTO {
 // ------------------------------
 // 수정하기 (Update)
 // ------------------------------
+export interface ExpenseEditPayload {
+  header: ExpenseHeaderBase;
+  items: {
+    ei_title: string;
+    ei_pdate: string;
+    ei_number?: string | null;
+    ei_amount: number;
+    ei_tax: number;
+    ei_total: number;
+    pro_id?: number | null;
+    attachments?: ExpenseAttachment[];
+  }[];
+}
+
+export interface ExpenseEditResponse {
+  ok: boolean;
+  updated: {
+    itemCount: number;
+    item_seqs: number[];
+    requested: number[];
+  };
+}
 
 // 은행리스트 가져오기
 export async function getBankList(): Promise<BankList[]> {
@@ -236,12 +259,9 @@ export async function expenseRegister(payload: ExpenseRegisterPayload) {
 }
 
 // 일반비용 수정하기
-export async function expenseUpdate(expid: string, payload: ExpenseRegisterPayload) {
-  return http<ExpenseRegisterResponse>(`/user/nexpense/update/${expid}`, {
+export async function expenseUpdate(expid: string, payload: ExpenseEditPayload) {
+  return http<ExpenseEditResponse>(`/user/nexpense/update/${expid}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(payload),
   });
 }
