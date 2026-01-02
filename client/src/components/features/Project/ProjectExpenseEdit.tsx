@@ -15,7 +15,7 @@ import { getProjectExpenseView, projectExpenseUpdate, delProjectExpenseAttachmen
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { SectionHeader } from '@components/ui/SectionHeader';
-import { Badge } from '@components/ui/badge';
+import { Spinner } from '@components/ui/spinner';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
 import { Textarea } from '@components/ui/textarea';
@@ -93,6 +93,7 @@ export default function ProjectExpenseEdit() {
   const [logs, setLogs] = useState<any>(null);
   const depositPicker = useToggleState();
 
+  const [isSubmitting, setIsSubmitting] = useState(false); // 비용 작성 등록 블로킹
   const [newAttachments, setNewAttachments] = useState<Record<number, PreviewFile[]>>({}); // 새 증빙자료 State
   const [rowAttachments, setRowAttachments] = useState<Record<number, UploadedPreviewFile[]>>({}); // 기존 증빙자료 State
 
@@ -323,6 +324,8 @@ export default function ProjectExpenseEdit() {
   const hasProposalList = proposalList.length === 0;
 
   const handleConfirmSubmit = async (values: EditFormValues) => {
+    setIsSubmitting(true);
+
     try {
       // 새 업로드할 파일 목록 정리
       const allNewFiles = Object.entries(newAttachments).flatMap(([rowIdx, files]) => files.map((f) => ({ ...f, rowIdx: Number(rowIdx) })));
@@ -558,6 +561,8 @@ export default function ProjectExpenseEdit() {
         icon: <OctagonAlert />,
         duration: 1500,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -607,6 +612,16 @@ export default function ProjectExpenseEdit() {
 
   return (
     <>
+      {isSubmitting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="flex w-full max-w-sm flex-col items-center rounded-lg bg-white px-4 py-8 leading-[1.3] shadow-lg">
+            <Spinner className="text-primary-blue-500 mb-3 size-12" />
+            <p className="text-lg font-bold text-gray-800">작성한 비용을 등록하고 있습니다</p>
+            <p className="text-base text-gray-500">잠시만 기다려 주세요</p>
+          </div>
+        </div>
+      )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="flex min-h-140 flex-wrap justify-between pb-12">
