@@ -61,10 +61,10 @@ export default function Overview({
           <TableRow>
             <TableHead className="w-[12%] text-center">이름</TableHead>
             <TableHead className="w-[18%] text-center">입사일</TableHead>
-            <TableHead className="w-[10%] text-center">잔여기본연차</TableHead>
+            <TableHead className="w-[10%] text-center">기본연차</TableHead>
             <TableHead className="w-[10%] text-center">
               <div className="flex items-center justify-center gap-1">
-                잔여이월연차
+                이월연차
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <InfoIcon className="w-3 h-3 text-gray-400" />
@@ -76,7 +76,7 @@ export default function Overview({
 
             <TableHead className="w-[10%] text-center">
               <div className="flex items-center justify-center gap-1">
-                잔여특별대휴
+                특별대휴
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <InfoIcon className="w-3 h-3 text-gray-400" />
@@ -88,7 +88,7 @@ export default function Overview({
 
             <TableHead className="w-[10%] text-center">
               <div className="flex items-center justify-center gap-1">
-                잔여공가
+                공가
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <InfoIcon className="w-3 h-3 text-gray-400" />
@@ -124,22 +124,22 @@ export default function Overview({
               </div>
             </TableCell>
             <TableCell className="text-center">
-              <Badge variant={Number(selectedYearSummary?.va_current) < 0 ? "lightpink" : Number(selectedYearSummary?.va_current) === 0 ? "grayish" : "secondary"} size="table">
+              <Badge variant={Number(selectedYearSummary?.va_current) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_current) === 0 ? "grayish" : "secondary"} size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_current || '0'}일`}
               </Badge>
             </TableCell>
             <TableCell className="text-center">
-              <Badge variant={Number(selectedYearSummary?.va_carryover) < 0 ? "lightpink" : Number(selectedYearSummary?.va_carryover) === 0 ? "grayish" : "secondary"} size="table">
+              <Badge variant={Number(selectedYearSummary?.va_carryover) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_carryover) === 0 ? "grayish" : "secondary"} size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_carryover || '0'}일`}
               </Badge>
             </TableCell>
             <TableCell className="text-center">
-              <Badge variant={Number(selectedYearSummary?.va_comp) < 0 ? "lightpink" : Number(selectedYearSummary?.va_comp) === 0 ? "grayish" : "secondary"} size="table">
+              <Badge variant={Number(selectedYearSummary?.va_comp) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_comp) === 0 ? "grayish" : "secondary"} size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_comp || '0'}일`}
               </Badge>
             </TableCell>
             <TableCell className="text-center">
-              <Badge variant={Number(selectedYearSummary?.va_long) < 0 ? "lightpink" : Number(selectedYearSummary?.va_long) === 0 ? "grayish" : "secondary"} size="table">
+              <Badge variant={Number(selectedYearSummary?.va_long) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_long) === 0 ? "grayish" : "secondary"} size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_long || '0'}일`}
               </Badge>
             </TableCell>
