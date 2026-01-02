@@ -64,6 +64,7 @@ export default function Header() {
   const [submenuTop, setSubmenuTop] = useState<number | null>(null);
   const [submenuMaxHeight, setSubmenuMaxHeight] = useState<number | null>(null);
   const submenuRef = useRef<HTMLDivElement | null>(null);
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
   const handleMenuEnter = (key: string | null) => (e: React.MouseEvent) => {
     setHoveredMenu(key);
     if (key && e.currentTarget) {
@@ -105,6 +106,21 @@ export default function Header() {
   useEffect(() => {
     setHoveredMenu(null);
   }, [location.pathname]);
+
+  // 사이드바를 왼쪽/위/아래로 벗어나면 닫기(오른쪽으로는 서브메뉴 이동 허용)
+  const handleSidebarMouseLeave = (e: React.MouseEvent) => {
+    const rect = sidebarRef.current?.getBoundingClientRect();
+    if (!rect) {
+      setHoveredMenu(null);
+      return;
+    }
+    const left = e.clientX < rect.left;
+    const above = e.clientY < rect.top;
+    const below = e.clientY > rect.bottom;
+    if (left || above || below) {
+      setHoveredMenu(null);
+    }
+  };
 
   /* 알림 도트  */
   useEffect(() => {
@@ -247,8 +263,11 @@ export default function Header() {
           </li>
         </ul>
       </header>
-      <div className="bg-primary-blue-100 fixed top-18 left-0 h-full w-60 max-[1441px]:w-50">
-        <div className="my-8.5 px-8" onMouseLeave={() => setHoveredMenu(null)}>
+      <div
+        ref={sidebarRef}
+        className="bg-primary-blue-100 fixed top-18 left-0 h-full w-60 max-[1441px]:w-50"
+        onMouseLeave={handleSidebarMouseLeave}>
+        <div className="my-8.5 px-8">
           <Link to="/mypage">
             <div className="relative mx-auto mb-2.5 aspect-square w-25 overflow-hidden rounded-[50%]">
               <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
