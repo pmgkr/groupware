@@ -117,28 +117,25 @@ export default function Nexpense() {
   // ============================
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
+    if (!checked) {
+      setCheckedItems([]);
+      return;
+    }
 
-    setCheckedItems(
-      checked
-        ? expenseList
-            .filter((item) => user_id !== item.user_id) // disabled 대상 제외
-            .map((item) => item.seq)
-        : []
-    );
+    const selectableSeqs = expenseList.filter((item) => item.status === 'Claimed').map((item) => item.seq);
+
+    setCheckedItems(selectableSeqs);
   };
 
   // 개별 체크박스 핸들러
   const handleCheckItem = (seq: number, checked: boolean) => {
+    const item = expenseList.find((i) => i.seq === seq);
+    if (!item) return;
+
+    if (item.status !== 'Claimed') return;
+
     setCheckedItems((prev) => (checked ? [...prev, seq] : prev.filter((id) => id !== seq)));
   };
-
-  // 전체 선택 상태 반영
-  useEffect(() => {
-    if (expenseList.length === 0) return;
-    const selectable = expenseList.filter((i) => i.user_id !== user_id).map((i) => i.seq);
-
-    setCheckAll(selectable.length > 0 && selectable.every((id) => checkedItems.includes(id)));
-  }, [checkedItems, expenseList]);
 
   // 탭 변경 시 필터 초기화
   const handleTabChange = (tab: 'all' | 'claimed') => {

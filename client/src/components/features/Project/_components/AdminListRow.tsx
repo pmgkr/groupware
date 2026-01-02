@@ -147,24 +147,24 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate, handlePDFDo
       <TableCell>{formatDate(item.wdate)}</TableCell>
       <TableCell>{formatDate(item.el_deposit) || '-'}</TableCell>
       <TableCell>
-        {selectedDate ? (
-          formatDate(selectedDate)
-        ) : (
-          <Popover open={isOpen} onOpenChange={setIsOpen} modal>
-            <PopoverTrigger asChild>
-              <Button type="button" variant="outline" size="sm" className="text h-auto p-1">
-                {selectedDate ?? (
-                  <>
-                    날짜 지정 <CalendarIcon className="size-3" />
-                  </>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="center" className="w-auto p-0">
-              <DayPicker mode="single" selected={selectedDate} onSelect={handleDateSelect} />
-            </PopoverContent>
-          </Popover>
-        )}
+        {selectedDate
+          ? formatDate(selectedDate)
+          : !item.edate && (
+              <Popover open={isOpen} onOpenChange={setIsOpen} modal>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="outline" size="sm" className="text h-auto p-1">
+                    {selectedDate ?? (
+                      <>
+                        날짜 지정 <CalendarIcon className="size-3" />
+                      </>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="center" className="w-auto p-0">
+                  <DayPicker mode="single" selected={selectedDate} onSelect={handleDateSelect} />
+                </PopoverContent>
+              </Popover>
+            )}
         {item.edate && <span className="block text-[11px] leading-[1.2] text-gray-600">지급일 {formatDate(item.edate)}</span>}
       </TableCell>
       <TableCell className="px-0!">
@@ -173,7 +173,7 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate, handlePDFDo
           className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
           checked={checked}
           onCheckedChange={(v) => onCheck(item.seq, !!v)}
-          disabled={item.status !== 'Claimed' && item.status !== 'Confirmed'}
+          disabled={item.status === 'Saved' || item.status === 'Rejected'}
         />
       </TableCell>
     </TableRow>

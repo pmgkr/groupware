@@ -629,6 +629,7 @@ export default function ProjectExpenseEdit() {
                           <RadioButton value="개인" label="개인카드" variant="dynamic" iconHide />
                           <RadioButton value="세금계산서" label="세금계산서" variant="dynamic" iconHide />
                           <RadioButton value="현금영수증" label="현금영수증" variant="dynamic" iconHide />
+                          <RadioButton value="기타" label="기타" variant="dynamic" iconHide />
                         </RadioGroup>
                       </FormControl>
                       <FormMessage />

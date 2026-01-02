@@ -85,7 +85,7 @@ export default function Invoice() {
   type UploadState = 'idle' | 'uploading' | 'success' | 'error';
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [draggingSeq, setDraggingSeq] = useState<number | null>(null);
   const [uploadStateMap, setUploadStateMap] = useState<Record<number, UploadState>>({});
 
   // ============================
@@ -464,12 +464,12 @@ export default function Invoice() {
                             fileInputRef.current?.click();
                           }
                         }}
-                        onDragEnter={() => setIsDragging(true)}
-                        onDragLeave={() => setIsDragging(false)}
+                        onDragEnter={() => setDraggingSeq(item.seq)}
+                        onDragLeave={() => setDraggingSeq((prev) => (prev === item.seq ? null : prev))}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => {
                           e.preventDefault();
-                          setIsDragging(false);
+                          setDraggingSeq(null);
 
                           if (uploadStateMap[item.seq] === 'uploading') return;
 
@@ -477,7 +477,7 @@ export default function Invoice() {
                           if (file) handleUploadFile(item.seq, file);
                         }}
                         className={`cursor-pointer rounded border border-dashed p-2 text-center text-xs transition-colors ${
-                          isDragging ? 'bg-primary-blue-100 border-primary text-primary' : 'text-muted-foreground'
+                          draggingSeq === item.seq ? 'bg-primary-blue-100 border-primary text-primary' : 'text-muted-foreground'
                         } `}>
                         {uploadStateMap[item.seq] === 'uploading' ? '업로드 중...' : 'PDF 드래그 또는 클릭'}
                       </div>
@@ -485,8 +485,10 @@ export default function Invoice() {
                   ) : (
                     <TableCell>
                       {item.attachments.map((att) => (
-                        <div className="inline-flex items-center gap-1 text-sm" key={att.ia_sname}>
-                          <Link to={att.ia_url}>{att.ia_fname}</Link>
+                        <div className="flex items-center gap-1 overflow-hidden text-sm" key={att.ia_sname}>
+                          <Link to={att.ia_url} className="truncate">
+                            {att.ia_fname}
+                          </Link>
                           <Button type="button" variant="svgIcon" size="icon" className="size-4" onClick={() => handleDelFile(item.seq)}>
                             <X className="size-3" />
                           </Button>

@@ -17,7 +17,6 @@ import { notificationApi } from '@/api/notification';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Badge } from '@components/ui/badge';
-import { Textarea } from '@components/ui/textarea';
 import { SearchableSelect, type SingleSelectOption } from '@components/ui/SearchableSelect';
 import { Avatar, AvatarFallback, AvatarImage } from '@components/ui/avatar';
 import { Select, SelectTriggerFull, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
