@@ -131,7 +131,7 @@ export default function BoardList() {
           {/* 일반글이 없을 때 */}
           {paginatedNormals.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={isSuggestBoard ? 5 : 6} className="border-b-0 py-6 text-center text-gray-500">
+              <TableCell colSpan={isSuggestBoard ? 5 : 6} className="h-100 border-b-0 py-6 text-center text-gray-500">
                 {activeQuery ? `'${activeQuery}'에 대한 검색 결과가 없습니다.` : '게시글이 없습니다.'}
               </TableCell>
             </TableRow>
