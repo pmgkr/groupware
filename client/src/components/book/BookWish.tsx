@@ -475,8 +475,8 @@ export default function BookWish() {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={10} className="py-10 text-center text-gray-500">
-                {searchQuery ? `‘${searchQuery}’에 대한 검색 결과가 없습니다.` : '등록된 도서가 없습니다.'}
+              <TableCell colSpan={10} className="h-100 py-10 text-center text-gray-500">
+                {searchQuery ? `‘${searchQuery}’에 대한 검색 결과가 없습니다.` : '신청된 도서가 없습니다.'}
               </TableCell>
             </TableRow>
           )}

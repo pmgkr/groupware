@@ -635,8 +635,8 @@ export default function ProposalList({
             <TableRow>
               <TableCell
                 colSpan={showBulkApproval ? (showWriterInfo ? 10 : 8) : showWriterInfo ? 9 : 7}
-                className="py-10 text-center text-gray-500">
-                문서가 없습니다.
+                className="h-100 py-10 text-center text-gray-500">
+                등록된 기안서가 없습니다.
               </TableCell>
             </TableRow>
           ) : (
