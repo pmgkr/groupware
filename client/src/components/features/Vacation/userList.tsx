@@ -322,7 +322,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
           </TableHead>
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              <span className="text-[13px]">잔여기본연차</span>
+              <span className="text-[13px]">기본연차</span>
               <Tooltip>
                 <TooltipTrigger
                   asChild
@@ -336,7 +336,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
                 variant="svgIcon"
                 size="icon"
                 className="p-0"
-                aria-label="잔여기본연차 정렬"
+                aria-label="기본연차 정렬"
                 onClick={() => toggleSort('va_current')}
               >
                 <SortIcon order={sortState?.key === 'va_current' ? sortState.order : undefined} />
@@ -345,7 +345,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
           </TableHead>
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              <span className="text-[13px]">잔여이월연차</span>
+              <span className="text-[13px]">이월연차</span>
               <Tooltip>
                 <TooltipTrigger
                   asChild
@@ -359,7 +359,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
                 variant="svgIcon"
                 size="icon"
                 className="p-0"
-                aria-label="잔여이월연차 정렬"
+                aria-label="이월연차 정렬"
                 onClick={() => toggleSort('va_carryover')}
               >
                 <SortIcon order={sortState?.key === 'va_carryover' ? sortState.order : undefined} />
@@ -369,7 +369,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
 
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              <span className="text-[13px]">잔여특별대휴</span>
+              <span className="text-[13px]">특별대휴</span>
               <Tooltip>
                 <TooltipTrigger
                   asChild
@@ -383,7 +383,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
                 variant="svgIcon"
                 size="icon"
                 className="p-0"
-                aria-label="잔여특별대휴 정렬"
+                aria-label="특별대휴 정렬"
                 onClick={() => toggleSort('va_comp')}
               >
                 <SortIcon order={sortState?.key === 'va_comp' ? sortState.order : undefined} />
@@ -393,13 +393,13 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
 
           <TableHead className="w-[10%] text-center">
             <div className="flex items-center justify-center gap-1">
-              <span className="text-[13px]">잔여공가</span>
+              <span className="text-[13px]">공가</span>
               <Button
                 type="button"
                 variant="svgIcon"
                 size="icon"
                 className="p-0"
-                aria-label="잔여공가 정렬"
+                aria-label="공가 정렬"
                 onClick={() => toggleSort('va_long')}
               >
                 <SortIcon order={sortState?.key === 'va_long' ? sortState.order : undefined} />
