@@ -26,7 +26,6 @@ export default function Header() {
     project: [
       { label: '프로젝트 관리', to: '/project' },
       { label: '프로젝트 기안', to: '/project/proposal' },
-      { label: '프로젝트 비용 내역', to: '/project/exp_mine' },
     ],
     expense: [
       { label: '비용 내역', to: '/expense' },
@@ -74,6 +73,16 @@ export default function Header() {
     } else {
       setSubmenuTop(null);
       setSubmenuMaxHeight(null);
+    }
+  };
+
+  // 서브메뉴 영역에서 X축을 벗어나면 닫기
+  const handleSubmenuMouseMove = (e: React.MouseEvent) => {
+    if (!submenuRef.current) return;
+    const rect = submenuRef.current.getBoundingClientRect();
+    const margin = 8; // 약간의 여유
+    if (e.clientX < rect.left - margin || e.clientX > rect.right + margin) {
+      setHoveredMenu(null);
     }
   };
 
@@ -380,13 +389,15 @@ export default function Header() {
           ref={submenuRef}
           className="border-primary-blue-150 bg-primary-blue-100 fixed left-64 z-8 w-auto rounded-sm border max-[1440px]:left-54"
           style={{ top: submenuTop ?? 0 }}
-          onMouseEnter={() => setHoveredMenu(hoveredMenu)}
-      onMouseLeave={() => setHoveredMenu(null)}>
+        onMouseEnter={() => setHoveredMenu(hoveredMenu)}
+        onMouseLeave={() => setHoveredMenu(null)}
+        onMouseMove={handleSubmenuMouseMove}>
           <ul className="flex flex-col gap-y-1 p-1.5">
             {subMenus[hoveredMenu].map((item) => (
               <li key={item.to}>
                 <NavLink
                   to={item.to}
+                  end={item.to === '/calendar' || item.to === '/project' || item.to === '/expense'}
                   onClick={() => {
                     setHoveredMenu(null);
                     // 포커스가 NavLink에 남아있는 상태에서도 메뉴가 닫히도록 blur
