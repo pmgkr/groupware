@@ -251,7 +251,7 @@ export default function Header() {
           </li>
         </ul>
       </header>
-      <div className="bg-primary-blue-100 fixed top-18 left-0 h-full w-60 max-[1440px]:w-50">
+      <div className="bg-primary-blue-100 fixed top-18 left-0 h-full w-60 max-[1441px]:w-50">
         <div className="my-8.5 px-8" onMouseLeave={() => setHoveredMenu(null)}>
           <Link to="/mypage">
             <div className="relative mx-auto mb-2.5 aspect-square w-25 overflow-hidden rounded-[50%]">
@@ -387,7 +387,7 @@ export default function Header() {
       {hoveredMenu && subMenus[hoveredMenu] && subMenus[hoveredMenu].length > 0 && (
         <div
           ref={submenuRef}
-          className="border-primary-blue-150 bg-primary-blue-100 fixed left-64 z-8 w-auto rounded-sm border max-[1440px]:left-54"
+          className="border-primary-blue-150 bg-primary-blue-100 fixed left-64 z-8 w-auto rounded-sm border max-[1441px]:left-54"
           style={{ top: submenuTop ?? 0 }}
         onMouseEnter={() => setHoveredMenu(hoveredMenu)}
         onMouseLeave={() => setHoveredMenu(null)}
@@ -409,7 +409,7 @@ export default function Header() {
                   }}
                   className={({ isActive }) =>
                     cn(
-                      'hover:bg-primary-blue-50 hover:text-primary-blue-500 flex h-10 items-center rounded-sm px-3 text-base text-gray-900 max-[1440px]:h-9 max-[1440px]:px-2.5',
+                      'hover:bg-primary-blue-50 hover:text-primary-blue-500 flex h-10 items-center rounded-sm px-3 text-base text-gray-900 max-[1441px]:h-9 max-[1441px]:px-2.5',
                       isActive && 'text-primary-blue-500 bg-white font-semibold'
                     )
                   }>
