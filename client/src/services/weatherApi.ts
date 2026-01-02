@@ -261,7 +261,7 @@ class WeatherApiService {
       return null
     } catch (error) {
       console.error('날씨 정보를 가져오는 중 오류가 발생했습니다:', error)
-      return null
+      throw error
     }
   }
 }
@@ -269,29 +269,79 @@ class WeatherApiService {
 // 싱글톤 인스턴스 생성
 export const weatherApiService = new WeatherApiService()
 
-// 캐시를 위한 Map
-const weatherCache = new Map<string, Weather>()
+// 로컬 캐시/백오프 설정
+const CACHE_KEY = 'weather.cache'
+const BACKOFF_KEY = 'weather.backoffUntil'
+const CACHE_TTL_MS = 60 * 60 * 1000 // 1시간
+const BACKOFF_MS = 10 * 60 * 1000 // 10분
+
+function loadCachedWeather(): Weather | null {
+  if (typeof localStorage === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { expiresAt: number; data: Weather }
+    if (Date.now() < parsed.expiresAt) {
+      return parsed.data
+    }
+  } catch (err) {
+    console.warn('날씨 캐시 읽기 실패:', err)
+  }
+  return null
+}
+
+function saveCachedWeather(data: Weather) {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({ expiresAt: Date.now() + CACHE_TTL_MS, data })
+    )
+  } catch (err) {
+    console.warn('날씨 캐시 저장 실패:', err)
+  }
+}
+
+function getBackoffUntil(): number {
+  if (typeof localStorage === 'undefined') return 0
+  const raw = localStorage.getItem(BACKOFF_KEY)
+  return raw ? Number(raw) || 0 : 0
+}
+
+function setBackoff(durationMs: number) {
+  if (typeof localStorage === 'undefined') return
+  localStorage.setItem(BACKOFF_KEY, String(Date.now() + durationMs))
+}
 
 /**
  * 캐시된 날씨 정보를 가져오는 함수
  */
 export async function getCachedCurrentWeather(): Promise<Weather | null> {
-  const now = new Date()
-  const cacheKey = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}`
-  
-  // 캐시가 있고 1시간 이내 데이터면 캐시 사용
-  if (weatherCache.has(cacheKey)) {
-    return weatherCache.get(cacheKey)!
+  const cached = loadCachedWeather()
+
+  // 429 등으로 백오프 중이면 캐시만 반환
+  const backoffUntil = getBackoffUntil()
+  if (Date.now() < backoffUntil) {
+    return cached
   }
 
-  const weather = await weatherApiService.getCurrentWeather()
-  if (weather) {
-    weatherCache.set(cacheKey, weather)
-    // 1시간 후 캐시 삭제
-    setTimeout(() => {
-      weatherCache.delete(cacheKey)
-    }, 60 * 60 * 1000)
+  // 캐시가 아직 유효하면 그대로 사용
+  if (cached) {
+    return cached
   }
-  
-  return weather
+
+  try {
+    const weather = await weatherApiService.getCurrentWeather()
+    if (weather) {
+      saveCachedWeather(weather)
+      return weather
+    }
+    return cached
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('429')) {
+      setBackoff(BACKOFF_MS)
+    }
+    return cached
+  }
 }
