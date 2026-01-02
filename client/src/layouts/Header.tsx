@@ -40,6 +40,7 @@ export default function Header() {
       { label: '미팅룸', to: '/meetingroom' },
       { label: 'IT디바이스', to: '/itdevice' },
       { label: '도서', to: '/book' },
+      { label: '제보게시판', to: '/suggest' },
     ],
     manager: [
       { label: '근태 관리', to: '/manager/working' },
@@ -130,20 +131,15 @@ export default function Header() {
     if (!user_id) return;
 
     try {
-      const [todayRes, recentRes] = await Promise.all([
+      const [todayRes] = await Promise.all([
         notificationApi.getNotification({
           user_id,
           type: 'today',
           is_read: 'N',
         }),
-        notificationApi.getNotification({
-          user_id,
-          type: 'recent',
-          is_read: 'N',
-        }),
       ]);
 
-      const totalUnread = todayRes.length + recentRes.length;
+      const totalUnread = todayRes.length;
       // 디버깅
       /* console.group('[Unread Debug]');
       console.log('today unread:', todayRes.length);
@@ -216,7 +212,7 @@ export default function Header() {
   };
 
   // 오피스 하위 경로들 (오피스는 /office 라우트가 없음)
-  const officePaths = ['/notice', '/meetingroom', '/seating', '/itdevice', '/book', '/report'];
+  const officePaths = ['/notice', '/meetingroom', '/seating', '/itdevice', '/book', '/suggest'];
   const isOfficeActive = officePaths.some((path) => location.pathname.startsWith(path));
 
   return (
@@ -358,7 +354,9 @@ export default function Header() {
                 className={({ isActive }) =>
                   cn(
                     'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                    isActive || isManagerSection ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
+                    isActive || isManagerSection
+                      ? 'text-primary bg-white font-semibold'
+                      : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
                   )
                 }>
                 <Manager />
@@ -374,7 +372,9 @@ export default function Header() {
                 className={({ isActive }) =>
                   cn(
                     'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                    isActive || isAdminSection ? 'text-primary bg-white font-semibold' : 'text-gray-900 hover:bg-primary-blue-50 hover:text-primary-blue-500'
+                    isActive || isAdminSection
+                      ? 'text-primary bg-white font-semibold'
+                      : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
                   )
                 }>
                 <Admin />

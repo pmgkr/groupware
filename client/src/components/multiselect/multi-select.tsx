@@ -971,10 +971,10 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                           }
                         }}
                         aria-label={`Clear all ${selectedValues.length} selected options`}
-                        className="text-muted-foreground hover:text-foreground focus:ring-ring ml-2 flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm focus:ring-2 focus:ring-offset-1 focus:outline-none">
+                        className="text-muted-foreground hover:text-foreground focus:ring-ring mx-1 flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm focus:ring-2 focus:ring-offset-1 focus:outline-none">
                         <XIcon className="h-4 w-4" />
                       </div>
-                      <Separator orientation="vertical" className="flex h-full min-h-6" />
+                      <Separator orientation="vertical" className="flex h-full min-h-5" />
                       <ChevronDown className="text-muted-foreground ml-2 h-4 cursor-pointer" aria-hidden="true" />
                     </div>
                   </div>

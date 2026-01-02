@@ -5,7 +5,7 @@ import { useUser } from '@/hooks/useUser';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { formatAmount, formatKST } from '@/utils';
+import { formatAmount, formatDate } from '@/utils';
 import type { ExpenseListItem } from '@/api';
 
 type ExpenseRowProps = {
@@ -62,12 +62,13 @@ export const ManagerListRow = memo(({ item, checked, onCheck }: ExpenseRowProps)
         </Link>
       </TableCell>
       <TableCell>{item.el_attach === 'Y' ? <Badge variant="secondary">제출</Badge> : <Badge variant="grayish">미제출</Badge>}</TableCell>
-      <TableCell className="text-right">{formatAmount(item.el_amount)}원</TableCell>
-      <TableCell className="text-right">{item.el_tax === 0 ? 0 : `${formatAmount(item.el_tax)}원`}</TableCell>
-      <TableCell className="text-right">{formatAmount(item.el_total)}원</TableCell>
+      <TableCell className="text-right">
+        {formatAmount(item.el_total)}원
+        {item.el_tax !== 0 && <div className="mt-0.5 text-[11px] leading-[1.2] text-gray-600">세금 {formatAmount(item.el_tax)}원</div>}
+      </TableCell>
       <TableCell>{item.user_nm}</TableCell>
       <TableCell>{statusMap[item.status as keyof typeof statusMap]}</TableCell>
-      <TableCell>{formatKST(item.wdate)}</TableCell>
+      <TableCell>{formatDate(item.wdate)}</TableCell>
       <TableCell className="px-0!">
         <Checkbox
           id={`chk_${item.seq}`}

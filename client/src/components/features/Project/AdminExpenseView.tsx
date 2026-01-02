@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
 import { useNavigate, useParams, Link, useLocation } from 'react-router';
-import { formatAmount } from '@/utils';
+import { formatAmount, sanitizeFilename } from '@/utils';
 import { useUser } from '@/hooks/useUser';
 import { format } from 'date-fns';
 import { notificationApi } from '@/api/notification';
 import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
-import { getAdminExpenseView, confirmExpense, rejectExpense } from '@/api/admin/pexpense';
+import { getAdminExpenseView, confirmExpense, rejectExpense, getPDFDownload } from '@/api/admin/pexpense';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
@@ -25,6 +25,7 @@ import EstimateMatched from './_components/EstimateMatched';
 import ExpenseViewRow from './_components/ExpenseViewRow';
 import ExpenseViewEstRow from './_components/ExpenseViewEstRow';
 import ReportMatched from './_components/ReportMatched';
+import { triggerDownload } from '@components/features/Project/utils/download';
 
 import { File, Link as LinkIcon, OctagonAlert, Files, SquareArrowOutUpRight } from 'lucide-react';
 
@@ -261,6 +262,20 @@ export default function ProjectExpenseView() {
     }
   };
 
+  const handlePDFDownload = async (seq: number, expId: string, userName: string) => {
+    try {
+      const res = await getPDFDownload(seq);
+
+      const rawFilename = `${expId}_${userName}.pdf`;
+      const filename = sanitizeFilename(rawFilename);
+
+      const blob = await res.blob();
+      triggerDownload(blob, filename);
+    } catch (e) {
+      console.error('❌ PDF 다운로드 실패:', e);
+    }
+  };
+
   return (
     <>
       <div className="flex min-h-140 flex-wrap justify-between pb-12">
@@ -470,7 +485,11 @@ export default function ProjectExpenseView() {
             </Button>
 
             <div className="flex gap-2">
-              <Button type="button" size="sm" variant="outline">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => handlePDFDownload(header.seq, header.exp_id, header.user_nm)}>
                 <Download /> 다운로드
               </Button>
               {header.status !== 'Saved' && header.status !== 'Completed' && header.status !== 'Rejected' && (

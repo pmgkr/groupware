@@ -25,6 +25,7 @@ import { UserRound, Check } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
 import { createReservationService, type Room, type Reservation } from '@/api';
+import { useUser } from '@/hooks/useUser';
 
 const service = createReservationService();
 
@@ -616,6 +617,7 @@ function RoomLane({
 
           const top = b.startIdx * ROW_H + 3;
           const height = b.length * ROW_H - 6;
+          const { user_id } = useUser();
           return (
             <div
               key={b.id}
@@ -629,7 +631,41 @@ function RoomLane({
                 </div>
               )}
               {/* 미팅 예약자와 접속한 유저의 아이디값 비교해서 Popover 노출 필요 */}
-              <Popover>
+
+              {b.user_id === user_id && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="svgIcon" size="icon" className="absolute top-2 right-1 size-3">
+                      <More />
+                    </Button>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-fit p-0" align="start">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="hover:bg-gray-100">
+                          삭제하기
+                        </Button>
+                      </AlertDialogTrigger>
+
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>예약 삭제</AlertDialogTitle>
+                          <AlertDialogDescription>미팅룸 예약을 삭제하시겠습니까?</AlertDialogDescription>
+                        </AlertDialogHeader>
+
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="h-8 px-3.5 text-sm">닫기</AlertDialogCancel>
+                          <AlertDialogAction className="h-8 px-3.5 text-sm" onClick={() => onDelete(b.id)}>
+                            삭제
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </PopoverContent>
+                </Popover>
+              )}
+              {/* <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="svgIcon" size="icon" className="absolute top-2 right-1 size-3">
                     <More />
@@ -656,7 +692,7 @@ function RoomLane({
                     </AlertDialogContent>
                   </AlertDialog>
                 </PopoverContent>
-              </Popover>
+              </Popover> */}
             </div>
           );
         })}

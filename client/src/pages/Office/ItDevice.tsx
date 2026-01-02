@@ -3,7 +3,7 @@ import { AppPagination } from '@/components/ui/AppPagination';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { SearchGray } from '@/assets/images/icons';
-import { useNavigate, Outlet } from 'react-router';
+import { useNavigate, Outlet, useSearchParams } from 'react-router';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useEffect, useState } from 'react';
 import { DeviceForm } from '@/components/itdevice/DeviceForm';
@@ -18,17 +18,26 @@ import { Badge } from '@/components/ui/badge';
 export default function ItDevice() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   //   페이지네이션 상태
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeQuery, setActiveQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [activeQuery, setActiveQuery] = useState(searchParams.get('search') || '');
 
   const [posts, setPosts] = useState<Device[]>([]);
+
+  // URL 파라미터 업데이트
+  useEffect(() => {
+    const params: Record<string, string> = {};
+    if (page > 1) params.page = String(page);
+    if (activeQuery) params.search = activeQuery;
+    setSearchParams(params, { replace: true });
+  }, [page, activeQuery, setSearchParams]);
 
   //   리스트 불러오기 (페이지 변경 시 실행)
   const fetchDevices = async (pageNum: number, query = '') => {

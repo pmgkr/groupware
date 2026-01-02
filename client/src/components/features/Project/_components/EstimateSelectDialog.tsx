@@ -346,7 +346,7 @@ export default function EstimateSelectDialog({
                               <TableCell className="text-left font-medium">{item.ei_name || 'Agency Fee'}</TableCell>
                               <TableCell className="text-right">{displayUnitPrice(item.unit_price ?? 0)}</TableCell>
                               <TableCell />
-                              <TableCell className="text-right font-semibold">{formatAmount(item.amount)}</TableCell>
+                              <TableCell className="text-right">{formatAmount(item.amount)}</TableCell>
                               <TableCell className="text-right">{formatAmount(item.ava_amount)}</TableCell>
                               <TableCell className="text-left leading-[1.3]">{item.remark}</TableCell>
                               <TableCell className="w-8 !px-0">

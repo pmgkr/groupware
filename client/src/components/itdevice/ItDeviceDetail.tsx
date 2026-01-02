@@ -1,5 +1,5 @@
 import { SectionHeader } from '@components/ui/SectionHeader';
-import { Navigate, useNavigate, useParams } from 'react-router';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -31,6 +31,7 @@ import { useAppDialog } from '../common/ui/AppDialog/AppDialog';
 export default function itDeviceDetail() {
   const { id } = useParams<{ id: string }>(); // /itdevice/:id
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [posts, setPosts] = useState<Device | null>(null);
   const [history, setHistory] = useState<DeviceHistory[]>([]);
@@ -89,7 +90,7 @@ export default function itDeviceDetail() {
   const currentUser = history.find((h) => !h.returnedAt);
   const previousUsers = history
     .filter((h) => h.returnedAt) // returnedAt이 존재하면 이전 사용자
-    .sort((a, b) => new Date(b.returnedAt!).getTime() - new Date(a.returnedAt!).getTime());
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   //dialog
   const [openEdit, setOpenEdit] = useState(false);
@@ -467,7 +468,7 @@ export default function itDeviceDetail() {
             반납 처리
           </Button>
         )}
-        <Button onClick={() => navigate('/itdevice')}>목록</Button>
+        <Button onClick={() => navigate('/itdevice' + location.search)}>목록</Button>
       </div>
 
       {/* 공통 다이얼로그 */}

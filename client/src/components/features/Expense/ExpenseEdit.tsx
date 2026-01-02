@@ -858,13 +858,13 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                               control={control}
                               name={`expense_items.${index}.date`}
                               render={({ field }) => {
-                                //const { isOpen, setIsOpen, close } = useToggleState();
+                                const { isOpen, setIsOpen, close } = useToggleState();
                                 return (
                                   <FormItem>
                                     <div className="flex h-6 justify-between">
                                       <FormLabel className="gap-.5 font-bold text-gray-950">매입 일자</FormLabel>
                                     </div>
-                                    <Popover open={depositPicker.isOpen} onOpenChange={depositPicker.setIsOpen}>
+                                    <Popover open={isOpen} onOpenChange={setIsOpen}>
                                       <div className="relative w-full">
                                         <PopoverTrigger asChild>
                                           <FormControl>
@@ -915,13 +915,18 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                                       placeholder="금액"
                                       value={field.value ? formatAmount(field.value) : ''}
                                       onChange={(e) => {
-                                        const raw = e.target.value.replace(/[^0-9]/g, '');
+                                        const raw = e.target.value
+                                          .replace(/,/g, '')
+                                          .replace(/[^0-9-]/g, '')
+                                          .replace(/(?!^)-/g, ''); // 마이너스는 맨 앞만 허용
+
                                         field.onChange(raw);
 
-                                        // ✅ 세금 필드와 합산하여 total 자동 계산
                                         const taxValue =
                                           Number(String(form.getValues(`expense_items.${index}.tax`) || '').replace(/,/g, '')) || 0;
-                                        const total = Number(raw || 0) + taxValue;
+
+                                        const priceValue = Number(raw || 0);
+                                        const total = priceValue + taxValue;
 
                                         form.setValue(`expense_items.${index}.total`, total.toString(), {
                                           shouldValidate: false,
@@ -1099,7 +1104,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
             <DialogTitle>기안서 매칭</DialogTitle>
           </DialogHeader>
 
-          <Table>
+          <Table variant="primary">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[100px]">구분</TableHead>
@@ -1113,7 +1118,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
             <TableBody>
               {hasProposalList ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center text-sm text-gray-500">
+                  <TableCell colSpan={5} className="py-10 text-center text-[13px] text-gray-500">
                     등록된 기안서가 없습니다.
                   </TableCell>
                 </TableRow>
@@ -1168,10 +1173,6 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
               type="button"
               disabled={!selectedProposalId}
               onClick={() => {
-                console.log('🔍 디버그 - activeRowIndex:', activeRowIndex);
-                console.log('🔍 디버그 - selectedProposalId:', selectedProposalId);
-                console.log('🔍 디버그 - selectedProposal:', selectedProposal);
-
                 if (activeRowIndex === null || !selectedProposalId) {
                   console.log('❌ 조건 실패');
                   return;

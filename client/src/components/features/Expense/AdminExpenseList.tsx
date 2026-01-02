@@ -1,5 +1,6 @@
 import { type ExpenseListItems } from '@/api/manager/nexpense';
 
+import { Button } from '@components/ui/button';
 import { Checkbox } from '@components/ui/checkbox';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -20,6 +21,8 @@ interface ExpenseListProps {
   handleCheckAll: (val: boolean) => void;
   handleCheckItem: (seq: number, checked: boolean) => void;
   handleSetDdate: (seq: number, ddate: Date) => void;
+  handlePDFDownload: (seq: number, expId: string, userName: string) => void;
+  handleMultiPDFDownload: (seqs: number[]) => void;
 }
 
 export default function ManagerExpenseList({
@@ -36,6 +39,8 @@ export default function ManagerExpenseList({
   handleCheckAll,
   handleCheckItem,
   handleSetDdate,
+  handlePDFDownload,
+  handleMultiPDFDownload,
 }: ExpenseListProps) {
   return (
     <>
@@ -85,11 +90,24 @@ export default function ManagerExpenseList({
                 checked={checkedItems.includes(item.seq)}
                 onCheck={handleCheckItem}
                 onDdate={handleSetDdate}
+                handlePDFDownload={handlePDFDownload}
               />
             ))
           )}
         </TableBody>
       </Table>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            handleMultiPDFDownload(checkedItems);
+          }}>
+          선택 다운로드
+        </Button>
+      </div>
 
       <div className="mt-5">
         {expenseList.length !== 0 && (

@@ -46,7 +46,15 @@ export function HalfDonut({ value, netProfit }: { value: number; netProfit: numb
     <div className="relative z-2 h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart responsive>
-          <Pie data={data} dataKey="value" startAngle={450} endAngle={90} innerRadius={70} outerRadius={100} paddingAngle={0} stroke="none">
+          <Pie
+            data={data}
+            dataKey="value"
+            startAngle={450}
+            endAngle={90}
+            innerRadius="55%"
+            outerRadius="80%"
+            paddingAngle={0}
+            stroke="none">
             <Cell className="fill-primary-blue-500" />
             <Cell className="fill-gray-300" />
           </Pie>

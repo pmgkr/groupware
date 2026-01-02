@@ -191,10 +191,18 @@ function ExpenseRowComponent({
                     placeholder="금액"
                     value={field.value ? formatAmount(field.value) : ''}
                     onChange={(e) => {
-                      const raw = e.target.value.replace(/[^0-9]/g, '');
+                      const raw = e.target.value
+                        .replace(/,/g, '')
+                        .replace(/[^0-9-]/g, '')
+                        .replace(/(?!^)-/g, ''); // 마이너스는 맨 앞만 허용
+
                       field.onChange(raw);
+
                       const taxValue = Number(String(form.getValues(`expense_items.${index}.tax`) || '').replace(/,/g, '')) || 0;
-                      const total = Number(raw || 0) + taxValue;
+
+                      const priceValue = Number(raw || 0);
+                      const total = priceValue + taxValue;
+
                       form.setValue(`expense_items.${index}.total`, total.toString(), {
                         shouldValidate: false,
                         shouldDirty: true,
@@ -277,7 +285,7 @@ function ExpenseRowComponent({
           <DialogHeader>
             <DialogTitle>기안서 매칭</DialogTitle>
           </DialogHeader>
-          <Table>
+          <Table variant="primary">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[100px]">구분</TableHead>
@@ -291,7 +299,7 @@ function ExpenseRowComponent({
             <TableBody>
               {hasProposalList ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center text-sm text-gray-500">
+                  <TableCell colSpan={5} className="py-10 text-center text-[13px] text-gray-500">
                     등록된 기안서가 없습니다.
                   </TableCell>
                 </TableRow>

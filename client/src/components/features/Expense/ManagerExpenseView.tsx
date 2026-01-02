@@ -444,9 +444,6 @@ export default function NexpenseView() {
             </div>
 
             <div className="flex gap-2">
-              <Button type="button" size="sm" variant="outline">
-                <Download /> 다운로드
-              </Button>
               {data.header.status === 'Claimed' && (
                 <>
                   <Button type="button" size="sm" variant="destructive" onClick={() => setDialogOpen(true)}>

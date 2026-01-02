@@ -11,7 +11,7 @@ import {
 } from '@/api';
 import InvoiceCreateForm from './_components/InvoiceCreate';
 import { InvoicePreviewDialog } from './_components/InvoiceDetail';
-import { formatKST, formatAmount } from '@/utils';
+import { formatDate, formatAmount } from '@/utils';
 
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -198,7 +198,7 @@ export default function ProjectInvoice() {
             <TableHead className="w-[9%]">합계</TableHead>
             <TableHead className="w-[10%] px-4!">작성자</TableHead>
             <TableHead className="w-[6%]">상태</TableHead>
-            <TableHead className="w-[12%]">작성일시</TableHead>
+            <TableHead className="w-[12%]">작성일</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -221,7 +221,7 @@ export default function ProjectInvoice() {
                 <TableCell className="text-right">{formatAmount(item.invoice_total)}</TableCell>
                 <TableCell className="px-4!">{item.user_nm}</TableCell>
                 <TableCell>{statusMap[item.invoice_status as keyof typeof statusMap]}</TableCell>
-                <TableCell>{formatKST(item.wdate)}</TableCell>
+                <TableCell>{formatDate(item.wdate)}</TableCell>
               </TableRow>
             ))
           ) : (

@@ -1,8 +1,10 @@
 import { useRef, useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import * as XLSX from 'xlsx';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
+import { findManager, getGrowingYears } from '@/utils';
+import { notificationApi } from '@/api/notification';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
@@ -22,15 +24,18 @@ import { ExpenseRow } from './_components/ExpenseListRow';
 
 export default function ExpenseList() {
   const navigate = useNavigate();
-  const { user_level } = useUser();
+  const { user_id, user_name, team_id, user_level } = useUser();
+  const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
   // 상단 필터용 state
   const [activeTab, setActiveTab] = useState<'all' | 'saved'>('all');
-  const [selectedYear, setSelectedYear] = useState('2025');
-  const [selectedType, setSelectedType] = useState<string[]>([]);
-  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
-  const [selectedProof, setSelectedProof] = useState<string[]>([]);
-  const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>([]);
+  const currentYear = String(new Date().getFullYear()); // 올해 구하기
+  const yearOptions = getGrowingYears(); // yearOptions
+  const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || currentYear);
+  const [selectedType, setSelectedType] = useState<string[]>(() => searchParams.get('type')?.split(',') ?? []);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('status')?.split(',') ?? []);
+  const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
+  const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>(() => searchParams.get('attach')?.split(',') ?? []);
   const [registerDialog, setRegisterDialog] = useState(false);
 
   // 리스트 내 체크박스 state
@@ -89,7 +94,7 @@ export default function ExpenseList() {
     setActiveTab(tab);
     setPage(1);
 
-    setSelectedYear('2025');
+    setSelectedYear(currentYear);
     setSelectedType([]);
     setSelectedStatus([]);
     setSelectedProof([]);
@@ -146,6 +151,33 @@ export default function ExpenseList() {
           const res = await claimTempExpense(payload);
 
           if (res.ok) {
+            const manager = await findManager(team_id);
+            if (manager.id) {
+              if (user_id === manager.id) {
+                // 접속한 계정이 매니저 아이디와 동일한 경우,
+                await notificationApi.registerNotification({
+                  user_id: user_id,
+                  user_name: user_name!,
+                  noti_target: user_id!,
+                  noti_title: `일반 비용 청구`,
+                  noti_message: `${checkedItems.length}건의 일반 비용을 청구했습니다.`,
+                  noti_type: 'nexpense',
+                  noti_url: `/expense`,
+                });
+              } else {
+                // 팀원이 매니저에게 승인 요청한 경우,
+                await notificationApi.registerNotification({
+                  user_id: manager.id!,
+                  user_name: manager.name,
+                  noti_target: user_id!,
+                  noti_title: `일반 비용 승인 요청`,
+                  noti_message: `${user_name}님이 ${checkedItems.length}건의 일반 비용을 청구했습니다.`,
+                  noti_type: 'pexpense',
+                  noti_url: `/manager/nexpense`,
+                });
+              }
+            }
+
             addAlert({
               title: '비용 청구가 완료되었습니다.',
               message: `<p><span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 임시저장 비용이 청구되었습니다.</p>`,
@@ -269,14 +301,23 @@ export default function ExpenseList() {
       try {
         setLoading(true);
         const params: Record<string, any> = {
-          type: selectedType.join(',') || undefined,
-          method: selectedProof.join(',') || undefined,
-          attach: selectedProofStatus.join(',') || undefined,
-          status: activeTab === 'all' ? selectedStatus.join(',') || undefined : activeTab, // 탭 선택 시 강제 상태
+          year: selectedYear,
           page,
-          size: pageSize,
         };
 
+        if (!selectedStatus.length) {
+          if (activeTab === 'saved') {
+            params.status = 'Saved';
+          }
+        } else {
+          params.status = selectedStatus.join(',');
+        }
+
+        if (selectedType.length) params.type = selectedType.join(',');
+        if (selectedProof.length) params.method = selectedProof.join(',');
+        if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
+
+        setSearchParams(params);
         const res = await getExpenseLists(params);
         console.log('📦 비용 리스트 요청 파라미터:', params);
         console.log('✅ 비용 리스트 응답:', res);
@@ -304,6 +345,7 @@ export default function ExpenseList() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
         selectedYear={selectedYear}
+        yearOptions={yearOptions}
         selectedType={selectedType}
         selectedStatus={selectedStatus}
         selectedProof={selectedProof}
@@ -320,7 +362,7 @@ export default function ExpenseList() {
 
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
-          <TableRow className="[&_th]:px-3 [&_th]:text-[13px] [&_th]:font-medium">
+          <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className={cn('w-[3%] px-0 transition-all duration-150', activeTab !== 'saved' && 'hidden')}>
               <Checkbox
                 id="chk_all"
@@ -330,15 +372,15 @@ export default function ExpenseList() {
               />
             </TableHead>
             <TableHead className="w-[8%]">EXP#</TableHead>
-            <TableHead className="w-[8%] whitespace-nowrap">증빙 수단</TableHead>
+            <TableHead className="w-[6%]">증빙 수단</TableHead>
             <TableHead className="w-[8%]">비용 용도</TableHead>
             <TableHead>비용 제목</TableHead>
-            <TableHead className="w-[6%] whitespace-nowrap">증빙 상태</TableHead>
-            <TableHead className="w-[10%]">금액</TableHead>
-            <TableHead className="w-[6%]">세금</TableHead>
-            <TableHead className="w-[10%]">합계</TableHead>
+            <TableHead className="w-[6%]">증빙 상태</TableHead>
+            <TableHead className="w-[11%]">금액</TableHead>
             <TableHead className="w-[7%]">상태</TableHead>
-            <TableHead className="w-[12%]">작성 일시</TableHead>
+            <TableHead className="w-[7%]">작성일</TableHead>
+            <TableHead className="w-[7%]">지급예정일</TableHead>
+            <TableHead className="w-[7%]">지급완료일</TableHead>
           </TableRow>
         </TableHeader>
 
