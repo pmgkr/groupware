@@ -20,7 +20,7 @@ export default function Header() {
   const isAdminSection = location.pathname.startsWith('/admin');
 
   const { user_id, user_name, job_role, profile_image } = useUser();
-  const { user, logout } = useAuth();
+  const { user, logout, setUserState } = useAuth();
 
   const subMenus: Record<string, { label: string; to: string }[]> = {
     project: [
@@ -149,11 +149,13 @@ export default function Header() {
       try {
         const updatedUser = await getMyProfile();
         setCurrentProfileImage(updatedUser.profile_image);
+        if (user) {
+          setUserState({ ...user, profile_image: updatedUser.profile_image });
+        }
       } catch (error) {
         console.error('프로필 재조회 실패:', error);
       }
     };
-
     // 다른 탭에서의 업데이트 감지
     const handleStorageChange = async (e: StorageEvent) => {
       if (e.key === 'profile_update') {
@@ -161,6 +163,9 @@ export default function Header() {
         try {
           const updatedUser = await getMyProfile();
           setCurrentProfileImage(updatedUser.profile_image);
+          if (user) {
+            setUserState({ ...user, profile_image: updatedUser.profile_image });
+          }
         } catch (error) {
           console.error('프로필 재조회 실패:', error);
         }
@@ -174,7 +179,7 @@ export default function Header() {
       window.removeEventListener('profile_update', handleProfileUpdate);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [user, setUserState]);
 
   // profile_image가 변경되면 currentProfileImage도 업데이트
   useEffect(() => {
