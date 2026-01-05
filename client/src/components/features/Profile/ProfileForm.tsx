@@ -45,6 +45,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageUploadAreaRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<ProfileValues>({
     resolver: zodResolver(ProfileSchema),
@@ -89,25 +90,14 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
 
         if (!alive) return;
 
-        console.log('User:', userData);
-        console.log('Teams:', teamsData);
-
         setUinfo(userData);
         setTeams(teamsData);
-
-        console.log('INIT DATA CHECK:', {
-          userData,
-          teamsData,
-          userTeamId: userData?.team_id,
-          teamsLength: teamsData?.length
-        });
 
         // 3. Form 초기값 설정
         if (userData) {
           // 사용자에게 팀 정보가 없으면, 팀 목록의 첫 번째를 기본값으로 사용
           let defaultTeamId = userData.team_id;
           if (!defaultTeamId && teamsData.length > 0) {
-            console.log('User has no team_id, using first team as default:', teamsData[0].team_id);
             defaultTeamId = teamsData[0].team_id;
           }
 
@@ -136,7 +126,6 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
 
       } catch (e: any) {
         if (!alive) return;
-        console.error('Profile Init Error:', e);
         // 401 Unauthorized or other critical errors
         if (e.status === 401 || (e.message && e.message.includes('expired'))) {
           alert('지정시간이 만료 되었습니다.\n프로세스를 초기화 합니다.\n다시 시도해 주세요');
@@ -188,6 +177,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
       const res = await onboardingUploadApi(file, onboardingToken);
       if (res.result && res.path) {
         form.setValue('profile_image', res.path);
+        form.clearErrors('profile_image');
       } else {
         alert('이미지 업로드에 실패했습니다.');
         setImagePreview(null);
@@ -210,6 +200,19 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
 
   const onSubmit = async (values: ProfileValues) => {
+    // 프로필 이미지가 등록되지 않았으면 제출 막기
+    if (!values.profile_image || values.profile_image.trim() === '') {
+      form.setError('profile_image', {
+        type: 'manual',
+        message: '프로필 이미지를 등록해주세요.',
+      });
+      // 프로필 이미지 영역으로 스크롤
+      setTimeout(() => {
+        imageUploadAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+      return;
+    }
+
     try {
       setSubmitting(true);
 
@@ -247,37 +250,50 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
         <input type="hidden" {...form.register('profile_image')} />
 
         {/* 사진 업로드 영역 */}
-        <div className="flex flex-col items-center gap-2">
-          <div
-            className={cn(
-              'group relative flex size-32 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-full border-2 border-dashed transition-colors',
-              isDragging ? 'border-primary bg-primary/10' : 'border-gray-300 bg-gray-50 hover:bg-gray-100',
-              imagePreview && 'border-none'
-            )}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}>
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
+        <FormField
+          control={form.control}
+          name="profile_image"
+          render={() => (
+            <FormItem>
+              <div ref={imageUploadAreaRef} className="flex flex-col items-center gap-2">
+                <div
+                  className={cn(
+                    'group relative flex size-32 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-full border-2 border-dashed transition-colors',
+                    isDragging ? 'border-primary bg-primary/10' : 'border-gray-300 bg-gray-50 hover:bg-gray-100',
+                    imagePreview && 'border-none',
+                    form.formState.errors.profile_image && 'border-destructive'
+                  )}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}>
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
 
-            {imagePreview ? (
-              <>
-                <img src={imagePreview} alt="Preview" className="size-full object-cover" />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                  <Upload className="size-8 text-white" />
+                  {imagePreview ? (
+                    <>
+                      <img src={imagePreview} alt="Preview" className="size-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                        <Upload className="size-8 text-white" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-gray-400">
+                      <Upload className="size-8" />
+                      <p className="text-[10px] font-medium text-center px-2">이미지 업로드</p>
+                    </div>
+                  )}
                 </div>
-              </>
-            ) : (
-              <div className="flex flex-col items-center gap-1 text-gray-400">
-                <Upload className="size-8" />
-                <p className="text-[10px] font-medium text-center px-2">이미지 업로드</p>
+                {form.formState.errors.profile_image ? (
+                  <FormMessage />
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center">
+                    클릭하거나 이미지를 드래그하여 프로필 사진을 등록해 주세요.
+                  </p>
+                )}
               </div>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground text-center">
-            클릭하거나 이미지를 드래그하여 프로필 사진을 등록해 주세요.
-          </p>
-        </div>
+            </FormItem>
+          )}
+        />
 
         {/* 이메일 (읽기 전용) */}
         <FormField
@@ -567,7 +583,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
 
         <div className="flex gap-2 pt-2">
           <Button type="submit" size="full" disabled={submitting}>
-            {submitting ? '저장 중...' : '프로필 저장'}
+            {submitting ? '저장 중' : '프로필 저장'}
           </Button>
         </div>
       </form>

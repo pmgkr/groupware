@@ -24,7 +24,7 @@ export const ProfileSchema = z.object({
   hire_date: z.coerce.date({ required_error: '입사일을 입력해 주세요', invalid_type_error: '입사일을 입력해 주세요' }),
   address: z.string().trim().min(1, '주소를 입력해 주세요'),
   emergency_phone: z.string().trim().min(5, '비상 연락망을 입력해 주세요'),
-  profile_image: z.string().optional(),
+  profile_image: z.string().min(1, '프로필 이미지를 등록해주세요.'),
 });
 
 export type ProfileValues = z.infer<typeof ProfileSchema>;
