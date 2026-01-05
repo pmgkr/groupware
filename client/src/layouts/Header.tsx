@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/hooks/useUser';
 import { cn } from '@/lib/utils';
-import { getImageUrl } from '@/utils';
+import { getAvatarFallback, getImageUrl } from '@/utils';
 
 import Logo from '@/assets/images/common/logo.svg?react';
 import { Dashboard, Project, Expense, Calendar, Profile, Logout, Pto, Office, Manager, Admin } from '@/assets/images/icons';
@@ -218,14 +218,17 @@ export default function Header() {
   }, [profile_image]);
 
   const profileImageUrl = useMemo(() => {
-    if (currentProfileImage) {
-      if (currentProfileImage.startsWith('http')) {
-        return currentProfileImage;
-      }
-      return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${currentProfileImage}`;
+    if (!currentProfileImage) return null; // ⬅️ 빈 문자열 대신 null 반환
+
+    if (currentProfileImage.startsWith('http')) {
+      return currentProfileImage; // ⬅️ 타임스탬프 제거
     }
-    //return getImageUrl('dummy/profile');
+    return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${currentProfileImage}`; // ⬅️ 타임스탬프 제거
   }, [currentProfileImage]);
+
+  const avatarFallback = useMemo(() => {
+    return getAvatarFallback(user_id || '');
+  }, [user_id]);
 
   const logoutClick = async () => {
     await logout(); // 서버 쿠키 삭제 + 토큰 초기화
@@ -275,7 +278,13 @@ export default function Header() {
         <div className="my-8.5 px-8">
           <Link to="/mypage">
             <div className="relative mx-auto mb-2.5 aspect-square w-25 overflow-hidden rounded-[50%]">
-              <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
+              {profileImageUrl ? (
+                <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-white text-2xl font-bold text-black">
+                  {avatarFallback}
+                </div>
+              )}
             </div>
           </Link>
           <div className="my-2.5 text-center text-sm text-gray-700">
