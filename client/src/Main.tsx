@@ -7,12 +7,14 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { router } from './router';
 import '@/index.css';
 
-createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <AppUIProvider>
-      <AuthProvider>
-        <RouterProvider router={router} />
-      </AuthProvider>
-    </AppUIProvider>
-  </React.StrictMode>
+const isProd = import.meta.env.VITE_ENV === 'production';
+
+const App = (
+  <AppUIProvider>
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  </AppUIProvider>
 );
+
+createRoot(document.getElementById('root')!).render(isProd ? App : <React.StrictMode>{App}</React.StrictMode>);
