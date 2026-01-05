@@ -39,13 +39,14 @@ interface UserListProps {
   year?: number;
   teamIds?: number[];
   userIds?: string[];
+  onGrantSuccess?: () => void;
 }
 
 /* ===========================================================
     컴포넌트 시작
 =========================================================== */
 
-export default function UserList({ year, teamIds = [], userIds = [] }: UserListProps) {
+export default function UserList({ year, teamIds = [], userIds = [], onGrantSuccess }: UserListProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isDetailPage = location.pathname.includes('/vacation/user/');
@@ -495,6 +496,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
           onSuccess={() => {
             handleCloseGrantDialog();
             loadVacationList();
+            onGrantSuccess?.();
           }}
         />
       )}

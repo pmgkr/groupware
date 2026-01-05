@@ -9,6 +9,10 @@ export default function VacationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
+  // 새로고침 트리거 state 추가 (다른 useState들 옆에)
+  const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
+  
+
   // 선택된 팀 ID 목록
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
   // 선택된 유저 ID 목록 - 클릭한 유저로 설정 (초기값으로 id 설정)
@@ -61,6 +65,11 @@ export default function VacationDetail() {
     }
   };
 
+  // UserList의 onGrantSuccess 핸들러 추가 (handleListClick 함수 다음에)
+  const handleGrantSuccess = () => {
+    setHistoryRefreshTrigger(prev => prev + 1);
+  };
+
   // 목록으로 돌아가기 핸들러
   const handleListClick = () => {
     navigate('/admin/vacation');
@@ -86,11 +95,13 @@ export default function VacationDetail() {
         year={year}
         teamIds={selectedTeamIds}
         userIds={selectedUserIds}
+        onGrantSuccess={handleGrantSuccess}
       />
       <div className="mt-6">
         <VacationHistory
         userId={id}
         year={year}
+        refreshTrigger={historyRefreshTrigger}
       />
       </div>
     </>
