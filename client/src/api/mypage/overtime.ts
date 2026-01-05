@@ -33,8 +33,6 @@ import { http } from '@/lib/http';
     queryParams.append('vyear', vyear.toString()); // 항상 vyear 전달
     if (user_id) queryParams.append('user_id', user_id);
     
-    console.log('MyOvertimeHistory API 호출 - vyear:', vyear, 'queryParams:', queryParams.toString());
-    
     const res = await http<{ total: number; page: number; size: number; pages: number; items: MyOvertimeItem[] }>(`/mypage/overtime?${queryParams.toString()}`, { method: 'GET' });
     return res;
   }
