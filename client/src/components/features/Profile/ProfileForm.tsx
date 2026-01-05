@@ -117,7 +117,11 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
 
           // 초기 이미지 프리뷰 설정
           if (userData.profile_image) {
-            setImagePreview(`${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${userData.profile_image}`);
+            // 이미 전체 URL인 경우 그대로 사용, 아니면 기존 경로 추가
+            const imageUrl = userData.profile_image.startsWith('http://') || userData.profile_image.startsWith('https://')
+              ? userData.profile_image
+              : `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${userData.profile_image}`;
+            setImagePreview(imageUrl);
           }
         } else if (teamsData.length > 0) {
           // 사용자 정보는 없지만 팀 목록은 로드된 경우 (예외적 상황)
