@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useSearchParams } from 'react-router';
+import { useSearchParams, useLocation } from 'react-router';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,10 +16,12 @@ dayjs.locale('ko');
 export interface VacationHistoryProps {
   userId?: string;
   year?: number;
+  refreshTrigger?: number;
 }
 
-export default function VacationHistory({ userId, year }: VacationHistoryProps) {
+export default function VacationHistory({ userId, year, refreshTrigger }: VacationHistoryProps) {
   const { user } = useAuth();
+  const location = useLocation();
   
   // 연도 state - props로 받거나 기본값 사용
   const currentYear = new Date().getFullYear();
@@ -39,11 +41,6 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
       lastFetchKeyRef.current = ''; // fetch key 리셋하여 재호출 가능하게
     }
   }, [userId]);
-  
-  // selectedYear가 변경되면 fetch key 리셋
-  useEffect(() => {
-    lastFetchKeyRef.current = ''; // year 변경 시 재호출 가능하게
-  }, [selectedYear]);
   
   // 데이터 state
   const [allData, setAllData] = useState<VacationItem[]>([]);
@@ -101,7 +98,11 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
     }
 
     // 중복 호출 방지: 같은 파라미터로 이미 호출 중이면 스킵
-    const fetchKey = `${targetUserId}-${selectedYear}`;
+    // refreshTrigger가 있으면 fetchKey에 포함시켜서 강제로 새로고침
+    const fetchKey = refreshTrigger !== undefined && refreshTrigger > 0
+      ? `${targetUserId}-${selectedYear}-refresh-${refreshTrigger}`
+      : `${targetUserId}-${selectedYear}`;
+    
     if (loadingRef.current || lastFetchKeyRef.current === fetchKey) {
       return;
     }
@@ -168,8 +169,91 @@ export default function VacationHistory({ userId, year }: VacationHistoryProps) 
     } finally {
       loadingRef.current = false;
     }
-  }, [userId, user?.user_id, selectedYear, page, pageSize]);
+  }, [userId, user?.user_id, selectedYear, page, pageSize, location.pathname, refreshTrigger]);
 
+  // refreshTrigger가 변경되면 fetch key 리셋 후 강제로 데이터 새로고침
+  // 서버에 데이터가 반영되는데 시간이 걸릴 수 있으므로 약간의 딜레이를 줌
+  useEffect(() => {
+    if (refreshTrigger !== undefined && refreshTrigger > 0) {
+      // 중복 호출 방지 로직 완전히 우회
+      lastFetchKeyRef.current = '';
+      loadingRef.current = false;
+      
+      // 서버에 데이터가 반영되는 시간을 고려하여 500ms 딜레이 후 호출
+      const timeoutId = setTimeout(async () => {
+        const targetUserId = userId || user?.user_id;
+        
+        if (!targetUserId) {
+          return;
+        }
+
+        // fetchKey에 refreshTrigger 포함하여 중복 호출 방지 완전히 우회
+        const fetchKey = `${targetUserId}-${selectedYear}-refresh-${refreshTrigger}`;
+        
+        loadingRef.current = true;
+        lastFetchKeyRef.current = fetchKey;
+        setLoading(true);
+        
+        try {
+          let vacationData: VacationItem[] = [];
+          
+          if (isExternalUser) {
+            // 관리자/매니저 외부 조회
+            let currentPage = 1;
+            const fetchSize = 100;
+            let hasMore = true;
+            
+            while (hasMore) {
+              const response = location.pathname.startsWith('/manager')
+                ? await managerVacationApi.getVacationInfo(targetUserId, selectedYear, currentPage, fetchSize)
+                : await adminVacationApi.getVacationInfo(targetUserId, selectedYear, currentPage, fetchSize);
+
+              const pageData = (response.body || []).map((item: any) => ({
+                sch_id: item.sch_id,
+                v_year: item.v_year,
+                v_type: item.v_type,
+                v_count: item.v_count,
+                sdate: item.sdate,
+                edate: item.edate,
+                remark: item.remark,
+                wdate: item.wdate
+              }));
+              
+              vacationData = [...vacationData, ...pageData];
+              
+              if (response.footer) {
+                const total = response.footer.total || 0;
+                const fetched = vacationData.length;
+                hasMore = fetched < total;
+              } else {
+                hasMore = pageData.length > 0;
+              }
+              
+              currentPage++;
+              if (currentPage > 100) break;
+            }
+          } else {
+            vacationData = await fetchVacationHistory(selectedYear);
+          }
+          
+          setAllData(vacationData);
+          setLoading(false);
+        } catch (error) {
+          console.error('휴가 이력 로드 실패:', error);
+          setAllData([]);
+          setLoading(false);
+        } finally {
+          loadingRef.current = false;
+        }
+      }, 500);
+      
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTrigger]);
+    
   // 데이터 조회
   useEffect(() => {
     fetchScheduleData();
