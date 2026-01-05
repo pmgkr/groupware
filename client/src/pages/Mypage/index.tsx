@@ -1,4 +1,4 @@
-import { formatKST, formatPhone, getImageUrl } from '@/utils';
+import { formatKST, formatPhone, getImageUrl, getAvatarFallback } from '@/utils';
 import { cn } from '@/lib/utils';
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Button } from '@components/ui/button';
@@ -107,11 +107,11 @@ export default function Mypage() {
 
   //프로필 이미지 수정
   const profileImageUrl = useMemo(() => {
-    if (!user) return '';
+    if (!user?.profile_image) return null;
 
-    if (!user?.profile_image) {
+    /* if (!user?.profile_image) {
       return getImageUrl('dummy/set_img');
-    }
+    } */
 
     // 🔥 Cloud URL인 경우 (http로 시작)
     if (user.profile_image.startsWith('http')) {
@@ -121,6 +121,11 @@ export default function Mypage() {
     // 🔥 기존 DB 파일명인 경우
     return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${user.profile_image}?t=${Date.now()}`;
   }, [user?.profile_image]);
+
+  const avatarFallback = useMemo(() => {
+    return getAvatarFallback(user?.user_id || '');
+  }, [user?.user_id]);
+
   const handleProfileImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -332,12 +337,26 @@ export default function Mypage() {
   const { addAlert } = useAppAlert();
   const { addDialog } = useAppDialog();
 
+  if (!user) {
+    return (
+      <section className="flex items-center justify-center py-20">
+        <Loader2 className="text-primary-blue-500 size-8 animate-spin" />
+      </section>
+    );
+  }
+
   return (
     <>
       <section className="flex flex-col gap-y-5">
         <div className="flex items-center gap-x-14 rounded-md border border-gray-300 px-20 py-6">
           <div className="group relative aspect-square w-36 overflow-hidden rounded-[50%]">
-            <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
+            {profileImageUrl ? (
+              <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
+            ) : (
+              <div className="bg-primary-blue-100 flex h-full w-full items-center justify-center text-4xl font-bold text-black">
+                {avatarFallback}
+              </div>
+            )}
             {/* hover 오버레이 - 업로드 중이 아닐 때만 표시 */}
             {!isUploadingProfile && (
               <label
@@ -347,7 +366,7 @@ export default function Mypage() {
               </label>
             )}
 
-            {/* 🔥 업로드 중 오버레이 - 항상 표시 */}
+            {/* 업로드 중 오버레이 - 항상 표시 */}
             {isUploadingProfile && (
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/70">
                 <Loader2 className="size-10 animate-spin text-white" />
