@@ -94,6 +94,7 @@ export interface pExpenseHeaderBase {
   user_id: string;
   project_id: string;
   el_type: string[] | string | null;
+  el_title?: string | null;
   el_method: string;
   el_attach: string;
   el_deposit?: string | null;
