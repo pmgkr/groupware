@@ -7,7 +7,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { router } from './router';
 import '@/index.css';
 
-const isProd = import.meta.env.PROD;
+const isProd = import.meta.env.VITE_ENV === 'production';
 
 const App = (
   <AppUIProvider>
