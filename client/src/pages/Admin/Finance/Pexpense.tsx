@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
-import { formatDate } from '@/utils';
+import { formatDate, getGrowingYears, sanitizeFilename, formatYYMMDD } from '@/utils';
 
 import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -12,9 +12,17 @@ import type { DateRange } from 'react-day-picker';
 import { OctagonAlert } from 'lucide-react';
 
 import { getExpenseType } from '@/api';
-import { getAdminExpenseList, confirmExpense, setDdate, getPDFDownload, type ExpenseListItems } from '@/api/admin/pexpense';
+import {
+  getAdminExpenseList,
+  confirmExpense,
+  setDdate,
+  getPDFDownload,
+  getMultiPDFDownload,
+  type ExpenseListItems,
+} from '@/api/admin/pexpense';
 import { AdminListFilter } from '@components/features/Project/_components/AdminListFilter';
 import AdminExpenseList from '@components/features/Project/AdminExpenseList';
+import { triggerDownload } from '@components/features/Project/utils/download';
 
 export default function Pexpense() {
   const { user_id } = useUser();
@@ -23,7 +31,9 @@ export default function Pexpense() {
   // ============================
   // Filter States
   // ============================
-  const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || '2025');
+  const currentYear = String(new Date().getFullYear()); // 올해 구하기
+  const yearOptions = getGrowingYears(); // yearOptions
+  const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || currentYear);
   const [selectedType, setSelectedType] = useState<string[]>(() => searchParams.get('type')?.split(',') ?? []);
   const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('status')?.split(',') ?? ['Confirmed']);
   const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
@@ -146,14 +156,14 @@ export default function Pexpense() {
   // ============================
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
+    if (!checked) {
+      setCheckedItems([]);
+      return;
+    }
 
-    setCheckedItems(
-      checked
-        ? expenseList
-            .filter((item) => user_id !== item.user_id) // disabled 대상 제외
-            .map((item) => item.seq)
-        : []
-    );
+    const selectableSeqs = expenseList.filter((item) => item.status !== 'Saved' && item.status !== 'Rejected').map((item) => item.seq);
+
+    setCheckedItems(selectableSeqs);
   };
 
   // 개별 체크박스 핸들러
@@ -161,19 +171,11 @@ export default function Pexpense() {
     setCheckedItems((prev) => (checked ? [...prev, seq] : prev.filter((id) => id !== seq)));
   };
 
-  // 전체 선택 상태 반영
-  useEffect(() => {
-    if (expenseList.length === 0) return;
-    const selectable = expenseList.filter((i) => i.user_id !== user_id).map((i) => i.seq);
-
-    setCheckAll(selectable.length > 0 && selectable.every((id) => checkedItems.includes(id)));
-  }, [checkedItems, expenseList]);
-
   const resetAllFilters = () => {
     setSearchInput('');
     setSearchQuery('');
 
-    setSelectedYear('2025');
+    setSelectedYear(currentYear);
     setSelectedType([]);
     setSelectedStatus([]);
     setSelectedProof([]);
@@ -301,41 +303,29 @@ export default function Pexpense() {
     }
   };
 
-  const handlePDFDownload = async (seq: number) => {
+  const handlePDFDownload = async (seq: number, expId: string, userName: string) => {
     try {
       const res = await getPDFDownload(seq);
 
-      console.log('PDF 다운로드', res);
+      const rawFilename = `${expId}_${userName}.pdf`;
+      const filename = sanitizeFilename(rawFilename);
 
-      // 1️⃣ 파일명 추출 (서버 Content-Disposition 우선)
-      const disposition = res.headers.get('content-disposition');
-      let filename = 'expense.pdf';
-
-      if (disposition) {
-        const match = disposition.match(/filename="?([^"]+)"?/);
-        if (match?.[1]) {
-          filename = decodeURIComponent(match[1]);
-        }
-      }
-
-      // 2️⃣ Blob 생성
       const blob = await res.blob();
-      URL.createObjectURL(blob);
-
-      // 3️⃣ 다운로드 트리거
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-
-      // 4️⃣ 정리
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      triggerDownload(blob, filename);
     } catch (e) {
       console.error('❌ PDF 다운로드 실패:', e);
+    }
+  };
+
+  const handleMultiPDFDownload = async (seqs: number[]) => {
+    try {
+      const blob = await getMultiPDFDownload(seqs);
+      const date = formatYYMMDD();
+      const filename = `프로젝트 비용_${date}.zip`;
+
+      triggerDownload(blob, filename);
+    } catch (e) {
+      console.error('❌ 선택 PDF 다운로드 실패:', e);
     }
   };
 
@@ -343,6 +333,7 @@ export default function Pexpense() {
     <>
       <AdminListFilter
         selectedYear={selectedYear}
+        yearOptions={yearOptions}
         selectedType={selectedType}
         selectedStatus={selectedStatus}
         selectedProof={selectedProof}
@@ -381,6 +372,7 @@ export default function Pexpense() {
         handleCheckItem={handleCheckItem}
         handleSetDdate={handleSetDdate}
         handlePDFDownload={handlePDFDownload}
+        handleMultiPDFDownload={handleMultiPDFDownload}
         total={total}
         page={page}
         pageSize={pageSize}

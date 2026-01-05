@@ -55,14 +55,14 @@ export function mapExcelToExpenseItems(excelData: any[]): any[] {
       const rawDate = row[headerMap.date] || '';
       const cleanDate = rawDate ? rawDate.replace(/\./g, '-').replace(/,/g, '').trim() : '';
 
-      const rawPrice = String(row[headerMap.price] || '0').replace(/,/g, '');
-      const price = Number(rawPrice) || 0;
+      const rawPrice = String(row[headerMap.price] ?? '0').replace(/,/g, '');
+      const price = Number(rawPrice);
 
-      const tax = 0; // 항상 0으로 고정
+      const tax = 0;
       const total = price + tax;
 
       return {
-        type: '', // 사용자가 직접 선택
+        type: '',
         title: String(row[headerMap.title] || '').trim(),
         number: String(row[headerMap.number] || ''),
         date: cleanDate,
@@ -73,8 +73,8 @@ export function mapExcelToExpenseItems(excelData: any[]): any[] {
         attachments: [],
       };
     })
-    // ✅ 매입금액이 0이거나 title이 비어 있는 행은 제외
-    .filter((item) => Number(item.price) > 0 && item.title !== '');
+    // ✅ 0원만 제외, 음수는 허용
+    .filter((item) => item.title !== '' && !isNaN(Number(item.price)) && Number(item.price) !== 0);
 
   return mapped;
 }

@@ -5,8 +5,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, type PieLabelRenderP
 type PieMode = 'pie' | 'donut';
 
 type PieModeConfig = {
-  innerRadius: number;
-  outerRadius: number;
+  innerRadius: number | string;
+  outerRadius: number | string;
   minAngle: number;
   hasGap: boolean;
   strokeWidth: number;
@@ -15,14 +15,14 @@ type PieModeConfig = {
 export const PIE_MODE_CONFIG: Record<PieMode, PieModeConfig> = {
   pie: {
     innerRadius: 0,
-    outerRadius: 110,
+    outerRadius: '80%',
     minAngle: 4,
     hasGap: false,
     strokeWidth: 0,
   },
   donut: {
-    innerRadius: 73,
-    outerRadius: 110,
+    innerRadius: '55%',
+    outerRadius: '80%',
     minAngle: 4,
     hasGap: true,
     strokeWidth: 3,

@@ -7,7 +7,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import { formatAmount, formatKST } from '@/utils';
+import { formatAmount, formatDate } from '@/utils';
 import type { pExpenseListItem } from '@/api';
 
 type ExpenseRowProps = {
@@ -104,7 +104,7 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
       </TableCell>
       <TableCell>{item.user_nm}</TableCell>
       <TableCell>{statusMap[item.status as keyof typeof statusMap]}</TableCell>
-      <TableCell>{formatKST(item.wdate)}</TableCell>
+      <TableCell>{formatDate(item.wdate)}</TableCell>
     </TableRow>
   );
 });

@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from "@components/ui/button";
 import { MultiSelect } from "@components/multiselect/multi-select";
+import type { WorkingListItem } from './list';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams, type MyTeamItem } from '@/api/manager/teams';
-
+import WorkTimeDownload from './WorkTimeDownload';
 
 // 셀렉트 옵션 타입 정의
 export interface SelectOption {
@@ -29,6 +30,8 @@ interface ToolbarProps {
   onTeamSelect?: (teamIds: number[]) => void;
   showTeamSelect?: boolean; // 팀 선택 셀렉터 표시 여부
   page?: 'manager' | 'admin'; // 페이지 타입 (manager/admin일 때만 팀 필터 사용)
+  workingList?: WorkingListItem[]; // 다운로드용 데이터 (admin/manager)
+  weekStartDate?: Date; // 다운로드용 주차 정보
 }
 
 export default function Toolbar({ 
@@ -36,14 +39,15 @@ export default function Toolbar({
   onDateChange,
   onTeamSelect = () => {},
   showTeamSelect = true,
-  page
+  page,
+  workingList = [],
+  weekStartDate,
 }: ToolbarProps) {
   const { user } = useAuth();
   
   // 팀 관련 state
   const [teams, setTeams] = useState<MyTeamItem[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
-  
   // 팀 목록 로드 중복 방지 ref
   const teamsLoadedRef = useRef(false);
 
@@ -107,6 +111,11 @@ export default function Toolbar({
       }
     }
   };
+
+  const selectedTeamIds = useMemo(
+    () => selectedTeams.map((id) => Number(id)).filter((n) => !Number.isNaN(n)),
+    [selectedTeams]
+  );
 
   // 셀렉트 옵션 설정
   const selectConfigs: SelectConfig[] = useMemo(() => {
@@ -245,6 +254,12 @@ export default function Toolbar({
         >
           오늘
         </Button>
+        <WorkTimeDownload
+          currentDate={currentDate}
+          page={page}
+          workingList={workingList}
+          selectedTeamIds={selectedTeamIds}
+        />
       </div>
     </div>
   );

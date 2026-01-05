@@ -64,6 +64,7 @@ export default function Header() {
   const [submenuTop, setSubmenuTop] = useState<number | null>(null);
   const [submenuMaxHeight, setSubmenuMaxHeight] = useState<number | null>(null);
   const submenuRef = useRef<HTMLDivElement | null>(null);
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
   const handleMenuEnter = (key: string | null) => (e: React.MouseEvent) => {
     setHoveredMenu(key);
     if (key && e.currentTarget) {
@@ -74,6 +75,16 @@ export default function Header() {
     } else {
       setSubmenuTop(null);
       setSubmenuMaxHeight(null);
+    }
+  };
+
+  // 서브메뉴 영역에서 X축을 벗어나면 닫기
+  const handleSubmenuMouseMove = (e: React.MouseEvent) => {
+    if (!submenuRef.current) return;
+    const rect = submenuRef.current.getBoundingClientRect();
+    const margin = 8; // 약간의 여유
+    if (e.clientX < rect.left - margin || e.clientX > rect.right + margin) {
+      setHoveredMenu(null);
     }
   };
 
@@ -90,6 +101,26 @@ export default function Header() {
       });
     }
   }, [hoveredMenu, submenuTop]);
+
+  // 라우트 이동 시 서브메뉴 닫기
+  useEffect(() => {
+    setHoveredMenu(null);
+  }, [location.pathname]);
+
+  // 사이드바를 왼쪽/위/아래로 벗어나면 닫기(오른쪽으로는 서브메뉴 이동 허용)
+  const handleSidebarMouseLeave = (e: React.MouseEvent) => {
+    const rect = sidebarRef.current?.getBoundingClientRect();
+    if (!rect) {
+      setHoveredMenu(null);
+      return;
+    }
+    const left = e.clientX < rect.left;
+    const above = e.clientY < rect.top;
+    const below = e.clientY > rect.bottom;
+    if (left || above || below) {
+      setHoveredMenu(null);
+    }
+  };
 
   /* 알림 도트  */
   useEffect(() => {
@@ -237,8 +268,11 @@ export default function Header() {
           </li>
         </ul>
       </header>
-      <div className="bg-primary-blue-100 fixed top-18 left-0 h-full w-60 max-[1440px]:w-50">
-        <div className="my-8.5 px-8" onMouseLeave={() => setHoveredMenu(null)}>
+      <div
+        ref={sidebarRef}
+        className="bg-primary-blue-100 fixed top-18 left-0 h-full w-60 max-[1441px]:w-50"
+        onMouseLeave={handleSidebarMouseLeave}>
+        <div className="my-8.5 px-8">
           <Link to="/mypage">
             <div className="relative mx-auto mb-2.5 aspect-square w-25 overflow-hidden rounded-[50%]">
               <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
@@ -377,18 +411,29 @@ export default function Header() {
       {hoveredMenu && subMenus[hoveredMenu] && subMenus[hoveredMenu].length > 0 && (
         <div
           ref={submenuRef}
-          className="border-primary-blue-150 bg-primary-blue-100 fixed left-64 z-8 w-auto rounded-sm border max-[1440px]:left-54"
+          className="border-primary-blue-150 bg-primary-blue-100 fixed left-64 z-8 w-auto rounded-sm border max-[1441px]:left-54"
           style={{ top: submenuTop ?? 0 }}
-          onMouseEnter={() => setHoveredMenu(hoveredMenu)}
-          onMouseLeave={() => setHoveredMenu(null)}>
+        onMouseEnter={() => setHoveredMenu(hoveredMenu)}
+        onMouseLeave={() => setHoveredMenu(null)}
+        onMouseMove={handleSubmenuMouseMove}>
           <ul className="flex flex-col gap-y-1 p-1.5">
             {subMenus[hoveredMenu].map((item) => (
               <li key={item.to}>
                 <NavLink
                   to={item.to}
+                  end={item.to === '/calendar' || item.to === '/project' || item.to === '/expense'}
+                  onClick={() => {
+                    setHoveredMenu(null);
+                    // 포커스가 NavLink에 남아있는 상태에서도 메뉴가 닫히도록 blur
+                    requestAnimationFrame(() => {
+                      try {
+                        (document.activeElement as HTMLElement | null)?.blur?.();
+                      } catch {}
+                    });
+                  }}
                   className={({ isActive }) =>
                     cn(
-                      'hover:bg-primary-blue-50 hover:text-primary-blue-500 flex h-10 items-center rounded-sm px-3 text-base text-gray-900 max-[1440px]:h-9 max-[1440px]:px-2.5',
+                      'hover:bg-primary-blue-50 hover:text-primary-blue-500 flex h-10 items-center rounded-sm px-3 text-base text-gray-900 max-[1441px]:h-9 max-[1441px]:px-2.5',
                       isActive && 'text-primary-blue-500 bg-white font-semibold'
                     )
                   }>

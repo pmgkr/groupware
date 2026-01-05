@@ -19,6 +19,10 @@ export const expenseRoutes: RouteObject = {
   children: [
     { index: true, element: <Expense /> },
     {
+      path: ':expId',
+      element: <ExpenseView />,
+    },
+    {
       path: 'proposal',
       element: <ProposalList />,
     },
@@ -36,15 +40,6 @@ export const expenseRoutes: RouteObject = {
     {
       path: 'edit/:expId',
       element: <Register mode="edit" />,
-      handle: {
-        // hideNav 시 Layout에서 2차 메뉴 숨김처리
-        hideNav: true,
-        hideTitle: true,
-      },
-    },
-    {
-      path: ':expId',
-      element: <ExpenseView />,
       handle: {
         // hideNav 시 Layout에서 2차 메뉴 숨김처리
         hideNav: true,

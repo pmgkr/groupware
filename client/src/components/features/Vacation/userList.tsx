@@ -336,7 +336,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
                 variant="svgIcon"
                 size="icon"
                 className="p-0"
-                aria-label="잔여기본연차 정렬"
+                aria-label="기본연차 정렬"
                 onClick={() => toggleSort('va_current')}
               >
                 <SortIcon order={sortState?.key === 'va_current' ? sortState.order : undefined} />
@@ -359,7 +359,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
                 variant="svgIcon"
                 size="icon"
                 className="p-0"
-                aria-label="잔여이월연차 정렬"
+                aria-label="이월연차 정렬"
                 onClick={() => toggleSort('va_carryover')}
               >
                 <SortIcon order={sortState?.key === 'va_carryover' ? sortState.order : undefined} />
@@ -383,7 +383,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
                 variant="svgIcon"
                 size="icon"
                 className="p-0"
-                aria-label="잔여특별대휴 정렬"
+                aria-label="특별대휴 정렬"
                 onClick={() => toggleSort('va_comp')}
               >
                 <SortIcon order={sortState?.key === 'va_comp' ? sortState.order : undefined} />
@@ -399,7 +399,7 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
                 variant="svgIcon"
                 size="icon"
                 className="p-0"
-                aria-label="잔여공가 정렬"
+                aria-label="공가 정렬"
                 onClick={() => toggleSort('va_long')}
               >
                 <SortIcon order={sortState?.key === 'va_long' ? sortState.order : undefined} />
@@ -452,24 +452,24 @@ export default function UserList({ year, teamIds = [], userIds = [] }: UserListP
 
               {/* 기본연차 */}
               <TableCell className="text-center">
-                <Badge variant={Number(item.va_current) < 0 ? "lightpink" : Number(item.va_current) === 0 ? "grayish" : "secondary"} size="table">
+                <Badge variant={Number(item.va_current) < 0 ? "lightpink2" : Number(item.va_current) === 0 ? "grayish" : "secondary"} size="table">
                   {item.va_current}일
                 </Badge>
               </TableCell>
 
               {/* 이월 */}
               <TableCell className="text-center">
-                <Badge variant={Number(item.va_carryover) < 0 ? "lightpink" : Number(item.va_carryover) === 0 ? "grayish" : "secondary"} size="table">{item.va_carryover}일</Badge>
+                <Badge variant={Number(item.va_carryover) < 0 ? "lightpink2" : Number(item.va_carryover) === 0 ? "grayish" : "secondary"} size="table">{item.va_carryover}일</Badge>
               </TableCell>
 
               {/* 특별 */}
               <TableCell className="text-center">
-                <Badge variant={Number(item.va_comp) < 0 ? "lightpink" : Number(item.va_comp) === 0 ? "grayish" : "secondary"} size="table">{item.va_comp}일</Badge>
+                <Badge variant={Number(item.va_comp) < 0 ? "lightpink2" : Number(item.va_comp) === 0 ? "grayish" : "secondary"} size="table">{item.va_comp}일</Badge>
               </TableCell>
 
               {/* 공가 (근속휴가) */}
                 <TableCell className="text-center">
-                <Badge variant={Number(item.va_long) < 0 ? "lightpink" : Number(item.va_long) === 0 ? "grayish" : "secondary"} size="table">{item.va_long}일</Badge>
+                <Badge variant={Number(item.va_long) < 0 ? "lightpink2" : Number(item.va_long) === 0 ? "grayish" : "secondary"} size="table">{item.va_long}일</Badge>
               </TableCell>
 
               {!isManagerPage && (

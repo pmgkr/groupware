@@ -1,6 +1,14 @@
 // src/utils/date.ts
 import { format } from 'date-fns';
 
+// YYMMDD 형식으로 날짜변환
+export function formatYYMMDD(date = new Date()) {
+  const yy = String(date.getFullYear()).slice(2);
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yy}${mm}${dd}`;
+}
+
 export function formatKST(dateString?: string | Date | null, withOutTime = false): string {
   if (!dateString) return '';
 

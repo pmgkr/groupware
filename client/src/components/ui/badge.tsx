@@ -15,6 +15,7 @@ const badgeVariants = cva(
         outline: 'text-primary-blue-500 border-primary-blue-500  [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
         destructive: 'border border-red-500 text-red-500 [a&]:hover:bg-red-500/90',
         lightpink: 'bg-primary-pink-300 text-primary-pink [a&]:hover:bg-primary/90',
+        lightpink2: 'bg-primary-pink-300/20 text-primary-pink [a&]:hover:bg-primary-pink/90',
         pink: 'bg-primary-pink text-primary-foreground [a&]:hover:bg-primary/90',
         dot: 'block max-w-full before:inline-block before:h-1.5 before:w-1.5 before:rounded-[50%] before:bg-primary-blue-500 before:mr-1  before:align-center text-gray-500 p-0 text-ellipsis overflow-hidden whitespace-nowrap',
 

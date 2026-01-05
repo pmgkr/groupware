@@ -59,12 +59,22 @@ export default function Overview({
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[12%] text-center">이름</TableHead>
-            <TableHead className="w-[18%] text-center">입사일</TableHead>
-            <TableHead className="w-[10%] text-center">잔여기본연차</TableHead>
+            <TableHead className="w-[12%] text-center text-[13px]">이름</TableHead>
+            <TableHead className="w-[18%] text-center text-[13px]">입사일</TableHead>
             <TableHead className="w-[10%] text-center">
               <div className="flex items-center justify-center gap-1">
-                잔여이월연차
+              <span className="text-[13px]">기본연차</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <InfoIcon className="w-3 h-3 text-gray-400" />
+                </TooltipTrigger>
+                <TooltipContent>당해 지급 연차 + 주말&공휴일 보상휴가</TooltipContent>
+              </Tooltip>
+              </div>
+            </TableHead>
+            <TableHead className="w-[10%] text-center">
+              <div className="flex items-center justify-center gap-1">
+                <span className="text-[13px]">이월연차</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <InfoIcon className="w-3 h-3 text-gray-400" />
@@ -76,7 +86,7 @@ export default function Overview({
 
             <TableHead className="w-[10%] text-center">
               <div className="flex items-center justify-center gap-1">
-                잔여특별대휴
+                <span className="text-[13px]">특별대휴</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <InfoIcon className="w-3 h-3 text-gray-400" />
@@ -88,13 +98,13 @@ export default function Overview({
 
             <TableHead className="w-[10%] text-center">
               <div className="flex items-center justify-center gap-1">
-                잔여공가
-                <Tooltip>
+                <span className="text-[13px]">공가</span>
+                {/* <Tooltip>
                   <TooltipTrigger asChild>
                     <InfoIcon className="w-3 h-3 text-gray-400" />
                   </TooltipTrigger>
                   <TooltipContent>총 휴가일수, 누적 휴가일수에 포함 안됨</TooltipContent>
-                </Tooltip>
+                </Tooltip> */}
               </div>
             </TableHead>
             <TableHead className="w-[12%] text-center">총 사용휴가일수</TableHead>
@@ -124,22 +134,22 @@ export default function Overview({
               </div>
             </TableCell>
             <TableCell className="text-center">
-              <Badge variant={Number(selectedYearSummary?.va_current) < 0 ? "lightpink" : Number(selectedYearSummary?.va_current) === 0 ? "grayish" : "secondary"} size="table">
+              <Badge variant={Number(selectedYearSummary?.va_current) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_current) === 0 ? "grayish" : "secondary"} size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_current || '0'}일`}
               </Badge>
             </TableCell>
             <TableCell className="text-center">
-              <Badge variant={Number(selectedYearSummary?.va_carryover) < 0 ? "lightpink" : Number(selectedYearSummary?.va_carryover) === 0 ? "grayish" : "secondary"} size="table">
+              <Badge variant={Number(selectedYearSummary?.va_carryover) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_carryover) === 0 ? "grayish" : "secondary"} size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_carryover || '0'}일`}
               </Badge>
             </TableCell>
             <TableCell className="text-center">
-              <Badge variant={Number(selectedYearSummary?.va_comp) < 0 ? "lightpink" : Number(selectedYearSummary?.va_comp) === 0 ? "grayish" : "secondary"} size="table">
+              <Badge variant={Number(selectedYearSummary?.va_comp) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_comp) === 0 ? "grayish" : "secondary"} size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_comp || '0'}일`}
               </Badge>
             </TableCell>
             <TableCell className="text-center">
-              <Badge variant={Number(selectedYearSummary?.va_long) < 0 ? "lightpink" : Number(selectedYearSummary?.va_long) === 0 ? "grayish" : "secondary"} size="table">
+              <Badge variant={Number(selectedYearSummary?.va_long) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_long) === 0 ? "grayish" : "secondary"} size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_long || '0'}일`}
               </Badge>
             </TableCell>

@@ -6,6 +6,7 @@ import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { getExpenseMatchedItems, setExpenseMatchedReset, type EstimateItemsMatch } from '@/api/project';
 import type { expenseInfo } from '@/types/estimate';
+import { normalizeElType } from '../utils/nomalizeType';
 
 import { CheckCircle } from 'lucide-react';
 
@@ -59,6 +60,7 @@ export const useProjectExpenseMatching = (expId?: string, getExpenseView?: GetEx
       const res = await getExpenseView(expId);
 
       const normalizedHeader = Array.isArray(res.header) ? res.header[0] : res.header;
+      const normalizedElType = normalizeElType(normalizedHeader.el_type);
 
       const itemsWithMatch = await Promise.all(
         res.items.map(async (item) => {
@@ -74,7 +76,10 @@ export const useProjectExpenseMatching = (expId?: string, getExpenseView?: GetEx
 
       setData({
         ...res,
-        header: normalizedHeader,
+        header: {
+          ...normalizedHeader,
+          el_type: normalizedElType,
+        },
         items: itemsWithMatch,
         project: projectInfo.info,
       });
@@ -261,7 +266,6 @@ export const useProjectExpenseMatching = (expId?: string, getExpenseView?: GetEx
     confirmEstimateSelect,
     closeEstimateDialog,
 
-    // match handlers
     completeMatching,
     resetMatching,
     clearMatching,

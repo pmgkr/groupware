@@ -1,5 +1,6 @@
 // 📦 일반비용 (Non-Expense) API
 import { http } from '@/lib/http';
+import { httpFile } from '@/lib/httpFile';
 import { cleanParams } from '@/utils';
 import type { ExpenseViewDTO } from '@/api/expense';
 
@@ -96,4 +97,34 @@ export async function setDdate(
   });
 
   return res;
+}
+
+// 어드민 > 일반 비용 PDF 다운로드
+export async function getPDFDownload(seq: number): Promise<Response> {
+  if (!seq) throw new Error('seq가 필요합니다.');
+
+  const res = await httpFile(`/admin/nexpense/pdf/${seq}`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/zip',
+    },
+  });
+
+  return res;
+}
+
+// 어드민 > 선택한 일반 비용 PDF 다운로드
+export async function getMultiPDFDownload(seqs: number[]) {
+  if (!seqs.length) throw new Error('비용이 선택되지 않았습니다.');
+
+  const seqParam = seqs.join(',');
+
+  const res = await httpFile(`/admin/nexpense/download?seqs=${seqParam}`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/zip',
+    },
+  });
+
+  return res.blob();
 }

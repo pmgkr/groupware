@@ -531,7 +531,7 @@ export default function Expense() {
             <TableHead className="w-[11%]">금액</TableHead>
             <TableHead className="w-[7%]">작성자</TableHead>
             <TableHead className="w-[7%]">상태</TableHead>
-            <TableHead className="w-[12%]">작성일시</TableHead>
+            <TableHead className="w-[12%]">작성일</TableHead>
           </TableRow>
         </TableHeader>
 

@@ -4,7 +4,7 @@
  * - 종료: max(anchorYear + 1, currentYear + 1)
  * - 해가 바뀌면 미래 연도 누적됨 (2024, 2025, 2026, 2027 ...)
  */
-export function getGrowingYears(anchorYear = 2025): string[] {
+export function getGrowingYears(anchorYear = 2026): string[] {
   const currentYear = new Date().getFullYear();
 
   const startYear = anchorYear - 1;

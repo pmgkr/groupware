@@ -1,7 +1,8 @@
 import { useRef, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
-import { formatDate } from '@/utils';
+import { formatDate, getGrowingYears, sanitizeFilename, formatYYMMDD } from '@/utils';
+import { triggerDownload } from '@components/features/Project/utils/download';
 
 import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -12,7 +13,14 @@ import type { DateRange } from 'react-day-picker';
 import { OctagonAlert } from 'lucide-react';
 
 import { getExpenseType } from '@/api';
-import { getAdminExpenseList, confirmExpense, setDdate, type ExpenseListItems } from '@/api/admin/nexpense';
+import {
+  getAdminExpenseList,
+  confirmExpense,
+  setDdate,
+  getPDFDownload,
+  getMultiPDFDownload,
+  type ExpenseListItems,
+} from '@/api/admin/nexpense';
 import { AdminListFilter } from '@components/features/Expense/_components/AdminListFilter';
 import AdminExpenseList from '@components/features/Expense/AdminExpenseList';
 
@@ -23,7 +31,9 @@ export default function Nexpense() {
   // ============================
   // Filter States
   // ============================
-  const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || '2025');
+  const currentYear = String(new Date().getFullYear()); // 올해 구하기
+  const yearOptions = getGrowingYears(); // yearOptions
+  const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || currentYear);
   const [selectedType, setSelectedType] = useState<string[]>(() => searchParams.get('type')?.split(',') ?? []);
   const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('status')?.split(',') ?? ['Confirmed']);
   const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
@@ -146,14 +156,14 @@ export default function Nexpense() {
   // ============================
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
+    if (!checked) {
+      setCheckedItems([]);
+      return;
+    }
 
-    setCheckedItems(
-      checked
-        ? expenseList
-            .filter((item) => user_id !== item.user_id) // disabled 대상 제외
-            .map((item) => item.seq)
-        : []
-    );
+    const selectableSeqs = expenseList.filter((item) => item.status !== 'Saved' && item.status !== 'Rejected').map((item) => item.seq);
+
+    setCheckedItems(selectableSeqs);
   };
 
   // 개별 체크박스 핸들러
@@ -161,19 +171,11 @@ export default function Nexpense() {
     setCheckedItems((prev) => (checked ? [...prev, seq] : prev.filter((id) => id !== seq)));
   };
 
-  // 전체 선택 상태 반영
-  useEffect(() => {
-    if (expenseList.length === 0) return;
-    const selectable = expenseList.filter((i) => i.user_id !== user_id).map((i) => i.seq);
-
-    setCheckAll(selectable.length > 0 && selectable.every((id) => checkedItems.includes(id)));
-  }, [checkedItems, expenseList]);
-
   const resetAllFilters = () => {
     setSearchInput('');
     setSearchQuery('');
 
-    setSelectedYear('2025');
+    setSelectedYear(currentYear);
     setSelectedType([]);
     setSelectedStatus([]);
     setSelectedProof([]);
@@ -301,10 +303,37 @@ export default function Nexpense() {
     }
   };
 
+  const handlePDFDownload = async (seq: number, expId: string, userName: string) => {
+    try {
+      const res = await getPDFDownload(seq);
+
+      const rawFilename = `${expId}_${userName}.pdf`;
+      const filename = sanitizeFilename(rawFilename);
+
+      const blob = await res.blob();
+      triggerDownload(blob, filename);
+    } catch (e) {
+      console.error('❌ PDF 다운로드 실패:', e);
+    }
+  };
+
+  const handleMultiPDFDownload = async (seqs: number[]) => {
+    try {
+      const blob = await getMultiPDFDownload(seqs);
+      const date = formatYYMMDD();
+      const filename = `프로젝트 비용_${date}.zip`;
+
+      triggerDownload(blob, filename);
+    } catch (e) {
+      console.error('❌ 선택 PDF 다운로드 실패:', e);
+    }
+  };
+
   return (
     <>
       <AdminListFilter
         selectedYear={selectedYear}
+        yearOptions={yearOptions}
         selectedType={selectedType}
         selectedStatus={selectedStatus}
         selectedProof={selectedProof}
@@ -342,6 +371,8 @@ export default function Nexpense() {
         handleCheckAll={handleCheckAll}
         handleCheckItem={handleCheckItem}
         handleSetDdate={handleSetDdate}
+        handlePDFDownload={handlePDFDownload}
+        handleMultiPDFDownload={handleMultiPDFDownload}
         total={total}
         page={page}
         pageSize={pageSize}

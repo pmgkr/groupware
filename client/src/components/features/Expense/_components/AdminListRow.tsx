@@ -12,16 +12,17 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { DayPicker } from '@components/daypicker';
 
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Download } from 'lucide-react';
 
 type ExpenseRowProps = {
   item: ExpenseListItems;
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
   onDdate: (seq: number, ddate: Date) => void;
+  handlePDFDownload: (seq: number, expId: string, userName: string) => void;
 };
 
-export const AdminListRow = memo(({ item, checked, onCheck, onDdate }: ExpenseRowProps) => {
+export const AdminListRow = memo(({ item, checked, onCheck, onDdate, handlePDFDownload }: ExpenseRowProps) => {
   const { search } = useLocation();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -69,10 +70,18 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate }: ExpenseRo
 
   return (
     <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]">
-      <TableCell className="whitespace-nowrap">
-        <Link to={`/admin/finance/nexpense/${item.seq}${search}`} className="rounded-[4px] border-1 bg-white p-1 text-sm">
+      <TableCell className="px-0! whitespace-nowrap">
+        <Link to={`/admin/finance/nexpense/${item.seq}${search}`} className="rounded-[4px] border-1 bg-white p-1 text-[11px] 2xl:text-sm">
           {item.exp_id}
         </Link>
+        <Button
+          type="button"
+          variant="outline"
+          size="xs"
+          onClick={() => handlePDFDownload(item.seq, item.exp_id, item.user_nm)}
+          className="ml-1 h-6 w-auto rounded-[4px] p-0.5! align-middle">
+          <Download className="size-3" />
+        </Button>
       </TableCell>
       <TableCell>{item.el_method}</TableCell>
       <TableCell>{item.el_type}</TableCell>
@@ -93,24 +102,25 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate }: ExpenseRo
       <TableCell>{formatDate(item.wdate)}</TableCell>
       <TableCell>{formatDate(item.el_deposit) || '-'}</TableCell>
       <TableCell>
-        {selectedDate ? (
-          formatDate(selectedDate)
-        ) : (
-          <Popover open={isOpen} onOpenChange={setIsOpen} modal>
-            <PopoverTrigger asChild>
-              <Button type="button" variant="outline" size="sm" className="text h-auto p-1">
-                {selectedDate ?? (
-                  <>
-                    날짜 지정 <CalendarIcon className="size-3" />
-                  </>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="center" className="w-auto p-0">
-              <DayPicker mode="single" selected={selectedDate} onSelect={handleDateSelect} />
-            </PopoverContent>
-          </Popover>
-        )}
+        {selectedDate
+          ? formatDate(selectedDate)
+          : !item.edate && (
+              <Popover open={isOpen} onOpenChange={setIsOpen} modal>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="outline" size="sm" className="text h-auto p-1">
+                    {selectedDate ?? (
+                      <>
+                        날짜 지정 <CalendarIcon className="size-3" />
+                      </>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="center" className="w-auto p-0">
+                  <DayPicker mode="single" selected={selectedDate} onSelect={handleDateSelect} />
+                </PopoverContent>
+              </Popover>
+            )}
+        {item.edate && <span className="block text-[11px] leading-[1.2] text-gray-600">지급일 {formatDate(item.edate)}</span>}
       </TableCell>
       <TableCell className="px-0!">
         <Checkbox
@@ -118,7 +128,7 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate }: ExpenseRo
           className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
           checked={checked}
           onCheckedChange={(v) => onCheck(item.seq, !!v)}
-          disabled={item.status !== 'Claimed' && item.status !== 'Confirmed'}
+          disabled={item.status === 'Saved' || item.status === 'Rejected'}
         />
       </TableCell>
     </TableRow>
