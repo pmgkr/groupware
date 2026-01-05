@@ -16,6 +16,7 @@ import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { Input } from '@components/ui/input';
 import { Textarea } from '@components/ui/textarea';
 import { Button } from '@components/ui/button';
@@ -27,7 +28,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
 
 import { Calendar, TooltipNoti } from '@/assets/images/icons';
-import { UserRound, FileText, OctagonAlert } from 'lucide-react';
+import { UserRound, FileText, OctagonAlert, Info } from 'lucide-react';
 
 import { format } from 'date-fns';
 import { getMyAccounts, type BankAccount } from '@/api/mypage/profile';
@@ -36,14 +37,15 @@ import { AccountSelectDialog } from '../Expense/_components/AccountSelectDialog'
 import { matchProjectWithProposal } from '@/api/expense/proposal';
 
 const expenseSchema = z.object({
-  el_method: z.string().nonempty('결제 수단을 선택해주세요.'),
-  account_name: z.string().nonempty('예금주명을 입력해주세요.'),
-  bank_code: z.string().nonempty('은행명을 선택해주세요.'),
+  el_method: z.string().nonempty('결제 수단을 선택해 주세요.'),
+  el_title: z.string().optional(),
+  account_name: z.string().nonempty('예금주명을 입력해 주세요.'),
+  bank_code: z.string().nonempty('은행명을 선택해 주세요.'),
   bank_name: z.string().optional(),
   bank_account: z
     .string()
     .regex(/^[0-9-]+$/, '계좌번호 형식이 올바르지 않습니다.')
-    .nonempty('계좌번호를 입력해주세요.'),
+    .nonempty('계좌번호를 입력해 주세요.'),
   el_deposit: z.string().optional(),
   remark: z.string().optional(),
   expense_items: z
@@ -97,6 +99,7 @@ export default function ProjectExpenseRegister() {
     resolver: zodResolver(expenseSchema) as any,
     defaultValues: {
       project_id: projectId,
+      el_title: '',
       el_method: '',
       el_type: [],
       bank_account: '',
@@ -429,6 +432,7 @@ export default function ProjectExpenseRegister() {
               project_id: projectId!,
               el_type: elTypeList || null,
               el_method: values.el_method,
+              el_title: values.el_title || null,
               el_attach: files.length > 0 ? 'Y' : 'N',
               el_deposit: values.el_deposit || '',
               bank_account: values.bank_account.replace(/-/g, ''),
@@ -627,6 +631,36 @@ export default function ProjectExpenseRegister() {
                   />
                 </div>
                 <div className="grid-row-3 mb-12 grid grid-cols-4 gap-y-6 tracking-tight">
+                  <div className="col-span-4 text-base leading-[1.5] text-gray-700">
+                    <FormField
+                      control={form.control}
+                      name="el_title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex h-6 justify-between">
+                            <FormLabel className="gap-.5 font-bold text-gray-950">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <span className="flex items-center justify-center gap-1">
+                                    비용 제목
+                                    <TooltipTrigger asChild>
+                                      <Info className="size-3 text-gray-500" />
+                                    </TooltipTrigger>
+                                  </span>
+                                  <TooltipContent>미입력 시 자동으로 제목이 생성됩니다.</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </FormLabel>
+                          </div>
+                          <FormControl>
+                            <Input placeholder="비용 제목을 입력해 주세요" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <div className="pr-5 text-base leading-[1.5] text-gray-700">
                     <FormField
                       control={form.control}

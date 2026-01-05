@@ -39,14 +39,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 // ✅ zod schema
 const editSchema = z.object({
-  el_method: z.string().nonempty('결제 수단을 선택해주세요.'),
-  account_name: z.string().nonempty('예금주명을 입력해주세요.'),
-  bank_code: z.string().nonempty('은행명을 선택해주세요.'),
+  el_method: z.string().nonempty('결제 수단을 선택해 주세요.'),
+  el_title: z.string().nonempty('비용 제목을 입력해 주세요.'),
+  account_name: z.string().nonempty('예금주명을 입력해 주세요.'),
+  bank_code: z.string().nonempty('은행명을 선택해 주세요.'),
   bank_name: z.string().optional(),
   bank_account: z
     .string()
     .regex(/^[0-9-]+$/, '계좌번호 형식이 올바르지 않습니다.')
-    .nonempty('계좌번호를 입력해주세요.'),
+    .nonempty('계좌번호를 입력해 주세요.'),
   el_deposit: z.string().optional(),
   remark: z.string().optional(),
   expense_items: z
@@ -108,6 +109,7 @@ export default function ProjectExpenseEdit() {
     resolver: zodResolver(editSchema),
     defaultValues: {
       el_method: '',
+      el_title: '',
       bank_account: '',
       bank_code: '',
       bank_name: '',
@@ -224,6 +226,7 @@ export default function ProjectExpenseEdit() {
 
         reset({
           el_method: h.el_method,
+          el_title: h.el_title,
           bank_account: h.bank_account,
           bank_name: h.bank_name,
           bank_code: h.bank_code,
@@ -435,6 +438,7 @@ export default function ProjectExpenseEdit() {
           user_id: user_id!,
           project_id: projectId!,
           el_type: elTypeList || null,
+          el_title: values.el_title,
           el_method: values.el_method,
           el_attach: enrichedItems.some((item) => item.attachments.length > 0) ? 'Y' : 'N',
           el_deposit: values.el_deposit || null,
@@ -654,6 +658,24 @@ export default function ProjectExpenseEdit() {
               </div>
 
               <div className="grid-row-3 mb-12 grid grid-cols-4 gap-y-6 tracking-tight">
+                <div className="col-span-4 text-base leading-[1.5] text-gray-700">
+                  <FormField
+                    control={form.control}
+                    name="el_title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex h-6 justify-between">
+                          <FormLabel className="gap-.5 font-bold text-gray-950">비용 제목</FormLabel>
+                        </div>
+                        <FormControl>
+                          <Input placeholder="비용 제목을 입력해 주세요" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <div className="pr-5 text-base leading-[1.5] text-gray-700">
                   <FormField
                     control={control}
