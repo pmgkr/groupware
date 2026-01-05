@@ -224,7 +224,7 @@ export default function Header() {
       }
       return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${currentProfileImage}`;
     }
-    return getImageUrl('dummy/profile');
+    //return getImageUrl('dummy/profile');
   }, [currentProfileImage]);
 
   const logoutClick = async () => {
@@ -413,9 +413,9 @@ export default function Header() {
           ref={submenuRef}
           className="border-primary-blue-150 bg-primary-blue-100 fixed left-64 z-8 w-auto rounded-sm border max-[1441px]:left-54"
           style={{ top: submenuTop ?? 0 }}
-        onMouseEnter={() => setHoveredMenu(hoveredMenu)}
-        onMouseLeave={() => setHoveredMenu(null)}
-        onMouseMove={handleSubmenuMouseMove}>
+          onMouseEnter={() => setHoveredMenu(hoveredMenu)}
+          onMouseLeave={() => setHoveredMenu(null)}
+          onMouseMove={handleSubmenuMouseMove}>
           <ul className="flex flex-col gap-y-1 p-1.5">
             {subMenus[hoveredMenu].map((item) => (
               <li key={item.to}>

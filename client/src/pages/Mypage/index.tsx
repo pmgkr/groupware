@@ -107,8 +107,10 @@ export default function Mypage() {
 
   //프로필 이미지 수정
   const profileImageUrl = useMemo(() => {
+    if (!user) return '';
+
     if (!user?.profile_image) {
-      return getImageUrl('dummy/profile');
+      return getImageUrl('dummy/set_img');
     }
 
     // 🔥 Cloud URL인 경우 (http로 시작)
