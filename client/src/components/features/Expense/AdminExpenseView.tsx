@@ -10,7 +10,7 @@ import ReportMatched from '@components/features/Project/_components/ReportMatche
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { statusIconMap, getLogMessage } from './utils/statusUtils';
-import { formatKST, formatAmount } from '@/utils';
+import { formatKST, formatAmount, normalizeAttachmentUrl } from '@/utils';
 import { format } from 'date-fns';
 
 import { Badge } from '@components/ui/badge';
@@ -403,7 +403,7 @@ export default function NexpenseView() {
                             {item.attachments.map((att, idx) => (
                               <li key={idx} className="overflow-hidden text-sm text-gray-800">
                                 <a
-                                  href={`${import.meta.env.VITE_API_ORIGIN}/uploads/nexpense/${att.ea_sname}`}
+                                  href={normalizeAttachmentUrl(att.ea_url)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="flex items-center justify-center gap-1">
