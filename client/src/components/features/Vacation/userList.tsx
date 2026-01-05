@@ -11,7 +11,7 @@ import { managerVacationApi } from '@/api/manager/vacation';
 import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams } from '@/api/manager/teams';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { getAvatarFallback, SortIcon } from '@/utils';
+import { getAvatarFallback, SortIcon, getProfileImageUrl } from '@/utils';
 
 /* ===========================================================
     타입 정의
@@ -434,7 +434,7 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
                   <Avatar className="w-8 h-8">
                     {item.profile_image && (
                       <AvatarImage
-                        src={`${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${item.profile_image}`}
+                        src={getProfileImageUrl(item.profile_image)}
                         alt={item.name}
                       />
                     )}
