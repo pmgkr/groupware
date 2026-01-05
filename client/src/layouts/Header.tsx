@@ -20,7 +20,7 @@ export default function Header() {
   const isAdminSection = location.pathname.startsWith('/admin');
 
   const { user_id, user_name, job_role, profile_image } = useUser();
-  const { user, logout } = useAuth();
+  const { user, logout, setUserState } = useAuth();
 
   const subMenus: Record<string, { label: string; to: string }[]> = {
     project: [
@@ -180,11 +180,13 @@ export default function Header() {
       try {
         const updatedUser = await getMyProfile();
         setCurrentProfileImage(updatedUser.profile_image);
+        if (user) {
+          setUserState({ ...user, profile_image: updatedUser.profile_image });
+        }
       } catch (error) {
         console.error('프로필 재조회 실패:', error);
       }
     };
-
     // 다른 탭에서의 업데이트 감지
     const handleStorageChange = async (e: StorageEvent) => {
       if (e.key === 'profile_update') {
@@ -192,6 +194,9 @@ export default function Header() {
         try {
           const updatedUser = await getMyProfile();
           setCurrentProfileImage(updatedUser.profile_image);
+          if (user) {
+            setUserState({ ...user, profile_image: updatedUser.profile_image });
+          }
         } catch (error) {
           console.error('프로필 재조회 실패:', error);
         }
@@ -205,7 +210,7 @@ export default function Header() {
       window.removeEventListener('profile_update', handleProfileUpdate);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [user, setUserState]);
 
   // profile_image가 변경되면 currentProfileImage도 업데이트
   useEffect(() => {
@@ -219,7 +224,7 @@ export default function Header() {
       }
       return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${currentProfileImage}`;
     }
-    return getImageUrl('dummy/profile');
+    //return getImageUrl('dummy/profile');
   }, [currentProfileImage]);
 
   const logoutClick = async () => {
@@ -408,9 +413,9 @@ export default function Header() {
           ref={submenuRef}
           className="border-primary-blue-150 bg-primary-blue-100 fixed left-64 z-8 w-auto rounded-sm border max-[1441px]:left-54"
           style={{ top: submenuTop ?? 0 }}
-        onMouseEnter={() => setHoveredMenu(hoveredMenu)}
-        onMouseLeave={() => setHoveredMenu(null)}
-        onMouseMove={handleSubmenuMouseMove}>
+          onMouseEnter={() => setHoveredMenu(hoveredMenu)}
+          onMouseLeave={() => setHoveredMenu(null)}
+          onMouseMove={handleSubmenuMouseMove}>
           <ul className="flex flex-col gap-y-1 p-1.5">
             {subMenus[hoveredMenu].map((item) => (
               <li key={item.to}>
