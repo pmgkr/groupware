@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { InfoIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { getAvatarFallback } from '@/utils';
+import { getAvatarFallback, getProfileImageUrl } from '@/utils';
 
 interface OverviewProps {
   year: string;
@@ -118,7 +118,7 @@ export default function Overview({
                 <Avatar className="w-8 h-8">
                   {user?.profile_image && (
                     <AvatarImage
-                      src={`${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${user.profile_image}`}
+                      src={getProfileImageUrl(user.profile_image)}
                       alt={user?.user_name}
                     />
                   )}
