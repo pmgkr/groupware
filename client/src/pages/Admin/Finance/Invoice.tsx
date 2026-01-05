@@ -143,13 +143,7 @@ export default function Invoice() {
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
 
-    setCheckedItems(
-      checked
-        ? invoiceList
-            .filter((item) => user_id !== item.user_id) // disabled 대상 제외
-            .map((item) => item.seq)
-        : []
-    );
+    setCheckedItems(checked ? invoiceList.map((item) => item.seq) : []);
   };
 
   // 개별 체크박스 핸들러
@@ -160,7 +154,7 @@ export default function Invoice() {
   // 전체 선택 상태 반영
   useEffect(() => {
     if (invoiceList.length === 0) return;
-    const selectable = invoiceList.filter((i) => i.user_id !== user_id).map((i) => i.seq);
+    const selectable = invoiceList.map((i) => i.seq);
 
     setCheckAll(selectable.length > 0 && selectable.every((id) => checkedItems.includes(id)));
   }, [checkedItems, invoiceList]);
