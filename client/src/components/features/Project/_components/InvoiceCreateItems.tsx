@@ -26,8 +26,9 @@ export default function InvoiceItemsForm({ control, watch, setValue }: Props) {
 
   // 금액 변경 처리
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
-    const raw = e.target.value.replace(/,/g, '');
-    if (!/^\d*$/.test(raw)) return; // 숫자만 허용
+    const raw = e.target.value.replace(/,/g, '').replace(/(?!^)-/g, ''); // '-'는 맨 앞만 허용
+
+    if (!/^-?\d*$/.test(raw)) return;
 
     setValue(`items.${idx}.ii_amount`, raw);
   };
