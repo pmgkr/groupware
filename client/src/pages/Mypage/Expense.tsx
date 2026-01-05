@@ -165,7 +165,7 @@ export default function Expense() {
     setActiveTab(tab);
     setPage(1);
 
-    setSelectedYear('2025');
+    setSelectedYear(currentYear);
     setSelectedType([]);
     setSelectedStatus([]);
     setSelectedProof([]);
