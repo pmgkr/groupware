@@ -2,14 +2,14 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { useDashboard } from '@/hooks/useDashboard';
-import { getImageUrl } from '@/utils';
+import { getProfileImageUrl } from '@/utils';
 
 import Header from '@/layouts/Header';
 
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Badge } from '@components/ui/badge';
 import { DayPicker } from '@components/daypicker';
-import { Avatar, AvatarImage, AvatarFallback } from '@components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import getWelcomeMessage from '@components/features/Dashboard/welcome';
 import WorkHoursBar from '@/components/ui/WorkHoursBar';
 import { Icons } from '@components/icons';
@@ -259,11 +259,7 @@ export default function Dashboard() {
                   >
                     <Avatar>
                       <AvatarImage 
-                        src={
-                          calendar.profile_image
-                            ? `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${calendar.profile_image}`
-                            : getImageUrl('dummy/profile')
-                        } 
+                        src={getProfileImageUrl(calendar.profile_image)} 
                         alt={calendar.user_name} 
                       />
                       <AvatarFallback>
