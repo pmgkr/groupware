@@ -2,7 +2,7 @@
 import { http } from '@/lib/http';
 import { httpFile } from '@/lib/httpFile';
 import { cleanParams } from '@/utils';
-import type { pExpenseViewDTO } from '@/api/project/expense';
+import type { pExpenseViewDTO, pExpenseItemDTO } from '@/api/project/expense';
 
 // 어드민 프로젝트 비용 목록 조회
 export interface ExpenseListParams {
@@ -58,11 +58,26 @@ export type ExpenseListItems = {
   is_estimate: 'Y' | 'N'; // 견적서 비용 체크
 };
 
+// 어드민 > 프로젝트 비용 전체 리스트 리스폰 (Excel 다운로드용)
+export interface AdminExpenseExcelResponse {
+  header: ExpenseListItems;
+  items: pExpenseItemDTO[];
+}
+
 // 어드민 > 프로젝트 비용 목록 가져오기
 export async function getAdminExpenseList(params: ExpenseListParams) {
   const clean = cleanParams(params);
 
   // 쿼리스트링으로 변환
+  const query = new URLSearchParams(clean as Record<string, string>).toString();
+  const res = await http<{ items: ExpenseListItems[]; total: number }>(`/admin/pexpense/list?${query}`, { method: 'GET' });
+
+  return res;
+}
+
+export async function getAdminExpenseAllList(params: ExpenseListParams) {
+  const clean = cleanParams(params);
+
   const query = new URLSearchParams(clean as Record<string, string>).toString();
   const res = await http<{ items: ExpenseListItems[]; total: number }>(`/admin/pexpense/list?${query}`, { method: 'GET' });
 
@@ -135,4 +150,17 @@ export async function getMultiPDFDownload(seqs: number[]) {
   });
 
   return res.blob();
+}
+
+// 어드민 > 프로젝트 비용 엑셀 다운로드 전체 데이터 가져오기
+export async function getAdminExpenseExcel(params: ExpenseListParams) {
+  const clean = cleanParams(params);
+
+  // 쿼리스트링으로 변환
+  const query = new URLSearchParams(clean as Record<string, string>).toString();
+  const res = await http<{ items: AdminExpenseExcelResponse[]; total: number }>(`/admin/pexpense/list/excel?${query}`, {
+    method: 'GET',
+  });
+
+  return res;
 }
