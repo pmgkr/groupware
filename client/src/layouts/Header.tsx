@@ -242,7 +242,7 @@ export default function Header() {
   return (
     <>
       <header className="fixed top-0 left-0 z-9 flex h-18 w-full items-center justify-between border-b-1 border-b-gray-300 bg-white px-7">
-        <h1 className="w-42">
+        <h1 className="w-33">
           <Link to="/dashboard">
             <Logo className="w-full" />
           </Link>
