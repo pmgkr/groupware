@@ -578,21 +578,21 @@ export default function WorkingList({
             sortedData.map((item) => (
               <TableRow key={item.id} className="[&_td]:text-[13px]">
                 <TableCell className="text-center p-0">{item.department}</TableCell>
-                <TableCell>{item.name}</TableCell>
+                <TableCell className="max-[1800px]:px-2">{item.name}</TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">
                     <span className="text-sm font-medium">{item.weeklyTotal}</span>
-                    <WorkHoursBar hours={parseWeeklyTotal(item.weeklyTotal)} className="w-full" />
+                    <WorkHoursBar hours={parseWeeklyTotal(item.weeklyTotal)} className="w-full" hide40h={true} />
                   </div>
                 </TableCell>
-                <TableCell>{formatDayWork(item.monday, item.id, item.name, 'monday', 0)}</TableCell>
-                <TableCell>{formatDayWork(item.tuesday, item.id, item.name, 'tuesday', 1)}</TableCell>
-                <TableCell>{formatDayWork(item.wednesday, item.id, item.name, 'wednesday', 2)}</TableCell>
-                <TableCell>{formatDayWork(item.thursday, item.id, item.name, 'thursday', 3)}</TableCell>
-                <TableCell>{formatDayWork(item.friday, item.id, item.name, 'friday', 4)}</TableCell>
-                <TableCell>{formatDayWork(item.saturday, item.id, item.name, 'saturday', 5)}</TableCell>
-                <TableCell>{formatDayWork(item.sunday, item.id, item.name, 'sunday', 6)}</TableCell>
-                <TableCell>
+                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.monday, item.id, item.name, 'monday', 0)}</TableCell>
+                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.tuesday, item.id, item.name, 'tuesday', 1)}</TableCell>
+                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.wednesday, item.id, item.name, 'wednesday', 2)}</TableCell>
+                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.thursday, item.id, item.name, 'thursday', 3)}</TableCell>
+                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.friday, item.id, item.name, 'friday', 4)}</TableCell>
+                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.saturday, item.id, item.name, 'saturday', 5)}</TableCell>
+                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.sunday, item.id, item.name, 'sunday', 6)}</TableCell>
+                <TableCell className="max-[1800px]:px-2">
                   <Button 
                     size="sm" 
                     variant="outline"

@@ -7,9 +7,10 @@ type Props = {
   safe?: number; // 정상 구간 끝(예: 40h)
   warn?: number; // 경고 구간 끝(예: 48h)
   className?: string;
+  hide40h?: boolean; // 40h 텍스트 숨김 여부
 };
 
-export default function WorkHoursBar({ hours, max = 52, safe = 40, warn = 48, className }: Props) {
+export default function WorkHoursBar({ hours, max = 52, safe = 40, warn = 48, className, hide40h = false }: Props) {
   const pct = Math.min(100, Math.max(0, (hours / max) * 100));
 
   // 구간에 따라 그라데이션 클래스 결정
@@ -37,7 +38,7 @@ export default function WorkHoursBar({ hours, max = 52, safe = 40, warn = 48, cl
         </div>
 
         <div className="absolute top-full right-0 left-0">
-          <div className="absolute top-0 h-5 text-[11px] text-gray-500" style={{ left: `${(safe / max) * 100}%` }}>
+          <div className={`absolute top-0 h-5 text-[11px] text-gray-500 ${hide40h ? 'max-[1800px]:hidden' : ''}`} style={{ left: `${(safe / max) * 100}%` }}>
             <div className="mt-1.5">40h</div>
           </div>
           <div className="absolute top-0 right-0 h-5 text-[11px] text-gray-500">
