@@ -259,7 +259,7 @@ export default function Dashboard() {
                   >
                     <Avatar>
                       <AvatarImage 
-                        src={getProfileImageUrl(calendar.profile_image)} 
+                        src={getProfileImageUrl(calendar.profile_image ?? undefined)} 
                         alt={calendar.user_name} 
                       />
                       <AvatarFallback>
