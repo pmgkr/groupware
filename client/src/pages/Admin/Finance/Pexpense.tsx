@@ -21,7 +21,6 @@ import {
   getMultiPDFDownload,
   getAdminExpenseExcel,
   type ExpenseListItems,
-  type AdminExpenseExcelResponse,
 } from '@/api/admin/pexpense';
 import { AdminListFilter } from '@components/features/Project/_components/AdminListFilter';
 import AdminExpenseList from '@components/features/Project/AdminExpenseList';
@@ -281,6 +280,7 @@ export default function Pexpense() {
         icon: <OctagonAlert />,
         duration: 2000,
       });
+      return;
     }
 
     try {
@@ -321,6 +321,16 @@ export default function Pexpense() {
   };
 
   const handleMultiPDFDownload = async (seqs: number[]) => {
+    if (seqs.length === 0) {
+      addAlert({
+        title: '선택된 비용 항목 없음',
+        message: 'PDF 다운로드할 비용 항목을 선택해주세요.',
+        icon: <OctagonAlert />,
+        duration: 1500,
+      });
+      return;
+    }
+
     try {
       const blob = await getMultiPDFDownload(seqs);
       const date = formatYYMMDD();
