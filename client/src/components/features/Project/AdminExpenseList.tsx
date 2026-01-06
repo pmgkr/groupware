@@ -22,6 +22,8 @@ interface ExpenseListProps {
   handleSetDdate: (seq: number, ddate: Date) => void;
   handlePDFDownload: (seq: number, expId: string, userName: string) => void;
   handleMultiPDFDownload: (seqs: number[]) => void;
+
+  handleExcelDownload: () => void;
 }
 
 export default function AdminListFilter({
@@ -40,6 +42,7 @@ export default function AdminListFilter({
   handleSetDdate,
   handlePDFDownload,
   handleMultiPDFDownload,
+  handleExcelDownload,
 }: ExpenseListProps) {
   return (
     <>
@@ -106,7 +109,11 @@ export default function AdminListFilter({
           onClick={() => {
             handleMultiPDFDownload(checkedItems);
           }}>
-          선택 다운로드
+          선택 PDF 다운로드
+        </Button>
+
+        <Button variant="outline" size="sm" onClick={handleExcelDownload}>
+          Excel 다운로드
         </Button>
       </div>
 

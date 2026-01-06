@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { formatDate, getGrowingYears, sanitizeFilename, formatYYMMDD } from '@/utils';
+import { downloadExpenseExcel } from '@/components/features/Project/utils/excelDown';
 
 import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -18,7 +19,9 @@ import {
   setDdate,
   getPDFDownload,
   getMultiPDFDownload,
+  getAdminExpenseExcel,
   type ExpenseListItems,
+  type AdminExpenseExcelResponse,
 } from '@/api/admin/pexpense';
 import { AdminListFilter } from '@components/features/Project/_components/AdminListFilter';
 import AdminExpenseList from '@components/features/Project/AdminExpenseList';
@@ -329,6 +332,41 @@ export default function Pexpense() {
     }
   };
 
+  const handleExcelDownload = async () => {
+    try {
+      const params: Record<string, any> = {
+        year: selectedYear,
+      };
+
+      if (!selectedStatus.length) {
+        params.status = 'Confirmed';
+      } else {
+        params.status = selectedStatus.join(',');
+      }
+      if (selectedType.length) params.type = selectedType.join(',');
+      if (selectedProof.length) params.method = selectedProof.join(',');
+      if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
+      if (selectedDdate !== '') params.ddate = selectedDdate;
+      if (selectedDateRange?.from) {
+        params.sdate = formatDate(selectedDateRange.from.toISOString());
+      }
+      if (selectedDateRange?.to) {
+        params.edate = formatDate(selectedDateRange.to.toISOString());
+      }
+      if (searchQuery) params.q = searchQuery;
+      setSearchParams(params);
+
+      const res = await getAdminExpenseExcel(params);
+
+      console.log(res);
+
+      downloadExpenseExcel(res.items, params);
+    } catch (e) {
+      console.error(e);
+      alert('Excel 다운로드에 실패했습니다.');
+    }
+  };
+
   return (
     <>
       <AdminListFilter
@@ -373,6 +411,7 @@ export default function Pexpense() {
         handleSetDdate={handleSetDdate}
         handlePDFDownload={handlePDFDownload}
         handleMultiPDFDownload={handleMultiPDFDownload}
+        handleExcelDownload={handleExcelDownload}
         total={total}
         page={page}
         pageSize={pageSize}
