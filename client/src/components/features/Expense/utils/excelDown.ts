@@ -334,7 +334,7 @@ export function downloadExpenseExcel(data: AdminExpenseExcelResponse[], params: 
   ];
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Project Expense');
+  XLSX.utils.book_append_sheet(wb, ws, 'N-Expense');
 
-  XLSX.writeFile(wb, `ProjectExpense_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`);
+  XLSX.writeFile(wb, `N-Expense_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`);
 }
