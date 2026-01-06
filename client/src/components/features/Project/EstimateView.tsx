@@ -281,7 +281,7 @@ export default function EstimateView() {
                 {/* ------------------------ */}
                 {row.ei_type === 'item' && (
                   <>
-                    <TableCell className="text-left">{row.ei_name}</TableCell>
+                    <TableCell className="text-left whitespace-break-spaces">{row.ei_name}</TableCell>
                     <TableCell className="text-right">{formatAmount(row.unit_price)}</TableCell>
                     <TableCell className="text-right">{row.qty}</TableCell>
                     <TableCell className="text-right">{formatAmount(row.amount)}</TableCell>
