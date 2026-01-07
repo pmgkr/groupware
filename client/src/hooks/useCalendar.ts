@@ -92,7 +92,7 @@ export function useCalendar({ filterMyEvents = false }: UseCalendarProps) {
               user_name: user!.user_name || '',
               noti_target: user!.user_id!,
               noti_title: `${eventLabel} (${rangeText})`,
-              noti_message: `새 일정이 등록되었습니다.`,
+              noti_message: `새 일정을 등록했습니다.`,
               noti_type: eventData.category,
               noti_url: '/calendar',
             });

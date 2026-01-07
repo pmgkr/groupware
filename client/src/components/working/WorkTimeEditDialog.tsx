@@ -217,7 +217,7 @@ export default function WorkTimeEditDialog({
             user_name: userName,
             noti_target: user.user_id,
             noti_title: `${dayjs(date).format('YYYY년 MM월 DD일')}의 출퇴근 시간`,
-            noti_message: `${user.user_name}님이 출퇴근 시간을 수정하셨습니다.`,
+            noti_message: `${user.user_name}님이 내 출퇴근 시간을 수정했습니다.`,
             noti_type: 'worktime',
             noti_url: `/working?year=${year}&week=${week}`,
           });
@@ -228,7 +228,7 @@ export default function WorkTimeEditDialog({
 
       addAlert({
         title: `출퇴근 시간 수정 완료`,
-        message: `${userName}님의 ${dayjs(date).format('YYYY년 MM월 DD일')}의 출퇴근 시간 수정이 완료되었습니다.`,
+        message: `${userName}님의 ${dayjs(date).format('YYYY년 MM월 DD일')} 출퇴근 시간 수정이 완료되었습니다.`,
         icon: <CheckCircle />,
         duration: 3000,
       });
@@ -237,7 +237,7 @@ export default function WorkTimeEditDialog({
       const errorMessage = error?.message || error?.toString() || '알 수 없는 오류';
       addAlert({
         title: `출퇴근 시간 수정 실패`,
-        message: `${userName}의 ${dayjs(date).format('YYYY년 MM월 DD일')}의 출퇴근 시간 수정에 실패했습니다.\n\n에러: ${errorMessage}.`,
+        message: `${userName}님의 ${dayjs(date).format('YYYY년 MM월 DD일')} 출퇴근 시간 수정에 실패했습니다.\n\n에러: ${errorMessage}.`,
         icon: <OctagonAlert />,
         duration: 3000,
       });
