@@ -31,3 +31,14 @@ export const getWeekNumber = (date: Date): { year: number; week: number } => {
   return { year: d.getUTCFullYear(), week: weekNo };
 };
 
+/**
+ * ISO 주차 번호로부터 주의 시작일(월요일) 계산
+ */
+export const getDateFromWeekNumber = (year: number, week: number): Date => {
+  const simple = new Date(Date.UTC(year, 0, 1));
+  const dayOfWeek = simple.getUTCDay() || 7;
+  const daysToAdd = (week - 1) * 7 + (1 - dayOfWeek);
+  simple.setUTCDate(simple.getUTCDate() + daysToAdd);
+  return simple;
+};
+

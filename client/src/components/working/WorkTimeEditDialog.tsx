@@ -4,11 +4,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
-
+import { CheckCircle, OctagonAlert } from 'lucide-react';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { notificationApi } from '@/api/notification';
+import { getWeekStartDate, getWeekNumber } from '@/utils/dateHelper';
+import { useAuth } from '@/contexts/AuthContext';
 interface WorkTimeEditDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (startTime: string, endTime: string) => Promise<void>;
+  userId: string;
   userName: string;
   date: string;
   startTime: string;
@@ -19,11 +24,14 @@ export default function WorkTimeEditDialog({
   isOpen,
   onClose,
   onSave,
+  userId,
   userName,
   date,
   startTime,
   endTime
 }: WorkTimeEditDialogProps) {
+  const { addAlert } = useAppAlert();
+  const { user } = useAuth();
   const [startHour, setStartHour] = useState('');
   const [startMinute, setStartMinute] = useState('');
   const [endHour, setEndHour] = useState('');
@@ -129,7 +137,6 @@ export default function WorkTimeEditDialog({
     if (isOpen) {
       const start = parseTime(startTime, false);
       const end = parseTime(endTime, true); // 퇴근 시간은 isEndTime=true로 전달
-      console.log('[초기값 설정]', { startTime, endTime, parsedStart: start, parsedEnd: end });
       
       setStartHour(start.hour);
       setStartMinute(start.minute);
@@ -142,20 +149,9 @@ export default function WorkTimeEditDialog({
           const endHourValue = (hourNum + 24).toString().padStart(2, '0');
           setEndHour(endHourValue);
           setIsEndTimeNextDay(true);
-          console.log('[퇴근 시간 초기값 - 다음날]', { 
-            hour: end.hour, 
-            endHourValue,
-            minute: end.minute,
-            'Select value 예상': endHourValue
-          });
         } else {
           setEndHour(end.hour);
           setIsEndTimeNextDay(false);
-          console.log('[퇴근 시간 초기값 - 오늘]', { 
-            hour: end.hour, 
-            minute: end.minute,
-            'Select value 예상': end.hour
-          });
         }
         setEndMinute(end.minute);
       } else {
@@ -206,17 +202,45 @@ export default function WorkTimeEditDialog({
       const actualEndHour = getEndHourValue();
       const formattedEndTime = formatTime(actualEndHour, endMinute, isEndTimeNextDay);
       
-      console.log('=== DB 저장 형식 ===');
-      console.log('출근 시간:', formattedStartTime);
-      console.log('퇴근 시간:', formattedEndTime);
-      console.log('==================');
-      
       await onSave(formattedStartTime, formattedEndTime);
+
+      // 출퇴근시간이 수정된 대상자에게 알림 전송
+      if (user?.user_id && user?.user_name) {
+        try {
+          // 날짜를 주차로 변환
+          const dateObj = new Date(date);
+          const weekStartDate = getWeekStartDate(dateObj);
+          const { year, week } = getWeekNumber(weekStartDate);
+          
+          await notificationApi.registerNotification({
+            user_id: userId,
+            user_name: userName,
+            noti_target: user.user_id,
+            noti_title: `${dayjs(date).format('YYYY년 MM월 DD일')}의 출퇴근 시간`,
+            noti_message: `${user.user_name}님이 출퇴근 시간을 수정하셨습니다.`,
+            noti_type: 'worktime',
+            noti_url: `/working?year=${year}&week=${week}`,
+          });
+        } catch (e) {
+          // 알림 전송 실패는 무시 (에러 로그 제거)
+        }
+      }
+
+      addAlert({
+        title: `출퇴근 시간 수정 완료`,
+        message: `${userName}님의 ${dayjs(date).format('YYYY년 MM월 DD일')}의 출퇴근 시간 수정이 완료되었습니다.`,
+        icon: <CheckCircle />,
+        duration: 3000,
+      });
       onClose();
     } catch (error: any) {
-      console.error('출퇴근 시간 수정 실패:', error);
       const errorMessage = error?.message || error?.toString() || '알 수 없는 오류';
-      alert(`출퇴근 시간 수정에 실패했습니다.\n\n에러: ${errorMessage}`);
+      addAlert({
+        title: `출퇴근 시간 수정 실패`,
+        message: `${userName}의 ${dayjs(date).format('YYYY년 MM월 DD일')}의 출퇴근 시간 수정에 실패했습니다.\n\n에러: ${errorMessage}.`,
+        icon: <OctagonAlert />,
+        duration: 3000,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -226,16 +250,12 @@ export default function WorkTimeEditDialog({
   const handleStartHourChange = (value: string) => {
     setStartHour(value);
     setErrors(prev => ({ ...prev, startHour: undefined }));
-    const currentTime = formatTime(value, startMinute || '00');
-    console.log('[출근 시간 변경] 시:', value, '현재 시간:', currentTime);
   };
 
   // 출근 시간 분 변경 핸들러
   const handleStartMinuteChange = (value: string) => {
     setStartMinute(value);
     setErrors(prev => ({ ...prev, startMinute: undefined }));
-    const currentTime = formatTime(startHour || '00', value);
-    console.log('[출근 시간 변경] 분:', value, '현재 시간:', currentTime);
   };
 
   // 퇴근 시간 변경 핸들러
@@ -244,9 +264,6 @@ export default function WorkTimeEditDialog({
     if (selectedOption) {
       setEndHourWithNextDay(selectedOption.displayHour, selectedOption.isNextDay);
       setErrors(prev => ({ ...prev, endHour: undefined }));
-      const actualEndHour = selectedOption.displayHour;
-      const currentTime = formatTime(actualEndHour, endMinute || '00', selectedOption.isNextDay);
-      console.log('[퇴근 시간 변경] 시:', selectedOption.label, '현재 시간:', currentTime, '(DB 저장 형식)');
     }
   };
 
@@ -254,9 +271,6 @@ export default function WorkTimeEditDialog({
   const handleEndMinuteChange = (value: string) => {
     setEndMinute(value);
     setErrors(prev => ({ ...prev, endMinute: undefined }));
-    const actualEndHour = getEndHourValue();
-    const currentTime = formatTime(actualEndHour || '00', value, isEndTimeNextDay);
-    console.log('[퇴근 시간 변경] 분:', value, '현재 시간:', currentTime, '(DB 저장 형식)');
   };
 
   const handleClose = () => {

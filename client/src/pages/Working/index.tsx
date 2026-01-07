@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useSearchParams } from 'react-router';
 import dayjs from "dayjs";
 import Toolbar from "@components/working/toolbar";
 import Table from "@components/working/table";
@@ -6,15 +7,84 @@ import Overview from "@components/working/Overview";
 import { workingApi } from "@/api/working";
 import { useAuth } from "@/contexts/AuthContext";
 import type { WorkData } from "@/types/working";
-import { getWeekStartDate, getWeekEndDate, getWeekNumber } from "@/utils/dateHelper";
+import { getWeekStartDate, getWeekEndDate, getWeekNumber, getDateFromWeekNumber } from "@/utils/dateHelper";
 import { convertApiDataToWorkData } from "@/services/workingDataConverter";
 import { formatMinutes } from "@/utils/date";
 
 
 export default function WorkHoursTable() {
   const { user } = useAuth();
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isInitialMount = useRef(true);
+  const isUpdatingFromUrl = useRef(false);
+  
+  // URL에서 파라미터 읽기
+  const urlYear = searchParams.get('year');
+  const urlWeek = searchParams.get('week');
+
+  // 초기 날짜 설정: URL 파라미터가 있으면 사용, 없으면 오늘
+  const getInitialDate = () => {
+    if (urlYear && urlWeek) {
+      const year = parseInt(urlYear, 10);
+      const week = parseInt(urlWeek, 10);
+      if (!isNaN(year) && !isNaN(week)) {
+        return getDateFromWeekNumber(year, week);
+      }
+    }
+    return new Date();
+  };
+
+  const [currentDate, setCurrentDate] = useState(() => getInitialDate());
   const [data, setData] = useState<WorkData[]>([]);
+  
+  // URL 파라미터가 변경되면 state 업데이트 (외부에서 URL이 변경된 경우만)
+  const prevUrlYearRef = useRef(urlYear);
+  const prevUrlWeekRef = useRef(urlWeek);
+  const currentDateRef = useRef(currentDate);
+  
+  // currentDate가 변경될 때마다 ref 업데이트
+  useEffect(() => {
+    currentDateRef.current = currentDate;
+  }, [currentDate]);
+  
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      prevUrlYearRef.current = urlYear;
+      prevUrlWeekRef.current = urlWeek;
+      return;
+    }
+
+    if (isUpdatingFromUrl.current) {
+      prevUrlYearRef.current = urlYear;
+      prevUrlWeekRef.current = urlWeek;
+      return;
+    }
+
+    // URL 파라미터가 실제로 변경된 경우에만 업데이트
+    if (urlYear !== prevUrlYearRef.current || urlWeek !== prevUrlWeekRef.current) {
+      prevUrlYearRef.current = urlYear;
+      prevUrlWeekRef.current = urlWeek;
+
+      if (urlYear && urlWeek) {
+        const year = parseInt(urlYear, 10);
+        const week = parseInt(urlWeek, 10);
+        if (!isNaN(year) && !isNaN(week)) {
+          const newDate = getDateFromWeekNumber(year, week);
+          const currentWeekStart = getWeekStartDate(currentDateRef.current);
+          const newWeekStart = getWeekStartDate(newDate);
+          // 실제로 다른 주인 경우에만 업데이트
+          if (currentWeekStart.getTime() !== newWeekStart.getTime()) {
+            isUpdatingFromUrl.current = true;
+            setCurrentDate(newDate);
+            setTimeout(() => {
+              isUpdatingFromUrl.current = false;
+            }, 0);
+          }
+        }
+      }
+    }
+  }, [urlYear, urlWeek]);
   
   // 현재 주의 시작일 계산
   const weekStartDate = useMemo(() => getWeekStartDate(currentDate), [currentDate]);
@@ -105,7 +175,6 @@ export default function WorkHoursTable() {
             
             return scheduleVacations;
           } catch (err) {
-            console.error('스케줄 조회 실패:', err);
             return [];
           }
         })()
@@ -122,7 +191,6 @@ export default function WorkHoursTable() {
       );
       setData(apiData);
     } catch (error) {
-      console.error('근태 로그 로드 실패:', error);
       setData([]);
     }
   };
@@ -161,11 +229,23 @@ export default function WorkHoursTable() {
     };
   }, [data]);
 
+  // 날짜 변경 핸들러: URL 업데이트
+  const handleDateChange = (newDate: Date) => {
+    if (isUpdatingFromUrl.current) return;
+    
+    setCurrentDate(newDate);
+    const { year, week } = getWeekNumber(getWeekStartDate(newDate));
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('year', year.toString());
+    newSearchParams.set('week', week.toString());
+    setSearchParams(newSearchParams, { replace: true });
+  };
+
   return (
     <div>
       <Toolbar
         currentDate={currentDate}
-        onDateChange={setCurrentDate}
+        onDateChange={handleDateChange}
         showTeamSelect={false}
       />
       <Overview weeklyStats={weeklyStats} />
