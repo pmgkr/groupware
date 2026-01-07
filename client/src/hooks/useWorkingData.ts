@@ -26,10 +26,29 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
   const { user } = useAuth();
   const [workingList, setWorkingList] = useState<WorkingListItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   
   // 중복 호출 방지 ref
   const loadingRef = useRef(false);
   const lastParamsRef = useRef<string>('');
+  
+  // 데이터 새로고침 함수
+  const refresh = () => {
+    // 캐시 무효화
+    const { year, week } = getWeekNumber(weekStartDate);
+    const teamIdsKey = [...selectedTeamIds].sort((a, b) => a - b).join(',');
+    const cacheKey = `${teamIdsKey}-${year}-${week}-${page || ''}`;
+    
+    // 관련된 모든 캐시 키 무효화
+    for (const [key] of wlogCache) {
+      if (key.includes(`${week}-${year}`)) {
+        wlogCache.delete(key);
+      }
+    }
+    
+    // refreshKey 변경하여 useEffect 재실행
+    setRefreshKey(prev => prev + 1);
+  };
 
   // 안정적인 의존성 키 생성
   const paramsKey = useMemo(() => {
@@ -325,9 +344,9 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
     if (user?.team_id || selectedTeamIds.length > 0 || page === 'admin') {
       loadTeamWorkLogs();
     }
-  }, [paramsKey, user?.team_id, page]);
+  }, [paramsKey, user?.team_id, page, refreshKey]);
 
-  return { workingList, loading };
+  return { workingList, loading, refresh };
 }
 
 

@@ -129,7 +129,6 @@ export default function WorkTimeEditDialog({
     if (isOpen) {
       const start = parseTime(startTime, false);
       const end = parseTime(endTime, true); // 퇴근 시간은 isEndTime=true로 전달
-      console.log('[초기값 설정]', { startTime, endTime, parsedStart: start, parsedEnd: end });
       
       setStartHour(start.hour);
       setStartMinute(start.minute);
@@ -142,20 +141,9 @@ export default function WorkTimeEditDialog({
           const endHourValue = (hourNum + 24).toString().padStart(2, '0');
           setEndHour(endHourValue);
           setIsEndTimeNextDay(true);
-          console.log('[퇴근 시간 초기값 - 다음날]', { 
-            hour: end.hour, 
-            endHourValue,
-            minute: end.minute,
-            'Select value 예상': endHourValue
-          });
         } else {
           setEndHour(end.hour);
           setIsEndTimeNextDay(false);
-          console.log('[퇴근 시간 초기값 - 오늘]', { 
-            hour: end.hour, 
-            minute: end.minute,
-            'Select value 예상': end.hour
-          });
         }
         setEndMinute(end.minute);
       } else {
@@ -206,15 +194,9 @@ export default function WorkTimeEditDialog({
       const actualEndHour = getEndHourValue();
       const formattedEndTime = formatTime(actualEndHour, endMinute, isEndTimeNextDay);
       
-      console.log('=== DB 저장 형식 ===');
-      console.log('출근 시간:', formattedStartTime);
-      console.log('퇴근 시간:', formattedEndTime);
-      console.log('==================');
-      
       await onSave(formattedStartTime, formattedEndTime);
       onClose();
     } catch (error: any) {
-      console.error('출퇴근 시간 수정 실패:', error);
       const errorMessage = error?.message || error?.toString() || '알 수 없는 오류';
       alert(`출퇴근 시간 수정에 실패했습니다.\n\n에러: ${errorMessage}`);
     } finally {
@@ -226,16 +208,12 @@ export default function WorkTimeEditDialog({
   const handleStartHourChange = (value: string) => {
     setStartHour(value);
     setErrors(prev => ({ ...prev, startHour: undefined }));
-    const currentTime = formatTime(value, startMinute || '00');
-    console.log('[출근 시간 변경] 시:', value, '현재 시간:', currentTime);
   };
 
   // 출근 시간 분 변경 핸들러
   const handleStartMinuteChange = (value: string) => {
     setStartMinute(value);
     setErrors(prev => ({ ...prev, startMinute: undefined }));
-    const currentTime = formatTime(startHour || '00', value);
-    console.log('[출근 시간 변경] 분:', value, '현재 시간:', currentTime);
   };
 
   // 퇴근 시간 변경 핸들러
@@ -244,9 +222,6 @@ export default function WorkTimeEditDialog({
     if (selectedOption) {
       setEndHourWithNextDay(selectedOption.displayHour, selectedOption.isNextDay);
       setErrors(prev => ({ ...prev, endHour: undefined }));
-      const actualEndHour = selectedOption.displayHour;
-      const currentTime = formatTime(actualEndHour, endMinute || '00', selectedOption.isNextDay);
-      console.log('[퇴근 시간 변경] 시:', selectedOption.label, '현재 시간:', currentTime, '(DB 저장 형식)');
     }
   };
 
@@ -254,9 +229,6 @@ export default function WorkTimeEditDialog({
   const handleEndMinuteChange = (value: string) => {
     setEndMinute(value);
     setErrors(prev => ({ ...prev, endMinute: undefined }));
-    const actualEndHour = getEndHourValue();
-    const currentTime = formatTime(actualEndHour || '00', value, isEndTimeNextDay);
-    console.log('[퇴근 시간 변경] 분:', value, '현재 시간:', currentTime, '(DB 저장 형식)');
   };
 
   const handleClose = () => {

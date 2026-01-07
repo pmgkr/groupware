@@ -95,7 +95,6 @@ export default function Toolbar({
       setTeams(teamItems);
       
     } catch (error) {
-      console.error('팀 목록 로드 실패:', error);
       setTeams([]);
     }
   };

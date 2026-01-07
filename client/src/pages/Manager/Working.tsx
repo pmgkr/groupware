@@ -137,7 +137,7 @@ export default function ManagerWorking() {
   const weekStartDate = useMemo(() => getWeekStartDate(currentDate), [currentDate]);
   
   // 근태 데이터 로드
-  const { workingList, loading } = useWorkingData({ weekStartDate, selectedTeamIds, page: 'manager' });
+  const { workingList, loading, refresh } = useWorkingData({ weekStartDate, selectedTeamIds, page: 'manager' });
 
   // 날짜 변경 핸들러: URL 업데이트
   const handleDateChange = (newDate: Date) => {
@@ -182,6 +182,7 @@ export default function ManagerWorking() {
         loading={loading}
         weekStartDate={weekStartDate}
         page="manager"
+        onRefresh={refresh}
       />
     </div>
   );
