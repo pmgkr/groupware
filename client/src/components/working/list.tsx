@@ -282,6 +282,27 @@ export default function WorkingList({
     }
   };
 
+  // 시간 표시 포맷팅 (24시간 이상 시간 처리 포함)
+  const formatTimeDisplay = (time: string | undefined, isEndTime: boolean = false): string => {
+    if (!time || time === '-') return '-';
+    
+    const [hour, minute] = time.split(':');
+    const hourNum = parseInt(hour || '0', 10);
+    
+    // 24시간 이상인 경우 그대로 표시 (예: 28:46 → 28:46)
+    if (hourNum >= 24) {
+      return time;
+    }
+    
+    // 퇴근 시간이고 00-11시인 경우 24를 더해서 표시 (예: 01:46 → 25:46)
+    if (isEndTime && hourNum >= 0 && hourNum < 12) {
+      const nextDayHour = (hourNum + 24).toString().padStart(2, '0');
+      return `${nextDayHour}:${minute}`;
+    }
+    
+    return time;
+  };
+
   // 주간 누적 시간을 숫자로 변환 (예: "40h 30m" → 40.5)
   const parseWeeklyTotal = (weeklyTotal: string): number => {
     const match = weeklyTotal.match(/(\d+)h\s*(\d+)m/);
@@ -462,7 +483,7 @@ export default function WorkingList({
             {hasWorkTime ? (
               <>
                 <span className="text-xs text-gray-600">
-                  {dayInfo.startTime}{dayInfo.endTime && dayInfo.endTime !== '-' ? ` - ${dayInfo.endTime}` : ' - 진행중'}
+                  {formatTimeDisplay(dayInfo.startTime, false)}{dayInfo.endTime && dayInfo.endTime !== '-' ? ` - ${formatTimeDisplay(dayInfo.endTime, true)}` : ' - 진행중'}
                 </span>
                 <button
                   onClick={(e) => {
@@ -490,7 +511,7 @@ export default function WorkingList({
           </div>
         ) : (
           <span className="text-xs text-gray-600">
-            {dayInfo.startTime ? `${dayInfo.startTime}${dayInfo.endTime ? ` - ${dayInfo.endTime}` : ' - 진행중'}` : '-'}
+            {dayInfo.startTime ? `${formatTimeDisplay(dayInfo.startTime, false)}${dayInfo.endTime ? ` - ${formatTimeDisplay(dayInfo.endTime, true)}` : ' - 진행중'}` : '-'}
           </span>
         )}
       </div>

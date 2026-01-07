@@ -116,9 +116,33 @@ const getWorkTypeFromVacation = (vacation: any, hasWlog: boolean): WorkData['wor
 /**
  * 출근/퇴근 시간 포맷 (HH:mm:ss -> HH:mm)
  */
-const formatTime = (time: string | null): string => {
+const formatTime = (time: string | null, isEndTime: boolean = false, startTime: string | null = null): string => {
   if (!time || time === '-' || time === 'null') return '-';
-  return time.substring(0, 5);
+  
+  const timeStr = time.substring(0, 5); // "HH:mm" 형식
+  const [hour, minute] = timeStr.split(':');
+  const hourNum = parseInt(hour || '0', 10);
+  
+  // 퇴근 시간이고 출근 시간이 있는 경우
+  if (isEndTime && startTime) {
+    const startTimeStr = startTime.substring(0, 5);
+    const [startHour] = startTimeStr.split(':');
+    const startHourNum = parseInt(startHour || '0', 10);
+    
+    // 퇴근 시간이 출근 시간보다 작거나, 00-11시 사이면 다음날로 처리
+    if (hourNum < startHourNum || (hourNum >= 0 && hourNum < 12)) {
+      const nextDayHour = (hourNum + 24).toString().padStart(2, '0');
+      return `${nextDayHour}:${minute}`;
+    }
+  }
+  
+  // 퇴근 시간이고 출근 시간이 없지만 00-11시 사이면 다음날로 처리
+  if (isEndTime && !startTime && hourNum >= 0 && hourNum < 12) {
+    const nextDayHour = (hourNum + 24).toString().padStart(2, '0');
+    return `${nextDayHour}:${minute}`;
+  }
+  
+  return timeStr;
 };
 
 /**
@@ -172,50 +196,13 @@ const selectPriorityVacation = (vacationsForDate: any[]): any | null => {
 };
 
 /**
- * 근무시간 계산
+ * 근무시간 계산 (wmin 사용)
  */
 const calculateWorkHours = (wlog: any, overtime: any) => {
-  // 출근 시간과 퇴근 시간 파싱
-  const startTime = wlog.stime; // "HH:mm:ss" 형식
-  const endTime = wlog.etime;   // "HH:mm:ss" 형식
+  // API에서 받은 wmin (분 단위)을 직접 사용
+  const totalWorkMinutes = wlog.wmin || 0;
   
-  // 시간을 분 단위로 변환하는 함수
-  const timeToMinutes = (timeStr: string): number => {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return hours * 60 + minutes;
-  };
-  
-  let startMinutes = timeToMinutes(startTime);
-  const endMinutes = timeToMinutes(endTime);
-  
-  // 9시 30분 기준 (570분)
-  const workStartThreshold = 9 * 60 + 30; // 570분
-  
-  // 출근 시간이 9시 30분 이전이면 9시 30분으로 조정
-  if (startMinutes < workStartThreshold) {
-    startMinutes = workStartThreshold;
-  }
-  
-  // 점심시간 정의 (12시 ~ 13시)
-  const lunchStart = 12 * 60; // 720분 (12:00)
-  const lunchEnd = 13 * 60;   // 780분 (13:00)
-  
-  // 총 근무 시간 계산 (분 단위)
-  let totalWorkMinutes = endMinutes - startMinutes;
-  
-  // 점심시간 제외 계산
-  // 근무 시간이 점심시간(12시-13시)과 겹치는 경우 해당 시간을 제외
-  let lunchMinutesToDeduct = 0;
-  
-  if (startMinutes < lunchEnd && endMinutes > lunchStart) {
-    // 근무 시간과 점심시간이 겹치는 경우
-    const overlapStart = Math.max(startMinutes, lunchStart);
-    const overlapEnd = Math.min(endMinutes, lunchEnd);
-    lunchMinutesToDeduct = overlapEnd - overlapStart;
-  }
-  
-  totalWorkMinutes = Math.max(0, totalWorkMinutes - lunchMinutesToDeduct);
-  
+  // 분을 시간과 분으로 변환
   const hours = Math.floor(totalWorkMinutes / 60);
   const minutes = totalWorkMinutes % 60;
   
@@ -348,8 +335,8 @@ export const convertApiDataToWorkData = async (
       }
     }
     
-    const startTime = formatTime(wlog?.stime || null);
-    const endTime = formatTime(wlog?.etime || null);
+    const startTime = formatTime(wlog?.stime || null, false);
+    const endTime = formatTime(wlog?.etime || null, true, wlog?.stime || null);
     const overtimeStatus = overtime ? getOvertimeStatus(overtime.ot_status) : '신청하기';
     const overtimeData = overtime ? extractOvertimeData(overtime) : undefined;
     

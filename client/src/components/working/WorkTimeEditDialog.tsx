@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
-import { Input } from '@components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 
 interface WorkTimeEditDialogProps {
   isOpen: boolean;
@@ -24,39 +24,194 @@ export default function WorkTimeEditDialog({
   startTime,
   endTime
 }: WorkTimeEditDialogProps) {
-  const [editStartTime, setEditStartTime] = useState('');
-  const [editEndTime, setEditEndTime] = useState('');
-  const startInputRef = useRef<HTMLInputElement | null>(null);
-  const endInputRef = useRef<HTMLInputElement | null>(null);
+  const [startHour, setStartHour] = useState('');
+  const [startMinute, setStartMinute] = useState('');
+  const [endHour, setEndHour] = useState('');
+  const [endMinute, setEndMinute] = useState('');
+  const [isEndTimeNextDay, setIsEndTimeNextDay] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<{
+    startHour?: string;
+    startMinute?: string;
+    endHour?: string;
+    endMinute?: string;
+  }>({});
 
-  const openNativePicker = (ref: React.RefObject<HTMLInputElement | null>) => {
-    const el = ref.current;
-    if (!el) return;
-    if (typeof (el as HTMLInputElement & { showPicker?: () => void }).showPicker === 'function') {
-      (el as HTMLInputElement & { showPicker?: () => void }).showPicker();
-    } else {
-      el.focus();
+  // 시간 문자열을 시와 분으로 분리하는 함수 (익일 시간 처리 포함)
+  const parseTime = (time: string, isEndTime: boolean = false) => {
+    if (!time || time === '-') return { hour: '', minute: '', isNextDay: false };
+    const [hour, minute] = time.split(':');
+    const hourNum = parseInt(hour || '0', 10);
+    
+    // 24시 이상인 경우 익일 시간으로 처리
+    if (hourNum >= 24) {
+      return {
+        hour: (hourNum - 24).toString().padStart(2, '0'),
+        minute: minute || '',
+        isNextDay: true
+      };
     }
+    
+    // 퇴근 시간이고 00-11시인 경우 자동으로 익일로 처리
+    if (isEndTime && hourNum >= 0 && hourNum < 12) {
+      return {
+        hour: hour || '',
+        minute: minute || '',
+        isNextDay: true
+      };
+    }
+    
+    return { hour: hour || '', minute: minute || '', isNextDay: false };
   };
+
+  // 시와 분을 시간 문자열로 합치는 함수 (익일 시간 처리 포함)
+  const formatTime = (hour: string, minute: string, isNextDay: boolean = false) => {
+    if (!hour || !minute) return '';
+    const hourNum = parseInt(hour, 10);
+    // 익일 시간인 경우 24를 더함
+    const finalHour = isNextDay ? hourNum + 24 : hourNum;
+    return `${finalHour.toString().padStart(2, '0')}:${minute.padStart(2, '0')}`;
+  };
+
+  
+  // 출근 시간 옵션 생성 (07-17시)
+  const startHourOptions = Array.from({ length: 11 }, (_, i) => (i + 7).toString().padStart(2, '0'));
+  // 분 옵션 생성 (00-59)
+  const minuteOptions = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+  
+  // 퇴근 시간 옵션 생성 (12-23시 + 익일 00-07시)
+  // value는 고유하게 만들기 위해 익일 시간은 "24", "25" 등으로 저장
+  const endHourOptions = [
+    // 오늘 12-23시
+    ...Array.from({ length: 12 }, (_, i) => ({
+      value: (i + 12).toString().padStart(2, '0'),
+      label: `${(i + 12).toString().padStart(2, '0')}시`,
+      isNextDay: false,
+      displayHour: (i + 12).toString().padStart(2, '0')
+    })),
+    // 익일 00-07시 (value는 24-31로 저장, 표시는 00-07)
+    ...Array.from({ length: 8 }, (_, i) => ({
+      value: (i + 24).toString().padStart(2, '0'),
+      label: `익일 ${i.toString().padStart(2, '0')}시`,
+      isNextDay: true,
+      displayHour: i.toString().padStart(2, '0')
+    }))
+  ];
+  
+  // endHour를 실제 hour 값으로 변환 (저장용)
+  const getEndHourValue = () => {
+    if (!endHour) return '';
+    const hourNum = parseInt(endHour, 10);
+    // 24 이상인 경우 익일 시간
+    if (hourNum >= 24) {
+      return (hourNum - 24).toString().padStart(2, '0');
+    }
+    return endHour;
+  };
+  
+  // endHour 설정 (익일 여부 포함)
+  const setEndHourWithNextDay = (value: string, isNextDay: boolean) => {
+    if (isNextDay) {
+      const hourNum = parseInt(value, 10);
+      setEndHour((hourNum + 24).toString().padStart(2, '0'));
+    } else {
+      setEndHour(value);
+    }
+    setIsEndTimeNextDay(isNextDay);
+  };
+  
+  // 현재 선택된 퇴근 시간의 Select value 계산
+  // endHour는 이미 Select의 value 형식으로 저장되어 있음 (12-23 또는 24-31)
+  const currentEndHourValue = endHour || '';
 
   // 다이얼로그가 열릴 때 초기값 설정
   useEffect(() => {
     if (isOpen) {
-      setEditStartTime(startTime && startTime !== '-' ? startTime : '');
-      setEditEndTime(endTime && endTime !== '-' ? endTime : '');
+      const start = parseTime(startTime, false);
+      const end = parseTime(endTime, true); // 퇴근 시간은 isEndTime=true로 전달
+      console.log('[초기값 설정]', { startTime, endTime, parsedStart: start, parsedEnd: end });
+      
+      setStartHour(start.hour);
+      setStartMinute(start.minute);
+      
+      // 퇴근 시간 초기값 설정
+      if (end.hour && end.minute) {
+        // 다음날 시간인 경우 endHour를 24+hour로 설정
+        if (end.isNextDay) {
+          const hourNum = parseInt(end.hour, 10);
+          const endHourValue = (hourNum + 24).toString().padStart(2, '0');
+          setEndHour(endHourValue);
+          setIsEndTimeNextDay(true);
+          console.log('[퇴근 시간 초기값 - 다음날]', { 
+            hour: end.hour, 
+            endHourValue,
+            minute: end.minute,
+            'Select value 예상': endHourValue
+          });
+        } else {
+          setEndHour(end.hour);
+          setIsEndTimeNextDay(false);
+          console.log('[퇴근 시간 초기값 - 오늘]', { 
+            hour: end.hour, 
+            minute: end.minute,
+            'Select value 예상': end.hour
+          });
+        }
+        setEndMinute(end.minute);
+      } else {
+        setEndHour('');
+        setEndMinute('');
+        setIsEndTimeNextDay(false);
+      }
+    } else {
+      // 다이얼로그가 닫힐 때 초기화
+      setStartHour('');
+      setStartMinute('');
+      setEndHour('');
+      setEndMinute('');
+      setIsEndTimeNextDay(false);
+      setErrors({});
     }
   }, [isOpen, startTime, endTime]);
 
+  // Validation 체크
+  const validate = () => {
+    const newErrors: typeof errors = {};
+    
+    if (!startHour) {
+      newErrors.startHour = '시를를 선택해주세요.';
+    }
+    if (!startMinute) {
+      newErrors.startMinute = '분을 선택해주세요.';
+    }
+    if (!endHour) {
+      newErrors.endHour = '시를 선택해주세요.';
+    }
+    if (!endMinute) {
+      newErrors.endMinute = '분을 선택해주세요.';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = async () => {
-    if (!editStartTime) {
-      alert('출근 시간을 입력해주세요.');
+    if (!validate()) {
       return;
     }
 
     setIsSaving(true);
     try {
-      await onSave(editStartTime, editEndTime);
+      const formattedStartTime = formatTime(startHour, startMinute);
+      const actualEndHour = getEndHourValue();
+      const formattedEndTime = formatTime(actualEndHour, endMinute, isEndTimeNextDay);
+      
+      console.log('=== DB 저장 형식 ===');
+      console.log('출근 시간:', formattedStartTime);
+      console.log('퇴근 시간:', formattedEndTime);
+      console.log('==================');
+      
+      await onSave(formattedStartTime, formattedEndTime);
       onClose();
     } catch (error: any) {
       console.error('출퇴근 시간 수정 실패:', error);
@@ -65,6 +220,43 @@ export default function WorkTimeEditDialog({
     } finally {
       setIsSaving(false);
     }
+  };
+  
+  // 출근 시간 시 변경 핸들러
+  const handleStartHourChange = (value: string) => {
+    setStartHour(value);
+    setErrors(prev => ({ ...prev, startHour: undefined }));
+    const currentTime = formatTime(value, startMinute || '00');
+    console.log('[출근 시간 변경] 시:', value, '현재 시간:', currentTime);
+  };
+
+  // 출근 시간 분 변경 핸들러
+  const handleStartMinuteChange = (value: string) => {
+    setStartMinute(value);
+    setErrors(prev => ({ ...prev, startMinute: undefined }));
+    const currentTime = formatTime(startHour || '00', value);
+    console.log('[출근 시간 변경] 분:', value, '현재 시간:', currentTime);
+  };
+
+  // 퇴근 시간 변경 핸들러
+  const handleEndHourChange = (value: string) => {
+    const selectedOption = endHourOptions.find(opt => opt.value === value);
+    if (selectedOption) {
+      setEndHourWithNextDay(selectedOption.displayHour, selectedOption.isNextDay);
+      setErrors(prev => ({ ...prev, endHour: undefined }));
+      const actualEndHour = selectedOption.displayHour;
+      const currentTime = formatTime(actualEndHour, endMinute || '00', selectedOption.isNextDay);
+      console.log('[퇴근 시간 변경] 시:', selectedOption.label, '현재 시간:', currentTime, '(DB 저장 형식)');
+    }
+  };
+
+  // 퇴근 시간 분 변경 핸들러
+  const handleEndMinuteChange = (value: string) => {
+    setEndMinute(value);
+    setErrors(prev => ({ ...prev, endMinute: undefined }));
+    const actualEndHour = getEndHourValue();
+    const currentTime = formatTime(actualEndHour || '00', value, isEndTimeNextDay);
+    console.log('[퇴근 시간 변경] 분:', value, '현재 시간:', currentTime, '(DB 저장 형식)');
   };
 
   const handleClose = () => {
@@ -84,43 +276,105 @@ export default function WorkTimeEditDialog({
         </DialogHeader>
         <div className="flex flex-col gap-4 w-full">
           <div className="space-y-2 w-full">
-            <Label htmlFor="start-time">출근 시간</Label>
-            <Input
-              id="start-time"
-              type="time"
-              ref={startInputRef}
-              value={editStartTime}
-              onChange={(e) => setEditStartTime(e.target.value)}
-              onClick={() => openNativePicker(startInputRef)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  openNativePicker(startInputRef);
-                }
-              }}
-              disabled={isSaving}
-              className="cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:pointer-events-none [&::-webkit-inner-spin-button]:hidden [&::-webkit-outer-spin-button]:hidden"
-            />
+            <Label className='gap-0.5'>출근 시간 <span className="text-red-500">*</span></Label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <Select 
+                  value={startHour} 
+                  onValueChange={handleStartHourChange} 
+                  disabled={isSaving}
+                  required
+                >
+                  <SelectTrigger className={`w-full ${errors.startHour ? 'border-red-500' : ''}`}>
+                    <SelectValue placeholder="시" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {startHourOptions.map((hour) => (
+                      <SelectItem key={hour} value={hour}>
+                        {hour}시
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.startHour && (
+                  <p className="text-xs text-red-500 mt-1">{errors.startHour}</p>
+                )}
+              </div>
+              <div className="flex-1">
+                <Select 
+                  value={startMinute} 
+                  onValueChange={handleStartMinuteChange} 
+                  disabled={isSaving}
+                  required
+                >
+                  <SelectTrigger className={`w-full ${errors.startMinute ? 'border-red-500' : ''}`}>
+                    <SelectValue placeholder="분" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {minuteOptions.map((minute) => (
+                      <SelectItem key={minute} value={minute}>
+                        {minute}분
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.startMinute && (
+                  <p className="text-xs text-red-500 mt-1">{errors.startMinute}</p>
+                )}
+              </div>
+            </div>
           </div>
           <div className="space-y-2 w-full">
-            <Label htmlFor="end-time">퇴근 시간</Label>
-            <Input
-              id="end-time"
-              type="time"
-              ref={endInputRef}
-              value={editEndTime}
-              onChange={(e) => setEditEndTime(e.target.value)}
-              onClick={() => openNativePicker(endInputRef)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  openNativePicker(endInputRef);
-                }
-              }}
-              disabled={isSaving}
-              className="cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:pointer-events-none [&::-webkit-inner-spin-button]:hidden [&::-webkit-outer-spin-button]:hidden"
-            />
+            <Label className='gap-0.5'>퇴근 시간 <span className="text-red-500">*</span></Label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <Select 
+                  key={`end-hour-${currentEndHourValue}-${isOpen}`}
+                  value={currentEndHourValue || undefined} 
+                  onValueChange={handleEndHourChange} 
+                  disabled={isSaving}
+                  required
+                >
+                  <SelectTrigger className={`w-full ${errors.endHour ? 'border-red-500' : ''}`}>
+                    <SelectValue placeholder="시" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {endHourOptions.map((option) => (
+                      <SelectItem key={`${option.value}-${option.isNextDay}`} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.endHour && (
+                  <p className="text-xs text-red-500 mt-1">{errors.endHour}</p>
+                )}
+              </div>
+              <div className="flex-1">
+                <Select 
+                  value={endMinute} 
+                  onValueChange={handleEndMinuteChange} 
+                  disabled={isSaving}
+                  required
+                >
+                  <SelectTrigger className={`w-full ${errors.endMinute ? 'border-red-500' : ''}`}>
+                    <SelectValue placeholder="분" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {minuteOptions.map((minute) => (
+                      <SelectItem key={minute} value={minute}>
+                        {minute}분
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.endMinute && (
+                  <p className="text-xs text-red-500 mt-1">{errors.endMinute}</p>
+                )}
+              </div>
+            </div>
           </div>
+
         </div>
 
         <DialogFooter>
