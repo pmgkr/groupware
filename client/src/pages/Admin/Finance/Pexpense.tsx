@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { formatDate, getGrowingYears, sanitizeFilename, formatYYMMDD } from '@/utils';
+import { downloadExpenseExcel } from '@/components/features/Project/utils/excelDown';
 
 import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -18,6 +19,7 @@ import {
   setDdate,
   getPDFDownload,
   getMultiPDFDownload,
+  getAdminExpenseExcel,
   type ExpenseListItems,
 } from '@/api/admin/pexpense';
 import { AdminListFilter } from '@components/features/Project/_components/AdminListFilter';
@@ -278,6 +280,7 @@ export default function Pexpense() {
         icon: <OctagonAlert />,
         duration: 2000,
       });
+      return;
     }
 
     try {
@@ -318,6 +321,16 @@ export default function Pexpense() {
   };
 
   const handleMultiPDFDownload = async (seqs: number[]) => {
+    if (seqs.length === 0) {
+      addAlert({
+        title: '선택된 비용 항목 없음',
+        message: 'PDF 다운로드할 비용 항목을 선택해주세요.',
+        icon: <OctagonAlert />,
+        duration: 1500,
+      });
+      return;
+    }
+
     try {
       const blob = await getMultiPDFDownload(seqs);
       const date = formatYYMMDD();
@@ -326,6 +339,41 @@ export default function Pexpense() {
       triggerDownload(blob, filename);
     } catch (e) {
       console.error('❌ 선택 PDF 다운로드 실패:', e);
+    }
+  };
+
+  const handleExcelDownload = async () => {
+    try {
+      const params: Record<string, any> = {
+        year: selectedYear,
+      };
+
+      if (!selectedStatus.length) {
+        params.status = 'Confirmed';
+      } else {
+        params.status = selectedStatus.join(',');
+      }
+      if (selectedType.length) params.type = selectedType.join(',');
+      if (selectedProof.length) params.method = selectedProof.join(',');
+      if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
+      if (selectedDdate !== '') params.ddate = selectedDdate;
+      if (selectedDateRange?.from) {
+        params.sdate = formatDate(selectedDateRange.from.toISOString());
+      }
+      if (selectedDateRange?.to) {
+        params.edate = formatDate(selectedDateRange.to.toISOString());
+      }
+      if (searchQuery) params.q = searchQuery;
+      setSearchParams(params);
+
+      const res = await getAdminExpenseExcel(params);
+
+      console.log(res);
+
+      downloadExpenseExcel(res.items, params);
+    } catch (e) {
+      console.error(e);
+      alert('Excel 다운로드에 실패했습니다.');
     }
   };
 
@@ -373,6 +421,7 @@ export default function Pexpense() {
         handleSetDdate={handleSetDdate}
         handlePDFDownload={handlePDFDownload}
         handleMultiPDFDownload={handleMultiPDFDownload}
+        handleExcelDownload={handleExcelDownload}
         total={total}
         page={page}
         pageSize={pageSize}

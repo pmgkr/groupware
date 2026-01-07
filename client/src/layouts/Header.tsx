@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/hooks/useUser';
 import { cn } from '@/lib/utils';
-import { getImageUrl } from '@/utils';
+import { getAvatarFallback, getImageUrl } from '@/utils';
 
 import Logo from '@/assets/images/common/logo.svg?react';
 import { Dashboard, Project, Expense, Calendar, Profile, Logout, Pto, Office, Manager, Admin } from '@/assets/images/icons';
@@ -20,7 +20,7 @@ export default function Header() {
   const isAdminSection = location.pathname.startsWith('/admin');
 
   const { user_id, user_name, job_role, profile_image } = useUser();
-  const { user, logout } = useAuth();
+  const { user, logout, setUserState } = useAuth();
 
   const subMenus: Record<string, { label: string; to: string }[]> = {
     project: [
@@ -180,11 +180,13 @@ export default function Header() {
       try {
         const updatedUser = await getMyProfile();
         setCurrentProfileImage(updatedUser.profile_image);
+        if (user) {
+          setUserState({ ...user, profile_image: updatedUser.profile_image });
+        }
       } catch (error) {
         console.error('프로필 재조회 실패:', error);
       }
     };
-
     // 다른 탭에서의 업데이트 감지
     const handleStorageChange = async (e: StorageEvent) => {
       if (e.key === 'profile_update') {
@@ -192,6 +194,9 @@ export default function Header() {
         try {
           const updatedUser = await getMyProfile();
           setCurrentProfileImage(updatedUser.profile_image);
+          if (user) {
+            setUserState({ ...user, profile_image: updatedUser.profile_image });
+          }
         } catch (error) {
           console.error('프로필 재조회 실패:', error);
         }
@@ -205,7 +210,7 @@ export default function Header() {
       window.removeEventListener('profile_update', handleProfileUpdate);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [user, setUserState]);
 
   // profile_image가 변경되면 currentProfileImage도 업데이트
   useEffect(() => {
@@ -213,14 +218,17 @@ export default function Header() {
   }, [profile_image]);
 
   const profileImageUrl = useMemo(() => {
-    if (currentProfileImage) {
-      if (currentProfileImage.startsWith('http')) {
-        return currentProfileImage;
-      }
-      return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${currentProfileImage}`;
+    if (!currentProfileImage) return null; // ⬅️ 빈 문자열 대신 null 반환
+
+    if (currentProfileImage.startsWith('http')) {
+      return currentProfileImage; // ⬅️ 타임스탬프 제거
     }
-    return getImageUrl('dummy/profile');
+    return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${currentProfileImage}`; // ⬅️ 타임스탬프 제거
   }, [currentProfileImage]);
+
+  const avatarFallback = useMemo(() => {
+    return getAvatarFallback(user_id || '');
+  }, [user_id]);
 
   const logoutClick = async () => {
     await logout(); // 서버 쿠키 삭제 + 토큰 초기화
@@ -270,7 +278,13 @@ export default function Header() {
         <div className="my-8.5 px-8">
           <Link to="/mypage">
             <div className="relative mx-auto mb-2.5 aspect-square w-25 overflow-hidden rounded-[50%]">
-              <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
+              {profileImageUrl ? (
+                <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-white text-2xl font-bold text-black">
+                  {avatarFallback}
+                </div>
+              )}
             </div>
           </Link>
           <div className="my-2.5 text-center text-sm text-gray-700">
@@ -408,9 +422,9 @@ export default function Header() {
           ref={submenuRef}
           className="border-primary-blue-150 bg-primary-blue-100 fixed left-64 z-8 w-auto rounded-sm border max-[1441px]:left-54"
           style={{ top: submenuTop ?? 0 }}
-        onMouseEnter={() => setHoveredMenu(hoveredMenu)}
-        onMouseLeave={() => setHoveredMenu(null)}
-        onMouseMove={handleSubmenuMouseMove}>
+          onMouseEnter={() => setHoveredMenu(hoveredMenu)}
+          onMouseLeave={() => setHoveredMenu(null)}
+          onMouseMove={handleSubmenuMouseMove}>
           <ul className="flex flex-col gap-y-1 p-1.5">
             {subMenus[hoveredMenu].map((item) => (
               <li key={item.to}>

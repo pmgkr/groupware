@@ -2,7 +2,7 @@
 import { http } from '@/lib/http';
 import { httpFile } from '@/lib/httpFile';
 import { cleanParams } from '@/utils';
-import type { ExpenseViewDTO } from '@/api/expense';
+import type { ExpenseViewDTO, ExpenseItemDTO } from '@/api/expense';
 
 // 어드민 일반비용 목록 팀별 조회
 export interface ExpenseListParams {
@@ -52,6 +52,12 @@ export type ExpenseListItems = {
   reg_year: string;
   rejected_by?: string | null;
 };
+
+// 어드민 > 일반 비용 전체 리스트 리스폰 (Excel 다운로드용)
+export interface AdminExpenseExcelResponse {
+  header: ExpenseListItems;
+  items: ExpenseItemDTO[];
+}
 
 // 어드민 > 일반 비용 목록 가져오기
 export async function getAdminExpenseList(params: ExpenseListParams) {
@@ -127,4 +133,17 @@ export async function getMultiPDFDownload(seqs: number[]) {
   });
 
   return res.blob();
+}
+
+// 어드민 > 일반 비용 엑셀 다운로드 전체 데이터 가져오기
+export async function getAdminExpenseExcel(params: ExpenseListParams) {
+  const clean = cleanParams(params);
+
+  // 쿼리스트링으로 변환
+  const query = new URLSearchParams(clean as Record<string, string>).toString();
+  const res = await http<{ items: AdminExpenseExcelResponse[]; total: number }>(`/admin/nexpense/list/excel?${query}`, {
+    method: 'GET',
+  });
+
+  return res;
 }

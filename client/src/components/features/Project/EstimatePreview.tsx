@@ -388,7 +388,7 @@ export default function EstimatePreview() {
                   {/* ------------------------ */}
                   {row.type === 'item' && (
                     <>
-                      <TableCell className="text-left">{row.item}</TableCell>
+                      <TableCell className="text-left whitespace-break-spaces">{row.item}</TableCell>
                       <TableCell className="text-right">{formatAmount(row.unit_price)}</TableCell>
                       <TableCell className="text-right">{row.qty}</TableCell>
                       <TableCell className="text-right">{formatAmount(row.amount)}</TableCell>

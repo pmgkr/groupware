@@ -1,4 +1,4 @@
-import { formatKST, formatPhone, getImageUrl } from '@/utils';
+import { formatKST, formatPhone, getImageUrl, getAvatarFallback } from '@/utils';
 import { cn } from '@/lib/utils';
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Button } from '@components/ui/button';
@@ -35,8 +35,10 @@ import { CheckboxButton } from '@/components/ui/checkboxButton';
 import { DayPicker } from '@components/daypicker';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Mypage() {
+  const { user: authUser, setUserState } = useAuth();
   const [user, setUser] = useState<UserDTO | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState<UserDTO | null>(null);
@@ -105,9 +107,11 @@ export default function Mypage() {
 
   //프로필 이미지 수정
   const profileImageUrl = useMemo(() => {
-    if (!user?.profile_image) {
-      return getImageUrl('dummy/profile');
-    }
+    if (!user?.profile_image) return null;
+
+    /* if (!user?.profile_image) {
+      return getImageUrl('dummy/set_img');
+    } */
 
     // 🔥 Cloud URL인 경우 (http로 시작)
     if (user.profile_image.startsWith('http')) {
@@ -117,11 +121,16 @@ export default function Mypage() {
     // 🔥 기존 DB 파일명인 경우
     return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${user.profile_image}?t=${Date.now()}`;
   }, [user?.profile_image]);
+
+  const avatarFallback = useMemo(() => {
+    return getAvatarFallback(user?.user_id || '');
+  }, [user?.user_id]);
+
   const handleProfileImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // 🔥 파일 크기 체크 (선택사항)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       addAlert({
         title: '파일 크기 초과',
@@ -131,7 +140,7 @@ export default function Mypage() {
       });
       return;
     }
-    setIsUploadingProfile(true); // 🔥 로딩 시작
+    setIsUploadingProfile(true);
 
     try {
       const result = await uploadProfileImage(file, 'mypage');
@@ -140,8 +149,17 @@ export default function Mypage() {
       const updatedUser = await getMyProfile();
       setUser(updatedUser);
 
-      window.dispatchEvent(new Event('profile_update')); // 같은 탭
-      localStorage.setItem('profile_update', Date.now().toString()); // 다른 탭
+      // AuthContext의 전역 상태도 업데이트
+      if (authUser) {
+        setUserState({ ...authUser, profile_image: updatedUser.profile_image });
+      }
+      // 이벤트 발생 (다른 컴포넌트에 알림용)
+      window.dispatchEvent(new Event('profile_update'));
+
+      // localStorage는 즉시 삭제 (플래그로만 사용)
+      localStorage.setItem('profile_update', Date.now().toString());
+      setTimeout(() => localStorage.removeItem('profile_update'), 100);
+
       console.log('📸 업로드 성공:', result);
 
       addAlert({
@@ -159,7 +177,7 @@ export default function Mypage() {
         duration: 2500,
       });
     } finally {
-      setIsUploadingProfile(false); // 🔥 로딩 종료
+      setIsUploadingProfile(false);
     }
   };
 
@@ -319,12 +337,26 @@ export default function Mypage() {
   const { addAlert } = useAppAlert();
   const { addDialog } = useAppDialog();
 
+  if (!user) {
+    return (
+      <section className="flex items-center justify-center py-20">
+        <Loader2 className="text-primary-blue-500 size-8 animate-spin" />
+      </section>
+    );
+  }
+
   return (
     <>
       <section className="flex flex-col gap-y-5">
         <div className="flex items-center gap-x-14 rounded-md border border-gray-300 px-20 py-6">
           <div className="group relative aspect-square w-36 overflow-hidden rounded-[50%]">
-            <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
+            {profileImageUrl ? (
+              <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
+            ) : (
+              <div className="bg-primary-blue-100 flex h-full w-full items-center justify-center text-4xl font-bold text-black">
+                {avatarFallback}
+              </div>
+            )}
             {/* hover 오버레이 - 업로드 중이 아닐 때만 표시 */}
             {!isUploadingProfile && (
               <label
@@ -334,7 +366,7 @@ export default function Mypage() {
               </label>
             )}
 
-            {/* 🔥 업로드 중 오버레이 - 항상 표시 */}
+            {/* 업로드 중 오버레이 - 항상 표시 */}
             {isUploadingProfile && (
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/70">
                 <Loader2 className="size-10 animate-spin text-white" />
