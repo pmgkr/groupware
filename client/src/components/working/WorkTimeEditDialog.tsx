@@ -217,7 +217,7 @@ export default function WorkTimeEditDialog({
             user_name: userName,
             noti_target: user.user_id,
             noti_title: `${dayjs(date).format('YYYY년 MM월 DD일')}의 출퇴근 시간`,
-            noti_message: `${user.user_name}님이 출퇴근 시간을 수정하셨습니다.`,
+            noti_message: `${user.user_name}님이 내 출퇴근 시간을 수정했습니다.`,
             noti_type: 'worktime',
             noti_url: `/working?year=${year}&week=${week}`,
           });
