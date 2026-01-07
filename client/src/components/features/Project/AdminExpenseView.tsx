@@ -314,8 +314,8 @@ export default function ProjectExpenseView() {
             </TableColumnHeader>
             <TableColumnBody>
               <TableColumnCell>
-                <Link to={`/project/${header.project_id}`} target="_blank" className="flex items-center gap-1 hover:underline">
-                  {project.project_title} <SquareArrowOutUpRight className="size-3" />
+                <Link to={`/project/${header.project_id}`} target="_blank" className="inline hover:underline">
+                  [{project.project_id}] {project.project_title} <SquareArrowOutUpRight className="inline size-3" />
                 </Link>
               </TableColumnCell>
             </TableColumnBody>
