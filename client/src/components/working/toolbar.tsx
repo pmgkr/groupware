@@ -32,6 +32,7 @@ interface ToolbarProps {
   page?: 'manager' | 'admin'; // 페이지 타입 (manager/admin일 때만 팀 필터 사용)
   workingList?: WorkingListItem[]; // 다운로드용 데이터 (admin/manager)
   weekStartDate?: Date; // 다운로드용 주차 정보
+  initialSelectedTeamIds?: number[]; // 초기 선택된 팀 ID 목록
 }
 
 export default function Toolbar({ 
@@ -42,6 +43,7 @@ export default function Toolbar({
   page,
   workingList = [],
   weekStartDate,
+  initialSelectedTeamIds = [],
 }: ToolbarProps) {
   const { user } = useAuth();
   
@@ -146,6 +148,39 @@ export default function Toolbar({
       loadTeams();
     }
   }, [user, page]);
+
+  // 초기 선택된 팀 ID가 변경되면 selectedTeams 업데이트
+  const prevInitialTeamIdsRef = useRef<number[]>(initialSelectedTeamIds);
+  const isInitialMountRef = useRef(true);
+  const selectedTeamsRef = useRef<string[]>(selectedTeams);
+  
+  // selectedTeams가 변경될 때마다 ref 업데이트
+  useEffect(() => {
+    selectedTeamsRef.current = selectedTeams;
+  }, [selectedTeams]);
+  
+  useEffect(() => {
+    // 배열이 실제로 변경되었는지 확인
+    const hasChanged = 
+      prevInitialTeamIdsRef.current.length !== initialSelectedTeamIds.length ||
+      prevInitialTeamIdsRef.current.some((id, idx) => id !== initialSelectedTeamIds[idx]);
+    
+    if (isInitialMountRef.current || hasChanged) {
+      isInitialMountRef.current = false;
+      prevInitialTeamIdsRef.current = [...initialSelectedTeamIds];
+      
+      if (initialSelectedTeamIds.length > 0) {
+        const newSelectedTeams = initialSelectedTeamIds.map(id => String(id));
+        // 실제로 다른 경우에만 업데이트
+        if (newSelectedTeams.length !== selectedTeamsRef.current.length ||
+            newSelectedTeams.some((id, idx) => id !== selectedTeamsRef.current[idx])) {
+          setSelectedTeams(newSelectedTeams);
+        }
+      } else if (selectedTeamsRef.current.length > 0) {
+        setSelectedTeams([]);
+      }
+    }
+  }, [initialSelectedTeamIds]);
 
   // 날짜 네비게이션 핸들러
   const handleNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {

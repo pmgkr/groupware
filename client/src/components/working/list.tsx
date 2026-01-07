@@ -269,7 +269,7 @@ export default function WorkingList({
       }
       
       console.log('✅ 출퇴근 시간 수정 성공!');
-      // 데이터 새로고침
+      // 데이터 새로고침 (URL 파라미터 유지)
       window.location.reload();
     } catch (error: any) {
       console.error('❌ 출퇴근 시간 수정 실패:', error);
