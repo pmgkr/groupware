@@ -188,7 +188,7 @@ export function Notification() {
   // 알림 아이템 렌더링 함수
   const renderNotificationItem = (noti: Notification) => {
     const displayName = noti.target_name || noti.noti_target || '';
-    const fallbackKey = displayName || noti.noti_target || '';
+    const fallbackKey = noti.noti_target || '';
     const profileSrc = getProfileImageUrl(noti.target_image);
 
     return (
