@@ -4,11 +4,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
-
+import { CheckCircle, OctagonAlert } from 'lucide-react';
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { notificationApi } from '@/api/notification';
+import { getWeekStartDate, getWeekNumber } from '@/utils/dateHelper';
+import { useAuth } from '@/contexts/AuthContext';
 interface WorkTimeEditDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (startTime: string, endTime: string) => Promise<void>;
+  userId: string;
   userName: string;
   date: string;
   startTime: string;
@@ -19,11 +24,14 @@ export default function WorkTimeEditDialog({
   isOpen,
   onClose,
   onSave,
+  userId,
   userName,
   date,
   startTime,
   endTime
 }: WorkTimeEditDialogProps) {
+  const { addAlert } = useAppAlert();
+  const { user } = useAuth();
   const [startHour, setStartHour] = useState('');
   const [startMinute, setStartMinute] = useState('');
   const [endHour, setEndHour] = useState('');
@@ -195,10 +203,44 @@ export default function WorkTimeEditDialog({
       const formattedEndTime = formatTime(actualEndHour, endMinute, isEndTimeNextDay);
       
       await onSave(formattedStartTime, formattedEndTime);
+
+      // 출퇴근시간이 수정된 대상자에게 알림 전송
+      if (user?.user_id && user?.user_name) {
+        try {
+          // 날짜를 주차로 변환
+          const dateObj = new Date(date);
+          const weekStartDate = getWeekStartDate(dateObj);
+          const { year, week } = getWeekNumber(weekStartDate);
+          
+          await notificationApi.registerNotification({
+            user_id: userId,
+            user_name: userName,
+            noti_target: user.user_id,
+            noti_title: `${dayjs(date).format('YYYY년 MM월 DD일')}의 출퇴근 시간`,
+            noti_message: `${user.user_name}님이 출퇴근 시간을 수정하셨습니다.`,
+            noti_type: 'worktime',
+            noti_url: `/working?year=${year}&week=${week}`,
+          });
+        } catch (e) {
+          // 알림 전송 실패는 무시 (에러 로그 제거)
+        }
+      }
+
+      addAlert({
+        title: `출퇴근 시간 수정 완료`,
+        message: `${userName}님의 ${dayjs(date).format('YYYY년 MM월 DD일')}의 출퇴근 시간 수정이 완료되었습니다.`,
+        icon: <CheckCircle />,
+        duration: 3000,
+      });
       onClose();
     } catch (error: any) {
       const errorMessage = error?.message || error?.toString() || '알 수 없는 오류';
-      alert(`출퇴근 시간 수정에 실패했습니다.\n\n에러: ${errorMessage}`);
+      addAlert({
+        title: `출퇴근 시간 수정 실패`,
+        message: `${userName}의 ${dayjs(date).format('YYYY년 MM월 DD일')}의 출퇴근 시간 수정에 실패했습니다.\n\n에러: ${errorMessage}.`,
+        icon: <OctagonAlert />,
+        duration: 3000,
+      });
     } finally {
       setIsSaving(false);
     }

@@ -742,6 +742,7 @@ export default function WorkingList({
           isOpen={isWorkTimeEditDialogOpen}
           onClose={handleCloseWorkTimeEditDialog}
           onSave={handleSaveWorkTime}
+          userId={selectedWorkTime.userId}
           userName={selectedWorkTime.userName}
           date={selectedWorkTime.date}
           startTime={selectedWorkTime.startTime}
