@@ -168,12 +168,6 @@ export default function EstimateView() {
                 <span className="ml-1 font-bold">({getBudgetPercent}%)</span>
               </TableColumnCell>
             </TableColumnBody>
-            <TableColumnHeader className="w-[18%]">
-              <TableColumnHeaderCell>예상 지출 금액</TableColumnHeaderCell>
-            </TableColumnHeader>
-            <TableColumnBody>
-              <TableColumnCell>{formatAmount(estData.header.exp_total)}</TableColumnCell>
-            </TableColumnBody>
           </TableColumn>
         </div>
 
@@ -231,9 +225,9 @@ export default function EstimateView() {
               </Button>
             )}
 
-            <Button type="button" size="sm">
+            {/* <Button type="button" size="sm">
               견적서 히스토리
-            </Button>
+            </Button> */}
           </div>
         </div>
 
@@ -245,19 +239,6 @@ export default function EstimateView() {
               <TableHead className="w-[8%]">수량</TableHead>
               <TableHead className="w-[10%]">금액</TableHead>
               <TableHead className="w-[10%]">가용 금액</TableHead>
-              <TableHead className="w-[10%]">
-                <TooltipProvider>
-                  <Tooltip>
-                    <span className="flex items-center justify-center gap-1">
-                      예상 지출 금액
-                      <TooltipTrigger asChild>
-                        <Info className="size-3 text-gray-500" />
-                      </TooltipTrigger>
-                    </span>
-                    <TooltipContent>프로젝트의 비용·수익 관리에 활용됩니다.</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </TableHead>
               <TableHead className="w-[24%]">비고</TableHead>
             </TableRow>
           </TableHeader>
@@ -270,7 +251,7 @@ export default function EstimateView() {
                 {/* ------------------------ */}
                 {row.ei_type === 'title' && (
                   <>
-                    <TableCell className="text-left font-bold" colSpan={7}>
+                    <TableCell className="text-left font-bold" colSpan={6}>
                       {row.ei_name}
                     </TableCell>
                   </>
@@ -301,7 +282,6 @@ export default function EstimateView() {
                         </Button>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">{formatAmount(row.exp_cost)}</TableCell>
                     <TableCell className="text-left leading-[1.1] break-keep whitespace-break-spaces">{row.remark}</TableCell>
                   </>
                 )}
@@ -312,10 +292,10 @@ export default function EstimateView() {
                 {row.ei_type === 'subtotal' && (
                   <>
                     <TableCell colSpan={3} className="bg-gray-100 font-semibold">
-                      Sub Total
+                      {row.ei_name ? row.ei_name : 'Sub Total'}
                     </TableCell>
                     <TableCell className="bg-gray-100 text-right font-semibold">{formatAmount(row.amount)}</TableCell>
-                    <TableCell colSpan={3} className="bg-gray-100"></TableCell>
+                    <TableCell colSpan={2} className="bg-gray-100"></TableCell>
                   </>
                 )}
 
@@ -325,7 +305,6 @@ export default function EstimateView() {
                 {row.ei_type === 'agency_fee' && (
                   <>
                     <TableCell className="text-left font-medium">{row.ei_name ? row.ei_name : 'Agency Fee'}</TableCell>
-
                     <TableCell className="text-right">{row.unit_price && displayUnitPrice(row.unit_price)}</TableCell>
                     <TableCell></TableCell>
                     <TableCell className="text-right font-semibold">{formatAmount(row.amount)}</TableCell>
@@ -345,8 +324,35 @@ export default function EstimateView() {
                         </Button>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">{formatAmount(row.exp_cost)}</TableCell>
                     <TableCell className="text-left">{row.remark}</TableCell>
+                  </>
+                )}
+
+                {/* ------------------------ */}
+                {/* Sub Total Row */}
+                {/* ------------------------ */}
+                {row.ei_type === 'totalamount' && (
+                  <>
+                    <TableCell colSpan={3} className="bg-gray-100 font-semibold">
+                      {row.ei_name ? row.ei_name : 'Total Amount'}
+                    </TableCell>
+                    <TableCell className="bg-gray-100 text-right font-semibold">{formatAmount(row.amount)}</TableCell>
+                    <TableCell className="bg-gray-100"></TableCell>
+                    <TableCell className="bg-gray-100 text-left">{row.remark}</TableCell>
+                  </>
+                )}
+
+                {/* ------------------------ */}
+                {/* Tax Row */}
+                {/* ------------------------ */}
+                {row.ei_type === 'tax' && (
+                  <>
+                    <TableCell colSpan={3} className="bg-gray-300 font-semibold">
+                      {row.ei_name ? row.ei_name : 'Tax (10%)'}
+                    </TableCell>
+                    <TableCell className="bg-gray-300 text-right font-semibold">{formatAmount(row.amount)}</TableCell>
+                    <TableCell className="bg-gray-300"></TableCell>
+                    <TableCell className="bg-gray-300 text-left">{row.remarks}</TableCell>
                   </>
                 )}
 
@@ -356,10 +362,10 @@ export default function EstimateView() {
                 {row.ei_type === 'discount' && (
                   <>
                     <TableCell colSpan={3} className="bg-gray-300 font-semibold">
-                      Discount
+                      {row.ei_name ? row.ei_name : 'Discount'}
                     </TableCell>
                     <TableCell className="bg-gray-300 text-right font-semibold">{formatAmount(row.amount)}</TableCell>
-                    <TableCell colSpan={2} className="bg-gray-300"></TableCell>
+                    <TableCell className="bg-gray-300"></TableCell>
                     <TableCell className="bg-gray-300 text-left">{row.remark}</TableCell>
                   </>
                 )}
@@ -374,7 +380,6 @@ export default function EstimateView() {
                     </TableCell>
                     <TableCell className="bg-primary-blue-150 text-right font-bold text-gray-900">{formatAmount(row.amount)}</TableCell>
                     <TableCell className="bg-primary-blue-150 text-right font-bold">{formatAmount(row.ava_amount)}</TableCell>
-                    <TableCell className="bg-primary-blue-150 text-right font-bold">{formatAmount(row.exp_cost)}</TableCell>
                     <TableCell className="bg-primary-blue-150"></TableCell>
                   </>
                 )}

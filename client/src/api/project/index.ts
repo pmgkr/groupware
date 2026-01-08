@@ -53,6 +53,7 @@ export interface projectCreatePayload {
   project_sdate: string | null;
   project_edate: string | null;
   remark?: string | null;
+  exp_cost?: string | null;
 }
 
 // 프로젝트 생성 응답 타입
@@ -79,6 +80,7 @@ export interface ProjectViewDTO {
   project_status: string;
   est_amount?: string;
   est_budget?: string;
+  exp_cost?: string;
 }
 
 // 프로젝트 멤버 타입

@@ -17,27 +17,41 @@ export type QuotationTitleRow = {
 
 export type QuotationSubtotal = {
   type: 'subtotal';
-  label: string;
+  item: string;
   amount: number;
 };
 
 export type QuotationGrandTotal = {
   type: 'grandtotal';
-  label: string;
+  item: string;
   amount: number;
 };
 
 export type QuotationDiscount = {
   type: 'discount';
-  label: string;
+  item: string;
   unit_price: string;
+  amount: number;
+  remarks?: string;
+};
+
+export type QuotationTotalAmount = {
+  type: 'totalamount';
+  item: string;
+  amount: number;
+  remarks?: string;
+};
+
+export type QuotationTax = {
+  type: 'tax';
+  item: string;
   amount: number;
   remarks?: string;
 };
 
 export type QuotationAgencyFee = {
   type: 'agency_fee';
-  label: string;
+  item: string;
   unit_price: string | number;
   amount: number;
   remarks?: string;
@@ -49,6 +63,8 @@ export type QuotationMappedItem =
   | QuotationSubtotal
   | QuotationGrandTotal
   | QuotationDiscount
+  | QuotationTotalAmount
+  | QuotationTax
   | QuotationAgencyFee;
 
 // 비용 - 견적서 매칭하기 위한 정보

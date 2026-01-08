@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Link, useOutletContext, useNavigate, useParams } from 'react-router';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
-import isEqual from 'lodash.isequal';
 import { useUser } from '@/hooks/useUser';
 import { calcAll } from './utils/calc';
 import { formatAmount } from '@/utils';
@@ -92,9 +91,9 @@ export default function EstimateEdit() {
           qty: row.qty ?? '',
           amount: row.amount ?? '',
           ava_amount: row.ava_amount ?? '',
-          exp_cost: row.exp_cost ?? '',
           remark: row.remark ?? '',
           ei_order: row.ei_order ?? '',
+          match_count: row.match_count ?? 0,
         })),
       });
 
@@ -106,9 +105,9 @@ export default function EstimateEdit() {
         qty: row.qty ?? '',
         amount: row.amount ?? '',
         ava_amount: row.ava_amount,
-        exp_cost: row.exp_cost,
         remark: row.remark,
         ei_order: row.ei_order,
+        match_count: row.match_count ?? 0,
       }));
 
       initialItemsRef.current = structuredClone(init);
@@ -133,7 +132,6 @@ export default function EstimateEdit() {
       qty: '',
       amount: '',
       ava_amount: '',
-      exp_cost: '',
       remark: '',
       ei_order: insertIndex,
     };
@@ -162,24 +160,91 @@ export default function EstimateEdit() {
     });
   };
 
+  // ----------------------------------------
+  const isBaseAmountRow = (row: any) => row.ei_type === 'item' || row.ei_type === 'agency_fee' || row.ei_type === 'discount';
+  const isSubtotalTarget = (row: any) => row.ei_type === 'item' || row.ei_type === 'agency_fee' || row.ei_type === 'discount';
+
+  // 견적서 수정의 모든 계산 책임
   const updateRowAll = () => {
-    const items = form.getValues('items');
-    const updated = calcAll(structuredClone(items));
+    const items = watch('items');
 
-    updated.forEach((row, i) => {
-      const needUpdate = reordered || !isEqual(items[i], row); // 값이 달라졌으면 업데이트
+    if (!Array.isArray(items)) return;
 
-      if (needUpdate) {
-        setValue(`items.${i}.amount`, row.amount, {
+    // ---------------------------
+    // Sub total 계산
+    // ---------------------------
+    let runningSum = 0;
+
+    items.forEach((row, idx) => {
+      // subtotal row를 만나면
+      if (row.ei_type === 'subtotal') {
+        setValue(`items.${idx}.amount`, runningSum, {
           shouldDirty: false,
-          shouldValidate: false,
+          shouldTouch: false,
         });
-        setValue(`items.${i}.exp_cost`, row.exp_cost, {
-          shouldDirty: false,
-          shouldValidate: false,
-        });
+
+        // 다음 구간을 위해 초기화
+        runningSum = 0;
+        return;
+      }
+
+      // 합산 대상이면 누적
+      if (isSubtotalTarget(row)) {
+        runningSum += Number(row.amount || 0);
       }
     });
+
+    // ---------------------------
+    // 1) VAT 제외 기준 금액 계산
+    // ---------------------------
+    let totalAmountBase = 0;
+
+    items.forEach((row) => {
+      if (isBaseAmountRow(row)) {
+        totalAmountBase += Number(row.amount || 0);
+      }
+    });
+
+    // ---------------------------
+    // 2) Total Amount row 반영
+    // ---------------------------
+    const totalAmountIdx = items.findIndex((r) => r.ei_type === 'totalamount');
+
+    if (totalAmountIdx >= 0) {
+      setValue(`items.${totalAmountIdx}.amount`, totalAmountBase, {
+        shouldDirty: false,
+        shouldTouch: false,
+      });
+    }
+
+    // ---------------------------
+    // 3) Tax 계산 (10%)
+    // ---------------------------
+    let taxAmount = 0;
+    const taxIdx = items.findIndex((r) => r.ei_type === 'tax');
+
+    if (taxIdx >= 0) {
+      taxAmount = Math.round(totalAmountBase * 0.1);
+
+      setValue(`items.${taxIdx}.amount`, taxAmount, {
+        shouldDirty: false,
+        shouldTouch: false,
+      });
+    }
+
+    // ---------------------------
+    // 4) Grand Total
+    // ---------------------------
+    const grandIdx = items.findIndex((r) => r.ei_type === 'grandtotal');
+
+    if (grandIdx >= 0) {
+      const grandTotal = totalAmountBase + taxAmount;
+
+      setValue(`items.${grandIdx}.amount`, grandTotal, {
+        shouldDirty: false,
+        shouldTouch: false,
+      });
+    }
   };
 
   // --------------------------
@@ -189,7 +254,6 @@ export default function EstimateEdit() {
     const grand = v.items.find((item) => item.ei_type === 'grandtotal');
 
     const totalAmount = grand ? formatAmount(grand.amount ?? 0) : '-';
-    const totalExpCost = grand ? formatAmount(grand.exp_cost ?? 0) : '-';
 
     return `<ul class="text-base text-gray-700
       [&>li]:flex [&>li]:leading-[1.4] space-y-1 [&>li]:gap-x-1.5 [&>li]:items-start [&_span::before]:content-[''] [&_span]:flex [&_span]:items-center [&_span]:gap-1.5
@@ -198,7 +262,6 @@ export default function EstimateEdit() {
       ">
       <li><span>견적서 제목 :</span> <p>${v.header.est_title}</p></li>
       <li><span>견적서 합계 :</span> <p>${totalAmount}</p></li>
-      <li><span>예상 지출 합계 :</span> <p>${totalExpCost}</p></li>
       ${reason ? `<li><span>증빙 사유 :</span> <p>${reason}</p></li>` : ''}
     </ul>
   `;
@@ -221,7 +284,6 @@ export default function EstimateEdit() {
       unit_price: Number(item.unit_price) || 0,
       qty: Number(item.qty) || 0,
       amount: Number(item.amount) || 0,
-      exp_cost: Number(item.exp_cost) || 0,
       ava_amount: Number(item.ava_amount) || 0,
       remark: item.remark || '',
       ei_order: idx, // 현재 화면상의 순서가 그대로 order
@@ -419,19 +481,6 @@ export default function EstimateEdit() {
                   <TableHead className="w-[8%] px-4">수량</TableHead>
                   <TableHead className="w-[12%] px-4">금액</TableHead>
                   <TableHead className="w-[10%] px-4">가용 금액</TableHead>
-                  <TableHead className="w-[10%] px-4">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <span className="flex items-center justify-center gap-1">
-                          예상 지출 금액
-                          <TooltipTrigger asChild>
-                            <Info className="size-3 text-gray-500" />
-                          </TooltipTrigger>
-                        </span>
-                        <TooltipContent>프로젝트의 비용·수익 관리에 활용됩니다.</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableHead>
                   <TableHead className="w-[22%]">비고</TableHead>
                   <TableHead className="w-8 px-0"></TableHead>
                 </TableRow>

@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
-import { getAvatarFallback, getProfileImageUrl, getGrowingYears } from '@/utils';
+import { getAvatarFallback, getProfileImageUrl, getGrowingYears, formatAmount } from '@/utils';
 import { useToggleState } from '@/hooks/useToggleState';
 import { useUser } from '@/hooks/useUser';
 
@@ -38,6 +38,7 @@ const projectSchema = z.object({
   members: z.array(z.string()).min(1, '멤버를 선택하세요.'),
   project_sdate: z.string().nullable(),
   project_edate: z.string().nullable(),
+  exp_cost: z.string().optional(),
   remark: z.string().optional(),
 });
 
@@ -198,6 +199,7 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
           project_sdate: v.project_sdate,
           project_edate: v.project_edate,
           remark: v.remark,
+          exp_cost: v.exp_cost || '0',
         };
 
         const result = await projectCreate(payload);
@@ -435,20 +437,35 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
             />
           </div>
 
-          {/* <FormField
+          <FormField
             control={form.control}
-            name="remark"
+            name="exp_cost"
             render={({ field }) => {
               return (
                 <FormItem>
-                  <FormLabel>비고</FormLabel>
+                  <FormLabel>프로젝트 예상 지출 금액</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="추가 기입할 정보가 있으면 입력해 주세요." className="h-16 min-h-16" {...field} />
+                    <Input
+                      inputMode="numeric"
+                      placeholder="예상 지출 금액"
+                      value={field.value ? formatAmount(field.value) : ''}
+                      onChange={(e) => {
+                        // 1. 콤마 제거
+                        const raw = e.target.value.replace(/,/g, '');
+
+                        // 2. 숫자만 허용
+                        if (!/^\d*$/.test(raw)) return;
+
+                        // 3. form에는 숫자 문자열만 저장
+                        field.onChange(raw);
+                      }}
+                      className="text-right"
+                    />
                   </FormControl>
                 </FormItem>
               );
             }}
-          /> */}
+          />
 
           {/* 프로젝트 멤버 */}
           <FormItem>

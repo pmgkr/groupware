@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { useUser } from '@/hooks/useUser';
 
 import { cn } from '@/lib/utils';
-import { getGrowingYears } from '@/utils';
+import { getGrowingYears, formatAmount } from '@/utils';
 import { useToggleState } from '@/hooks/useToggleState';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -52,6 +52,7 @@ const projectUpdateSchema = z.object({
   project_title: z.string().min(2),
   project_sdate: z.string().nullable(),
   project_edate: z.string().nullable(),
+  exp_cost: z.string().optional(),
 });
 
 type ProjectUpdateFormValues = z.infer<typeof projectUpdateSchema>;
@@ -107,6 +108,7 @@ export function ProjectUpdate({ open, projectId, projectMembers, onOpenChange, o
       project_title: '',
       project_sdate: null,
       project_edate: null,
+      exp_cost: '',
     },
   });
 
@@ -142,6 +144,7 @@ export function ProjectUpdate({ open, projectId, projectMembers, onOpenChange, o
         project_title: res.project_title,
         project_sdate: formatDate(new Date(res.project_sdate)) ?? null,
         project_edate: formatDate(new Date(res.project_edate)) ?? null,
+        exp_cost: String(res.exp_cost ?? ''),
       });
     })();
   }, [open, projectId, form]);
@@ -167,6 +170,7 @@ export function ProjectUpdate({ open, projectId, projectMembers, onOpenChange, o
           project_title: v.project_title,
           project_sdate: v.project_sdate,
           project_edate: v.project_edate,
+          exp_cost: v.exp_cost || '0',
         };
 
         const res = await projectUpdate(projectId, payload);
@@ -399,6 +403,35 @@ export function ProjectUpdate({ open, projectId, projectMembers, onOpenChange, o
                     </FormItem>
                   );
                 }}
+              />
+
+              {/* 프로젝트 예상 지출 */}
+              <FormField
+                control={form.control}
+                name="exp_cost"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>프로젝트 예상 지출 금액</FormLabel>
+                    <FormControl>
+                      <Input
+                        inputMode="numeric"
+                        placeholder="예상 지출 금액"
+                        value={field.value ? formatAmount(field.value) : ''}
+                        onChange={(e) => {
+                          // 1. 콤마 제거
+                          const raw = e.target.value.replace(/,/g, '');
+
+                          // 2. 숫자만 허용
+                          if (!/^\d*$/.test(raw)) return;
+
+                          // 3. form에는 숫자 문자열만 저장
+                          field.onChange(raw);
+                        }}
+                        className="text-right"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
               />
             </div>
 
