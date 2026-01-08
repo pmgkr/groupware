@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { useDashboard } from '@/hooks/useDashboard';
-import { getProfileImageUrl } from '@/utils';
+import { getProfileImageUrl, getAvatarFallback } from '@/utils';
 
 import Header from '@/layouts/Header';
 
@@ -263,7 +263,7 @@ export default function Dashboard() {
                         alt={calendar.user_name} 
                       />
                       <AvatarFallback>
-                        {calendar.user_name?.slice(0, 2).toUpperCase() || 'CN'}
+                        {getAvatarFallback(calendar.user_id || '')}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col text-base">
