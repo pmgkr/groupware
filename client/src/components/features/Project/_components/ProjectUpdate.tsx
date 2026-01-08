@@ -404,36 +404,36 @@ export function ProjectUpdate({ open, projectId, projectMembers, onOpenChange, o
                   );
                 }}
               />
-
-              {/* 프로젝트 예상 지출 */}
-              <FormField
-                control={form.control}
-                name="exp_cost"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>프로젝트 예상 지출 금액</FormLabel>
-                    <FormControl>
-                      <Input
-                        inputMode="numeric"
-                        placeholder="예상 지출 금액"
-                        value={field.value ? formatAmount(field.value) : ''}
-                        onChange={(e) => {
-                          // 1. 콤마 제거
-                          const raw = e.target.value.replace(/,/g, '');
-
-                          // 2. 숫자만 허용
-                          if (!/^\d*$/.test(raw)) return;
-
-                          // 3. form에는 숫자 문자열만 저장
-                          field.onChange(raw);
-                        }}
-                        className="text-right"
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
             </div>
+
+            {/* 프로젝트 예상 지출 */}
+            <FormField
+              control={form.control}
+              name="exp_cost"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>프로젝트 예상 지출 금액</FormLabel>
+                  <FormControl>
+                    <Input
+                      inputMode="numeric"
+                      placeholder="예상 지출 금액"
+                      value={field.value ? formatAmount(field.value) : ''}
+                      onChange={(e) => {
+                        // 1. 콤마 제거
+                        const raw = e.target.value.replace(/,/g, '');
+
+                        // 2. 숫자만 허용
+                        if (!/^\d*$/.test(raw)) return;
+
+                        // 3. form에는 숫자 문자열만 저장
+                        field.onChange(raw);
+                      }}
+                      className="text-right"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
             <div className="flex justify-end gap-3 pt-3">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
