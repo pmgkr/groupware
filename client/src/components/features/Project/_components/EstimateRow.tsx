@@ -12,7 +12,7 @@ import { FormField } from '@/components/ui/form';
 import { cn } from '@/lib/utils';
 import { formatAmount } from '@/utils';
 
-type DirtyCheckField = 'ei_name' | 'unit_price' | 'qty' | 'amount' | 'ava_amount' | 'exp_cost' | 'remark';
+type DirtyCheckField = 'ei_name' | 'unit_price' | 'qty' | 'amount' | 'ava_amount' | 'remark';
 
 interface EstimateRowProps {
   field: any;
@@ -49,10 +49,12 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const amount = useWatch({ control, name: `items.${idx}.amount` });
-  const expCost = useWatch({ control, name: `items.${idx}.exp_cost` });
   const row = useWatch({ control, name: `items.${idx}` });
 
   const initialRow = (initialItems ?? []).find((r) => r.seq === row.seq);
+  const matchCount = initialRow?.match_count ?? 0; // 견적서 항목과 비용이 매칭된 갯수
+
+  console.log('row 데이터', initialRow);
 
   const normalizeValue = (v: any) => {
     if (v === null || v === undefined) return '';
@@ -64,8 +66,8 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
   const isDirty = (key: DirtyCheckField) => {
     if (!initialRow) return false;
 
-    // 숫자 필드 (unit_price, qty, amount, exp_cost)
-    if (['unit_price', 'qty', 'amount', 'exp_cost'].includes(key)) {
+    // 숫자 필드 (unit_price, qty, amount)
+    if (['unit_price', 'qty', 'amount'].includes(key)) {
       return normalizeNumber(initialRow[key]) !== normalizeNumber(row[key]);
     }
 
@@ -90,17 +92,13 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
     if (t === 'item' || t === 'agency_fee' || t === 'discount') updateRowAll();
   }, [amount]);
 
-  useEffect(() => {
-    if (t === 'item' || t === 'agency_fee') updateRowAll();
-  }, [expCost]);
-
   // Amount가 변경 시 rawData와 비교해서 가용금액 업데이트
   useEffect(() => {
     if (!initialRow) return; // 신규 row 제외
     if (t !== 'item' && t !== 'agency_fee') return;
 
     // 사용자가 입력한 변경이 아니면 diff 반영 X
-    const userChanged = isDirty('unit_price') || isDirty('qty') || isDirty('exp_cost') || isDirty('remark') || isDirty('ei_name');
+    const userChanged = isDirty('unit_price') || isDirty('qty') || isDirty('remark') || isDirty('ei_name');
 
     if (!userChanged) return;
 
@@ -125,6 +123,8 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
     subtotal: 'bg-gray-100',
     discount: 'bg-gray-300',
     grandtotal: 'bg-primary-blue-150',
+    totalamount: 'bg-gray-100',
+    tax: 'bg-gray-300',
   };
 
   const dirtyClass = 'text-primary-blue-500 font-bold border-primary-500';
@@ -177,7 +177,7 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
             render={({ field }) => <Input {...field} className={cn('h-9 font-bold', isDirty('ei_name') && dirtyClass)} />}
           />
         </TableCell>
-        <TableCell colSpan={6}></TableCell>
+        <TableCell colSpan={5}></TableCell>
         {Menu}
       </>
     );
@@ -188,13 +188,46 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
     return (
       <>
         {Drag}
-
         <TableCell className="bg-gray-100 !pl-1 !text-base leading-7 font-semibold" colSpan={3}>
-          Sub total
+          {row.ei_name ? row.ei_name : 'Sub Total'}
         </TableCell>
         <TableCell className="bg-gray-100 text-right font-semibold">{formatAmount(row?.amount || 0)}</TableCell>
-        <TableCell className="bg-gray-100" colSpan={3}></TableCell>
+        <TableCell className="bg-gray-100" colSpan={2}></TableCell>
+        {Menu}
+      </>
+    );
+  }
 
+  /** Total Amount */
+  if (t === 'totalamount') {
+    return (
+      <>
+        <TableCell className="bg-gray-100 !pl-1 !text-base leading-7 font-semibold" colSpan={4}>
+          {row.ei_name ? row.ei_name : 'Total Amount'}
+        </TableCell>
+        <TableCell className="bg-gray-100 text-right font-semibold">{formatAmount(row?.amount || 0)}</TableCell>
+        <TableCell className="bg-gray-100"></TableCell>
+        <TableCell className="bg-gray-100">
+          <Input className={cn('h-9', isDirty('remark') && dirtyClass)} {...control.register(`items.${idx}.remark`)} />
+        </TableCell>
+        {Menu}
+      </>
+    );
+  }
+
+  /** TAX */
+  if (t === 'tax') {
+    return (
+      <>
+        <TableCell className="bg-gray-300 !pl-1 !text-base font-semibold" colSpan={4}>
+          {row.ei_name || 'Tax'} (10%)
+        </TableCell>
+
+        <TableCell className="bg-gray-300 text-right font-semibold">{formatAmount(row?.amount || 0)}</TableCell>
+        <TableCell className="bg-gray-300"></TableCell>
+        <TableCell className="bg-gray-300">
+          <Input className={cn('h-9', isDirty('remark') && dirtyClass)} {...control.register(`items.${idx}.remark`)} />
+        </TableCell>
         {Menu}
       </>
     );
@@ -205,18 +238,11 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
     return (
       <>
         <TableCell className="bg-primary-blue-150 !px-0"></TableCell>
-
         <TableCell className="bg-primary-blue-150 !pl-1 !text-base leading-8.5 font-semibold" colSpan={3}>
           Grand Total
         </TableCell>
-
         <TableCell className="bg-primary-blue-150 text-right !text-base font-semibold">{formatAmount(row?.amount || 0)}</TableCell>
-
-        <TableCell className="bg-primary-blue-150"></TableCell>
-
-        <TableCell className="bg-primary-blue-150 text-right !text-base font-semibold">{formatAmount(row?.exp_cost || 0)}</TableCell>
-
-        <TableCell className="bg-primary-blue-150" colSpan={2}></TableCell>
+        <TableCell className="bg-primary-blue-150" colSpan={3}></TableCell>
       </>
     );
   }
@@ -227,8 +253,9 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
       <>
         {Drag}
         <TableCell className="bg-gray-300 !pl-1 !text-base font-semibold" colSpan={3}>
-          Discount
+          {row.ei_name ? row.ei_name : 'Discount'}
         </TableCell>
+
         <TableCell className="bg-gray-300 text-right">
           <FormField
             control={control}
@@ -236,11 +263,11 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
             render={({ field }) => {
               const inputRef = useRef<HTMLInputElement>(null);
 
-              // 🔥 저장(raw)은 항상 음수 → display는 절댓값
+              // 🔹 display는 항상 절댓값
               const numeric = Number(field.value);
               const displayValue = !numeric ? '' : formatAmount(Math.abs(numeric));
 
-              /** 🔥 커서 유지 + raw 음수 저장 핸들러 */
+              /** 🔹 커서 유지 + 항상 음수 저장 */
               const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 const input = e.target;
                 const rawPrev = input.value;
@@ -252,8 +279,8 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
                 const prevDigitsBeforeCursor = rawPrev.slice(0, cursorPrev).replace(/[^\d]/g, '').length;
                 const prevDigitsAfterCursor = rawPrev.slice(cursorPrev).replace(/[^\d]/g, '').length;
 
-                // 숫자만 추출 → 음수로 변환
-                let rawDigits = rawPrev.replace(/[^\d]/g, '');
+                // 숫자만 추출
+                const rawDigits = rawPrev.replace(/[^\d]/g, '');
 
                 if (rawDigits === '') {
                   field.onChange('');
@@ -263,7 +290,7 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
 
                 const formatted = formatAmount(Number(rawDigits));
 
-                // 커서 이동 계산
+                // 커서 계산
                 let cursorNew = 0;
 
                 if (isBackspace) {
@@ -295,9 +322,8 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
                   }
                 }
 
-                // 🔥 raw 값을 항상 음수로 저장
-                const negativeRaw = -Number(rawDigits);
-                field.onChange(negativeRaw);
+                // 🔥 항상 음수로 저장
+                field.onChange(-Number(rawDigits));
 
                 requestAnimationFrame(() => {
                   input.setSelectionRange(cursorNew, cursorNew);
@@ -318,7 +344,7 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
           />
         </TableCell>
 
-        <TableCell className="bg-gray-300" colSpan={2}></TableCell>
+        <TableCell className="bg-gray-300"></TableCell>
         <TableCell className="bg-gray-300">
           <Input className={cn('h-9', isDirty('remark') && dirtyClass)} {...control.register(`items.${idx}.remark`)} />
         </TableCell>
@@ -516,31 +542,9 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
               className="flex cursor-pointer items-center gap-0.5 text-xs font-normal text-gray-500 hover:text-gray-700"
               title="매칭된 비용 갯수">
               <Link className="size-3" />
-              {/* {row.match_count} */}
+              {matchCount}
             </span>
           </div>
-        </TableCell>
-        {/* exp_cost */}
-        <TableCell>
-          <FormField
-            control={control}
-            name={`items.${idx}.exp_cost`}
-            render={({ field }) => {
-              const rawValue = field.value || 0;
-              const displayValue = formatAmount(rawValue);
-
-              return (
-                <Input
-                  className={cn('h-9 text-right', isDirty('exp_cost') && dirtyClass)}
-                  value={displayValue}
-                  onChange={(e) => {
-                    const raw = Number(e.target.value.replace(/[^\d]/g, '') || 0);
-                    field.onChange(raw);
-                  }}
-                />
-              );
-            }}
-          />
         </TableCell>
 
         {/* remark */}
@@ -693,29 +697,9 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
               className="flex cursor-pointer items-center gap-0.5 text-xs font-normal text-gray-500 hover:text-gray-700"
               title="매칭된 비용 갯수">
               <Link className="size-3" />
-              12
+              {matchCount}
             </span>
           </div>
-        </TableCell>
-
-        {/* exp_cost */}
-        <TableCell>
-          <FormField
-            control={control}
-            name={`items.${idx}.exp_cost`}
-            render={({ field }) => {
-              return (
-                <Input
-                  className={cn('h-9 text-right', isDirty('exp_cost') && dirtyClass)}
-                  value={formatAmount(field.value || 0)}
-                  onChange={(e) => {
-                    const raw = Number(e.target.value.replace(/[^\d]/g, '') || 0);
-                    field.onChange(raw);
-                  }}
-                />
-              );
-            }}
-          />
         </TableCell>
 
         {/* remark */}

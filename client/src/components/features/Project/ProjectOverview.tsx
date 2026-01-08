@@ -45,6 +45,8 @@ export default function Overview() {
   const [memberDialogOpen, setMemberDialogOpen] = useState(false); // 프로젝트 멤버 변경 Dialog State
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false); // 프로젝트 업데이트 Dialog State
 
+  console.log('프로젝트 데이터', data);
+
   // 페이지 렌더 시 비용 유형 컬러맵 생성 & 인보이스 데이터 조회
   useEffect(() => {
     async function loadColors() {
@@ -231,7 +233,7 @@ export default function Overview() {
                 <TableColumnBody>
                   <TableColumnCell>{data.client_nm}</TableColumnCell>
                   <TableColumnCell>{`${formatDate(data.project_sdate)} ~ ${formatDate(data.project_edate)}`}</TableColumnCell>
-                  <TableColumnCell>{formatAmount(data.est_budget) ?? 0} 원</TableColumnCell>
+                  <TableColumnCell>{formatAmount(data.exp_cost) ?? 0} 원</TableColumnCell>
                 </TableColumnBody>
               </TableColumn>
             </div>

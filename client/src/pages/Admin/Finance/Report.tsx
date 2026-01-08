@@ -330,7 +330,7 @@ export default function Report() {
                 variant="svgIcon"
                 className="h-full w-full gap-1 text-[13px] has-[>svg]:p-0"
                 onClick={() => hanldeToggleSort('est_amount')}>
-                견적서 총액
+                견적서 금액
                 <SortIcon order={getSortOrder('est_amount')} />
               </Button>
             </TableHead>
@@ -340,7 +340,7 @@ export default function Report() {
                 variant="svgIcon"
                 className="h-full w-full gap-1 text-[13px] has-[>svg]:p-0"
                 onClick={() => hanldeToggleSort('est_budget')}>
-                견적서 가용예산
+                예상 지출 금액
                 <SortIcon order={getSortOrder('est_budget')} />
               </Button>
             </TableHead>
@@ -349,9 +349,9 @@ export default function Report() {
                 type="button"
                 variant="svgIcon"
                 className="h-full w-full gap-1 text-[13px] has-[>svg]:p-0"
-                onClick={() => hanldeToggleSort('invoice_amount')}>
-                인보이스 공급가액
-                <SortIcon order={getSortOrder('invoice_amount')} />
+                onClick={() => hanldeToggleSort('inv_amount')}>
+                계산서 금액
+                <SortIcon order={getSortOrder('inv_amount')} />
               </Button>
             </TableHead>
             <TableHead className="w-[8%]">
@@ -360,7 +360,7 @@ export default function Report() {
                 variant="svgIcon"
                 className="h-full w-full gap-1 text-[13px] has-[>svg]:p-0"
                 onClick={() => hanldeToggleSort('exp_amount')}>
-                지출 비용 합계
+                실제 지출
                 <SortIcon order={getSortOrder('exp_amount')} />
               </Button>
             </TableHead>
@@ -370,7 +370,7 @@ export default function Report() {
                 variant="svgIcon"
                 className="h-full w-full gap-1 text-[13px] has-[>svg]:p-0"
                 onClick={() => hanldeToggleSort('netprofit')}>
-                순이익
+                Net
                 <SortIcon order={getSortOrder('netprofit')} />
               </Button>
             </TableHead>

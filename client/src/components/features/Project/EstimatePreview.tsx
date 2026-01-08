@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation, useOutletContext, useNavigate, useParams } from 'react-router';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { useUser } from '@/hooks/useUser';
-import { notificationApi } from '@/api/notification';
 import { mapExcelToQuotationItems, formatAmount, displayUnitPrice } from '@/utils';
 import { uploadFilesToServer, estimateRegister } from '@/api';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
@@ -19,7 +18,6 @@ import { Input } from '@components/ui/input';
 import { Button } from '@components/ui/button';
 import { Textarea } from '@components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 
@@ -77,13 +75,20 @@ export default function EstimatePreview() {
   // --------------------------
   useEffect(() => {
     if (excelData && Array.isArray(excelData)) {
-      const mapped = mapExcelToQuotationItems(excelData);
-      replace(mapped);
+      const { items, warning } = mapExcelToQuotationItems(excelData);
 
-      // form 데이터에도 반영
-      form.reset({
-        estimate_items: mapped,
-      });
+      if (warning) {
+        addAlert({
+          title: '엑셀 매핑 실패',
+          message: warning,
+          icon: <OctagonAlert />,
+          duration: 3000,
+        });
+        return;
+      }
+
+      replace(items);
+      form.reset({ estimate_items: items });
     }
   }, [excelData]);
 
@@ -101,35 +106,7 @@ export default function EstimatePreview() {
     return fields.filter(isAmountItem).reduce((sum, f) => sum + Number(f.amount || 0), 0);
   }, [fields]);
 
-  const totalCost = useMemo(() => {
-    return watchedItems?.filter((f) => f.type === 'item')?.reduce((sum, f) => sum + (Number(f.cost) || 0), 0) || 0;
-  }, [watchedItems]);
-
   const hasGrandTotal = fields.some((f) => f.type === 'grandtotal');
-
-  // --------------------------
-  // 비용 입력 (format + validation)
-  // --------------------------
-  const handleCostInput = useCallback((e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    let raw = e.target.value;
-
-    raw = raw.replace(/[.]/g, '');
-    raw = raw.replace(/[^0-9]/g, '');
-
-    if (raw === '') {
-      form.setValue(`estimate_items.${index}.cost`, undefined);
-      return;
-    }
-
-    if (/^0+$/.test(raw)) return;
-
-    raw = raw.replace(/^0+/, '');
-    const numeric = Number(raw);
-
-    if (!isNaN(numeric)) {
-      form.setValue(`estimate_items.${index}.cost`, numeric);
-    }
-  }, []);
 
   // --------------------------
   // Dialog content 템플릿
@@ -142,7 +119,6 @@ export default function EstimatePreview() {
       ">
       <li><span>견적서 제목 :</span> <p>${estimateName}</p></li>
       <li><span>견적서 합계 :</span> <p>${formatAmount(totalAmount)}</p></li>
-      <li><span>예상 지출 합계 :</span> <p>${formatAmount(totalCost)}</p></li>
       ${reason ? `<li><span>증빙 사유 :</span> <p>${reason}</p></li>` : ''}
     </ul>
   `;
@@ -206,7 +182,6 @@ export default function EstimatePreview() {
               unit_price: i.unit_price ?? null,
               qty: i.qty ?? null,
               amount: i.amount ?? null,
-              exp_cost: i.cost ?? null,
               ava_amount: i.amount ?? null,
               remark: i.remarks ?? null,
               ei_order: idx,
@@ -229,16 +204,6 @@ export default function EstimatePreview() {
 
             if (result.ok) {
               const item_count = result.counts.items;
-
-              // await notificationApi.registerNotification({
-              //   user_id: data.header.user_id,
-              //   user_name: data.header.user_nm,
-              //   noti_target: user_id!,
-              //   noti_title: `${data.header.exp_id} · ${data.header.el_title}`,
-              //   noti_message: `청구한 비용을 지급 완료했습니다.`,
-              //   noti_type: 'expense',
-              //   noti_url: `/project/${data.header.project_id}/expense/${data.header.seq}`,
-              // });
 
               addAlert({
                 title: '견적서 등록이 완료되었습니다.',
@@ -352,19 +317,6 @@ export default function EstimatePreview() {
                 <TableHead className="w-[10%]">단가</TableHead>
                 <TableHead className="w-[6%]">수량</TableHead>
                 <TableHead className="w-[10%]">금액</TableHead>
-                <TableHead className="w-[12%]">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <span className="flex items-center justify-center gap-1">
-                        예상 지출 금액
-                        <TooltipTrigger asChild>
-                          <Info className="size-3 text-gray-500" />
-                        </TooltipTrigger>
-                      </span>
-                      <TooltipContent>프로젝트의 비용·수익 관리에 활용됩니다.</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </TableHead>
                 <TableHead className="w-[28%]">비고</TableHead>
               </TableRow>
             </TableHeader>
@@ -377,7 +329,7 @@ export default function EstimatePreview() {
                   {/* ------------------------ */}
                   {row.type === 'title' && (
                     <>
-                      <TableCell className="text-left font-bold" colSpan={6}>
+                      <TableCell className="text-left font-bold" colSpan={5}>
                         {row.item}
                       </TableCell>
                     </>
@@ -392,22 +344,6 @@ export default function EstimatePreview() {
                       <TableCell className="text-right">{formatAmount(row.unit_price)}</TableCell>
                       <TableCell className="text-right">{row.qty}</TableCell>
                       <TableCell className="text-right">{formatAmount(row.amount)}</TableCell>
-
-                      <TableCell>
-                        {(() => {
-                          const watchedCost = form.watch(`estimate_items.${index}.cost`);
-                          return (
-                            <Input
-                              type="text"
-                              size="sm"
-                              inputMode="numeric"
-                              className="h-7 rounded-sm text-right"
-                              value={watchedCost ? formatAmount(watchedCost) : ''}
-                              onChange={(e) => handleCostInput(e, index)}
-                            />
-                          );
-                        })()}
-                      </TableCell>
                       <TableCell className="text-left leading-[1.1] break-keep whitespace-break-spaces">{row.remarks}</TableCell>
                     </>
                   )}
@@ -418,10 +354,10 @@ export default function EstimatePreview() {
                   {row.type === 'subtotal' && (
                     <>
                       <TableCell colSpan={3} className="bg-gray-100 font-semibold">
-                        {row.label}
+                        {row.item}
                       </TableCell>
                       <TableCell className="bg-gray-100 text-right font-semibold">{formatAmount(row.amount)}</TableCell>
-                      <TableCell colSpan={2} className="bg-gray-100"></TableCell>
+                      <TableCell className="bg-gray-100"></TableCell>
                     </>
                   )}
 
@@ -430,13 +366,38 @@ export default function EstimatePreview() {
                   {/* ------------------------ */}
                   {row.type === 'agency_fee' && (
                     <>
-                      <TableCell className="text-left font-medium">{row.label}</TableCell>
+                      <TableCell className="text-left font-medium">{row.item}</TableCell>
 
                       <TableCell className="text-right">{displayUnitPrice(row.unit_price)}</TableCell>
                       <TableCell></TableCell>
                       <TableCell className="text-right font-semibold">{row.amount.toLocaleString()}</TableCell>
-                      <TableCell></TableCell>
                       <TableCell className="text-left">{row.remarks}</TableCell>
+                    </>
+                  )}
+
+                  {/* ------------------------ */}
+                  {/* Total Amount Row */}
+                  {/* ------------------------ */}
+                  {row.type === 'totalamount' && (
+                    <>
+                      <TableCell colSpan={3} className="bg-gray-300 font-semibold">
+                        {row.item}
+                      </TableCell>
+                      <TableCell className="bg-gray-300 text-right font-semibold">{formatAmount(row.amount)}</TableCell>
+                      <TableCell className="bg-gray-300 text-left">{row.remarks}</TableCell>
+                    </>
+                  )}
+
+                  {/* ------------------------ */}
+                  {/* Tax Row */}
+                  {/* ------------------------ */}
+                  {row.type === 'tax' && (
+                    <>
+                      <TableCell colSpan={3} className="bg-gray-300 font-semibold">
+                        {row.item}
+                      </TableCell>
+                      <TableCell className="bg-gray-300 text-right font-semibold">{formatAmount(row.amount)}</TableCell>
+                      <TableCell className="bg-gray-300 text-left">{row.remarks}</TableCell>
                     </>
                   )}
 
@@ -446,10 +407,9 @@ export default function EstimatePreview() {
                   {row.type === 'discount' && (
                     <>
                       <TableCell colSpan={3} className="bg-gray-300 font-semibold">
-                        {row.label}
+                        {row.item}
                       </TableCell>
                       <TableCell className="bg-gray-300 text-right font-semibold">{formatAmount(row.amount)}</TableCell>
-                      <TableCell className="bg-gray-300"></TableCell>
                       <TableCell className="bg-gray-300 text-left">{row.remarks}</TableCell>
                     </>
                   )}
@@ -460,10 +420,9 @@ export default function EstimatePreview() {
                   {row.type === 'grandtotal' && (
                     <>
                       <TableCell colSpan={3} className="bg-primary-blue-150 font-bold text-gray-900">
-                        {row.label}
+                        {row.item}
                       </TableCell>
                       <TableCell className="bg-primary-blue-150 text-right font-bold text-gray-900">{formatAmount(row.amount)}</TableCell>
-                      <TableCell className="bg-primary-blue-150 text-right font-bold">{formatAmount(totalCost)}</TableCell>
                       <TableCell className="bg-primary-blue-150"></TableCell>
                     </>
                   )}
@@ -479,10 +438,6 @@ export default function EstimatePreview() {
 
                   {/* 총 금액 */}
                   <TableCell className="bg-primary-blue-150 text-right font-bold text-gray-900">{formatAmount(totalAmount)}</TableCell>
-
-                  {/* 총 예상 지출 */}
-                  <TableCell className="bg-primary-blue-150 text-right font-bold text-gray-900">{formatAmount(totalCost)}</TableCell>
-
                   <TableCell className="bg-primary-blue-150"></TableCell>
                 </TableRow>
               )}

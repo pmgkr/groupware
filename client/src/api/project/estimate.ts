@@ -146,6 +146,7 @@ export interface EstimateRow {
   exp_cost?: number | string;
   remark?: string;
   ei_order: number;
+  match_count?: number;
 }
 
 // Edit에서 보낼 Form의 Response Type

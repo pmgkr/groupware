@@ -26,8 +26,6 @@ export default function ExpenseItemDialog({ open, ei_seq, onClose }: ExpenseDial
       try {
         const res = await getEstExpenseItem(ei_seq);
         setSelectedExpList(res);
-
-        console.log(res);
       } catch (err) {
         console.error('❌ 비용 조회 실패:', err);
       }
@@ -70,24 +68,32 @@ export default function ExpenseItemDialog({ open, ei_seq, onClose }: ExpenseDial
                     <col style={{ width: '8%' }} />
                   </colgroup>
                   <TableBody>
-                    {selectedExpList.map((item) => (
-                      <TableRow key={item.pseq} className="[&_td]:px-2 [&_td]:text-[13px]">
-                        <TableCell className="">{item.ei_type}</TableCell>
-                        <TableCell className="text-left">{item.ei_title}</TableCell>
-                        <TableCell className="text-right">{formatAmount(item.ei_amount)}</TableCell>
-                        <TableCell className="text-right">{formatAmount(item.ei_tax)}</TableCell>
-                        <TableCell className="text-right">{formatAmount(item.ei_total)}</TableCell>
-                        <TableCell className="text-right">{formatAmount(item.alloc_amount)}</TableCell>
-                        <TableCell>
-                          <Link
-                            to={`/project/${projectId}/expense/${item.list_seq}`}
-                            target="_blank"
-                            className="hover:text-primary text-gray-600">
-                            <SquareArrowOutUpRight className="mx-auto size-4" />
-                          </Link>
+                    {selectedExpList.length > 0 ? (
+                      selectedExpList.map((item) => (
+                        <TableRow key={item.pseq} className="[&_td]:px-2 [&_td]:text-[13px]">
+                          <TableCell className="">{item.ei_type}</TableCell>
+                          <TableCell className="text-left">{item.ei_title}</TableCell>
+                          <TableCell className="text-right">{formatAmount(item.ei_amount)}</TableCell>
+                          <TableCell className="text-right">{formatAmount(item.ei_tax)}</TableCell>
+                          <TableCell className="text-right">{formatAmount(item.ei_total)}</TableCell>
+                          <TableCell className="text-right">{formatAmount(item.alloc_amount)}</TableCell>
+                          <TableCell>
+                            <Link
+                              to={`/project/${projectId}/expense/${item.list_seq}`}
+                              target="_blank"
+                              className="hover:text-primary text-gray-600">
+                              <SquareArrowOutUpRight className="mx-auto size-4" />
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="py-25 text-center text-gray-500">
+                          매칭된 비용 항목을 찾을 수 없습니다.
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </div>
