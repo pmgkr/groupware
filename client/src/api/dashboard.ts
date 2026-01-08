@@ -62,6 +62,7 @@ export interface Notice {
 export interface Calendar {
   sch_label: string;
   user_name: string;
+  user_id?: string; // 사용자 ID (아바타 fallback용)
   profile_image: string | null;
   sch_sdate?: string; // 시작일 (YYYY-MM-DD)
   sch_edate?: string; // 종료일 (YYYY-MM-DD)
