@@ -410,7 +410,7 @@ export default function BookWish() {
             <TableHead className="w-[88px]"></TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="text-[13px]">
           {posts.length > 0 ? (
             posts.map((post) => (
               <TableRow key={post.id} onClick={() => handleRowClick(post)} className="cursor-pointer">

@@ -113,7 +113,7 @@ export default function BoardList() {
             <TableHead className="w-[91px]">조회</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="text-[13px]">
           {/* 공지글: 항상 맨 위 */}
           {notices.map((post) => (
             <TableRow key={`notice-${post.n_seq}`} onClick={() => navigate(`${post.n_seq}`)} className="bg-primary-blue-100 cursor-pointer">

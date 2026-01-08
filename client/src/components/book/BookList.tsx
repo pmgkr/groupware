@@ -201,7 +201,7 @@ export default function BookList() {
             <TableHead className="w-[130px]">날짜</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="text-[13px]">
           {posts.length > 0 ? (
             posts.map((post, index) => {
               return (
