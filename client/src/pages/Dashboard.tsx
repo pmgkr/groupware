@@ -268,9 +268,15 @@ export default function Dashboard() {
                     </Avatar>
                     <div className="flex flex-col text-base">
                       <strong className="leading-[1.2]">{calendar.user_name}</strong>
-                      <Badge variant="dot" className={`p-0 ${getBadgeColor(calendar.sch_label)}`}>
-                        {calendar.sch_label}
-                      </Badge>
+                      {calendar.sch_label === '생일' ? (
+                        <Badge variant="dot" className="p-0 rounded-none before:content-['🎂'] before:bg-transparent before:w-auto before:h-auto before:rounded-none before:mr-0.5 border-none">
+                          <span className="text-[11px]">{calendar.sch_label}</span>
+                        </Badge>
+                      ) : (
+                        <Badge variant="dot" className={`p-0 border-none rounded-none ${getBadgeColor(calendar.sch_label)}`}>
+                          <span className="text-[11px]">{calendar.sch_label}</span>
+                        </Badge>
+                      )}
                     </div>
                   </li>
                   ))
