@@ -69,6 +69,12 @@ export interface Calendar {
   sch_stime?: string; // 시작시간 (HH:mm:ss)
   sch_etime?: string; // 종료시간 (HH:mm:ss)
   sch_isAllday?: 'Y' | 'N'; // 종일 여부
+  description?: string; // 설명
+  startDate?: string; // 시작일 (YYYY-MM-DD)
+  endDate?: string; // 종료일 (YYYY-MM-DD)
+  startTime?: string; // 시작시간 (HH:mm:ss)
+  endTime?: string; // 종료시간 (HH:mm:ss)
+  allDay?: boolean; // 종일 여부
 }
 
 // 회의실

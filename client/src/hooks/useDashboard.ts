@@ -189,12 +189,12 @@ export function useDashboard(selectedDate?: Date) {
     
     return {
       title: calendar.sch_label,
-      description: '',
-      startDate: startDate,
-      endDate: endDate,
-      startTime: startTime,
-      endTime: endTime,
-      allDay: allDay,
+      description: calendar.description || '',
+      startDate: calendar.startDate,
+      endDate: calendar.endDate,
+      startTime: calendar.startTime,
+      endTime: calendar.endTime,
+      allDay: calendar.allDay,
       category: category,
       eventType: calendar.sch_label,
       author: calendar.user_name,
@@ -205,16 +205,23 @@ export function useDashboard(selectedDate?: Date) {
   }, [selectedDate]);
 
   // 정렬된 캘린더 데이터 (useMemo로 메모이제이션하여 불필요한 재정렬 방지)
-  const calendarBadges = ['연차', '반차', '반반차', '공가', '외부 일정', '재택'];
+  // 정렬 순서: 연차 -> 오전 반차 -> 오후 반차 -> 공가 -> 외부일정 -> 재택
+  const getSortOrder = (label: string): number => {
+    if (label === '연차') return 1;
+    if (label === '오전 반차') return 2;
+    if (label === '오후 반차') return 3;
+    if (label === '공가') return 4;
+    if (label === '외부 일정') return 5;
+    if (label === '재택') return 6;
+    // 기타 항목은 맨 뒤로
+    return 999;
+  };
+
   const sortedCalendar = useMemo(() => {
     return [...calendar].sort((a, b) => {
-      const indexA = calendarBadges.indexOf(a.sch_label);
-      const indexB = calendarBadges.indexOf(b.sch_label);
-      // calendarBadges에 없는 경우 맨 뒤로 정렬
-      if (indexA === -1 && indexB === -1) return 0;
-      if (indexA === -1) return 1;
-      if (indexB === -1) return -1;
-      return indexA - indexB;
+      const orderA = getSortOrder(a.sch_label);
+      const orderB = getSortOrder(b.sch_label);
+      return orderA - orderB;
     });
   }, [calendar]);
 
