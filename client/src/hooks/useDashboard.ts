@@ -198,14 +198,17 @@ export function useDashboard(selectedDate?: Date) {
   }, []);
 
   // 정렬된 캘린더 데이터 (useMemo로 메모이제이션하여 불필요한 재정렬 방지)
-  // 정렬 순서: 연차 -> 오전 반차 -> 오후 반차 -> 공가 -> 외부일정 -> 재택
+  // 정렬 순서: 연차 -> 반차 -> 반반차 -> 공가 -> 외부일정 -> 재택
   const getSortOrder = (label: string): number => {
+    if (label === '생일') return 0;
     if (label === '연차') return 1;
-    if (label === '오전 반차') return 2;
+    if (label === '오전 반차')  return 2;
     if (label === '오후 반차') return 3;
-    if (label === '공가') return 4;
-    if (label === '외부 일정') return 5;
-    if (label === '재택') return 6;
+    if (label === '오전 반반차')  return 4;
+    if (label === '오후 반반차')  return 5;
+    if (label === '공가') return 6;
+    if (label === '외부 일정') return 7;
+    if (label === '재택') return 8;
     // 기타 항목은 맨 뒤로
     return 999;
   };
