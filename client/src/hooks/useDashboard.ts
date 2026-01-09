@@ -172,16 +172,9 @@ export function useDashboard(selectedDate?: Date) {
 
   // Calendar 데이터를 EventData 형식으로 변환 (useCallback으로 메모이제이션)
   const convertCalendarToEventData = useCallback((calendar: Calendar) => {
-    // 시작일/종료일이 있으면 사용하고, 없으면 선택된 날짜 사용
-    const startDate = calendar.sch_sdate || (selectedDate ? dayjs(selectedDate).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'));
-    const endDate = calendar.sch_edate || startDate;
-    
-    // 시작시간/종료시간이 있으면 사용하고, 없으면 기본값 사용
-    const startTime = calendar.sch_stime || '00:00:00';
-    const endTime = calendar.sch_etime || '23:59:59';
-    
-    // 종일 여부 확인 (기본값: true)
-    const allDay = calendar.sch_isAllday === 'Y' || (!calendar.sch_stime && !calendar.sch_etime);
+    const allDay = typeof calendar.allDay === 'boolean' 
+      ? calendar.allDay 
+      : calendar.allDay === 'Y';
     
     // sch_label에 따라 category 결정
     const vacationLabels = ['연차', '반차', '반반차', '공가'];
@@ -190,11 +183,11 @@ export function useDashboard(selectedDate?: Date) {
     return {
       title: calendar.sch_label,
       description: calendar.description || '',
-      startDate: calendar.startDate,
-      endDate: calendar.endDate,
-      startTime: calendar.startTime,
-      endTime: calendar.endTime,
-      allDay: calendar.allDay,
+      startDate: calendar.startDate || '',
+      endDate: calendar.endDate || '',
+      startTime: calendar.startTime || '',
+      endTime: calendar.endTime || '',
+      allDay: allDay,
       category: category,
       eventType: calendar.sch_label,
       author: calendar.user_name,
@@ -202,7 +195,7 @@ export function useDashboard(selectedDate?: Date) {
       teamId: undefined,
       status: '등록 완료' as const,
     };
-  }, [selectedDate]);
+  }, []);
 
   // 정렬된 캘린더 데이터 (useMemo로 메모이제이션하여 불필요한 재정렬 방지)
   // 정렬 순서: 연차 -> 오전 반차 -> 오후 반차 -> 공가 -> 외부일정 -> 재택
