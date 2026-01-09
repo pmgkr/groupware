@@ -42,45 +42,56 @@ export interface Book {
 export function toItBook(dto: BookDTO): Book {
   return {
     id: dto.bw_seq,
-    user: dto.b_user_id,
-    user_name: dto.b_user_name,
-    team_id: dto.b_team_id,
-    title: dto.b_title,
-    category: dto.b_category,
-    author: dto.b_author,
-    publish: dto.b_publish,
-    buylink: dto.b_buylink,
-    createdAt: dto.b_date || '',
-    purchaseAt: dto.b_buy_date || '',
-    comment: dto.b_comment,
-    status: dto.b_status,
+    user: dto.b_user_id ?? '',
+    user_name: dto.b_user_name ?? '',
+    team_id: Number(dto.b_team_id ?? 0),
+    title: dto.b_title ?? '',
+    category: dto.b_category ?? '',
+    author: dto.b_author ?? '',
+    publish: dto.b_publish ?? '',
+    buylink: dto.b_buylink ?? '',
+    createdAt: dto.b_date ?? '',
+    purchaseAt: dto.b_buy_date ?? '',
+    comment: dto.b_comment ?? '',
+    status: dto.b_status ?? '',
   };
 }
 
 //도서 목록
 export async function getBookList(
   page = 1,
-  size = 100,
+  size = 10,
   q?: string
 ): Promise<{ items: Book[]; total: number; page: number; size: number; pages: number }> {
   const query = q && q.trim() ? `&q=${encodeURIComponent(q)}` : '';
 
-  //서버에서 모든 데이터를 한 번에 받아오기 (페이징 무시)
-  const dto = await http<{ items: BookDTO[]; total: number; page: number; size: number; pages: number }>(
-    `/user/office/book/list?page=1&size=9999${query}`,
-    { method: 'GET' }
-  );
+  // ✅ 서버 pagination 그대로 사용
+  const dto = await http<{
+    items: BookDTO[];
+    total: number;
+    page: number;
+    size: number;
+    pages: number;
+  }>(`/user/office/book/list?page=${page}&size=${size}${query}`, {
+    method: 'GET',
+  });
 
   const teams = await getTeams();
 
-  // "완료" 상태만 필터링
-  const filtered = dto.items.filter((item) => item.b_status?.trim() === '완료');
-  //  클라이언트에서 페이지 나누기
-  const startIdx = (page - 1) * size;
-  const pagedItems = filtered.slice(startIdx, startIdx + size);
+  // ✅ 서버에서 이미 pagination 된 items 그대로 사용
+  /* const items = dto.items
+    .filter((item) => (item.b_status ?? '').trim() === '완료')
+    .map((item) => {
+      const book = toItBook(item);
+      const matchedTeam = teams.find((t) => Number(t.team_id) === Number(book.team_id));
 
-  const items = pagedItems.map((dto) => {
-    const book = toItBook(dto);
+      return {
+        ...book,
+        team_name: matchedTeam ? matchedTeam.team_name : '소속없음',
+      };
+    }); */
+  const items = dto.items.map((item) => {
+    const book = toItBook(item);
     const matchedTeam = teams.find((t) => Number(t.team_id) === Number(book.team_id));
 
     return {
@@ -91,10 +102,10 @@ export async function getBookList(
 
   return {
     items,
-    total: filtered.length,
-    page,
-    size,
-    pages: Math.ceil(filtered.length / size),
+    total: dto.total,
+    page: dto.page,
+    size: dto.size,
+    pages: dto.pages,
   };
 }
 
