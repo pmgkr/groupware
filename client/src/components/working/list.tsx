@@ -564,13 +564,13 @@ export default function WorkingList({
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className={`text-sm ${holidayNames[5] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(5)}(토)</span>
+                <span className={`text-sm ${holidayNames[5] ? 'text-red-600' : 'text-blue-600'}`}>{getDayDate(5)}(토)</span>
                 {holidayNames[5] && <span className="text-xs text-red-600">{holidayNames[5]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className={`text-sm ${holidayNames[6] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(6)}(일)</span>
+                <span className="text-sm text-red-600">{getDayDate(6)}(일)</span>
                 {holidayNames[6] && <span className="text-xs text-red-600">{holidayNames[6]}</span>}
               </div>
             </TableHead>

@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { useDashboard } from '@/hooks/useDashboard';
-import { getProfileImageUrl } from '@/utils';
+import { getProfileImageUrl, getAvatarFallback } from '@/utils';
 
 import Header from '@/layouts/Header';
 
@@ -254,8 +254,10 @@ export default function Dashboard() {
                 calendarData.map((calendar, index) => (
                   <li 
                     key={`${calendar.user_name}-${calendar.sch_label}-${index}`} 
-                    className="flex items-center gap-x-2 cursor-pointer hover:bg-gray-50 rounded-md p-1 transition-colors"
-                    onClick={() => handleCalendarClick(calendar)}
+                    className={`flex items-center gap-x-2 rounded-md p-1 transition-colors ${
+                      calendar.sch_label === '생일' ? '' : 'cursor-pointer hover:bg-gray-50'
+                    }`}
+                    onClick={calendar.sch_label === '생일' ? undefined : () => handleCalendarClick(calendar)}
                   >
                     <Avatar>
                       <AvatarImage 
@@ -263,14 +265,20 @@ export default function Dashboard() {
                         alt={calendar.user_name} 
                       />
                       <AvatarFallback>
-                        {calendar.user_name?.slice(0, 2).toUpperCase() || 'CN'}
+                        {getAvatarFallback(calendar.user_id || '')}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col text-base">
                       <strong className="leading-[1.2]">{calendar.user_name}</strong>
-                      <Badge variant="dot" className={`p-0 ${getBadgeColor(calendar.sch_label)}`}>
-                        {calendar.sch_label}
-                      </Badge>
+                      {calendar.sch_label === '생일' ? (
+                        <Badge variant="dot" className="p-0 rounded-none before:content-['🎂'] before:bg-transparent before:w-auto before:h-auto before:rounded-none before:mr-0.5 border-none">
+                          <span className="text-[11px]">{calendar.sch_label}</span>
+                        </Badge>
+                      ) : (
+                        <Badge variant="dot" className={`p-0 border-none rounded-none ${getBadgeColor(calendar.sch_label)}`}>
+                          <span className="text-[11px]">{calendar.sch_label}</span>
+                        </Badge>
+                      )}
                     </div>
                   </li>
                   ))

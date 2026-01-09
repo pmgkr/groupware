@@ -172,16 +172,9 @@ export function useDashboard(selectedDate?: Date) {
 
   // Calendar 데이터를 EventData 형식으로 변환 (useCallback으로 메모이제이션)
   const convertCalendarToEventData = useCallback((calendar: Calendar) => {
-    // 시작일/종료일이 있으면 사용하고, 없으면 선택된 날짜 사용
-    const startDate = calendar.sch_sdate || (selectedDate ? dayjs(selectedDate).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'));
-    const endDate = calendar.sch_edate || startDate;
-    
-    // 시작시간/종료시간이 있으면 사용하고, 없으면 기본값 사용
-    const startTime = calendar.sch_stime || '00:00:00';
-    const endTime = calendar.sch_etime || '23:59:59';
-    
-    // 종일 여부 확인 (기본값: true)
-    const allDay = calendar.sch_isAllday === 'Y' || (!calendar.sch_stime && !calendar.sch_etime);
+    const allDay = typeof calendar.allDay === 'boolean' 
+      ? calendar.allDay 
+      : calendar.allDay === 'Y';
     
     // sch_label에 따라 category 결정
     const vacationLabels = ['연차', '반차', '반반차', '공가'];
@@ -189,11 +182,11 @@ export function useDashboard(selectedDate?: Date) {
     
     return {
       title: calendar.sch_label,
-      description: '',
-      startDate: startDate,
-      endDate: endDate,
-      startTime: startTime,
-      endTime: endTime,
+      description: calendar.description || '',
+      startDate: calendar.startDate || '',
+      endDate: calendar.endDate || '',
+      startTime: calendar.startTime || '',
+      endTime: calendar.endTime || '',
       allDay: allDay,
       category: category,
       eventType: calendar.sch_label,
@@ -202,19 +195,29 @@ export function useDashboard(selectedDate?: Date) {
       teamId: undefined,
       status: '등록 완료' as const,
     };
-  }, [selectedDate]);
+  }, []);
 
   // 정렬된 캘린더 데이터 (useMemo로 메모이제이션하여 불필요한 재정렬 방지)
-  const calendarBadges = ['연차', '반차', '반반차', '공가', '외부 일정', '재택'];
+  // 정렬 순서: 연차 -> 반차 -> 반반차 -> 공가 -> 외부일정 -> 재택
+  const getSortOrder = (label: string): number => {
+    if (label === '생일') return 0;
+    if (label === '연차') return 1;
+    if (label === '오전 반차')  return 2;
+    if (label === '오후 반차') return 3;
+    if (label === '오전 반반차')  return 4;
+    if (label === '오후 반반차')  return 5;
+    if (label === '공가') return 6;
+    if (label === '외부 일정') return 7;
+    if (label === '재택') return 8;
+    // 기타 항목은 맨 뒤로
+    return 999;
+  };
+
   const sortedCalendar = useMemo(() => {
     return [...calendar].sort((a, b) => {
-      const indexA = calendarBadges.indexOf(a.sch_label);
-      const indexB = calendarBadges.indexOf(b.sch_label);
-      // calendarBadges에 없는 경우 맨 뒤로 정렬
-      if (indexA === -1 && indexB === -1) return 0;
-      if (indexA === -1) return 1;
-      if (indexB === -1) return -1;
-      return indexA - indexB;
+      const orderA = getSortOrder(a.sch_label);
+      const orderB = getSortOrder(b.sch_label);
+      return orderA - orderB;
     });
   }, [calendar]);
 

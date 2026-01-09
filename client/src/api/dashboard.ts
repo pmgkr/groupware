@@ -62,12 +62,19 @@ export interface Notice {
 export interface Calendar {
   sch_label: string;
   user_name: string;
+  user_id?: string; // 사용자 ID (아바타 fallback용)
   profile_image: string | null;
   sch_sdate?: string; // 시작일 (YYYY-MM-DD)
   sch_edate?: string; // 종료일 (YYYY-MM-DD)
   sch_stime?: string; // 시작시간 (HH:mm:ss)
   sch_etime?: string; // 종료시간 (HH:mm:ss)
   sch_isAllday?: 'Y' | 'N'; // 종일 여부
+  description?: string; // 설명
+  startDate?: string; // 시작일 (YYYY-MM-DD)
+  endDate?: string; // 종료일 (YYYY-MM-DD)
+  startTime?: string; // 시작시간 (HH:mm:ss)
+  endTime?: string; // 종료시간 (HH:mm:ss)
+  allDay?: boolean | string; // 종일 여부 (boolean 또는 "Y"/"N" 문자열)
 }
 
 // 회의실
