@@ -254,8 +254,10 @@ export default function Dashboard() {
                 calendarData.map((calendar, index) => (
                   <li 
                     key={`${calendar.user_name}-${calendar.sch_label}-${index}`} 
-                    className="flex items-center gap-x-2 cursor-pointer hover:bg-gray-50 rounded-md p-1 transition-colors"
-                    onClick={() => handleCalendarClick(calendar)}
+                    className={`flex items-center gap-x-2 rounded-md p-1 transition-colors ${
+                      calendar.sch_label === '생일' ? '' : 'cursor-pointer hover:bg-gray-50'
+                    }`}
+                    onClick={calendar.sch_label === '생일' ? undefined : () => handleCalendarClick(calendar)}
                   >
                     <Avatar>
                       <AvatarImage 
