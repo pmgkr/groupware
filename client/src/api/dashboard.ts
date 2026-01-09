@@ -74,7 +74,7 @@ export interface Calendar {
   endDate?: string; // 종료일 (YYYY-MM-DD)
   startTime?: string; // 시작시간 (HH:mm:ss)
   endTime?: string; // 종료시간 (HH:mm:ss)
-  allDay?: boolean; // 종일 여부
+  allDay?: boolean | string; // 종일 여부 (boolean 또는 "Y"/"N" 문자열)
 }
 
 // 회의실
