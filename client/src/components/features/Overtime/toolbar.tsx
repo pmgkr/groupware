@@ -178,7 +178,7 @@ export default function OvertimeToolbar({
   // 상태 옵션 (탭에 따라 다름)
   const statusOptions = useMemo(() => {
     if (activeTab === 'weekday') {
-      // 평일 추가근무: 승인대기, 승인완료, 취소완료
+      // 평일 연장장근무: 승인대기, 승인완료, 취소완료
       return [
         { value: 'pending', label: '승인대기' },
         { value: 'approved', label: '승인완료' },
@@ -228,7 +228,7 @@ export default function OvertimeToolbar({
                 ? 'bg-primary hover:bg-primary active:bg-primary text-white'
                 : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
             }`}>
-            평일 추가근무
+            평일 연장근무
           </Button>
           <Button
             onClick={() => onTabChange('weekend')}
