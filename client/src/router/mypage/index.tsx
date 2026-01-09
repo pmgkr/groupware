@@ -12,7 +12,7 @@ export const mypageRoutes: RouteObject = {
     nav: [
       { to: '/mypage', label: '내 프로필', end: true },
       { to: '/mypage/vacation', label: '휴가 내역' },
-      { to: '/mypage/overtime', label: '추가근무 내역' },
+      { to: '/mypage/overtime', label: '연장근무 내역' },
       { to: '/mypage/expense', label: '내 비용 내역' },
       { to: '/mypage/invoice', label: '내 인보이스' },
     ],

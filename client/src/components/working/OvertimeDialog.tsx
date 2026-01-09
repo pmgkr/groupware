@@ -259,7 +259,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     const timeRange = isWeekendOrHolidayDay
       ? (startText && endText ? `${startText}~${endText}` : startText || endText || '')
       : (endText ? `~${endText}` : '');
-    const notiTitle = `${isWeekendOrHolidayDay ? '휴일근무' : '언장근무'} (${overtimeDateText}${timeRange ? ` ${timeRange}` : ''})`;
+    const notiTitle = `${isWeekendOrHolidayDay ? '휴일근무' : '연장근무'} (${overtimeDateText}${timeRange ? ` ${timeRange}` : ''})`;
 
     const selfUrl = (user.user_level === 'manager' || user.user_level === 'admin') ? '/manager/overtime' : '/mypage/overtime';
     const managerUrl = '/manager/overtime';
