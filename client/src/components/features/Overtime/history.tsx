@@ -55,7 +55,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
     }
   }, [page, searchParams, setSearchParams]);
   
-  // 추가근무 다이얼로그 state
+  // 연장근무 다이얼로그 state
   const [isOvertimeDialogOpen, setIsOvertimeDialogOpen] = useState(false);
   const [isReapplyDialogOpen, setIsReapplyDialogOpen] = useState(false);
   const [selectedOvertime, setSelectedOvertime] = useState<MyOvertimeItem | null>(null);
@@ -107,9 +107,9 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
       return itemYear === selectedYear;
     });
     
-    // 탭 필터 (평일 추가근무 vs 휴일 근무)
+    // 탭 필터 (평일 연장근무 vs 휴일 근무)
     if (activeTab === 'weekday') {
-      // 평일 추가근무: weekday
+      // 평일 연장근무: weekday
       result = result.filter(item => item.ot_type === 'weekday' || item.ot_type === 'week');
     } else if (activeTab === 'weekend') {
       // 휴일 근무: saturday, sunday, holiday
@@ -265,19 +265,19 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
     };
   }, [activeTab]);
 
-  // 추가근무 클릭 핸들러
+  // 연장근무 클릭 핸들러
   const handleOvertimeClick = async (item: MyOvertimeItem) => {
     setSelectedOvertime(item);
     setIsOvertimeDialogOpen(true);
   };
 
-  // 추가근무 다이얼로그 닫기
+  // 연장근무 다이얼로그 닫기
   const handleCloseOvertimeDialog = () => {
     setIsOvertimeDialogOpen(false);
     setSelectedOvertime(null);
   };
 
-  // 추가근무 취소 핸들러
+  // 연장근무 취소 핸들러
   const handleCancelOvertime = async () => {
     if (!selectedOvertime?.id) return;
     
@@ -308,7 +308,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
     if (!selectedOvertime) return;
     
     try {
-      // 추가근무 API 파라미터 구성
+      // 연장근무 API 파라미터 구성
       const selectedDay = convertToWorkData(selectedOvertime);
       const apiParams = buildOvertimeApiParams(selectedDay, overtimeData, []);
       
@@ -321,7 +321,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
       handleCloseReapplyDialog();
     } catch (error: any) {
       const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
-      alert(`추가근무 재신청에 실패했습니다.\n오류: ${errorMessage}`);
+      alert(`연장근무 재신청에 실패했습니다.\n오류: ${errorMessage}`);
     }
   };
 
@@ -377,7 +377,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
       <Table key={`table-${page}`} variant="primary" align="center" className="w-full">
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="text-center p-2 w-[10%]">추가근무날짜</TableHead>
+            <TableHead className="text-center p-2 w-[10%]">연장근무날짜</TableHead>
             {activeTab === 'weekday' ? (
               <>
                 <TableHead className="text-center p-2 w-[10%]">예상퇴근시간</TableHead>
@@ -493,7 +493,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
         </div>
       )}
 
-      {/* 추가근무 다이얼로그 */}
+      {/* 연장근무 다이얼로그 */}
       {selectedOvertime && (
         <OvertimeViewDialog
           isOpen={isOvertimeDialogOpen}
@@ -508,7 +508,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
         />
       )}
 
-      {/*추가근무 재신청 다이얼로그 */}
+      {/*연장근무 재신청 다이얼로그 */}
       {selectedOvertime && (
         <OvertimeDialog
           isOpen={isReapplyDialogOpen}

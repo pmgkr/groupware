@@ -53,7 +53,7 @@ export default function OvertimeToolbar({
   
   const yearOptions = getGrowingYears().reverse();
 
-  // 추가근무 필터 state
+  // 연장근무 필터 state
   const [filters, setFilters] = useState<OvertimeFilters>({
     year: new Date().getFullYear().toString(),
     status: page === 'admin' && activeTab === 'weekend' ? ['approved'] : [], // admin이고 휴일일 때 기본값: 보상대기
@@ -124,7 +124,7 @@ export default function OvertimeToolbar({
         onTeamSelect([]);
       }
     } else {
-      // 추가근무 필터 핸들러
+      // 연장근무 필터 핸들러
       const newFilters = { ...filters };
       
       if (id === 'year') {
