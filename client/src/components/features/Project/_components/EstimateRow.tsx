@@ -373,47 +373,65 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
             control={control}
             name={`items.${idx}.unit_price`}
             render={({ field }) => {
-              const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+              const inputRef = useRef<HTMLInputElement>(null);
+
+              // -----------------------------
+              // 화면 표시값 (- 포함)
+              // -----------------------------
+              const valueNum = Number(field.value);
+              const isNegative = valueNum < 0;
+
+              const displayValue =
+                field.value === '' || field.value == null ? '' : `${isNegative ? '-' : ''}${formatAmount(Math.abs(valueNum))}`;
+
+              const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 const input = e.target;
                 const rawPrev = input.value;
-
                 const cursorPrev = input.selectionStart ?? rawPrev.length;
 
-                // 🔍 입력 키 확인 (Backspace or Delete)
-                const isDelete = (e.nativeEvent as InputEvent)?.inputType === 'deleteContentForward';
-                const isBackspace = (e.nativeEvent as InputEvent)?.inputType === 'deleteContentBackward';
+                const inputType = (e.nativeEvent as InputEvent)?.inputType;
+                const isDelete = inputType === 'deleteContentForward';
+                const isBackspace = inputType === 'deleteContentBackward';
 
-                // 숫자만 추출 (format 초기 remove)
-                const prevDigitsText = rawPrev.replace(/[^\d]/g, '');
-                const totalDigits = prevDigitsText.length;
+                const hasMinus = rawPrev.startsWith('-');
+                const rawDigits = rawPrev.replace(/[^\d]/g, '');
 
-                // ✔ Backspace: 커서 앞의 숫자 개수
-                const prevDigitsBeforeCursor = rawPrev.slice(0, cursorPrev).replace(/[^\d]/g, '').length;
+                // ============================
+                // 🔥 핵심: "-" 단독 입력 허용
+                // ============================
+                if (hasMinus && rawDigits === '') {
+                  field.onChange('-'); // RHF에 문자열 상태 유지
+                  setValue(`items.${idx}.amount`, 0);
 
-                // ✔ Delete: 커서 뒤 숫자 개수
-                const prevDigitsAfterCursor = rawPrev.slice(cursorPrev).replace(/[^\d]/g, '').length;
-
-                // ===============================
-                //   RAW 숫자 파싱 + 정리
-                // ===============================
-                let raw = rawPrev.replace(/[^\d]/g, '');
-
-                if (raw === '') {
-                  field.onChange('');
-                  requestAnimationFrame(() => input.setSelectionRange(0, 0));
+                  requestAnimationFrame(() => {
+                    input.setSelectionRange(1, 1);
+                  });
                   return;
                 }
 
-                const formatted = formatAmount(Number(raw));
+                // 완전 빈 값
+                if (!hasMinus && rawDigits === '') {
+                  field.onChange('');
+                  setValue(`items.${idx}.amount`, 0);
 
-                // ===============================
-                //   커서 재배치
-                // ===============================
+                  requestAnimationFrame(() => {
+                    input.setSelectionRange(0, 0);
+                  });
+                  return;
+                }
+
+                // ============================
+                // 숫자 포맷 처리
+                // ============================
+                const formatted = formatAmount(Number(rawDigits));
+
+                const prevDigitsBeforeCursor = rawPrev.slice(0, cursorPrev).replace(/[^\d]/g, '').length;
+
+                const prevDigitsAfterCursor = rawPrev.slice(cursorPrev).replace(/[^\d]/g, '').length;
 
                 let cursorNew = 0;
 
                 if (isBackspace) {
-                  // 🔥 Backspace → 커서 앞의 숫자 개수(prevDigitsBeforeCursor)를 기준으로 위치 계산
                   let seen = 0;
                   for (let i = 0; i < formatted.length; i++) {
                     if (/\d/.test(formatted[i])) seen++;
@@ -423,7 +441,6 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
                     }
                   }
                 } else if (isDelete) {
-                  // 🔥 Delete → 커서 뒤의 숫자(prevDigitsAfterCursor) 개수를 기준으로 커서 계산
                   let seen = 0;
                   for (let i = formatted.length - 1; i >= 0; i--) {
                     if (/\d/.test(formatted[i])) seen++;
@@ -433,7 +450,6 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
                     }
                   }
                 } else {
-                  // 기본 입력 → prevDigitsBeforeCursor 유지
                   let seen = 0;
                   for (let i = 0; i < formatted.length; i++) {
                     if (/\d/.test(formatted[i])) seen++;
@@ -444,29 +460,30 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
                   }
                 }
 
-                // RHF raw 저장
-                const price = Number(raw);
-                field.onChange(raw);
+                const signedValue = hasMinus ? -Number(rawDigits) : Number(rawDigits);
 
-                requestAnimationFrame(() => {
-                  input.setSelectionRange(cursorNew, cursorNew);
-                });
+                field.onChange(signedValue);
 
-                // 즉시 amount 업데이트
                 const qty = Number(row?.qty || 0);
-                const amt = Math.round(qty * price); // 반올림 적용
+                const amt = Math.round(qty * signedValue);
 
                 setValue(`items.${idx}.amount`, amt, {
                   shouldDirty: true,
                   shouldTouch: false,
                 });
+
+                requestAnimationFrame(() => {
+                  const offset = hasMinus ? 1 : 0;
+                  input.setSelectionRange(cursorNew + offset, cursorNew + offset);
+                });
               };
 
               return (
                 <Input
+                  ref={inputRef}
                   className={cn('h-9 text-right', isDirty('unit_price') && dirtyClass)}
-                  value={formatAmount(field.value || 0)}
-                  onChange={handlePriceChange}
+                  value={displayValue}
+                  onChange={handleChange}
                 />
               );
             }}
