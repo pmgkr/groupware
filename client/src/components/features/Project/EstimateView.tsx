@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
 import { Link, useOutletContext, useNavigate, useParams } from 'react-router';
-import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
+import { useUser } from '@/hooks/useUser';
 import { getEstimateView, type EstimateViewDTO } from '@/api';
 import { formatKST, formatAmount, displayUnitPrice, normalizeAttachmentUrl } from '@/utils';
 
+import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import ExpenseItemDialog from './_components/ExpenseItemDialog';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -11,23 +12,23 @@ import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 
 import { format } from 'date-fns';
-import { Info, OctagonAlert, Paperclip, MessageSquareMore, Link as LinkIcon } from 'lucide-react';
+import { OctagonAlert, Paperclip, MessageSquareMore, Link as LinkIcon } from 'lucide-react';
 import { Download } from '@/assets/images/icons';
 
 export default function EstimateView() {
   const navigate = useNavigate();
+  const { user_id } = useUser();
   const { estId, projectId } = useParams();
 
   const { addAlert } = useAppAlert();
   const { addDialog } = useAppDialog();
 
   const [loading, setLoading] = useState(true);
-  const { data } = useOutletContext<ProjectLayoutContext>();
+  const { data, members } = useOutletContext<ProjectLayoutContext>();
   const [estData, setEstData] = useState<EstimateViewDTO | null>(null);
   const [seletedEstId, setSelectedEstId] = useState<number | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false); // 매칭된 비용 항목 Dialog State
@@ -63,6 +64,8 @@ export default function EstimateView() {
       }
     })();
   }, [estId]);
+
+  const isProjectMember = useMemo(() => members.some((m) => m.user_id === user_id), [members, user_id]);
 
   if (!estData)
     return (
@@ -219,7 +222,7 @@ export default function EstimateView() {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-800">견적서 항목</h2>
           <div className="flex gap-2">
-            {(estData.header.est_valid === 'Y' || estData.header.est_valid === 'S') && (
+            {(estData.header.est_valid === 'Y' || estData.header.est_valid === 'S') && isProjectMember && (
               <Button type="button" variant="outline" size="sm" onClick={handleEstEdit}>
                 견적서 수정
               </Button>
@@ -378,8 +381,10 @@ export default function EstimateView() {
                     <TableCell colSpan={3} className="bg-primary-blue-150 font-bold text-gray-900">
                       Grand Total
                     </TableCell>
-                    <TableCell className="bg-primary-blue-150 text-right font-bold text-gray-900">{formatAmount(row.amount)}</TableCell>
-                    <TableCell className="bg-primary-blue-150 text-right font-bold">{formatAmount(row.ava_amount)}</TableCell>
+                    <TableCell className="bg-primary-blue-150 text-right font-bold text-gray-900">
+                      {formatAmount(estData.header.est_amount)}
+                    </TableCell>
+                    <TableCell className="bg-primary-blue-150 text-right font-bold">{formatAmount(estData.header.est_budget)}</TableCell>
                     <TableCell className="bg-primary-blue-150"></TableCell>
                   </>
                 )}
