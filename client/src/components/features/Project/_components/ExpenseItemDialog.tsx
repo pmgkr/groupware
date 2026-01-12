@@ -34,7 +34,11 @@ export default function ExpenseItemDialog({ open, ei_seq, onClose }: ExpenseDial
 
   return (
     <>
-      <Dialog open={open}>
+      <Dialog
+        open={open}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) onClose();
+        }}>
         <DialogContent className="max-w-5xl">
           <DialogHeader>
             <DialogTitle>비용 항목 조회</DialogTitle>
