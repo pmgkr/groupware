@@ -94,7 +94,7 @@ export interface EstimateHeaderView extends EstimateHeader {
   user_nm: string;
   est_amount: number;
   est_budget: number;
-  exp_total?: number;
+  exp_total: number;
   wdate: string;
 }
 
