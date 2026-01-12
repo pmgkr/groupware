@@ -35,7 +35,7 @@ export default function Overview({
               ? 'bg-primary hover:bg-primary active:bg-primary text-white'
               : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
           }`}>
-          평일 추가근무
+          평일 연장근무
         </Button>
         <Button
           onClick={() => onTabChange('weekend')}

@@ -54,13 +54,15 @@ export interface WorkingListProps {
   loading?: boolean;
   weekStartDate?: Date;
   page?: 'admin' | 'manager';
+  onRefresh?: () => void;
 }
 
 export default function WorkingList({ 
   data = [], 
   loading = false,
   weekStartDate,
-  page
+  page,
+  onRefresh
 }: WorkingListProps) {
   const { user } = useAuth();
   
@@ -177,7 +179,7 @@ export default function WorkingList({
       const detail = await managerOvertimeApi.getManagerOvertimeDetail(parseInt(overtimeId));
       setOvertimeDetailData(detail);
     } catch (error) {
-      console.error('추가근무 상세 조회 실패:', error);
+      // 에러 무시
     }
   };
 
@@ -194,10 +196,13 @@ export default function WorkingList({
     
     try {
       await managerOvertimeApi.approveOvertime(parseInt(selectedOvertime.overtimeId));
-      // 데이터 새로고침을 위해 부모 컴포넌트에 알림 (나중에 구현)
-      window.location.reload(); // 임시로 새로고침
+      // 데이터 새로고침
+      if (onRefresh) {
+        onRefresh();
+      } else {
+        window.location.reload();
+      }
     } catch (error) {
-      console.error('승인 실패:', error);
       throw error;
     }
   };
@@ -208,10 +213,13 @@ export default function WorkingList({
     
     try {
       await managerOvertimeApi.rejectOvertime(parseInt(selectedOvertime.overtimeId), reason);
-      // 데이터 새로고침을 위해 부모 컴포넌트에 알림 (나중에 구현)
-      window.location.reload(); // 임시로 새로고침
+      // 데이터 새로고침
+      if (onRefresh) {
+        onRefresh();
+      } else {
+        window.location.reload();
+      }
     } catch (error) {
-      console.error('반려 실패:', error);
       throw error;
     }
   };
@@ -243,15 +251,6 @@ export default function WorkingList({
     if (!selectedWorkTime) return;
     
     try {
-      const endpoint = page === 'admin' ? '/admin/wlog/update' : '/manager/wlog/update';
-      console.log('✅ 출퇴근 시간 수정 요청:', {
-        user_id: selectedWorkTime.userId,
-        tdate: selectedWorkTime.date,
-        stime: startTime ? `${startTime}:00` : '',
-        etime: endTime ? `${endTime}:00` : '',
-        endpoint
-      });
-      
       if (page === 'admin') {
         await managerWorkingApi.updateAdminWorkTime(
           selectedWorkTime.userId,
@@ -268,16 +267,13 @@ export default function WorkingList({
         );
       }
       
-      console.log('✅ 출퇴근 시간 수정 성공!');
-      // 데이터 새로고침
-      window.location.reload();
+      // 데이터 새로고침 (컴포넌트만 새로고침)
+      if (onRefresh) {
+        onRefresh();
+      } else {
+        window.location.reload();
+      }
     } catch (error: any) {
-      console.error('❌ 출퇴근 시간 수정 실패:', error);
-      console.error('에러 상세:', {
-        message: error?.message,
-        status: error?.status,
-        response: error?.response
-      });
       throw error;
     }
   };
@@ -568,13 +564,13 @@ export default function WorkingList({
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className={`text-sm ${holidayNames[5] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(5)}(토)</span>
+                <span className={`text-sm ${holidayNames[5] ? 'text-red-600' : 'text-blue-600'}`}>{getDayDate(5)}(토)</span>
                 {holidayNames[5] && <span className="text-xs text-red-600">{holidayNames[5]}</span>}
               </div>
             </TableHead>
             <TableHead className="w-[8%]">
               <div className="flex flex-col">
-                <span className={`text-sm ${holidayNames[6] ? 'text-red-600' : 'text-gray-800'}`}>{getDayDate(6)}(일)</span>
+                <span className="text-sm text-red-600">{getDayDate(6)}(일)</span>
                 {holidayNames[6] && <span className="text-xs text-red-600">{holidayNames[6]}</span>}
               </div>
             </TableHead>
@@ -707,7 +703,11 @@ export default function WorkingList({
             onCancel={async () => {
               if (selectedOvertime.overtimeId) {
                 await workingApi.cancelOvertime(parseInt(selectedOvertime.overtimeId));
-                window.location.reload();
+                if (onRefresh) {
+                  onRefresh();
+                } else {
+                  window.location.reload();
+                }
               }
             }}
             onApprove={isManager && !isOwnRequest ? handleApproveOvertime : undefined}
@@ -742,6 +742,7 @@ export default function WorkingList({
           isOpen={isWorkTimeEditDialogOpen}
           onClose={handleCloseWorkTimeEditDialog}
           onSave={handleSaveWorkTime}
+          userId={selectedWorkTime.userId}
           userName={selectedWorkTime.userName}
           date={selectedWorkTime.date}
           startTime={selectedWorkTime.startTime}

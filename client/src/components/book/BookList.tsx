@@ -29,8 +29,14 @@ export default function BookList() {
   const fetchBookList = async (pageNum = 1, query = '') => {
     try {
       const data = await getBookList(pageNum, pageSize, query);
+
       setPosts(data.items);
       setTotal(data.total);
+      setPageInfo({
+        page: data.page,
+        totalPages: data.pages,
+        total: data.total,
+      });
     } catch (err) {
       console.error('❌ booklist 불러오기 실패:', err);
       setPosts([]);
@@ -38,7 +44,7 @@ export default function BookList() {
   };
   useEffect(() => {
     fetchBookList(page, searchQuery);
-  }, [page]);
+  }, [page, searchQuery]);
 
   const handleSearch = () => {
     setPage(1);
@@ -192,7 +198,7 @@ export default function BookList() {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[80px]">번호</TableHead>
-            <TableHead className="w-[130px]">카테고리</TableHead>
+            <TableHead className="w-[200px]">카테고리</TableHead>
             <TableHead className="">도서명</TableHead>
             <TableHead className="w-[200px]">저자</TableHead>
             <TableHead className="w-[130px]">출판사</TableHead>
@@ -201,7 +207,7 @@ export default function BookList() {
             <TableHead className="w-[130px]">날짜</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="text-[13px]">
           {posts.length > 0 ? (
             posts.map((post, index) => {
               return (
@@ -236,12 +242,7 @@ export default function BookList() {
 
       {posts.length > 0 && total > 1 && (
         <div className="mt-5">
-          <AppPagination
-            totalPages={Math.ceil(total / pageSize)}
-            initialPage={page}
-            visibleCount={5}
-            onPageChange={(p) => setPage(p)} //부모 state 업데이트
-          />
+          <AppPagination totalPages={pageInfo.totalPages} initialPage={page} visibleCount={5} onPageChange={(p) => setPage(p)} />
         </div>
       )}
     </div>

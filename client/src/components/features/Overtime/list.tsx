@@ -92,7 +92,7 @@ export default function OvertimeList({
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
   const [checkAll, setCheckAll] = useState(false);
   
-  // 추가근무 다이얼로그 state
+  // 연장근무 다이얼로그 state
   const [isOvertimeDialogOpen, setIsOvertimeDialogOpen] = useState(false);
   const [isReapplyDialogOpen, setIsReapplyDialogOpen] = useState(false);
   const [selectedOvertime, setSelectedOvertime] = useState<OvertimeItem | null>(null);
@@ -222,9 +222,9 @@ export default function OvertimeList({
   const filteredData = useMemo(() => {
     let result = [...allData];
     
-    // 탭 필터 (평일 추가근무 vs 주말 근무)
+    // 탭 필터 (평일 연장근무 vs 주말 근무)
     if (activeTab === 'weekday') {
-      // 평일 추가근무: weekday
+      // 평일 연장근무: weekday
       result = result.filter(item => item.ot_type === 'weekday');
     } else if (activeTab === 'weekend') {
       // 주말 근무: saturday, sunday, holiday
@@ -343,7 +343,7 @@ export default function OvertimeList({
   // 선택 가능한 상태 확인 헬퍼 함수 (isPage prop 기반)
   const isSelectableStatus = useCallback((status: string) => {
     if (isPage === 'admin') {
-      // admin 페이지: 평일 추가근무는 선택 불가, 휴일 근무는 보상대기(T)만 선택 가능
+      // admin 페이지: 평일 연장근무는 선택 불가, 휴일 근무는 보상대기(T)만 선택 가능
       if (activeTab === 'weekday') return false;
       return status === 'T';
     } else {
@@ -381,12 +381,12 @@ export default function OvertimeList({
     setCheckAll(allSelected);
   }, [checkedItems, paginatedData, isSelectableStatus]);
 
-  // 추가근무 클릭 핸들러
+  // 연장근무 클릭 핸들러
   const handleOvertimeClick = async (item: OvertimeItem) => {
     setSelectedOvertime(item);
     setIsOvertimeDialogOpen(true);
     
-    // 추가근무 상세 정보 조회
+    // 연장근무 상세 정보 조회
     try {
       if (isPage === 'admin') {
         const detail = await adminOvertimeApi.getOvertimeDetail(item.id);
@@ -399,7 +399,7 @@ export default function OvertimeList({
     }
   };
 
-  // 추가근무 다이얼로그 닫기
+  // 연장근무 다이얼로그 닫기
   const handleCloseOvertimeDialog = () => {
     setIsOvertimeDialogOpen(false);
     setSelectedOvertime(null);
@@ -414,10 +414,10 @@ export default function OvertimeList({
     if (!item?.user_id) return;
     const dateText = item.ot_date ? dayjs(item.ot_date).format('YYYY-MM-DD') : '';
     const isComp = kind === 'compensation';
-    const notiTitle = `${isComp ? '보상 지급 완료' : '추가근무 승인'}${dateText ? ` (${dateText})` : ''}`;
+    const notiTitle = `${isComp ? '보상 지급 완료' : '연장근무 승인'}${dateText ? ` (${dateText})` : ''}`;
     const notiMessage = isComp
       ? '보상 지급이 승인되었습니다.'
-      : '추가근무가 승인되었습니다.';
+      : '연장근무가 승인되었습니다.';
 
     try {
       await notificationApi.registerNotification({
@@ -430,11 +430,11 @@ export default function OvertimeList({
         noti_url: '/mypage/overtime',
       });
     } catch (e) {
-      console.error('추가근무 알림 전송 실패:', e);
+      console.error('연장근무 알림 전송 실패:', e);
     }
   };
 
-  // 추가근무 승인 핸들러
+  // 연장근무 승인 핸들러
   const handleApproveOvertime = async () => {
     if (!selectedOvertime?.id) return;
     
@@ -447,7 +447,7 @@ export default function OvertimeList({
       await notifyApplicant(selectedOvertime, 'approve');
       addAlert({
         title: '승인 완료',
-        message: '추가근무 요청을 승인했했습니다.',
+        message: '연장근무 요청을 승인했했습니다.',
         icon: <CheckCircle />,
         duration: 3000,
       });
@@ -456,7 +456,7 @@ export default function OvertimeList({
     } catch (error) {
       addAlert({
         title: '승인 실패',
-        message: '추가근무 승인 중 오류가 발생했습니다.',
+        message: '연장근무 승인 중 오류가 발생했습니다.',
         icon: <OctagonAlert />,
         duration: 3000,
       });
@@ -464,7 +464,7 @@ export default function OvertimeList({
     }
   };
 
-  // 추가근무 반려 핸들러
+  // 연장근무 반려 핸들러
   const handleRejectOvertime = async (reason: string) => {
     if (!selectedOvertime?.id) return;
     
@@ -539,7 +539,7 @@ export default function OvertimeList({
         isHoliday: false
       };
       
-      // 추가근무 API 파라미터 구성
+      // 연장근무 API 파라미터 구성
       const apiParams = buildOvertimeApiParams(selectedDay as any, overtimeData, []);
       
       // API 호출(Dialog에서 저장하므로 해당 코드 삭제)
@@ -606,12 +606,12 @@ export default function OvertimeList({
       // Toast로 성공 메시지 표시
       let description = '';
       if (isPage === 'admin' && overtime > 0 && compensation > 0) {
-        description = `${overtime}개의 추가근무 요청과 ${compensation}개의 보상지급 요청이 승인 완료되었습니다.`;
+        description = `${overtime}개의 연장근무 요청과 ${compensation}개의 보상지급 요청이 승인 완료되었습니다.`;
       } else if (isPage === 'admin' && compensation > 0) {
         description = `${compensation}개의 보상지급 요청이 승인 완료되었습니다.`;
       } else {
         const totalCount = overtime + compensation;
-        description = `${totalCount}개의 추가근무 요청이 승인 완료되었습니다.`;
+        description = `${totalCount}개의 연장근무 요청이 승인 완료되었습니다.`;
       }
       
       toast({
@@ -712,7 +712,7 @@ export default function OvertimeList({
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className="w-[7%] text-center p-2">부서</TableHead>
             <TableHead className="w-[7%] text-center p-2">이름</TableHead>
-            <TableHead className="w-[10%] text-center p-2">추가근무날짜</TableHead>
+            <TableHead className="w-[10%] text-center p-2">연장근무날짜</TableHead>
             {activeTab === 'weekday' ?
                 <>
                 <TableHead className="w-[8%] text-center p-2">예상퇴근시간</TableHead>
@@ -749,7 +749,7 @@ export default function OvertimeList({
               className="h-100 text-gray-500" 
               colSpan={activeTab === 'weekday' ? (isPage === 'admin' ? 10 : 11) : (isPage === 'admin' ? 10 : 10)}
             >
-              추가근무 신청 데이터 불러오는 중
+              연장근무 신청 데이터 불러오는 중
             </TableCell>
           </TableRow>
         ) : paginatedData.length === 0 ? (
@@ -758,7 +758,7 @@ export default function OvertimeList({
               className="h-100 text-gray-500" 
               colSpan={activeTab === 'weekday' ? (isPage === 'admin' ? 10 : 11) : (isPage === 'admin' ? 10 : 10)}
             >
-              추가근무 신청 데이터가 없습니다.
+              연장근무 신청 데이터가 없습니다.
             </TableCell>
           </TableRow>
         ) : (
@@ -840,7 +840,7 @@ export default function OvertimeList({
         </div>
       )}
 
-      {/* 추가근무 다이얼로그 */}
+      {/* 연장근무 다이얼로그 */}
       {selectedOvertime && (() => {
         const isOwnRequest = selectedOvertime.user_id === user?.user_id;
         
@@ -892,7 +892,7 @@ export default function OvertimeList({
         const mapStatus = (status: string) => {
           if (status === 'H') return '승인대기';
           if (status === 'T') {
-            // 평일 추가근무는 승인완료, 휴일 근무는 보상대기
+            // 평일 연장근무는 승인완료, 휴일 근무는 보상대기
             return activeTab === 'weekday' ? '승인완료' : '보상대기';
           }
           if (status === 'N') return '취소완료';
@@ -1008,7 +1008,7 @@ export default function OvertimeList({
                 if (isPage === 'manager') {
                   return (
                     <>
-                      {approveCounts.overtime}개의 추가근무 요청을 승인하시겠습니까?
+                      {approveCounts.overtime}개의 연장근무 요청을 승인하시겠습니까?
                     </>
                   );
                 } else if (isPage === 'admin') {
@@ -1021,7 +1021,7 @@ export default function OvertimeList({
                   const totalCount = approveCounts.overtime + approveCounts.compensation;
                   return (
                     <>
-                      {totalCount}개의 추가근무 요청을 승인하시겠습니까?
+                      {totalCount}개의 연장근무 요청을 승인하시겠습니까?
                     </>
                   );
                 }

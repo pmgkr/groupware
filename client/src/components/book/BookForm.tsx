@@ -18,6 +18,7 @@ export type BookFormData = {
   team_id?: number;
   user_name?: string;
   createdAt?: string;
+  team_name?: string;
 };
 
 type EditableBookFormData = Pick<BookFormData, 'category' | 'title' | 'author' | 'publish' | 'buylink' | 'purchaseAt'>;
@@ -67,7 +68,7 @@ export function BookForm(props: BookFormProps) {
               type="text"
               value={form.category}
               onChange={(e) => handleChange?.('category', e.target.value)}
-              placeholder="*yes24 기준 카테고리를 입력해주세요"
+              placeholder="* 알라딘 기준 카테고리를 입력해주세요"
               className="w-full"
             />
           )}
@@ -146,7 +147,7 @@ export function BookForm(props: BookFormProps) {
         )}
 
         {/* 팀 (view 전용) */}
-        {mode === 'view' && <TableColumnCell className="px-4 py-2.5">{form.team_id}</TableColumnCell>}
+        {mode === 'view' && <TableColumnCell className="px-4 py-2.5">{form.team_name}</TableColumnCell>}
 
         {/* 신청자 (view 전용) */}
         {mode === 'view' && <TableColumnCell className="px-4 py-2.5">{form.user_name}</TableColumnCell>}
