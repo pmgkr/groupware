@@ -1,16 +1,16 @@
 // utils/quotation.ts
 import { type EstimateRow } from '@/api';
 // 금액 계산에 포함시킬 item 타입들
-export const AMOUNT_ITEM_TYPES = ['item', 'agency_fee', 'discount'] as const;
+export const AMOUNT_ITEM_TYPES = ['item', 'agency_fee', 'discount', 'tax'] as const;
 
 // 타입 가드 함수
 export function isAmountItem<T extends { type: string }>(
   f: T
 ): f is T & {
   amount: number;
-  type: 'item' | 'agency_fee' | 'discount';
+  type: 'item' | 'agency_fee' | 'discount' | 'tax';
 } {
-  return ['item', 'agency_fee', 'discount'].includes(f.type);
+  return ['item', 'agency_fee', 'discount', 'tax'].includes(f.type);
 }
 
 export function recalcAmount(unit_price: number, qty: number) {
@@ -26,7 +26,7 @@ export function calcSubtotal(rows: EstimateRow[], startIndex: number) {
     // 다음 subtotal 또는 grandtotal 만나면 그룹 종료
     if (row.ei_type === 'subtotal' || row.ei_type === 'grandtotal') break;
 
-    if (row.ei_type === 'item' || row.ei_type === 'agency_fee') {
+    if (row.ei_type === 'item' || row.ei_type === 'agency_fee' || row.ei_type === 'tax') {
       sum += Number(row.amount || 0);
     }
 
@@ -61,7 +61,7 @@ export function recalcTotals(items: any[]) {
         const prev = items[i];
         if (prev.ei_type === 'subtotal') break;
 
-        if (['item', 'agency_fee', 'discount'].includes(prev.ei_type)) {
+        if (['item', 'agency_fee', 'discount', 'tax'].includes(prev.ei_type)) {
           const val = prev.amount === '-' || prev.amount === '' || prev.amount == null ? 0 : Number(prev.amount);
 
           if (!isNaN(val)) sum += val;
@@ -77,7 +77,7 @@ export function recalcTotals(items: any[]) {
   let exp = 0;
 
   items.forEach((row) => {
-    if (['item', 'agency_fee', 'discount'].includes(row.ei_type)) {
+    if (['item', 'agency_fee', 'discount', 'tax'].includes(row.ei_type)) {
       const a = row.amount === '-' || row.amount === '' || row.amount == null ? 0 : Number(row.amount);
       const e = row.exp_cost === '-' || row.exp_cost === '' || row.exp_cost == null ? 0 : Number(row.exp_cost);
 

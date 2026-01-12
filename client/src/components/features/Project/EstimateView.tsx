@@ -65,6 +65,31 @@ export default function EstimateView() {
     })();
   }, [estId]);
 
+  const hasGrandTotal = useMemo(() => {
+    return estData?.items.some((row) => row.ei_type === 'grandtotal') ?? true;
+  }, [estData]);
+
+  // 견적서에 'grandtotal' 항목이 없는 경우 자체 생성
+  const viewItems = useMemo(() => {
+    if (!estData) return [];
+    if (hasGrandTotal) return estData.items;
+
+    return [
+      ...estData.items,
+      {
+        seq: -1,
+        ei_type: 'grandtotal',
+        ei_name: 'Grand Total',
+        amount: 0,
+        unit_price: 0,
+        qty: 0,
+        ava_amount: 0,
+        match_count: 0,
+        remark: '',
+      },
+    ];
+  }, [estData, hasGrandTotal]);
+
   const isProjectMember = useMemo(() => members.some((m) => m.user_id === user_id), [members, user_id]);
 
   if (!estData)
@@ -247,7 +272,7 @@ export default function EstimateView() {
           </TableHeader>
 
           <TableBody>
-            {estData.items.map((row) => (
+            {viewItems.map((row) => (
               <TableRow key={row.seq} className={`whitespace-nowrap [&_td]:text-[13px] ${row.ei_type === 'item' && 'hover:bg-muted/15'}`}>
                 {/* ------------------------ */}
                 {/* 일반 Title Row */}
@@ -355,7 +380,7 @@ export default function EstimateView() {
                     </TableCell>
                     <TableCell className="bg-gray-300 text-right font-semibold">{formatAmount(row.amount)}</TableCell>
                     <TableCell className="bg-gray-300"></TableCell>
-                    <TableCell className="bg-gray-300 text-left">{row.remarks}</TableCell>
+                    <TableCell className="bg-gray-300 text-left">{row.remark}</TableCell>
                   </>
                 )}
 
