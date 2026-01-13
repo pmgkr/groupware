@@ -373,7 +373,14 @@ export default function Pexpense() {
       downloadExpenseExcel(res.items, params);
     } catch (e) {
       console.error(e);
-      alert('Excel 다운로드에 실패했습니다.');
+
+      addAlert({
+        title: '다운로드 실패',
+        message: `Excel 다운로드에 실패했습니다.<br />에러 메세지 : ${e}`,
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+      return;
     }
   };
 

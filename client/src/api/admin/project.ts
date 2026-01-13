@@ -68,3 +68,16 @@ export async function getProjectList(params: ProjectListParams) {
 
   return res;
 }
+
+// 프로젝트 리포트 엑셀 다운로드 조회
+export async function getAdminReportExcel(params: ProjectListParams) {
+  const clean = cleanParams(params);
+
+  // 쿼리스트링으로 변환
+  const query = new URLSearchParams(clean as Record<string, string>).toString();
+  const res = await http<ProjectListResponse>(`/admin/summary/list/excel?${query}`, {
+    method: 'GET',
+  });
+
+  return res;
+}

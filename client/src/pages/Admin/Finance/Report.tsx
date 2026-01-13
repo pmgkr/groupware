@@ -2,9 +2,10 @@ import { useRef, useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { formatDate, formatAmount, getGrowingYears, SortIcon } from '@/utils';
+import { downloadReportExcel } from '@/components/features/Project/utils/reportDown';
 
 import { getClientList, getTeamList } from '@/api';
-import { getProjectList } from '@/api/admin/project';
+import { getProjectList, getAdminReportExcel } from '@/api/admin/project';
 import type { ProjectListResponse, ProjectListItem } from '@/api/admin/project';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -13,12 +14,11 @@ import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@components/ui/button';
-import { Checkbox } from '@components/ui/checkbox';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
-import { OctagonAlert, X, RefreshCw, ChevronsUpDown } from 'lucide-react';
+import { X, RefreshCw } from 'lucide-react';
 
 type SortState = {
   key: string;
@@ -58,9 +58,9 @@ export default function Report() {
   const statusRef = useRef<MultiSelectRef>(null);
   const statusOptions: MultiSelectOption[] = [
     { label: '진행중', value: 'in-progress' },
-    { label: '종료됨', value: 'closed' },
-    { label: '정산완료', value: 'completed' },
-    { label: '취소됨', value: 'cancelled' },
+    { label: '종료됨', value: 'Closed' },
+    { label: '정산완료', value: 'Completed' },
+    { label: '취소됨', value: 'Cancelled' },
   ];
 
   const { addAlert } = useAppAlert();
@@ -72,17 +72,17 @@ export default function Report() {
         진행중
       </Badge>
     ),
-    closed: (
+    Closed: (
       <Badge className="bg-primary-blue" size="table">
         종료됨
       </Badge>
     ),
-    completed: (
+    Completed: (
       <Badge variant="grayish" size="table">
         정산완료
       </Badge>
     ),
-    cancelled: (
+    Cancelled: (
       <Badge className="bg-destructive" size="table">
         취소됨
       </Badge>
@@ -198,6 +198,36 @@ export default function Report() {
     statusRef.current?.clear();
   };
 
+  const handleExcelDownload = async () => {
+    const params: Record<string, any> = {
+      year: selectedYear,
+      page: page,
+      size: pageSize,
+    };
+
+    params.project_status = selectedStatus.length ? selectedStatus.join(',') : 'in-progress';
+
+    if (selectedClient.length > 0) {
+      params.client_id = selectedClient.join(',');
+    }
+
+    if (selectedTeam.length > 0) {
+      params.team_id = selectedTeam.join(',');
+    }
+
+    if (searchQuery) params.q = searchQuery;
+    if (sort) {
+      params.order = `${sort.key}:${sort.order}`;
+    }
+
+    setSearchParams(params);
+    const res = await getAdminReportExcel(params);
+
+    console.log('엑셀 저장용 리스트', res);
+
+    downloadReportExcel(res, params);
+  };
+
   return (
     <>
       <div className="mb-4 flex items-center justify-between">
@@ -274,9 +304,9 @@ export default function Report() {
             autoSize={true}
             placeholder="상태 선택"
             options={statusOptions}
+            defaultValue={selectedStatus}
             onValueChange={(v) => handleFilterChange(setSelectedStatus, v)}
             simpleSelect={true}
-            hideSelectAll={true}
           />
 
           <Button
@@ -445,6 +475,12 @@ export default function Report() {
           )}
         </TableBody>
       </Table>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={handleExcelDownload}>
+          Excel 다운로드
+        </Button>
+      </div>
 
       <div className="mt-5">
         {reportList.length !== 0 && (
