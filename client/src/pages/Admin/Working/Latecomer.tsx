@@ -24,6 +24,7 @@ export default function Latecomer() {
         onDateChange={setCurrentDate} 
         onTeamSelect={handleTeamSelect}
         page="admin"
+        downloadType="late"
       />
       
       <LatecomerComponent
