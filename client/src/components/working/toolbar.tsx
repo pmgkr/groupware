@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams, type MyTeamItem } from '@/api/manager/teams';
 import WorkTimeDownload from './WorkTimeDownload';
+import LateTimeDownload from './LateTimeDownload';
 
 // 셀렉트 옵션 타입 정의
 export interface SelectOption {
@@ -33,6 +34,7 @@ interface ToolbarProps {
   workingList?: WorkingListItem[]; // 다운로드용 데이터 (admin/manager)
   weekStartDate?: Date; // 다운로드용 주차 정보
   initialSelectedTeamIds?: number[]; // 초기 선택된 팀 ID 목록
+  downloadType?: 'working' | 'late'; // 다운로드 타입 (기본값: 'working')
 }
 
 export default function Toolbar({ 
@@ -44,6 +46,7 @@ export default function Toolbar({
   workingList = [],
   weekStartDate,
   initialSelectedTeamIds = [],
+  downloadType = 'working',
 }: ToolbarProps) {
   const { user } = useAuth();
   
@@ -288,12 +291,20 @@ export default function Toolbar({
         >
           오늘
         </Button>
-        <WorkTimeDownload
-          currentDate={currentDate}
-          page={page}
-          workingList={workingList}
-          selectedTeamIds={selectedTeamIds}
-        />
+        {downloadType === 'late' ? (
+          <LateTimeDownload
+            currentDate={currentDate}
+            page={page}
+            selectedTeamIds={selectedTeamIds}
+          />
+        ) : (
+          <WorkTimeDownload
+            currentDate={currentDate}
+            page={page}
+            workingList={workingList}
+            selectedTeamIds={selectedTeamIds}
+          />
+        )}
       </div>
     </div>
   );
