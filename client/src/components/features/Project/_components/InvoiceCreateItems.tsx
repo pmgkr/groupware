@@ -1,13 +1,13 @@
 // InvoiceCreateItems.tsx
-import { useCallback } from 'react';
-import { useFieldArray } from 'react-hook-form';
+import { useCallback, useMemo } from 'react';
+import { useFieldArray, useWatch } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { Control, UseFormWatch, UseFormSetValue } from 'react-hook-form';
 import type { InvoiceFormValues } from '@/types/invoice';
-import { formatAmount } from '@/utils';
+import { formatAmount, parseSafeNumber, normalizeDecimalInput } from '@/utils';
 
 interface Props {
   control: Control<InvoiceFormValues>;
@@ -21,13 +21,12 @@ export default function InvoiceItemsForm({ control, watch, setValue }: Props) {
     name: 'items',
   });
 
-  const items = watch('items') || [];
+  const items = useWatch({ control, name: 'items' }) || [];
   const tax = Number(watch('tax') || 0);
 
   // 금액 변경 처리
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
     const raw = e.target.value.replace(/,/g, '').replace(/(?!^)-/g, ''); // '-'는 맨 앞만 허용
-
     if (!/^-?\d*$/.test(raw)) return;
 
     setValue(`items.${idx}.ii_amount`, raw);
@@ -35,29 +34,34 @@ export default function InvoiceItemsForm({ control, watch, setValue }: Props) {
 
   // 수량 변경 처리
   const handleQtyChange = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
-    const raw = e.target.value.replace(/,/g, '');
-    if (!/^\d*$/.test(raw)) return;
-
+    const raw = normalizeDecimalInput(e.target.value, 2);
     setValue(`items.${idx}.ii_qty`, raw);
   };
-
-  // 계산 안전 처리 (공백 → 0)
-  const parseNum = (v?: string | number) => {
-    if (!v) return 0;
-    const n = Number(String(v).replace(/,/g, ''));
-    return isNaN(n) ? 0 : n;
-  };
-
-  const subtotal = items.reduce((sum, row) => {
-    return sum + parseNum(row.ii_amount) * parseNum(row.ii_qty);
-  }, 0);
-
-  const grandTotal = Math.round(subtotal + subtotal * tax);
 
   // 항목 추가 버튼 클릭 시
   const handleAddRow = useCallback(() => {
     append({ ii_title: '', ii_amount: '', ii_qty: '' });
   }, [append]);
+
+  // 유틸 함수 (메모 불필요)
+  const formatDecimalValue = (value?: string | number) => {
+    if (value === '' || value == null) return '';
+    if (value === '.') return '0.';
+
+    const [int, dec] = String(value).split('.');
+    return `${formatAmount(parseSafeNumber(int))}${dec !== undefined ? `.${dec}` : ''}`;
+  };
+
+  // 파생 값은 useMemo
+  const subtotal = useMemo(() => {
+    return items.reduce((sum, row) => {
+      return sum + parseSafeNumber(row.ii_amount) * parseSafeNumber(row.ii_qty);
+    }, 0);
+  }, [items]);
+
+  const grandTotal = useMemo(() => {
+    return Math.round(subtotal + subtotal * tax);
+  }, [subtotal, tax]);
 
   return (
     <div className="col-span-2">
@@ -71,33 +75,44 @@ export default function InvoiceItemsForm({ control, watch, setValue }: Props) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {fields.map((field, idx) => (
-            <TableRow
-              key={field.id}
-              className="hover:bg-muted/15 [&_input]:text-[13px] [&_input]:placeholder:text-[13px] [&_td]:px-2 [&_td]:text-[13px]">
-              <TableCell>
-                <Input {...control.register(`items.${idx}.ii_title`)} placeholder="항목명" className="h-9" />
-              </TableCell>
-              <TableCell>
-                <Input
-                  inputMode="numeric"
-                  value={items[idx]?.ii_amount === '' ? '' : formatAmount(parseNum(items[idx]?.ii_amount))}
-                  onChange={(e) => handleAmountChange(e, idx)}
-                  className="h-9 text-right"
-                  placeholder="단가"
-                />
-              </TableCell>
-              <TableCell>
-                <Input
-                  inputMode="numeric"
-                  value={items[idx]?.ii_qty === '' ? '' : formatAmount(parseNum(items[idx]?.ii_qty))}
-                  onChange={(e) => handleQtyChange(e, idx)}
-                  className="h-9 text-right"
-                  placeholder="수량"
-                />
-              </TableCell>
-            </TableRow>
-          ))}
+          {fields.map((field, idx) => {
+            const amountValue = items[idx]?.ii_amount;
+            const qtyValue = items[idx]?.ii_qty;
+
+            return (
+              <TableRow
+                key={field.id}
+                className="hover:bg-muted/15 [&_input]:text-[13px] [&_input]:placeholder:text-[13px] [&_td]:px-2 [&_td]:text-[13px]">
+                <TableCell>
+                  <Input {...control.register(`items.${idx}.ii_title`)} placeholder="항목명" className="h-9" />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    inputMode="numeric"
+                    value={
+                      amountValue === '' || amountValue === undefined
+                        ? ''
+                        : amountValue === '-'
+                          ? '-'
+                          : formatAmount(parseSafeNumber(amountValue))
+                    }
+                    onChange={(e) => handleAmountChange(e, idx)}
+                    className="h-9 text-right"
+                    placeholder="단가"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    inputMode="decimal"
+                    value={formatDecimalValue(qtyValue)}
+                    onChange={(e) => handleQtyChange(e, idx)}
+                    className="h-9 text-right"
+                    placeholder="수량"
+                  />
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
       {/* Total */}

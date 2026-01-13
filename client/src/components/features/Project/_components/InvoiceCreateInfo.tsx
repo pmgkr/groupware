@@ -79,12 +79,12 @@ export default function InvoiceInfoForm({ control, watch, setValue, formatDate }
               <span>
                 담당자 이름<span className="text-primary-blue-500">*</span>
               </span>
-              <button
+              {/* <button
                 type="button"
                 className="text-primary-blue-500 hover:[&_svg]:fill-primary flex cursor-pointer items-center gap-1 text-sm"
                 tabIndex={-1}>
                 <Bookmark className="size-3.5" /> 북마크
-              </button>
+              </button> */}
             </FormLabel>
             <FormControl>
               <Input placeholder="담당자 입력" {...field} value={field.value ?? ''} />
