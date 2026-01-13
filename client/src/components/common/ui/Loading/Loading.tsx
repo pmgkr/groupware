@@ -36,7 +36,7 @@ function LoadingComponent({ title, message, className }: { title?: string; messa
       `}</style>
       <div
         className={cn(
-          'flex flex-col items-center justify-center gap-3 inset-0 z-50 bg-background/60 backdrop-blur-[1px] fixed left-0 top-0 w-[100vw] h-[100vh]',
+          'flex flex-col items-center justify-center gap-3 inset-0 z-[150] bg-background/60 backdrop-blur-[1px] fixed left-0 top-0 w-[100vw] h-[100vh]',
           className
         )}
       >
@@ -111,4 +111,3 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
 export function Loading({ title, message, className }: { title?: string; message?: string; className?: string }) {
   return <LoadingComponent title={title} message={message} className={className} />;
 }
-

@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import React, { useState, useEffect } from 'react';
-import { Loading } from '../../components/common/ui/Loading/loading';
-import { LoadingIcon } from '../../components/common/ui/Loading/LoadingIcon';
-import { Button } from '../../components/ui/button';
+import { Loading } from '@/components/common/ui/Loading/Loading';
+import { LoadingIcon } from '@/components/common/ui/Loading/LoadingIcon';
+import { Button } from '@/components/ui/button';
 
 const meta: Meta<typeof Loading> = {
   title: 'Components/ui/Loading',

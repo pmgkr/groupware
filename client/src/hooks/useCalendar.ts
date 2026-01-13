@@ -6,7 +6,7 @@ import { validateUser, formatErrorMessage } from '@/utils/calendarHelper';
 import { loadCalendarEvents, createCalendarEvent } from '@/services/calendarService';
 import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
-import { useLoading } from '@/components/common/ui/Loading/loading';
+import { useLoading } from '@/components/common/ui/Loading/Loading';
 import { defaultEventTitleMapper } from '@/components/calendar/config';
 import { findManager } from '@/utils/managerHelper';
 import { getDateRangeTextSimple } from '@/utils/dateRangeHelper';
