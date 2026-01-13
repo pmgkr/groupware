@@ -23,7 +23,7 @@ export function Loading({ title, message, className }: LoadingProps) {
       `}</style>
       <div
         className={cn(
-          'flex flex-col items-center justify-center gap-3 inset-0 z-50 bg-background/80 backdrop-blur-sm fixed left-0 top-0 w-[100vw] h-[100vh]',
+          'flex flex-col items-center justify-center gap-3 inset-0 z-50 bg-background/60 backdrop-blur-[1px] fixed left-0 top-0 w-[100vw] h-[100vh]',
           className
         )}
       >
