@@ -20,6 +20,7 @@ interface CustomCalendarProps {
   defaultDate?: Date;
   onSaveEvent?: (eventData: any) => Promise<boolean>;
   onDateChange?: (date: Date) => void;
+  onRefreshEvents?: () => void;
 }
 
 export default function CustomCalendar({
@@ -30,7 +31,8 @@ export default function CustomCalendar({
   defaultView = 'month',
   defaultDate = new Date(),
   onSaveEvent,
-  onDateChange
+  onDateChange,
+  onRefreshEvents
 }: CustomCalendarProps) {
   const [myEvents, setMyEvents] = useState<CalendarEvent[]>(initialEvents);
   const [currentDate, setCurrentDate] = useState(defaultDate);
@@ -166,8 +168,11 @@ export default function CustomCalendar({
     // 다이얼로그 닫기
     handleCloseEventViewDialog();
     
-    // 부모 컴포넌트에 날짜 변경 알림하여 데이터 새로고침
-    if (onDateChange) {
+    // 부모 컴포넌트에 이벤트 새로고침 요청
+    if (onRefreshEvents) {
+      onRefreshEvents();
+    } else if (onDateChange) {
+      // fallback: 날짜 변경으로 새로고침 시도
       onDateChange(currentDate);
     }
   };
@@ -198,8 +203,11 @@ export default function CustomCalendar({
     // 다이얼로그 닫기
     handleCloseEventViewDialog();
     
-    // 부모 컴포넌트에 날짜 변경 알림하여 데이터 새로고침
-    if (onDateChange) {
+    // 부모 컴포넌트에 이벤트 새로고침 요청
+    if (onRefreshEvents) {
+      onRefreshEvents();
+    } else if (onDateChange) {
+      // fallback: 날짜 변경으로 새로고침 시도
       onDateChange(currentDate);
     }
   };
