@@ -492,15 +492,15 @@ export default function ProjectExpenseView() {
                 onClick={() => handlePDFDownload(header.seq, header.exp_id, header.user_nm)}>
                 <Download /> 다운로드
               </Button>
+              {header.status !== 'Saved' && header.status !== 'Rejected' && (
+                <Button type="button" size="sm" variant="destructive" onClick={() => setReasonDialogOpen(true)}>
+                  반려하기
+                </Button>
+              )}
               {header.status !== 'Saved' && header.status !== 'Completed' && header.status !== 'Rejected' && (
-                <>
-                  <Button type="button" size="sm" variant="destructive" onClick={() => setReasonDialogOpen(true)}>
-                    반려하기
-                  </Button>
-                  <Button type="button" size="sm" onClick={handleConfirm}>
-                    승인하기
-                  </Button>
-                </>
+                <Button type="button" size="sm" onClick={handleConfirm}>
+                  승인하기
+                </Button>
               )}
             </div>
           </div>
