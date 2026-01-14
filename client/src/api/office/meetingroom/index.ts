@@ -65,9 +65,25 @@ export interface ReservationService {
 /* -------- HTTP 구현 -------- */
 export class HttpReservationService implements ReservationService {
   /** 회의실 목록: GET /user/meetingroom/list */
-  async listRooms(): Promise<Room[]> {
+  /* async listRooms(): Promise<Room[]> {
     const rows = await http<any[]>('user/meetingroom/list');
     return (rows || []).map(toRoom);
+  } */
+  async listRooms(): Promise<Room[]> {
+    const rows = await http<any[]>('user/meetingroom/list');
+    const rooms = (rows || []).map(toRoom);
+
+    // 층별로 정렬 (7F → 6F 순)
+    return rooms.sort((a, b) => {
+      const floorA = parseInt(a.floor || '0');
+      const floorB = parseInt(b.floor || '0');
+
+      // 층 내림차순
+      if (floorA !== floorB) return floorB - floorA;
+
+      // 같은 층이면 이름순
+      return (a.name || '').localeCompare(b.name || '');
+    });
   }
 
   /** 회의실 정보: GET /user/meetingroom/info/:mr_id */
