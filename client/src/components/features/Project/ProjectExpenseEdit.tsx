@@ -5,13 +5,14 @@ import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToggleState } from '@/hooks/useToggleState';
-import { UploadArea, type UploadAreaHandle, type PreviewFile } from './_components/UploadArea';
+import { type PreviewFile } from './_components/UploadArea';
 import { AttachmentFieldEdit } from './_components/AttachmentFieldEdit';
 import { useUser } from '@/hooks/useUser';
 import { formatKST, formatAmount } from '@/utils';
 import { getBankList, uploadFilesToServer, type BankList, type pExpenseViewDTO } from '@/api';
 import { getProjectExpenseView, projectExpenseUpdate, delProjectExpenseAttachment } from '@/api/project/expense';
 
+import { useLoading } from '@/components/common/ui/Loading/Loading';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { SectionHeader } from '@components/ui/SectionHeader';
@@ -94,7 +95,7 @@ export default function ProjectExpenseEdit() {
   const [logs, setLogs] = useState<any>(null);
   const depositPicker = useToggleState();
 
-  const [isSubmitting, setIsSubmitting] = useState(false); // 비용 작성 등록 블로킹
+  const { showLoading, hideLoading } = useLoading(); // 비용 등록 시 로딩 오버레이 화면
   const [newAttachments, setNewAttachments] = useState<Record<number, PreviewFile[]>>({}); // 새 증빙자료 State
   const [rowAttachments, setRowAttachments] = useState<Record<number, UploadedPreviewFile[]>>({}); // 기존 증빙자료 State
 
@@ -327,7 +328,10 @@ export default function ProjectExpenseEdit() {
   const hasProposalList = proposalList.length === 0;
 
   const handleConfirmSubmit = async (values: EditFormValues) => {
-    setIsSubmitting(true);
+    showLoading({
+      title: '작성한 <em>비용을 등록</em>하고 있습니다',
+      message: '새로고침을 누르거나, 페이지 이탈 시 비용이 저장되지 않습니다.',
+    });
 
     try {
       // 새 업로드할 파일 목록 정리
@@ -548,8 +552,11 @@ export default function ProjectExpenseEdit() {
           duration: 1500,
         });
 
+        hideLoading();
         navigate(`/project/${projectId}/expense/${res.updated.requested}`);
       } else {
+        hideLoading();
+
         addAlert({
           title: '비용 수정 실패',
           message: '프로젝트 비용 수정을 실패했습니다. 다시 시도해 주세요.',
@@ -559,14 +566,14 @@ export default function ProjectExpenseEdit() {
       }
     } catch (err) {
       console.error('❌ 수정 실패:', err);
+      hideLoading();
+
       addAlert({
         title: '비용 수정 실패',
         message: '프로젝트 비용 수정을 실패했습니다. 다시 시도해 주세요.',
         icon: <OctagonAlert />,
         duration: 1500,
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -616,16 +623,6 @@ export default function ProjectExpenseEdit() {
 
   return (
     <>
-      {isSubmitting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="flex w-full max-w-sm flex-col items-center rounded-lg bg-white px-4 py-8 leading-[1.3] shadow-lg">
-            <Spinner className="text-primary-blue-500 mb-3 size-12" />
-            <p className="text-lg font-bold text-gray-800">작성한 비용을 등록하고 있습니다</p>
-            <p className="text-base text-gray-500">잠시만 기다려 주세요</p>
-          </div>
-        </div>
-      )}
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="flex min-h-140 flex-wrap justify-between pb-12">

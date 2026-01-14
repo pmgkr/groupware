@@ -581,6 +581,8 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
           }
         } catch (err) {
           console.error('❌ 수정 실패:', err);
+
+          hideLoading();
           addAlert({
             title: '비용 수정 실패',
             message: '일반 비용 수정을 실패했습니다. 다시 시도해 주세요.',
