@@ -11,6 +11,7 @@ import { ExpenseRow } from './_components/ExpenseRegisterRow';
 import { ZoomBoundaryContext } from './context/ZoomContext';
 import { UploadArea, type UploadAreaHandle, type PreviewFile } from './_components/UploadArea';
 
+import { useLoading } from '@/components/common/ui/Loading/Loading';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { SectionHeader } from '@components/ui/SectionHeader';
@@ -87,7 +88,7 @@ export default function ExpenseRegister() {
   const [linkedRows, setLinkedRows] = useState<Record<string, number | null>>({}); // 업로드된 이미지와 연결된 행 번호 저장용
   const [activeFile, setActiveFile] = useState<string | null>(null); // UploadArea & Attachment 연결상태 공유용
   const [selectedProposal, setSelectedProposal] = useState<any>(null); //기안서  번호 확인용
-  const [isSubmitting, setIsSubmitting] = useState(false); // 비용 작성 등록 블로킹
+  const { showLoading, hideLoading } = useLoading(); // 비용 등록 시 로딩 오버레이 화면
 
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : ''); // YYYY-MM-DD Date 포맷 변경
 
@@ -334,7 +335,10 @@ export default function ExpenseRegister() {
         confirmText: '확인',
         cancelText: '취소',
         onConfirm: async () => {
-          setIsSubmitting(true);
+          showLoading({
+            title: '작성한 <em>비용을 등록</em>하고 있습니다',
+            message: '새로고침을 누르거나, 페이지 이탈 시 비용이 저장되지 않습니다.',
+          });
 
           // [1] 연결된 파일 업로드
           const linkedFiles = files.filter((f) => linkedRows[f.name] !== null);
@@ -525,8 +529,12 @@ export default function ExpenseRegister() {
               duration: 2000,
             });
 
+            hideLoading();
+
             navigate('/expense');
           } else {
+            hideLoading();
+
             addAlert({
               title: '비용 등록 실패',
               message: `비용 등록 중 오류가 발생했습니다. \n 다시 시도해주세요.`,
@@ -546,8 +554,6 @@ export default function ExpenseRegister() {
         duration: 2000,
       });
       return;
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -571,15 +577,6 @@ export default function ExpenseRegister() {
 
   return (
     <>
-      {isSubmitting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="flex w-full max-w-sm flex-col items-center rounded-lg bg-white px-4 py-8 leading-[1.3] shadow-lg">
-            <Spinner className="text-primary-blue-500 mb-3 size-12" />
-            <p className="text-lg font-bold text-gray-800">작성한 비용을 등록하고 있습니다</p>
-            <p className="text-base text-gray-500">잠시만 기다려 주세요</p>
-          </div>
-        </div>
-      )}
       <ZoomBoundaryContext.Provider value={zoomBoundary}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>

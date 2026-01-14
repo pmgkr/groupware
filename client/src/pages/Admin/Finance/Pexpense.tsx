@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { formatDate, getGrowingYears, sanitizeFilename, formatYYMMDD } from '@/utils';
@@ -20,11 +20,20 @@ import {
   getPDFDownload,
   getMultiPDFDownload,
   getAdminExpenseExcel,
+  sendExpenseToCBox,
   type ExpenseListItems,
 } from '@/api/admin/pexpense';
 import { AdminListFilter } from '@components/features/Project/_components/AdminListFilter';
 import AdminExpenseList from '@components/features/Project/AdminExpenseList';
+import { CBoxDialog } from '@/components/features/Expense/_components/AdminCBox';
 import { triggerDownload } from '@components/features/Project/utils/download';
+
+const parseCBoxMemo = (memo: string): string[] => {
+  return memo
+    .split(/\r?\n/) // 줄바꿈
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+};
 
 export default function Pexpense() {
   const { user_id } = useUser();
@@ -88,49 +97,49 @@ export default function Pexpense() {
   // ============================
   // 리스트 조회 (팀 선택 완료 후 실행)
   // ============================
-  useEffect(() => {
-    async function loadList() {
-      try {
-        setLoading(true);
+  const loadList = useCallback(async () => {
+    try {
+      setLoading(true);
 
-        const params: Record<string, any> = {
-          year: selectedYear,
-          page: page,
-        };
+      const params: Record<string, any> = {
+        year: selectedYear,
+        page: page,
+      };
 
-        if (!selectedStatus.length) {
-          params.status = 'Confirmed';
-        } else {
-          params.status = selectedStatus.join(',');
-        }
-        if (selectedType.length) params.type = selectedType.join(',');
-        if (selectedProof.length) params.method = selectedProof.join(',');
-        if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
-        if (selectedDdate !== '') params.ddate = selectedDdate;
-        if (selectedDateRange?.from) {
-          params.sdate = formatDate(selectedDateRange.from.toISOString());
-        }
-        if (selectedDateRange?.to) {
-          params.edate = formatDate(selectedDateRange.to.toISOString());
-        }
-        if (searchQuery) params.q = searchQuery;
-
-        setSearchParams(params);
-        const res = await getAdminExpenseList(params);
-
-        console.log('📦 리스트 조회', res);
-
-        setExpenseList(res.items);
-        setTotal(res.total);
-      } catch (err) {
-        console.error('❌ 리스트 조회 실패:', err);
-      } finally {
-        setLoading(false);
+      if (!selectedStatus.length) {
+        params.status = 'Confirmed';
+      } else {
+        params.status = selectedStatus.join(',');
       }
-    }
+      if (selectedType.length) params.type = selectedType.join(',');
+      if (selectedProof.length) params.method = selectedProof.join(',');
+      if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
+      if (selectedDdate !== '') params.ddate = selectedDdate;
+      if (selectedDateRange?.from) {
+        params.sdate = formatDate(selectedDateRange.from.toISOString());
+      }
+      if (selectedDateRange?.to) {
+        params.edate = formatDate(selectedDateRange.to.toISOString());
+      }
+      if (searchQuery) params.q = searchQuery;
 
-    loadList();
+      setSearchParams(params);
+      const res = await getAdminExpenseList(params);
+
+      console.log('📦 리스트 조회', res);
+
+      setExpenseList(res.items);
+      setTotal(res.total);
+    } catch (err) {
+      console.error('❌ 리스트 조회 실패:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [selectedYear, selectedType, selectedProof, selectedProofStatus, selectedStatus, selectedDdate, searchQuery, selectedDateRange, page]);
+
+  useEffect(() => {
+    loadList();
+  }, [loadList]);
 
   // ============================
   // Input 핸들러
@@ -384,6 +393,75 @@ export default function Pexpense() {
     }
   };
 
+  // ============================
+  // C-Box
+  // ============================
+  const [isCBoxOpen, setIsCBoxOpen] = useState(false);
+
+  const handleOpenCBox = () => {
+    setIsCBoxOpen(true);
+  };
+
+  const handleSubmitCBox = async (value: string) => {
+    const cBoxList = parseCBoxMemo(value);
+
+    if (cBoxList.length === 0) {
+      addAlert({
+        title: '입력 내용 없음',
+        message: '승인할 EXP#를 하나 이상 입력해 주세요.',
+        icon: <OctagonAlert />,
+        duration: 1500,
+      });
+      return;
+    }
+
+    try {
+      const res = await sendExpenseToCBox({
+        expIds: cBoxList,
+      });
+
+      if (res.ok) {
+        addAlert({
+          title: '비용 지급 승인',
+          message: `${cBoxList.length}개의 비용이 지급 승인되었습니다.`,
+          icon: <OctagonAlert />,
+          duration: 1500,
+        });
+
+        for (const row of res.items) {
+          await notificationApi.registerNotification({
+            user_id: row.user_id,
+            user_name: row.user_nm,
+            noti_target: user_id!,
+            noti_title: `${row.exp_id} · ${row.el_title}`,
+            noti_message: `청구한 비용을 지급 완료했습니다.`,
+            noti_type: 'expense',
+            noti_url: `/project/${row.project_id}/expense/${row.seq}`,
+          });
+        }
+      } else {
+        addAlert({
+          title: '비용 승인 실패',
+          message: `${cBoxList.length}개의 항목이 전달되었습니다.`,
+          icon: <OctagonAlert />,
+          duration: 1500,
+        });
+      }
+
+      await loadList();
+      setIsCBoxOpen(false);
+    } catch (e) {
+      addAlert({
+        title: 'C-Box 전송 실패',
+        message: '전송 중 오류가 발생했습니다.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+    }
+
+    return;
+  };
+
   return (
     <>
       <AdminListFilter
@@ -429,10 +507,19 @@ export default function Pexpense() {
         handlePDFDownload={handlePDFDownload}
         handleMultiPDFDownload={handleMultiPDFDownload}
         handleExcelDownload={handleExcelDownload}
+        onOpenCBox={handleOpenCBox}
         total={total}
         page={page}
         pageSize={pageSize}
         onPageChange={setPage}
+      />
+
+      <CBoxDialog
+        open={isCBoxOpen}
+        onClose={() => setIsCBoxOpen(false)}
+        onSubmit={(value) => {
+          handleSubmitCBox(value);
+        }}
       />
     </>
   );

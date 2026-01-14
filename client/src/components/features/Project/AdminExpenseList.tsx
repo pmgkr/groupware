@@ -5,6 +5,7 @@ import { Checkbox } from '@components/ui/checkbox';
 import { Button } from '@components/ui/button';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Mail } from 'lucide-react';
 
 interface ExpenseListProps {
   loading: boolean;
@@ -22,8 +23,9 @@ interface ExpenseListProps {
   handleSetDdate: (seq: number, ddate: Date) => void;
   handlePDFDownload: (seq: number, expId: string, userName: string) => void;
   handleMultiPDFDownload: (seqs: number[]) => void;
-
   handleExcelDownload: () => void;
+
+  onOpenCBox: () => void;
 }
 
 export default function AdminListFilter({
@@ -43,6 +45,8 @@ export default function AdminListFilter({
   handlePDFDownload,
   handleMultiPDFDownload,
   handleExcelDownload,
+
+  onOpenCBox,
 }: ExpenseListProps) {
   return (
     <>
@@ -101,20 +105,26 @@ export default function AdminListFilter({
         </TableBody>
       </Table>
 
-      <div className="mt-4 flex justify-end gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            handleMultiPDFDownload(checkedItems);
-          }}>
-          선택 PDF 다운로드
+      <div className="mt-4 flex justify-between gap-2">
+        <Button type="button" size="sm" variant="outline" className="text-primary" onClick={onOpenCBox}>
+          <Mail className="size-3.5" />
+          C-Box
         </Button>
+        <div className="space-x-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              handleMultiPDFDownload(checkedItems);
+            }}>
+            선택 PDF 다운로드
+          </Button>
 
-        <Button variant="outline" size="sm" onClick={handleExcelDownload}>
-          Excel 다운로드
-        </Button>
+          <Button type="button" variant="outline" size="sm" onClick={handleExcelDownload}>
+            Excel 다운로드
+          </Button>
+        </div>
       </div>
 
       <div className="mt-5">

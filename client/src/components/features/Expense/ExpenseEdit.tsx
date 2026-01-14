@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToggleState } from '@/hooks/useToggleState';
-import { UploadArea, type UploadAreaHandle, type PreviewFile } from './_components/UploadArea';
+import { type PreviewFile } from './_components/UploadArea';
 import { AttachmentFieldEdit } from './_components/AttachmentFieldEdit';
 import { useUser } from '@/hooks/useUser';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -32,6 +32,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@components/ui/alert-dialog';
+import { useLoading } from '@/components/common/ui/Loading/Loading';
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Badge } from '@components/ui/badge';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
@@ -116,7 +117,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
   const [alertTitle, setAlertTitle] = useState('');
   const [alertDescription, setAlertDescription] = useState('');
   const [successState, setSuccessState] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // 비용 작성 등록 블로킹
+  const { showLoading, hideLoading } = useLoading(); // 비용 등록 시 로딩 오버레이 화면
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
@@ -341,8 +342,12 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
       confirmText: '확인',
       cancelText: '취소',
       onConfirm: async () => {
+        showLoading({
+          title: '작성한 <em>비용을 등록</em>하고 있습니다',
+          message: '새로고침을 누르거나, 페이지 이탈 시 비용이 저장되지 않습니다.',
+        });
+
         try {
-          setIsSubmitting(true);
           // 1️⃣ 새 업로드할 파일 목록 정리
           const allNewFiles = Object.entries(newAttachments).flatMap(([rowIdx, files]) =>
             files.map((f) => ({ ...f, rowIdx: Number(rowIdx) }))
@@ -561,8 +566,12 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
               duration: 1500,
             });
 
+            hideLoading();
+
             navigate(`/expense/${expId}`);
           } else {
+            hideLoading();
+
             addAlert({
               title: '비용 수정 실패',
               message: '일반 비용 수정을 실패했습니다. 다시 시도해 주세요.',
@@ -578,8 +587,6 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
             icon: <OctagonAlert />,
             duration: 1500,
           });
-        } finally {
-          setIsSubmitting(false);
         }
       },
     });
@@ -589,16 +596,6 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
 
   return (
     <>
-      {isSubmitting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="flex w-full max-w-sm flex-col items-center rounded-lg bg-white px-4 py-8 leading-[1.3] shadow-lg">
-            <Spinner className="text-primary-blue-500 mb-3 size-12" />
-            <p className="text-lg font-bold text-gray-800">작성한 비용을 등록하고 있습니다</p>
-            <p className="text-base text-gray-500">잠시만 기다려 주세요</p>
-          </div>
-        </div>
-      )}
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="flex items-end justify-between border-b border-b-gray-300 pb-2">
