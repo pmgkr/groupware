@@ -547,6 +547,8 @@ export default function ExpenseRegister() {
     } catch (err) {
       console.error('❌ 등록 실패:', err);
 
+      hideLoading();
+
       addAlert({
         title: '비용 등록 실패',
         message: `비용 등록 중 오류가 발생했습니다. \n 다시 시도해주세요.`,
