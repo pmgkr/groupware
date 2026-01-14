@@ -87,6 +87,7 @@ export function Notification() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeTab, setActiveTab] = useState<string>('today');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
   const navigate = useNavigate();
 
   // 알림 목록 조회
@@ -131,15 +132,33 @@ export function Notification() {
 
   // 탭 변경 시 알림 조회
   useEffect(() => {
-    fetchNotifications(activeTab === 'today' ? 'today' : 'recent');
-  }, [activeTab, fetchNotifications]);
-
-  // 초기 로드 시 오늘 알림 조회
-  useEffect(() => {
-    if (user?.user_id) {
-      fetchNotifications('today');
+    if (isOpen) {
+      fetchNotifications(activeTab === 'today' ? 'today' : 'recent');
     }
-  }, [user, fetchNotifications]);
+  }, [activeTab, fetchNotifications, isOpen]);
+
+  // Sheet가 열릴 때 알림 새로고침
+  useEffect(() => {
+    if (isOpen && user?.user_id) {
+      fetchNotifications(activeTab === 'today' ? 'today' : 'recent');
+    }
+  }, [isOpen, user, activeTab, fetchNotifications]);
+
+  // notification:update 이벤트 리스닝
+  useEffect(() => {
+    const handleNotiUpdate = () => {
+      // Sheet가 열려있을 때만 새로고침
+      if (isOpen) {
+        fetchNotifications(activeTab === 'today' ? 'today' : 'recent');
+      }
+    };
+
+    window.addEventListener('notification:update', handleNotiUpdate);
+
+    return () => {
+      window.removeEventListener('notification:update', handleNotiUpdate);
+    };
+  }, [isOpen, activeTab, fetchNotifications]);
 
   // 알림 클릭 시 읽음 처리
   const handleNotificationClick = async (noti: Notification) => {
@@ -220,7 +239,7 @@ export function Notification() {
 
   return (
     <>
-      <Sheet>
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
           <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="알람">
             <Alarm className="size-6" />
