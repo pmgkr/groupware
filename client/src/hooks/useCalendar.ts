@@ -143,6 +143,10 @@ export function useCalendar({ filterMyEvents = false }: UseCalendarProps) {
     setCurrentDate(date);
   }, []);
 
+  const refreshEvents = useCallback(() => {
+    loadEvents(currentDate, filterMyEvents);
+  }, [currentDate, filterMyEvents, loadEvents]);
+
   useEffect(() => {
     loadEvents(currentDate, filterMyEvents);
   }, [filterMyEvents, currentDate, loadEvents]);
@@ -150,7 +154,8 @@ export function useCalendar({ filterMyEvents = false }: UseCalendarProps) {
   return {
     events,
     handleSaveEvent,
-    handleDateChange
+    handleDateChange,
+    refreshEvents
   };
 }
 

@@ -113,7 +113,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
             {data.map((row, index) => {
               const getDayColor = (dayOfWeek: string, holidayName?: string) => {
                 if (holidayName) return 'text-red-600';
-                if (dayOfWeek === '토') return 'text-primary-blue-500';
+                if (dayOfWeek === '토') return 'text-blue-600';
                 if (dayOfWeek === '일') return 'text-red-600';
                 return 'text-gray-800';
               };
