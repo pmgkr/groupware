@@ -7,7 +7,7 @@ interface CalendarProps {
 }
 
 export default function Calendar({ filterMyEvents = false }: CalendarProps) {
-  const { events, handleSaveEvent, handleDateChange } = useCalendar({ filterMyEvents });
+  const { events, handleSaveEvent, handleDateChange, refreshEvents } = useCalendar({ filterMyEvents });
 
   return (
     <CustomCalendar 
@@ -19,6 +19,7 @@ export default function Calendar({ filterMyEvents = false }: CalendarProps) {
       defaultDate={new Date()}
       onSaveEvent={handleSaveEvent}
       onDateChange={handleDateChange}
+      onRefreshEvents={refreshEvents}
     />
   );
 } 
