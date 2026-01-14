@@ -34,7 +34,7 @@ const CLOSE_HOUR = 20;
 const SLOT_MINUTES = 30;
 const SLOT_COUNT = (CLOSE_HOUR - OPEN_HOUR) * (60 / SLOT_MINUTES);
 const ROW_H = 40;
-const HEADER_H_CLASS = 'h-48'; // 헤더 고정 높이(12rem)
+const HEADER_H_CLASS = 'h-54'; // 헤더 고정 높이(12rem)
 
 type Slot = { index: number; start: Date; end: Date; label: string };
 
@@ -302,7 +302,7 @@ export default function MeetingRoomsAllPage() {
             <div className={`${HEADER_H_CLASS} border-b border-gray-400/50`} />
 
             {/* 우측-헤더행: 미팅룸 카드 */}
-            <div className="grid grid-cols-6">
+            <div className="grid grid-cols-5">
               {rooms.map((room, idx) => (
                 <RoomHeader key={room.id} room={room} showRightBorder={idx !== rooms.length - 1} />
               ))}
@@ -318,7 +318,7 @@ export default function MeetingRoomsAllPage() {
             </div>
 
             {/* 우측-바디행: RoomLane(슬롯 영역만) */}
-            <div className="grid grid-cols-6">
+            <div className="grid grid-cols-5">
               {rooms.map((room) => {
                 const all = roomResMap[room.id] ?? [];
 
@@ -624,10 +624,23 @@ function RoomLane({
               className="absolute right-1 left-1 overflow-hidden border border-t-3 border-gray-400/50 bg-white p-2"
               style={{ top, height, borderTopColor: colorsForBlocks[i] }}
               title={`${b.title} · ${format(b.start, 'HH:mm')}~${format(b.end, 'HH:mm')}`}>
-              <div className="text-sm font-semibold">{b.title}</div>
-              {b.length > 1 && (
-                <div className="text-xs text-gray-500">
-                  {format(b.start, 'HH:mm')} - {format(b.end, 'HH:mm')} · {b.user_name}
+              {b.length > 1 ? (
+                // 1시간 이상 예약 (2칸 이상)
+                <>
+                  <div className="text-sm font-semibold">{b.title}</div>
+                  <div className="text-xs text-gray-500">
+                    {format(b.start, 'HH:mm')} - {format(b.end, 'HH:mm')} · {b.user_name}
+                  </div>
+                </>
+              ) : (
+                // 30분 예약 (1칸) - 한 줄에 제목(2/3) + 예약자(1/3)
+                <div className="relative bottom-0.5 flex items-center gap-x-1 text-sm">
+                  <div className="flex-[2] truncate font-semibold" title={b.title}>
+                    {b.title}
+                  </div>
+                  <div className="pr-3 text-xs text-gray-500">
+                    {format(b.start, 'HH:mm')} - {format(b.end, 'HH:mm')} · {b.user_name}
+                  </div>
                 </div>
               )}
               {/* 미팅 예약자와 접속한 유저의 아이디값 비교해서 Popover 노출 필요 */}
@@ -635,7 +648,7 @@ function RoomLane({
               {b.user_id === user_id && (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="svgIcon" size="icon" className="absolute top-2 right-1 size-3">
+                    <Button variant="svgIcon" size="icon" className="absolute top-[9px] right-1 size-3">
                       <More />
                     </Button>
                   </PopoverTrigger>
@@ -665,34 +678,6 @@ function RoomLane({
                   </PopoverContent>
                 </Popover>
               )}
-              {/* <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="svgIcon" size="icon" className="absolute top-2 right-1 size-3">
-                    <More />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-fit p-0" align="start">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="hover:bg-gray-100">
-                        삭제하기
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>예약 삭제</AlertDialogTitle>
-                        <AlertDialogDescription>미팅룸 예약을 삭제하시겠습니까?</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="h-8 px-3.5 text-sm">닫기</AlertDialogCancel>
-                        <AlertDialogAction className="h-8 px-3.5 text-sm" onClick={() => onDelete(b.id)}>
-                          삭제
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </PopoverContent>
-              </Popover> */}
             </div>
           );
         })}

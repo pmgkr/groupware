@@ -59,9 +59,20 @@ export default function Mypage() {
     })();
   }, []);
 
+  const REQUIRED_FIELDS: {
+    key: keyof NonNullable<typeof editedUser>;
+    label: string;
+  }[] = [
+    { key: 'phone', label: '휴대폰 번호' },
+    { key: 'birth_date', label: '생년월일' },
+    { key: 'hire_date', label: '입사일' },
+    { key: 'address', label: '주소' },
+  ];
   //프로필 수정 저장
   const handleEditSave = async () => {
     if (!editedUser) return;
+    if (hasEmptyRequiredField()) return;
+
     // 날짜 변환 함수
     const formatDate = (value?: string | null) => {
       if (!value) return '';
@@ -103,6 +114,32 @@ export default function Mypage() {
   const handleCancel = () => {
     setEditedUser(user); // 원래 값 복원
     setIsEditing(false);
+  };
+
+  const handleEditStart = () => {
+    setEditedUser({
+      ...user!,
+      phone: user?.phone?.replace(/\D/g, '') || '',
+    });
+  };
+  const hasEmptyRequiredField = () => {
+    if (!editedUser) return false;
+
+    for (const field of REQUIRED_FIELDS) {
+      const value = editedUser[field.key];
+
+      if (!value || String(value).trim() === '') {
+        addAlert({
+          title: '필수 입력 항목',
+          message: `<p><strong>${field.label}</strong>을(를) 입력해주세요.</p>`,
+          icon: <OctagonAlert className="text-red-500" />,
+          duration: 2500,
+        });
+        return true;
+      }
+    }
+
+    return false;
   };
 
   //프로필 이미지 수정
@@ -400,7 +437,20 @@ export default function Mypage() {
               </li>
               <li className="flex items-center gap-x-1.5">
                 <PhoneMin className="size-5" />
-                <span>{formatPhone(user?.phone)}</span>
+                {isEditing ? (
+                  <Input
+                    className="h-8 text-sm"
+                    value={editedUser?.phone || ''}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    onChange={(e) => {
+                      const onlyNumber = e.target.value.replace(/\D/g, '');
+                      setEditedUser({ ...editedUser!, phone: onlyNumber });
+                    }}
+                  />
+                ) : (
+                  <span>{formatPhone(user?.phone)}</span>
+                )}
               </li>
             </ul>
           </div>

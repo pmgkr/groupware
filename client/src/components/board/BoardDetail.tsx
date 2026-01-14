@@ -246,7 +246,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
           <h2 className="w-[100px] text-base font-bold">댓글</h2>
           <div className="w-full flex-1">
             <Textarea
-              size="sm"
+              size="default"
               className="w-full"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
