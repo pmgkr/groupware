@@ -164,3 +164,27 @@ export async function getAdminExpenseExcel(params: ExpenseListParams) {
 
   return res;
 }
+
+// 어드민 > 프로젝트 비용 C-Box (EXP# 아이디 입력)
+export interface ExpenseCBoxItem {
+  seq: number;
+  exp_id: string;
+  project_id: string;
+  user_id: string;
+  user_nm: string;
+  el_title: string;
+}
+
+export type ExpenseCBoxRes = {
+  ok: boolean;
+  items: ExpenseCBoxItem[];
+};
+
+export async function sendExpenseToCBox(payload: { expIds: string[] }): Promise<ExpenseCBoxRes> {
+  const res = http<ExpenseCBoxRes>(`/admin/pexpense/cbox`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+  return res;
+}

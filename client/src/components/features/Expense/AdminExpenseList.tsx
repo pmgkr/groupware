@@ -1,11 +1,11 @@
 import { type ExpenseListItems } from '@/api/manager/nexpense';
+import { AdminListRow } from '@components/features/Expense/_components/AdminListRow';
 
 import { Button } from '@components/ui/button';
 import { Checkbox } from '@components/ui/checkbox';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-
-import { AdminListRow } from '@components/features/Expense/_components/AdminListRow';
+import { Mail } from 'lucide-react';
 
 interface ExpenseListProps {
   loading: boolean;
@@ -24,6 +24,8 @@ interface ExpenseListProps {
   handlePDFDownload: (seq: number, expId: string, userName: string) => void;
   handleMultiPDFDownload: (seqs: number[]) => void;
   handleExcelDownload: () => void;
+
+  onOpenCBox: () => void;
 }
 
 export default function ManagerExpenseList({
@@ -43,6 +45,8 @@ export default function ManagerExpenseList({
   handlePDFDownload,
   handleMultiPDFDownload,
   handleExcelDownload,
+
+  onOpenCBox,
 }: ExpenseListProps) {
   return (
     <>
@@ -99,20 +103,27 @@ export default function ManagerExpenseList({
         </TableBody>
       </Table>
 
-      <div className="mt-4 flex justify-end gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            handleMultiPDFDownload(checkedItems);
-          }}>
-          선택 PDF 다운로드
+      <div className="mt-4 flex justify-between gap-2">
+        <Button type="button" size="sm" variant="outline" className="text-primary" onClick={onOpenCBox}>
+          <Mail className="size-3.5" />
+          C-Box
         </Button>
 
-        <Button variant="outline" size="sm" onClick={handleExcelDownload}>
-          Excel 다운로드
-        </Button>
+        <div className="space-x-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              handleMultiPDFDownload(checkedItems);
+            }}>
+            선택 PDF 다운로드
+          </Button>
+
+          <Button variant="outline" size="sm" onClick={handleExcelDownload}>
+            Excel 다운로드
+          </Button>
+        </div>
       </div>
 
       <div className="mt-5">

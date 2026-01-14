@@ -36,20 +36,14 @@ function LoadingComponent({ title, message, className }: { title?: string; messa
       `}</style>
       <div
         className={cn(
-          'flex flex-col items-center justify-center gap-3 inset-0 z-[150] bg-background/60 backdrop-blur-[1px] fixed left-0 top-0 w-[100vw] h-[100vh]',
+          'bg-background/90 fixed inset-0 top-0 left-0 z-[150] flex h-[100vh] w-[100vw] flex-col items-center justify-center gap-3 backdrop-blur-[1px]',
           className
-        )}
-      >
+        )}>
         <LoadingIcon className="size-20" />
-        {title && (
-          <p 
-            className="loading-title text-lg text-gray-500 text-center"
-            dangerouslySetInnerHTML={{ __html: title }}
-          />
-        )}
+        {title && <p className="loading-title text-center text-lg text-gray-500" dangerouslySetInnerHTML={{ __html: title }} />}
         {message && (
-          <div className="flex flex-col items-center justify-center gap-1 text-primary-blue-500 mt-[10px]">
-            <p className="text-sm bg-primary-blue-100 w-[41px] h-[18px] rounded-md flex items-center justify-center">tip</p>
+          <div className="text-primary-blue-500 mt-[10px] flex flex-col items-center justify-center gap-1">
+            <p className="bg-primary-blue-100 flex h-[18px] w-[41px] items-center justify-center rounded-md text-sm">tip</p>
             <p className="text-sm">{message}</p>
           </div>
         )}
@@ -69,7 +63,7 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
       const opts = options || {};
       setLoadingOptions(opts);
       setIsLoading(true);
-      
+
       return promise
         .then((result) => {
           setIsLoading(false);
@@ -82,7 +76,7 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
           throw error;
         });
     }
-    
+
     // 옵션만 받은 경우 (수동 제어)
     const opts = optionsOrPromise as LoadingOptions | undefined;
     setLoadingOptions(opts || {});
@@ -97,12 +91,7 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
   return (
     <LoadingContext.Provider value={{ showLoading, hideLoading }}>
       {children}
-      {isLoading && (
-        <LoadingComponent
-          title={loadingOptions.title}
-          message={loadingOptions.message}
-        />
-      )}
+      {isLoading && <LoadingComponent title={loadingOptions.title} message={loadingOptions.message} />}
     </LoadingContext.Provider>
   );
 }
