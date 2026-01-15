@@ -80,6 +80,10 @@ export default function LateTimeDownload({
       case '-':
       case '':
         return '일반근무';
+      case 'field':
+        return '외부근무';
+      case 'remote':
+        return '재택근무';
       default:
         return wtype || '-';
     }
