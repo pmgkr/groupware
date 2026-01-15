@@ -426,17 +426,17 @@ export default function Mypage() {
               {user?.branch}
               <PlaceMin className="inline-block size-3.5" />
             </div>
-            <div className="my-2.5">
+            <div className="mt-2.5 mb-1">
               <strong className="block text-[1.5em] font-bold">{user?.user_name_en}</strong>
               {user?.job_role}
             </div>
-            <ul className="flex items-center gap-x-4 text-[.875em] font-normal">
+            <ul className="flex h-[32px] items-center gap-x-4 text-[.875em] font-normal">
               <li className="flex items-center gap-x-1.5">
                 <MailMin className="size-5" />
                 <span>{user?.user_id}</span>
               </li>
               <li className="flex items-center gap-x-1.5">
-                <PhoneMin className="size-5" />
+                <PhoneMin className="size-5 shrink-0" />
                 {isEditing ? (
                   <Input
                     className="h-8 text-sm"
