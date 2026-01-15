@@ -1,29 +1,33 @@
 // src/components/features/Expense/_components/ExpenseRegisterRow.tsx
-import React, { useState } from 'react';
+import { useEffect, useState, useCallback, memo } from 'react';
+import type { Control, UseFormGetValues, UseFormSetValue } from 'react-hook-form';
+import { useToggleState } from '@/hooks/useToggleState';
+import { cn } from '@/lib/utils';
+import { formatAmount, formatKST } from '@/utils';
+import { format } from 'date-fns';
+
+import { getProposalList, type ProposalItem } from '@/api/expense/proposal';
+import { AttachmentField } from './AttachmentField';
+import type { PreviewFile } from './UploadArea';
+
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
 import { Button } from '@components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
+import { SearchableSelect, type SingleSelectOption } from '@components/ui/SearchableSelect';
 import { DayPicker } from '@components/daypicker';
-import { cn } from '@/lib/utils';
-import { Calendar, Close } from '@/assets/images/icons';
-import { FileText } from 'lucide-react';
-import { useToggleState } from '@/hooks/useToggleState';
-import { format } from 'date-fns';
-import { formatAmount, formatKST } from '@/utils';
-import { AttachmentField } from './AttachmentField';
-import type { PreviewFile } from './UploadArea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getProposalList, type ProposalItem } from '@/api/expense/proposal';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar, Close } from '@/assets/images/icons';
+import { FileText } from 'lucide-react';
 
 type ExpenseRowProps = {
   index: number;
-  control: any;
-  expenseTypes: { code: string }[];
-  form: any;
+  control: Control<any>;
+  getValues: UseFormGetValues<any>;
+  setValue: UseFormSetValue<any>;
+  expenseTypes: SingleSelectOption[];
   onRemove: (index: number) => void;
   handleDropFiles: (files: PreviewFile[], fieldName: string, rowIndex: number | null) => void;
   handleAttachUpload: (files: PreviewFile[], rowIndex: number | null) => void;
@@ -31,13 +35,15 @@ type ExpenseRowProps = {
   activeFile: string | null;
   setActiveFile: (id: string | null) => void;
   onSelectProposal?: (selectedProposalId: Number) => void;
+  onTotalChange: () => void;
 };
 
 function ExpenseRowComponent({
   index,
   control,
+  getValues,
+  setValue,
   expenseTypes,
-  form,
   onRemove,
   handleDropFiles,
   handleAttachUpload,
@@ -45,8 +51,27 @@ function ExpenseRowComponent({
   activeFile,
   setActiveFile,
   onSelectProposal,
+  onTotalChange,
 }: ExpenseRowProps) {
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
+
+  // 로컬 상태 (핵심)
+  const [price, setPrice] = useState('');
+  const [tax, setTax] = useState('');
+
+  // 초기값 동기화 (excel / reset 대응)
+  useEffect(() => {
+    setPrice(getValues(`expense_items.${index}.price`) || '');
+    setTax(getValues(`expense_items.${index}.tax`) || '');
+  }, [index]);
+
+  const syncTotal = (nextPrice: string, nextTax: string) => {
+    const total = Number(nextPrice || 0) + Number(nextTax || 0);
+    setValue(`expense_items.${index}.total`, total.toString(), {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+  };
 
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [proposalList, setProposalList] = useState<ProposalItem[]>([]);
@@ -100,22 +125,17 @@ function ExpenseRowComponent({
           <FormField
             control={control}
             name={`expense_items.${index}.type`}
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel className="font-bold text-gray-950">비용 유형</FormLabel>
                 <FormControl>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <SelectTrigger className="aria-[invalid=true]:border-destructive w-full">
-                      <SelectValue placeholder={expenseTypes.length ? '비용 유형 선택' : '불러오는 중...'} />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-80 w-full">
-                      {expenseTypes.map((item, i) => (
-                        <SelectItem key={i} value={item.code}>
-                          {item.code}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    placeholder="비용 유형 선택"
+                    options={expenseTypes}
+                    value={field.value}
+                    onChange={field.onChange}
+                    invalid={fieldState.invalid}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -189,24 +209,18 @@ function ExpenseRowComponent({
                   <Input
                     inputMode="numeric"
                     placeholder="금액"
-                    value={field.value ? formatAmount(field.value) : ''}
+                    value={price ? formatAmount(price) : ''}
                     onChange={(e) => {
-                      const raw = e.target.value
-                        .replace(/,/g, '')
-                        .replace(/[^0-9-]/g, '')
-                        .replace(/(?!^)-/g, ''); // 마이너스는 맨 앞만 허용
-
-                      field.onChange(raw);
-
-                      const taxValue = Number(String(form.getValues(`expense_items.${index}.tax`) || '').replace(/,/g, '')) || 0;
-
-                      const priceValue = Number(raw || 0);
-                      const total = priceValue + taxValue;
-
-                      form.setValue(`expense_items.${index}.total`, total.toString(), {
-                        shouldValidate: false,
+                      const raw = e.target.value.replace(/[^0-9-]/g, '');
+                      setPrice(raw);
+                    }}
+                    onBlur={() => {
+                      setValue(`expense_items.${index}.price`, price, {
                         shouldDirty: true,
+                        shouldValidate: false,
                       });
+                      syncTotal(price, tax);
+                      onTotalChange?.();
                     }}
                   />
                 </FormControl>
@@ -226,16 +240,18 @@ function ExpenseRowComponent({
                   <Input
                     inputMode="numeric"
                     placeholder="세금"
-                    value={field.value ? formatAmount(field.value) : ''}
+                    value={tax ? formatAmount(tax) : ''}
                     onChange={(e) => {
                       const raw = e.target.value.replace(/[^0-9]/g, '');
-                      field.onChange(raw);
-                      const priceValue = Number(String(form.getValues(`expense_items.${index}.price`) || '').replace(/,/g, '')) || 0;
-                      const total = priceValue + Number(raw || 0);
-                      form.setValue(`expense_items.${index}.total`, total.toString(), {
-                        shouldValidate: false,
+                      setTax(raw);
+                    }}
+                    onBlur={() => {
+                      setValue(`expense_items.${index}.tax`, tax, {
                         shouldDirty: true,
+                        shouldValidate: false,
                       });
+                      syncTotal(price, tax);
+                      onTotalChange?.();
                     }}
                   />
                 </FormControl>
@@ -321,23 +337,8 @@ function ExpenseRowComponent({
                           checked={isSelected}
                           disabled={isDisabled}
                           onCheckedChange={(checked) => {
-                            if (checked) {
-                              form.setValue(`expense_items.${index}.pro_id`, p.rp_seq, {
-                                shouldDirty: true,
-                                shouldValidate: false,
-                              });
-
-                              setSelectedProposalId(p.rp_seq);
-                              setSelectedProposal(p);
-                            } else {
-                              form.setValue(`expense_items.${index}.pro_id`, null, {
-                                shouldDirty: true,
-                                shouldValidate: false,
-                              });
-
-                              setSelectedProposalId(null);
-                              setSelectedProposal(null);
-                            }
+                            setSelectedProposalId(checked ? p.rp_seq : null);
+                            setSelectedProposal(checked ? p : null);
                           }}
                         />
                       </TableCell>
@@ -358,6 +359,11 @@ function ExpenseRowComponent({
                 if (!selectedProposalId) return;
                 console.log('선택된 기안서:', selectedProposalId);
 
+                setValue(`expense_items.${index}.pro_id`, selectedProposalId, {
+                  shouldDirty: true,
+                  shouldValidate: false,
+                });
+
                 // 부모 컴포넌트로 선택된 기안서 전달
                 onSelectProposal?.(selectedProposalId);
                 setDialogOpen(false);
@@ -372,4 +378,4 @@ function ExpenseRowComponent({
 }
 
 /** 메모이제이션 적용 */
-export const ExpenseRow = React.memo(ExpenseRowComponent);
+export const ExpenseRow = memo(ExpenseRowComponent);

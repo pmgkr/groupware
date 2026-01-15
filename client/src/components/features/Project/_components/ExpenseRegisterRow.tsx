@@ -1,8 +1,6 @@
 // src/components/features/Expense/_components/ExpenseRegisterRow.tsx
 import { useState, useEffect, useCallback, memo } from 'react';
-import { useForm } from 'react-hook-form';
-import { useUser } from '@/hooks/useUser';
-import { getExpenseType } from '@/api';
+import type { Control, UseFormGetValues, UseFormSetValue } from 'react-hook-form';
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
@@ -26,8 +24,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 type ExpenseRowProps = {
   index: number;
   projectType: string;
-  control: any;
-  form: any;
+  control: Control<any>;
+  getValues: UseFormGetValues<any>;
+  setValue: UseFormSetValue<any>;
+  expenseTypes: SingleSelectOption[];
   onRemove: (index: number) => void;
   handleDropFiles: (files: PreviewFile[], fieldName: string, rowIndex: number | null) => void;
   handleAttachUpload: (files: PreviewFile[], rowIndex: number | null) => void;
@@ -35,13 +35,16 @@ type ExpenseRowProps = {
   activeFile: string | null;
   setActiveFile: (id: string | null) => void;
   onSelectProposal?: (selectedProposalId: Number) => void;
+  onTotalChange: () => void;
 };
 
 function ExpenseRowComponent({
   index,
   control,
   projectType,
-  form,
+  getValues,
+  setValue,
+  expenseTypes,
   onRemove,
   handleDropFiles,
   handleAttachUpload,
@@ -49,25 +52,27 @@ function ExpenseRowComponent({
   activeFile,
   setActiveFile,
   onSelectProposal,
+  onTotalChange,
 }: ExpenseRowProps) {
-  const { user_level } = useUser();
-  const [expenseTypes, setExpenseTypes] = useState<SingleSelectOption[]>([]);
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
 
-  const fetchClients = useCallback(async () => {
-    try {
-      const expenseTypeParam = user_level === 'user' ? 'exp_type1' : 'exp_type2';
+  // 로컬 상태 (핵심)
+  const [price, setPrice] = useState('');
+  const [tax, setTax] = useState('');
 
-      const res = await getExpenseType(expenseTypeParam);
-      const mapped = res.map((t: any) => ({
-        label: t.code,
-        value: t.code,
-      }));
-      setExpenseTypes(mapped);
-    } catch (err) {
-      console.error('❌ 클라이언트 불러오기 오류 :', err);
-    }
-  }, []);
+  // 초기값 동기화 (excel / reset 대응)
+  useEffect(() => {
+    setPrice(getValues(`expense_items.${index}.price`) || '');
+    setTax(getValues(`expense_items.${index}.tax`) || '');
+  }, [index]);
+
+  const syncTotal = (nextPrice: string, nextTax: string) => {
+    const total = Number(nextPrice || 0) + Number(nextTax || 0);
+    setValue(`expense_items.${index}.total`, total.toString(), {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+  };
 
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [proposalList, setProposalList] = useState<ProposalItem[]>([]);
@@ -92,10 +97,6 @@ function ExpenseRowComponent({
       console.error('기안서 리스트 불러오기 실패:', err);
     }
   };
-
-  useEffect(() => {
-    fetchClients();
-  }, [fetchClients]);
 
   return (
     <article className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0">
@@ -135,7 +136,7 @@ function ExpenseRowComponent({
                     placeholder="비용 유형 선택"
                     options={expenseTypes}
                     value={field.value}
-                    onChange={(v) => field.onChange(v)}
+                    onChange={field.onChange}
                     invalid={fieldState.invalid}
                   />
                 </FormControl>
@@ -211,24 +212,18 @@ function ExpenseRowComponent({
                   <Input
                     inputMode="numeric"
                     placeholder="금액"
-                    value={field.value ? formatAmount(field.value) : ''}
+                    value={price ? formatAmount(price) : ''}
                     onChange={(e) => {
-                      const raw = e.target.value
-                        .replace(/,/g, '')
-                        .replace(/[^0-9-]/g, '')
-                        .replace(/(?!^)-/g, ''); // 마이너스는 맨 앞만 허용
-
-                      field.onChange(raw);
-
-                      const taxValue = Number(String(form.getValues(`expense_items.${index}.tax`) || '').replace(/,/g, '')) || 0;
-
-                      const priceValue = Number(raw || 0);
-                      const total = priceValue + taxValue;
-
-                      form.setValue(`expense_items.${index}.total`, total.toString(), {
-                        shouldValidate: false,
+                      const raw = e.target.value.replace(/[^0-9-]/g, '');
+                      setPrice(raw);
+                    }}
+                    onBlur={() => {
+                      setValue(`expense_items.${index}.price`, price, {
                         shouldDirty: true,
+                        shouldValidate: false,
                       });
+                      syncTotal(price, tax);
+                      onTotalChange?.();
                     }}
                   />
                 </FormControl>
@@ -248,16 +243,18 @@ function ExpenseRowComponent({
                   <Input
                     inputMode="numeric"
                     placeholder="세금"
-                    value={field.value ? formatAmount(field.value) : ''}
+                    value={tax ? formatAmount(tax) : ''}
                     onChange={(e) => {
                       const raw = e.target.value.replace(/[^0-9]/g, '');
-                      field.onChange(raw);
-                      const priceValue = Number(String(form.getValues(`expense_items.${index}.price`) || '').replace(/,/g, '')) || 0;
-                      const total = priceValue + Number(raw || 0);
-                      form.setValue(`expense_items.${index}.total`, total.toString(), {
-                        shouldValidate: false,
+                      setTax(raw);
+                    }}
+                    onBlur={() => {
+                      setValue(`expense_items.${index}.tax`, tax, {
                         shouldDirty: true,
+                        shouldValidate: false,
                       });
+                      syncTotal(price, tax);
+                      onTotalChange?.();
                     }}
                   />
                 </FormControl>
@@ -344,23 +341,8 @@ function ExpenseRowComponent({
                           checked={isSelected}
                           disabled={isDisabled}
                           onCheckedChange={(checked) => {
-                            if (checked) {
-                              form.setValue(`expense_items.${index}.pro_id`, p.rp_seq, {
-                                shouldDirty: true,
-                                shouldValidate: false,
-                              });
-
-                              setSelectedProposalId(p.rp_seq);
-                              setSelectedProposal(p);
-                            } else {
-                              form.setValue(`expense_items.${index}.pro_id`, null, {
-                                shouldDirty: true,
-                                shouldValidate: false,
-                              });
-
-                              setSelectedProposalId(null);
-                              setSelectedProposal(null);
-                            }
+                            setSelectedProposalId(checked ? p.rp_seq : null);
+                            setSelectedProposal(checked ? p : null);
                           }}
                         />
                       </TableCell>
@@ -380,6 +362,12 @@ function ExpenseRowComponent({
               onClick={() => {
                 if (!selectedProposalId) return;
                 console.log('선택된 기안서:', selectedProposalId);
+
+                setValue(`expense_items.${index}.pro_id`, selectedProposalId, {
+                  shouldDirty: true,
+                  shouldValidate: false,
+                });
+
                 // 부모 컴포넌트로 선택된 기안서 전달
                 onSelectProposal?.(selectedProposalId);
 
@@ -394,5 +382,5 @@ function ExpenseRowComponent({
   );
 }
 
-/** 메모이제이션 적용 */
+/* 메모이제이션 적용 */
 export const ExpenseRow = memo(ExpenseRowComponent);
