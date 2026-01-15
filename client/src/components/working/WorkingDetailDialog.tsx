@@ -53,9 +53,10 @@ export default function WorkingDetailDialog({
       ]);
       
       // API 데이터를 WorkData 형식으로 변환
+      // event 데이터를 vacations 배열에 합쳐서 전달
       const apiData = await convertApiDataToWorkData(
         workLogResponse.wlog || [], 
-        workLogResponse.vacation || [], 
+        [...(workLogResponse.vacation || []), ...(workLogResponse.event || [])], 
         overtimeResponse.items?.filter(ot => ot.user_id === userId) || [],
         weekStartDate,
         userId
