@@ -1,8 +1,6 @@
 // src/components/features/Expense/_components/ExpenseRegisterRow.tsx
 import { useState, useEffect, useCallback, memo } from 'react';
 import type { Control, UseFormGetValues, UseFormSetValue } from 'react-hook-form';
-import { useUser } from '@/hooks/useUser';
-import { getExpenseType } from '@/api';
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
@@ -29,6 +27,7 @@ type ExpenseRowProps = {
   control: Control<any>;
   getValues: UseFormGetValues<any>;
   setValue: UseFormSetValue<any>;
+  expenseTypes: SingleSelectOption[];
   onRemove: (index: number) => void;
   handleDropFiles: (files: PreviewFile[], fieldName: string, rowIndex: number | null) => void;
   handleAttachUpload: (files: PreviewFile[], rowIndex: number | null) => void;
@@ -45,6 +44,7 @@ function ExpenseRowComponent({
   projectType,
   getValues,
   setValue,
+  expenseTypes,
   onRemove,
   handleDropFiles,
   handleAttachUpload,
@@ -54,9 +54,6 @@ function ExpenseRowComponent({
   onSelectProposal,
   onTotalChange,
 }: ExpenseRowProps) {
-  const { user_level } = useUser();
-  const [expenseTypes, setExpenseTypes] = useState<SingleSelectOption[]>([]);
-
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
 
   // 로컬 상태 (핵심)
@@ -68,16 +65,6 @@ function ExpenseRowComponent({
     setPrice(getValues(`expense_items.${index}.price`) || '');
     setTax(getValues(`expense_items.${index}.tax`) || '');
   }, [index]);
-
-  const fetchExpenseTypes = useCallback(async () => {
-    const typeKey = user_level === 'user' ? 'exp_type1' : 'exp_type2';
-    const res = await getExpenseType(typeKey);
-    setExpenseTypes(res.map((t: any) => ({ label: t.code, value: t.code })));
-  }, [user_level]);
-
-  useEffect(() => {
-    fetchExpenseTypes();
-  }, [fetchExpenseTypes]);
 
   const syncTotal = (nextPrice: string, nextTax: string) => {
     const total = Number(nextPrice || 0) + Number(nextTax || 0);

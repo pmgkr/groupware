@@ -7,7 +7,8 @@ import { useToggleState } from '@/hooks/useToggleState';
 import { useUser } from '@/hooks/useUser';
 import { mapExcelToExpenseItems } from '@/utils';
 
-import { uploadFilesToServer, projectExpenseRegister, getBankList, type BankList } from '@/api';
+import { uploadFilesToServer, projectExpenseRegister, getBankList, getExpenseType, type BankList } from '@/api';
+import { type SingleSelectOption } from '@components/ui/SearchableSelect';
 import { ExpenseRow } from './_components/ExpenseRegisterRow';
 import { ZoomBoundaryContext } from '../Expense/context/ZoomContext';
 import { UploadArea, type UploadAreaHandle, type PreviewFile } from '../Expense/_components/UploadArea';
@@ -84,6 +85,7 @@ export default function ProjectExpenseRegister() {
   // 비용 항목 기본 세팅값 : Excel 업로드 시 0으로 세팅, 수기 작성 시 5개로 세팅
   const [articleCount, setArticleCount] = useState(state?.excelData ? 0 : 5);
   const [bankList, setBankList] = useState<BankList[]>([]);
+  const [expenseTypes, setExpenseTypes] = useState<SingleSelectOption[]>([]); // 비용 유형 API State
 
   const [files, setFiles] = useState<PreviewFile[]>([]);
   const [hasFiles, setHasFiles] = useState(false); // 추가 업로드 버튼 활성화 State
@@ -145,8 +147,10 @@ export default function ProjectExpenseRegister() {
   useEffect(() => {
     (async () => {
       try {
+        const expenseTypeParam = user_level === 'user' ? 'exp_type1' : 'exp_type2';
+
         // 페이지 렌더 시 API 병렬 호출
-        const [bankResult] = await Promise.allSettled([getBankList()]);
+        const [bankResult, expResult] = await Promise.allSettled([getBankList(), getExpenseType(expenseTypeParam)]);
 
         // API 개별 결과 관리
         if (bankResult.status === 'fulfilled') {
@@ -154,6 +158,12 @@ export default function ProjectExpenseRegister() {
           setBankList(formattedBanks);
         } else {
           console.error('은행 목록 불러오기 실패:', bankResult.reason);
+        }
+
+        if (expResult.status === 'fulfilled') {
+          setExpenseTypes(expResult.value.map((t: any) => ({ label: t.code, value: t.code })));
+        } else {
+          console.error('비용 유형 불러오기 실패:', expResult.reason);
         }
       } catch (error) {
         // Promise.allSettled 자체는 에러를 던지지 않지만, 안전하게 감싸줌
@@ -853,6 +863,7 @@ export default function ProjectExpenseRegister() {
                       projectType={projectType}
                       getValues={getValues}
                       setValue={setValue}
+                      expenseTypes={expenseTypes}
                       onRemove={handleRemoveArticle}
                       handleDropFiles={handleDropFiles}
                       handleAttachUpload={handleAttachUpload}
