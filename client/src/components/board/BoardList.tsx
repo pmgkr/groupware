@@ -121,7 +121,9 @@ export default function BoardList() {
                 <Badge>공지</Badge>
               </TableCell>
               {!isSuggestBoard && <TableCell>{post.category}</TableCell>}
-              <TableCell className="text-left">{post.title}</TableCell>
+              <TableCell className="text-left">
+                {post.title} {post.repl_cnt > 0 && <span className="ml-1 text-sm tracking-tighter text-gray-500">[ {post.repl_cnt} ]</span>}
+              </TableCell>
               <TableCell>{post.user_name}</TableCell>
               <TableCell>{post.reg_date.substring(0, 10)}</TableCell>
               <TableCell>{post.v_count}</TableCell>
@@ -142,7 +144,10 @@ export default function BoardList() {
                 <TableRow key={post.n_seq} onClick={() => navigate(`${post.n_seq}`)} className="cursor-pointer hover:bg-gray-100">
                   <TableCell className="font-medium">{total - startNo - index}</TableCell>
                   {!isSuggestBoard && <TableCell>{post.category}</TableCell>}
-                  <TableCell className="text-left">{post.title}</TableCell>
+                  <TableCell className="text-left">
+                    {post.title}
+                    {post.repl_cnt > 0 && <span className="ml-1 text-sm tracking-tighter text-gray-500">[ {post.repl_cnt} ]</span>}
+                  </TableCell>
                   <TableCell>{post.user_name}</TableCell>
                   <TableCell>{post.reg_date.substring(0, 10)}</TableCell>
                   <TableCell>{post.v_count}</TableCell>

@@ -12,6 +12,7 @@ export type BoardDTO = {
   v_count: number;
   reg_date: string;
   pinned?: string;
+  repl_cnt: number;
 };
 
 //게시글 리스트

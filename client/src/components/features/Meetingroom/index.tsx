@@ -94,6 +94,39 @@ function useAllReservations(dateStr: string) {
   return { rooms, roomResMap, refresh, loading, error };
 }
 
+function ReservationAction({ onDelete }: { onDelete: () => void }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="svgIcon" size="icon" className="relative bottom-[1px] left-0.5 size-3 flex-shrink-0">
+          <More />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-fit p-0" align="start">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" size="sm" className="hover:bg-gray-100">
+              삭제하기
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>예약 삭제</AlertDialogTitle>
+              <AlertDialogDescription>미팅룸 예약을 삭제하시겠습니까?</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="h-8 px-3.5 text-sm">닫기</AlertDialogCancel>
+              <AlertDialogAction className="h-8 px-3.5 text-sm" onClick={onDelete}>
+                삭제
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 type PendingSelection = {
   roomId: number | null;
   start: Date | null;
@@ -618,65 +651,44 @@ function RoomLane({
           const top = b.startIdx * ROW_H + 3;
           const height = b.length * ROW_H - 6;
           const { user_id } = useUser();
+          const isOwner = b.user_id === user_id;
+          const isLong = b.length > 1;
           return (
             <div
               key={b.id}
               className="absolute right-1 left-1 overflow-hidden border border-t-3 border-gray-400/50 bg-white p-2"
               style={{ top, height, borderTopColor: colorsForBlocks[i] }}
               title={`${b.title} · ${format(b.start, 'HH:mm')}~${format(b.end, 'HH:mm')}`}>
-              {b.length > 1 ? (
-                // 1시간 이상 예약 (2칸 이상)
+              {isLong ? (
                 <>
-                  <div className="text-sm font-semibold">{b.title}</div>
+                  {/* 상단 */}
+                  <div className="flex items-start justify-between">
+                    <div className="text-sm font-semibold">{b.title}</div>
+                    {isOwner && <ReservationAction onDelete={() => onDelete(b.id)} />}
+                  </div>
+
+                  {/* 하단 */}
                   <div className="text-xs text-gray-500">
                     {format(b.start, 'HH:mm')} - {format(b.end, 'HH:mm')} · {b.user_name}
                   </div>
                 </>
               ) : (
-                // 30분 예약 (1칸) - 한 줄에 제목(2/3) + 예약자(1/3)
-                <div className="relative bottom-0.5 flex items-center gap-x-1 text-sm">
-                  <div className="flex-[2] truncate font-semibold" title={b.title}>
+                <div className="relative bottom-0.5 flex items-center gap-x-1">
+                  {/* 제목 */}
+                  <div className="flex-1.5 truncate text-sm font-semibold" title={b.title}>
                     {b.title}
                   </div>
-                  <div className="pr-3 text-xs text-gray-500">
+
+                  {/* 시간·작성자 */}
+                  <div
+                    className="flex-1 truncate text-right text-xs text-gray-500"
+                    title={`${format(b.start, 'HH:mm')}-${format(b.end, 'HH:mm')} · ${b.user_name}`}>
                     {format(b.start, 'HH:mm')} - {format(b.end, 'HH:mm')} · {b.user_name}
                   </div>
+
+                  {/* 액션 */}
+                  {isOwner && <ReservationAction onDelete={() => onDelete(b.id)} />}
                 </div>
-              )}
-              {/* 미팅 예약자와 접속한 유저의 아이디값 비교해서 Popover 노출 필요 */}
-
-              {b.user_id === user_id && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="svgIcon" size="icon" className="absolute top-[9px] right-1 size-3">
-                      <More />
-                    </Button>
-                  </PopoverTrigger>
-
-                  <PopoverContent className="w-fit p-0" align="start">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="hover:bg-gray-100">
-                          삭제하기
-                        </Button>
-                      </AlertDialogTrigger>
-
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>예약 삭제</AlertDialogTitle>
-                          <AlertDialogDescription>미팅룸 예약을 삭제하시겠습니까?</AlertDialogDescription>
-                        </AlertDialogHeader>
-
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="h-8 px-3.5 text-sm">닫기</AlertDialogCancel>
-                          <AlertDialogAction className="h-8 px-3.5 text-sm" onClick={() => onDelete(b.id)}>
-                            삭제
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </PopoverContent>
-                </Popover>
               )}
             </div>
           );

@@ -427,11 +427,11 @@ export default function BookWish() {
 
                 <TableCell>
                   {post.status === '신청' ? (
-                    <Badge variant="lightpink" className="px-3">
+                    <Badge variant="lightpink" className="bg-primary-pink-100 text-primary-pink px-3">
                       신청
                     </Badge>
                   ) : (
-                    <Badge variant="pink" className="px-3">
+                    <Badge variant="pink" className="bg-primary-pink px-3 text-white">
                       완료
                     </Badge>
                   )}

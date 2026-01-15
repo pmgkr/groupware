@@ -24,6 +24,7 @@ import { Textarea } from '../ui/textarea';
 import { Heart, OctagonAlert } from 'lucide-react';
 import { useAppAlert } from '../common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '../common/ui/AppDialog/AppDialog';
+import { notificationApi } from '@/api/notification';
 
 interface BoardDetailProps {
   id?: string;
@@ -144,6 +145,18 @@ export default function BoardDetail({ id }: BoardDetailProps) {
           user_name: user.user_name!,
           comment: newComment,
         });
+
+        if (post && post.user_id !== user.user_id) {
+          await notificationApi.registerNotification({
+            user_id: post.user_id,
+            user_name: post.user_name,
+            noti_target: user.user_id!,
+            noti_title: post.title,
+            noti_message: `작성한 게시글에 댓글이 달렸습니다.`,
+            noti_type: 'notice',
+            noti_url: `/notice/${post.n_seq}`,
+          });
+        }
       }
 
       // 등록 성공 후 댓글 다시 불러오기
