@@ -123,24 +123,24 @@ export default function ProjectExpenseRegister() {
     },
   });
 
-  const { control } = form;
+  const { control, getValues, setValue } = form;
   const { fields, append, replace, remove } = useFieldArray({
     control,
     name: 'expense_items',
   });
 
-  // 합계 계산: debounce 적용
-  const watchedItems = useWatch({
-    control: form.control,
-    name: 'expense_items',
-  });
+  // Total 계산을 위한 recalcKey State
+  const [recalcKey, setRecalcKey] = useState(0);
 
-  const totalSum = useMemo(() => {
-    if (!Array.isArray(watchedItems)) return 0;
-    return watchedItems.reduce((sum, item) => sum + (Number(item?.total) || 0), 0);
-  }, [watchedItems]);
+  const recalcTotal = () => {
+    setRecalcKey((k) => k + 1);
+  };
 
-  const formattedTotal = totalSum.toLocaleString();
+  const formattedTotal = useMemo(() => {
+    const items = form.getValues('expense_items') || [];
+    const sum = items.reduce((acc, i) => acc + (Number(i.total) || 0), 0);
+    return sum.toLocaleString();
+  }, [recalcKey]);
 
   useEffect(() => {
     (async () => {
@@ -851,7 +851,8 @@ export default function ProjectExpenseRegister() {
                       index={index}
                       control={control}
                       projectType={projectType}
-                      form={form}
+                      getValues={getValues}
+                      setValue={setValue}
                       onRemove={handleRemoveArticle}
                       handleDropFiles={handleDropFiles}
                       handleAttachUpload={handleAttachUpload}
@@ -861,6 +862,7 @@ export default function ProjectExpenseRegister() {
                       onSelectProposal={(proposalId) => {
                         setSelectedProposal(proposalId);
                       }}
+                      onTotalChange={recalcTotal}
                     />
                   ))}
 

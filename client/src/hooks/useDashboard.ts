@@ -1,5 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { dashboardApi, type VacationSummaryItem, type Calendar, type Meetingroom, type Notification, type Wlog, type Notice, type Expense } from '@/api/dashboard';
+import {
+  dashboardApi,
+  type VacationSummaryItem,
+  type Calendar,
+  type Meetingroom,
+  type Notification,
+  type Wlog,
+  type Notice,
+  type Expense,
+} from '@/api/dashboard';
 import { formatKST, timeToMinutes } from '@/utils/date';
 import dayjs from 'dayjs';
 
@@ -18,12 +27,12 @@ const getMeetingroomKoreanName = (mrName: string): string => {
 
 const getMeetingroomBadgeColor = (mrName: string): string => {
   const colorMap: Record<string, string> = {
-    'Beijing Room': 'bg-[#FF6B6B]',
-    'Tokyo Room': 'bg-[#FFA46B]',
-    'Singapore Room': 'bg-[#2FC05D]',
-    'Sydney Room': 'bg-[#6BADFF]',
-    'Manila Room': 'bg-[#5E6BFF]',
-    'Bangkok Room': 'bg-[#DA6BFF]',
+    'Beijing Room': 'bg-[#F3AD47]',
+    'Tokyo Room': 'bg-[#4DB6AC]',
+    'Singapore Room': 'bg-[#E57373]',
+    'Sydney Room': 'bg-[#81C784]',
+    'Manila Room': 'bg-[#64B5F6]',
+    'Bangkok Room': 'bg-[#D493EA]',
   };
   return colorMap[mrName] || 'bg-gray-500';
 };
@@ -31,12 +40,12 @@ const getMeetingroomBadgeColor = (mrName: string): string => {
 // 비용 관련 함수
 const getExpenseStepStatusName = (status: string): string => {
   const nameMap: Record<string, string> = {
-    'Saved': '임시저장',
-    'Claimed': '승인대기',
-    'Confirmed': '승인완료',
-    'Approved': '지급대기',
-    'Completed': '지급완료',
-    'Rejected': '반려됨',
+    Saved: '임시저장',
+    Claimed: '승인대기',
+    Confirmed: '승인완료',
+    Approved: '지급대기',
+    Completed: '지급완료',
+    Rejected: '반려됨',
   };
   return nameMap[status] || status;
 };
@@ -44,14 +53,14 @@ const getExpenseStepStatusName = (status: string): string => {
 const getExpenseBadgeColor = (status: string): string => {
   const colorMap: Record<string, string> = {
     // grayish variant의 className
-    'Saved': 'bg-gray-100 text-gray-700 [a&]:hover:bg-gray-300/90 border-gray-300/50',
+    Saved: 'bg-gray-100 text-gray-700 [a&]:hover:bg-gray-300/90 border-gray-300/50',
     // secondary variant의 className
-    'Claimed': 'bg-primary-blue-100 text-primary-blue [a&]:hover:bg-secondary/90 border-primary-blue-300/10',
+    Claimed: 'bg-primary-blue-100 text-primary-blue [a&]:hover:bg-secondary/90 border-primary-blue-300/10',
     // default variant의 className
-    'Confirmed': 'bg-primary-blue-500 text-primary-foreground [a&]:hover:bg-primary/90',
-    'Approved': 'bg-primary-blue/80',
-    'Completed': 'bg-primary-blue',
-    'Rejected': 'bg-destructive',
+    Confirmed: 'bg-primary-blue-500 text-primary-foreground [a&]:hover:bg-primary/90',
+    Approved: 'bg-primary-blue/80',
+    Completed: 'bg-primary-blue',
+    Rejected: 'bg-destructive',
   };
   return colorMap[status] || 'bg-gray-500';
 };
@@ -60,7 +69,7 @@ export function useDashboard(selectedDate?: Date) {
   const [wlog, setWlog] = useState<Wlog>({
     wlogWeek: [],
     wlogToday: [],
-    wlogSchedule: []
+    wlogSchedule: [],
   });
   const [vacation, setVacation] = useState<VacationSummaryItem | null>(null);
   const [notification, setNotification] = useState<Notification[]>([]);
@@ -68,18 +77,18 @@ export function useDashboard(selectedDate?: Date) {
   const [meetingroom, setMeetingroom] = useState<Meetingroom[]>([]);
   const [notice, setNotice] = useState<Notice[]>([]);
   const [expense, setExpense] = useState<Expense[]>([]);
-  
+
   // 초기 데이터 로드 (한 번만 실행)
   useEffect(() => {
     const fetchWlog = async () => {
-        try {
-            const data = await dashboardApi.getWlog();
-            setWlog(data);
-        } catch (error) {
-            console.error('근무시간 정보 조회 실패:', error);
-        }
+      try {
+        const data = await dashboardApi.getWlog();
+        setWlog(data);
+      } catch (error) {
+        console.error('근무시간 정보 조회 실패:', error);
+      }
     };
-    
+
     const fetchVacation = async () => {
       try {
         const currentYear = new Date().getFullYear();
@@ -92,42 +101,42 @@ export function useDashboard(selectedDate?: Date) {
     };
 
     const fetchNotice = async () => {
-        try {
-            const data = await dashboardApi.getNotice(4);
-            setNotice(data);
-        } catch (error) {
-            console.error('공지사항 정보 조회 실패:', error);
-        }
+      try {
+        const data = await dashboardApi.getNotice(4);
+        setNotice(data);
+      } catch (error) {
+        console.error('공지사항 정보 조회 실패:', error);
+      }
     };
 
     const fetchNotification = async () => {
-        try {
-            const data = await dashboardApi.getNotification();
-            setNotification(data);
-        } catch (error) {
-            console.error('알림 정보 조회 실패:', error);
-        }
+      try {
+        const data = await dashboardApi.getNotification();
+        setNotification(data);
+      } catch (error) {
+        console.error('알림 정보 조회 실패:', error);
+      }
     };
 
     const fetchMeetingroom = async () => {
-        try {
-            const data = await dashboardApi.getMeetingroom();
-            setMeetingroom(data);
-        } catch (error) {
-            console.error('회의실 정보 조회 실패:', error);
-        }
+      try {
+        const data = await dashboardApi.getMeetingroom();
+        setMeetingroom(data);
+      } catch (error) {
+        console.error('회의실 정보 조회 실패:', error);
+      }
     };
 
     const fetchExpense = async () => {
-        try {
-            const data = await dashboardApi.getExpense();
-            // API에서 이미 nexpense 배열을 반환하므로 그대로 사용
-            const expenseArray = Array.isArray(data) ? data : [];
-            setExpense(expenseArray);
-        } catch (error) {
-            console.error('비용 정보 조회 실패:', error);
-            setExpense([]);
-        }
+      try {
+        const data = await dashboardApi.getExpense();
+        // API에서 이미 nexpense 배열을 반환하므로 그대로 사용
+        const expenseArray = Array.isArray(data) ? data : [];
+        setExpense(expenseArray);
+      } catch (error) {
+        console.error('비용 정보 조회 실패:', error);
+        setExpense([]);
+      }
     };
 
     fetchWlog();
@@ -141,14 +150,14 @@ export function useDashboard(selectedDate?: Date) {
   // 선택된 날짜가 변경될 때 캘린더 데이터만 업데이트
   useEffect(() => {
     const fetchCalendar = async () => {
-        try {
-            const t_date = selectedDate ? formatKST(selectedDate, true) : undefined;
-            const data = await dashboardApi.getCalendar(t_date);
-            setCalendar(data || []);
-        } catch (error) {
-            console.error('캘린더 정보 조회 실패:', error);
-            setCalendar([]);
-        }
+      try {
+        const t_date = selectedDate ? formatKST(selectedDate, true) : undefined;
+        const data = await dashboardApi.getCalendar(t_date);
+        setCalendar(data || []);
+      } catch (error) {
+        console.error('캘린더 정보 조회 실패:', error);
+        setCalendar([]);
+      }
     };
 
     fetchCalendar();
@@ -172,14 +181,12 @@ export function useDashboard(selectedDate?: Date) {
 
   // Calendar 데이터를 EventData 형식으로 변환 (useCallback으로 메모이제이션)
   const convertCalendarToEventData = useCallback((calendar: Calendar) => {
-    const allDay = typeof calendar.allDay === 'boolean' 
-      ? calendar.allDay 
-      : calendar.allDay === 'Y';
-    
+    const allDay = typeof calendar.allDay === 'boolean' ? calendar.allDay : calendar.allDay === 'Y';
+
     // sch_label에 따라 category 결정
     const vacationLabels = ['연차', '반차', '반반차', '공가'];
     const category = vacationLabels.includes(calendar.sch_label) ? 'vacation' : 'event';
-    
+
     return {
       title: calendar.sch_label,
       description: calendar.description || '',
@@ -202,10 +209,10 @@ export function useDashboard(selectedDate?: Date) {
   const getSortOrder = (label: string): number => {
     if (label === '생일') return 0;
     if (label === '연차') return 1;
-    if (label === '오전 반차')  return 2;
+    if (label === '오전 반차') return 2;
     if (label === '오후 반차') return 3;
-    if (label === '오전 반반차')  return 4;
-    if (label === '오후 반반차')  return 5;
+    if (label === '오전 반반차') return 4;
+    if (label === '오후 반반차') return 5;
     if (label === '공가') return 6;
     if (label === '외부 일정') return 7;
     if (label === '재택') return 8;
@@ -231,11 +238,11 @@ export function useDashboard(selectedDate?: Date) {
     return [...meetingroom].sort((a, b) => {
       const startA = timeToMinutes(a.stime);
       const startB = timeToMinutes(b.stime);
-      
+
       if (startA !== startB) {
         return startA - startB;
       }
-      
+
       // 같은 stime일 경우 etime으로 정렬
       const endA = timeToMinutes(a.etime);
       const endB = timeToMinutes(b.etime);
@@ -243,10 +250,10 @@ export function useDashboard(selectedDate?: Date) {
     });
   }, [meetingroom]);
 
-  return { 
-    wlog, 
-    vacation, 
-    notification, 
+  return {
+    wlog,
+    vacation,
+    notification,
     calendar: sortedCalendar, // 정렬된 캘린더 반환
     meetingroom: sortedMeetingroom, // 정렬된 미팅룸 반환
     notice,
@@ -262,7 +269,6 @@ export function useDashboard(selectedDate?: Date) {
     getMeetingroomBadgeColor,
     // 비용 관련 함수
     getExpenseStepStatusName,
-    getExpenseBadgeColor
+    getExpenseBadgeColor,
   };
 }
-

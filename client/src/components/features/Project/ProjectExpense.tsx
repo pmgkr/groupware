@@ -11,6 +11,7 @@ import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { Button } from '@components/ui/button';
 import { Checkbox } from '@components/ui/checkbox';
+import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
 import { Dialog, DialogClose, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -592,14 +593,13 @@ export default function Expense() {
           </DialogHeader>
           <div className="space-y-3 py-4">
             <p className="text-base">등록하실 비용의 유형을 선택해주세요.</p>
-            <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" onClick={() => setRegisterType('est')}>
-                견적서 비용
-              </Button>
-              <Button variant="outline" onClick={() => setRegisterType('pro')}>
-                견적서 외 비용
-              </Button>
-            </div>
+            <RadioGroup
+              value={registerType}
+              onValueChange={(value) => setRegisterType(value as 'est' | 'pro')}
+              className="grid grid-cols-2 gap-4">
+              <RadioButton value="est" label="견적서 비용" variant="dynamic" size="md" className="mb-0" />
+              <RadioButton value="pro" label="견적서 외 비용" variant="dynamic" size="md" className="mb-0" />
+            </RadioGroup>
             {registerType && (
               <>
                 <div className="grid grid-cols-2 gap-4">
@@ -613,7 +613,6 @@ export default function Expense() {
                 <input ref={fileInputRef} type="file" accept=".xlsx, .xls" className="h-0 w-0 text-[0]" onChange={handleExcelUpload} />
               </>
             )}
-            <input ref={fileInputRef} type="file" accept=".xlsx, .xls" className="h-0 w-0 text-[0]" onChange={handleExcelUpload} />
           </div>
         </DialogContent>
       </Dialog>
