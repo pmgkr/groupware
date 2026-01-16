@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
 import { Link, useOutletContext, useNavigate, useParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
-import { getEstimateView, type EstimateViewDTO } from '@/api';
+import { getEstimateView, estimateCancel, type EstimateViewDTO } from '@/api';
 import { formatKST, formatAmount, displayUnitPrice, normalizeAttachmentUrl } from '@/utils';
 
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
@@ -128,7 +128,19 @@ export default function EstimateView() {
       confirmText: '수정',
       cancelText: '취소',
       onConfirm: async () => {
-        const res = await getEstimateView(estId);
+        const res = await estimateCancel(estId);
+        console.log('견적서 취소', res);
+
+        const resetCount = `${res.reset_count}건의 견적서 비용이 매칭 초기화 되었습니다.`;
+
+        if (res.ok) {
+          addAlert({
+            title: '견적서 취소',
+            message: `견적서가 등록 취소 되었습니다.`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        }
       },
     });
   };
@@ -263,9 +275,9 @@ export default function EstimateView() {
           <div className="flex gap-2">
             {(estData.header.est_valid === 'Y' || estData.header.est_valid === 'S') && isProjectMember && (
               <>
-                {/* <Button type="button" variant="outline" size="sm" onClick={() => handleEstCancel(estId)}>
+                <Button type="button" variant="outline" size="sm" onClick={() => handleEstCancel(estId)}>
                   견적서 취소
-                </Button> */}
+                </Button>
                 <Button type="button" variant="outline" size="sm" onClick={handleEstEdit}>
                   견적서 수정
                 </Button>
