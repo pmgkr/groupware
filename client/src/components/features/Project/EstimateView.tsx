@@ -119,6 +119,20 @@ export default function EstimateView() {
     });
   };
 
+  const handleEstCancel = (estId: string | undefined) => {
+    if (!estId) return;
+
+    addDialog({
+      title: '견적서를 취소하시겠습니까?',
+      message: `취소 시 해당 견적은 '과거 견적' 상태로 변경되며, 매칭된 비용 정보는 초기화됩니다.`,
+      confirmText: '수정',
+      cancelText: '취소',
+      onConfirm: async () => {
+        const res = await getEstimateView(estId);
+      },
+    });
+  };
+
   // 가용금액 옆 링크 버튼 클릭 시, 매칭된 비용 항목 리스트 가져오기
   const getExpenseItemDialog = async (ei_seq: number) => {
     if (!ei_seq || ei_seq === null) {
@@ -248,9 +262,14 @@ export default function EstimateView() {
           <h2 className="text-lg font-bold text-gray-800">견적서 항목</h2>
           <div className="flex gap-2">
             {(estData.header.est_valid === 'Y' || estData.header.est_valid === 'S') && isProjectMember && (
-              <Button type="button" variant="outline" size="sm" onClick={handleEstEdit}>
-                견적서 수정
-              </Button>
+              <>
+                {/* <Button type="button" variant="outline" size="sm" onClick={() => handleEstCancel(estId)}>
+                  견적서 취소
+                </Button> */}
+                <Button type="button" variant="outline" size="sm" onClick={handleEstEdit}>
+                  견적서 수정
+                </Button>
+              </>
             )}
 
             {/* <Button type="button" size="sm">

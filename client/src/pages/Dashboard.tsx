@@ -328,7 +328,7 @@ export default function Dashboard() {
                     const expensePath =
                       expense.expenseType === 'nexpense'
                         ? `/expense/${expense.exp_id}`
-                        : `/project/${(expense as any).project_id || expense.proejct_id}/expense/${expense.exp_id}`;
+                        : `/project/${(expense as any).project_id || expense.proejct_id}/expense/${expense.seq}`;
 
                     return (
                       <li key={expense.seq} className="group flex items-center justify-between gap-x-1.5">
