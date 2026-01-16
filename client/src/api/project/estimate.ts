@@ -328,5 +328,14 @@ export async function setExpenseMatchedReset(ei_seq: number | undefined) {
   return http<EstimateItemsResetResponse>(`/user/pexpense/estimate/reset/${ei_seq}`, { method: 'POST' });
 }
 
+export interface EstimateCancelResponse {
+  ok: boolean;
+  user_id: string;
+  user_nm: string;
+  reset_count: number;
+}
+
 // 견적서 등록 취소
-export async function estimateCancel(est_id: string) {}
+export async function estimateCancel(est_id: string) {
+  return http<EstimateCancelResponse>(`/user/estimate/cancel/${est_id}`, { method: 'GET' });
+}
