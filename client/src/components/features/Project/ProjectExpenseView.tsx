@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router';
+import { useNavigate, useLocation, useParams, Link } from 'react-router';
 import { formatAmount } from '@/utils';
-import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
 import { Badge } from '@components/ui/badge';
@@ -29,6 +28,7 @@ import { RotateCcw, OctagonAlert, Files, File } from 'lucide-react';
 export default function ProjectExpenseView() {
   const { expId, projectId } = useParams();
   const navigate = useNavigate();
+  const { search } = useLocation();
 
   const { addAlert } = useAppAlert();
   const { addDialog } = useAppDialog();
@@ -170,6 +170,9 @@ export default function ProjectExpenseView() {
       });
     }
   };
+
+  // 마이페이지 > 비용 내역에서 넘어왔는 지 파악
+  const hasFlag = new URLSearchParams(search).has('flag');
 
   return (
     <>
@@ -373,7 +376,7 @@ export default function ProjectExpenseView() {
 
           <div className="mt-4 flex">
             <Button variant="outline" size="sm" asChild>
-              <Link to={`/project/${projectId}/expense`}>목록</Link>
+              <Link to={`${hasFlag ? '/mypage/expense' : `/project/${projectId}/expense`}${search}`}>목록</Link>
             </Button>
           </div>
         </div>

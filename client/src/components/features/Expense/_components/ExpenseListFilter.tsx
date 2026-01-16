@@ -1,7 +1,7 @@
 // components/ExpenseListFilter.tsx
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { MultiSelect, type MultiSelectOption } from '@/components/multiselect/multi-select';
+import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@/components/multiselect/multi-select';
 import { RefreshCw } from 'lucide-react';
 
 interface ExpenseListFilterProps {
@@ -14,6 +14,11 @@ interface ExpenseListFilterProps {
   selectedStatus: string[];
   selectedProof: string[];
   selectedProofStatus: string[];
+
+  typeRef: React.RefObject<MultiSelectRef | null>;
+  statusRef: React.RefObject<MultiSelectRef | null>;
+  proofRef: React.RefObject<MultiSelectRef | null>;
+  proofStatusRef: React.RefObject<MultiSelectRef | null>;
 
   typeOptions: MultiSelectOption[];
 
@@ -30,14 +35,16 @@ interface ExpenseListFilterProps {
 export function ExpenseListFilter({
   activeTab,
   onTabChange,
-
   selectedYear,
   yearOptions,
-
   selectedType,
   selectedStatus,
   selectedProof,
   selectedProofStatus,
+  typeRef,
+  statusRef,
+  proofRef,
+  proofStatusRef,
 
   typeOptions,
 
@@ -121,7 +128,9 @@ export function ExpenseListFilter({
             size="sm"
             className="max-w-[80px] min-w-auto!"
             placeholder="비용 용도"
+            ref={typeRef}
             options={typeOptions}
+            defaultValue={selectedType}
             onValueChange={onTypeChange}
             maxCount={0}
             hideSelectAll={true}
@@ -136,7 +145,9 @@ export function ExpenseListFilter({
             size="sm"
             className="max-w-[80px] min-w-auto!"
             placeholder="증빙 수단"
+            ref={proofRef}
             options={proofMethod}
+            defaultValue={selectedProof}
             onValueChange={onProofChange}
             maxCount={0}
             hideSelectAll={true}
@@ -151,7 +162,9 @@ export function ExpenseListFilter({
             size="sm"
             className="max-w-[80px] min-w-auto!"
             placeholder="증빙 상태"
+            ref={proofStatusRef}
             options={proofStatusOptions}
+            defaultValue={selectedProofStatus}
             onValueChange={onProofStatusChange}
             maxCount={0}
             hideSelectAll={true}
@@ -166,7 +179,9 @@ export function ExpenseListFilter({
             size="sm"
             className="max-w-[80px] min-w-auto!"
             placeholder="비용 상태"
+            ref={statusRef}
             options={statusOptions}
+            defaultValue={selectedStatus}
             onValueChange={onStatusChange}
             maxCount={0}
             hideSelectAll={true}
