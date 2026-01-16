@@ -1,6 +1,6 @@
 // src/components/features/Project/_components/ExpensListeRow.tsx
 import { memo } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
 import { TableCell, TableRow } from '@/components/ui/table';
@@ -20,6 +20,7 @@ type ExpenseRowProps = {
 export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRowProps) => {
   const { user_id } = useUser();
   const { projectId } = useParams();
+  const { search } = useLocation();
 
   const statusMap = {
     Saved: <Badge variant="grayish">임시저장</Badge>,
@@ -57,7 +58,7 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
       </TableCell>
       <TableCell>
         <Link
-          to={`/project/${item.project_id}/expense/${item.seq}`}
+          to={`/project/${item.project_id}/expense/${item.seq}${search}`}
           className="rounded-[4px] border-1 bg-white p-1 text-[11px] 2xl:text-sm">
           {item.exp_id}
         </Link>
@@ -85,7 +86,7 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
         </TooltipProvider>
       </TableCell>
       <TableCell className="text-left">
-        <Link to={`/project/${projectId}/expense/${item.seq}`} className="relative hover:underline">
+        <Link to={`/project/${projectId}/expense/${item.seq}${search}`} className="relative hover:underline">
           {item.el_title}
         </Link>
       </TableCell>

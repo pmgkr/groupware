@@ -15,7 +15,7 @@ import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
 import { Dialog, DialogClose, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { MultiSelect, type MultiSelectOption } from '@components/multiselect/multi-select';
+import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Excel } from '@/assets/images/icons';
 import { RefreshCw, OctagonAlert } from 'lucide-react';
@@ -41,6 +41,11 @@ export default function Expense() {
   const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>(() => searchParams.get('attach')?.split(',') ?? []);
   const [registerDialog, setRegisterDialog] = useState(false); // Dialog용 State
   const [registerType, setRegisterType] = useState<'est' | 'pro' | null>(null); // Dialog Type용 State
+
+  const typeRef = useRef<MultiSelectRef>(null);
+  const statusRef = useRef<MultiSelectRef>(null);
+  const proofRef = useRef<MultiSelectRef>(null);
+  const proofStatusRef = useRef<MultiSelectRef>(null);
 
   // 리스트 내 체크박스 state
   const [checkedItems, setCheckedItems] = useState<number[]>([]); // 선택된 seq 목록
@@ -430,13 +435,15 @@ export default function Expense() {
               </SelectContent>
             </Select>
 
-            {/* 증빙수단 다중 선택 */}
+            {/* 용도 다중 선택 */}
             <MultiSelect
               className="max-w-[80px] min-w-auto!"
               size="sm"
-              placeholder="증빙 수단"
-              options={proofMethod}
-              onValueChange={(v) => handleFilterChange(setSelectedProof, v)}
+              placeholder="비용 용도"
+              ref={typeRef}
+              options={typeOptions}
+              defaultValue={selectedType}
+              onValueChange={(v) => handleFilterChange(setSelectedType, v)}
               maxCount={0}
               hideSelectAll={true}
               autoSize={true}
@@ -445,13 +452,15 @@ export default function Expense() {
               simpleSelect={true}
             />
 
-            {/* 용도 다중 선택 */}
+            {/* 증빙수단 다중 선택 */}
             <MultiSelect
               className="max-w-[80px] min-w-auto!"
               size="sm"
-              placeholder="비용 용도"
-              options={typeOptions}
-              onValueChange={(v) => handleFilterChange(setSelectedType, v)}
+              placeholder="증빙 수단"
+              ref={proofRef}
+              options={proofMethod}
+              defaultValue={selectedProof}
+              onValueChange={(v) => handleFilterChange(setSelectedProof, v)}
               maxCount={0}
               hideSelectAll={true}
               autoSize={true}
@@ -465,7 +474,9 @@ export default function Expense() {
               className="max-w-[80px] min-w-auto!"
               size="sm"
               placeholder="증빙 상태"
+              ref={proofStatusRef}
               options={proofStatusOptions}
+              defaultValue={selectedProofStatus}
               onValueChange={(v) => handleFilterChange(setSelectedProofStatus, v)}
               maxCount={0}
               hideSelectAll={true}
@@ -480,7 +491,9 @@ export default function Expense() {
               className="max-w-[80px] min-w-auto!"
               size="sm"
               placeholder="비용 상태"
+              ref={statusRef}
               options={statusOptions}
+              defaultValue={selectedStatus}
               onValueChange={(v) => handleFilterChange(setSelectedStatus, v)}
               maxCount={0}
               hideSelectAll={true}
