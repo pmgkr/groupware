@@ -96,6 +96,8 @@ export default function Pexpense() {
         if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
 
         setSearchParams(params);
+
+        console.log('매니저 플젝비용 파라미터', params);
         const res = activeTab === 'claimed' ? await getManagerExpenseMine(params) : await getManagerExpenseList(params);
 
         console.log('📦 리스트 조회', res);

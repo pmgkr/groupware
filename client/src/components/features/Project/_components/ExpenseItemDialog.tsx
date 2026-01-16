@@ -25,6 +25,7 @@ export default function ExpenseItemDialog({ open, ei_seq, onClose }: ExpenseDial
     (async () => {
       try {
         const res = await getEstExpenseItem(ei_seq);
+        console.log('다이얼로그', res);
         setSelectedExpList(res);
       } catch (err) {
         console.error('❌ 비용 조회 실패:', err);
