@@ -399,15 +399,15 @@ export default function BookWish() {
                 <Checkbox checked={allChecked} onCheckedChange={toggleAll} />
               </TableHead>
             )}
-            <TableHead className="w-[100px]">상태</TableHead>
-            <TableHead className="w-[130px]">날짜</TableHead>
-            <TableHead className="w-[130px]">카테고리</TableHead>
+            <TableHead className="w-[7%]">상태</TableHead>
+            <TableHead className="w-[11%]">날짜</TableHead>
+            <TableHead className="w-[12%]">카테고리</TableHead>
             <TableHead className="">도서명</TableHead>
-            <TableHead className="w-[200px]">저자</TableHead>
-            <TableHead className="w-[150px]">출판사</TableHead>
-            <TableHead className="w-[120px]">팀</TableHead>
-            <TableHead className="w-[120px]">신청자</TableHead>
-            <TableHead className="w-[88px]"></TableHead>
+            <TableHead className="w-[10%]">저자</TableHead>
+            <TableHead className="w-[10%]">출판사</TableHead>
+            <TableHead className="w-[8%]">팀</TableHead>
+            <TableHead className="w-[8%]">신청자</TableHead>
+            <TableHead className="w-[8%]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="text-[13px]">
@@ -441,7 +441,7 @@ export default function BookWish() {
                 <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
                 <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
                 <TableCell className="max-w-[130px] truncate">{post.publish}</TableCell>
-                <TableCell>{post.team_name}</TableCell>
+                <TableCell className="max-w-[130px] truncate">{post.team_name}</TableCell>
                 <TableCell>{post.user_name}</TableCell>
                 <TableCell>
                   {post.status !== '완료' && post.user === user?.user_id && (

@@ -197,14 +197,14 @@ export default function BookList() {
       <Table className="table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[80px]">번호</TableHead>
-            <TableHead className="w-[200px]">카테고리</TableHead>
+            <TableHead className="w-[8%]">번호</TableHead>
+            <TableHead className="w-[12%]">카테고리</TableHead>
             <TableHead className="">도서명</TableHead>
-            <TableHead className="w-[200px]">저자</TableHead>
-            <TableHead className="w-[130px]">출판사</TableHead>
-            <TableHead className="w-[130px]">팀</TableHead>
-            <TableHead className="w-[130px]">신청자</TableHead>
-            <TableHead className="w-[130px]">날짜</TableHead>
+            <TableHead className="w-[12%]">저자</TableHead>
+            <TableHead className="w-[12%]">출판사</TableHead>
+            <TableHead className="w-[8%]">팀</TableHead>
+            <TableHead className="w-[8%]">신청자</TableHead>
+            <TableHead className="w-[12%]">날짜</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="text-[13px]">
@@ -217,7 +217,7 @@ export default function BookList() {
                   <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
                   <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
                   <TableCell className="max-w-[150px] truncate">{post.publish}</TableCell>
-                  <TableCell>{post.team_name}</TableCell>
+                  <TableCell className="max-w-[130px] truncate">{post.team_name}</TableCell>
                   <TableCell>{post.user_name}</TableCell>
                   <TableCell>{formatKST(post.purchaseAt, true)}</TableCell>
                 </TableRow>
