@@ -40,7 +40,12 @@ export default function Expense() {
   const currentYear = String(new Date().getFullYear()); // 올해 구하기
   const yearOptions = getGrowingYears(); // yearOptions
   const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || currentYear);
-  const [activeTab, setActiveTab] = useState<'pexpense' | 'nexpense'>('pexpense');
+  const [activeTab, setActiveTab] = useState<'pexpense' | 'nexpense'>(() => {
+    const flag = searchParams.get('flag');
+    if (flag === 'P') return 'pexpense';
+    if (flag === 'N') return 'nexpense';
+    return 'pexpense';
+  });
   const [selectedType, setSelectedType] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [selectedProof, setSelectedProof] = useState<string[]>([]);
@@ -89,7 +94,7 @@ export default function Expense() {
     (async () => {
       try {
         setLoading(true);
-        const params: ExpenseListParams = {
+        const apiParams: ExpenseListParams = {
           flag: activeTab === 'pexpense' ? 'P' : 'N',
           year: selectedYear,
           method: selectedProof.join(','),
@@ -97,7 +102,17 @@ export default function Expense() {
           size: pageSize,
         };
 
-        const res = await getExpenseMine(params);
+        const urlParams: Record<string, string> = {
+          flag: apiParams.flag,
+          year: apiParams.year ?? '',
+          method: apiParams.method ?? '',
+          page: String(apiParams.page ?? 1),
+          size: String(apiParams.size ?? pageSize),
+        };
+
+        setSearchParams(urlParams);
+
+        const res = await getExpenseMine(apiParams);
 
         console.log('✅ 비용 리스트 응답:', res);
 
@@ -187,6 +202,8 @@ export default function Expense() {
     Rejected: <Badge className="bg-destructive">반려됨</Badge>,
   } as const;
 
+  const search = `?${searchParams.toString()}`;
+
   return (
     <>
       <ExpenseMineFilter
@@ -255,7 +272,7 @@ export default function Expense() {
                   <TableRow key={item.seq} className="hover:bg-gray-50 [&_td]:px-2 [&_td]:text-[13px]">
                     <TableCell>
                       <Link
-                        to={`/project/${item.project_id}/expense/${item.seq}`}
+                        to={`/project/${item.project_id}/expense/${item.seq}${search}`}
                         className="rounded-[4px] border-1 bg-white p-1 text-[11px] 2xl:text-sm">
                         {item.exp_id}
                       </Link>
@@ -283,7 +300,7 @@ export default function Expense() {
                       </TooltipProvider>
                     </TableCell>
                     <TableCell className="text-left">
-                      <Link to={`/project/${item.project_id}/expense/${item.seq}`} className="hover:underline">
+                      <Link to={`/project/${item.project_id}/expense/${item.seq}${search}`} className="hover:underline">
                         {item.el_title}
                       </Link>
                     </TableCell>
@@ -342,14 +359,16 @@ export default function Expense() {
               filteredNList.map((item) => (
                 <TableRow key={item.seq} className="hover:bg-gray-50 [&_td]:px-2 [&_td]:text-[13px]">
                   <TableCell>
-                    <Link to={`/expense/nexpense//${item.exp_id}`} className="rounded-[4px] border-1 bg-white p-1 text-[11px] 2xl:text-sm">
+                    <Link
+                      to={`/expense/nexpense//${item.exp_id}${search}`}
+                      className="rounded-[4px] border-1 bg-white p-1 text-[11px] 2xl:text-sm">
                       {item.exp_id}
                     </Link>
                   </TableCell>
                   <TableCell>{item.el_method}</TableCell>
                   <TableCell>{item.el_type}</TableCell>
                   <TableCell className="text-left">
-                    <Link to={`/expense/${item.exp_id}`} className="hover:underline">
+                    <Link to={`/expense/${item.exp_id}${search}`} className="hover:underline">
                       {item.el_title}
                     </Link>
                   </TableCell>

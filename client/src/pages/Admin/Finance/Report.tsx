@@ -5,7 +5,7 @@ import { formatDate, formatAmount, getGrowingYears, SortIcon } from '@/utils';
 import { downloadReportExcel } from '@/components/features/Project/utils/reportDown';
 
 import { getClientList, getTeamList } from '@/api';
-import { getProjectList, getAdminReportExcel } from '@/api/admin/project';
+import { getProjectList, getAdminReportExcel, updateExpcost } from '@/api/admin/project';
 import type { ProjectListResponse, ProjectListItem } from '@/api/admin/project';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -18,7 +18,8 @@ import { AppPagination } from '@/components/ui/AppPagination';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
-import { X, RefreshCw } from 'lucide-react';
+import { Edit } from '@/assets/images/icons';
+import { X, RefreshCw, OctagonAlert } from 'lucide-react';
 
 type SortState = {
   key: string;
@@ -45,6 +46,9 @@ export default function Report() {
   const [selectedTeam, setSelectedTeam] = useState<string[]>([]);
   const [searchInput, setSearchInput] = useState(''); // 사용자가 입력중인 Input 저장값
   const [searchQuery, setSearchQuery] = useState(''); // 실제 검색 Input 저장값
+  const [editingId, setEditingId] = useState<string | null>(null); // 예상 지출 금액 수정 ID
+  const [editingValue, setEditingValue] = useState<number>(0); // 수정된 예상 지출 금액 Value 저장용
+  const [editingDisplay, setEditingDisplay] = useState<string>(''); // 수정된 예상 지출 금액 보여주는 값
   const [sort, setSort] = useState<SortState>(null);
 
   const [page, setPage] = useState<number>(() => Number(searchParams.get('page') || 1));
@@ -228,6 +232,20 @@ export default function Report() {
     downloadReportExcel(res, params);
   };
 
+  // 프로젝트 별 예상 지출 금액 수정
+  const handleUpdateExp = async (projectId: string) => {
+    await updateExpcost(projectId, editingValue);
+
+    addAlert({
+      title: '예상 지출 금액 수정',
+      message: `<p>프로젝트# <span class="text-primary-blue-500">${projectId}</span>의 예상 지출 금액이 수정되었습니다.</p>`,
+      icon: <OctagonAlert />,
+      duration: 2000,
+    });
+
+    loadList();
+  };
+
   return (
     <>
       <div className="mb-4 flex items-center justify-between">
@@ -364,7 +382,7 @@ export default function Report() {
                 <SortIcon order={getSortOrder('est_amount')} />
               </Button>
             </TableHead>
-            <TableHead className="w-[8%]">
+            <TableHead className="w-[9%]">
               <Button
                 type="button"
                 variant="svgIcon"
@@ -438,7 +456,69 @@ export default function Report() {
                     <TableCell>{item.client_nm}</TableCell>
                     <TableCell>{item.owner_nm}</TableCell>
                     <TableCell className="text-right">{formatAmount(item.est_amount)}</TableCell>
-                    <TableCell className="text-right">{formatAmount(item.est_budget)}</TableCell>
+                    <TableCell className="text-right">
+                      {editingId === item.project_id ? (
+                        <div className="flex items-center justify-end">
+                          <Input
+                            size="sm"
+                            value={editingDisplay}
+                            className="w-full px-2 text-right"
+                            placeholder="예상 지출 금액"
+                            autoFocus
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/,/g, '');
+                              if (!/^\d*$/.test(raw)) return; // 숫자만 허용
+
+                              const num = Number(raw);
+
+                              setEditingValue(num);
+                              setEditingDisplay(raw === '' ? '' : formatAmount(num));
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleUpdateExp(item.project_id);
+                                setEditingId(null);
+                              }
+                              if (e.key === 'Escape') {
+                                setEditingId(null);
+                              }
+                            }}
+                            onBlur={() => {
+                              if (editingDisplay !== '') {
+                                setEditingDisplay(formatAmount(editingValue));
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="svgIcon"
+                            size="sm"
+                            className="px-1! text-gray-600 hover:text-gray-700"
+                            onClick={() => {
+                              setEditingId(null);
+                            }}>
+                            <X className="size-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          {formatAmount(item.est_budget)}
+                          <Button
+                            type="button"
+                            variant="svgIcon"
+                            size="sm"
+                            className="px-1! align-middle text-gray-600 hover:text-gray-700"
+                            onClick={() => {
+                              setEditingId(item.project_id);
+                              setEditingValue(item.est_budget);
+                              setEditingDisplay(formatAmount(item.est_budget));
+                            }}>
+                            <Edit className="size-3" />
+                          </Button>
+                        </>
+                      )}
+                    </TableCell>
+
                     <TableCell className="text-right">{formatAmount(item.inv_amount)}</TableCell>
                     <TableCell className="text-right">{formatAmount(item.exp_amount)}</TableCell>
                     <TableCell className="text-right">{formatAmount(item.netprofit)}</TableCell>

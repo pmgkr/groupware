@@ -81,3 +81,12 @@ export async function getAdminReportExcel(params: ProjectListParams) {
 
   return res;
 }
+
+// 프로젝트 리포트 예상 지출 금액 수정
+export async function updateExpcost(projectId: string, expCost: number) {
+  const res = http<{ ok: boolean }>(`/admin/summary/updateExpcost?project_id=${projectId}&exp_cost=${expCost}`, {
+    method: 'POST',
+  });
+
+  return res;
+}

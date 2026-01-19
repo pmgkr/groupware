@@ -13,7 +13,7 @@ import { Button } from '@components/ui/button';
 import { Checkbox } from '@components/ui/checkbox';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { type MultiSelectOption } from '@components/multiselect/multi-select';
+import type { MultiSelectOption, MultiSelectRef } from '@components/multiselect/multi-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Excel } from '@/assets/images/icons';
 import { OctagonAlert } from 'lucide-react';
@@ -37,6 +37,11 @@ export default function ExpenseList() {
   const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
   const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>(() => searchParams.get('attach')?.split(',') ?? []);
   const [registerDialog, setRegisterDialog] = useState(false);
+
+  const typeRef = useRef<MultiSelectRef>(null);
+  const statusRef = useRef<MultiSelectRef>(null);
+  const proofRef = useRef<MultiSelectRef>(null);
+  const proofStatusRef = useRef<MultiSelectRef>(null);
 
   // 리스트 내 체크박스 state
   const [checkedItems, setCheckedItems] = useState<number[]>([]); // 선택된 seq 목록
@@ -350,6 +355,10 @@ export default function ExpenseList() {
         selectedStatus={selectedStatus}
         selectedProof={selectedProof}
         selectedProofStatus={selectedProofStatus}
+        typeRef={typeRef}
+        statusRef={statusRef}
+        proofRef={proofRef}
+        proofStatusRef={proofStatusRef}
         typeOptions={typeOptions}
         onYearChange={(v) => handleFilterChange(setSelectedYear, v)}
         onTypeChange={(v) => handleFilterChange(setSelectedType, v)}

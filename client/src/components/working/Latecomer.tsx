@@ -70,6 +70,10 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
       case '-':
       case '':
         return { label: '일반근무', colorKey: '일반근무' };
+      case 'field':
+        return { label: '외부근무', colorKey: '외부근무' };
+      case 'remote':
+        return { label: '재택근무', colorKey: '재택근무' };
       default:
         // 기타 값은 원본 그대로 표시
         return { label: wtype || '-', colorKey: '-' };

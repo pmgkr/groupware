@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
 import { Link, useOutletContext, useNavigate, useParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
-import { getEstimateView, type EstimateViewDTO } from '@/api';
+import { getEstimateView, estimateCancel, type EstimateViewDTO } from '@/api';
 import { formatKST, formatAmount, displayUnitPrice, normalizeAttachmentUrl } from '@/utils';
 
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
@@ -17,7 +17,6 @@ import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody,
 
 import { format } from 'date-fns';
 import { OctagonAlert, Paperclip, MessageSquareMore, Link as LinkIcon } from 'lucide-react';
-import { Download } from '@/assets/images/icons';
 
 export default function EstimateView() {
   const navigate = useNavigate();
@@ -45,12 +44,6 @@ export default function EstimateView() {
     window.addEventListener('resize', sync);
     return () => window.removeEventListener('resize', sync);
   }, [estData]);
-
-  const formatDate = (d?: string | Date | null) => {
-    if (!d) return '';
-    const date = typeof d === 'string' ? new Date(d) : d;
-    return format(date, 'yyyy-MM-dd');
-  };
 
   useEffect(() => {
     (async () => {
@@ -115,6 +108,32 @@ export default function EstimateView() {
       cancelText: '취소',
       onConfirm: async () => {
         navigate(`/project/${projectId}/estimate/${estId}/edit`);
+      },
+    });
+  };
+
+  const handleEstCancel = (estId: string | undefined) => {
+    if (!estId) return;
+
+    addDialog({
+      title: '견적서를 취소하시겠습니까?',
+      message: `취소 시 해당 견적은 '과거 견적' 상태로 변경되며, 매칭된 비용 정보는 초기화됩니다.`,
+      confirmText: '수정',
+      cancelText: '취소',
+      onConfirm: async () => {
+        const res = await estimateCancel(estId);
+        console.log('견적서 취소', res);
+
+        const resetCount = `${res.reset_count}건의 견적서 비용이 매칭 초기화 되었습니다.`;
+
+        if (res.ok) {
+          addAlert({
+            title: '견적서 취소',
+            message: `견적서가 등록 취소 되었습니다.`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        }
       },
     });
   };
@@ -248,9 +267,14 @@ export default function EstimateView() {
           <h2 className="text-lg font-bold text-gray-800">견적서 항목</h2>
           <div className="flex gap-2">
             {(estData.header.est_valid === 'Y' || estData.header.est_valid === 'S') && isProjectMember && (
-              <Button type="button" variant="outline" size="sm" onClick={handleEstEdit}>
-                견적서 수정
-              </Button>
+              <>
+                <Button type="button" variant="outline" size="sm" onClick={() => handleEstCancel(estId)}>
+                  견적서 취소
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={handleEstEdit}>
+                  견적서 수정
+                </Button>
+              </>
             )}
 
             {/* <Button type="button" size="sm">
@@ -421,9 +445,9 @@ export default function EstimateView() {
           <Button type="button" variant="outline" size="sm" asChild>
             <Link to={`/project/${projectId}/estimate`}>목록</Link>
           </Button>
-          <Button type="button" size="sm">
+          {/* <Button type="button" size="sm">
             <Download /> 다운로드
-          </Button>
+          </Button> */}
         </div>
       </div>
 
