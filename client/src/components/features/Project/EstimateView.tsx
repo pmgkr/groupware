@@ -17,7 +17,6 @@ import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody,
 
 import { format } from 'date-fns';
 import { OctagonAlert, Paperclip, MessageSquareMore, Link as LinkIcon } from 'lucide-react';
-import { Download } from '@/assets/images/icons';
 
 export default function EstimateView() {
   const navigate = useNavigate();
@@ -45,12 +44,6 @@ export default function EstimateView() {
     window.addEventListener('resize', sync);
     return () => window.removeEventListener('resize', sync);
   }, [estData]);
-
-  const formatDate = (d?: string | Date | null) => {
-    if (!d) return '';
-    const date = typeof d === 'string' ? new Date(d) : d;
-    return format(date, 'yyyy-MM-dd');
-  };
 
   useEffect(() => {
     (async () => {
@@ -452,9 +445,9 @@ export default function EstimateView() {
           <Button type="button" variant="outline" size="sm" asChild>
             <Link to={`/project/${projectId}/estimate`}>목록</Link>
           </Button>
-          <Button type="button" size="sm">
+          {/* <Button type="button" size="sm">
             <Download /> 다운로드
-          </Button>
+          </Button> */}
         </div>
       </div>
 
