@@ -9,6 +9,9 @@ import { updateMemberStatus } from '@/api/manager/member';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
 
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { CheckCircle, OctagonAlert } from 'lucide-react';
+
 const STATUS_BADGE_MAP = {
   inactive: {
     label: '비활성화',
@@ -31,6 +34,8 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
   const [status, setStatus] = useState(member.user_status);
   const initialStatus = member.user_status;
   const { user_id } = useUser();
+  const { addAlert } = useAppAlert();
+  const [saving, setSaving] = useState(false);
 
   const profileImageUrl = member.profile_image
     ? member.profile_image.startsWith('http')
@@ -44,16 +49,46 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
   const badge = STATUS_BADGE_MAP[member.user_status as keyof typeof STATUS_BADGE_MAP];
 
   const handleSave = async () => {
+    if (status === initialStatus) return;
+
     try {
+      setSaving(true);
+
       await updateMemberStatus({
         user_id: member.user_id,
-        status: status,
+        status,
       });
 
-      // TODO: 상위 리스트 상태 즉시 반영
       setOpen(false);
+      onRefresh();
+
+      addAlert({
+        title: '상태 변경 완료',
+        message: `
+          <p>
+            <span class="font-semibold text-primary-blue-500">
+              ${member.user_name}
+            </span> 님의 상태가
+            <span class="font-semibold text-primary-blue-500">
+              ${STATUS_OPTIONS.find((o) => o.value === status)?.label}
+            </span>
+            로 변경되었습니다.
+          </p>
+        `,
+        icon: <CheckCircle />,
+        duration: 3000,
+      });
     } catch (e) {
       console.error('상태 변경 실패', e);
+
+      addAlert({
+        title: '상태 변경 실패',
+        message: '상태 변경 중 오류가 발생했습니다. 다시 시도해 주세요.',
+        icon: <OctagonAlert />,
+        duration: 3000,
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
