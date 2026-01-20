@@ -5,6 +5,7 @@ import { useDashboard } from '@/hooks/useDashboard';
 import { getProfileImageUrl, getAvatarFallback } from '@/utils';
 
 import Header from '@/layouts/Header';
+import HeaderMobile from '@/layouts/HeaderMobile';
 
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Badge } from '@components/ui/badge';
@@ -95,13 +96,14 @@ export default function Dashboard() {
 
   return (
     <>
-      <Header />
-      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8 max-2xl:ml-50 max-2xl:px-6">
+      {/* <Header /> */}
+      <HeaderMobile />
+      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8 max-2xl:ml-50 max-2xl:px-6 max-md:m-0! max-md:mt-[50px]! max-md:p-5!">
         <div className="flex items-center justify-between text-base text-gray-800">
           <p>{welcomeMessage}</p>
           <Weather />
         </div>
-        <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6 max-2xl:gap-4">
+        <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6 max-2xl:gap-4 max-md:grid-cols-1 max-md:grid-rows-1">
           <div className="row-span-2 flex flex-col justify-start rounded-md border border-gray-300 bg-white p-6">
             <SectionHeader
               title="근무 시간"
