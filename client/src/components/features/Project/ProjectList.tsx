@@ -6,7 +6,8 @@ import { useViewport, useIsMobileViewport } from '@/hooks/useViewport';
 
 import { ProjectCreateForm } from './_components/ProjectCreate';
 import { getProjectList, type ProjectListItem, getClientList, getTeamList, getBookmarkList, addBookmark, removeBookmark } from '@/api';
-import { ProjectRow } from './_components/ProjectListRow';
+import { ProjectCardList } from './_responsive/ProjectCardList';
+import { ProjectTable } from './_responsive/ProjectTable';
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@components/ui/button';
@@ -21,7 +22,7 @@ import { Star, RefreshCw, ListFilter } from 'lucide-react';
 export default function ProjectList() {
   const { search } = useLocation();
   const viewport = useViewport();
-  const isMobile = useIsMobileViewport();
+  const isMobile = viewport === 'mobile';
   const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
   const [registerDialog, setRegisterDialog] = useState(false);
@@ -291,7 +292,7 @@ export default function ProjectList() {
     <>
       {/* ---------------- 상단 필터 ---------------- */}
       {isMobile ? (
-        <div className="mb-4 bg-white px-5">
+        <div className="mb-4 bg-white">
           <div className="mb-4 flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
             <Button
               onClick={() => handleTabChange('mine')}
@@ -503,59 +504,11 @@ export default function ProjectList() {
         </div>
       )}
 
-      {/* ---------------- 테이블 ---------------- */}
+      {/* ---------------- 프로젝트 리스트 ---------------- */}
       {isMobile ? (
-        <div className="space-y-2.5 bg-gray-200 p-5">
-          {projects.length > 0 ? (
-            projects.map((p) => (
-              <ProjectRow
-                key={p.project_id}
-                item={p}
-                isFavorite={favorites.includes(p.project_id)}
-                onToggleFavorite={toggleFavorite}
-                search={search}
-              />
-            ))
-          ) : (
-            <p>등록된 플젝없음</p>
-          )}
-        </div>
+        <ProjectCardList projects={projects} favorites={favorites} onToggleFavorite={toggleFavorite} search={search} />
       ) : (
-        <Table variant="primary" align="center" className="table-fixed">
-          <TableHeader>
-            <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
-              <TableHead className="w-12 px-0!"></TableHead>
-              <TableHead className="w-24 px-0!">프로젝트#</TableHead>
-              <TableHead className="w-[6%]">프로젝트 법인</TableHead>
-              <TableHead className="w-[10%]">카테고리</TableHead>
-              <TableHead>프로젝트 이름</TableHead>
-              <TableHead className="w-[14%]">클라이언트</TableHead>
-              <TableHead className="w-[8%]">오너</TableHead>
-              <TableHead className="w-[6%]">팀</TableHead>
-              <TableHead className="w-[6%]">상태</TableHead>
-              <TableHead className="w-[10%]">시작일</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {projects.length > 0 ? (
-              projects.map((p) => (
-                <ProjectRow
-                  key={p.project_id}
-                  item={p}
-                  isFavorite={favorites.includes(p.project_id)}
-                  onToggleFavorite={toggleFavorite}
-                  search={search}
-                />
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={10} className="py-50 text-center text-gray-500">
-                  등록된 프로젝트가 없습니다.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+        <ProjectTable projects={projects} favorites={favorites} onToggleFavorite={toggleFavorite} search={search} />
       )}
 
       {/* ---------------- 페이지네이션 ---------------- */}
