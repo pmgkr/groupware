@@ -12,7 +12,10 @@ import { Button } from '@components/ui/button';
 import { Notification } from '@components/features/Dashboard/notifications';
 import { getMyProfile } from '@/api/mypage';
 import { notificationApi } from '@/api/notification';
-import { X, Menu } from 'lucide-react';
+import { X, Menu, Home } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@components/ui/sheet';
+import getWelcomeMessage from '@components/features/Dashboard/welcome';
+import Weather from '@components/features/Dashboard/weather';
 
 export default function HeaderMobile() {
   const location = useLocation();
@@ -20,7 +23,7 @@ export default function HeaderMobile() {
   const isManagerSection = location.pathname.startsWith('/manager');
   const isAdminSection = location.pathname.startsWith('/admin');
 
-  const { user_id, user_name, job_role, profile_image } = useUser();
+  const { user_id, user_name, job_role, profile_image, birth_date } = useUser();
   const { user, logout, setUserState } = useAuth();
 
   const subMenus: Record<string, { label: string; to: string }[]> = {
@@ -206,26 +209,21 @@ export default function HeaderMobile() {
   const officePaths = ['/notice', '/meetingroom', '/seating', '/itdevice', '/book', '/suggest'];
   const isOfficeActive = officePaths.some((path) => location.pathname.startsWith(path));
 
+  // getWelcomeMessage를 메모이제이션하여 리렌더링 시에도 같은 메시지 유지
+  const welcomeMessage = useMemo(() => getWelcomeMessage(user_name, birth_date), [user_name, birth_date]);
+
   return (
     <>
       {/* 모바일 헤더 */}
       <header className="fixed top-0 left-0 z-9 flex h-[50px] w-full items-center justify-between border-b-1 border-b-gray-300 bg-white px-4">
         <div className="flex items-center gap-4">
-          <Button
-            variant="svgIcon"
-            size="icon"
-            className="hover:text-primary-blue-500"
-            aria-label="메뉴 열기"
-            onClick={() => setIsSidebarOpen(true)}>
-            <Menu className="size-6" />
-          </Button>
           <h1 className="w-33">
             <Link to="/dashboard">
               <Logo className="w-full" />
             </Link>
           </h1>
         </div>
-        <ul className="text-primary-blue-300 flex items-center gap-x-4">
+        <ul className="text-primary-blue-300 flex items-center gap-x-1">
           <li className="relative">
             <Notification />
             {hasUnreadNoti && (
@@ -235,71 +233,45 @@ export default function HeaderMobile() {
               </span>
             )}
           </li>
-          <li>
-            <Button asChild variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="마이페이지">
-              <Link to="/mypage">
-                <Profile className="size-6" />
-              </Link>
-            </Button>
-          </li>
-          <li>
-            <Button variant="svgIcon" size="icon" className="hover:text-primary-blue-500" aria-label="로그아웃" onClick={logoutClick}>
-              <Logout className="size-6" />
-            </Button>
-          </li>
         </ul>
       </header>
       
-      {/* 모바일 사이드 메뉴 */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 z-9998 bg-black/50"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-      <div
-        className={cn(
-          "bg-primary-blue-100 fixed top-0 left-0 h-full w-full z-9999 transition-transform duration-300 ease-in-out",
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        )}>
-        <div className="p-5">
-        <Button
-            variant="svgIcon"
-            size="icon"
-            className="hover:text-primary-blue-500"
-            aria-label="닫기"
-            onClick={() => {
-            setIsSidebarOpen(false);
-            setExpandedMenu(null);
-            requestAnimationFrame(() => {
-                try {
-                (document.activeElement as HTMLElement | null)?.blur?.();
-                } catch {}
-            });
-            }}>
-            <X className="size-6" />
-        </Button>
-        <div className="flex items-center gap-2.5 mt-2.5">
-          <Link to="/mypage" onClick={() => setIsSidebarOpen(false)}>
-            <div className="relative aspect-square w-25 overflow-hidden rounded-[50%] flex-shrink-0">
-              {profileImageUrl ? (
-                <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-white text-2xl font-bold text-black">
-                  {avatarFallback}
+      {/* 모바일 토글 사이드 메뉴 */}
+      <Sheet open={isSidebarOpen} onOpenChange={(open) => {
+        setIsSidebarOpen(open);
+        if (!open) {
+          setExpandedMenu(null);
+        }
+      }}>
+        <SheetContent side="right" className="bg-white w-full p-0 flex flex-col">
+          <SheetHeader className="p-4 bg-gray-200 border-b border-gray-300">
+            <SheetTitle className="sr-only">메뉴</SheetTitle>
+            <div className="flex items-center gap-2.5">
+              <Link to="/mypage" onClick={() => setIsSidebarOpen(false)}>
+                <div className="relative aspect-square w-10 overflow-hidden rounded-[50%] flex-shrink-0">
+                  {profileImageUrl ? (
+                    <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-white text-base font-bold text-black">
+                      {avatarFallback}
+                    </div>
+                  )}
                 </div>
-              )}
+              </Link>
+              <div className="flex-1 align-left text-left">
+                <Link to="/mypage" onClick={() => setIsSidebarOpen(false)} className="flex flex-col gap-0">
+                  <strong className="text-base font-medium text-gray-950">{user_name} <span className="text-sm text-gray-500">{job_role}</span></strong>
+                  <p className="text-xs"><Weather /></p>
+                </Link>
+              </div>
             </div>
-          </Link>
-          <div className="flex-1 text-sm text-gray-700">
-            <Link to="/mypage" onClick={() => setIsSidebarOpen(false)}>
-              <strong className="block text-xl font-medium text-gray-950">{user_name}</strong>
-              {job_role}
-            </Link>
+          </SheetHeader>
+          <div className="px-5 pt-5 pb-5">
+            <div className="flex flex-col items-start justify-between text-base text-gray-800 mb-4">
+              <p className="text-sm">{welcomeMessage}</p>
+            </div>
           </div>
-        </div>
-        </div>
-        <ul className="mx-4 flex flex-col gap-y-2.5">
+          <ul className="mx-4 flex flex-col gap-y-2.5 flex-1 overflow-y-auto">
           <li>
             <NavLink
               to="/dashboard"
@@ -310,7 +282,7 @@ export default function HeaderMobile() {
                   isActive ? 'text-primary bg-white font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
                 )
               }>
-              <Dashboard className="size-6" />
+              <Dashboard className="size-5.5" />
               <span>대시보드</span>
             </NavLink>
           </li>
@@ -565,7 +537,77 @@ export default function HeaderMobile() {
             </li>
           )}
         </ul>
-      </div>
+        <div className="mt-auto p-5 flex justify-end">
+          <Button 
+            variant="svgIcon" 
+            size="icon" 
+            className="text-gray-500" 
+            aria-label="로그아웃" 
+            onClick={logoutClick}>
+            <Logout className="size-5.5" />
+          </Button>
+        </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* 모바일 하단바 */}
+      <nav className="fixed bottom-0 left-0 z-9 flex h-[60px] w-full items-center justify-around border-t-1 border-t-gray-300 bg-white px-2 safe-area-inset-bottom">
+        <NavLink
+          to="/dashboard"
+          end
+          className={({ isActive }) =>
+            cn(
+              'flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors',
+              isActive ? 'text-primary-blue-500' : 'text-gray-600'
+            )
+          }>
+          <Dashboard className="size-5.5" />
+          <span className="text-[11px] font-medium">대시보드</span>
+        </NavLink>
+        <NavLink
+          to="/project"
+          className={({ isActive }) =>
+            cn(
+              'flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors',
+              isActive || location.pathname.startsWith('/project') ? 'text-primary-blue-500' : 'text-gray-600'
+            )
+          }>
+          <Project className="size-5.5" />
+          <span className="text-[11px] font-medium">프로젝트</span>
+        </NavLink>
+        <NavLink
+          to="/expense"
+          className={({ isActive }) =>
+            cn(
+              'flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors',
+              isActive || location.pathname.startsWith('/expense') ? 'text-primary-blue-500' : 'text-gray-600'
+            )
+          }>
+          <Expense className="size-5.5" />
+          <span className="text-[11px] font-medium">일반비용</span>
+        </NavLink>
+        <NavLink
+          to="/calendar"
+          className={({ isActive }) =>
+            cn(
+              'flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors',
+              isActive || location.pathname.startsWith('/calendar') ? 'text-primary-blue-500' : 'text-gray-600'
+            )
+          }>
+          <Calendar className="size-5.5" />
+          <span className="text-[11px] font-medium">캘린더</span>
+        </NavLink>
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className={cn(
+            'flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors',
+            'text-gray-600 active:text-primary-blue-500'
+          )}
+          aria-label="메뉴 열기">
+          <Menu className="size-5.5" />
+          <span className="text-[11px] font-medium">메뉴</span>
+        </button>
+      </nav>
     </>
   );
 }
