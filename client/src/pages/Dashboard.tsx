@@ -96,9 +96,13 @@ export default function Dashboard() {
 
   return (
     <>
-      {/* <Header /> */}
-      <HeaderMobile />
-      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8 max-2xl:ml-50 max-2xl:px-6 max-md:m-0! max-md:mt-[50px]! max-md:p-4.5!">
+      <div className="hidden md:block">
+        <Header />
+      </div>
+      <div className="block md:hidden">
+        <HeaderMobile />
+      </div>
+      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8 max-2xl:ml-50 max-2xl:px-6 max-md:m-0! max-md:mt-[50px]! max-md:p-4.5! max-md:pb-[80px]!">
         <div className="flex items-center justify-between text-base text-gray-800 max-md:hidden">
           <p>{welcomeMessage}</p>
           <Weather />

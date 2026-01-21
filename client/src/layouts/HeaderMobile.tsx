@@ -212,6 +212,19 @@ export default function HeaderMobile() {
   // getWelcomeMessage를 메모이제이션하여 리렌더링 시에도 같은 메시지 유지
   const welcomeMessage = useMemo(() => getWelcomeMessage(user_name, birth_date), [user_name, birth_date]);
 
+  // 메뉴 항목 공통 스타일
+  const getMenuLinkClassName = (isActive: boolean) =>
+    cn(
+      'flex h-12 items-center justify-center rounded-lg px-3 text-lg',
+      isActive ? 'text-primary bg-primary-blue-100 text-primary-blue-500 font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
+    );
+
+  const getSubMenuLinkClassName = (isActive: boolean) =>
+    cn(
+      'flex h-9 items-center justify-center text-center rounded-sm text-base',
+      isActive ? 'text-primary-blue-500 bg-white font-semibold' : 'text-gray-700 hover:bg-primary-blue-50'
+    );
+
   return (
     <>
       {/* 모바일 헤더 */}
@@ -244,7 +257,7 @@ export default function HeaderMobile() {
         }
       }}>
         <SheetContent side="right" className="bg-white w-full p-0 flex flex-col">
-          <SheetHeader className="p-4 bg-gray-200 border-b border-gray-300">
+          <SheetHeader className="p-5 border-b border-gray-300">
             <SheetTitle className="sr-only">메뉴</SheetTitle>
             <div className="flex items-center gap-2.5">
               <Link to="/mypage" onClick={() => setIsSidebarOpen(false)}>
@@ -258,284 +271,200 @@ export default function HeaderMobile() {
                   )}
                 </div>
               </Link>
-              <div className="flex-1 align-left text-left">
-                <Link to="/mypage" onClick={() => setIsSidebarOpen(false)} className="flex flex-col gap-0">
+              <div className="align-left text-left">
+                <Link to="/mypage" onClick={() => setIsSidebarOpen(false)}>
                   <strong className="text-base font-medium text-gray-950">{user_name} <span className="text-sm text-gray-500">{job_role}</span></strong>
-                  <p className="text-xs"><Weather /></p>
                 </Link>
+                <p className="text-xs"><Weather /></p>
               </div>
             </div>
           </SheetHeader>
-          <div className="px-5 pt-5 pb-5">
-            <div className="flex flex-col items-start justify-between text-base text-gray-800 mb-4">
-              <p className="text-sm">{welcomeMessage}</p>
-            </div>
-          </div>
-          <ul className="mx-4 flex flex-col gap-y-2.5 flex-1 overflow-y-auto">
-          <li>
-            <NavLink
-              to="/dashboard"
-              onClick={() => setIsSidebarOpen(false)}
-              className={({ isActive }) =>
-                cn(
-                  'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
-                )
-              }>
-              <Dashboard className="size-5.5" />
-              <span>대시보드</span>
-            </NavLink>
-          </li>
-          <li>
-            <div>
-              <NavLink
-                to="/project"
-                onClick={handleMenuClick('project')}
-                className={({ isActive }) =>
-                  cn(
-                    'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                    isActive ? 'text-primary bg-white font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
-                  )
-                }>
-                <Project />
-                <span>프로젝트</span>
-              </NavLink>
-              {expandedMenu === 'project' && (
-                <ul className="ml-4 mt-1 flex flex-col gap-y-1">
-                  {subMenus.project.map((item) => (
-                    <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        onClick={() => {
-                          setIsSidebarOpen(false);
-                          setExpandedMenu(null);
-                        }}
-                        className={({ isActive }) =>
-                          cn(
-                            'flex h-9 items-center rounded-sm px-3 text-sm',
-                            isActive ? 'text-primary-blue-500 bg-white font-semibold' : 'text-gray-700 hover:bg-primary-blue-50'
-                          )
-                        }>
-                        {item.label}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </li>
-          <li>
-            <div>
-              <NavLink
-                to="/expense"
-                onClick={handleMenuClick('expense')}
-                className={({ isActive }) =>
-                  cn(
-                    'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                    isActive ? 'text-primary bg-white font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
-                  )
-                }>
-                <Expense />
-                <span>일반비용</span>
-              </NavLink>
-              {expandedMenu === 'expense' && (
-                <ul className="ml-4 mt-1 flex flex-col gap-y-1">
-                  {subMenus.expense.map((item) => (
-                    <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        onClick={() => {
-                          setIsSidebarOpen(false);
-                          setExpandedMenu(null);
-                        }}
-                        className={({ isActive }) =>
-                          cn(
-                            'flex h-9 items-center rounded-sm px-3 text-sm',
-                            isActive ? 'text-primary-blue-500 bg-white font-semibold' : 'text-gray-700 hover:bg-primary-blue-50'
-                          )
-                        }>
-                        {item.label}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </li>
-          <li>
-            <div>
-              <NavLink
-                to="/calendar"
-                onClick={handleMenuClick('calendar')}
-                className={({ isActive }) =>
-                  cn(
-                    'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                    isActive ? 'text-primary bg-white font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
-                  )
-                }>
-                <Calendar />
-                <span>캘린더</span>
-              </NavLink>
-              {expandedMenu === 'calendar' && (
-                <ul className="ml-4 mt-1 flex flex-col gap-y-1">
-                  {subMenus.calendar.map((item) => (
-                    <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        onClick={() => {
-                          setIsSidebarOpen(false);
-                          setExpandedMenu(null);
-                        }}
-                        className={({ isActive }) =>
-                          cn(
-                            'flex h-9 items-center rounded-sm px-3 text-sm',
-                            isActive ? 'text-primary-blue-500 bg-white font-semibold' : 'text-gray-700 hover:bg-primary-blue-50'
-                          )
-                        }>
-                        {item.label}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </li>
-          <li>
-            <NavLink
-              to="/working"
-              onClick={() => setIsSidebarOpen(false)}
-              className={({ isActive }) =>
-                cn(
-                  'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isActive ? 'text-primary bg-white font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
-                )
-              }>
-              <Pto />
-              <span>출퇴근관리</span>
-            </NavLink>
-          </li>
-          <li>
-            <div>
-              <NavLink
-                to="/notice"
-                onClick={handleMenuClick('office')}
-                className={cn(
-                  'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                  isOfficeActive
-                    ? 'text-primary bg-white font-semibold'
-                    : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
-                )}>
-                <Office />
-                <span>오피스</span>
-              </NavLink>
-              {expandedMenu === 'office' && (
-                <ul className="ml-4 mt-1 flex flex-col gap-y-1">
-                  {subMenus.office.map((item) => (
-                    <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        onClick={() => {
-                          setIsSidebarOpen(false);
-                          setExpandedMenu(null);
-                        }}
-                        className={({ isActive }) =>
-                          cn(
-                            'flex h-9 items-center rounded-sm px-3 text-sm',
-                            isActive ? 'text-primary-blue-500 bg-white font-semibold' : 'text-gray-700 hover:bg-primary-blue-50'
-                          )
-                        }>
-                        {item.label}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </li>
-          {(user?.user_level === 'manager' || user?.user_level === 'admin') && (
+          {/* <div className="text-center">
+            <p className="text-sm">{welcomeMessage}</p>
+          </div> */}
+          <ul className="mx-5 flex flex-col align-center justify-center gap-y-2.5 flex-1 overflow-y-auto">
             <li>
-              <div>
                 <NavLink
-                  to="/manager/working"
-                  onClick={handleMenuClick('manager')}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                      isActive || isManagerSection
-                        ? 'text-primary bg-white font-semibold'
-                        : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
-                    )
-                  }>
-                  <Manager />
-                  <span>관리자</span>
+                to="/dashboard"
+                onClick={() => setIsSidebarOpen(false)}
+                className={({ isActive }) => getMenuLinkClassName(isActive)}>
+                <span>대시보드</span>
                 </NavLink>
-                {expandedMenu === 'manager' && (
-                  <ul className="ml-4 mt-1 flex flex-col gap-y-1">
-                    {subMenus.manager.map((item) => (
-                      <li key={item.to}>
+            </li>
+            <li>
+                <div>
+                <NavLink
+                    to="/project"
+                    onClick={handleMenuClick('project')}
+                    className={({ isActive }) => getMenuLinkClassName(isActive)}>
+                    <span>프로젝트</span>
+                </NavLink>
+                {expandedMenu === 'project' && (
+                    <ul className="mt-1 flex flex-col gap-y-1">
+                    {subMenus.project.map((item) => (
+                        <li key={item.to}>
                         <NavLink
-                          to={item.to}
-                          onClick={() => {
+                            to={item.to}
+                            onClick={() => {
                             setIsSidebarOpen(false);
                             setExpandedMenu(null);
-                          }}
-                          className={({ isActive }) =>
-                            cn(
-                              'flex h-9 items-center rounded-sm px-3 text-sm',
-                              isActive ? 'text-primary-blue-500 bg-white font-semibold' : 'text-gray-700 hover:bg-primary-blue-50'
-                            )
-                          }>
-                          {item.label}
+                            }}
+                            className={({ isActive }) => getSubMenuLinkClassName(isActive)}>
+                            {item.label}
                         </NavLink>
-                      </li>
+                        </li>
                     ))}
-                  </ul>
+                    </ul>
                 )}
-              </div>
+                </div>
             </li>
-          )}
-          {user?.user_level === 'admin' && (
             <li>
-              <div>
+                <div>
                 <NavLink
-                  to="/admin/finance"
-                  onClick={handleMenuClick('admin')}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
-                      isActive || isAdminSection
-                        ? 'text-primary bg-white font-semibold'
-                        : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
-                    )
-                  }>
-                  <Admin />
-                  <span>최고관리자</span>
+                    to="/expense"
+                    onClick={handleMenuClick('expense')}
+                    className={({ isActive }) => getMenuLinkClassName(isActive)}>
+                    <span>일반비용</span>
                 </NavLink>
-                {expandedMenu === 'admin' && (
-                  <ul className="ml-4 mt-1 flex flex-col gap-y-1">
-                    {subMenus.admin.map((item) => (
-                      <li key={item.to}>
+                {expandedMenu === 'expense' && (
+                    <ul className="mt-1 flex flex-col gap-y-1">
+                    {subMenus.expense.map((item) => (
+                        <li key={item.to}>
                         <NavLink
-                          to={item.to}
-                          onClick={() => {
+                            to={item.to}
+                            onClick={() => {
                             setIsSidebarOpen(false);
                             setExpandedMenu(null);
-                          }}
-                          className={({ isActive }) =>
-                            cn(
-                              'flex h-9 items-center rounded-sm px-3 text-sm',
-                              isActive ? 'text-primary-blue-500 bg-white font-semibold' : 'text-gray-700 hover:bg-primary-blue-50'
-                            )
-                          }>
-                          {item.label}
+                            }}
+                            className={({ isActive }) => getSubMenuLinkClassName(isActive)}>
+                            {item.label}
                         </NavLink>
-                      </li>
+                        </li>
                     ))}
-                  </ul>
+                    </ul>
                 )}
-              </div>
+                </div>
             </li>
-          )}
+            <li>
+                <div>
+                <NavLink
+                    to="/calendar"
+                    onClick={handleMenuClick('calendar')}
+                    className={({ isActive }) => getMenuLinkClassName(isActive)}>
+                    <span>캘린더</span>
+                </NavLink>
+                {expandedMenu === 'calendar' && (
+                    <ul className="mt-1 flex flex-col gap-y-1">
+                    {subMenus.calendar.map((item) => (
+                        <li key={item.to}>
+                        <NavLink
+                            to={item.to}
+                            onClick={() => {
+                            setIsSidebarOpen(false);
+                            setExpandedMenu(null);
+                            }}
+                            className={({ isActive }) => getSubMenuLinkClassName(isActive)}>
+                            {item.label}
+                        </NavLink>
+                        </li>
+                    ))}
+                    </ul>
+                )}
+                </div>
+            </li>
+            <li>
+                <NavLink
+                to="/working"
+                onClick={() => setIsSidebarOpen(false)}
+                className={({ isActive }) => getMenuLinkClassName(isActive)}>
+                <span>출퇴근관리</span>
+                </NavLink>
+            </li>
+            <li>
+                <div>
+                <NavLink
+                    to="/notice"
+                    onClick={handleMenuClick('office')}
+                    className={({ isActive }) => getMenuLinkClassName(isActive || isOfficeActive)}>
+                    <span>오피스</span>
+                </NavLink>
+                {expandedMenu === 'office' && (
+                    <ul className="mt-1 flex flex-col gap-y-1">
+                    {subMenus.office.map((item) => (
+                        <li key={item.to}>
+                        <NavLink
+                            to={item.to}
+                            onClick={() => {
+                            setIsSidebarOpen(false);
+                            setExpandedMenu(null);
+                            }}
+                            className={({ isActive }) => getSubMenuLinkClassName(isActive)}>
+                            {item.label}
+                        </NavLink>
+                        </li>
+                    ))}
+                    </ul>
+                )}
+                </div>
+            </li>
+            {(user?.user_level === 'manager' || user?.user_level === 'admin') && (
+                <li>
+                <div>
+                    <NavLink
+                    to="/manager/working"
+                    onClick={handleMenuClick('manager')}
+                    className={({ isActive }) => getMenuLinkClassName(isActive || isManagerSection)}>
+                    <span>관리자</span>
+                    </NavLink>
+                    {expandedMenu === 'manager' && (
+                    <ul className="mt-1 flex flex-col gap-y-1">
+                        {subMenus.manager.map((item) => (
+                        <li key={item.to}>
+                            <NavLink
+                            to={item.to}
+                            onClick={() => {
+                                setIsSidebarOpen(false);
+                                setExpandedMenu(null);
+                            }}
+                            className={({ isActive }) => getSubMenuLinkClassName(isActive)}>
+                            {item.label}
+                            </NavLink>
+                        </li>
+                        ))}
+                    </ul>
+                    )}
+                </div>
+                </li>
+            )}
+            {user?.user_level === 'admin' && (
+                <li>
+                <div>
+                    <NavLink
+                    to="/admin/finance"
+                    onClick={handleMenuClick('admin')}
+                    className={({ isActive }) => getMenuLinkClassName(isActive || isAdminSection)}>
+                    <span>최고관리자</span>
+                    </NavLink>
+                    {expandedMenu === 'admin' && (
+                    <ul className="mt-1 flex flex-col gap-y-1">
+                        {subMenus.admin.map((item) => (
+                        <li key={item.to}>
+                            <NavLink
+                            to={item.to}
+                            onClick={() => {
+                                setIsSidebarOpen(false);
+                                setExpandedMenu(null);
+                            }}
+                            className={({ isActive }) => getSubMenuLinkClassName(isActive)}>
+                            {item.label}
+                            </NavLink>
+                        </li>
+                        ))}
+                    </ul>
+                    )}
+                </div>
+                </li>
+            )}
         </ul>
         <div className="mt-auto p-5 flex justify-end">
           <Button 

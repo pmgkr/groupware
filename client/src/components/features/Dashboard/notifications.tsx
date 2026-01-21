@@ -245,7 +245,7 @@ export function Notification() {
             <Alarm className="size-6" />
           </Button>
         </SheetTrigger>
-        <SheetContent className="flex flex-col">
+        <SheetContent className="flex flex-col max-md:w-full">
           <SheetHeader>
             <SheetTitle>알림</SheetTitle>
           </SheetHeader>
