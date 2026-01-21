@@ -1,6 +1,7 @@
 // src/Layout.tsx
 import { NavLink, Outlet, useMatches } from 'react-router';
 import Header from './Header';
+import HeaderMobile from './HeaderMobile';
 import { cn } from '@/lib/utils'; // 선택: clsx+twMerge 헬퍼
 
 export default function Layout() {
@@ -20,8 +21,13 @@ export default function Layout() {
 
   return (
     <>
-      <Header />
-      <div className="mt-18 min-h-200 bg-white py-8 md:mr-0 md:ml-50 md:px-5 2xl:ml-60 2xl:px-25">
+      <div className="hidden md:block">
+        <Header />
+      </div>
+      <div className="block md:hidden">
+        <HeaderMobile />
+      </div>
+      <div className="mt-18 ml-60 min-h-200 bg-white px-5 py-8 max-2xl:ml-50 max-2xl:px-25 max-md:m-0! max-md:max-w-[100vw]! max-md:overflow-x-scroll! max-md:p-4.5! max-md:pt-[70px]! max-md:pb-[80px]!">
         {/* 페이지 타이틀 : router의 handle.title 값 노출 */}
         {!hideTitle && title && (
           <div className="mb-5 flex items-center has-[+nav]:mb-2">
