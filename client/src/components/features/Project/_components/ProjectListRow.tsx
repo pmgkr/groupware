@@ -1,5 +1,7 @@
 import { memo } from 'react';
 import { Link } from 'react-router';
+import { useIsMobileViewport } from '@/hooks/useViewport';
+
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,11 +29,39 @@ type Props = {
 };
 
 export const ProjectRow = memo(({ item, isFavorite = false, onToggleFavorite, search }: Props) => {
+  const isMobile = useIsMobileViewport();
   const categories = parseCategories(item.project_cate);
   const status = statusMap[item.project_status as keyof typeof statusMap];
 
-  return (
-    <TableRow key={item.project_id} className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]">
+  return isMobile ? (
+    <div className="rounded-md bg-white p-2.5">
+      <div className="mb-2 flex justify-between border-b-1 border-b-gray-300">
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            size="xs"
+            variant="svgIcon"
+            className={`${isFavorite ? 'text-primary-yellow-500' : 'hover:text-primary-yellow-500 text-gray-600'}`}
+            onClick={() => onToggleFavorite?.(item.project_id)}>
+            <Star className="size-3" fill={isFavorite ? 'currentColor' : 'none'} />
+          </Button>
+
+          <span className="text-sm text-gray-500">{item.project_id}</span>
+        </div>
+        {status}
+      </div>
+      <Link to={`/project/${item.project_id}`} state={{ fromSearch: search }}>
+        <p className="truncate text-lg leading-[1.3] font-bold">{item.project_title}</p>
+        <div className="flex items-center justify-between overflow-hidden text-sm text-gray-500">
+          <p className="flex-1 truncate">{item.client_nm}</p>
+          <p className="shrink-0">
+            {item.team_name} · {item.owner_nm}
+          </p>
+        </div>
+      </Link>
+    </div>
+  ) : (
+    <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]">
       {/* 즐겨찾기 */}
       <TableCell className="px-0!">
         <Button
