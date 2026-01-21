@@ -5,6 +5,7 @@ import { useDashboard } from '@/hooks/useDashboard';
 import { getProfileImageUrl, getAvatarFallback } from '@/utils';
 
 import Header from '@/layouts/Header';
+import HeaderMobile from '@/layouts/HeaderMobile';
 
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Badge } from '@components/ui/badge';
@@ -95,14 +96,19 @@ export default function Dashboard() {
 
   return (
     <>
-      <Header />
-      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8 max-[1441px]:ml-50 max-[1441px]:px-6">
-        <div className="flex items-center justify-between text-base text-gray-800">
+      <div className="hidden md:block">
+        <Header />
+      </div>
+      <div className="block md:hidden">
+        <HeaderMobile />
+      </div>
+      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8 max-2xl:ml-50 max-2xl:px-6 max-md:m-0! max-md:mt-[50px]! max-md:p-4.5! max-md:pb-[80px]!">
+        <div className="flex items-center justify-between text-base text-gray-800 max-md:hidden">
           <p>{welcomeMessage}</p>
           <Weather />
         </div>
-        <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6 max-[1441px]:gap-4">
-          <div className="row-span-2 flex flex-col justify-start rounded-md border border-gray-300 bg-white p-6">
+        <div className="grid min-h-200 grid-cols-3 grid-rows-4 gap-6 max-2xl:gap-4 max-md:grid-cols-1 max-md:grid-rows-1">
+          <div className="row-span-2 flex min-h-0 flex-col justify-start rounded-md border border-gray-300 bg-white p-6 max-md:p-5">
             <SectionHeader
               title="근무 시간"
               description={dayjs(currentTime).format('YYYY년 MM월 DD일 (ddd) HH:mm:ss')}
@@ -132,10 +138,10 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <div>
+            <div className="flex-1 flex flex-col">
               <div className="mt-1 flex flex-col gap-0">
                 <div className="flex items-center gap-1">
-                  <span className="text-xl font-black text-gray-800">주간누적</span>
+                  <span className="text-lg font-black text-gray-800">주간누적</span>
                   {(() => {
                     const weekData = Array.isArray(wlog.wlogWeek) ? wlog.wlogWeek[0] : wlog.wlogWeek;
                     return (
@@ -164,8 +170,8 @@ export default function Dashboard() {
               />
             </div>
           </div>
-          <div className="row-span-2 flex flex-col gap-4">
-            <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
+          <div className="row-span-2 flex min-h-0 flex-col gap-4">
+            <div className="rounded-md border border-gray-300 bg-white px-6 py-5 max-md:p-4.5!">
               <SectionHeader
                 title="잔여 휴가 ⛱️"
                 buttonText="전체보기"
@@ -193,7 +199,7 @@ export default function Dashboard() {
                 </li>
               </ul>
             </div>
-            <div className="h-full rounded-md border border-gray-300 bg-white px-6 py-5">
+            <div className="h-full rounded-md border border-gray-300 bg-white px-6 py-5 max-md:hidden">
               <SectionHeader
                 title="공지사항"
                 buttonText="전체보기"
@@ -224,7 +230,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="row-span-4 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
+          <div className="row-span-4 flex min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5 max-md:p-4.5!">
             <SectionHeader
               title="캘린더"
               buttonText="전체보기"
@@ -234,9 +240,9 @@ export default function Dashboard() {
               className="mb-4 shrink-0"
             />
             <div className="shrink-0">
-              <DayPicker mode="single" variant="dashboard" selected={selected} onSelect={setSelected} />
+              <DayPicker mode="single" variant="dashboard" selected={selected} onSelect={setSelected} className="max-md:p-0" />
             </div>
-            <ul className="flex items-center justify-end gap-x-1.5 px-4 py-2 max-[1441px]:flex-wrap">
+            <ul className="flex items-center justify-end gap-x-1.5 px-4 py-2 flex-wrap max-md:px-0! max-md:gap-0!">
               {calendarBadges.map((label) => (
                 <li key={label}>
                   <Badge variant="dot" className={getBadgeColor(label)}>
@@ -245,8 +251,8 @@ export default function Dashboard() {
                 </li>
               ))}
             </ul>
-            <div className="overflow-y-auto rounded-xl p-4 max-[1441px]:p-2">
-              <ul className="grid grid-cols-3 gap-2 gap-y-4 max-[1441px]:grid-cols-2 max-[1441px]:gap-x-1 max-[1441px]:gap-y-2">
+            <div className="overflow-y-auto rounded-xl p-4 max-2xl:p-2 max-md:px-0!">
+              <ul className="grid grid-cols-3 gap-2 gap-y-4 max-2xl:grid-cols-2 max-2xl:gap-x-1 max-2xl:gap-y-2 max-md:grid-cols-3!">
                 {calendarData.length === 0 ? (
                   <span className="text-base text-gray-500">등록된 일정이 없습니다.</span>
                 ) : (
@@ -282,7 +288,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="row-span-2 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
+          <div className="row-span-2 flex min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5 max-md:hidden">
             <SectionHeader
               title="미팅룸"
               buttonText="전체보기"
@@ -310,7 +316,7 @@ export default function Dashboard() {
               </ul>
             </div>
           </div>
-          <div className="row-span-2 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
+          <div className="row-span-2 flex min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5 max-md:hidden">
             <SectionHeader
               title="비용 관리"
               buttonText="전체보기"

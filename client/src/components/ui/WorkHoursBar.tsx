@@ -24,7 +24,7 @@ export default function WorkHoursBar({ hours, max = 52, safe = 40, warn = 48, cl
   return (
     <div className={cn('w-full', className)}>
       {/* 트랙 */}
-      <div className="relative mb-4 h-3.5">
+      <div className="relative mb-4 h-3.5 max-md:h-2.5">
         {/* 진행 바 */}
         <div className="absolute inset-0 overflow-hidden rounded-xl bg-gray-300">
           <div
