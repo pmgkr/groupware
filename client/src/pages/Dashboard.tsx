@@ -16,6 +16,8 @@ import WorkHoursBar from '@/components/ui/WorkHoursBar';
 import { Icons } from '@components/icons';
 import EventViewDialog from '@/components/calendar/EventViewDialog';
 import Weather from '@components/features/Dashboard/weather';
+import { Office, Expense as ExpenseIcon } from '@/assets/images/icons';
+import { Building2 } from 'lucide-react';
 
 import type { Calendar, Meetingroom, Wlog, VacationSummaryItem, Notice, Expense } from '@/api/dashboard';
 
@@ -228,6 +230,28 @@ export default function Dashboard() {
                 </ul>
               </div>
             </div>
+          </div>
+          
+          {/* 빠른 메뉴 */}
+          <div className="grid grid-cols-3 gap-6 max-2xl:gap-4 md:hidden">
+            <Link
+              to="/notice"
+              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-6 transition-colors hover:bg-gray-50">
+              <Office className="size-8 text-primary-blue-500" />
+              <span className="text-base font-medium text-gray-900">공지사항</span>
+            </Link>
+            <Link
+              to="/meetingroom"
+              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-6 transition-colors hover:bg-gray-50">
+              <Building2 className="size-8 text-primary-blue-500" />
+              <span className="text-base font-medium text-gray-900">미팅룸</span>
+            </Link>
+            <Link
+              to="/mypage/expense"
+              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-6 transition-colors hover:bg-gray-50">
+              <ExpenseIcon className="size-8 text-primary-blue-500" />
+              <span className="text-base font-medium text-gray-900">비용관리</span>
+            </Link>
           </div>
 
           <div className="row-span-4 flex min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5 max-md:p-4.5!">
