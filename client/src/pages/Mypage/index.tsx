@@ -385,8 +385,8 @@ export default function Mypage() {
   return (
     <>
       <section className="flex flex-col gap-y-5">
-        <div className="flex items-center gap-x-14 rounded-md border border-gray-300 px-20 py-6">
-          <div className="group relative aspect-square w-36 overflow-hidden rounded-[50%]">
+        <div className="flex items-center gap-x-7 rounded-md border border-gray-300 px-5 py-8 sm:px-8 md:gap-x-10 md:px-14 md:py-6 lg:gap-x-14 lg:px-10 xl:px-20">
+          <div className="group relative aspect-square w-[90px] shrink-0 overflow-hidden rounded-[50%] md:w-25 lg:w-36">
             {profileImageUrl ? (
               <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
             ) : (
@@ -422,16 +422,16 @@ export default function Mypage() {
           </div>
 
           <div className="text-base font-medium tracking-tight text-gray-950">
-            <div className="flex items-center gap-x-1.5 text-[.875em] text-gray-500">
+            <div className="flex items-center gap-x-1.5 text-[.875em] text-gray-500 max-md:text-sm">
               {user?.branch}
               <PlaceMin className="inline-block size-3.5" />
             </div>
-            <div className="mt-2.5 mb-1">
-              <strong className="block text-[1.5em] font-bold">{user?.user_name_en}</strong>
+            <div className="mt-2.5 mb-1 max-md:mt-2 max-md:mb-2 max-md:text-sm">
+              <strong className="block text-[1.5em] font-bold max-md:text-[18px]">{user?.user_name_en}</strong>
               {user?.job_role}
             </div>
-            <ul className="flex h-[32px] items-center gap-x-4 text-[.875em] font-normal">
-              <li className="flex items-center gap-x-1.5">
+            <ul className="flex h-[32px] flex-col items-start gap-x-4 text-sm text-[.875em] font-normal sm:flex-row sm:items-center">
+              <li className="flex items-center gap-x-1.5 max-md:mb-[3px]">
                 <MailMin className="size-5" />
                 <span>{user?.user_id}</span>
               </li>
@@ -455,8 +455,8 @@ export default function Mypage() {
             </ul>
           </div>
         </div>
-        <div className="rounded-md border border-gray-300 px-18.5 py-12.5">
-          <div className="mb-6 flex items-center justify-between border-b border-b-gray-300 pb-1.5">
+        <div className="rounded-md border border-gray-300 px-5 py-8 max-md:py-7 md:py-12.5 lg:px-10 xl:px-18.5">
+          <div className="mb-5 flex items-center justify-between border-b border-b-gray-300 pb-1.5 md:mb-6">
             <SectionHeader title="프로필 수정" className="mb-0 border-0" />
             <div className="flex gap-x-2">
               {isEditing ? (
@@ -477,113 +477,128 @@ export default function Mypage() {
             </div>
           </div>
 
-          <div className="mb-15 grid grid-cols-3 gap-y-6 tracking-tight">
-            <div className="pr-5 text-base leading-[1.5] text-gray-700">
-              <strong className="mb-1 block text-[1.14em] font-bold text-gray-950">팀 이름</strong>
+          <div className="mb-15 grid grid-cols-1 gap-y-3.5 tracking-tight md:grid-cols-3 md:gap-y-6">
+            <div className="order-1 text-sm leading-[1.5] text-gray-700 md:pr-5 lg:text-base">
+              <strong className="inline-block w-[78px] text-[1.14em] font-bold text-gray-950 md:mb-1 md:block">팀 이름</strong>
               <span>{user?.team_name}</span>
             </div>
-            <div className="short-v-divider px-5 text-base leading-[1.5] text-gray-700">
-              <strong className="mb-1 block text-[1.14em] font-bold text-gray-950">생년월일</strong>
-              {isEditing ? (
-                <Popover open={isBirthOpen} onOpenChange={setIsBirthOpen}>
-                  <div className="relative w-full">
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          'border-input focus-visible:border-primary-blue-300 h-10 w-full px-3 text-left text-base font-normal text-gray-700 hover:bg-[none]',
-                          !editedUser?.birth_date && 'text-muted-foreground hover:text-muted-foreground',
-                          isBirthOpen && 'border-primary-blue-300'
-                        )}>
-                        {editedUser?.birth_date ? String(formatKST(editedUser.birth_date, true)) : <span>YYYY-MM-DD</span>}
-                        <Calendar className="ml-auto size-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                  </div>
+            <div className="relative order-3 text-sm leading-[1.5] text-gray-700 md:order-2 md:px-5 lg:text-base">
+              <div className="short-v-divider absolute top-0 left-0 hidden h-[90%] w-[1px] bg-gray-300 md:block" />
+              <div className="flex items-center md:flex-col md:items-start">
+                <strong className="inline-block w-[78px] shrink-0 text-[1.14em] font-bold text-gray-950 md:mb-1 md:block">생년월일</strong>
+                {isEditing ? (
+                  <Popover open={isBirthOpen} onOpenChange={setIsBirthOpen}>
+                    <div className="relative w-full">
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            'border-input focus-visible:border-primary-blue-300 h-10 w-full px-3 text-left text-base font-normal text-gray-700 hover:bg-[none]',
+                            !editedUser?.birth_date && 'text-muted-foreground hover:text-muted-foreground',
+                            isBirthOpen && 'border-primary-blue-300'
+                          )}>
+                          {editedUser?.birth_date ? String(formatKST(editedUser.birth_date, true)) : <span>YYYY-MM-DD</span>}
+                          <Calendar className="ml-auto size-4 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                    </div>
 
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <DayPicker
-                      captionLayout="dropdown"
-                      mode="single"
-                      selected={editedUser?.birth_date ? new Date(editedUser.birth_date) : undefined}
-                      onSelect={(date) => {
-                        const formatted = date ? formatKST(date) : '';
-                        setEditedUser({ ...editedUser!, birth_date: formatted });
-                        if (date) setIsBirthOpen(false);
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-              ) : (
-                <span>{formatKST(user?.birth_date, true)}</span>
-              )}
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <DayPicker
+                        captionLayout="dropdown"
+                        mode="single"
+                        selected={editedUser?.birth_date ? new Date(editedUser.birth_date) : undefined}
+                        onSelect={(date) => {
+                          const formatted = date ? formatKST(date) : '';
+                          setEditedUser({ ...editedUser!, birth_date: formatted });
+                          if (date) setIsBirthOpen(false);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <span className="block">{formatKST(user?.birth_date, true)}</span>
+                )}
+              </div>
             </div>
-            <div className="short-v-divider px-5 text-base leading-[1.5] text-gray-700">
-              <strong className="mb-1 block text-[1.14em] font-bold text-gray-950">입사일</strong>
-              {isEditing ? (
-                <Popover open={isHireOpen} onOpenChange={setIsHireOpen}>
-                  <div className="relative w-full">
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          'border-input focus-visible:border-primary-blue-300 h-10 w-full px-3 text-left text-base font-normal text-gray-700 hover:bg-[none]',
-                          !editedUser?.birth_date && 'text-muted-foreground hover:text-muted-foreground',
-                          isHireOpen && 'border-primary-blue-300'
-                        )}>
-                        {editedUser?.birth_date ? String(formatKST(editedUser.hire_date, true)) : <span>YYYY-MM-DD</span>}
-                        <Calendar className="ml-auto size-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                  </div>
+            <div className="relative order-4 text-sm leading-[1.5] text-gray-700 md:order-3 md:px-5 lg:text-base">
+              <div className="short-v-divider absolute top-0 left-0 hidden h-[90%] w-[1px] bg-gray-300 md:block" />
+              <div className="flex items-center md:flex-col md:items-start">
+                <strong className="inline-block w-[78px] shrink-0 text-[1.14em] font-bold text-gray-950 md:mb-1 md:block">입사일</strong>
+                {isEditing ? (
+                  <Popover open={isHireOpen} onOpenChange={setIsHireOpen}>
+                    <div className="relative w-full">
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            'border-input focus-visible:border-primary-blue-300 h-10 w-full px-3 text-left text-base font-normal text-gray-700 hover:bg-[none]',
+                            !editedUser?.birth_date && 'text-muted-foreground hover:text-muted-foreground',
+                            isHireOpen && 'border-primary-blue-300'
+                          )}>
+                          {editedUser?.birth_date ? String(formatKST(editedUser.hire_date, true)) : <span>YYYY-MM-DD</span>}
+                          <Calendar className="ml-auto size-4 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                    </div>
 
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <DayPicker
-                      captionLayout="dropdown"
-                      mode="single"
-                      selected={editedUser?.hire_date ? new Date(editedUser.hire_date) : undefined}
-                      onSelect={(date) => {
-                        const formatted = date ? formatKST(date) : '';
-                        setEditedUser({ ...editedUser!, hire_date: formatted });
-                        if (date) setIsHireOpen(false);
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-              ) : (
-                <span>{formatKST(user?.hire_date, true)}</span>
-              )}
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <DayPicker
+                        captionLayout="dropdown"
+                        mode="single"
+                        selected={editedUser?.hire_date ? new Date(editedUser.hire_date) : undefined}
+                        onSelect={(date) => {
+                          const formatted = date ? formatKST(date) : '';
+                          setEditedUser({ ...editedUser!, hire_date: formatted });
+                          if (date) setIsHireOpen(false);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <span className="block">{formatKST(user?.hire_date, true)}</span>
+                )}
+              </div>
             </div>
 
-            <div className="pr-5 text-base leading-[1.5] text-gray-700">
-              <strong className="mb-1 block text-[1.14em] font-bold text-gray-950">회원 레벨</strong>
+            <div className="order-2 text-sm leading-[1.5] text-gray-700 md:order-4 md:pr-5 lg:text-base">
+              <strong className="inline-block w-[78px] text-[1.14em] font-bold text-gray-950 md:mb-1 md:block">회원 레벨</strong>
               <span>
                 <Badge>{user?.user_level}</Badge>
               </span>
             </div>
-            <div className="short-v-divider px-5 text-base leading-[1.5] text-gray-700">
-              <strong className="mb-1 block text-[1.14em] font-bold text-gray-950">주소</strong>
-              {isEditing ? (
-                <Input
-                  className="h-10"
-                  value={editedUser?.address || ''}
-                  onChange={(e) => setEditedUser({ ...editedUser!, address: e.target.value })}
-                />
-              ) : (
-                <span>{user?.address}</span>
-              )}
+            <div className="relative order-5 text-sm leading-[1.5] text-gray-700 md:col-span-1 md:block md:px-5 lg:text-base">
+              <div className="short-v-divider absolute top-0 left-0 hidden h-[90%] w-[1px] bg-gray-300 md:block" />
+
+              <div className="flex items-center md:flex-col md:items-start">
+                <strong className="inline-block w-[78px] shrink-0 text-[1.14em] font-bold text-gray-950 md:mb-1 md:block">주소</strong>
+                {isEditing ? (
+                  <Input
+                    className="h-10"
+                    value={editedUser?.address || ''}
+                    onChange={(e) => setEditedUser({ ...editedUser!, address: e.target.value })}
+                  />
+                ) : (
+                  <span className="block">{user?.address}</span>
+                )}
+              </div>
             </div>
-            <div className="short-v-divider px-5 text-base leading-[1.5] text-gray-700">
-              <strong className="mb-1 block text-[1.14em] font-bold text-gray-950">비상 연락망</strong>
-              {isEditing ? (
-                <Input
-                  className="h-10"
-                  value={editedUser?.emergency_phone || ''}
-                  onChange={(e) => setEditedUser({ ...editedUser!, emergency_phone: e.target.value })}
-                />
-              ) : (
-                <span>{user?.emergency_phone}</span>
-              )}
+            <div className="relative order-6 text-sm leading-[1.5] text-gray-700 md:col-span-1 md:px-5 lg:text-base">
+              <div className="short-v-divider absolute top-0 left-0 hidden h-[90%] w-[1px] bg-gray-300 md:block" />
+              <div className="flex items-center md:flex-col md:items-start">
+                <strong className="inline-block w-[78px] shrink-0 text-[1.14em] font-bold text-gray-950 md:mb-1 md:block">
+                  비상 연락망
+                </strong>
+                {isEditing ? (
+                  <Input
+                    className="h-10"
+                    value={editedUser?.emergency_phone || ''}
+                    onChange={(e) => setEditedUser({ ...editedUser!, emergency_phone: e.target.value })}
+                  />
+                ) : (
+                  <span className="block">{user?.emergency_phone}</span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -612,7 +627,7 @@ export default function Mypage() {
                 </Button>
               </DialogTrigger>
             </div>
-            <DialogContent className="gap-y-6 sm:max-w-[600px]">
+            <DialogContent className="w-full gap-y-6 px-4 max-md:max-w-[calc(100%-var(--spacing)*8)] max-md:rounded-md lg:px-6">
               <DialogHeader>
                 <DialogTitle>{editAccount ? '은행계좌 수정' : '은행계좌 추가'}</DialogTitle>
               </DialogHeader>
@@ -721,17 +736,20 @@ export default function Mypage() {
                       )}
                     />
                   </div>
-                  <DialogFooter className="pt-8">
+                  <DialogFooter className="pt-8 max-sm:flex-row max-sm:justify-center max-sm:gap-x-3">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => {
                         setOpen(false);
                         form.reset();
-                      }}>
+                      }}
+                      className="max-sm:flex-1">
                       취소
                     </Button>
-                    <Button type="submit">{editAccount ? '수정' : '확인'}</Button>
+                    <Button type="submit" className="max-sm:flex-1">
+                      {editAccount ? '수정' : '확인'}
+                    </Button>
                   </DialogFooter>
                 </form>
               </Form>
@@ -739,30 +757,30 @@ export default function Mypage() {
           </Dialog>
 
           <div>
-            <Table className="mb-6">
+            <Table className="mb-6 w-full table-fixed">
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[5%] pr-0"></TableHead>
-                  <TableHead className="w-[15%]">계좌 별명</TableHead>
-                  <TableHead className="w-[16%]">은행명</TableHead>
-                  <TableHead className="">계좌 번호</TableHead>
-                  <TableHead className="w-[18%]">예금주</TableHead>
-                  <TableHead className="w-[20%]">등록일시</TableHead>
-                  <TableHead className="w-[10%]"></TableHead>
+                <TableRow className="text-sm md:text-base">
+                  <TableHead className="w-[30px] pr-0 md:w-[5%]"></TableHead>
+                  <TableHead className="w-[100px] max-md:px-2 md:w-[16%]">계좌 별명</TableHead>
+                  <TableHead className="w-[80px] max-md:px-2 md:w-[15%]">은행명</TableHead>
+                  <TableHead className="w-[130px] max-md:px-2">계좌 번호</TableHead>
+                  <TableHead className="w-[80px] max-md:px-2 md:w-[15%]">예금주</TableHead>
+                  <TableHead className="w-[130px] max-md:px-2 md:w-[18%]">등록일시</TableHead>
+                  <TableHead className="w-[110px] max-md:px-2 md:w-[12%]"></TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="text-sm md:text-base">
                 {accounts.length > 0 ? (
                   accounts.map((acc) => (
                     <TableRow key={acc.seq}>
-                      <TableCell className="pr-0">
-                        {acc.flag === 'mine' && <CrownIcon className="inline-block size-5 text-yellow-500" />}
+                      <TableCell className="w-[30px] pr-0 max-md:pl-0">
+                        {acc.flag === 'mine' && <CrownIcon className="inline-block size-4 text-yellow-500 md:size-5" />}
                       </TableCell>
-                      <TableCell>{acc.account_alias}</TableCell>
-                      <TableCell>{acc.bank_name}</TableCell>
-                      <TableCell>{acc.bank_account}</TableCell>
-                      <TableCell>{acc.account_name}</TableCell>
-                      <TableCell>{formatKST(acc.wdate)}</TableCell>
+                      <TableCell className="w-[80px] truncate max-md:px-2">{acc.account_alias}</TableCell>
+                      <TableCell className="max-md:px-2">{acc.bank_name}</TableCell>
+                      <TableCell className="max-md:px-2">{acc.bank_account}</TableCell>
+                      <TableCell className="max-md:px-2">{acc.account_name}</TableCell>
+                      <TableCell className="w-[130px] truncate max-md:px-2">{formatKST(acc.wdate)}</TableCell>
                       {/* 수정 삭제 버튼 */}
                       <TableCell>
                         <Button
