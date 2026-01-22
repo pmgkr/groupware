@@ -266,7 +266,7 @@ export default function Dashboard() {
             <div className="shrink-0">
               <DayPicker mode="single" variant="dashboard" selected={selected} onSelect={setSelected} className="max-md:p-0" />
             </div>
-            <ul className="flex items-center justify-end gap-x-1.5 px-4 py-2 flex-wrap max-md:px-0! max-md:gap-0!">
+            <ul className="flex shrink-0 items-center justify-end gap-x-1.5 px-4 py-2 flex-wrap max-md:px-0! max-md:gap-0!">
               {calendarBadges.map((label) => (
                 <li key={label}>
                   <Badge variant="dot" className={getBadgeColor(label)}>
@@ -278,7 +278,9 @@ export default function Dashboard() {
             <div className="overflow-y-auto rounded-xl p-4 max-2xl:p-2 max-md:px-0!">
               <ul className="grid grid-cols-3 gap-2 gap-y-4 max-2xl:grid-cols-2 max-2xl:gap-x-1 max-2xl:gap-y-2 max-md:grid-cols-3!">
                 {calendarData.length === 0 ? (
-                  <span className="text-base text-gray-500">등록된 일정이 없습니다.</span>
+                  <li className="col-span-full text-center">
+                    <span className="text-base text-gray-500">등록된 일정이 없습니다.</span>
+                  </li>
                 ) : (
                   calendarData.map((calendar, index) => (
                     <li
