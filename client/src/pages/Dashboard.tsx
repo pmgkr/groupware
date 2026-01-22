@@ -123,19 +123,19 @@ export default function Dashboard() {
             <div className="mb-6 flex flex-col items-center justify-center gap-y-3 rounded-md bg-gray-100 p-5">
               <div className="flex flex-wrap justify-center gap-2">
                 {displayWorkTypes.map((type, idx) => (
-                  <div key={idx} className={cn('rounded-sm px-4 py-1.5 text-[0.8em] font-bold', getWorkTypeColor(type))}>
+                  <div key={idx} className={cn('rounded-sm px-4 py-1.5 text-[0.8em] font-bold max-md:text-sm max-md:px-3 max-md:py-1', getWorkTypeColor(type))}>
                     {type}
                   </div>
                 ))}
               </div>
               <div className="flex items-center justify-center gap-x-10">
                 <div className="align-center flex flex-col justify-center text-center">
-                  <p className="text-base text-gray-500">출근시간</p>
+                  <p className="text-base text-gray-500 max-md:text-[13px]">출근시간</p>
                   <p className="text-xl font-medium text-gray-800">{formatTime(wlog.wlogToday[0]?.stime || null)}</p>
                 </div>
                 <Icons.arrowRightCustom />
                 <div className="align-center flex flex-col justify-center text-center">
-                  <p className="text-base text-gray-500">퇴근시간</p>
+                  <p className="text-base text-gray-500 max-md:text-[13px]">퇴근시간</p>
                   <p className="text-xl font-medium text-gray-800">{formatTime(wlog.wlogToday[0]?.etime || null)}</p>
                 </div>
               </div>
