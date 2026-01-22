@@ -715,11 +715,11 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
     const getSizeClasses = () => {
       switch (size) {
         case 'sm':
-          return 'h-8 rounded-md text-sm gap-1.25 px-2 py-0';
+          return 'h-8 rounded-md text-sm gap-1.25 px-2 py-0 max-md:h-7 max-md:rounded-sm max-md:text-[11px]';
         case 'lg':
-          return 'w-full max-w-[280px] h-12 text-lg rounded-md px-4 py-0';
+          return 'w-full max-w-[280px] h-12 text-lg rounded-md px-4 py-0 max-md:h-10 max-md:rounded-sm max-md:text-base';
         default:
-          return 'h-11 px-2 py-0';
+          return 'h-11 px-2 py-0 max-md:h-9 max-md:rounded-sm max-md:text-[13px]!';
       }
     };
 
@@ -819,6 +819,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               ref={buttonRef}
               {...props}
               variant="outline"
+              size={undefined}
               onClick={handleTogglePopover}
               disabled={disabled}
               role="combobox"
@@ -832,7 +833,6 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 getSizeClasses(),
                 autoSize ? 'w-auto' : 'w-full',
                 responsiveSettings.compactMode && 'min-h-8 text-sm',
-                screenSize === 'mobile' && 'min-h-12 text-base',
                 disabled && 'cursor-not-allowed opacity-50',
                 invalid && 'border-destructive ring-destructive/20',
                 className
@@ -1187,3 +1187,4 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 
 MultiSelect.displayName = 'MultiSelect';
 export type { MultiSelectOption, MultiSelectGroup, MultiSelectProps };
+
