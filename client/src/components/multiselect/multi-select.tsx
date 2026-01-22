@@ -828,7 +828,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               aria-describedby={`${triggerDescriptionId} ${selectedCountId}`}
               aria-label={`Multi-select: ${selectedValues.length} of ${getAllOptions().length} options selected. ${placeholder}`}
               className={cn(
-                'flex items-center justify-between rounded-md border bg-inherit hover:bg-inherit [&_svg]:pointer-events-auto',
+                'flex items-center justify-between rounded-md border bg-inherit hover:bg-inherit max-md:w-full! [&_svg]:pointer-events-auto',
                 getSizeClasses(),
                 autoSize ? 'w-auto' : 'w-full',
                 responsiveSettings.compactMode && 'min-h-8 text-sm',
@@ -1041,7 +1041,8 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               width: triggerWidth ? `${triggerWidth}px` : 'auto',
             }}
             align="start"
-            onEscapeKeyDown={() => setIsPopoverOpen(false)}>
+            onEscapeKeyDown={() => setIsPopoverOpen(false)}
+            onPointerDownCapture={(e) => e.stopPropagation()}>
             <Command shouldFilter={false}>
               {searchable && (
                 <CommandInput

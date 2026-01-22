@@ -8,6 +8,8 @@ import { ProjectCreateForm } from './_components/ProjectCreate';
 import { getProjectList, type ProjectListItem, getClientList, getTeamList, getBookmarkList, addBookmark, removeBookmark } from '@/api';
 import { ProjectCardList } from './_responsive/ProjectCardList';
 import { ProjectTable } from './_responsive/ProjectTable';
+import { ProjectFilterPC } from './_responsive/ProjectFilterPC';
+import { ProjectFilterMobile } from './_responsive/ProjectFilterMo';
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@components/ui/button';
@@ -23,6 +25,7 @@ export default function ProjectList() {
   const { search } = useLocation();
   const viewport = useViewport();
   const isMobile = viewport === 'mobile';
+
   const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
   const [registerDialog, setRegisterDialog] = useState(false);
@@ -133,9 +136,29 @@ export default function ProjectList() {
   }, []); // 🔥 반드시 1회
 
   // 필터 변경 시 page 초기화
-  const handleFilterChange = (setter: any, key: string, value: any) => {
-    setter(value);
+  const handleFilterChange = (key: string, value: any) => {
     setPage(1);
+
+    switch (key) {
+      case 'project_year':
+        setSelectedYear(value);
+        break;
+      case 'brand':
+        setSelectedBrand(value);
+        break;
+      case 'category':
+        setSelectedCategory(value);
+        break;
+      case 'client_id':
+        setSelectedClient(value);
+        break;
+      case 'team_id':
+        setSelectedTeam(value);
+        break;
+      case 'status':
+        setSelectedStatus(value);
+        break;
+    }
 
     updateSearchParams({
       page: 1,
@@ -158,6 +181,8 @@ export default function ProjectList() {
     clientRef.current?.clear();
     teamRef.current?.clear();
     statusRef.current?.clear();
+
+    updateSearchParams({ page: 1 });
   };
 
   const handleTabChange = (tab: 'mine' | 'others') => {
@@ -292,216 +317,61 @@ export default function ProjectList() {
     <>
       {/* ---------------- 상단 필터 ---------------- */}
       {isMobile ? (
-        <div className="mb-4 bg-white">
-          <div className="mb-4 flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
-            <Button
-              onClick={() => handleTabChange('mine')}
-              className={`h-8 w-1/2 rounded-sm text-sm ${
-                activeTab === 'mine'
-                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-              }`}>
-              내 프로젝트
-            </Button>
-            <Button
-              onClick={() => handleTabChange('others')}
-              className={`h-8 w-1/2 rounded-sm text-sm ${
-                activeTab === 'others'
-                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-              }`}>
-              전체 프로젝트
-            </Button>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-x-1">
-              <Button type="button" size="xs" variant="ghost" className="text-gray-600" onClick={() => {}}>
-                <ListFilter className="size-3" /> 필터
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="xs"
-                className={cn(
-                  'text-gray-600 transition-colors',
-                  showFavoritesOnly
-                    ? 'text-primary-yellow-500 [&_svg]:fill-current'
-                    : 'hover:text-primary-yellow-500 hover:[&_svg]:fill-current'
-                )}
-                onClick={handleToggleFavorites}>
-                <Star className="size-3" fill={showFavoritesOnly ? 'currentColor' : 'none'} /> 북마크
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="xs"
-                className="hover:text-primary-blue-500 text-gray-600"
-                onClick={() => handleTabChange(activeTab)}>
-                <RefreshCw className="size-3" /> 초기화
-              </Button>
-            </div>
-
-            <Button size="sm" onClick={() => setRegisterDialog(true)}>
-              프로젝트 생성
-            </Button>
-          </div>
-        </div>
+        <ProjectFilterMobile
+          activeTab={activeTab}
+          yearOptions={yearOptions}
+          selectedYear={selectedYear}
+          selectedBrand={selectedBrand}
+          selectedCategory={selectedCategory}
+          selectedClient={selectedClient}
+          selectedTeam={selectedTeam}
+          selectedStatus={selectedStatus}
+          searchInput={searchInput}
+          showFavoritesOnly={showFavoritesOnly}
+          categoryRef={categoryRef}
+          clientRef={clientRef}
+          teamRef={teamRef}
+          statusRef={statusRef}
+          categoryOptions={categoryOptions}
+          clientOptions={clientOptions}
+          teamOptions={teamOptions}
+          statusOptions={statusOptions}
+          onTabChange={handleTabChange}
+          onFilterChange={handleFilterChange}
+          onSearchInputChange={setSearchInput}
+          onSearchSubmit={() => setSearchQuery(searchInput)}
+          onToggleFavorites={handleToggleFavorites}
+          onReset={() => handleTabChange(activeTab)}
+          onCreate={() => setRegisterDialog(true)}
+        />
       ) : (
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
-              <Button
-                onClick={() => handleTabChange('mine')}
-                className={`h-8 w-18 rounded-sm p-0 text-sm ${
-                  activeTab === 'mine'
-                    ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                    : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-                }`}>
-                내 프로젝트
-              </Button>
-              <Button
-                onClick={() => handleTabChange('others')}
-                className={`h-8 w-18 rounded-sm p-0 text-sm ${
-                  activeTab === 'others'
-                    ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                    : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-                }`}>
-                전체 프로젝트
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-x-2 before:mr-3 before:ml-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
-              {activeTab === 'others' && (
-                <Select value={selectedYear} onValueChange={(v) => handleFilterChange(setSelectedYear, 'project_year', v)}>
-                  <SelectTrigger size="sm" className="px-2">
-                    <SelectValue placeholder="년도 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {yearOptions.map((y) => (
-                      <SelectItem size="sm" key={y} value={y}>
-                        {y}년
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-
-              <Select value={selectedBrand} onValueChange={(v) => handleFilterChange(setSelectedBrand, 'brand', v)}>
-                <SelectTrigger size="sm" className="px-2">
-                  <SelectValue placeholder="소속 선택" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem size="sm" value="PMG">
-                      PMG
-                    </SelectItem>
-                    <SelectItem size="sm" value="MCS">
-                      MCS
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-
-              <MultiSelect
-                size="sm"
-                ref={categoryRef}
-                className="max-w-[80px] min-w-auto! max-xl:hidden"
-                maxCount={0}
-                autoSize={true}
-                placeholder="카테고리"
-                defaultValue={selectedCategory}
-                options={categoryOptions}
-                onValueChange={(v) => handleFilterChange(setSelectedCategory, 'category', v)}
-                simpleSelect={true}
-                hideSelectAll={true}
-              />
-
-              <MultiSelect
-                size="sm"
-                ref={clientRef}
-                className="max-w-[80px] min-w-auto!"
-                maxCount={0}
-                autoSize={true}
-                placeholder="클라이언트"
-                defaultValue={selectedClient}
-                options={clientOptions}
-                onValueChange={(v) => handleFilterChange(setSelectedClient, 'client_id', v)}
-                simpleSelect={true}
-                hideSelectAll={true}
-              />
-
-              <MultiSelect
-                size="sm"
-                ref={teamRef}
-                className="max-w-[80px] min-w-auto! max-xl:hidden"
-                maxCount={0}
-                autoSize={true}
-                placeholder="팀 선택"
-                defaultValue={selectedTeam}
-                options={teamOptions}
-                onValueChange={(v) => handleFilterChange(setSelectedTeam, 'team_id', v)}
-                simpleSelect={true}
-                hideSelectAll={true}
-              />
-
-              <MultiSelect
-                size="sm"
-                ref={statusRef}
-                className="max-w-[80px] min-w-auto! max-xl:hidden"
-                maxCount={0}
-                autoSize={true}
-                placeholder="상태 선택"
-                defaultValue={selectedStatus}
-                options={statusOptions}
-                onValueChange={(v) => handleFilterChange(setSelectedStatus, 'status', v)}
-                simpleSelect={true}
-                hideSelectAll={true}
-              />
-
-              <Button
-                type="button"
-                variant="svgIcon"
-                size="icon"
-                className={cn(
-                  'size-6 text-gray-600 transition-colors',
-                  showFavoritesOnly
-                    ? 'text-primary-yellow-500 [&_svg]:fill-current'
-                    : 'hover:text-primary-yellow-500 hover:[&_svg]:fill-current'
-                )}
-                onClick={handleToggleFavorites}>
-                <Star fill={showFavoritesOnly ? 'currentColor' : 'none'} />
-              </Button>
-              <Button
-                type="button"
-                variant="svgIcon"
-                size="icon"
-                className="hover:text-primary-blue-500 size-6 text-gray-600"
-                onClick={() => handleTabChange(activeTab)}>
-                <RefreshCw />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex gap-x-2">
-            <Input
-              className="max-w-42"
-              size="sm"
-              placeholder="검색어 입력"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setSearchQuery(searchInput);
-                }
-              }}
-            />
-
-            <Button size="sm" onClick={() => setRegisterDialog(true)}>
-              프로젝트 생성
-            </Button>
-          </div>
-        </div>
+        <ProjectFilterPC
+          activeTab={activeTab}
+          yearOptions={yearOptions}
+          selectedYear={selectedYear}
+          selectedBrand={selectedBrand}
+          selectedCategory={selectedCategory}
+          selectedClient={selectedClient}
+          selectedTeam={selectedTeam}
+          selectedStatus={selectedStatus}
+          searchInput={searchInput}
+          showFavoritesOnly={showFavoritesOnly}
+          categoryRef={categoryRef}
+          clientRef={clientRef}
+          teamRef={teamRef}
+          statusRef={statusRef}
+          categoryOptions={categoryOptions}
+          clientOptions={clientOptions}
+          teamOptions={teamOptions}
+          statusOptions={statusOptions}
+          onTabChange={handleTabChange}
+          onFilterChange={handleFilterChange}
+          onSearchInputChange={setSearchInput}
+          onSearchSubmit={() => setSearchQuery(searchInput)}
+          onToggleFavorites={handleToggleFavorites}
+          onReset={() => handleTabChange(activeTab)}
+          onCreate={() => setRegisterDialog(true)}
+        />
       )}
 
       {/* ---------------- 프로젝트 리스트 ---------------- */}
@@ -512,14 +382,16 @@ export default function ProjectList() {
       )}
 
       {/* ---------------- 페이지네이션 ---------------- */}
-      <div className="mt-5">
-        <AppPagination totalPages={Math.ceil(total / pageSize)} initialPage={page} visibleCount={5} onPageChange={(p) => setPage(p)} />
-      </div>
+      {projects.length !== 0 && (
+        <div className="mt-5">
+          <AppPagination totalPages={Math.ceil(total / pageSize)} initialPage={page} visibleCount={5} onPageChange={(p) => setPage(p)} />
+        </div>
+      )}
 
       {/* ---------------- 프로젝트 생성 다이얼로그 ---------------- */}
       <Dialog open={registerDialog} onOpenChange={setRegisterDialog}>
         <DialogContent onInteractOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
+          <DialogHeader className="text-left">
             <DialogTitle>프로젝트 생성하기</DialogTitle>
             <DialogDescription>새 프로젝트 생성을 위한 정보를 입력해 주세요.</DialogDescription>
           </DialogHeader>

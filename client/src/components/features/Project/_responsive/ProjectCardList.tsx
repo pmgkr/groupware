@@ -11,7 +11,7 @@ export function ProjectCardList({ projects, favorites, onToggleFavorite, search 
   const isEmpty = projects.length === 0;
 
   return (
-    <div className="-ml-5 w-[calc(100%+var(--spacing)*10)] space-y-4 bg-gray-200 p-5">
+    <div className="space-y-4">
       {isEmpty ? (
         <p className="py-50 text-center text-base text-gray-500">등록된 프로젝트가 없습니다.</p>
       ) : (
