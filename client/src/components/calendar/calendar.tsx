@@ -4,6 +4,7 @@ import type { View } from "react-big-calendar";
 import { parse } from "date-fns/parse";
 import CustomToolbar from "./toolbar";
 import CalendarView from "./view";
+import CalendarViewMobile from "./viewMobile";
 import EventDialog from "./EventDialog";
 import EventViewDialog from "./EventViewDialog";
 import type { CalendarEvent } from '@/utils/calendarHelper';
@@ -311,17 +312,34 @@ export default function CustomCalendar({
         onAddEvent={handleAddEvent}
         onTeamSelect={handleTeamSelect}
       />
-      <CalendarView
-        events={filteredEvents}
-        currentDate={currentDate}
-        currentView={currentView}
-        onNavigate={(newDate, view, action) => {
-          setCurrentDate(newDate);
-          setCurrentView(view as View);
-        }}
-        onViewChange={handleViewChange}
-        onSelectEvent={handleSelectEvent}
-      />
+      {/* 데스크톱: 기존 CalendarView */}
+      <div className="hidden md:block">
+        <CalendarView
+          events={filteredEvents}
+          currentDate={currentDate}
+          currentView={currentView}
+          onNavigate={(newDate, view, action) => {
+            setCurrentDate(newDate);
+            setCurrentView(view as View);
+          }}
+          onViewChange={handleViewChange}
+          onSelectEvent={handleSelectEvent}
+        />
+      </div>
+      {/* 모바일: CalendarViewMobile */}
+      <div className="flex min-h-0 flex-col">
+        <CalendarViewMobile
+          events={filteredEvents}
+          currentDate={currentDate}
+          onDateChange={(date) => {
+            setCurrentDate(date);
+            if (onDateChange) {
+              onDateChange(date);
+            }
+          }}
+          onSelectEvent={handleSelectEvent}
+        />
+      </div>
       
       {/* 일정 등록 Dialog */}
       <EventDialog
