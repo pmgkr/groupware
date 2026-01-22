@@ -105,8 +105,15 @@ export function SearchableSelect({
       </PopoverTrigger>
 
       <PopoverContent
-        className={cn('w-full p-0', popoverClassName)}
+        className={cn(
+          'w-full p-0',
+          'max-md:[&_input]:h-9 max-md:[&_input]:text-[13px] max-md:[&_input]:py-2',
+          'max-md:[&_[cmdk-item]]:text-[13px] max-md:[&_[cmdk-item]]:py-1.5',
+          'max-md:[&_[cmdk-empty]]:text-[13px]',
+          popoverClassName
+        )}
         align="start"
+        onInteractOutside={(e) => e.preventDefault()}
         style={{
           width: triggerWidth ? `${triggerWidth}px` : 'auto',
         }}>
