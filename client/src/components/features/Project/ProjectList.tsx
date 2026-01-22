@@ -390,7 +390,7 @@ export default function ProjectList() {
 
       {/* ---------------- 프로젝트 생성 다이얼로그 ---------------- */}
       <Dialog open={registerDialog} onOpenChange={setRegisterDialog}>
-        <DialogContent onInteractOutside={(e) => e.preventDefault()}>
+        <DialogContent className="flex h-full max-h-full flex-col md:h-auto md:max-h-[90vh]" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader className="text-left">
             <DialogTitle>프로젝트 생성하기</DialogTitle>
             <DialogDescription>새 프로젝트 생성을 위한 정보를 입력해 주세요.</DialogDescription>

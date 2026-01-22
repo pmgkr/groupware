@@ -79,7 +79,7 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
           <Drawer direction="bottom">
             <DrawerTrigger asChild>
               <Button size="sm" variant="ghost" className="has-[>svg]:px-0">
-                <ListFilter className="size-3" /> 필터
+                <ListFilter className="size-4" /> 필터
               </Button>
             </DrawerTrigger>
             <DrawerContent className="pointer-events-auto">
@@ -87,7 +87,7 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
                 <div className="flex justify-between">
                   <DrawerTitle className="text-left">상세 필터</DrawerTitle>
                   <Button type="button" variant="ghost" size="xs" className="hover:text-primary-blue-500 text-gray-600" onClick={onReset}>
-                    <RefreshCw className="size-3" /> 초기화
+                    <RefreshCw className="size-4" /> 초기화
                   </Button>
                 </div>
               </DrawerHeader>
@@ -209,7 +209,7 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
             variant="ghost"
             className={`has-[>svg]:px-0 ${cn(showFavoritesOnly && 'text-primary-yellow-500')}`}
             onClick={onToggleFavorites}>
-            <Star fill={showFavoritesOnly ? 'currentColor' : 'none'} className="size-3" /> 북마크
+            <Star fill={showFavoritesOnly ? 'currentColor' : 'none'} className="size-4" /> 북마크
           </Button>
         </div>
 

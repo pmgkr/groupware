@@ -987,7 +987,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                     <span
                       className={cn(
                         size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]',
-                        'text-muted-foreground'
+                        'text-muted-foreground max-md:text-sm'
                       )}>
                       {placeholder}
                     </span>
@@ -1011,7 +1011,10 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               ) : (
                 <div className="mx-auto flex w-full items-center justify-between">
                   <span
-                    className={cn(size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]', 'text-muted-foreground')}>
+                    className={cn(
+                      size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]',
+                      'text-muted-foreground max-md:text-sm'
+                    )}>
                     {placeholder}
                   </span>
                   <ChevronDown className="text-muted-foreground ml-2 h-4 cursor-pointer" />
