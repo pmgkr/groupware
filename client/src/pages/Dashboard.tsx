@@ -183,19 +183,19 @@ export default function Dashboard() {
                 className="mb-4"
               />
               <ul className="grid grid-cols-4">
-                <li className="flex flex-col text-center text-base">
+                <li className="flex flex-col text-center text-base max-md:text-[13px]">
                   <span>기본연차</span>
                   <strong className="text-[1.4em]">{vacation?.va_current || 0}</strong>
                 </li>
-                <li className="short-v-divider flex flex-col text-center text-base">
+                <li className="short-v-divider flex flex-col text-center text-base max-md:text-[13px]">
                   <span>이월연차</span>
                   <strong className="text-[1.4em]">{vacation?.va_carryover || 0}</strong>
                 </li>
-                <li className="short-v-divider flex flex-col text-center text-base">
+                <li className="short-v-divider flex flex-col text-center text-base max-md:text-[13px]">
                   <span>특별대휴</span>
                   <strong className="text-[1.4em]">{vacation?.va_comp || 0}</strong>
                 </li>
-                <li className="short-v-divider flex flex-col text-center text-base">
+                <li className="short-v-divider flex flex-col text-center text-base max-md:text-[13px]">
                   <span>총 사용</span>
                   <strong className="text-[1.4em]">{vacation?.va_used || 0}</strong>
                 </li>
@@ -236,20 +236,20 @@ export default function Dashboard() {
           <div className="grid grid-cols-3 gap-6 max-2xl:gap-4 md:hidden">
             <Link
               to="/notice"
-              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-6 transition-colors hover:bg-gray-50">
-              <Office className="size-8 text-primary-blue-500" />
+              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
+              <Office className="size-7 text-primary-blue-500" />
               <span className="text-base font-medium text-gray-900">공지사항</span>
             </Link>
             <Link
               to="/meetingroom"
-              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-6 transition-colors hover:bg-gray-50">
-              <Building2 className="size-8 text-primary-blue-500" />
+              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
+              <Building2 className="size-7 text-primary-blue-500" />
               <span className="text-base font-medium text-gray-900">미팅룸</span>
             </Link>
             <Link
               to="/mypage/expense"
-              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-6 transition-colors hover:bg-gray-50">
-              <ExpenseIcon className="size-8 text-primary-blue-500" />
+              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
+              <ExpenseIcon className="size-7 text-primary-blue-500" />
               <span className="text-base font-medium text-gray-900">비용관리</span>
             </Link>
           </div>
@@ -291,17 +291,17 @@ export default function Dashboard() {
                         <AvatarImage src={getProfileImageUrl(calendar.profile_image ?? undefined)} alt={calendar.user_name} />
                         <AvatarFallback>{getAvatarFallback(calendar.user_id || '')}</AvatarFallback>
                       </Avatar>
-                      <div className="flex flex-col text-base">
-                        <strong className="leading-[1.2]">{calendar.user_name}</strong>
+                      <div className="flex flex-col text-base max-md:text-">
+                        <strong className="leading-[1.2] max-md:text-sm">{calendar.user_name}</strong>
                         {calendar.sch_label === '생일' ? (
                           <Badge
                             variant="dot"
                             className="rounded-none border-none p-0 before:mr-0.5 before:h-auto before:w-auto before:rounded-none before:bg-transparent before:content-['🎂']">
-                            <span className="text-[11px]">{calendar.sch_label}</span>
+                            <span className="text-[11px] max-md:text-xs">{calendar.sch_label}</span>
                           </Badge>
                         ) : (
                           <Badge variant="dot" className={`rounded-none border-none p-0 ${getBadgeColor(calendar.sch_label)}`}>
-                            <span className="text-[11px]">{calendar.sch_label}</span>
+                            <span className="text-[11px] max-md:text-xs">{calendar.sch_label}</span>
                           </Badge>
                         )}
                       </div>
