@@ -9,6 +9,8 @@ import { workingApi } from "@/api/working";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { getWorkTypeColor } from "@/utils/workTypeHelper";
+import { useIsMobileViewport } from "@/hooks/useViewport";
+import { Icons } from "@components/icons";
 
 // 오늘 날짜 확인 함수
 const isToday = (date: string) => {
@@ -102,6 +104,162 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
     setDialogOpen(true);
   };
 
+  const isMobile = useIsMobileViewport();
+
+  // 모바일 버전 렌더링 (카드 형식)
+  if (isMobile) {
+    return (
+      <div className="mt-10 space-y-4">
+        {data.map((row, index) => {
+          const getDayColor = (dayOfWeek: string, holidayName?: string) => {
+            if (holidayName) return 'text-red-600';
+            if (dayOfWeek === '토') return 'text-blue-600';
+            if (dayOfWeek === '일') return 'text-red-600';
+            return 'text-gray-800';
+          };
+
+          const hasMultipleWorkTypes = row.workTypes && row.workTypes.length > 1;
+          const latestWorkType = hasMultipleWorkTypes ? row.workTypes![0] : null;
+          const otherWorkTypes = hasMultipleWorkTypes ? row.workTypes!.slice(1) : [];
+
+          const isHolidayOrWeekend =
+            row.holidayName != null ||
+            row.isHoliday === true ||
+            row.dayOfWeek === '토' ||
+            row.dayOfWeek === '일' ||
+            row.workType === '공휴일';
+
+          let displayWorkType: string =
+            hasMultipleWorkTypes ? latestWorkType!.type : row.workType;
+
+          const isApprovedOrPaid =
+            row.overtimeStatus === '승인완료' ||
+            row.overtimeStatus === '보상완료';
+
+          if (isApprovedOrPaid) {
+            displayWorkType = isHolidayOrWeekend ? '휴일근무' : '연장근무';
+          }
+
+          return (
+            <div
+              key={index}
+              className={`bg-white border border-gray-200 rounded-base p-4 ${isToday(row.date) ? 'bg-primary-blue-50 border-primary-blue-200' : ''}`}>
+              {/* 날짜 헤더 */}
+              <div className="flex justify-between items-center mb-1 pb-2 border-b border-gray-200">
+                <p className={`text-base font-semibold ${getDayColor(row.dayOfWeek, row.holidayName ?? undefined)}`}>
+                  {dayjs(row.date).format("MM월 DD일")} <span>{row.dayOfWeek}요일</span>
+                  {row.holidayName && <span className="ml-2">{row.holidayName}</span>}
+                </p>
+                <span className={`inline-flex px-3 py-1 text-[11px] font-semibold rounded-full ${getWorkTypeColor(displayWorkType)}`}>
+                  {displayWorkType}
+                </span>
+              </div>
+
+              {/* 구분 */}
+              <div className="mb-3">
+                <div className="flex items-center gap-1 flex-wrap">
+                  {hasMultipleWorkTypes && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="grayish" className="px-1 py-0 text-xs cursor-pointer">
+                            +{otherWorkTypes.length}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="flex flex-col gap-1">
+                            {row.workTypes!.map((wt, idx) => (
+                              <div key={idx} className="text-sm">
+                                {wt.type}
+                              </div>
+                            ))}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-x-10 mb-3 bg-gray-100 p-2 rounded-base">
+                <div className="align-center flex flex-col justify-center text-center">
+                  <p className="text-sm text-gray-500">출근시간</p>
+                  <p className={`text-base font-medium ${row.workType === '-' ? 'text-gray-400' : 'text-gray-800'}`}>
+                    {row.workType === '-' ? '-' : row.startTime}
+                  </p>
+                </div>
+                <Icons.arrowRightCustom />
+                <div className="align-center flex flex-col justify-center text-center">
+                  <p className="text-sm text-gray-500">퇴근시간</p>
+                  <p className={`text-base font-medium ${row.workType === '-' ? 'text-gray-400' : 'text-gray-800'}`}>
+                    {row.workType === '-' ? '-' : row.endTime}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {/* 기본근무시간 */}
+                <div className="flex flex-col align-center text-center">
+                  <div className="text-sm text-gray-500 mb-1">기본근무시간</div>
+                  <p className={`text-sm ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'}`}>
+                    {row.workType === '-' ? '-' : `${row.basicHours}시간 ${String(row.basicMinutes || 0).padStart(2, '0')}분`}
+                  </p>
+                </div>
+
+                {/* 연장근무시간 */}
+                <div className="flex flex-col align-center text-center">
+                  <div className="text-sm text-gray-500 mb-1">연장근무시간</div>
+                  <p className={`text-sm ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'}`}>
+                    {row.workType === '-' ? '-' : `${row.overtimeHours}시간 ${String(row.overtimeMinutes || 0).padStart(2, '0')}분`}
+                  </p>
+                </div>
+
+                {/* 총 근무시간 */}
+                <div className="flex flex-col align-center text-center">
+                  <div className="text-sm text-gray-500 mb-1">총 근무시간</div>
+                  <p className={`text-sm ${row.workType === '-' ? 'text-gray-400 font-normal' : 'text-gray-900 font-bold'}`}>
+                    {row.workType === '-' ? '-' : `${row.totalHours}시간 ${String(row.totalMinutes || 0).padStart(2, '0')}분`}
+                  </p>
+                </div>
+              </div>
+
+              {/* 연장근무 신청 */}
+              {!readOnly && (
+                <div>
+                  <Button
+                    onClick={() => handleOvertimeClick(index)}
+                    disabled={false}
+                    variant={getOvertimeButtonVariant(row.overtimeStatus)}
+                    size="default"
+                    className="w-full">
+                    연장근무 {row.overtimeStatus}
+                  </Button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        <OvertimeDialog
+          isOpen={dialogOpen}
+          onClose={handleDialogClose}
+          onSave={handleOvertimeSave}
+          selectedDay={selectedIndex !== null ? data[selectedIndex] : undefined}
+        />
+
+        <OvertimeViewDialog
+          isOpen={viewDialogOpen}
+          onClose={handleViewDialogClose}
+          onCancel={handleOvertimeCancel}
+          onReapply={handleOvertimeReapply}
+          selectedDay={selectedIndex !== null ? data[selectedIndex] : undefined}
+          selectedIndex={selectedIndex || undefined}
+        />
+      </div>
+    );
+  }
+
+  // 데스크톱 버전 렌더링 (기존 테이블 형식)
   return (
     <div className="overflow-x-auto mt-10">
       <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow">
@@ -195,7 +353,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
             })}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50 max-md:sticky max-md:left-0 max-md:z-10 max-md:px-3 max-md:py-3 max-md:text-[11px]">
               <div className="flex items-center gap-1">
                 <span>출근시간</span>
                 <Tooltip>
@@ -212,26 +370,26 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
             </td>
             {data.map((row, index) => {
               return (
-                <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''} max-md:px-3 max-md:py-3 max-md:text-[11px]`}>
                   {row.workType === '-' ? '-' : row.startTime}
                 </td>
               );
             })}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50 max-md:sticky max-md:left-0 max-md:z-10 max-md:px-3 max-md:py-3 max-md:text-[11px]">
               퇴근시간
             </td>
             {data.map((row, index) => {
               return (
-                <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+                <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''} max-md:px-3 max-md:py-3 max-md:text-[11px]`}>
                   {row.workType === '-' ? '-' : row.endTime}
                 </td>
               );
             })}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50 max-md:sticky max-md:left-0 max-md:z-10 max-md:px-3 max-md:py-3 max-md:text-[11px]">
               <div className="flex items-center gap-1">
                 <span>기본근무시간</span>
                 <Tooltip>
@@ -250,13 +408,13 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               </div>
             </td>
             {data.map((row, index) => (
-              <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
+              <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] ${row.workType === '-' ? 'text-gray-400' : 'text-gray-900'} text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''} max-md:px-3 max-md:py-3 max-md:text-[11px]`}>
                 {row.workType === '-' ? '-' : `${row.basicHours}시간 ${String(row.basicMinutes || 0).padStart(2, '0')}분`}
               </td>
             ))}
           </tr>
           <tr className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50 max-md:sticky max-md:left-0 max-md:z-10 max-md:px-3 max-md:py-3 max-md:text-[11px]">
               <div className="flex items-center gap-1">
                 <span>연장근무시간</span>
                 <Tooltip>
@@ -292,7 +450,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
           {!readOnly && (
             <tr className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
-                추가근무 신청
+                연장근무 신청
               </td>
               {data.map((row, index) => (
                 <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
