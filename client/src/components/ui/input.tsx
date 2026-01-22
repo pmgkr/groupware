@@ -8,8 +8,8 @@ type InputProps = Omit<React.ComponentProps<'input'>, 'size'> & {
 function Input({ className, type, size = 'default', ...props }: InputProps) {
   const sizeClasses =
     size === 'sm'
-      ? 'h-8 text-sm px-3 py-0.5 file:h-6 file:text-xs placeholder:text-sm max-md:h-7 max-md:rounded-sm max-md:text-[11px]' // sm 전용 스타일
-      : 'h-11 text-base px-3 py-1 file:h-7 file:text-sm placeholder:text-base max-md:h-9 max-md:rounded-sm max-md:text-[13px]'; // default 스타일
+      ? 'h-8 text-sm px-3 py-0.5 file:h-6 file:text-xs placeholder:text-sm max-md:h-8 max-md:rounded-sm max-md:text-[11px]' // sm 전용 스타일
+      : 'h-11 text-base px-3 py-1 file:h-7 file:text-sm placeholder:text-base max-md:h-10 max-md:rounded-sm max-md:text-[13px]'; // default 스타일
 
   return (
     <input

@@ -715,11 +715,11 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
     const getSizeClasses = () => {
       switch (size) {
         case 'sm':
-          return 'h-8 rounded-md text-sm gap-1.25 px-2 py-0 max-md:h-7 max-md:rounded-sm max-md:text-[11px]';
+          return 'h-8 rounded-md text-sm gap-1.25 px-2 py-0 max-md:h-8 max-md:rounded-sm max-md:text-[11px]';
         case 'lg':
           return 'w-full max-w-[280px] h-12 text-lg rounded-md px-4 py-0 max-md:h-10 max-md:rounded-sm max-md:text-base';
         default:
-          return 'h-11 px-2 py-0 max-md:h-9 max-md:rounded-sm max-md:text-[13px]!';
+          return 'h-11 px-2 py-0 max-md:h-10 max-md:rounded-sm max-md:text-[13px]!';
       }
     };
 
