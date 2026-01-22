@@ -41,9 +41,9 @@ function CheckboxButton({ className, label, labelProps, size = 'sm', variant = '
         className={cn(
           'flex items-center justify-center transition-none [&_svg]:pointer-events-none shrink-0 [&_svg]:shrink-0',
           {
-            '[&_svg]:size-3': size === 'sm',
-            '[&_svg]:size-4': size === 'md',
-            '[&_svg]:size-5': size === 'lg',
+            '[&_svg]:size-3 [&_svg]:max-md:size-2.5': size === 'sm',
+            '[&_svg]:size-4 [&_svg]:max-md:size-3': size === 'md',
+            '[&_svg]:size-5 [&_svg]:max-md:size-4': size === 'lg',
           }
         )}>
         <CheckIcon />
@@ -52,6 +52,11 @@ function CheckboxButton({ className, label, labelProps, size = 'sm', variant = '
       {/* 라벨 텍스트 - 필수 */}
       <span className={cn(
         'transition-colors select-none',
+        {
+          'max-md:text-[11px]': size === 'sm',
+          'max-md:text-[13px]': size === 'md',
+          'max-md:text-base': size === 'lg',
+        },
         props.disabled
           ? 'cursor-not-allowed text-gray-400'
           : 'cursor-pointer',

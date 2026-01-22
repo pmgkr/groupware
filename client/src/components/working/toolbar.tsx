@@ -225,7 +225,7 @@ export default function Toolbar({
   };
 
   return (
-    <div className="w-full flex items-center justify-between mb-5 relative">
+    <div className="w-full flex items-center justify-between mb-5 relative max-md:flex-col max-md:items-start max-md:gap-2">
       
       {/* 왼쪽: 팀 필터 (Manager/Admin 페이지에서만 표시) */}
       {showTeamSelect && (page === 'manager' || page === 'admin') && (
@@ -254,7 +254,7 @@ export default function Toolbar({
       )}
 
       {/* 중앙: 현재 날짜 표시 */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5">
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5 max-md:w-full max-md:relative max-md:gap-0 max-md:justify-center">
         <Button
           onClick={() => handleNavigate('PREV')}
           variant="ghost"
@@ -266,7 +266,7 @@ export default function Toolbar({
           </svg>
         </Button>
 
-        <div className="text-xl font-semibold text-gray-950 px-2">
+        <div className="text-xl font-semibold text-gray-950 px-2 max-md:text-lg">
           {formatWeekDisplay(currentDate)}
         </div>
 
