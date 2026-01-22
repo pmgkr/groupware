@@ -31,10 +31,10 @@ export default function Layout() {
         {/* 페이지 타이틀 : router의 handle.title 값 노출 */}
         {!hideTitle && title && (
           <div className="mb-5 flex items-center has-[+nav]:mb-2">
-            <h1 className="text-3xl font-bold">{title}</h1>
+            <h1 className="text-3xl font-bold max-md:text-xl">{title}</h1>
             {/* 2차 메뉴 노출 */}
             {!hideChildNav && childNav && childNav.length > 0 && (
-              <nav className="before:mx-5 before:inline-flex before:h-8 before:w-[1px] before:bg-gray-300 before:align-middle">
+              <nav className="before:mx-5 before:inline-flex before:h-8 before:w-[1px] before:bg-gray-300 before:align-middle max-md:before:h-6 max-md:before:mx-4">
                 <ul className="inline-flex items-center gap-x-1">
                   {childNav.map((item) => (
                     <li key={item.to}>
@@ -43,7 +43,7 @@ export default function Layout() {
                         end={item.end} // 목록 탭 등에서 정확히 일치해야 활성 처리할 때
                         className={({ isActive }) =>
                           cn(
-                            'rounded-xs px-3 py-1 text-base transition-colors',
+                            'rounded-xs px-3 py-1 text-base transition-colors max-md:text-sm',
                             isActive ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-800'
                           )
                         }>

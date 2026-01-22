@@ -715,22 +715,22 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
     const getSizeClasses = () => {
       switch (size) {
         case 'sm':
-          return 'h-8 rounded-md text-sm gap-1.25 px-2 py-0';
+          return 'h-8 rounded-md text-sm gap-1.25 px-2 py-0 max-md:h-7 max-md:rounded-sm max-md:text-[11px]';
         case 'lg':
-          return 'w-full max-w-[280px] h-12 text-lg rounded-md px-4 py-0';
+          return 'w-full max-w-[280px] h-12 text-lg rounded-md px-4 py-0 max-md:h-10 max-md:rounded-sm max-md:text-base';
         default:
-          return 'h-11 px-2 py-0';
+          return 'h-11 px-2 py-0 max-md:h-9 max-md:rounded-sm max-md:text-[13px]!';
       }
     };
 
     const getBadgeSizeClasses = () => {
       switch (size) {
         case 'sm':
-          return 'text-xs px-1.5 py-0.5';
+          return 'text-xs px-1.5 py-0.5 max-md:text-[10px] max-md:px-1 max-md:py-0';
         case 'lg':
-          return 'text-sm px-3 py-1';
+          return 'text-sm px-3 py-1 max-md:text-xs max-md:px-2 max-md:py-0.5';
         default:
-          return 'text-sm px-2 py-0.5';
+          return 'text-sm px-2 py-0.5 max-md:text-[11px] max-md:px-1.5 max-md:py-0';
       }
     };
 
@@ -819,6 +819,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               ref={buttonRef}
               {...props}
               variant="outline"
+              size={undefined}
               onClick={handleTogglePopover}
               disabled={disabled}
               role="combobox"
@@ -832,7 +833,6 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 getSizeClasses(),
                 autoSize ? 'w-auto' : 'w-full',
                 responsiveSettings.compactMode && 'min-h-8 text-sm',
-                screenSize === 'mobile' && 'min-h-12 text-base',
                 disabled && 'cursor-not-allowed opacity-50',
                 invalid && 'border-destructive ring-destructive/20',
                 className
@@ -946,7 +946,10 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                           }}>
                           {`+ ${selectedValues.length - responsiveSettings.maxCount} more`}
                           <XCircle
-                            className={cn('ml-2 h-4 w-4 cursor-pointer', responsiveSettings.compactMode && 'ml-1 h-3 w-3')}
+                            className={cn(
+                              'ml-2 h-4 w-4 cursor-pointer max-md:ml-1 max-md:h-3 max-md:w-3',
+                              responsiveSettings.compactMode && 'ml-1 h-3 w-3'
+                            )}
                             onClick={(event) => {
                               event.stopPropagation();
                               clearExtraOptions();
@@ -981,7 +984,13 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 ) : (
                   // simpleSelect : true 일 때
                   <div className="mx-auto flex w-full items-center justify-between">
-                    <span className={cn(size === 'sm' ? 'text-sm' : 'text-base', 'text-muted-foreground')}>{placeholder}</span>
+                    <span
+                      className={cn(
+                        size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]',
+                        'text-muted-foreground'
+                      )}>
+                      {placeholder}
+                    </span>
 
                     {selectedValues.length > 0 && (
                       <span
@@ -1001,7 +1010,10 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 )
               ) : (
                 <div className="mx-auto flex w-full items-center justify-between">
-                  <span className={cn(size === 'sm' ? 'text-sm' : 'text-base', 'text-muted-foreground')}>{placeholder}</span>
+                  <span
+                    className={cn(size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]', 'text-muted-foreground')}>
+                    {placeholder}
+                  </span>
                   <ChevronDown className="text-muted-foreground ml-2 h-4 cursor-pointer" />
                 </div>
               )}
@@ -1029,6 +1041,10 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                     getPopoverAnimationClass(),
                     screenSize === 'mobile' && 'w-[85vw] max-w-[280px]',
                     screenSize === 'tablet' && 'w-[70vw] max-w-md',
+                    // 모바일 공통 스타일
+                    'max-md:[&_input]:h-9 max-md:[&_input]:py-2 max-md:[&_input]:text-[13px]',
+                    'max-md:[&_[cmdk-item]]:py-1.5 max-md:[&_[cmdk-item]]:text-[13px]',
+                    'max-md:[&_[cmdk-empty]]:text-[13px]',
                   ],
               popoverClassName
             )}
@@ -1041,8 +1057,9 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               width: triggerWidth ? `${triggerWidth}px` : 'auto',
             }}
             align="start"
-            onEscapeKeyDown={() => setIsPopoverOpen(false)}
-            onPointerDownCapture={(e) => e.stopPropagation()}>
+            onPointerDownCapture={(e) => e.stopPropagation()}
+            onInteractOutside={(e) => e.preventDefault()}
+            onEscapeKeyDown={() => setIsPopoverOpen(false)}>
             <Command shouldFilter={false}>
               {searchable && (
                 <CommandInput
@@ -1156,17 +1173,19 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                   </CommandGroup>
                 )}
                 <CommandSeparator />
-                <CommandGroup>
-                  <div className="flex items-center justify-between">
+                <CommandGroup className="max-md:p-0">
+                  <div className="flex items-center justify-between max-md:py-0">
                     {selectedValues.length > 0 && (
                       <>
-                        <CommandItem onSelect={handleClear} className="flex-1 cursor-pointer justify-center">
+                        <CommandItem onSelect={handleClear} className="flex-1 cursor-pointer justify-center max-md:py-1 max-md:text-[13px]">
                           초기화
                         </CommandItem>
-                        <Separator orientation="vertical" className="flex h-full min-h-6" />
+                        <Separator orientation="vertical" className="flex h-full min-h-6 max-md:min-h-4" />
                       </>
                     )}
-                    <CommandItem onSelect={() => setIsPopoverOpen(false)} className="max-w-full flex-1 cursor-pointer justify-center">
+                    <CommandItem
+                      onSelect={() => setIsPopoverOpen(false)}
+                      className="max-w-full flex-1 cursor-pointer justify-center max-md:py-1 max-md:text-[13px]">
                       닫기
                     </CommandItem>
                   </div>

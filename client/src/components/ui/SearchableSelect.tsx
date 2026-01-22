@@ -73,11 +73,11 @@ export function SearchableSelect({
   const getSizeClasses = () => {
     switch (size) {
       case 'sm':
-        return 'h-8 text-sm px-3';
+        return 'h-8 text-sm px-3 max-md:h-7 max-md:rounded-sm max-md:text-[11px]';
       case 'lg':
-        return 'h-12 text-lg px-4';
+        return 'h-12 text-lg px-4 max-md:h-10 max-md:rounded-sm max-md:text-base';
       default:
-        return 'h-11 text-base px-3';
+        return 'h-11 text-base px-3 max-md:h-9 max-md:rounded-sm max-md:text-[13px]';
     }
   };
 
@@ -105,8 +105,15 @@ export function SearchableSelect({
       </PopoverTrigger>
 
       <PopoverContent
-        className={cn('w-full p-0', popoverClassName)}
+        className={cn(
+          'w-full p-0',
+          'max-md:[&_input]:h-9 max-md:[&_input]:text-[13px] max-md:[&_input]:py-2',
+          'max-md:[&_[cmdk-item]]:text-[13px] max-md:[&_[cmdk-item]]:py-1.5',
+          'max-md:[&_[cmdk-empty]]:text-[13px]',
+          popoverClassName
+        )}
         align="start"
+        onInteractOutside={(e) => e.preventDefault()}
         style={{
           width: triggerWidth ? `${triggerWidth}px` : 'auto',
         }}>
