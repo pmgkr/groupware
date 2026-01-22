@@ -16,6 +16,8 @@ import WorkHoursBar from '@/components/ui/WorkHoursBar';
 import { Icons } from '@components/icons';
 import EventViewDialog from '@/components/calendar/EventViewDialog';
 import Weather from '@components/features/Dashboard/weather';
+import { Office, Expense as ExpenseIcon } from '@/assets/images/icons';
+import { Building2 } from 'lucide-react';
 
 import type { Calendar, Meetingroom, Wlog, VacationSummaryItem, Notice, Expense } from '@/api/dashboard';
 
@@ -121,19 +123,19 @@ export default function Dashboard() {
             <div className="mb-6 flex flex-col items-center justify-center gap-y-3 rounded-md bg-gray-100 p-5">
               <div className="flex flex-wrap justify-center gap-2">
                 {displayWorkTypes.map((type, idx) => (
-                  <div key={idx} className={cn('rounded-sm px-4 py-1.5 text-[0.8em] font-bold', getWorkTypeColor(type))}>
+                  <div key={idx} className={cn('rounded-sm px-4 py-1.5 text-[0.8em] font-bold max-md:text-sm max-md:px-3 max-md:py-1', getWorkTypeColor(type))}>
                     {type}
                   </div>
                 ))}
               </div>
               <div className="flex items-center justify-center gap-x-10">
                 <div className="align-center flex flex-col justify-center text-center">
-                  <p className="text-base text-gray-500">출근시간</p>
+                  <p className="text-base text-gray-500 max-md:text-[13px]">출근시간</p>
                   <p className="text-xl font-medium text-gray-800">{formatTime(wlog.wlogToday[0]?.stime || null)}</p>
                 </div>
                 <Icons.arrowRightCustom />
                 <div className="align-center flex flex-col justify-center text-center">
-                  <p className="text-base text-gray-500">퇴근시간</p>
+                  <p className="text-base text-gray-500 max-md:text-[13px]">퇴근시간</p>
                   <p className="text-xl font-medium text-gray-800">{formatTime(wlog.wlogToday[0]?.etime || null)}</p>
                 </div>
               </div>
@@ -181,19 +183,19 @@ export default function Dashboard() {
                 className="mb-4"
               />
               <ul className="grid grid-cols-4">
-                <li className="flex flex-col text-center text-base">
+                <li className="flex flex-col text-center text-base max-md:text-[13px]">
                   <span>기본연차</span>
                   <strong className="text-[1.4em]">{vacation?.va_current || 0}</strong>
                 </li>
-                <li className="short-v-divider flex flex-col text-center text-base">
+                <li className="short-v-divider flex flex-col text-center text-base max-md:text-[13px]">
                   <span>이월연차</span>
                   <strong className="text-[1.4em]">{vacation?.va_carryover || 0}</strong>
                 </li>
-                <li className="short-v-divider flex flex-col text-center text-base">
+                <li className="short-v-divider flex flex-col text-center text-base max-md:text-[13px]">
                   <span>특별대휴</span>
                   <strong className="text-[1.4em]">{vacation?.va_comp || 0}</strong>
                 </li>
-                <li className="short-v-divider flex flex-col text-center text-base">
+                <li className="short-v-divider flex flex-col text-center text-base max-md:text-[13px]">
                   <span>총 사용</span>
                   <strong className="text-[1.4em]">{vacation?.va_used || 0}</strong>
                 </li>
@@ -228,6 +230,28 @@ export default function Dashboard() {
                 </ul>
               </div>
             </div>
+          </div>
+          
+          {/* 빠른 메뉴 */}
+          <div className="grid grid-cols-3 gap-6 max-2xl:gap-4 md:hidden">
+            <Link
+              to="/notice"
+              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
+              <Office className="size-7 text-primary-blue-500" />
+              <span className="text-base font-medium text-gray-900">공지사항</span>
+            </Link>
+            <Link
+              to="/meetingroom"
+              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
+              <Building2 className="size-7 text-primary-blue-500" />
+              <span className="text-base font-medium text-gray-900">미팅룸</span>
+            </Link>
+            <Link
+              to="/mypage/expense"
+              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
+              <ExpenseIcon className="size-7 text-primary-blue-500" />
+              <span className="text-base font-medium text-gray-900">비용관리</span>
+            </Link>
           </div>
 
           <div className="row-span-4 flex min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5 max-md:p-4.5!">
@@ -267,17 +291,17 @@ export default function Dashboard() {
                         <AvatarImage src={getProfileImageUrl(calendar.profile_image ?? undefined)} alt={calendar.user_name} />
                         <AvatarFallback>{getAvatarFallback(calendar.user_id || '')}</AvatarFallback>
                       </Avatar>
-                      <div className="flex flex-col text-base">
-                        <strong className="leading-[1.2]">{calendar.user_name}</strong>
+                      <div className="flex flex-col text-base max-md:text-">
+                        <strong className="leading-[1.2] max-md:text-sm">{calendar.user_name}</strong>
                         {calendar.sch_label === '생일' ? (
                           <Badge
                             variant="dot"
                             className="rounded-none border-none p-0 before:mr-0.5 before:h-auto before:w-auto before:rounded-none before:bg-transparent before:content-['🎂']">
-                            <span className="text-[11px]">{calendar.sch_label}</span>
+                            <span className="text-[11px] max-md:text-xs">{calendar.sch_label}</span>
                           </Badge>
                         ) : (
                           <Badge variant="dot" className={`rounded-none border-none p-0 ${getBadgeColor(calendar.sch_label)}`}>
-                            <span className="text-[11px]">{calendar.sch_label}</span>
+                            <span className="text-[11px] max-md:text-xs">{calendar.sch_label}</span>
                           </Badge>
                         )}
                       </div>
