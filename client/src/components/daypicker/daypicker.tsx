@@ -87,6 +87,7 @@ function DayPicker({
           defaultClassNames.button_next
         ),
         month_caption: cn('flex items-center justify-center h-(--cell-size) w-full px-(--cell-size)', defaultClassNames.month_caption),
+        month_grid: cn('!grid', defaultClassNames.month_grid),
         dropdowns: cn(
           'w-full flex items-center text-sm font-medium justify-center h-(--cell-size) gap-1.5 flex-row-reverse',
           defaultClassNames.dropdowns

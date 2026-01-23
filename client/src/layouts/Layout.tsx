@@ -53,7 +53,7 @@ export default function Layout() {
       <div className="block md:hidden">
         <HeaderMobile />
       </div>
-      <div className="mt-18 ml-60 min-h-200 bg-white px-5 py-8 max-2xl:ml-50 max-md:m-0! max-md:max-w-[100vw]! max-md:overflow-x-scroll! max-md:p-4.5! max-md:pt-[70px]! max-md:pb-[80px]! 2xl:px-25">
+      <div className="mt-18 ml-60 min-h-200 bg-white px-5 py-8 max-2xl:ml-50 max-md:m-0! max-md:max-w-[100vw]! max-md:overflow-x-scroll! max-md:p-4.5! max-md:pt-[70px]! max-md:pb-[80px]! 2xl:px-25 max-md:min-h-[100vh]!">
         {/* 페이지 타이틀 : router의 handle.title 값 노출 */}
         {!hideTitle && title && (
           <div className="mb-5 flex items-center has-[+nav]:mb-2">

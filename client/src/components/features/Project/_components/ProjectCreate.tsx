@@ -238,321 +238,326 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
   };
 
   return (
-    <Form {...form}>
-      <Dialog>
-        <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-5 pt-4">
-          <div className="grid grid-cols-2 items-start gap-4">
-            {/* 생성년도 */}
-            <FormField
-              control={form.control}
-              name="year"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>생성년도</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+    <div className="flex-1">
+      <Form {...form}>
+        <Dialog>
+          <form onSubmit={form.handleSubmit(onSubmit, onError)} className="flex h-full flex-col pt-4">
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 items-start gap-4">
+                {/* 생성년도 */}
+                <FormField
+                  control={form.control}
+                  name="year"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>생성년도</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTriggerFull className="w-full">
+                            <SelectValue placeholder="년도 선택" />
+                          </SelectTriggerFull>
+                        </FormControl>
+                        <SelectContent>
+                          {yearOptions.map((y) => (
+                            <SelectItem key={y} value={y}>
+                              {y}년
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+
+                {/* 브랜드 */}
+                <FormField
+                  control={form.control}
+                  name="brand"
+                  render={({ field, fieldState }) => (
+                    <FormItem>
+                      <FormLabel>ICG 브랜드</FormLabel>
+                      <FormControl>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <SelectTriggerFull className={cn('w-full', fieldState.invalid && 'border-destructive ring-destructive/20')}>
+                            <SelectValue placeholder="브랜드 선택" />
+                          </SelectTriggerFull>
+                          <SelectContent>
+                            <SelectItem value="PMG">PMG</SelectItem>
+                            <SelectItem value="MCS">MCS</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {/* 카테고리 */}
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field, fieldState }) => (
+                    <FormItem>
+                      <FormLabel>카테고리</FormLabel>
+                      <FormControl>
+                        <MultiSelect
+                          placeholder="카테고리 선택"
+                          options={categoryOptions}
+                          value={field.value}
+                          onValueChange={(v) => field.onChange(v)}
+                          invalid={fieldState.invalid}
+                          modalPopover={true}
+                          maxCount={0}
+                          hideSelectAll={true}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {/* 클라이언트 */}
+                <FormField
+                  control={form.control}
+                  name="client"
+                  render={({ field, fieldState }) => (
+                    <FormItem>
+                      <FormLabel>클라이언트</FormLabel>
+                      <FormControl>
+                        <SearchableSelect
+                          placeholder="클라이언트 선택"
+                          options={clientOptions}
+                          value={field.value}
+                          onChange={(v) => field.onChange(v)}
+                          invalid={fieldState.invalid}
+                          className="w-full overflow-hidden"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* 프로젝트 이름 */}
+              <FormField
+                control={form.control}
+                name="project_title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>프로젝트 이름</FormLabel>
                     <FormControl>
-                      <SelectTriggerFull className="w-full">
-                        <SelectValue placeholder="년도 선택" />
-                      </SelectTriggerFull>
+                      <Input placeholder="프로젝트 이름을 입력해 주세요" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      {yearOptions.map((y) => (
-                        <SelectItem key={y} value={y}>
-                          {y}년
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
+                  </FormItem>
+                )}
+              />
 
-            {/* 브랜드 */}
-            <FormField
-              control={form.control}
-              name="brand"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel>ICG 브랜드</FormLabel>
-                  <FormControl>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <SelectTriggerFull className={cn('w-full', fieldState.invalid && 'border-destructive ring-destructive/20')}>
-                        <SelectValue placeholder="브랜드 선택" />
-                      </SelectTriggerFull>
-                      <SelectContent>
-                        <SelectItem value="PMG">PMG</SelectItem>
-                        <SelectItem value="MCS">MCS</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+              {/* 날짜 */}
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="project_sdate"
+                  render={({ field }) => {
+                    const { isOpen, setIsOpen, close } = useToggleState();
 
-            {/* 카테고리 */}
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel>카테고리</FormLabel>
-                  <FormControl>
-                    <MultiSelect
-                      placeholder="카테고리 선택"
-                      options={categoryOptions}
-                      value={field.value}
-                      onValueChange={(v) => field.onChange(v)}
-                      invalid={fieldState.invalid}
-                      modalPopover={true}
-                      maxCount={0}
-                      hideSelectAll={true}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+                    return (
+                      <FormItem>
+                        <FormLabel>프로젝트 시작일</FormLabel>
+                        <Popover open={isOpen} onOpenChange={setIsOpen} modal={true}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  'border-input focus-visible:border-primary-blue-300 h-11 w-full px-3 text-left text-base font-normal text-gray-800 hover:bg-[none]',
+                                  !field.value && 'text-muted-foreground hover:text-muted-foreground',
+                                  isOpen && 'border-primary-blue-300'
+                                )}>
+                                {field.value ? String(field.value) : <span>날짜 선택</span>}
+                                <CalendarIcon className="ml-auto size-4.5 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <DayPicker
+                              captionLayout="label"
+                              mode="single"
+                              selected={field.value ? new Date(field.value) : undefined}
+                              onSelect={(date) => {
+                                const formattedDate = date ? formatDate(date) : null;
+                                field.onChange(formattedDate);
 
-            {/* 클라이언트 */}
-            <FormField
-              control={form.control}
-              name="client"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel>클라이언트</FormLabel>
-                  <FormControl>
-                    <SearchableSelect
-                      placeholder="클라이언트 선택"
-                      options={clientOptions}
-                      value={field.value}
-                      onChange={(v) => field.onChange(v)}
-                      invalid={fieldState.invalid}
-                      className="w-full overflow-hidden"
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
+                                if (date) close();
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </FormItem>
+                    );
+                  }}
+                />
 
-          {/* 프로젝트 이름 */}
-          <FormField
-            control={form.control}
-            name="project_title"
-            render={({ field }) => (
+                <FormField
+                  control={form.control}
+                  name="project_edate"
+                  render={({ field }) => {
+                    const { isOpen, setIsOpen, close } = useToggleState();
+
+                    return (
+                      <FormItem>
+                        <FormLabel>프로젝트 종료일</FormLabel>
+                        <Popover open={isOpen} onOpenChange={setIsOpen} modal={true}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  'border-input focus-visible:border-primary-blue-300 h-11 w-full px-3 text-left text-base font-normal text-gray-800 hover:bg-[none]',
+                                  !field.value && 'text-muted-foreground hover:text-muted-foreground',
+                                  isOpen && 'border-primary-blue-300'
+                                )}>
+                                {field.value ? String(field.value) : <span>날짜 선택</span>}
+                                <CalendarIcon className="ml-auto size-4.5 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <DayPicker
+                              captionLayout="label"
+                              mode="single"
+                              selected={field.value ? new Date(field.value) : undefined}
+                              onSelect={(date) => {
+                                const formattedDate = date ? formatDate(date) : null;
+                                field.onChange(formattedDate);
+
+                                if (date) close();
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </FormItem>
+                    );
+                  }}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="exp_cost"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel>프로젝트 예상 지출 금액</FormLabel>
+                      <FormControl>
+                        <Input
+                          inputMode="numeric"
+                          placeholder="예상 지출 금액"
+                          value={field.value ? formatAmount(field.value) : ''}
+                          onChange={(e) => {
+                            // 1. 콤마 제거
+                            const raw = e.target.value.replace(/,/g, '');
+
+                            // 2. 숫자만 허용
+                            if (!/^\d*$/.test(raw)) return;
+
+                            // 3. form에는 숫자 문자열만 저장
+                            field.onChange(raw);
+                          }}
+                          className="text-right"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  );
+                }}
+              />
+
+              {/* 프로젝트 멤버 */}
               <FormItem>
-                <FormLabel>프로젝트 이름</FormLabel>
-                <FormControl>
-                  <Input placeholder="프로젝트 이름을 입력해 주세요" {...field} />
-                </FormControl>
+                <div className="flex items-center justify-between">
+                  <FormLabel>프로젝트 멤버</FormLabel>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="ghost" size="xs" className="text-primary-blue-500 hover:text-primary-blue-500">
+                      <Plus className="size-3.5" />
+                      멤버 추가
+                    </Button>
+                  </DialogTrigger>
+                </div>
+                <div className="border-input flex flex-wrap gap-2">
+                  {members.map((m) => (
+                    <Badge key={m.user_id} variant="grayish" className="flex items-center gap-1 px-1.5 py-1 not-has-[>button]:px-2">
+                      <Avatar className="size-5">
+                        <AvatarImage src={getProfileImageUrl(m.profile_image)} />
+                        <AvatarFallback className="text-xs">{getAvatarFallback(m.user_id)}</AvatarFallback>
+                      </Avatar>
+                      {m.user_name}
+                      {user_id !== m.user_id && (
+                        <button
+                          type="button"
+                          className="ml-1 cursor-pointer text-gray-500 hover:text-gray-700"
+                          onClick={() => setMembers((prev) => prev.filter((x) => x.user_id !== m.user_id))}>
+                          ✕
+                        </button>
+                      )}
+                    </Badge>
+                  ))}
+                </div>
               </FormItem>
-            )}
-          />
-
-          {/* 날짜 */}
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="project_sdate"
-              render={({ field }) => {
-                const { isOpen, setIsOpen, close } = useToggleState();
-
-                return (
-                  <FormItem>
-                    <FormLabel>프로젝트 시작일</FormLabel>
-                    <Popover open={isOpen} onOpenChange={setIsOpen} modal={true}>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              'border-input focus-visible:border-primary-blue-300 h-11 w-full px-3 text-left text-base font-normal text-gray-800 hover:bg-[none]',
-                              !field.value && 'text-muted-foreground hover:text-muted-foreground',
-                              isOpen && 'border-primary-blue-300'
-                            )}>
-                            {field.value ? String(field.value) : <span>날짜 선택</span>}
-                            <CalendarIcon className="ml-auto size-4.5 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <DayPicker
-                          captionLayout="label"
-                          mode="single"
-                          selected={field.value ? new Date(field.value) : undefined}
-                          onSelect={(date) => {
-                            const formattedDate = date ? formatDate(date) : null;
-                            field.onChange(formattedDate);
-
-                            if (date) close();
-                          }}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </FormItem>
-                );
-              }}
-            />
-
-            <FormField
-              control={form.control}
-              name="project_edate"
-              render={({ field }) => {
-                const { isOpen, setIsOpen, close } = useToggleState();
-
-                return (
-                  <FormItem>
-                    <FormLabel>프로젝트 종료일</FormLabel>
-                    <Popover open={isOpen} onOpenChange={setIsOpen} modal={true}>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              'border-input focus-visible:border-primary-blue-300 h-11 w-full px-3 text-left text-base font-normal text-gray-800 hover:bg-[none]',
-                              !field.value && 'text-muted-foreground hover:text-muted-foreground',
-                              isOpen && 'border-primary-blue-300'
-                            )}>
-                            {field.value ? String(field.value) : <span>날짜 선택</span>}
-                            <CalendarIcon className="ml-auto size-4.5 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <DayPicker
-                          captionLayout="label"
-                          mode="single"
-                          selected={field.value ? new Date(field.value) : undefined}
-                          onSelect={(date) => {
-                            const formattedDate = date ? formatDate(date) : null;
-                            field.onChange(formattedDate);
-
-                            if (date) close();
-                          }}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </FormItem>
-                );
-              }}
-            />
-          </div>
-
-          <FormField
-            control={form.control}
-            name="exp_cost"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel>프로젝트 예상 지출 금액</FormLabel>
-                  <FormControl>
-                    <Input
-                      inputMode="numeric"
-                      placeholder="예상 지출 금액"
-                      value={field.value ? formatAmount(field.value) : ''}
-                      onChange={(e) => {
-                        // 1. 콤마 제거
-                        const raw = e.target.value.replace(/,/g, '');
-
-                        // 2. 숫자만 허용
-                        if (!/^\d*$/.test(raw)) return;
-
-                        // 3. form에는 숫자 문자열만 저장
-                        field.onChange(raw);
-                      }}
-                      className="text-right"
-                    />
-                  </FormControl>
-                </FormItem>
-              );
-            }}
-          />
-
-          {/* 프로젝트 멤버 */}
-          <FormItem>
-            <div className="flex items-center justify-between">
-              <FormLabel>프로젝트 멤버</FormLabel>
-              <DialogTrigger asChild>
-                <Button type="button" variant="ghost" size="xs" className="text-primary-blue-500 hover:text-primary-blue-500">
-                  <Plus className="size-3.5" />
-                  멤버 추가
-                </Button>
-              </DialogTrigger>
             </div>
-            <div className="border-input flex flex-wrap gap-2">
+
+            <div className="mt-auto flex justify-end gap-3 pt-3">
+              <Button type="button" variant="outline" className="max-md:flex-1" onClick={handleCancel}>
+                취소
+              </Button>
+              <Button type="submit" className="max-md:flex-1">
+                등록
+              </Button>
+            </div>
+          </form>
+
+          <DialogContent className="max-md:max-w-[calc(100%-var(--spacing)*8)] max-md:rounded-md">
+            <DialogHeader>
+              <DialogTitle>멤버 선택</DialogTitle>
+            </DialogHeader>
+            <MemberSelect
+              value={members}
+              onChange={(selected) =>
+                setMembers((prev) => {
+                  const owner = prev.find((m) => m.user_type === 'owner');
+                  const unique = selected.filter((m) => m.user_id !== owner?.user_id);
+                  return owner ? [owner, ...unique] : unique;
+                })
+              }
+              currentUserId={user_id}
+            />
+
+            <ul className="mt-2 flex flex-wrap items-center gap-2">
               {members.map((m) => (
-                <Badge key={m.user_id} variant="grayish" className="flex items-center gap-1 px-1.5 py-1 not-has-[>button]:px-2">
-                  <Avatar className="size-5">
-                    <AvatarImage src={getProfileImageUrl(m.profile_image)} />
-                    <AvatarFallback className="text-xs">{getAvatarFallback(m.user_id)}</AvatarFallback>
-                  </Avatar>
-                  {m.user_name}
-                  {user_id !== m.user_id && (
-                    <button
-                      type="button"
-                      className="ml-1 cursor-pointer text-gray-500 hover:text-gray-700"
-                      onClick={() => setMembers((prev) => prev.filter((x) => x.user_id !== m.user_id))}>
-                      ✕
-                    </button>
-                  )}
-                </Badge>
+                <li key={m.user_id}>
+                  <Badge key={m.user_id} variant="grayish" className="flex items-center gap-1 px-1.5 py-1 not-has-[>button]:px-2">
+                    <Avatar className="size-5">
+                      <AvatarImage src={getProfileImageUrl(m.profile_image)} />
+                      <AvatarFallback className="text-xs">{getAvatarFallback(m.user_id)}</AvatarFallback>
+                    </Avatar>
+                    {m.user_name}
+                    {user_id !== m.user_id && (
+                      <button
+                        type="button"
+                        className="ml-1 cursor-pointer text-gray-500 hover:text-gray-700"
+                        onClick={() => setMembers((prev) => prev.filter((x) => x.user_id !== m.user_id))}>
+                        ✕
+                      </button>
+                    )}
+                  </Badge>
+                </li>
               ))}
+            </ul>
+
+            <div className="mt-4 flex justify-end">
+              <DialogClose asChild>
+                <Button type="button">확인</Button>
+              </DialogClose>
             </div>
-          </FormItem>
-
-          <div className="flex justify-end gap-3 pt-3">
-            <Button type="button" variant="outline" onClick={handleCancel}>
-              취소
-            </Button>
-            <Button type="submit">등록</Button>
-          </div>
-        </form>
-
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>멤버 선택</DialogTitle>
-          </DialogHeader>
-
-          <MemberSelect
-            value={members}
-            onChange={(selected) =>
-              setMembers((prev) => {
-                const owner = prev.find((m) => m.user_type === 'owner');
-                const unique = selected.filter((m) => m.user_id !== owner?.user_id);
-                return owner ? [owner, ...unique] : unique;
-              })
-            }
-            currentUserId={user_id}
-          />
-
-          <ul className="mt-2 flex flex-wrap items-center gap-2">
-            {members.map((m) => (
-              <li key={m.user_id}>
-                <Badge key={m.user_id} variant="grayish" className="flex items-center gap-1 px-1.5 py-1 not-has-[>button]:px-2">
-                  <Avatar className="size-5">
-                    <AvatarImage src={getProfileImageUrl(m.profile_image)} />
-                    <AvatarFallback className="text-xs">{getAvatarFallback(m.user_id)}</AvatarFallback>
-                  </Avatar>
-                  {m.user_name}
-                  {user_id !== m.user_id && (
-                    <button
-                      type="button"
-                      className="ml-1 cursor-pointer text-gray-500 hover:text-gray-700"
-                      onClick={() => setMembers((prev) => prev.filter((x) => x.user_id !== m.user_id))}>
-                      ✕
-                    </button>
-                  )}
-                </Badge>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-4 flex justify-end">
-            <DialogClose asChild>
-              <Button type="button">확인</Button>
-            </DialogClose>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </Form>
+          </DialogContent>
+        </Dialog>
+      </Form>
+    </div>
   );
 }
