@@ -312,8 +312,8 @@ export default function CustomCalendar({
         onAddEvent={handleAddEvent}
         onTeamSelect={handleTeamSelect}
       />
-      {/* 데스크톱: 기존 CalendarView */}
-      <div className="hidden md:block">
+      {/* 데스크톱: CalendarView */}
+      <div className="hidden md:block pb-8">
         <CalendarView
           events={filteredEvents}
           currentDate={currentDate}
@@ -327,7 +327,7 @@ export default function CustomCalendar({
         />
       </div>
       {/* 모바일: CalendarViewMobile */}
-      <div className="flex min-h-0 flex-col">
+      <div className="flex md:hidden min-h-0 flex-col">
         <CalendarViewMobile
           events={filteredEvents}
           currentDate={currentDate}
