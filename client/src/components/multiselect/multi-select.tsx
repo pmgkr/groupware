@@ -829,7 +829,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               aria-describedby={`${triggerDescriptionId} ${selectedCountId}`}
               aria-label={`Multi-select: ${selectedValues.length} of ${getAllOptions().length} options selected. ${placeholder}`}
               className={cn(
-                'flex items-center justify-between rounded-md border bg-inherit hover:bg-inherit [&_svg]:pointer-events-auto',
+                'flex items-center justify-between rounded-md border bg-inherit hover:bg-inherit max-md:w-full! [&_svg]:pointer-events-auto',
                 getSizeClasses(),
                 autoSize ? 'w-auto' : 'w-full',
                 responsiveSettings.compactMode && 'min-h-8 text-sm',
@@ -946,7 +946,10 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                           }}>
                           {`+ ${selectedValues.length - responsiveSettings.maxCount} more`}
                           <XCircle
-                            className={cn('ml-2 h-4 w-4 cursor-pointer max-md:ml-1 max-md:h-3 max-md:w-3', responsiveSettings.compactMode && 'ml-1 h-3 w-3')}
+                            className={cn(
+                              'ml-2 h-4 w-4 cursor-pointer max-md:ml-1 max-md:h-3 max-md:w-3',
+                              responsiveSettings.compactMode && 'ml-1 h-3 w-3'
+                            )}
                             onClick={(event) => {
                               event.stopPropagation();
                               clearExtraOptions();
@@ -981,7 +984,13 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 ) : (
                   // simpleSelect : true 일 때
                   <div className="mx-auto flex w-full items-center justify-between">
-                    <span className={cn(size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]', 'text-muted-foreground')}>{placeholder}</span>
+                    <span
+                      className={cn(
+                        size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]',
+                        'text-muted-foreground max-md:text-sm'
+                      )}>
+                      {placeholder}
+                    </span>
 
                     {selectedValues.length > 0 && (
                       <span
@@ -1001,7 +1010,13 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 )
               ) : (
                 <div className="mx-auto flex w-full items-center justify-between">
-                  <span className={cn(size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]', 'text-muted-foreground')}>{placeholder}</span>
+                  <span
+                    className={cn(
+                      size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]',
+                      'text-muted-foreground max-md:text-sm'
+                    )}>
+                    {placeholder}
+                  </span>
                   <ChevronDown className="text-muted-foreground ml-2 h-4 cursor-pointer" />
                 </div>
               )}
@@ -1030,8 +1045,8 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                     screenSize === 'mobile' && 'w-[85vw] max-w-[280px]',
                     screenSize === 'tablet' && 'w-[70vw] max-w-md',
                     // 모바일 공통 스타일
-                    'max-md:[&_input]:h-9 max-md:[&_input]:text-[13px] max-md:[&_input]:py-2',
-                    'max-md:[&_[cmdk-item]]:text-[13px] max-md:[&_[cmdk-item]]:py-1.5',
+                    'max-md:[&_input]:h-9 max-md:[&_input]:py-2 max-md:[&_input]:text-[13px]',
+                    'max-md:[&_[cmdk-item]]:py-1.5 max-md:[&_[cmdk-item]]:text-[13px]',
                     'max-md:[&_[cmdk-empty]]:text-[13px]',
                   ],
               popoverClassName
@@ -1045,7 +1060,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               width: triggerWidth ? `${triggerWidth}px` : 'auto',
             }}
             align="start"
-            onInteractOutside={(e) => e.preventDefault()}
+            onPointerDownCapture={(e) => e.stopPropagation()}
             onEscapeKeyDown={() => setIsPopoverOpen(false)}>
             <Command shouldFilter={false}>
               {searchable && (
@@ -1170,7 +1185,9 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                         <Separator orientation="vertical" className="flex h-full min-h-6 max-md:min-h-4" />
                       </>
                     )}
-                    <CommandItem onSelect={() => setIsPopoverOpen(false)} className="max-w-full flex-1 cursor-pointer justify-center max-md:py-1 max-md:text-[13px]">
+                    <CommandItem
+                      onSelect={() => setIsPopoverOpen(false)}
+                      className="max-w-full flex-1 cursor-pointer justify-center max-md:py-1 max-md:text-[13px]">
                       닫기
                     </CommandItem>
                   </div>
@@ -1192,4 +1209,3 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 
 MultiSelect.displayName = 'MultiSelect';
 export type { MultiSelectOption, MultiSelectGroup, MultiSelectProps };
-
