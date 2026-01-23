@@ -146,12 +146,12 @@ export default function BookList() {
 
   const Administrator = 'admin';
   return (
-    <div className="relative">
+    <div className="relative max-sm:mt-2">
       {/* 검색창 */}
-      <div className="absolute -top-11 right-0 flex justify-end gap-3">
+      <div className="absolute -top-11 right-0 flex justify-end gap-3 max-sm:relative max-sm:top-0">
         <div className="relative mb-4 w-[175px]">
           <Input
-            className="h-[32px] px-4 [&]:bg-white"
+            className="h-[32px]! px-4 [&]:bg-white"
             placeholder="검색어 입력"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
