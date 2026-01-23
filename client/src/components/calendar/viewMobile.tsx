@@ -63,12 +63,21 @@ export default function CalendarViewMobile({
   };
 
   // 선택된 날짜의 이벤트 필터링 (currentDate 사용)
+  // 여러 날에 걸친 이벤트도 포함하도록 시작일과 종료일 사이에 있는지 확인
   const calendarData = useMemo(() => {
     const selectedDateStr = format(currentDate, 'yyyy-MM-dd');
+    const selectedDate = new Date(selectedDateStr);
+    selectedDate.setHours(0, 0, 0, 0);
     
     return events.filter(event => {
-      const eventDateStr = format(event.start, 'yyyy-MM-dd');
-      return eventDateStr === selectedDateStr;
+      const eventStart = new Date(event.start);
+      eventStart.setHours(0, 0, 0, 0);
+      
+      const eventEnd = new Date(event.end);
+      eventEnd.setHours(23, 59, 59, 999);
+      
+      // 선택된 날짜가 이벤트의 시작일과 종료일 사이에 있는지 확인
+      return selectedDate >= eventStart && selectedDate <= eventEnd;
     });
   }, [events, currentDate]);
 
