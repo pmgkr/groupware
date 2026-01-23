@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { Link } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { useDashboard } from '@/hooks/useDashboard';
@@ -16,8 +16,8 @@ import WorkHoursBar from '@/components/ui/WorkHoursBar';
 import { Icons } from '@components/icons';
 import EventViewDialog from '@/components/calendar/EventViewDialog';
 import Weather from '@components/features/Dashboard/weather';
-import { Office, Expense as ExpenseIcon } from '@/assets/images/icons';
-import { Building2 } from 'lucide-react';
+import { Expense as ExpenseIcon } from '@/assets/images/icons';
+import { ClipboardList as NoticeIcon, Users as MeetingroomIcon, ChevronRight } from 'lucide-react';
 
 import type { Calendar, Meetingroom, Wlog, VacationSummaryItem, Notice, Expense } from '@/api/dashboard';
 
@@ -40,6 +40,12 @@ const statusMap: Record<string, string> = {
   Rejected: '거부',
 };
 
+// DayPicker를 메모이제이션하여 불필요한 리렌더링 방지
+const MemoizedDayPicker = memo(({ selected, onSelect }: { selected: Date | undefined; onSelect: (date: Date | undefined) => void }) => {
+  return <DayPicker mode="single" variant="dashboard" selected={selected} onSelect={onSelect} className="max-md:p-0" />;
+});
+MemoizedDayPicker.displayName = 'MemoizedDayPicker';
+
 export default function Dashboard() {
   // Daypicker 선택된 날짜 관리 (Default : Today)
   const [selected, setSelected] = useState<Date | undefined>(new Date());
@@ -53,6 +59,11 @@ export default function Dashboard() {
     }, 1000); // 1초마다 업데이트
 
     return () => clearInterval(timer);
+  }, []);
+
+  // DayPicker의 onSelect 핸들러를 메모이제이션하여 불필요한 리렌더링 방지
+  const handleDateSelect = useCallback((date: Date | undefined) => {
+    setSelected(date);
   }, []);
 
   // 선택된 날짜에 따라 캘린더 데이터만 가져오기
@@ -104,13 +115,13 @@ export default function Dashboard() {
       <div className="block md:hidden">
         <HeaderMobile />
       </div>
-      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8 max-2xl:ml-50 max-2xl:px-6 max-md:m-0! max-md:mt-[50px]! max-md:p-4.5! max-md:pb-[80px]!">
+      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 max-h-screen flex-col gap-y-2 px-16 py-8 max-2xl:ml-50 max-2xl:px-6 max-md:m-0! max-md:mt-[50px]! max-md:max-h-none! max-md:p-4.5! max-md:pb-[80px]!">
         <div className="flex items-center justify-between text-base text-gray-800 max-md:hidden">
           <p>{welcomeMessage}</p>
           <Weather />
         </div>
-        <div className="grid min-h-200 grid-cols-3 grid-rows-4 gap-6 max-2xl:gap-4 max-md:grid-cols-1 max-md:grid-rows-1">
-          <div className="row-span-2 flex min-h-0 flex-col justify-start rounded-md border border-gray-300 bg-white p-6 max-md:p-5">
+        <div className="grid min-h-200 h-full grid-cols-3 grid-rows-4 gap-6 max-2xl:gap-4 max-md:grid-cols-1 max-md:grid-rows-1 max-md:h-auto">
+          <div className="row-span-2 flex min-h-0 flex-col justify-start rounded-md border border-gray-300 bg-white p-6 max-md:h-auto max-md:p-4.5!">
             <SectionHeader
               title="근무 시간"
               description={dayjs(currentTime).format('YYYY년 MM월 DD일 (ddd) HH:mm:ss')}
@@ -172,7 +183,7 @@ export default function Dashboard() {
               />
             </div>
           </div>
-          <div className="row-span-2 flex min-h-0 flex-col gap-4">
+          <div className="row-span-2 flex min-h-0 flex-col gap-4 max-md:h-auto">
             <div className="rounded-md border border-gray-300 bg-white px-6 py-5 max-md:p-4.5!">
               <SectionHeader
                 title="잔여 휴가 ⛱️"
@@ -233,28 +244,43 @@ export default function Dashboard() {
           </div>
           
           {/* 빠른 메뉴 */}
-          <div className="grid grid-cols-3 gap-6 max-2xl:gap-4 md:hidden">
+          <div className="grid grid-cols-3 gap-2 md:hidden">
             <Link
               to="/notice"
-              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
-              <Office className="size-7 text-primary-blue-500" />
-              <span className="text-base font-medium text-gray-900">공지사항</span>
+              className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
+              <div className="flex items-center justify-center rounded-full bg-primary-blue-100 p-1.5">
+                <NoticeIcon className="size-4.5 text-primary-blue-500" />
+              </div>
+              <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
+                공지사항
+                <ChevronRight className="size-3 text-gray-500" />
+              </span>
             </Link>
             <Link
               to="/meetingroom"
-              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
-              <Building2 className="size-7 text-primary-blue-500" />
-              <span className="text-base font-medium text-gray-900">미팅룸</span>
+              className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
+              <div className="flex items-center justify-center rounded-full bg-primary-blue-100 p-1.5">
+                <MeetingroomIcon className="size-4.5 text-primary-blue-500" />
+              </div>
+              <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
+                미팅룸
+                <ChevronRight className="size-3 text-gray-500" />
+              </span>
             </Link>
             <Link
               to="/mypage/expense"
-              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
-              <ExpenseIcon className="size-7 text-primary-blue-500" />
-              <span className="text-base font-medium text-gray-900">비용관리</span>
+              className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
+              <div className="flex items-center justify-center rounded-full bg-primary-blue-100 p-1.5">
+                <ExpenseIcon className="size-4.5 text-primary-blue-500" />
+              </div>
+              <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
+                비용관리
+                <ChevronRight className="size-3 text-gray-500" />
+              </span>
             </Link>
           </div>
 
-          <div className="row-span-4 flex min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5 max-md:p-4.5!">
+          <div className="row-span-4 flex h-full min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5 max-md:h-auto max-md:p-4.5!">
             <SectionHeader
               title="캘린더"
               buttonText="전체보기"
@@ -264,9 +290,9 @@ export default function Dashboard() {
               className="mb-4 shrink-0"
             />
             <div className="shrink-0">
-              <DayPicker mode="single" variant="dashboard" selected={selected} onSelect={setSelected} className="max-md:p-0" />
+              <MemoizedDayPicker selected={selected} onSelect={handleDateSelect} />
             </div>
-            <ul className="flex items-center justify-end gap-x-1.5 px-4 py-2 flex-wrap max-md:px-0! max-md:gap-0!">
+            <ul className="flex shrink-0 items-center justify-end gap-x-1.5 px-4 py-2 flex-wrap max-md:px-0! max-md:gap-0!">
               {calendarBadges.map((label) => (
                 <li key={label}>
                   <Badge variant="dot" className={getBadgeColor(label)}>
@@ -275,10 +301,12 @@ export default function Dashboard() {
                 </li>
               ))}
             </ul>
-            <div className="overflow-y-auto rounded-xl p-4 max-2xl:p-2 max-md:px-0!">
-              <ul className="grid grid-cols-3 gap-2 gap-y-4 max-2xl:grid-cols-2 max-2xl:gap-x-1 max-2xl:gap-y-2 max-md:grid-cols-3!">
+            <div className="flex-1 min-h-0 overflow-y-auto rounded-xl p-4 max-2xl:p-2 max-md:px-0!">
+              <ul className="grid grid-cols-3 gap-2 gap-y-4 max-2xl:grid-cols-2 max-2xl:gap-x-1 max-2xl:gap-y-2 max-md:grid-cols-3! max-md:gap-x-0!">
                 {calendarData.length === 0 ? (
-                  <span className="text-base text-gray-500">등록된 일정이 없습니다.</span>
+                  <li className="col-span-full text-center">
+                    <span className="text-base text-gray-500">등록된 일정이 없습니다.</span>
+                  </li>
                 ) : (
                   calendarData.map((calendar, index) => (
                     <li

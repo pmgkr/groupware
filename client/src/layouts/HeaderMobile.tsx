@@ -275,7 +275,7 @@ export default function HeaderMobile() {
                 <Link to="/mypage" onClick={() => setIsSidebarOpen(false)}>
                   <strong className="text-base font-medium text-gray-950">{user_name} <span className="text-sm text-gray-500">{job_role}</span></strong>
                 </Link>
-                <p className="text-xs"><Weather /></p>
+                <div className="text-xs"><Weather /></div>
               </div>
             </div>
           </SheetHeader>

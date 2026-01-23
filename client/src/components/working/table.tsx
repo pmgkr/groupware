@@ -109,7 +109,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
   // 모바일 버전 렌더링 (카드 형식)
   if (isMobile) {
     return (
-      <div className="mt-10 space-y-4">
+      <div className="mt-5 -ml-5 w-[calc(100%+var(--spacing)*10)] space-y-4 bg-gray-200 p-5 mb-[-20px]!">
         {data.map((row, index) => {
           const getDayColor = (dayOfWeek: string, holidayName?: string) => {
             if (holidayName) return 'text-red-600';
@@ -143,7 +143,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
           return (
             <div
               key={index}
-              className={`bg-white border border-gray-200 rounded-base p-4 ${isToday(row.date) ? 'bg-primary-blue-50 border-primary-blue-200' : ''}`}>
+              className={`bg-white border border-gray-300 rounded-md p-4 ${isToday(row.date) ? 'bg-primary-blue-50 border-primary-blue-200' : ''}`}>
               {/* 날짜 헤더 */}
               <div className="flex justify-between items-center mb-1 pb-2 border-b border-gray-200">
                 <p className={`text-base font-semibold ${getDayColor(row.dayOfWeek, row.holidayName ?? undefined)}`}>

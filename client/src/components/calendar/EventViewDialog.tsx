@@ -245,16 +245,16 @@ export default function EventViewDialog({
           {/* 작성자 */}
           <div className="space-y-2">
             <Label>작성자</Label>
-            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
-              <span className="text-base">{selectedEvent?.author}</span>
+            <div className="h-11 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:h-10 max-md:rounded-sm flex items-center">
+              <span className="text-base max-md:text-[13px]">{selectedEvent?.author}</span>
             </div>
           </div>
 
           {/* 일정 유형 */}
           <div className="space-y-2">
             <Label>{selectedEvent?.category === 'vacation' ? '휴가' : '이벤트'  } 유형</Label>
-            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
-              <span className="text-base">
+            <div className="h-11 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:h-10 max-md:rounded-sm flex items-center">
+              <span className="text-base max-md:text-[13px]">
                 {selectedEvent?.title}
               </span>
             </div>
@@ -263,8 +263,8 @@ export default function EventViewDialog({
           {/* 기간 */}
           <div className="space-y-2">
             <Label>기간</Label>
-            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
-              <span className="text-base">
+            <div className="h-11 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:h-10 max-md:rounded-sm flex items-center">
+              <span className="text-base max-md:text-[13px]">
                 {getDateRangeTextFull(selectedEvent?.startDate, selectedEvent?.endDate, selectedEvent?.startTime, selectedEvent?.endTime, selectedEvent?.allDay)}
               </span>
             </div>
@@ -274,8 +274,8 @@ export default function EventViewDialog({
           {selectedEvent?.description && (
             <div className="space-y-2">
               <Label>설명</Label>
-              <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100 min-h-[80px]">
-                <span className="text-base">{selectedEvent.description}</span>
+              <div className="min-h-[80px] px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:rounded-sm flex items-start pt-3">
+                <span className="text-base max-md:text-[13px]">{selectedEvent.description}</span>
               </div>
             </div>
           )}
@@ -284,18 +284,18 @@ export default function EventViewDialog({
           {(isMyEvent || hasAuthority) && status && (
             <div className="space-y-2">
               <Label>진행 상태</Label>
-              <div className="px-4 py-2 rounded-lg border border-gray-300 bg-gray-100">
+              <div className="min-h-[44px] px-3 py-1 rounded-lg border border-gray-300 bg-gray-100 max-md:rounded-sm flex items-center">
                 <div>
-                  <span className="text-base font-semibold text-gray-800">
+                  <span className="text-base max-md:text-[13px] font-semibold text-gray-800">
                     {status}
                   </span>
                   {status === "등록 완료" && selectedEvent?.createdAt && (
-                    <p className="text-sm text-gray-800 mt-1">
+                    <p className="text-sm max-md:text-[11px] text-gray-800 mt-1">
                       등록일: {dayjs(selectedEvent.createdAt).format('YYYY년 MM월 DD일')}
                     </p>
                   )}
                   {status === "취소 요청됨" && selectedEvent?.cancelRequestDate && (
-                    <p className="text-sm text-gray-800 mt-1">
+                    <p className="text-sm max-md:text-[11px] text-gray-800 mt-1">
                       요청날짜: {dayjs(selectedEvent.cancelRequestDate).format('YYYY년 MM월 DD일')}
                     </p>
                   )}
@@ -304,22 +304,22 @@ export default function EventViewDialog({
             </div>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="max-md:flex-row max-md:flex-nowrap max-md:gap-2">
           {status !== "취소 완료" && (
             <>
               {isSameTeamManager && status === "취소 요청됨" && onApproveCancel && (
-                <Button variant="destructive" onClick={handleApproveCancel}>취소 요청 승인</Button>
+                <Button variant="destructive" onClick={handleApproveCancel} className="max-md:flex-1">취소 요청 승인</Button>
               )}
               {/* 액션 버튼들 - 본인의 일정일 때만 표시 */}
               {isMyEvent && status === "등록 완료" && (
                 <>
                   {user_level === 'user' && onRequestCancel && (
-                    <Button variant="destructive" onClick={handleCancelRequest}>
+                    <Button variant="destructive" onClick={handleCancelRequest} className="max-md:flex-1">
                       취소 신청하기
                     </Button>
                   )}
                   {(user_level === 'manager' || user_level === 'admin') && onApproveCancel && (!isPage || isPage !== 'admin') && (
-                    <Button variant="destructive" onClick={handleCancelRequest}>
+                    <Button variant="destructive" onClick={handleCancelRequest} className="max-md:flex-1">
                       취소하기
                     </Button>
                   )}
@@ -327,7 +327,7 @@ export default function EventViewDialog({
               )}
             </>
           )}
-          <Button variant="outline" onClick={onClose}>닫기</Button>
+          <Button variant="outline" onClick={onClose} className="max-md:flex-1">닫기</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
