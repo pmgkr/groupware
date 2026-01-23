@@ -1,12 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Ellipsis, Mail, Phone } from 'lucide-react';
 import { Button } from './button';
 import { Badge } from './badge';
-import { getImageUrl } from '@/utils';
+import { getAvatarFallback, getImageUrl } from '@/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 import { updateMemberStatus } from '@/api/manager/member';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/hooks/useUser';
+
+import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { CheckCircle, OctagonAlert } from 'lucide-react';
 
 const STATUS_BADGE_MAP = {
   inactive: {
@@ -29,28 +33,62 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState(member.user_status);
   const initialStatus = member.user_status;
+  const { user_id } = useUser();
+  const { addAlert } = useAppAlert();
+  const [saving, setSaving] = useState(false);
 
-  const profileImageUrl = (() => {
-    if (member.profile_image) {
-      if (member.profile_image.startsWith('http')) return member.profile_image;
-      return `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${member.profile_image}`;
-    }
-    return getImageUrl('dummy/profile');
-  })();
+  const profileImageUrl = member.profile_image
+    ? member.profile_image.startsWith('http')
+      ? member.profile_image
+      : `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${member.profile_image}`
+    : null;
 
+  const avatarFallback = useMemo(() => {
+    return getAvatarFallback(member.user_id);
+  }, [member.user_id]);
   const badge = STATUS_BADGE_MAP[member.user_status as keyof typeof STATUS_BADGE_MAP];
 
   const handleSave = async () => {
+    if (status === initialStatus) return;
+
     try {
+      setSaving(true);
+
       await updateMemberStatus({
         user_id: member.user_id,
-        status: status,
+        status,
       });
 
-      // TODO: 상위 리스트 상태 즉시 반영
       setOpen(false);
+      onRefresh();
+
+      addAlert({
+        title: '상태 변경 완료',
+        message: `
+          <p>
+            <span class="font-semibold text-primary-blue-500">
+              ${member.user_name}
+            </span> 님의 상태가
+            <span class="font-semibold text-primary-blue-500">
+              ${STATUS_OPTIONS.find((o) => o.value === status)?.label}
+            </span>
+            로 변경되었습니다.
+          </p>
+        `,
+        icon: <CheckCircle />,
+        duration: 3000,
+      });
     } catch (e) {
       console.error('상태 변경 실패', e);
+
+      addAlert({
+        title: '상태 변경 실패',
+        message: '상태 변경 중 오류가 발생했습니다. 다시 시도해 주세요.',
+        icon: <OctagonAlert />,
+        duration: 3000,
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -67,16 +105,14 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
         <div className="flex">
           <div className="mr-5 flex flex-col items-center">
             <div className="mb-2.5 aspect-square w-18 overflow-hidden rounded-full bg-gray-300">
-              <img
-                src={profileImageUrl}
-                alt={member.user_name}
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = getImageUrl('dummy/profile');
-                }}
-              />
+              {profileImageUrl ? (
+                <img src={profileImageUrl} alt={member.user_name} className="h-full w-full object-cover" />
+              ) : (
+                <div className="bg-primary-blue-100 flex h-full w-full items-center justify-center font-bold text-black **:text-2xl">
+                  {avatarFallback}
+                </div>
+              )}
             </div>
-
             {/* inactive / suspended만 뱃지 */}
             {badge && <Badge className={badge.className}>{badge.label}</Badge>}
           </div>
@@ -114,7 +150,14 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
           <div className="space-y-6">
             {/* 프로필 */}
             <div className="flex flex-col items-center gap-y-3 text-center">
-              <img src={profileImageUrl} className="h-20 w-20 rounded-full object-cover" />
+              {profileImageUrl ? (
+                <img src={profileImageUrl} className="h-20 w-20 rounded-full object-cover" />
+              ) : (
+                <div className="bg-primary-blue-100 flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold text-black">
+                  {avatarFallback}
+                </div>
+              )}
+
               <div>
                 <p className="font-medium">
                   {member.user_name} {member.user_name_en}

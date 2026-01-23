@@ -524,14 +524,14 @@ export default function ProposalList({
   return (
     <div>
       {/* 탭 + 필터 + 작성 버튼 */}
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
+      <div className="mb-5 flex items-center justify-between gap-3 max-sm:relative max-sm:flex-col max-sm:items-start">
+        <div className="flex items-center gap-3 max-sm:w-full max-sm:flex-col max-sm:items-start">
+          <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5 max-sm:mb-2 max-sm:w-full">
             {usedTabs.map((tab) => (
               <Button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
-                className={`h-8 w-22 rounded-sm p-0 text-sm ${
+                className={`h-8 w-22 rounded-sm p-0 text-sm max-sm:w-[33%] ${
                   activeTab === tab.key
                     ? 'bg-primary hover:bg-primary active:bg-primary text-white'
                     : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
@@ -540,7 +540,7 @@ export default function ProposalList({
               </Button>
             ))}
           </div>
-          <div className="flex items-center gap-x-2 before:mr-3 before:ml-3 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300">
+          <div className="flex items-center gap-x-2 md:before:mr-3 md:before:ml-3 md:before:inline-flex md:before:h-7 md:before:w-[1px] md:before:bg-gray-300">
             {!isProjectPage && (
               <Select value={selectedCategory || ''} onValueChange={handleCategoryChange}>
                 <SelectTrigger size="sm" className="w-[100px]">
@@ -571,7 +571,7 @@ export default function ProposalList({
         </div>
 
         {showRegisterButton && onRegister && (
-          <Button size="sm" onClick={onRegister}>
+          <Button size="sm" onClick={onRegister} className="max-sm:absolute max-sm:right-0 max-sm:bottom-0">
             기안서 작성하기
           </Button>
         )}
