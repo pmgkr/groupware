@@ -17,7 +17,7 @@ import { Icons } from '@components/icons';
 import EventViewDialog from '@/components/calendar/EventViewDialog';
 import Weather from '@components/features/Dashboard/weather';
 import { Expense as ExpenseIcon } from '@/assets/images/icons';
-import { Megaphone as NoticeIcon, Users as MeetingroomIcon } from 'lucide-react';
+import { ClipboardList as NoticeIcon, Users as MeetingroomIcon, ChevronRight } from 'lucide-react';
 
 import type { Calendar, Meetingroom, Wlog, VacationSummaryItem, Notice, Expense } from '@/api/dashboard';
 
@@ -244,24 +244,39 @@ export default function Dashboard() {
           </div>
           
           {/* 빠른 메뉴 */}
-          <div className="grid grid-cols-3 gap-6 max-2xl:gap-4 md:hidden">
+          <div className="grid grid-cols-3 gap-2 md:hidden">
             <Link
               to="/notice"
-              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
-              <NoticeIcon className="size-7 text-primary-blue-500" />
-              <span className="text-base font-medium text-gray-900">공지사항</span>
+              className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
+              <div className="flex items-center justify-center rounded-full bg-primary-blue-100 p-1.5">
+                <NoticeIcon className="size-4.5 text-primary-blue-500" />
+              </div>
+              <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
+                공지사항
+                <ChevronRight className="size-3 text-gray-500" />
+              </span>
             </Link>
             <Link
               to="/meetingroom"
-              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
-              <MeetingroomIcon className="size-7 text-primary-blue-500" />
-              <span className="text-base font-medium text-gray-900">미팅룸</span>
+              className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
+              <div className="flex items-center justify-center rounded-full bg-primary-blue-100 p-1.5">
+                <MeetingroomIcon className="size-4.5 text-primary-blue-500" />
+              </div>
+              <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
+                미팅룸
+                <ChevronRight className="size-3 text-gray-500" />
+              </span>
             </Link>
             <Link
               to="/mypage/expense"
-              className="flex flex-col items-center justify-center gap-2 rounded-md border border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
-              <ExpenseIcon className="size-7 text-primary-blue-500" />
-              <span className="text-base font-medium text-gray-900">비용관리</span>
+              className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
+              <div className="flex items-center justify-center rounded-full bg-primary-blue-100 p-1.5">
+                <ExpenseIcon className="size-4.5 text-primary-blue-500" />
+              </div>
+              <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
+                비용관리
+                <ChevronRight className="size-3 text-gray-500" />
+              </span>
             </Link>
           </div>
 
