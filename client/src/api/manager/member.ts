@@ -15,6 +15,28 @@ export interface Member {
   user_status: 'active' | 'inactive' | 'suspended';
 }
 
+export interface MyTeam {
+  team_id: number;
+  team_name: string;
+  level: number;
+}
+
+export async function getMyTeams(): Promise<{ items: MyTeam[] }> {
+  return await http('/manager/myteam', { method: 'GET' });
+}
+
+export async function getMembersByTeams(teamIds: number[]) {
+  const results = await Promise.all(teamIds.map((team_id) => getManagerMemberList({ team_id })));
+
+  // 2차원 배열 → 1차원
+  const merged = results.flat();
+
+  // 혹시 중복 유저가 있을 경우 대비
+  const unique = Array.from(new Map(merged.map((m) => [m.user_id, m])).values());
+
+  return unique;
+}
+
 export async function getManagerMemberList(params?: { team_id?: number; q?: string }): Promise<Member[]> {
   const searchParams = new URLSearchParams();
 

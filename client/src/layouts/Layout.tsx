@@ -3,6 +3,8 @@ import { NavLink, Outlet, useMatches } from 'react-router';
 import Header from './Header';
 import HeaderMobile from './HeaderMobile';
 import { cn } from '@/lib/utils'; // 선택: clsx+twMerge 헬퍼
+import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router';
 
 export default function Layout() {
   const matches = useMatches();
@@ -19,6 +21,30 @@ export default function Layout() {
   const hideChildNav = (active?.handle as any)?.hideNav === true;
   const hideTitle = (active?.handle as any)?.hideTitle === true;
 
+  const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const location = useLocation();
+  const pathname = location.pathname;
+
+  const activeIndex = childNav?.findIndex((item) => {
+    if (item.end) {
+      return pathname === item.to;
+    }
+    return pathname === item.to || pathname.startsWith(item.to + '/');
+  });
+
+  useEffect(() => {
+    if (activeIndex == null || activeIndex < 0) return;
+
+    const el = itemRefs.current[activeIndex];
+    if (!el) return;
+
+    el.scrollIntoView({
+      behavior: 'smooth',
+      inline: 'center',
+      block: 'nearest',
+    });
+  }, [activeIndex]);
+
   return (
     <>
       <div className="hidden md:block">
@@ -31,16 +57,23 @@ export default function Layout() {
         {/* 페이지 타이틀 : router의 handle.title 값 노출 */}
         {!hideTitle && title && (
           <div className="mb-5 flex items-center has-[+nav]:mb-2">
-            <h1 className="text-3xl font-bold max-md:text-xl">{title}</h1>
+            <h1 className="shrink-0 text-3xl font-bold after:mx-5 after:inline-flex after:h-8 after:w-[1px] after:bg-gray-300 after:align-middle max-md:text-xl max-md:after:mx-4 max-md:after:h-6">
+              {title}
+            </h1>
             {/* 2차 메뉴 노출 */}
             {!hideChildNav && childNav && childNav.length > 0 && (
-              <nav className="before:mx-5 before:inline-flex before:h-8 before:w-[1px] before:bg-gray-300 before:align-middle max-md:before:h-6 max-md:before:mx-4">
+              <nav className="scrollbar-hide relative flex-1 overflow-x-auto whitespace-nowrap md:overflow-visible">
                 <ul className="inline-flex items-center gap-x-1">
-                  {childNav.map((item) => (
-                    <li key={item.to}>
+                  {childNav.map((item, idx) => (
+                    <li
+                      key={item.to}
+                      ref={(el) => {
+                        itemRefs.current[idx] = el;
+                      }}
+                      className="shrink-0">
                       <NavLink
                         to={item.to}
-                        end={item.end} // 목록 탭 등에서 정확히 일치해야 활성 처리할 때
+                        end={item.end}
                         className={({ isActive }) =>
                           cn(
                             'rounded-xs px-3 py-1 text-base transition-colors max-md:text-sm',

@@ -80,7 +80,7 @@ export default function BoardList() {
       <div className="flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
           <Input
-            className="h-[32px] px-4 [&]:bg-white"
+            className="h-[32px]! px-4 max-sm:h-[28px] [&]:bg-white"
             placeholder="검색어 입력"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
