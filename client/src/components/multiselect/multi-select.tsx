@@ -1061,7 +1061,6 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
             }}
             align="start"
             onPointerDownCapture={(e) => e.stopPropagation()}
-            onInteractOutside={(e) => e.preventDefault()}
             onEscapeKeyDown={() => setIsPopoverOpen(false)}>
             <Command shouldFilter={false}>
               {searchable && (

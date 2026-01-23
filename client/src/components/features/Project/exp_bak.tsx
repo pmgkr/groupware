@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useOutletContext, useNavigate, useParams, useSearchParams } from 'react-router';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import * as XLSX from 'xlsx';
@@ -10,6 +10,7 @@ import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { Button } from '@components/ui/button';
+import { Checkbox } from '@components/ui/checkbox';
 import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
@@ -19,22 +20,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Excel } from '@/assets/images/icons';
 import { RefreshCw, OctagonAlert } from 'lucide-react';
 
-import { useViewport } from '@/hooks/useViewport';
-import { ExpenseFilterPC } from './_responsive/ExpenseFilterPC';
-import { ExpenseFilterMo } from './_responsive/ExpenseFilterMo';
-import { ExpenseTable } from './_responsive/ExpenseTable';
-import { ExpenseCardList } from './_responsive/ExpenseCardList';
-
 import { getProjectExpense, type pExpenseListItem, getProjectExpenseType, deleteProjectTempExpense, claimProjectTempExpense } from '@/api';
+import { ExpenseRow } from './_components/ExpenseListRow';
 
 export default function Expense() {
   const navigate = useNavigate();
-  const viewport = useViewport();
-  const isMobile = viewport === 'mobile';
-
   const { projectId } = useParams();
   const { user_id, user_name, team_id, user_level } = useUser();
-
   const { data } = useOutletContext<ProjectLayoutContext>();
   const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
@@ -101,64 +93,22 @@ export default function Expense() {
   const pageSize = 15; // 한 페이지에 보여줄 개수
 
   // 필터 변경 시 page 초기화
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = (setter: any, value: any) => {
+    setter(value);
     setPage(1);
-
-    switch (key) {
-      case 'year':
-        setSelectedYear(value as string);
-        break;
-
-      case 'type':
-        setSelectedType(value as string[]);
-        break;
-
-      case 'status':
-        setSelectedStatus(value as string[]);
-        break;
-
-      case 'method':
-        setSelectedProof(value as string[]);
-        break;
-
-      case 'attach':
-        setSelectedProofStatus(value as string[]);
-        break;
-
-      default:
-        break;
-    }
-
-    updateSearchParams({
-      page: 1,
-      [key]: value,
-    });
   };
 
   // 탭 변경 시 필터 초기화
-  const handleTabChange = (tab: 'saved' | 'all') => {
+  const handleTabChange = (tab: 'all' | 'saved') => {
     setActiveTab(tab);
     setPage(1);
-    resetAllFilters();
 
-    setSearchParams({ tab: tab, page: '1' });
-  };
-
-  const resetAllFilters = () => {
     setSelectedYear(currentYear);
     setSelectedType([]);
     setSelectedStatus([]);
     setSelectedProof([]);
     setSelectedProofStatus([]);
     setCheckedItems([]);
-
-    // MultiSelect 내부 상태 초기화
-    typeRef.current?.clear();
-    statusRef.current?.clear();
-    proofRef.current?.clear();
-    proofStatusRef.current?.clear();
-
-    updateSearchParams({ page: 1 });
   };
 
   // 체크박스 활성화 여부
@@ -417,7 +367,7 @@ export default function Expense() {
         if (selectedProof.length) params.method = selectedProof.join(',');
         if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
 
-        // setSearchParams(params);
+        setSearchParams(params);
         const res = await getProjectExpense(params);
 
         console.log('📦 비용 리스트 요청 파라미터:', params);
@@ -445,77 +395,186 @@ export default function Expense() {
     setCheckAll(selectableSeqs.every((seq) => checkedItems.includes(seq)));
   }, [checkedItems, expenseList]);
 
-  // 파라미터 업데이트 유틸 함수
-  const updateSearchParams = useCallback(
-    (next: Record<string, any>) => {
-      const params = new URLSearchParams(searchParams);
-
-      Object.entries(next).forEach(([key, value]) => {
-        if (!value || (Array.isArray(value) && value.length === 0)) {
-          params.delete(key);
-        } else {
-          params.set(key, Array.isArray(value) ? value.join(',') : String(value));
-        }
-      });
-
-      setSearchParams(params);
-      console.log(searchParams);
-    },
-    [searchParams, setSearchParams]
-  );
-
-  const filterProps = {
-    activeTab,
-    yearOptions,
-    selectedYear,
-    selectedType,
-    selectedStatus,
-    selectedProof,
-    selectedProofStatus,
-
-    typeOptions,
-    statusOptions,
-    proofMethod,
-    proofStatusOptions,
-
-    typeRef,
-    statusRef,
-    proofRef,
-    proofStatusRef,
-
-    onTabChange: handleTabChange,
-    onFilterChange: handleFilterChange,
-    onReset: handleTabChange,
-    onCreate: () => setRegisterDialog(true),
-  };
-
   return (
     <>
-      {/* -------- 상단 필터 -------- */}
-      {isMobile ? <ExpenseFilterMo {...filterProps} /> : <ExpenseFilterPC {...filterProps} />}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center">
+          <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
+            <Button
+              onClick={() => handleTabChange('all')}
+              className={`h-8 w-18 rounded-sm p-0 text-sm ${
+                activeTab === 'all'
+                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+              }`}>
+              전체
+            </Button>
+            <Button
+              onClick={() => handleTabChange('saved')}
+              className={`h-8 w-18 rounded-sm p-0 text-sm ${
+                activeTab === 'saved'
+                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+              }`}>
+              임시 저장
+            </Button>
+          </div>
 
-      {/* -------- 리스트 -------- */}
-      {isMobile ? (
-        <ExpenseCardList
-          items={expenseList}
-          activeTab={activeTab}
-          checkedItems={checkedItems}
-          checkAll={checkAll}
-          onCheckAll={handleCheckAll}
-          onCheck={handleCheckItem}
-          loading={loading}
-        />
-      ) : (
-        <ExpenseTable
-          items={expenseList}
-          activeTab={activeTab}
-          checkedItems={checkedItems}
-          checkAll={checkAll}
-          onCheckAll={handleCheckAll}
-          onCheck={handleCheckItem}
-          loading={loading}
-        />
-      )}
+          <div className="flex items-center gap-x-2 before:mr-3 before:ml-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
+            {/* 연도 단일 선택 */}
+            <Select value={selectedYear} onValueChange={(v) => handleFilterChange(setSelectedYear, v)}>
+              <SelectTrigger size="sm" className="px-2">
+                <SelectValue placeholder="연도 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {yearOptions.map((y) => (
+                  <SelectItem key={y} value={y} size="sm">
+                    {y}년
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* 용도 다중 선택 */}
+            <MultiSelect
+              className="max-w-[80px] min-w-auto!"
+              size="sm"
+              placeholder="비용 용도"
+              ref={typeRef}
+              options={typeOptions}
+              defaultValue={selectedType}
+              onValueChange={(v) => handleFilterChange(setSelectedType, v)}
+              maxCount={0}
+              hideSelectAll={true}
+              autoSize={true}
+              closeOnSelect={false}
+              searchable={false}
+              simpleSelect={true}
+            />
+
+            {/* 증빙수단 다중 선택 */}
+            <MultiSelect
+              className="max-w-[80px] min-w-auto!"
+              size="sm"
+              placeholder="증빙 수단"
+              ref={proofRef}
+              options={proofMethod}
+              defaultValue={selectedProof}
+              onValueChange={(v) => handleFilterChange(setSelectedProof, v)}
+              maxCount={0}
+              hideSelectAll={true}
+              autoSize={true}
+              closeOnSelect={false}
+              searchable={false}
+              simpleSelect={true}
+            />
+
+            {/* 증빙상태 다중 선택 */}
+            <MultiSelect
+              className="max-w-[80px] min-w-auto!"
+              size="sm"
+              placeholder="증빙 상태"
+              ref={proofStatusRef}
+              options={proofStatusOptions}
+              defaultValue={selectedProofStatus}
+              onValueChange={(v) => handleFilterChange(setSelectedProofStatus, v)}
+              maxCount={0}
+              hideSelectAll={true}
+              autoSize={true}
+              closeOnSelect={false}
+              searchable={false}
+              simpleSelect={true}
+            />
+
+            {/* 상태 다중 선택 */}
+            <MultiSelect
+              className="max-w-[80px] min-w-auto!"
+              size="sm"
+              placeholder="비용 상태"
+              ref={statusRef}
+              options={statusOptions}
+              defaultValue={selectedStatus}
+              onValueChange={(v) => handleFilterChange(setSelectedStatus, v)}
+              maxCount={0}
+              hideSelectAll={true}
+              autoSize={true}
+              closeOnSelect={false}
+              searchable={false}
+              simpleSelect={true}
+            />
+
+            <Button
+              type="button"
+              variant="svgIcon"
+              size="icon"
+              className="hover:text-primary-blue-500 size-6 text-gray-600 transition-transform hover:rotate-45"
+              onClick={() => handleTabChange(activeTab)}>
+              <RefreshCw />
+            </Button>
+          </div>
+        </div>
+
+        {data.project_status === 'in-progress' && (
+          <Button
+            size="sm"
+            onClick={() => {
+              setRegisterDialog(true);
+            }}>
+            비용 작성하기
+          </Button>
+        )}
+      </div>
+
+      <Table variant="primary" align="center" className="table-fixed">
+        <TableHeader>
+          <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
+            <TableHead className={cn('w-[3%] px-0! transition-all duration-150', activeTab !== 'saved' && 'hidden')}>
+              <Checkbox
+                id="chk_all"
+                className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
+                checked={checkAll}
+                onCheckedChange={(v) => handleCheckAll(!!v)}
+              />
+            </TableHead>
+            <TableHead className="w-[8%]">EXP#</TableHead>
+            <TableHead className="w-[6%]">증빙 수단</TableHead>
+            <TableHead className="w-[8%]">비용 용도</TableHead>
+            <TableHead>비용 제목</TableHead>
+            <TableHead className="w-[6%]">증빙 상태</TableHead>
+            <TableHead className="w-[7%]">비용 유형</TableHead>
+            <TableHead className="w-[11%]">금액</TableHead>
+            <TableHead className="w-[7%]">작성자</TableHead>
+            <TableHead className="w-[7%]">상태</TableHead>
+            <TableHead className="w-[12%]">작성일</TableHead>
+          </TableRow>
+        </TableHeader>
+
+        <TableBody>
+          {loading ? (
+            <TableRow>
+              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 11 : 10}>
+                비용 리스트 불러오는 중 . . .
+              </TableCell>
+            </TableRow>
+          ) : expenseList.length === 0 ? (
+            <TableRow>
+              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 11 : 10}>
+                리스트가 없습니다.
+              </TableCell>
+            </TableRow>
+          ) : (
+            expenseList.map((item) => (
+              <ExpenseRow
+                key={item.seq}
+                item={item}
+                activeTab={activeTab}
+                checked={checkedItems.includes(item.seq)}
+                onCheck={handleCheckItem}
+              />
+            ))
+          )}
+        </TableBody>
+      </Table>
 
       {activeTab === 'saved' && (
         <div className="mt-4 flex gap-2">

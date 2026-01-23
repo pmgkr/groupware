@@ -117,10 +117,10 @@ function Checkbox({ className, label, labelProps, size, ...props }: CheckboxProp
         {checkboxElement}
         <label
           className={cn(
-            'text-base transition-colors select-none',
+            'text-sm transition-colors select-none md:text-base',
             props.disabled
               ? 'cursor-not-allowed text-gray-400'
-              : 'peer-data-[state=checked]:text-primary-blue-500 cursor-pointer text-[var(--color-gray-700)]',
+              : 'peer-data-[state=checked]:text-primary-blue-500 cursor-pointer text-gray-700',
             labelProps?.className
           )}
           htmlFor={props.id}

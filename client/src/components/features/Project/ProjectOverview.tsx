@@ -2,6 +2,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useOutletContext, useLocation, useNavigate } from 'react-router';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
+import { cn } from '@/lib/utils';
 import { formatAmount } from '@/utils';
 import { useUser } from '@/hooks/useUser';
 import { useIsMobileViewport } from '@/hooks/useViewport';
@@ -435,7 +436,7 @@ function ProjectInfoRow({ title, value, bold }: { title: string; value: string; 
   return (
     <dl className="flex items-center justify-between border-b-1 border-gray-300/50 py-1 first:pt-0 last:border-b-0 last:pb-0">
       <dt className="text-sm font-medium text-gray-600">{title}</dt>
-      <dd className={`text-[13px] ${bold && 'font-semibold'}`}>{value}</dd>
+      <dd className={cn('text-[13px]', bold && 'font-semibold')}>{value}</dd>
     </dl>
   );
 }
