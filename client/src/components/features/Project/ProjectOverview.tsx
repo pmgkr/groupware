@@ -11,11 +11,10 @@ import { getInvoiceList, type InvoiceListItem } from '@/api';
 import { getProjectLogs, type ProjectLogs } from '@/api/project';
 import { buildExpenseColorMap, buildPieChartData, groupExpenseForChart, buildInvoicePieChartData } from './utils/chartMap';
 import type { PieItem, PieChartItem } from './utils/chartMap';
-import { statusMap } from './utils/projectUtil';
 
 import { HalfDonut } from '@components/charts/HalfDonut';
 import { GapPieChart } from '@components/charts/GapPieChart';
-
+import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
@@ -198,6 +197,38 @@ export default function Overview() {
     : [];
 
   const isProjectMember = useMemo(() => members.some((m) => m.user_id === user_id), [members, user_id]);
+
+  /** -----------------------------------------
+   *  상태 Badge
+   ----------------------------------------- */
+  const statusMap = {
+    Saved: (
+      <Badge variant="grayish" size="md">
+        임시저장
+      </Badge>
+    ),
+    Claimed: (
+      <Badge variant="secondary" size="md">
+        승인대기
+      </Badge>
+    ),
+    Confirmed: <Badge size="md">승인완료</Badge>,
+    Approved: (
+      <Badge className="bg-primary-blue/80" size="md">
+        지급대기
+      </Badge>
+    ),
+    Completed: (
+      <Badge className="bg-primary-blue" size="md">
+        지급완료
+      </Badge>
+    ),
+    Rejected: (
+      <Badge className="bg-destructive" size="md">
+        반려됨
+      </Badge>
+    ),
+  };
   const status = statusMap[data.project_status as keyof typeof statusMap];
 
   return (
@@ -264,7 +295,7 @@ export default function Overview() {
             <div className="mt-4 w-full gap-4 space-y-4 md:mt-8 md:grid md:grid-cols-2 md:grid-rows-2 md:space-y-0">
               <Card className="rounded-none border-0 bg-white text-gray-800 max-md:rounded-md max-md:border-1 max-md:border-gray-300 max-md:shadow-none">
                 <CardHeader className="p-4 pb-0 md:p-6 md:pb-4">
-                  <CardTitle className="text-xl leading-[1.3] font-bold">프로젝트 GPM</CardTitle>
+                  <CardTitle className="text-lg leading-[1.1] font-bold md:text-xl md:leading-[1.3]">프로젝트 GPM</CardTitle>
                   <CardDescription>인보이스 발행금액 대비 지출 비용을 제외한 순이익 비율을 제공합니다.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-2 pb-4 md:flex-row md:gap-4">
@@ -297,7 +328,7 @@ export default function Overview() {
               </Card>
               <Card className="rounded-none border-0 bg-white text-gray-800 max-md:rounded-md max-md:border-1 max-md:border-gray-300 max-md:shadow-none">
                 <CardHeader className="p-4 pb-0 md:p-6 md:pb-4">
-                  <CardTitle className="text-xl leading-[1.3] font-bold">비용 차트</CardTitle>
+                  <CardTitle className="text-lg leading-[1.1] font-bold md:text-xl md:leading-[1.3]">비용 차트</CardTitle>
                   <CardDescription>비용 용도별 지출 금액을 기준으로 상위 6개 항목을 제공합니다.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-2 pb-4 md:flex-row md:gap-4">
@@ -321,7 +352,7 @@ export default function Overview() {
               </Card>
               <Card className="rounded-none border-0 bg-white text-gray-800 max-md:rounded-md max-md:border-1 max-md:border-gray-300 max-md:shadow-none">
                 <CardHeader className="p-4 pb-0 md:p-6 md:pb-4">
-                  <CardTitle className="text-xl leading-[1.3] font-bold">인보이스</CardTitle>
+                  <CardTitle className="text-lg leading-[1.1] font-bold md:text-xl md:leading-[1.3]">인보이스</CardTitle>
                   <CardDescription>인보이스가 발행된 업체별 비율을 제공합니다.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-2 pb-4 md:flex-row md:gap-4">
@@ -345,7 +376,7 @@ export default function Overview() {
               </Card>
               <Card className="rounded-none border-0 bg-white text-gray-800 max-md:rounded-md max-md:border-1 max-md:border-gray-300 max-md:shadow-none">
                 <CardHeader className="p-4 pb-0 md:p-6 md:pb-4">
-                  <CardTitle className="text-xl leading-[1.3] font-bold">비용 유형</CardTitle>
+                  <CardTitle className="text-lg leading-[1.1] font-bold md:text-xl md:leading-[1.3]">비용 유형</CardTitle>
                   <CardDescription>등록된 비용을 견적서, 기안서, 야근 식대·교통비 기준으로 분류해 제공합니다.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-2 pb-4 md:flex-row md:gap-4">
@@ -370,7 +401,7 @@ export default function Overview() {
             </div>
           </div>
           <div className="mt-8 flex w-full items-center justify-between">
-            <Button type="button" variant="outline" size="sm" onClick={() => navigate(fallbackListPath)}>
+            <Button type="button" variant="outline" size={isMobile ? 'full' : 'sm'} onClick={() => navigate(fallbackListPath)}>
               목록
             </Button>
           </div>

@@ -50,7 +50,7 @@ export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck }: Expen
     <div className="relative rounded-md border border-gray-300 bg-white p-4">
       {matchMissing}
       <div className="mb-1 flex justify-between border-b border-gray-300 pb-1">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
           {activeTab === 'saved' && (
             <Checkbox
               id={`chk_${item.seq}`}
@@ -60,24 +60,23 @@ export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck }: Expen
               disabled={item.user_id !== user_id}
             />
           )}
-          <span className="relative pr-2 after:absolute after:top-1/2 after:left-full after:h-3 after:w-px after:-translate-y-1/2 after:bg-gray-300 after:content-['']">
-            {' '}
-            {item.is_estimate === 'Y' ? '견적서' : '견적서 외'}
-          </span>
-          <span>{item.exp_id}</span>
+          <span>EXP #{item.exp_id}</span>
         </div>
         {status}
       </div>
 
       <Link to={`/project/${item.project_id}/expense/${item.seq}${search}`}>
-        <div className="my-2 flex items-center gap-1 overflow-hidden text-base tracking-tight">
+        <div className="my-2 flex items-center gap-2 overflow-hidden text-lg tracking-tight">
           <p className="flex-1 truncate">{item.el_title}</p>
           <strong className="shrink-0 font-medium">{formatAmount(item.el_total)}원</strong>
         </div>
         <div className="flex items-center justify-between text-sm text-gray-500">
           <p className="flex flex-1 gap-2 overflow-hidden">
             <span className="relative pr-2 after:absolute after:top-1/2 after:left-full after:h-3 after:w-px after:-translate-y-1/2 after:bg-gray-300 after:content-['']">
-              {item.el_method}{' '}
+              {item.el_method}
+            </span>
+            <span className="relative pr-2 after:absolute after:top-1/2 after:left-full after:h-3 after:w-px after:-translate-y-1/2 after:bg-gray-300 after:content-['']">
+              {item.is_estimate === 'Y' ? '견적서' : '견적서 외'}
             </span>
             <TooltipProvider>
               <Tooltip>

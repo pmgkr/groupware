@@ -290,7 +290,7 @@ export default function ProjectLayout() {
   };
 
   return (
-    <section>
+    <section className="max-md:min-h-[90vh]">
       {/* 상단 프로젝트 공통 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -356,7 +356,7 @@ export default function ProjectLayout() {
       </nav>
 
       {/* 하위 페이지 Outlet + context 전달 */}
-      <div className="pt-6 max-md:-ml-5 max-md:w-[calc(100%+var(--spacing)*10)] max-md:bg-gray-200 max-md:px-5">
+      <div className="py-6">
         <Outlet
           context={
             {

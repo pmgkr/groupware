@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useSearchParams } from 'react-router';
-import { cn } from '@/lib/utils';
 import { getGrowingYears } from '@/utils';
-import { useViewport, useIsMobileViewport } from '@/hooks/useViewport';
+import { useViewport } from '@/hooks/useViewport';
 
 import { ProjectCreateForm } from './_components/ProjectCreate';
 import { getProjectList, type ProjectListItem, getClientList, getTeamList, getBookmarkList, addBookmark, removeBookmark } from '@/api';
@@ -11,15 +10,9 @@ import { ProjectTable } from './_responsive/ProjectTable';
 import { ProjectFilterPC } from './_responsive/ProjectFilterPC';
 import { ProjectFilterMobile } from './_responsive/ProjectFilterMo';
 
-import { Input } from '@/components/ui/input';
-import { Button } from '@components/ui/button';
 import { AppPagination } from '@/components/ui/AppPagination';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
-import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-
-import { Star, RefreshCw, ListFilter } from 'lucide-react';
 
 export default function ProjectList() {
   const { search } = useLocation();
