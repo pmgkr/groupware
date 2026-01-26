@@ -34,7 +34,7 @@ export function DeviceForm({ form, onChange, mode = 'create' }: DeviceFormProps)
 
   return (
     <TableColumn>
-      <TableColumnHeader className="text-base">
+      <TableColumnHeader className="max-md:[&>div] text-base max-md:w-22.5 max-md:border-r-0 max-md:[&>div]:bg-white max-md:[&>div]:px-3 max-md:[&>div]:font-normal max-md:[&>div]:text-gray-600">
         <TableColumnHeaderCell>디바이스</TableColumnHeaderCell>
         <TableColumnHeaderCell>브랜드</TableColumnHeaderCell>
         <TableColumnHeaderCell>모델</TableColumnHeaderCell>
@@ -50,7 +50,7 @@ export function DeviceForm({ form, onChange, mode = 'create' }: DeviceFormProps)
         <TableColumnHeaderCell>구매일자</TableColumnHeaderCell>
       </TableColumnHeader>
 
-      <TableColumnBody className="text-base">
+      <TableColumnBody className="text-base [&>div]:text-black max-md:[&>div]:justify-end max-md:[&>div]:truncate max-md:[&>div]:px-3">
         {/* 디바이스 */}
         <TableColumnCell className={readOnly ? 'px-4 py-2.5' : 'p-0'}>
           {readOnly ? (

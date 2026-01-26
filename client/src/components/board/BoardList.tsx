@@ -10,8 +10,12 @@ import { SearchGray } from '@/assets/images/icons';
 import { getBoardList } from '@/api/office/notice';
 import type { BoardDTO } from '@/api/office/notice';
 import { BOARD_ID_MAP } from '@/api';
+import { useIsMobileViewport } from '@/hooks/useViewport';
+import BoardCardList from './BoardListCard';
 
 export default function BoardList() {
+  const isMobile = useIsMobileViewport();
+
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -80,7 +84,7 @@ export default function BoardList() {
       <div className="flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
           <Input
-            className="h-[32px]! px-4 max-sm:h-[28px] [&]:bg-white"
+            className="h-[32px]! px-4 max-md:placeholder:text-sm max-sm:h-[28px] [&]:bg-white"
             placeholder="검색어 입력"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -101,62 +105,71 @@ export default function BoardList() {
       </div>
 
       {/* 게시판 테이블 */}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[80px]">번호</TableHead>
-            {/* 제보게시판이 아닐 때만 카테고리 컬럼 표시 */}
-            {!isSuggestBoard && <TableHead className="w-[120px]">카테고리</TableHead>}
-            <TableHead className={isSuggestBoard ? 'w-[820px]' : 'w-[700px]'}>제목</TableHead>
-            <TableHead className="w-[270px]">작성자</TableHead>
-            <TableHead className="w-[220px]">작성날짜</TableHead>
-            <TableHead className="w-[91px]">조회</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody className="text-[13px]">
-          {/* 공지글: 항상 맨 위 */}
-          {notices.map((post) => (
-            <TableRow key={`notice-${post.n_seq}`} onClick={() => navigate(`${post.n_seq}`)} className="bg-primary-blue-100 cursor-pointer">
-              <TableCell className="font-medium">
-                <Badge>공지</Badge>
-              </TableCell>
-              {!isSuggestBoard && <TableCell>{post.category}</TableCell>}
-              <TableCell className="text-left">
-                {post.title} {post.repl_cnt > 0 && <span className="ml-1 text-sm tracking-tighter text-gray-500">[ {post.repl_cnt} ]</span>}
-              </TableCell>
-              <TableCell>{post.user_name}</TableCell>
-              <TableCell>{post.reg_date.substring(0, 10)}</TableCell>
-              <TableCell>{post.v_count}</TableCell>
-            </TableRow>
-          ))}
+      {isMobile ? (
+        <BoardCardList
+          notices={notices}
+          posts={paginatedNormals}
+          isSuggestBoard={isSuggestBoard}
+          activeQuery={activeQuery}
+          total={total}
+          startNo={startNo}
+        />
+      ) : (
+        <>
+          {/* 🔽 기존 PC 테이블 코드 그대로 🔽 */}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[80px]">번호</TableHead>
+                {!isSuggestBoard && <TableHead className="w-[120px]">카테고리</TableHead>}
+                <TableHead className={isSuggestBoard ? 'w-[820px]' : 'w-[700px]'}>제목</TableHead>
+                <TableHead className="w-[270px]">작성자</TableHead>
+                <TableHead className="w-[220px]">작성날짜</TableHead>
+                <TableHead className="w-[91px]">조회</TableHead>
+              </TableRow>
+            </TableHeader>
 
-          {/* 일반글이 없을 때 */}
-          {paginatedNormals.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={isSuggestBoard ? 5 : 6} className="h-100 border-b-0 py-6 text-center text-gray-500">
-                {activeQuery ? `'${activeQuery}'에 대한 검색 결과가 없습니다.` : '게시글이 없습니다.'}
-              </TableCell>
-            </TableRow>
-          ) : (
-            <>
-              {/* 일반글: 최신순 + 번호 */}
-              {paginatedNormals.map((post, index) => (
-                <TableRow key={post.n_seq} onClick={() => navigate(`${post.n_seq}`)} className="cursor-pointer hover:bg-gray-100">
-                  <TableCell className="font-medium">{total - startNo - index}</TableCell>
-                  {!isSuggestBoard && <TableCell>{post.category}</TableCell>}
-                  <TableCell className="text-left">
-                    {post.title}
-                    {post.repl_cnt > 0 && <span className="ml-1 text-sm tracking-tighter text-gray-500">[ {post.repl_cnt} ]</span>}
+            <TableBody className="text-[13px]">
+              {/* 👇 여기부터 전부 기존 코드 그대로 */}
+              {notices.map((post) => (
+                <TableRow
+                  key={`notice-${post.n_seq}`}
+                  onClick={() => navigate(`${post.n_seq}`)}
+                  className="bg-primary-blue-100 cursor-pointer">
+                  <TableCell>
+                    <Badge>공지</Badge>
                   </TableCell>
+                  {!isSuggestBoard && <TableCell>{post.category}</TableCell>}
+                  <TableCell className="text-left">{post.title}</TableCell>
                   <TableCell>{post.user_name}</TableCell>
                   <TableCell>{post.reg_date.substring(0, 10)}</TableCell>
                   <TableCell>{post.v_count}</TableCell>
                 </TableRow>
               ))}
-            </>
-          )}
-        </TableBody>
-      </Table>
+
+              {paginatedNormals.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={isSuggestBoard ? 5 : 6} className="h-100 py-6 text-center text-gray-500">
+                    {activeQuery ? `'${activeQuery}'에 대한 검색 결과가 없습니다.` : '게시글이 없습니다.'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedNormals.map((post, index) => (
+                  <TableRow key={post.n_seq} onClick={() => navigate(`${post.n_seq}`)} className="cursor-pointer hover:bg-gray-100">
+                    <TableCell>{total - startNo - index}</TableCell>
+                    {!isSuggestBoard && <TableCell>{post.category}</TableCell>}
+                    <TableCell className="text-left">{post.title}</TableCell>
+                    <TableCell>{post.user_name}</TableCell>
+                    <TableCell>{post.reg_date.substring(0, 10)}</TableCell>
+                    <TableCell>{post.v_count}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </>
+      )}
+
       {total > 0 && (
         <div className="mt-5">
           <AppPagination

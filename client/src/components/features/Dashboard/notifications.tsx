@@ -251,7 +251,7 @@ export function Notification() {
           </SheetHeader>
           <div className="flex-1">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full">
-              <TabsList className="h-12 w-full px-4 py-2">
+              <TabsList className="h-12 w-full px-4 py-2 max-md:py-1">
                 <TabsTrigger value="today">오늘</TabsTrigger>
                 <TabsTrigger value="recent">최근 알림</TabsTrigger>
               </TabsList>
