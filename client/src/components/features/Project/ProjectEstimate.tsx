@@ -1,20 +1,22 @@
 import { useRef, useState, useEffect } from 'react';
 import { Link, useNavigate, useParams, useOutletContext } from 'react-router';
 import * as XLSX from 'xlsx';
-import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { getEstimateList, type EstimateListItem, type projectEstimateParams } from '@/api';
 import { formatDate, formatAmount } from '@/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@components/ui/button';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogClose, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Excel } from '@/assets/images/icons';
+import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 
 export default function ProjectEstimate() {
   const navigate = useNavigate();
   const { projectId } = useParams();
+  const isMobile = useIsMobileViewport();
+
   const { data } = useOutletContext<ProjectLayoutContext>();
 
   // 상단 필터용 state
@@ -98,57 +100,90 @@ export default function ProjectEstimate() {
 
   return (
     <>
-      <div className="mb-4 flex justify-end">
-        {data.project_status === 'in-progress' && (
-          <Button
-            size="sm"
-            onClick={() => {
-              setRegisterDialog(true);
-            }}>
-            견적서 등록
-          </Button>
-        )}
-      </div>
-      <Table variant="primary" align="center" className="table-fixed">
-        <TableHeader>
-          <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[6%]">#</TableHead>
-            <TableHead className="text-left">견적서 제목</TableHead>
-            {/* <TableHead className="w-[12%]">클라이언트</TableHead> */}
-            <TableHead className="w-[10%]">견적서 총액</TableHead>
-            <TableHead className="w-[10%]">가용 예산</TableHead>
-            <TableHead className="w-[8%]">작성자</TableHead>
-            <TableHead className="w-[8%]">상태</TableHead>
-            <TableHead className="w-[12%]">작성일</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      {isMobile ? (
+        <>
           {estimateList.length ? (
-            estimateList.map((item, idx) => (
-              <TableRow className="[&_td]:text-[13px]" key={item.est_id}>
-                <TableCell>{estimateList.length - idx}</TableCell>
-                <TableCell className="text-left">
-                  <Link to={`${item.est_id}`} className="hover:underline">
-                    {item.est_title}
+            <div className="space-y-4">
+              {estimateList.map((item, idx) => (
+                <div className="rounded-md border border-gray-300 p-4">
+                  <div className="mb-1 flex justify-between border-b border-gray-300 pb-1">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <span>#{estimateList.length - idx}</span>
+                    </div>
+                    {statusMap[item.est_valid as keyof typeof statusMap]}
+                  </div>
+                  <Link to={`${item.est_id}`}>
+                    <div className="mt-2 flex items-center gap-2 overflow-hidden text-lg tracking-tight">
+                      <p className="flex-1 truncate">{item.est_title}</p>
+                      <strong className="shrink-0 font-medium">{formatAmount(item.est_amount)}원</strong>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <p className="shrink-0">{item.user_nm}</p>
+                      <p>가용 예산 {formatAmount(item.est_budget)}원</p>
+                    </div>
                   </Link>
-                </TableCell>
-                {/* <TableCell>{data.client_nm}</TableCell> */}
-                <TableCell>{formatAmount(item.est_amount)}</TableCell>
-                <TableCell>{formatAmount(item.est_budget)}</TableCell>
-                <TableCell>{item.user_nm}</TableCell>
-                <TableCell>{statusMap[item.est_valid as keyof typeof statusMap]}</TableCell>
-                <TableCell>{formatDate(item.wdate)}</TableCell>
-              </TableRow>
-            ))
+                </div>
+              ))}
+            </div>
           ) : (
-            <TableRow>
-              <TableCell colSpan={7} className="py-50 text-center text-gray-500">
-                등록된 견적서가 없습니다.
-              </TableCell>
-            </TableRow>
+            <p className="py-50 text-center text-base text-gray-500">등록된 견적서가 없습니다.</p>
           )}
-        </TableBody>
-      </Table>
+        </>
+      ) : (
+        <>
+          <div className="mb-4 flex justify-end">
+            {data.project_status === 'in-progress' && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setRegisterDialog(true);
+                }}>
+                견적서 등록
+              </Button>
+            )}
+          </div>
+          <Table variant="primary" align="center" className="table-fixed">
+            <TableHeader>
+              <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+                <TableHead className="w-[6%]">#</TableHead>
+                <TableHead className="text-left">견적서 제목</TableHead>
+                {/* <TableHead className="w-[12%]">클라이언트</TableHead> */}
+                <TableHead className="w-[10%]">견적서 총액</TableHead>
+                <TableHead className="w-[10%]">가용 예산</TableHead>
+                <TableHead className="w-[8%]">작성자</TableHead>
+                <TableHead className="w-[8%]">상태</TableHead>
+                <TableHead className="w-[12%]">작성일</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {estimateList.length ? (
+                estimateList.map((item, idx) => (
+                  <TableRow className="[&_td]:text-[13px]" key={item.est_id}>
+                    <TableCell>{estimateList.length - idx}</TableCell>
+                    <TableCell className="text-left">
+                      <Link to={`${item.est_id}`} className="hover:underline">
+                        {item.est_title}
+                      </Link>
+                    </TableCell>
+                    {/* <TableCell>{data.client_nm}</TableCell> */}
+                    <TableCell>{formatAmount(item.est_amount)}</TableCell>
+                    <TableCell>{formatAmount(item.est_budget)}</TableCell>
+                    <TableCell>{item.user_nm}</TableCell>
+                    <TableCell>{statusMap[item.est_valid as keyof typeof statusMap]}</TableCell>
+                    <TableCell>{formatDate(item.wdate)}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-50 text-center text-gray-500">
+                    등록된 견적서가 없습니다.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </>
+      )}
 
       <div className="mt-5">
         {estimateList.length !== 0 && (
