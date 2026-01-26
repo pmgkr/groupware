@@ -200,7 +200,7 @@ export default function EstimateView() {
       <div className="p-5">
         <h3 className="text-lg leading-[1.2] font-bold">견적서 항목</h3>
 
-        <div className="mt-2">
+        <div className="mt-2 mb-6">
           {viewItems.map((row) => (
             <>
               {row.ei_type === 'title' && (
@@ -208,7 +208,7 @@ export default function EstimateView() {
               )}
 
               {row.ei_type === 'item' && (
-                <div className="border-t-1 border-gray-300 bg-gray-100 px-3 py-2">
+                <div className="border-t-1 border-gray-300 bg-gray-100/70 px-3 py-2">
                   <div className="text-base leading-[1.2] tracking-tight">{row.ei_name}</div>
                   <div className="flex gap-2 text-sm text-gray-700">
                     <span className="relative pr-2 after:absolute after:top-1/2 after:left-full after:h-3 after:w-px after:-translate-y-1/2 after:bg-gray-400 after:content-['']">
@@ -216,18 +216,72 @@ export default function EstimateView() {
                     </span>
                     <span>수량 {row.qty}</span>
                   </div>
-                  <div className="text-[13px]">
-                    <div className="text-base leading-[1.3] font-semibold">
-                      {formatAmount(row.amount) + '원'}{' '}
-                      <span className="block text-[.75em] font-normal text-gray-600">{`가용 금액 ${formatAmount(row.ava_amount)}원`}</span>
-                    </div>
+                  <div className="text-right text-[13px] leading-[1.3] font-medium">
+                    {formatAmount(row.amount) + '원'}{' '}
+                    <span className="block text-[.75em] font-normal text-gray-600">{`가용 금액 ${formatAmount(row.ava_amount)}원`}</span>
                   </div>
                   {row.remark && <p className="mt-2 text-sm text-gray-700">{row.remark}</p>}
+                </div>
+              )}
+
+              {row.ei_type === 'subtotal' && (
+                <div className="bg-primary-blue-100 flex items-center justify-between border-t-1 border-gray-300 px-3 py-2 text-base">
+                  <span className="flex-1 text-[13px] leading-[1.2] font-semibold">{row.ei_name ? row.ei_name : 'Sub Total'}</span>
+                  <strong className="shrink-0 tracking-tight">{formatAmount(row.amount)}원</strong>
+                </div>
+              )}
+
+              {row.ei_type === 'agency_fee' && (
+                <div className="border-t-1 border-gray-300 bg-gray-100/80 px-3 py-2">
+                  <div className="text-base leading-[1.2] tracking-tight">{row.ei_name ? row.ei_name : 'Agency Fee'}</div>
+                  <div className="text-sm text-gray-700">단가 {row.unit_price && displayUnitPrice(row.unit_price)}</div>
+                  <div className="text-right text-[13px] leading-[1.3] font-medium">
+                    {formatAmount(row.amount)}원
+                    <span className="block text-[.75em] font-normal text-gray-600">{`가용 금액 ${formatAmount(row.ava_amount)}원`}</span>
+                  </div>
+                  {row.remark && <p className="mt-2 text-sm text-gray-700">{row.remark}</p>}
+                </div>
+              )}
+
+              {row.ei_type === 'totalamount' && (
+                <div className="flex items-center justify-between border-t-1 border-gray-300 bg-gray-200/80 px-3 py-2 text-base">
+                  <span className="flex-1 text-[13px] leading-[1.2] font-semibold">{row.ei_name ? row.ei_name : 'Total Amount'}</span>
+                  <strong className="shrink-0 tracking-tight">{formatAmount(row.amount)}원</strong>
+                  {row.remark && <p className="mt-2 text-sm text-gray-700">{row.remark}</p>}
+                </div>
+              )}
+
+              {row.ei_type === 'tax' && (
+                <div className="flex items-center justify-between border-t-1 border-gray-300 bg-gray-200/80 px-3 py-2 text-base">
+                  <span className="flex-1 text-[13px] leading-[1.2] font-semibold">{row.ei_name ? row.ei_name : 'Tax (10%)'}</span>
+                  <strong className="shrink-0 tracking-tight">{formatAmount(row.amount)}원</strong>
+                  {row.remark && <p className="mt-2 text-sm text-gray-700">{row.remark}</p>}
+                </div>
+              )}
+
+              {row.ei_type === 'discount' && (
+                <div className="flex items-center justify-between border-t-1 border-gray-300 bg-gray-300/80 px-3 py-2 text-base">
+                  <span className="flex-1 text-[13px] leading-[1.2] font-semibold">{row.ei_name ? row.ei_name : 'Discount'}</span>
+                  <strong className="shrink-0 tracking-tight">{formatAmount(row.amount)}원</strong>
+                  {row.remark && <p className="mt-2 text-sm text-gray-700">{row.remark}</p>}
+                </div>
+              )}
+
+              {row.ei_type === 'grandtotal' && (
+                <div className="bg-primary-blue-150 flex items-center justify-between border-t-1 border-gray-300 px-3 py-2 text-base">
+                  <span className="flex-1 text-[13px] leading-[1.2] font-semibold">Grand Total</span>
+                  <strong className="shrink-0 text-right leading-[1.4] tracking-tight">
+                    {formatAmount(estData.header.est_amount)}원{' '}
+                    <span className="block text-[.75em] font-normal text-gray-700">{`가용 금액 ${formatAmount(estData.header.est_budget)}원`}</span>
+                  </strong>
                 </div>
               )}
             </>
           ))}
         </div>
+        <Button type="button" variant="outline" size="full" asChild>
+          <Link to={`/project/${projectId}/estimate`}>목록</Link>
+        </Button>
       </div>
     </div>
   ) : (
