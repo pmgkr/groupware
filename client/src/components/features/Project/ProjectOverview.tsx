@@ -29,9 +29,9 @@ import { format } from 'date-fns';
 
 export default function Overview() {
   const { user_id } = useUser();
-  const isMobile = useIsMobileViewport();
   const location = useLocation();
   const navigate = useNavigate();
+  const isMobile = useIsMobileViewport();
 
   const listSearch = (location.state as any)?.fromSearch ?? '';
   const fallbackListPath = listSearch ? `/project${listSearch}` : '/project';
