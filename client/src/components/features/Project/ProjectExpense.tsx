@@ -537,13 +537,13 @@ export default function Expense() {
       </div>
 
       <Dialog open={registerDialog} onOpenChange={setRegisterDialog}>
-        <DialogContent>
+        <DialogContent className="max-md:max-w-[calc(100%-var(--spacing)*8)] max-md:rounded-md">
           <DialogHeader>
             <DialogTitle>신규 비용 등록</DialogTitle>
             <DialogDescription>견적서 비용 혹은 견적서 외 비용을 등록할 수 있습니다.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-4">
-            <p className="text-base">등록하실 비용의 유형을 선택해주세요.</p>
+          <div className="space-y-3 py-4 max-md:py-2">
+            <p className="text-base max-md:text-[13px]">등록하실 비용의 유형을 선택해주세요.</p>
             <RadioGroup
               value={registerType}
               onValueChange={(value) => setRegisterType(value as 'est' | 'pro')}
@@ -553,10 +553,13 @@ export default function Expense() {
             </RadioGroup>
             {registerType && (
               <>
-                <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" onClick={openFileDialog}>
-                    <Excel className="size-4.5" /> Excel 업로드
-                  </Button>
+                <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
+                  {!isMobile && (
+                    <Button variant="outline" onClick={openFileDialog}>
+                      <Excel className="size-4.5" /> Excel 업로드
+                    </Button>
+                  )}
+
                   <Button variant="outline" onClick={() => navigate('register', { state: { registerType } })}>
                     수기 입력
                   </Button>

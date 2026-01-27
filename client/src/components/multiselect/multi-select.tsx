@@ -436,6 +436,10 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
             }, 1000);
           }
         },
+        close: () => {
+          setIsPopoverOpen(false);
+          setSearchValue('');
+        },
       }),
       [resetToDefault, selectedValues, onValueChange]
     );
@@ -881,11 +885,11 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                               key={value}
                               className={cn(
                                 getBadgeAnimationClass(),
-                                'text-primary bg-primary-blue-100 hover:bg-primary-blue-100 border border-primary-blue-150',
+                                'text-primary bg-primary-blue-100 hover:bg-primary-blue-100 border-primary-blue-150 border',
                                 customStyle?.gradient && 'border-transparent text-white',
                                 getBadgeSizeClasses(),
                                 responsiveSettings.compactMode && 'px-1.5 py-0.5 text-xs',
-                                screenSize === 'mobile' && 'max-w-[120px] truncate gap-0.5!',
+                                screenSize === 'mobile' && 'max-w-[120px] gap-0.5! truncate',
                                 singleLine && 'flex-shrink-0 whitespace-nowrap',
                                 '[&>svg]:pointer-events-auto'
                               )}
@@ -922,8 +926,10 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                                   }
                                 }}
                                 aria-label={`Remove ${option.label} from selection`}
-                                className="flex justify-center align-center hover:bg-[var(--color-primary-white)/20 -m-0.5 ml-2 flex h-4.5 w-4 cursor-pointer justify-center rounded-sm p-0.5 focus:ring-1 focus:ring-white/50 focus:outline-none max-md:ml-0">
-                                <XCircle className={cn('h-3 w-3 max-md:h-3.5! max-md:w-3!', responsiveSettings.compactMode && 'h-2.5 w-2.5')} />
+                                className="align-center hover:bg-primary-blue-150/20 -m-0.5 ml-2 flex h-4.5 w-4 cursor-pointer justify-center rounded-sm p-0.5 focus:ring-1 focus:ring-white/50 focus:outline-none max-md:ml-0">
+                                <XCircle
+                                  className={cn('h-3 w-3 max-md:h-3.5! max-md:w-3!', responsiveSettings.compactMode && 'h-2.5 w-2.5')}
+                                />
                               </div>
                             </Badge>
                           );
@@ -933,9 +939,9 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                         <Badge
                           className={cn(
                             getBadgeAnimationClass(),
-                            'text-primary bg-primary-blue-100 hover:bg-primary-blue-100 border border-primary-blue-150',
+                            'text-primary bg-primary-blue-100 hover:bg-primary-blue-100 border-primary-blue-150 border',
                             getBadgeSizeClasses(),
-                            responsiveSettings.compactMode && 'px-1.5 py-0.5 text-xs gap-0.5!',
+                            responsiveSettings.compactMode && 'gap-0.5! px-1.5 py-0.5 text-xs',
                             singleLine && 'flex-shrink-0 whitespace-nowrap',
                             '[&>svg]:pointer-events-auto'
                           )}
@@ -946,7 +952,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                           {`+ ${selectedValues.length - responsiveSettings.maxCount}`}
                           <XCircle
                             className={cn(
-                              'ml-2 h-3 w-3 cursor-pointer max-md:h-3.5! max-md:w-3! max-md:ml-0',
+                              'ml-2 h-3 w-3 cursor-pointer max-md:ml-0 max-md:h-3.5! max-md:w-3!',
                               responsiveSettings.compactMode && 'h-2.5 w-2.5'
                             )}
                             onClick={(event) => {
@@ -986,7 +992,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                     <span
                       className={cn(
                         size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]',
-                        'text-muted-foreground max-md:text-sm'
+                        'text-muted-foreground max-md:text-[13px]'
                       )}>
                       {placeholder}
                     </span>
@@ -1012,7 +1018,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                   <span
                     className={cn(
                       size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]',
-                      'text-muted-foreground max-md:text-sm'
+                      'text-muted-foreground max-md:text-[13px]'
                     )}>
                     {placeholder}
                   </span>
