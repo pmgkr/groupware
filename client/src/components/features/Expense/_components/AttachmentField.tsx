@@ -127,7 +127,7 @@ export const AttachmentField = React.memo(function AttachmentField({
         )}
       </div>
 
-      <div ref={fieldRef} className="min-h-[140px]">
+      <div ref={fieldRef} className="md:min-h-[140px]">
         {attachments.length > 0 ? (
           <div
             className="flex h-full w-full gap-2 overflow-x-auto p-2"
