@@ -81,10 +81,8 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
         // 팀명 매핑 (team_id -> team_name)
         const teamNameMap = new Map<number, string>();
         try {
-          const teamList =
-            page === 'admin'
-              ? await getAdminTeams({})
-              : await getManagerTeams({});
+          // 팀 이름 변환을 위해 모든 팀 정보 가져오기 (admin과 동일)
+          const teamList = await getAdminTeams({});
           teamList.forEach((t: any) => {
             if (t.team_id != null && t.team_name) {
               teamNameMap.set(Number(t.team_id), t.team_name);

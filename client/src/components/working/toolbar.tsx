@@ -225,11 +225,11 @@ export default function Toolbar({
   };
 
   return (
-    <div className="w-full flex items-center justify-between mb-5 relative max-md:flex-col max-md:items-start max-md:gap-2">
+    <div className="w-full flex items-center justify-between mb-5 relative max-md:items-start max-md:gap-2 max-md:flex-wrap">
       
       {/* 왼쪽: 팀 필터 (Manager/Admin 페이지에서만 표시) */}
       {showTeamSelect && (page === 'manager' || page === 'admin') && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between max-md:order-[2]">
           <div className="flex items-center">
             <div className="flex items-center gap-2">
               {selectConfigs.map((config) => (
@@ -254,7 +254,7 @@ export default function Toolbar({
       )}
 
       {/* 중앙: 현재 날짜 표시 */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5 max-md:w-full max-md:relative max-md:gap-0 max-md:justify-center">
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5 max-md:w-full max-md:flex-wrap max-md:relative max-md:gap-0 max-md:justify-center">
         <Button
           onClick={() => handleNavigate('PREV')}
           variant="ghost"
@@ -283,7 +283,7 @@ export default function Toolbar({
       </div>
 
       {/* 오른쪽: 뷰 변경 버튼들 */}
-      <div className="flex items-center gap-1 float-right ml-auto">
+      <div className="flex items-center gap-1 float-right ml-auto max-md:order-[3]">
         <Button
           onClick={() => handleNavigate('TODAY')}
           variant="outline"
@@ -309,3 +309,4 @@ export default function Toolbar({
     </div>
   );
 }
+

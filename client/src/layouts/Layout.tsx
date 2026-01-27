@@ -5,9 +5,11 @@ import HeaderMobile from './HeaderMobile';
 import { cn } from '@/lib/utils'; // 선택: clsx+twMerge 헬퍼
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 export default function Layout() {
   const matches = useMatches();
+  const isMobile = useIsMobileViewport();
 
   // 가장 깊은 매치(현재 페이지)
   const active = matches[matches.length - 1];
@@ -47,12 +49,8 @@ export default function Layout() {
 
   return (
     <>
-      <div className="hidden md:block">
-        <Header />
-      </div>
-      <div className="block md:hidden">
-        <HeaderMobile />
-      </div>
+      {!isMobile && <Header />}
+      {isMobile && <HeaderMobile />}
       <div className="mt-18 ml-60 min-h-200 bg-white px-5 py-8 max-2xl:ml-50 max-md:m-0! max-md:max-w-[100vw]! max-md:overflow-x-scroll! max-md:p-4.5! max-md:pt-[70px]! max-md:pb-[80px]! 2xl:px-25 max-md:min-h-[100vh]!">
         {/* 페이지 타이틀 : router의 handle.title 값 노출 */}
         {!hideTitle && title && (
