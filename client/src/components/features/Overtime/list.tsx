@@ -493,7 +493,7 @@ export default function OvertimeList({
       await notifyApplicant(selectedOvertime, 'approve');
       addAlert({
         title: '승인 완료',
-        message: '연장근무 요청을 승인했했습니다.',
+        message: '연장근무 요청을 승인했습니다.',
         icon: <CheckCircle />,
         duration: 3000,
       });
