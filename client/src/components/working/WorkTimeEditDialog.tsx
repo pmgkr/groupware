@@ -391,7 +391,7 @@ export default function WorkTimeEditDialog({
 
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="max-md:mt-5 max-md:w-full max-md:gap-2">
           <Button variant="outline" onClick={handleClose} disabled={isSaving}>
             취소
           </Button>
