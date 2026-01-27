@@ -209,7 +209,7 @@ export default function EstimateView() {
 
               {row.ei_type === 'item' && (
                 <div className="border-t-1 border-gray-300 bg-gray-100/70 px-3 py-2">
-                  <div className="text-base leading-[1.2] tracking-tight">{row.ei_name}</div>
+                  <div className="text-base leading-[1.2] font-medium tracking-tight">{row.ei_name}</div>
                   <div className="flex gap-2 text-sm text-gray-700">
                     <span className="relative pr-2 after:absolute after:top-1/2 after:left-full after:h-3 after:w-px after:-translate-y-1/2 after:bg-gray-400 after:content-['']">
                       단가 {formatAmount(row.unit_price)}
@@ -268,7 +268,7 @@ export default function EstimateView() {
               )}
 
               {row.ei_type === 'grandtotal' && (
-                <div className="bg-primary-blue-150 flex items-center justify-between border-t-1 border-gray-300 px-3 py-2 text-base">
+                <div className="bg-primary-blue-150 flex items-center justify-between border-t-1 border-gray-300 p-3 text-base">
                   <span className="flex-1 text-[13px] leading-[1.2] font-semibold">Grand Total</span>
                   <strong className="shrink-0 text-right leading-[1.4] tracking-tight">
                     {formatAmount(estData.header.est_amount)}원{' '}
@@ -561,9 +561,6 @@ export default function EstimateView() {
           <Button type="button" variant="outline" size="sm" asChild>
             <Link to={`/project/${projectId}/estimate`}>목록</Link>
           </Button>
-          {/* <Button type="button" size="sm">
-          <Download /> 다운로드
-        </Button> */}
         </div>
       </div>
 

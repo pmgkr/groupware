@@ -26,7 +26,7 @@ export function InvoicePreviewDialog({ open, onClose, detail }: { open: boolean;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="flex max-w-xl flex-col overflow-hidden">
+      <DialogContent className="flex h-full max-h-full flex-col overflow-hidden md:h-auto md:max-h-[90vh] md:max-w-xl">
         <DialogHeader className="shrink-0">
           <DialogTitle>인보이스 상세</DialogTitle>
         </DialogHeader>
@@ -112,7 +112,7 @@ export function InvoicePreviewDialog({ open, onClose, detail }: { open: boolean;
             <Summary label="Grand Total" value={`${formatAmount(total)} 원`} bg="blue" />
           </div>
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" className="max-md:flex-1" onClick={onClose}>
               닫기
             </Button>
           </div>
