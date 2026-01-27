@@ -436,6 +436,10 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
             }, 1000);
           }
         },
+        close: () => {
+          setIsPopoverOpen(false);
+          setSearchValue('');
+        },
       }),
       [resetToDefault, selectedValues, onValueChange]
     );
@@ -922,7 +926,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                                   }
                                 }}
                                 aria-label={`Remove ${option.label} from selection`}
-                                className="align-center hover:bg-[var(--color-primary-white)/20 -m-0.5 ml-2 flex h-4.5 w-4 cursor-pointer justify-center rounded-sm p-0.5 focus:ring-1 focus:ring-white/50 focus:outline-none">
+                                className="align-center hover:bg-primary-blue-150/20 -m-0.5 ml-2 flex h-4.5 w-4 cursor-pointer justify-center rounded-sm p-0.5 focus:ring-1 focus:ring-white/50 focus:outline-none">
                                 <XCircle className={cn('h-3 w-3', responsiveSettings.compactMode && 'h-2.5 w-2.5')} />
                               </div>
                             </Badge>
@@ -987,7 +991,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                     <span
                       className={cn(
                         size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]',
-                        'text-muted-foreground max-md:text-sm'
+                        'text-muted-foreground max-md:text-[13px]'
                       )}>
                       {placeholder}
                     </span>
@@ -1013,7 +1017,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                   <span
                     className={cn(
                       size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]',
-                      'text-muted-foreground max-md:text-sm'
+                      'text-muted-foreground max-md:text-[13px]'
                     )}>
                     {placeholder}
                   </span>
