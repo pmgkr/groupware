@@ -87,7 +87,7 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
     <div className="w-full flex items-center justify-between mb-5 relative max-md:items-start max-md:gap-2 max-md:flex-wrap">
 
       {/* 왼쪽: 필터 셀렉트들 */}
-      <div className="flex items-center gap-2 max-md:flex-wrap max-md:order-2 max-md:w-auto">
+      <div className="flex items-center gap-2 max-md:flex-wrap max-md:order-2 max-md:w-auto max-md:gap-1">
         {/* 팀 선택 */}
         <MultiSelect
           simpleSelect={true}
@@ -100,7 +100,7 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
           searchable={true}
           hideSelectAll={false}
           autoSize={true}
-          className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[80px]!"
+          className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[90px]! max-md:w-[90px]! max-md:max-w-[90px]!"
         />
 
         {/* 동적 셀렉트 렌더링 */}
@@ -117,7 +117,7 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
             searchable={config.searchable}
             hideSelectAll={config.hideSelectAll}
             autoSize={config.autoSize}
-            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[80px]!"
+            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[90px]! max-md:w-[90px]! max-md:max-w-[90px]!"
           />
         ))}
       </div>

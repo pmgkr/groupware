@@ -8,9 +8,10 @@ type Props = {
   warn?: number; // 경고 구간 끝(예: 48h)
   className?: string;
   hide40h?: boolean; // 40h 텍스트 숨김 여부
+  hide52h?: boolean; // 52h 텍스트 숨김 여부
 };
 
-export default function WorkHoursBar({ hours, max = 52, safe = 40, warn = 48, className, hide40h = false }: Props) {
+export default function WorkHoursBar({ hours, max = 52, safe = 40, warn = 48, className, hide40h = false, hide52h = false }: Props) {
   const pct = Math.min(100, Math.max(0, (hours / max) * 100));
 
   // 구간에 따라 그라데이션 클래스 결정
@@ -24,7 +25,7 @@ export default function WorkHoursBar({ hours, max = 52, safe = 40, warn = 48, cl
   return (
     <div className={cn('w-full', className)}>
       {/* 트랙 */}
-      <div className="relative mb-4 h-3.5 max-md:h-2.5">
+      <div className={cn('relative h-3.5 max-md:h-2.5', hide40h && hide52h ? '' : 'mb-4')}>
         {/* 진행 바 */}
         <div className="absolute inset-0 overflow-hidden rounded-xl bg-gray-300">
           <div
@@ -41,7 +42,7 @@ export default function WorkHoursBar({ hours, max = 52, safe = 40, warn = 48, cl
           <div className={`absolute top-0 h-5 text-[11px] text-gray-500 ${hide40h ? 'max-[1800px]:hidden' : ''}`} style={{ left: `${(safe / max) * 100}%` }}>
             <div className="mt-1.5">40h</div>
           </div>
-          <div className="absolute top-0 right-0 h-5 text-[11px] text-gray-500">
+          <div className={`absolute top-0 right-0 h-5 text-[11px] text-gray-500 ${hide52h ? 'hidden' : ''}`}>
             <div className="mt-1.5">52h</div>
           </div>
         </div>

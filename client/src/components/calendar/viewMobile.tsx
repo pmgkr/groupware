@@ -133,7 +133,7 @@ export default function CalendarViewMobile({
           }}
         />
       </div>
-      <ul className="flex shrink-0 items-center justify-end gap-x-1.5 px-4 py-2 flex-wrap max-md:px-0! max-md:gap-0!">
+      <ul className="flex shrink-0 items-center justify-end gap-x-1.5 px-4 py-2 flex-wrap max-md:px-0! max-md:gap-0! max-md:py-3">
         {calendarBadges.map((label) => (
           <li key={label}>
             <Badge variant="dot" className={getBadgeColor(label)}>
