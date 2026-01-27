@@ -292,7 +292,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
           {!readOnly && (
             <tr className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap text-[13px] font-medium text-gray-900 bg-gray-50">
-                추가근무 신청
+                연장근무 신청
               </td>
               {data.map((row, index) => (
                 <td key={index} className={`px-6 py-4 whitespace-nowrap text-[13px] text-gray-900 text-center ${isToday(row.date) ? 'bg-primary-blue-50' : ''}`}>
