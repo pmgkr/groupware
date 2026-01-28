@@ -59,7 +59,7 @@ export default function InvoiceInfoForm({ control, watch, setValue, formatDate }
         name="client_nm"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="gap-.5 h-5">
+            <FormLabel className="gap-.5">
               인보이스 수신<span className="text-primary-blue-500">*</span>
             </FormLabel>
             <FormControl>
@@ -193,7 +193,7 @@ export default function InvoiceInfoForm({ control, watch, setValue, formatDate }
           <FormItem className="col-span-2">
             <FormLabel>비고</FormLabel>
             <FormControl>
-              <Textarea placeholder="추가 기입할 정보가 있으면 입력해 주세요." className="h-16 min-h-16" {...field} />
+              <Textarea placeholder="추가 기입할 정보가 있으면 입력해 주세요." className="h-20 min-h-20 md:h-16 md:min-h-16" {...field} />
             </FormControl>
           </FormItem>
         )}

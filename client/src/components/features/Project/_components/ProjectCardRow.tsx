@@ -17,8 +17,8 @@ export const ProjectCardRow = memo(({ item, isFavorite = false, onToggleFavorite
   const status = statusMap[item.project_status as keyof typeof statusMap];
 
   return (
-    <div className="rounded-md border border-gray-300 bg-white p-4">
-      <div className="mb-1 flex justify-between border-b border-gray-300 pb-1">
+    <div className="rounded-md border border-gray-300 bg-white px-4 py-2">
+      <div className="mb-1 flex items-center justify-between border-b border-gray-300 pb-1">
         <div className="flex items-center gap-1">
           <Button
             type="button"

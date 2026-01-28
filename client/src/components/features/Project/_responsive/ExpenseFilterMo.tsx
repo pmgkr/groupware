@@ -92,7 +92,7 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
                   </Button>
                 </div>
               </DrawerHeader>
-              <div className="flex flex-col gap-y-2 px-4 pb-2">
+              <div className="flex flex-col gap-y-2 px-4 pb-8">
                 <>
                   <div>
                     <FilterTitle label="년도 선택" />
@@ -190,11 +190,6 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
                   </div>
                 </>
               </div>
-              <DrawerFooter>
-                <Button type="button" size="full">
-                  적용하기
-                </Button>
-              </DrawerFooter>
             </DrawerContent>
           </Drawer>
         </div>

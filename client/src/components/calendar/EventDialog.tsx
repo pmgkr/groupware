@@ -632,7 +632,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
             취소
           </Button>
           <Button onClick={handleSave} className="max-md:flex-1">
-            저장
+            등록
           </Button>
         </DialogFooter>
       </DialogContent>

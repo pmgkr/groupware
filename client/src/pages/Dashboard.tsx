@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { useDashboard } from '@/hooks/useDashboard';
 import { getProfileImageUrl, getAvatarFallback } from '@/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 import Header from '@/layouts/Header';
 import HeaderMobile from '@/layouts/HeaderMobile';
@@ -47,6 +48,8 @@ const MemoizedDayPicker = memo(({ selected, onSelect }: { selected: Date | undef
 MemoizedDayPicker.displayName = 'MemoizedDayPicker';
 
 export default function Dashboard() {
+  const isMobile = useIsMobileViewport();
+  
   // Daypicker 선택된 날짜 관리 (Default : Today)
   const [selected, setSelected] = useState<Date | undefined>(new Date());
 
@@ -109,17 +112,15 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="hidden md:block">
-        <Header />
-      </div>
-      <div className="block md:hidden">
-        <HeaderMobile />
-      </div>
+      {!isMobile && <Header />}
+      {isMobile && <HeaderMobile />}
       <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 max-h-screen flex-col gap-y-2 px-16 py-8 max-2xl:ml-50 max-2xl:px-6 max-md:m-0! max-md:mt-[50px]! max-md:max-h-none! max-md:p-4.5! max-md:pb-[80px]!">
-        <div className="flex items-center justify-between text-base text-gray-800 max-md:hidden">
-          <p>{welcomeMessage}</p>
-          <Weather />
-        </div>
+        {!isMobile && (
+          <div className="flex items-center justify-between text-base text-gray-800">
+            <p>{welcomeMessage}</p>
+            <Weather />
+          </div>
+        )}
         <div className="grid min-h-200 h-full grid-cols-3 grid-rows-4 gap-6 max-2xl:gap-4 max-md:grid-cols-1 max-md:grid-rows-1 max-md:h-auto">
           <div className="row-span-2 flex min-h-0 flex-col justify-start rounded-md border border-gray-300 bg-white p-6 max-md:h-auto max-md:p-4.5!">
             <SectionHeader
@@ -212,39 +213,42 @@ export default function Dashboard() {
                 </li>
               </ul>
             </div>
-            <div className="h-full rounded-md border border-gray-300 bg-white px-6 py-5 max-md:hidden">
-              <SectionHeader
-                title="공지사항"
-                buttonText="전체보기"
-                buttonVariant="outline"
-                buttonSize="sm"
-                buttonHref="/notice"
-                className="mb-4"
-              />
-              <div>
-                <ul className="flex flex-col gap-y-2 px-2 text-base tracking-tight text-gray-700">
-                  {notice.length === 0 ? (
-                    <span className="text-base text-gray-500">등록된 공지사항이 없습니다.</span>
-                  ) : (
-                    notice.map((notice) => (
-                      <li
-                        key={notice.n_seq}
-                        className="flex items-center gap-x-1.5 before:h-1 before:w-1 before:rounded-[50%] before:bg-gray-700">
-                        <Link to={`/notice/${notice.n_seq}`} className="group flex items-center justify-between gap-x-1.5">
-                          <p className="overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline">
-                            [{notice.category}] {notice.title}
-                          </p>
-                        </Link>
-                      </li>
-                    ))
-                  )}
-                </ul>
+            {!isMobile && (
+              <div className="h-full rounded-md border border-gray-300 bg-white px-6 py-5">
+                <SectionHeader
+                  title="공지사항"
+                  buttonText="전체보기"
+                  buttonVariant="outline"
+                  buttonSize="sm"
+                  buttonHref="/notice"
+                  className="mb-4"
+                />
+                <div>
+                  <ul className="flex flex-col gap-y-2 px-2 text-base tracking-tight text-gray-700">
+                    {notice.length === 0 ? (
+                      <span className="text-base text-gray-500">등록된 공지사항이 없습니다.</span>
+                    ) : (
+                      notice.map((notice) => (
+                        <li
+                          key={notice.n_seq}
+                          className="flex items-center gap-x-1.5 before:h-1 before:w-1 before:rounded-[50%] before:bg-gray-700">
+                          <Link to={`/notice/${notice.n_seq}`} className="group flex items-center justify-between gap-x-1.5">
+                            <p className="overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline">
+                              [{notice.category}] {notice.title}
+                            </p>
+                          </Link>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
               </div>
-            </div>
+            )}
           </div>
           
           {/* 빠른 메뉴 */}
-          <div className="grid grid-cols-3 gap-2 md:hidden">
+          {isMobile && (
+            <div className="grid grid-cols-3 gap-2">
             <Link
               to="/notice"
               className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
@@ -279,6 +283,7 @@ export default function Dashboard() {
               </span>
             </Link>
           </div>
+          )}
 
           <div className="row-span-4 flex h-full min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5 max-md:h-auto max-md:p-4.5!">
             <SectionHeader
@@ -292,7 +297,7 @@ export default function Dashboard() {
             <div className="shrink-0">
               <MemoizedDayPicker selected={selected} onSelect={handleDateSelect} />
             </div>
-            <ul className="flex shrink-0 items-center justify-end gap-x-1.5 px-4 py-2 flex-wrap max-md:px-0! max-md:gap-0!">
+            <ul className="flex shrink-0 items-center justify-end gap-x-1.5 px-4 py-2 flex-wrap max-md:px-0! max-md:gap-0! max-md:py-3">
               {calendarBadges.map((label) => (
                 <li key={label}>
                   <Badge variant="dot" className={getBadgeColor(label)}>
@@ -340,35 +345,38 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="row-span-2 flex min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5 max-md:hidden">
-            <SectionHeader
-              title="미팅룸"
-              buttonText="전체보기"
-              buttonVariant="outline"
-              buttonSize="sm"
-              buttonHref="/meetingroom"
-              className="shrink-0"
-            />
-            <div className="overflow-y-auto">
-              <ul className="flex flex-col gap-y-2 text-base tracking-tight text-gray-700">
-                {meetingroom.length === 0 ? (
-                  <span className="text-base text-gray-500">등록된 예약이 없습니다.</span>
-                ) : (
-                  meetingroom.map((meetingroom) => (
-                    <li key={`${meetingroom.mr_name}-${meetingroom.stime}-${meetingroom.etime}`} className="flex items-center gap-x-1.5">
-                      <Badge className={getMeetingroomBadgeColor(meetingroom.mr_name)}>
-                        {getMeetingroomKoreanName(meetingroom.mr_name)}
-                      </Badge>
-                      <p className="overflow-hidden text-ellipsis whitespace-nowrap">
-                        {formatTime(meetingroom.stime)} - {formatTime(meetingroom.etime)} {`${meetingroom.title}`}
-                      </p>
-                    </li>
-                  ))
-                )}
-              </ul>
+          {!isMobile && (
+            <div className="row-span-2 flex min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
+              <SectionHeader
+                title="미팅룸"
+                buttonText="전체보기"
+                buttonVariant="outline"
+                buttonSize="sm"
+                buttonHref="/meetingroom"
+                className="shrink-0"
+              />
+              <div className="overflow-y-auto">
+                <ul className="flex flex-col gap-y-2 text-base tracking-tight text-gray-700">
+                  {meetingroom.length === 0 ? (
+                    <span className="text-base text-gray-500">등록된 예약이 없습니다.</span>
+                  ) : (
+                    meetingroom.map((meetingroom) => (
+                      <li key={`${meetingroom.mr_name}-${meetingroom.stime}-${meetingroom.etime}`} className="flex items-center gap-x-1.5">
+                        <Badge className={getMeetingroomBadgeColor(meetingroom.mr_name)}>
+                          {getMeetingroomKoreanName(meetingroom.mr_name)}
+                        </Badge>
+                        <p className="overflow-hidden text-ellipsis whitespace-nowrap">
+                          {formatTime(meetingroom.stime)} - {formatTime(meetingroom.etime)} {`${meetingroom.title}`}
+                        </p>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
             </div>
-          </div>
-          <div className="row-span-2 flex min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5 max-md:hidden">
+          )}
+          {!isMobile && (
+            <div className="row-span-2 flex min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
               title="비용 관리"
               buttonText="전체보기"
@@ -403,6 +411,7 @@ export default function Dashboard() {
               </ul>
             </div>
           </div>
+          )}
         </div>
       </section>
 

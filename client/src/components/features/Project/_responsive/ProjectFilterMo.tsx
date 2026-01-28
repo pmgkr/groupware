@@ -1,4 +1,5 @@
 // _filters/ProjectFilterMobile.tsx
+import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import type { ProjectFilterProps } from '../types/ProjectFilterProps';
 
@@ -15,9 +16,9 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer';
-import { MultiSelect } from '@/components/multiselect/multi-select';
+import { MultiSelect, type MultiSelectRef } from '@/components/multiselect/multi-select';
 
-import { Star, RefreshCw, ListFilter, X } from 'lucide-react';
+import { Star, RefreshCw, ListFilter, X, Search } from 'lucide-react';
 
 export function ProjectFilterMobile(props: ProjectFilterProps) {
   const {
@@ -51,6 +52,53 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
     onCreate,
   } = props;
 
+  /* ---------------- draft state ---------------- */
+  type OpenKey = 'category' | 'client' | 'team' | 'status' | null;
+
+  const [open, setOpen] = useState(false);
+  const [draftYear, setDraftYear] = useState(selectedYear);
+  const [draftBrand, setDraftBrand] = useState(selectedBrand);
+  const [draftCategory, setDraftCategory] = useState<string[]>(selectedCategory);
+  const [draftClient, setDraftClient] = useState<string[]>(selectedClient);
+  const [draftTeam, setDraftTeam] = useState<string[]>(selectedTeam);
+  const [draftStatus, setDraftStatus] = useState<string[]>(selectedStatus);
+  const [draftSearch, setDraftSearch] = useState(searchInput);
+
+  const [openKey, setOpenKey] = useState<OpenKey>(null);
+
+  const syncDraft = () => {
+    setDraftYear(selectedYear);
+    setDraftBrand(selectedBrand);
+    setDraftCategory(selectedCategory);
+    setDraftClient(selectedClient);
+    setDraftTeam(selectedTeam);
+    setDraftStatus(selectedStatus);
+    setDraftSearch(searchInput);
+  };
+
+  const handleApply = () => {
+    setOpen(false);
+
+    requestAnimationFrame(() => {
+      applyFilters();
+    });
+  };
+
+  const applyFilters = () => {
+    if (activeTab === 'others') {
+      onFilterChange('project_year', draftYear);
+    }
+
+    onFilterChange('brand', draftBrand);
+    onFilterChange('category', draftCategory);
+    onFilterChange('client_id', draftClient);
+    onFilterChange('team_id', draftTeam);
+    onFilterChange('status', draftStatus);
+
+    onSearchInputChange(draftSearch);
+    onSearchSubmit();
+  };
+
   return (
     <div className="mb-4 bg-white">
       <div className="mb-3 flex rounded-sm bg-gray-300 p-1">
@@ -76,9 +124,16 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
 
       <div className="flex items-center justify-between">
         <div className="flex gap-2 text-gray-500">
-          <Drawer direction="bottom">
+          <Drawer direction="bottom" open={open} onOpenChange={setOpen}>
             <DrawerTrigger asChild>
-              <Button size="sm" variant="ghost" className="has-[>svg]:px-0">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="has-[>svg]:px-0"
+                onClick={() => {
+                  syncDraft();
+                }}>
                 <ListFilter className="size-4" /> 필터
               </Button>
             </DrawerTrigger>
@@ -91,12 +146,12 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
                   </Button>
                 </div>
               </DrawerHeader>
-              <div className="flex flex-col gap-y-2 px-4 pb-8">
+              <div className="flex flex-col gap-y-3 px-4 pb-8">
                 <>
                   {activeTab === 'others' && (
                     <div>
                       <FilterTitle label="년도 선택" />
-                      <Select value={selectedYear} onValueChange={(v) => onFilterChange('project_year', v)}>
+                      <Select value={draftYear} onValueChange={setDraftYear}>
                         <SelectTrigger className="w-full px-2">
                           <SelectValue placeholder="년도 선택" />
                         </SelectTrigger>
@@ -114,7 +169,7 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
                   <div className="flex justify-between gap-2">
                     <div className="flex-1">
                       <FilterTitle label="소속 선택" />
-                      <Select value={selectedBrand} onValueChange={(v) => onFilterChange('brand', v)}>
+                      <Select value={draftBrand} onValueChange={setDraftBrand}>
                         <SelectTrigger className="w-full px-2">
                           <SelectValue placeholder="소속 선택" />
                         </SelectTrigger>
@@ -134,12 +189,13 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
                         className="w-full max-w-full min-w-auto!"
                         maxCount={0}
                         placeholder="카테고리 선택"
-                        defaultValue={selectedCategory}
                         options={categoryOptions}
-                        onValueChange={(v) => onFilterChange('category', v)}
+                        defaultValue={draftCategory}
+                        onValueChange={setDraftCategory}
                         simpleSelect={true}
                         hideSelectAll={true}
                         modalPopover={true}
+                        searchable={false}
                       />
                     </div>
                   </div>
@@ -151,9 +207,9 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
                       className="w-full max-w-full min-w-auto!"
                       maxCount={0}
                       placeholder="클라이언트"
-                      defaultValue={selectedClient}
                       options={clientOptions}
-                      onValueChange={(v) => onFilterChange('client_id', v)}
+                      defaultValue={draftClient}
+                      onValueChange={setDraftClient}
                       simpleSelect={true}
                       hideSelectAll={true}
                       modalPopover={true}
@@ -168,12 +224,13 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
                         className="w-full max-w-full min-w-auto!"
                         maxCount={0}
                         placeholder="팀 선택"
-                        defaultValue={selectedTeam}
                         options={teamOptions}
-                        onValueChange={(v) => onFilterChange('team_id', v)}
+                        defaultValue={draftTeam}
+                        onValueChange={setDraftTeam}
                         simpleSelect={true}
                         hideSelectAll={true}
                         modalPopover={true}
+                        searchable={false}
                       />
                     </div>
 
@@ -184,24 +241,33 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
                         className="w-full max-w-full min-w-auto!"
                         maxCount={0}
                         placeholder="상태 선택"
-                        defaultValue={selectedStatus}
                         options={statusOptions}
-                        onValueChange={(v) => onFilterChange('status', v)}
+                        defaultValue={draftStatus}
+                        onValueChange={setDraftStatus}
                         simpleSelect={true}
                         hideSelectAll={true}
                         modalPopover={true}
+                        searchable={false}
                       />
                     </div>
                   </div>
+
+                  <div>
+                    <FilterTitle label="프로젝트 검색" />
+                    <Input
+                      className="w-full max-w-full"
+                      placeholder="검색어 입력"
+                      value={draftSearch}
+                      onChange={(e) => setDraftSearch(e.target.value)}
+                    />
+                  </div>
                 </>
               </div>
-              {/* <DrawerFooter className="mt-5 border-t-1 border-gray-300">
+              <DrawerFooter className="flex gap-2">
                 <DrawerClose asChild>
-                  <Button type="button" size="full">
-                    닫기
-                  </Button>
+                  <Button onClick={handleApply}>적용하기</Button>
                 </DrawerClose>
-              </DrawerFooter> */}
+              </DrawerFooter>
             </DrawerContent>
           </Drawer>
           <Button
@@ -213,9 +279,11 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
           </Button>
         </div>
 
-        <Button size="sm" onClick={onCreate}>
-          프로젝트 생성
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={onCreate}>
+            프로젝트 생성
+          </Button>
+        </div>
       </div>
     </div>
   );

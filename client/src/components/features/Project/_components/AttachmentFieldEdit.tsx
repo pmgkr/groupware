@@ -125,7 +125,7 @@ export function AttachmentFieldEdit({ rowIndex, serverFiles = [], onUploadNew, o
           onDragLeave={() => setIsDragOver(false)}
           onDrop={handleDrop}
           className={cn(
-            'flex h-full min-h-[140px] w-full cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-400 p-2 transition-colors',
+            'flex h-full w-full cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-400 p-2 transition-colors md:min-h-[140px]',
             isDragOver && 'bg-primary-blue-100/30'
           )}>
           <p className="text-sm text-gray-500">증빙자료 업로드 영역</p>

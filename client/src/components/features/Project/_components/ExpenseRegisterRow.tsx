@@ -121,9 +121,9 @@ function ExpenseRowComponent({
         </Button>
       </div>
 
-      <div className="flex justify-between">
+      <div className="flex flex-col justify-between gap-2 md:flex-row md:gap-0">
         {/* 왼쪽 입력필드 그룹 */}
-        <div className="grid w-[66%] grid-cols-3 gap-4 tracking-tight">
+        <div className="grid w-full grid-cols-2 gap-4 tracking-tight md:w-[66%] md:grid-cols-3">
           {/* 비용 유형 */}
           <FormField
             control={control}
@@ -286,7 +286,7 @@ function ExpenseRowComponent({
         </div>
 
         {/* 오른쪽 첨부 */}
-        <div className="w-[32%] pl-2">
+        <div className="w-full md:w-[32%] md:pl-2">
           <AttachmentField
             name={`expense_attachment${index}`}
             rowIndex={index + 1}
