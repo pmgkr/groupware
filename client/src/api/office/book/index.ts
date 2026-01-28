@@ -38,6 +38,9 @@ export interface Book {
   team_name?: string;
 }
 
+//status 파라미터 타입 추가
+export type BookStatus = '신청' | '완료';
+
 //변환기 DTO -> 도메인
 export function toItBook(dto: BookDTO): Book {
   return {
@@ -72,24 +75,12 @@ export async function getBookList(
     page: number;
     size: number;
     pages: number;
-  }>(`/user/office/book/list?page=${page}&size=${size}${query}`, {
+  }>(`/user/office/book/list?page=${page}&size=${size}&b_status=완료${query}`, {
     method: 'GET',
   });
 
   const teams = await getTeams();
 
-  // ✅ 서버에서 이미 pagination 된 items 그대로 사용
-  /* const items = dto.items
-    .filter((item) => (item.b_status ?? '').trim() === '완료')
-    .map((item) => {
-      const book = toItBook(item);
-      const matchedTeam = teams.find((t) => Number(t.team_id) === Number(book.team_id));
-
-      return {
-        ...book,
-        team_name: matchedTeam ? matchedTeam.team_name : '소속없음',
-      };
-    }); */
   const items = dto.items.map((item) => {
     const book = toItBook(item);
     const matchedTeam = teams.find((t) => Number(t.team_id) === Number(book.team_id));
@@ -116,17 +107,18 @@ export async function getBookWishList(
   q?: string
 ): Promise<{ items: Book[]; total: number; page: number; size: number; pages: number }> {
   const query = q && q.trim() ? `&q=${encodeURIComponent(q)}` : '';
-  const dto = await http<{ items: BookDTO[]; total: number; page: number; size: number; pages: number }>(
-    `/user/office/book/list?page=1&size=9999${query}`,
-    { method: 'GET' }
-  );
 
-  const filtered = dto.items.filter((item) => item.b_buylink && item.b_buylink.trim() !== '');
-  const startIdx = (page - 1) * size;
-  const pagedItems = filtered.slice(startIdx, startIdx + size);
+  const dto = await http<{
+    items: BookDTO[];
+    total: number;
+    page: number;
+    size: number;
+    pages: number;
+  }>(`/user/office/book/list?page=${page}&size=${size}&b_status=신청${query}`, { method: 'GET' });
 
   const teams = await getTeams();
-  const items = pagedItems.map((item) => {
+
+  const items = dto.items.map((item) => {
     const book = toItBook(item);
     const matchedTeam = teams.find((t) => Number(t.team_id) === Number(book.team_id));
 
@@ -138,10 +130,10 @@ export async function getBookWishList(
 
   return {
     items,
-    total: filtered.length,
-    page,
-    size,
-    pages: Math.ceil(filtered.length / size),
+    total: dto.total,
+    page: dto.page,
+    size: dto.size,
+    pages: dto.pages,
   };
 }
 

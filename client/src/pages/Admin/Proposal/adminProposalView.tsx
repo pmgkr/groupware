@@ -257,6 +257,8 @@ export default function AdminProposalView() {
     );
   }
 
+  // 회계, gm 구분 - 최고관리자에 접속할수있는 admin레벨 중 team_id가 5면 회계, 5가 아니면 GM
+  // GM은 adminProposalList.tsx에서 GM_ADMINS로 관리중
   const isFinance = user?.team_id === 5;
   const isGM = user?.user_level === 'admin' && user?.team_id !== 5;
 
