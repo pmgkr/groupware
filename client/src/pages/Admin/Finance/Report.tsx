@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
+import { cn } from '@/lib/utils';
 import { formatDate, formatAmount, getGrowingYears, SortIcon } from '@/utils';
 import { downloadReportExcel } from '@/components/features/Project/utils/reportDown';
 
@@ -19,7 +20,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
 import { Edit } from '@/assets/images/icons';
-import { X, RefreshCw, OctagonAlert } from 'lucide-react';
+import { X, RefreshCw, OctagonAlert, Lock, LockOpen, LockKeyhole } from 'lucide-react';
 
 type SortState = {
   key: string;
@@ -50,6 +51,7 @@ export default function Report() {
   const [editingValue, setEditingValue] = useState<number>(0); // 수정된 예상 지출 금액 Value 저장용
   const [editingDisplay, setEditingDisplay] = useState<string>(''); // 수정된 예상 지출 금액 보여주는 값
   const [sort, setSort] = useState<SortState>(null);
+  const [isLocked, setIsLocked] = useState<'Y' | 'N' | ''>(''); // 프로젝트 잠금 상태
 
   const [page, setPage] = useState<number>(() => Number(searchParams.get('page') || 1));
   const [total, setTotal] = useState(0);
@@ -117,7 +119,10 @@ export default function Report() {
         size: pageSize,
       };
 
-      params.project_status = selectedStatus.length ? selectedStatus.join(',') : 'in-progress';
+      if (selectedStatus.length > 0) {
+        params.project_status = selectedStatus.join(',');
+      }
+
       if (selectedClient.length > 0) {
         params.client_id = selectedClient.join(',');
       }
@@ -130,6 +135,11 @@ export default function Report() {
 
       if (sort) {
         params.order = `${sort.key}:${sort.order}`;
+      }
+
+      // 프로젝트 잠금 상태 필터
+      if (isLocked === 'Y' || isLocked === 'N') {
+        params.is_locked = isLocked;
       }
 
       setSearchParams(params);
@@ -149,7 +159,7 @@ export default function Report() {
 
   useEffect(() => {
     loadList();
-  }, [selectedYear, selectedStatus, selectedClient, selectedTeam, selectedStatus, searchQuery, sort, page, pageSize]);
+  }, [selectedYear, selectedStatus, selectedClient, selectedTeam, selectedStatus, searchQuery, sort, isLocked, page, pageSize]);
 
   // 필터 변경 시 page 초기화
   const handleFilterChange = (setter: any, value: any) => {
@@ -187,6 +197,12 @@ export default function Report() {
     setPage(1);
   };
 
+  const handleLockChange = () => {
+    // isLocked 값 '' -> 'Y' -> 'N' -> ''
+    isLocked === '' ? setIsLocked('Y') : isLocked === 'Y' ? setIsLocked('N') : setIsLocked('');
+    setPage(1);
+  };
+
   // 탭 변경 시 필터 초기화
   const resetAllFilters = () => {
     setSelectedYear(currentYear);
@@ -195,6 +211,8 @@ export default function Report() {
     setSelectedStatus([]);
     setSearchInput('');
     setSearchQuery('');
+    setIsLocked('');
+    setSort(null);
 
     // MultiSelect 내부 상태 초기화
     clientRef.current?.clear();
@@ -209,7 +227,9 @@ export default function Report() {
       size: pageSize,
     };
 
-    params.project_status = selectedStatus.length ? selectedStatus.join(',') : 'in-progress';
+    if (selectedStatus.length > 0) {
+      params.project_status = selectedStatus.join(',');
+    }
 
     if (selectedClient.length > 0) {
       params.client_id = selectedClient.join(',');
@@ -222,6 +242,11 @@ export default function Report() {
     if (searchQuery) params.q = searchQuery;
     if (sort) {
       params.order = `${sort.key}:${sort.order}`;
+    }
+
+    // 프로젝트 잠금 상태 필터
+    if (isLocked === 'Y' || isLocked === 'N') {
+      params.is_locked = isLocked;
     }
 
     setSearchParams(params);
@@ -326,6 +351,15 @@ export default function Report() {
             onValueChange={(v) => handleFilterChange(setSelectedStatus, v)}
             simpleSelect={true}
           />
+
+          <Button
+            type="button"
+            variant="svgIcon"
+            size="icon"
+            className={cn('size-6 text-gray-600', isLocked === '' ? 'hover:text-primary-blue-500' : '[&_rect]:fill-gray-600')}
+            onClick={handleLockChange}>
+            {isLocked === 'N' ? <LockOpen /> : <Lock />}
+          </Button>
 
           <Button
             type="button"
@@ -452,7 +486,10 @@ export default function Report() {
                         {item.project_id}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-left">{item.project_title}</TableCell>
+                    <TableCell className="text-left">
+                      {item.project_title}
+                      {item.is_locked === 'Y' && <LockKeyhole className="ml-1 inline-block size-3 text-gray-600" />}
+                    </TableCell>
                     <TableCell>{item.client_nm}</TableCell>
                     <TableCell>{item.owner_nm}</TableCell>
                     <TableCell className="text-right">{formatAmount(item.est_amount)}</TableCell>

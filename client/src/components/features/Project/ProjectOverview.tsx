@@ -6,7 +6,6 @@ import { formatAmount } from '@/utils';
 import { useUser } from '@/hooks/useUser';
 
 import { getInvoiceList, type InvoiceListItem } from '@/api';
-import { getProjectLogs, type ProjectLogs } from '@/api/project';
 import { buildExpenseColorMap, buildPieChartData, groupExpenseForChart, buildInvoicePieChartData } from './utils/chartMap';
 import type { PieItem, PieChartItem } from './utils/chartMap';
 
@@ -44,8 +43,6 @@ export default function Overview() {
   const [expenseTypeChartData, setExpenseTypeChartData] = useState<PieChartItem[]>([]); // 비용 유형 차트 데이터 State
   const [memberDialogOpen, setMemberDialogOpen] = useState(false); // 프로젝트 멤버 변경 Dialog State
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false); // 프로젝트 업데이트 Dialog State
-
-  console.log('프로젝트 데이터', data);
 
   // 페이지 렌더 시 비용 유형 컬러맵 생성 & 인보이스 데이터 조회
   useEffect(() => {
@@ -194,7 +191,6 @@ export default function Overview() {
     : [];
 
   const isProjectMember = useMemo(() => members.some((m) => m.user_id === user_id), [members, user_id]);
-
   return (
     <>
       <div className="flex min-h-240 flex-wrap justify-between py-2">
@@ -203,7 +199,7 @@ export default function Overview() {
             <div className="w-full">
               <div className="flex items-center justify-between">
                 <h3 className="mb-2 text-lg font-bold text-gray-800">프로젝트 정보</h3>
-                {data.project_status === 'in-progress' && isProjectMember && (
+                {data.project_status === 'in-progress' && isProjectMember && data.is_locked === 'N' && (
                   <Button
                     type="button"
                     variant="svgIcon"
@@ -356,7 +352,7 @@ export default function Overview() {
             <div className="mb-2 flex shrink-0 items-center justify-between">
               <h2 className="text-lg font-bold text-gray-800">프로젝트 멤버</h2>
 
-              {data.project_status === 'in-progress' && isProjectMember && (
+              {data.project_status === 'in-progress' && isProjectMember && data.is_locked === 'N' && (
                 <Button
                   type="button"
                   variant="svgIcon"

@@ -1,6 +1,7 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useParams, useOutletContext } from 'react-router';
 import * as XLSX from 'xlsx';
+import { useUser } from '@/hooks/useUser';
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { getEstimateList, type EstimateListItem, type projectEstimateParams } from '@/api';
 import { formatDate, formatAmount } from '@/utils';
@@ -10,12 +11,12 @@ import { Button } from '@components/ui/button';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogClose, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Excel } from '@/assets/images/icons';
 
 export default function ProjectEstimate() {
   const navigate = useNavigate();
   const { projectId } = useParams();
-  const { data } = useOutletContext<ProjectLayoutContext>();
+  const { user_id } = useUser();
+  const { data, members } = useOutletContext<ProjectLayoutContext>();
 
   // 상단 필터용 state
   const [registerDialog, setRegisterDialog] = useState(false); // Dialog용 State
@@ -96,10 +97,12 @@ export default function ProjectEstimate() {
     N: <Badge variant="grayish">과거견적</Badge>,
   } as const;
 
+  const isProjectMember = useMemo(() => members.some((m) => m.user_id === user_id), [members, user_id]);
+
   return (
     <>
       <div className="mb-4 flex justify-end">
-        {data.project_status === 'in-progress' && (
+        {data.project_status === 'in-progress' && data.is_locked === 'N' && isProjectMember && (
           <Button
             size="sm"
             onClick={() => {

@@ -266,7 +266,7 @@ export default function EstimateView() {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-800">견적서 항목</h2>
           <div className="flex gap-2">
-            {(estData.header.est_valid === 'Y' || estData.header.est_valid === 'S') && isProjectMember && (
+            {(estData.header.est_valid === 'Y' || estData.header.est_valid === 'S') && isProjectMember && data.is_locked === 'N' && (
               <>
                 <Button type="button" variant="outline" size="sm" onClick={() => handleEstCancel(estId)}>
                   견적서 취소
