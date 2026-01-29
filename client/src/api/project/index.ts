@@ -81,6 +81,7 @@ export interface ProjectViewDTO {
   est_amount?: string;
   est_budget?: string;
   exp_cost?: string;
+  is_locked: 'Y' | 'N';
 }
 
 // 프로젝트 멤버 타입

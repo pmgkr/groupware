@@ -9,6 +9,7 @@ export type ProjectListParams = {
   project_status?: string;
   q?: string;
   order?: string; // project_id:desc, exp_amount:asc
+  is_locked?: 'Y' | 'N';
   page?: number;
   size?: number;
 };
@@ -35,6 +36,7 @@ export type ProjectListItem = {
   GPM: number;
   sdate: string;
   edate: string;
+  is_locked: 'Y' | 'N';
 };
 
 export type ProjectTotal = {
@@ -89,4 +91,18 @@ export async function updateExpcost(projectId: string, expCost: number) {
   });
 
   return res;
+}
+
+// 프로젝트 잠금처리
+export async function projectLock(projectId: string | undefined) {
+  if (!projectId) throw new Error('projectId가 필요합니다.');
+
+  return http<{ result: string }>(`/admin/project/lock/${projectId}`, { method: 'GET' });
+}
+
+// 프로젝트 잠금처리
+export async function projectUnLock(projectId: string | undefined) {
+  if (!projectId) throw new Error('projectId가 필요합니다.');
+
+  return http<{ result: string }>(`/admin/project/unlock/${projectId}`, { method: 'GET' });
 }

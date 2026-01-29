@@ -514,7 +514,7 @@ export default function Expense() {
           </div>
         </div>
 
-        {data.project_status === 'in-progress' && (
+        {data.project_status === 'in-progress' && data.is_locked === 'N' && (
           <Button
             size="sm"
             onClick={() => {
