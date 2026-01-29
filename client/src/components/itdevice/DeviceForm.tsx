@@ -33,8 +33,8 @@ export function DeviceForm({ form, onChange, mode = 'create' }: DeviceFormProps)
   const date = new Date(selectDate);
 
   return (
-    <TableColumn>
-      <TableColumnHeader className="max-md:[&>div] text-base max-md:w-22.5 max-md:border-r-0 max-md:[&>div]:bg-white max-md:[&>div]:px-3 max-md:[&>div]:font-normal max-md:[&>div]:text-gray-600">
+    <TableColumn className="max-md:overflow-x-hidden">
+      <TableColumnHeader className="max-md:[&>div] text-base max-md:w-22.5 max-md:shrink-0 max-md:border-r-0 max-md:[&>div]:bg-white max-md:[&>div]:px-3 max-md:[&>div]:font-normal max-md:[&>div]:text-gray-600">
         <TableColumnHeaderCell>디바이스</TableColumnHeaderCell>
         <TableColumnHeaderCell>브랜드</TableColumnHeaderCell>
         <TableColumnHeaderCell>모델</TableColumnHeaderCell>
@@ -50,14 +50,14 @@ export function DeviceForm({ form, onChange, mode = 'create' }: DeviceFormProps)
         <TableColumnHeaderCell>구매일자</TableColumnHeaderCell>
       </TableColumnHeader>
 
-      <TableColumnBody className="text-base [&>div]:text-black max-md:[&>div]:justify-end max-md:[&>div]:truncate max-md:[&>div]:px-3">
+      <TableColumnBody className="text-[13px] max-md:overflow-x-hidden [&>div]:text-black max-md:[&>div]:h-[45px] max-md:[&>div]:justify-end max-md:[&>div]:px-3">
         {/* 디바이스 */}
-        <TableColumnCell className={readOnly ? 'px-4 py-2.5' : 'p-0'}>
+        <TableColumnCell className={readOnly ? 'px-4 py-2.5' : 'p-0 max-md:pl-0'}>
           {readOnly ? (
             form.device
           ) : (
             <Select value={form.device} onValueChange={(value) => onChange('device', value)}>
-              <SelectTrigger className="w-full border-0 bg-transparent pl-4 shadow-none [&]:hover:bg-transparent">
+              <SelectTrigger className="w-full border-0 bg-transparent pl-4 shadow-none max-md:px-3 [&]:hover:bg-transparent">
                 <SelectValue placeholder="선택" />
               </SelectTrigger>
               <SelectContent>
@@ -95,21 +95,28 @@ export function DeviceForm({ form, onChange, mode = 'create' }: DeviceFormProps)
             <TableColumnCell>
               {readOnly ? form.ram || '-' : <input type="text" value={form.ram} onChange={(e) => onChange('ram', e.target.value)} />}
             </TableColumnCell>
-            <TableColumnCell>
-              {readOnly ? form.gpu || '-' : <input type="text" value={form.gpu} onChange={(e) => onChange('gpu', e.target.value)} />}
+            <TableColumnCell className="min-w-0">
+              <div className="scrollbar-hide max-w-full overflow-x-auto whitespace-nowrap">{form.gpu || '-'}</div>
             </TableColumnCell>
-            <TableColumnCell>
+            <TableColumnCell className="min-w-0">
               {readOnly ? (
-                form.storage || '-'
+                <div className="scrollbar-hide max-w-full overflow-x-auto whitespace-nowrap">{form.storage || '-'}</div>
               ) : (
-                <input type="text" value={form.storage} onChange={(e) => onChange('storage', e.target.value)} />
+                <div className="max-w-full overflow-x-auto">
+                  <input
+                    type="text"
+                    value={form.storage}
+                    onChange={(e) => onChange('storage', e.target.value)}
+                    className="w-full min-w-0 whitespace-nowrap"
+                  />
+                </div>
               )}
             </TableColumnCell>
           </>
         )}
 
         {/* 구매일자 */}
-        <TableColumnCell className={readOnly ? 'px-4 py-2.5' : 'p-0'}>
+        <TableColumnCell className={readOnly ? 'px-4 py-2.5 max-md:px-3' : 'p-0 max-md:justify-start!'}>
           {readOnly ? (
             form.p_date
           ) : (
@@ -119,7 +126,7 @@ export function DeviceForm({ form, onChange, mode = 'create' }: DeviceFormProps)
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-[45px] w-full rounded-none border-0 px-5 text-left font-normal text-gray-900 shadow-none">
+                    className="h-[45px] w-full rounded-none border-0 px-5 text-left font-normal text-gray-900 shadow-none max-md:pl-0!">
                     <Calendar className="ml-auto size-4.5 opacity-50" />
                     {selectDate}
                   </Button>

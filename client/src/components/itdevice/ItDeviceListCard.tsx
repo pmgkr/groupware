@@ -38,7 +38,7 @@ export default function ITDeviceListCard({ posts, total, page, pageSize, activeQ
             </div>
 
             <div className="space-y-1">
-              <div className="text-sm font-semibold text-gray-900">
+              <div className="text-base font-semibold text-gray-900">
                 {post.brand} · {post.model}
               </div>
 

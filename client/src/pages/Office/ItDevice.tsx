@@ -176,16 +176,18 @@ export default function ItDevice() {
           <DialogTrigger asChild>
             <Button size="sm">등록하기</Button>
           </DialogTrigger>
-          <DialogContent className="p-7">
+          <DialogContent className="rounded-lg p-7 max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)]">
             <DialogHeader>
               <DialogTitle className="mb-3">장비 정보 등록</DialogTitle>
             </DialogHeader>
             <DeviceForm form={form} onChange={handleChange} mode="create" />
-            <DialogFooter className="mt-5">
-              <Button variant="outline" onClick={() => setOpenRegister(false)}>
+            <DialogFooter className="mt-5 max-md:flex-row max-md:gap-x-3">
+              <Button variant="outline" onClick={() => setOpenRegister(false)} className="flex-1">
                 취소
               </Button>
-              <Button onClick={handleRegisterClick}>완료</Button>
+              <Button onClick={handleRegisterClick} className="flex-1">
+                완료
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

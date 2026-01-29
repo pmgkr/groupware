@@ -317,20 +317,21 @@ export default function itDeviceDetail() {
                 </Button>
               </DialogTrigger>
             </div>
-            <DialogContent className="p-7 sm:max-w-[500px]">
+            <DialogContent className="rounded-lg p-7 max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)] sm:max-w-[500px]">
               <DialogHeader>
                 <DialogTitle className="mb-3">장비 정보 수정</DialogTitle>
               </DialogHeader>
               <DeviceForm form={form} onChange={handleChange} mode="edit" />
 
-              <DialogFooter className="mt-5">
-                <Button variant="outline" onClick={() => setOpenEdit(false)}>
+              <DialogFooter className="mt-5 max-md:flex-row max-md:gap-x-3">
+                <Button variant="outline" onClick={() => setOpenEdit(false)} className="max-md:flex-1">
                   취소
                 </Button>
                 <Button
                   onClick={() => {
                     openConfirm('장비 정보를 수정하시겠습니까?', () => handleSave());
-                  }}>
+                  }}
+                  className="max-md:flex-1">
                   완료
                 </Button>
               </DialogFooter>
