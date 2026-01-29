@@ -282,7 +282,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
             <div className="w-full flex-1">
               <Textarea
                 size="default"
-                className="w-full max-sm:h-10 max-sm:min-h-10"
+                className="w-full max-md:h-10 max-md:min-h-10"
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 /* onKeyDown={(e) => {
@@ -315,8 +315,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                   //수정중
                   <div className="w-full text-[13px] md:text-base">
                     <Textarea
-                      size="sm"
-                      className=""
+                      className="max-md:h-10 max-md:min-h-10"
                       value={editCommentText[c.bc_seq] ?? ''}
                       onChange={(e) => setEditCommentText((prev) => ({ ...prev, [c.bc_seq]: e.target.value }))}
                     />
@@ -326,11 +325,12 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                   <div className="flex w-full justify-start">
                     <p className="pt-1 text-[13px] whitespace-pre-line text-gray-700 md:max-w-[1050px] md:text-base">{c.comment}</p>
                     {user?.user_id === c.user_id && (
-                      <div className="hidden shrink-0 items-center pl-6 text-gray-600 md:flex">
+                      <div className="hidden shrink-0 items-center pl-0 text-gray-600 md:flex md:pl-6">
                         <Button
                           variant="svgIcon"
                           size="icon"
                           aria-label="댓글 수정"
+                          className=""
                           onClick={() => {
                             setEditCommentMode(true);
                             setEditCommentModeId(c.bc_seq);
@@ -361,11 +361,14 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                 {!(editCommentMode && editCommentModeId === c.bc_seq) && (
                   <div className="flex w-full shrink-0 items-center pt-1.5 text-sm text-gray-600 md:w-[130px]">
                     {formatKST(c.created_at)}
+
+                    {/* 모바일 댓글 수정 삭제 버튼 */}
                     {user?.user_id === c.user_id && (
-                      <div className="flex shrink-0 items-center pl-6 text-gray-600 md:hidden">
+                      <div className="flex shrink-0 items-center gap-x-4 pl-6 text-gray-600 md:hidden">
                         <Button
                           variant="svgIcon"
                           size="icon"
+                          className="size-3"
                           aria-label="댓글 수정"
                           onClick={() => {
                             setEditCommentMode(true);
@@ -378,6 +381,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                         <Button
                           variant="svgIcon"
                           size="icon"
+                          className="size-3"
                           aria-label="댓글 삭제"
                           onClick={() =>
                             confirmDelete('댓글', async () => {
@@ -452,7 +456,9 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       </div>
 
       <div className="mt-3 text-right">
-        <Button onClick={() => navigate('..')}>목록</Button>
+        <Button size="sm" onClick={() => navigate('..')}>
+          목록
+        </Button>
       </div>
     </article>
   );

@@ -20,7 +20,11 @@ import { useAppAlert } from '../common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '../common/ui/AppDialog/AppDialog';
 import { CheckCircle, OctagonAlert } from 'lucide-react';
 
+import { useIsMobileViewport } from '@/hooks/useViewport';
+import BookWishCard from './BookWishCard';
+
 export default function BookWish() {
+  const isMobile = useIsMobileViewport();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [pageInfo, setPageInfo] = useState({
@@ -321,10 +325,10 @@ export default function BookWish() {
   return (
     <div className="relative">
       {/* 검색창 */}
-      <div className="absolute -top-11 right-0 flex justify-end gap-3 max-sm:relative max-sm:top-0 max-sm:mt-2">
+      <div className="absolute -top-11 right-0 flex justify-end gap-3 max-md:relative max-md:top-0 max-md:mt-2">
         <div className="relative mb-4 w-[175px]">
           <Input
-            className="h-[32px]! px-4 [&]:bg-white"
+            className="h-[32px]! px-4 max-md:placeholder:text-sm [&]:bg-white"
             placeholder="검색어 입력"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -344,20 +348,20 @@ export default function BookWish() {
           <DialogTrigger asChild>
             <Button size="sm">도서 신청</Button>
           </DialogTrigger>
-          <DialogContent aria-describedby={undefined}>
+          <DialogContent aria-describedby={undefined} className="rounded-lg max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)]">
             <DialogHeader>
               <DialogTitle className="mb-3">도서 신청</DialogTitle>
               <DialogDescription>중복으로 구매가 되지 않도록 도서목록 검색 후 신청 부탁드립니다.</DialogDescription>
             </DialogHeader>
             <div className="text-sm text-gray-800">
               <div className="">
-                <div className="mb-2 w-[43%]">
+                <div className="mb-2">
                   <h2 className="mb-1 font-bold">▶ 온라인 도서 신청 </h2>
                   <p>
                     - 신청기간 : 매월 말일 까지 <br />- 제공기간 : 익월 5일 이내
                   </p>
                 </div>
-                <div className="mb-2 w-[57%]">
+                <div className="mb-2">
                   <h2 className="mb-1 font-bold">▶ 오프라인 도서 신청 </h2>
                   <p>
                     1. 오프라인에서 도서 구매
@@ -380,125 +384,145 @@ export default function BookWish() {
               </div>
             </div>
             <BookForm form={form} onChange={handleChange} mode="apply" />
-            <DialogFooter className="mt-5">
-              <Button variant="outline" onClick={() => setOpen(false)}>
+            <DialogFooter className="mt-5 max-md:flex-row max-md:gap-x-3">
+              <Button variant="outline" onClick={() => setOpen(false)} className="flex-1">
                 취소
               </Button>
-              <Button onClick={handleRegisterClick}>등록</Button>
+              <Button onClick={handleRegisterClick} className="flex-1">
+                등록
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
       {/* 도서 테이블 */}
-      <Table className="table-fixed">
-        <TableHeader>
-          <TableRow>
-            {user?.user_level === Administrator && (
-              <TableHead className="w-[40px] [&>[role=checkbox]]:translate-x-[2px]">
-                <Checkbox checked={allChecked} onCheckedChange={toggleAll} />
-              </TableHead>
-            )}
-            <TableHead className="w-[7%]">상태</TableHead>
-            <TableHead className="w-[11%]">날짜</TableHead>
-            <TableHead className="w-[12%]">카테고리</TableHead>
-            <TableHead className="">도서명</TableHead>
-            <TableHead className="w-[10%]">저자</TableHead>
-            <TableHead className="w-[10%]">출판사</TableHead>
-            <TableHead className="w-[8%]">팀</TableHead>
-            <TableHead className="w-[8%]">신청자</TableHead>
-            <TableHead className="w-[8%]"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody className="text-[13px]">
-          {posts.length > 0 ? (
-            posts.map((post) => (
-              <TableRow key={post.id} onClick={() => handleRowClick(post)} className="cursor-pointer">
-                {user?.user_level === Administrator && (
-                  <TableCell className="[&:has([role=checkbox])]:pr-auto">
-                    <Checkbox
-                      checked={selected.includes(post.id)}
-                      onCheckedChange={() => toggleOne(post.id, post.status)}
-                      onClick={(e) => e.stopPropagation()}
-                      disabled={post.status !== '신청'}
-                    />
-                  </TableCell>
-                )}
 
-                <TableCell>
-                  {post.status === '신청' ? (
-                    <Badge variant="lightpink" className="bg-primary-pink-100 text-primary-pink px-3">
-                      신청
-                    </Badge>
-                  ) : (
-                    <Badge variant="pink" className="bg-primary-pink px-3 text-white">
-                      완료
-                    </Badge>
+      {isMobile ? (
+        <BookWishCard
+          posts={posts}
+          total={total}
+          searchQuery={searchQuery}
+          onSelect={handleRowClick}
+          isAdmin={user?.user_level === Administrator}
+          selected={selected}
+          onToggleSelect={toggleOne}
+          onToggleAll={toggleAll}
+        />
+      ) : (
+        <Table className="table-fixed">
+          <TableHeader>
+            <TableRow>
+              {user?.user_level === Administrator && (
+                <TableHead className="w-[40px] [&>[role=checkbox]]:translate-x-[2px]">
+                  <Checkbox checked={allChecked} onCheckedChange={toggleAll} />
+                </TableHead>
+              )}
+              <TableHead className="w-[7%]">상태</TableHead>
+              <TableHead className="w-[11%]">날짜</TableHead>
+              <TableHead className="w-[12%]">카테고리</TableHead>
+              <TableHead className="">도서명</TableHead>
+              <TableHead className="w-[10%]">저자</TableHead>
+              <TableHead className="w-[10%]">출판사</TableHead>
+              <TableHead className="w-[8%]">팀</TableHead>
+              <TableHead className="w-[8%]">신청자</TableHead>
+              <TableHead className="w-[8%]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="text-[13px]">
+            {posts.length > 0 ? (
+              posts.map((post) => (
+                <TableRow key={post.id} onClick={() => handleRowClick(post)} className="cursor-pointer">
+                  {user?.user_level === Administrator && (
+                    <TableCell className="[&:has([role=checkbox])]:pr-auto">
+                      <Checkbox
+                        checked={selected.includes(post.id)}
+                        onCheckedChange={() => toggleOne(post.id, post.status)}
+                        onClick={(e) => e.stopPropagation()}
+                        disabled={post.status !== '신청'}
+                      />
+                    </TableCell>
                   )}
-                </TableCell>
-                <TableCell>{formatKST(post.purchaseAt, true)}</TableCell>
-                <TableCell className="max-w-[130px] truncate">{post.category}</TableCell>
-                <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
-                <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
-                <TableCell className="max-w-[130px] truncate">{post.publish}</TableCell>
-                <TableCell className="max-w-[130px] truncate">{post.team_name}</TableCell>
-                <TableCell>{post.user_name}</TableCell>
-                <TableCell>
-                  {post.status !== '완료' && post.user === user?.user_id && (
-                    <div className="text-gray-700">
-                      <Button
-                        variant="svgIcon"
-                        size="icon"
-                        className="hover:text-primary-blue-500"
-                        aria-label="수정"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(post);
-                        }}>
-                        <Edit className="size-4" />
-                      </Button>
-                      <Button
-                        variant="svgIcon"
-                        size="icon"
-                        className="hover:text-primary-blue-500"
-                        aria-label="삭제"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          confirmAction('신청 도서 삭제', '신청도서를 삭제하시겠습니까?', () => handleDelete(post.id));
-                        }}>
-                        <Delete className="size-4" />
-                      </Button>
-                    </div>
-                  )}
+
+                  <TableCell>
+                    {post.status === '신청' ? (
+                      <Badge variant="lightpink" className="bg-primary-pink-100 text-primary-pink px-3">
+                        신청
+                      </Badge>
+                    ) : (
+                      <Badge variant="pink" className="bg-primary-pink px-3 text-white">
+                        완료
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>{formatKST(post.purchaseAt, true)}</TableCell>
+                  <TableCell className="max-w-[130px] truncate">{post.category}</TableCell>
+                  <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
+                  <TableCell className="max-w-[130px] truncate">{post.publish}</TableCell>
+                  <TableCell className="max-w-[130px] truncate">{post.team_name}</TableCell>
+                  <TableCell>{post.user_name}</TableCell>
+                  <TableCell>
+                    {post.status !== '완료' && post.user === user?.user_id && (
+                      <div className="text-gray-700">
+                        <Button
+                          variant="svgIcon"
+                          size="icon"
+                          className="hover:text-primary-blue-500"
+                          aria-label="수정"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(post);
+                          }}>
+                          <Edit className="size-4" />
+                        </Button>
+                        <Button
+                          variant="svgIcon"
+                          size="icon"
+                          className="hover:text-primary-blue-500"
+                          aria-label="삭제"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            confirmAction('신청 도서 삭제', '신청도서를 삭제하시겠습니까?', () => handleDelete(post.id));
+                          }}>
+                          <Delete className="size-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={10} className="h-100 py-10 text-center text-gray-500">
+                  {searchQuery ? `‘${searchQuery}’에 대한 검색 결과가 없습니다.` : '신청된 도서가 없습니다.'}
                 </TableCell>
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={10} className="h-100 py-10 text-center text-gray-500">
-                {searchQuery ? `‘${searchQuery}’에 대한 검색 결과가 없습니다.` : '신청된 도서가 없습니다.'}
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            )}
+          </TableBody>
+        </Table>
+      )}
 
       {/* 상세 보기 다이얼로그 */}
       <Dialog open={openView} onOpenChange={setOpenView}>
-        <DialogContent className="p-7" aria-describedby={undefined}>
+        <DialogContent
+          className="rounded-lg p-7 max-md:max-h-[80vh] max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)]"
+          aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="mb-3">신청도서 상세보기</DialogTitle>
           </DialogHeader>
           {selectedPost && <BookForm form={selectedPost} mode="view" />}
           <DialogFooter className="mt-5">
-            <Button onClick={() => setOpenView(false)}>닫기</Button>
+            <Button size="default" onClick={() => setOpenView(false)}>
+              닫기
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* 수정 다이얼로그 */}
       <Dialog open={openEdit} onOpenChange={setOpenEdit}>
-        <DialogContent className="p-7" aria-describedby={undefined}>
+        <DialogContent className="p-7 max-md:max-h-[80vh] max-md:max-w-[calc(100%-var(--spacing)*8)]" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="mb-3">신청 도서 수정</DialogTitle>
           </DialogHeader>

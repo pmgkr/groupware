@@ -14,8 +14,11 @@ import { createPortal } from 'react-dom';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { OctagonAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useIsMobileViewport } from '@/hooks/useViewport';
+import ITDeviceListCard from '@/components/itdevice/ItDeviceListCard';
 
 export default function ItDevice() {
+  const isMobile = useIsMobileViewport();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -146,7 +149,7 @@ export default function ItDevice() {
       <div className="flex justify-end gap-3">
         <div className="relative mb-4 w-[175px]">
           <Input
-            className="h-[32px]! px-4 [&]:bg-white"
+            className="h-[32px]! px-4 max-md:placeholder:text-sm [&]:bg-white"
             placeholder="검색어 입력"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -173,67 +176,74 @@ export default function ItDevice() {
           <DialogTrigger asChild>
             <Button size="sm">등록하기</Button>
           </DialogTrigger>
-          <DialogContent className="p-7">
+          <DialogContent className="rounded-lg p-7 max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)]">
             <DialogHeader>
               <DialogTitle className="mb-3">장비 정보 등록</DialogTitle>
             </DialogHeader>
             <DeviceForm form={form} onChange={handleChange} mode="create" />
-            <DialogFooter className="mt-5">
-              <Button variant="outline" onClick={() => setOpenRegister(false)}>
+            <DialogFooter className="mt-5 max-md:flex-row max-md:gap-x-3">
+              <Button variant="outline" onClick={() => setOpenRegister(false)} className="flex-1">
                 취소
               </Button>
-              <Button onClick={handleRegisterClick}>완료</Button>
+              <Button onClick={handleRegisterClick} className="flex-1">
+                완료
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
       {/* 테이블 */}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[80px]">번호</TableHead>
-            <TableHead>디바이스</TableHead>
-            <TableHead>브랜드</TableHead>
-            <TableHead className="w-[300px]">모델</TableHead>
-            <TableHead className="w-[300px]">시리얼넘버</TableHead>
-            <TableHead>사용자</TableHead>
-            <TableHead>구매일자</TableHead>
-            {/* <TableHead>등록일</TableHead> */}
-          </TableRow>
-        </TableHeader>
 
-        <TableBody>
-          {posts.length > 0 ? (
-            posts.map((post, idx) => (
-              <TableRow key={post.id} onClick={() => navigate(`${post.id}`)} className="cursor-pointer hover:bg-gray-100">
-                <TableCell>{total - (page - 1) * pageSize - idx}</TableCell>
-                <TableCell>{post.device}</TableCell>
-                <TableCell>{post.brand}</TableCell>
-                <TableCell>{post.model}</TableCell>
-                <TableCell>{post.serial}</TableCell>
-                <TableCell>
-                  {post.it_status === '재고' ? (
-                    <Badge variant="secondary" className="bg-gray-200 text-gray-700">
-                      재고
-                    </Badge>
-                  ) : (
-                    post.user || <span className="text-gray-500 italic">-</span>
-                  )}
-                </TableCell>
-                <TableCell>{post.p_date}</TableCell>
-                {/* <TableCell>{post.createdAt}</TableCell> */}
-              </TableRow>
-            ))
-          ) : (
+      {isMobile ? (
+        <ITDeviceListCard posts={posts} total={total} page={page} pageSize={pageSize} activeQuery={activeQuery} />
+      ) : (
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={8} className="py-10 text-center text-gray-400">
-                {activeQuery ? `‘${activeQuery}’에 대한 검색 결과가 없습니다.` : '등록된 장비가 없습니다.'}
-              </TableCell>
+              <TableHead className="w-[80px]">번호</TableHead>
+              <TableHead>디바이스</TableHead>
+              <TableHead>브랜드</TableHead>
+              <TableHead className="w-[300px]">모델</TableHead>
+              <TableHead className="w-[300px]">시리얼넘버</TableHead>
+              <TableHead>사용자</TableHead>
+              <TableHead>구매일자</TableHead>
+              {/* <TableHead>등록일</TableHead> */}
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+
+          <TableBody>
+            {posts.length > 0 ? (
+              posts.map((post, idx) => (
+                <TableRow key={post.id} onClick={() => navigate(`${post.id}`)} className="cursor-pointer hover:bg-gray-100">
+                  <TableCell>{total - (page - 1) * pageSize - idx}</TableCell>
+                  <TableCell>{post.device}</TableCell>
+                  <TableCell>{post.brand}</TableCell>
+                  <TableCell>{post.model}</TableCell>
+                  <TableCell>{post.serial}</TableCell>
+                  <TableCell>
+                    {post.it_status === '재고' ? (
+                      <Badge variant="secondary" className="bg-gray-200 text-gray-700">
+                        재고
+                      </Badge>
+                    ) : (
+                      post.user || <span className="text-gray-500 italic">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>{post.p_date}</TableCell>
+                  {/* <TableCell>{post.createdAt}</TableCell> */}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={8} className="py-10 text-center text-gray-400">
+                  {activeQuery ? `‘${activeQuery}’에 대한 검색 결과가 없습니다.` : '등록된 장비가 없습니다.'}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      )}
 
       {/* 페이지네이션 */}
       {posts.length > 0 && (

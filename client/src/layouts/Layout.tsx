@@ -51,7 +51,7 @@ export default function Layout() {
     <>
       {!isMobile && <Header />}
       {isMobile && <HeaderMobile />}
-      <div className="mt-18 ml-60 min-h-200 bg-white px-5 py-8 max-2xl:ml-50 max-md:m-0! max-md:max-w-[100vw]! max-md:overflow-x-scroll! max-md:p-4.5! max-md:pt-[70px]! max-md:pb-[80px]! 2xl:px-25 max-md:min-h-[100vh]!">
+      <div className="mt-18 ml-60 min-h-200 bg-white px-5 py-8 max-2xl:ml-50 max-md:m-0! max-md:min-h-[100vh]! max-md:max-w-[100vw]! max-md:overflow-x-scroll! max-md:p-4.5! max-md:pt-[70px]! max-md:pb-[80px]! 2xl:px-25">
         {/* 페이지 타이틀 : router의 handle.title 값 노출 */}
         {!hideTitle && title && (
           <div className="mb-5 flex items-center has-[+nav]:mb-2">
@@ -60,7 +60,7 @@ export default function Layout() {
             </h1>
             {/* 2차 메뉴 노출 */}
             {!hideChildNav && childNav && childNav.length > 0 && (
-              <nav className="scrollbar-hide relative flex-1 overflow-x-auto whitespace-nowrap md:overflow-visible">
+              <nav className="scrollbar-hide relative flex-1 overflow-x-auto whitespace-nowrap max-md:-mr-[18px] max-md:pr-[18px] md:overflow-visible">
                 <ul className="inline-flex items-center gap-x-1">
                   {childNav.map((item, idx) => (
                     <li
