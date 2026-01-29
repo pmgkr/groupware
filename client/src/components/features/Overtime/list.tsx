@@ -772,7 +772,7 @@ export default function OvertimeList({
       <Table variant="primary" align="center" className={cn(isMobileNoData ? 'table-auto' : 'table-fixed')}>
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className={cn('w-[7%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:max-w-[50px]! max-md:w-unset!', isMobileNoData && 'w-auto')}>부서</TableHead>
+            <TableHead className={cn('w-[7%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:max-w-[50px]! max-md:w-unset! max-md:hidden', isMobileNoData && 'w-auto')}>부서</TableHead>
             <TableHead className={cn('w-[7%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:max-w-[50px]! max-md:w-unset!', isMobileNoData && 'w-auto')}>이름</TableHead>
             <TableHead className={cn('w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:min-w-[90px]! max-md:w-unset!', isMobileNoData && 'w-auto')}><span className="max-md:hidden">연장</span>근무날짜</TableHead>
             {activeTab === 'weekday' ?
@@ -830,7 +830,7 @@ export default function OvertimeList({
               className={`[&_td]:text-[13px] cursor-pointer hover:bg-gray-50 ${item.ot_status === 'N' ? 'opacity-40' : ''}`}
               onClick={() => handleOvertimeClick(item)}
             >
-              <TableCell className="text-center p-2 whitespace-nowrap max-md:px-0.5 max-md:max-w-[50px]! max-md:w-unset! overflow-hidden text-ellipsis">{getTeamName(item.team_id)}</TableCell>
+              <TableCell className="text-center p-2 whitespace-nowrap max-md:px-0.5 max-md:max-w-[50px]! max-md:w-unset! max-md:hidden overflow-hidden text-ellipsis">{getTeamName(item.team_id)}</TableCell>
               <TableCell className="text-center p-2 max-md:px-0.5 max-md:max-w-[50px]! max-md:w-unset!">{item.user_name}</TableCell>
               <TableCell className="text-center p-2 whitespace-nowrap max-md:px-0.5 max-md:min-w-[90px]! max-md:w-unset!">
                 {item.ot_date ? dayjs(item.ot_date).format(isMobile ? 'MM-DD' : 'YYYY-MM-DD (ddd)') : '-'}

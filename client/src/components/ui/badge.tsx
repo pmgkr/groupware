@@ -27,7 +27,7 @@ const badgeVariants = cva(
       size: {
         default: 'min-w-6 px-2 py-0.5 text-xs',
         md: 'min-w-5 px-2 py-0.5 text-sm',
-        table: 'min-w-6 px-2 py-.25 text-sm', // 테이블 안에 들어가는 badge
+        table: 'min-w-6 px-2 py-.25 text-sm max-md:text-[11px]! max-md:px-1.5', // 테이블 안에 들어가는 badge
         dot: 'p-0 w-1.5 h-1.5 rounded-full text-[0px]',
       },
     },

@@ -29,6 +29,7 @@ import { AppPagination } from '@/components/ui/AppPagination';
 import { notificationApi } from '@/api/notification';
 import { defaultEventTitleMapper } from '@/components/calendar/config';
 import { getDateRangeTextSimple } from '@/utils/dateRangeHelper';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 dayjs.locale('ko');
 
@@ -70,6 +71,7 @@ export default function VacationList({
 }: VacationListProps) {
   const { user } = useAuth();
   const { addAlert } = useAppAlert();
+  const isMobile = useIsMobileViewport();
   
   // 데이터 state
   const [allData, setAllData] = useState<Schedule[]>([]);
@@ -634,18 +636,18 @@ export default function VacationList({
       <Table key={`table-${page}-${activeTab}`} variant="primary" align="center" className="table-fixed w-full">
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[7%] text-center p-2">부서</TableHead>
-            <TableHead className="w-[7%] text-center p-2">이름</TableHead>
-            <TableHead className="w-[10%] text-center p-2">
+            {!isMobile && <TableHead className="w-[7%] text-center p-2 max-md:px-0.5 max-md:text-sm!">부서</TableHead>}
+            <TableHead className="w-[7%] text-center p-2 max-md:px-0.5 max-md:text-sm!">이름</TableHead>
+            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm!">
               {activeTab === 'vacation' ? '휴가 유형' : '이벤트 유형'}
             </TableHead>
-            <TableHead className="w-[20%] text-center p-2">기간</TableHead>
-            {activeTab === 'vacation' && (
-              <TableHead className="w-[20%] text-center p-2">사용휴가일수</TableHead>
+            <TableHead className="w-[20%] text-center p-2 max-md:px-0.5 max-md:text-sm!">기간</TableHead>
+            {activeTab === 'vacation' && !isMobile && (
+              <TableHead className="w-[20%] text-center p-2 max-md:px-0.5 max-md:text-sm!">사용휴가일수</TableHead>
             )}
-            <TableHead className="w-[10%] text-center p-2">등록일</TableHead>
-            <TableHead className="w-[8%] text-center p-2">상태</TableHead>
-            <TableHead className="w-[5%] text-center p-2">
+            {!isMobile && <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm!">등록일</TableHead>}
+            <TableHead className="w-[8%] text-center p-2 max-md:px-0.5 max-md:text-sm!">상태</TableHead>
+            <TableHead className="w-[5%] text-center p-2 max-md:px-0.5 max-md:text-sm!">
               <Checkbox 
                 id="chk_all" 
                 className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkAll && 'bg-primary-blue-150')} 
@@ -658,14 +660,14 @@ export default function VacationList({
 
         <TableBody key={`tbody-${page}-${activeTab}`}>
         {loading ? (
-          <TableRow>
-            <TableCell className="h-100 text-gray-500 w-full" colSpan={activeTab === 'vacation' ? 8 : 7}>
+          <TableRow className="[&_td]:text-[13px]">
+            <TableCell className="h-100 text-gray-500 w-full p-2 max-md:px-0.5 max-md:text-sm!" colSpan={isMobile ? 5 : (activeTab === 'vacation' ? 8 : 7)}>
               데이터 불러오는 중
             </TableCell>
           </TableRow>
         ) : !loading && paginatedData.length === 0 ? (
-          <TableRow>
-            <TableCell className="h-100 text-gray-500 w-full" colSpan={activeTab === 'vacation' ? 8 : 7}>
+          <TableRow className="[&_td]:text-[13px]">
+            <TableCell className="h-100 text-gray-500 w-full p-2 max-md:px-0.5 max-md:text-sm!" colSpan={isMobile ? 5 : (activeTab === 'vacation' ? 8 : 7)}>
               데이터가 없습니다.
             </TableCell>
           </TableRow>
@@ -676,22 +678,24 @@ export default function VacationList({
               className="[&_td]:text-[13px] cursor-pointer hover:bg-gray-50"
               onClick={() => handleEventClick(item)}
             >
-              <TableCell className="text-center p-2">{getTeamName(item.team_id)}</TableCell>
-              <TableCell className="text-center p-2">{item.user_name || '-'}</TableCell>
-              <TableCell className="text-center p-2">
+              {!isMobile && <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">{getTeamName(item.team_id)}</TableCell>}
+              <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">{item.user_name || '-'}</TableCell>
+              <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">
                 {activeTab === 'vacation' 
                   ? getVacationTypeText(item.sch_vacation_type, item.sch_vacation_time)
                   : getEventTypeText(item.sch_event_type)
                 }
               </TableCell>
-              <TableCell className="text-center p-2">{getDateRangeText(item)}</TableCell>
-              {activeTab === 'vacation' && item.sch_vacation_used && (
-                <TableCell className="text-center p-2">{item.sch_vacation_used}</TableCell>
+              <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">{getDateRangeText(item)}</TableCell>
+              {activeTab === 'vacation' && !isMobile && item.sch_vacation_used && (
+                <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">{item.sch_vacation_used}</TableCell>
               )}
-              <TableCell className="text-center p-2">
-                {item.sch_created_at ? dayjs(item.sch_created_at).format('YYYY-MM-DD') : '-'}
-              </TableCell>
-              <TableCell className="text-center p-2">
+              {!isMobile && (
+                <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">
+                  {item.sch_created_at ? dayjs(item.sch_created_at).format('YYYY-MM-DD') : '-'}
+                </TableCell>
+              )}
+              <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">
                 {item.sch_status === 'H' && (
                   <Badge variant="default" size="table" title="취소요청됨">
                     {getStatusText(item.sch_status)}
@@ -708,7 +712,7 @@ export default function VacationList({
                   </Badge>
                 )}
               </TableCell>
-              <TableCell className="text-center p-2" onClick={(e) => e.stopPropagation()}>
+              <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!" onClick={(e) => e.stopPropagation()}>
                 <Checkbox 
                   id={`chk_${item.id}`} 
                   className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkedItems.includes(item.id) && 'bg-primary-blue-150')} 
