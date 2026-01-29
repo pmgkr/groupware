@@ -27,8 +27,10 @@ import { DayPicker } from '../daypicker';
 import { useAppAlert } from '../common/ui/AppAlert/AppAlert';
 import { CheckCircle, OctagonAlert } from 'lucide-react';
 import { useAppDialog } from '../common/ui/AppDialog/AppDialog';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 export default function itDeviceDetail() {
+  const isMobile = useIsMobileViewport();
   const { id } = useParams<{ id: string }>(); // /itdevice/:id
   const navigate = useNavigate();
   const location = useLocation();
@@ -294,11 +296,11 @@ export default function itDeviceDetail() {
 
   return (
     <>
-      <h2 className="pt-3 text-3xl font-bold">
+      <h2 className="pt-3 text-3xl font-bold max-md:mb-6">
         [{posts?.device ?? '-'}] {posts?.model ?? '-'}
       </h2>
-      <div className="flex gap-8">
-        <div className="flex-1 p-6 pl-0">
+      <div className="flex gap-8 max-md:flex-col">
+        <div className="flex-1 p-6 pl-0 max-md:w-full max-md:p-0">
           {/* 수정버튼 dialog */}
           <Dialog
             open={openEdit}
@@ -315,20 +317,21 @@ export default function itDeviceDetail() {
                 </Button>
               </DialogTrigger>
             </div>
-            <DialogContent className="p-7 sm:max-w-[500px]">
+            <DialogContent className="rounded-lg p-7 max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)] sm:max-w-[500px]">
               <DialogHeader>
                 <DialogTitle className="mb-3">장비 정보 수정</DialogTitle>
               </DialogHeader>
               <DeviceForm form={form} onChange={handleChange} mode="edit" />
 
-              <DialogFooter className="mt-5">
-                <Button variant="outline" onClick={() => setOpenEdit(false)}>
+              <DialogFooter className="mt-5 max-md:flex-row max-md:gap-x-3">
+                <Button variant="outline" onClick={() => setOpenEdit(false)} className="max-md:flex-1">
                   취소
                 </Button>
                 <Button
                   onClick={() => {
                     openConfirm('장비 정보를 수정하시겠습니까?', () => handleSave());
-                  }}>
+                  }}
+                  className="max-md:flex-1">
                   완료
                 </Button>
               </DialogFooter>
@@ -341,7 +344,7 @@ export default function itDeviceDetail() {
             <div className="text-sm text-gray-500">장비 정보를 불러오는 중...</div>
           )}
         </div>
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-6 max-md:w-full max-md:p-0">
           <Dialog open={openAddUser} onOpenChange={setOpenAddUser} modal={false}>
             <div className="mb-4 flex items-center justify-between border-b border-b-gray-300 pb-1.5">
               <SectionHeader title="사용이력" className="mb-0 border-0" />
@@ -351,12 +354,12 @@ export default function itDeviceDetail() {
                 </Button>
               </DialogTrigger>
             </div>
-            <DialogContent className="p-7 sm:max-w-[500px]">
+            <DialogContent className="rounded-lg p-7 max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)] sm:max-w-[500px]">
               <DialogHeader>
                 <DialogTitle className="mb-3">사용자 등록</DialogTitle>
               </DialogHeader>
               <TableColumn>
-                <TableColumnHeader className="text-base">
+                <TableColumnHeader className="max-md:[&>div] text-base max-md:w-22.5 max-md:border-r-0 max-md:[&>div]:bg-white max-md:[&>div]:px-3 max-md:[&>div]:font-normal max-md:[&>div]:text-gray-600">
                   <TableColumnHeaderCell>팀이름</TableColumnHeaderCell>
                   <TableColumnHeaderCell>이름</TableColumnHeaderCell>
                   <TableColumnHeaderCell>등록일자</TableColumnHeaderCell>
@@ -382,7 +385,7 @@ export default function itDeviceDetail() {
                       </SelectContent>
                     </Select>
                   </TableColumnCell>
-                  <TableColumnCell>
+                  <TableColumnCell className="max-md:p-0">
                     <input type="text" onChange={(e) => handleNewFormChange('user', e.target.value)} />
                   </TableColumnCell>
                   <TableColumnCell className="p-0">
@@ -415,16 +418,18 @@ export default function itDeviceDetail() {
                   </TableColumnCell>
                 </TableColumnBody>
               </TableColumn>
-              <DialogFooter className="mt-5">
-                <Button variant="outline" onClick={() => setOpenAddUser(false)}>
+              <DialogFooter className="mt-5 max-md:flex-row max-md:gap-x-3">
+                <Button variant="outline" onClick={() => setOpenAddUser(false)} className="flex-1">
                   취소
                 </Button>
-                <Button onClick={handleAddUserClick}>완료</Button>
+                <Button onClick={handleAddUserClick} className="flex-1">
+                  완료
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
-          <div>
+          <div className="max-md:mb-6">
             {/* 현재 사용자 */}
             {currentUser && (
               <div className="border-primary-blue-300 bg-primary-blue-100 mb-4 flex items-center justify-between rounded border p-3">
@@ -462,13 +467,16 @@ export default function itDeviceDetail() {
           <Button
             variant="secondary"
             className="mr-3"
+            size={isMobile ? 'sm' : 'default'}
             onClick={() => {
               confirmAction('장비 반납', '처리 하시겠습니까?', () => handleReturn(Number(id), currentUser.ih_seq));
             }}>
             반납 처리
           </Button>
         )}
-        <Button onClick={() => navigate('/itdevice' + location.search)}>목록</Button>
+        <Button size={isMobile ? 'sm' : 'default'} onClick={() => navigate('/itdevice' + location.search)}>
+          목록
+        </Button>
       </div>
 
       {/* 공통 다이얼로그 */}

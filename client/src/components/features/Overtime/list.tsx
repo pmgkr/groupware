@@ -411,15 +411,61 @@ export default function OvertimeList({
   // 신청자에게 알림 전송
   const notifyApplicant = async (
     item: OvertimeItem | overtimeItem | null | undefined,
-    kind: 'approve' | 'compensation'
+    kind: 'approve' | 'compensation' | 'reject'
   ) => {
     if (!item?.user_id) return;
     const dateText = item.ot_date ? dayjs(item.ot_date).format('YYYY-MM-DD') : '';
+    
+    // 주말/공휴일 여부 확인
+    const isWeekendOrHoliday = item.ot_date 
+      ? (() => {
+          const dayOfWeek = dayjs(item.ot_date).day();
+          return dayOfWeek === 0 || dayOfWeek === 6; // 일요일(0) 또는 토요일(6)
+        })()
+      : activeTab === 'weekend';
+    const overtimeLabel = isWeekendOrHoliday ? '휴일근무' : '연장근무';
+    
+    // 시간 정보 추출
+    const formatTimeText = (hour?: string, minute?: string) => {
+      if (!hour) return '';
+      const hh = hour.padStart(2, '0');
+      const mm = (minute ?? '0').padStart(2, '0');
+      return `${hh}:${mm}`;
+    };
+    
+    let timeRange = '';
+    if (overtimeDetailData?.info) {
+      const info = overtimeDetailData.info;
+      let startText = '';
+      let endText = '';
+      
+      if (info.ot_stime) {
+        const timeStr = info.ot_stime.includes('T') ? info.ot_stime.split('T')[1] : info.ot_stime;
+        const timeParts = timeStr.split(':');
+        startText = formatTimeText(timeParts[0], timeParts[1]);
+      }
+      
+      if (info.ot_etime) {
+        const timeStr = info.ot_etime.includes('T') ? info.ot_etime.split('T')[1] : info.ot_etime;
+        const timeParts = timeStr.split(':');
+        endText = formatTimeText(timeParts[0], timeParts[1]);
+      }
+      
+      if (isWeekendOrHoliday) {
+        timeRange = startText && endText ? ` ${startText}~${endText}` : (startText || endText ? ` ${startText || endText}` : '');
+      } else {
+        timeRange = endText ? ` ~${endText}` : '';
+      }
+    }
+    
     const isComp = kind === 'compensation';
-    const notiTitle = `${isComp ? '보상 지급 완료' : '연장근무 승인'}${dateText ? ` (${dateText})` : ''}`;
-    const notiMessage = isComp
-      ? '보상 지급이 승인되었습니다.'
-      : '연장근무가 승인되었습니다.';
+    const isReject = kind === 'reject';
+    const notiTitle = `${overtimeLabel} (${dateText}${timeRange})`;
+    const notiMessage = isReject
+      ? `${overtimeLabel}가 반려되었습니다.`
+      : isComp
+      ? `${overtimeLabel} 보상 지급이 승인되었습니다.`
+      : `${overtimeLabel}가 승인되었습니다.`;
 
     try {
       await notificationApi.registerNotification({
@@ -449,7 +495,7 @@ export default function OvertimeList({
       await notifyApplicant(selectedOvertime, 'approve');
       addAlert({
         title: '승인 완료',
-        message: '연장근무 요청을 승인했했습니다.',
+        message: '연장근무 요청을 승인했습니다.',
         icon: <CheckCircle />,
         duration: 3000,
       });
@@ -477,6 +523,7 @@ export default function OvertimeList({
       } else {
         await managerOvertimeApi.rejectOvertime(selectedOvertime.id, reason);
       }
+      await notifyApplicant(selectedOvertime, 'reject');
       fetchOvertimeData(true); // 데이터 새로고침
       handleCloseOvertimeDialog();
     } catch (error) {
@@ -496,9 +543,20 @@ export default function OvertimeList({
         await managerOvertimeApi.confirmOvertimeCompensation({ ot_seq: selectedOvertime.id });
       }
       await notifyApplicant(selectedOvertime, 'compensation');
+      
+      // 주말/공휴일 여부 확인
+      const isWeekendOrHoliday = selectedOvertime.ot_date 
+        ? (() => {
+            const dayOfWeek = dayjs(selectedOvertime.ot_date).day();
+            return dayOfWeek === 0 || dayOfWeek === 6; // 일요일(0) 또는 토요일(6)
+          })()
+        : activeTab === 'weekend';
+      const overtimeLabel = isWeekendOrHoliday ? '휴일근무' : '연장근무';
+      const dateText = selectedOvertime.ot_date ? dayjs(selectedOvertime.ot_date).format('YYYY-MM-DD') : '';
+      
       addAlert({
         title: '보상 지급 완료',
-        message: '보상지급 요청을 승인했습니다.',
+        message: `${overtimeLabel}${dateText ? ` (${dateText})` : ''} 보상 지급이 승인되었습니다.`,
         icon: <CheckCircle />,
         duration: 3000,
       });
@@ -714,7 +772,7 @@ export default function OvertimeList({
       <Table variant="primary" align="center" className={cn(isMobileNoData ? 'table-auto' : 'table-fixed')}>
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className={cn('w-[7%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:max-w-[50px]! max-md:w-unset!', isMobileNoData && 'w-auto')}>부서</TableHead>
+            <TableHead className={cn('w-[7%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:max-w-[50px]! max-md:w-unset! max-md:hidden', isMobileNoData && 'w-auto')}>부서</TableHead>
             <TableHead className={cn('w-[7%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:max-w-[50px]! max-md:w-unset!', isMobileNoData && 'w-auto')}>이름</TableHead>
             <TableHead className={cn('w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:min-w-[90px]! max-md:w-unset!', isMobileNoData && 'w-auto')}><span className="max-md:hidden">연장</span>근무날짜</TableHead>
             {activeTab === 'weekday' ?
@@ -772,7 +830,7 @@ export default function OvertimeList({
               className={`[&_td]:text-[13px] cursor-pointer hover:bg-gray-50 ${item.ot_status === 'N' ? 'opacity-40' : ''}`}
               onClick={() => handleOvertimeClick(item)}
             >
-              <TableCell className="text-center p-2 whitespace-nowrap max-md:px-0.5 max-md:max-w-[50px]! max-md:w-unset! overflow-hidden text-ellipsis">{getTeamName(item.team_id)}</TableCell>
+              <TableCell className="text-center p-2 whitespace-nowrap max-md:px-0.5 max-md:max-w-[50px]! max-md:w-unset! max-md:hidden overflow-hidden text-ellipsis">{getTeamName(item.team_id)}</TableCell>
               <TableCell className="text-center p-2 max-md:px-0.5 max-md:max-w-[50px]! max-md:w-unset!">{item.user_name}</TableCell>
               <TableCell className="text-center p-2 whitespace-nowrap max-md:px-0.5 max-md:min-w-[90px]! max-md:w-unset!">
                 {item.ot_date ? dayjs(item.ot_date).format(isMobile ? 'MM-DD' : 'YYYY-MM-DD (ddd)') : '-'}
@@ -922,13 +980,13 @@ export default function OvertimeList({
                 : undefined
             }
             onReject={
-              isManager && !isOwnRequest && 
+              isManager && 
               isPage === 'admin' && activeTab === 'weekend' && selectedOvertime.ot_status === 'T'
                 ? handleRejectOvertime 
                 : undefined
             }
             onCompensation={
-              isManager && !isOwnRequest && isPage === 'admin' && activeTab === 'weekend'
+              isManager && isPage === 'admin' && activeTab === 'weekend'
                 ? handleCompensationOvertime 
                 : undefined
             }

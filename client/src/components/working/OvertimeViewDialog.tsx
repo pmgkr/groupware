@@ -67,6 +67,15 @@ export default function OvertimeViewDialog({
   isPage = 'manager',
   user
 }: OvertimeViewDialogProps) {
+  console.log({
+    onCompensation,
+    onReject,
+    isManager,
+    isOwnRequest,
+    userLevel: user?.user_level,
+    isPage,
+    activeTab,
+  });
   const { user: currentUser } = useAuth();
   // Hook 호출
   const { addDialog } = useAppDialog();
@@ -443,7 +452,6 @@ export default function OvertimeViewDialog({
           {/* 반려 정보 표시 */}
           {/* {status === "취소완료" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
             <>
-              
               <div className="space-y-2">
                 <Label>반려사유</Label>
                 <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100 min-h-[80px]">
@@ -456,7 +464,7 @@ export default function OvertimeViewDialog({
 
           {/* 반려 사유 입력 */}
           {showRejectInput && (
-            <div className="space-y-2 pt-4 border-t">
+            <div className="space-y-2">
               <Label htmlFor="reject-reason">반려 사유</Label>
               <Textarea
                 id="reject-reason"
@@ -470,7 +478,7 @@ export default function OvertimeViewDialog({
 
           <DialogFooter className="gap-2 max-md:flex-row max-md:flex-nowrap">
             {/* 관리자 모드 - 승인대기 상태일 때 승인/반려 버튼 */}
-            {isManager && !isOwnRequest && status === "승인대기" && (
+            {isManager && status === "승인대기" && (
               <>
                 {!showRejectInput ? (
                   <>
@@ -502,7 +510,7 @@ export default function OvertimeViewDialog({
             )}
 
             {/* 보상대기 상태일 때 보상 지급하기 + 반려하기 버튼 (admin이고 휴일 근무일 때만) */}
-            {isManager && !isOwnRequest && status === "보상대기" && isWeekendOrHolidayDay && (onCompensation || onReject) && (
+            {isManager && status === "보상대기" && isWeekendOrHolidayDay && (onCompensation || onReject) && (
               <>
                 {!showRejectInput ? (
                   <>

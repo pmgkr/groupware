@@ -526,7 +526,7 @@ export default function ProposalList({
       {/* 탭 + 필터 + 작성 버튼 */}
       <div className="mb-5 flex items-center justify-between gap-3 max-sm:relative max-sm:flex-col max-sm:items-start">
         <div className="flex items-center gap-3 max-sm:w-full max-sm:flex-col max-sm:items-start">
-          <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5 max-sm:mb-2 max-sm:w-full">
+          <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5 max-sm:w-full">
             {usedTabs.map((tab) => (
               <Button
                 key={tab.key}

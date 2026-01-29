@@ -385,7 +385,7 @@ export default function Mypage() {
   return (
     <>
       <section className="flex flex-col gap-y-5">
-        <div className="flex items-center gap-x-7 rounded-md border border-gray-300 px-5 py-8 sm:px-8 md:gap-x-10 md:px-14 md:py-6 lg:gap-x-14 lg:px-10 xl:px-20">
+        <div className="flex items-center gap-x-7 rounded-md border border-gray-300 px-5 py-[31px] sm:px-8 md:gap-x-10 md:px-14 md:py-6 lg:gap-x-14 lg:px-10 xl:px-20">
           <div className="group relative aspect-square w-[90px] shrink-0 overflow-hidden rounded-[50%] md:w-25 lg:w-36">
             {profileImageUrl ? (
               <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
@@ -430,12 +430,12 @@ export default function Mypage() {
               <strong className="block text-[1.5em] font-bold max-md:text-[18px]">{user?.user_name_en}</strong>
               {user?.job_role}
             </div>
-            <ul className="flex h-[32px] flex-col items-start gap-x-4 text-sm text-[.875em] font-normal sm:flex-row sm:items-center">
-              <li className="flex items-center gap-x-1.5 max-md:mb-[3px]">
+            <ul className="flex h-[32px] flex-col items-start gap-x-4 text-sm text-[.875em] font-normal max-md:h-auto sm:flex-row sm:items-center">
+              <li className="flex flex-1 items-center gap-x-1.5 max-md:mb-[3px]">
                 <MailMin className="size-5" />
                 <span>{user?.user_id}</span>
               </li>
-              <li className="flex items-center gap-x-1.5">
+              <li className="flex flex-1 items-center gap-x-1.5">
                 <PhoneMin className="size-5 shrink-0" />
                 {isEditing ? (
                   <Input
@@ -611,7 +611,7 @@ export default function Mypage() {
                 form.reset();
               }
             }}>
-            <div className="mb-6 flex items-center justify-between border-b border-b-gray-300 pb-1.5">
+            <div className="mb-6 flex items-center justify-between border-b border-b-gray-300 pb-1.5 max-md:mb-1.5">
               <SectionHeader title="은행계좌 목록" className="mb-0 border-0" />
               <DialogTrigger asChild>
                 <Button
@@ -759,28 +759,28 @@ export default function Mypage() {
           <div>
             <Table className="mb-6 w-full table-fixed">
               <TableHeader>
-                <TableRow className="text-sm md:text-base">
+                <TableRow className="text-sm md:text-base max-md:[&>th]:h-9 max-md:[&>th]:p-1">
                   <TableHead className="w-[30px] pr-0 md:w-[5%]"></TableHead>
-                  <TableHead className="w-[100px] max-md:px-2 md:w-[16%]">계좌 별명</TableHead>
-                  <TableHead className="w-[80px] max-md:px-2 md:w-[15%]">은행명</TableHead>
-                  <TableHead className="w-[130px] max-md:px-2">계좌 번호</TableHead>
-                  <TableHead className="w-[80px] max-md:px-2 md:w-[15%]">예금주</TableHead>
-                  <TableHead className="w-[130px] max-md:px-2 md:w-[18%]">등록일시</TableHead>
-                  <TableHead className="w-[110px] max-md:px-2 md:w-[12%]"></TableHead>
+                  <TableHead className="w-[80px] md:w-[16%]">계좌 별명</TableHead>
+                  <TableHead className="w-[80px] md:w-[15%]">은행명</TableHead>
+                  <TableHead className="w-[120px]">계좌 번호</TableHead>
+                  <TableHead className="w-[80px] md:w-[15%]">예금주</TableHead>
+                  <TableHead className="w-[130px] md:w-[18%]">등록일시</TableHead>
+                  <TableHead className="w-[110px] md:w-[12%]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="text-sm md:text-base">
                 {accounts.length > 0 ? (
                   accounts.map((acc) => (
-                    <TableRow key={acc.seq}>
+                    <TableRow key={acc.seq} className="max-md:[&>td]:h-9 max-md:[&>td]:p-1">
                       <TableCell className="w-[30px] pr-0 max-md:pl-0">
                         {acc.flag === 'mine' && <CrownIcon className="inline-block size-4 text-yellow-500 md:size-5" />}
                       </TableCell>
-                      <TableCell className="w-[80px] truncate max-md:px-2">{acc.account_alias}</TableCell>
-                      <TableCell className="max-md:px-2">{acc.bank_name}</TableCell>
-                      <TableCell className="max-md:px-2">{acc.bank_account}</TableCell>
-                      <TableCell className="max-md:px-2">{acc.account_name}</TableCell>
-                      <TableCell className="w-[130px] truncate max-md:px-2">{formatKST(acc.wdate)}</TableCell>
+                      <TableCell className="w-[80px] truncate">{acc.account_alias}</TableCell>
+                      <TableCell>{acc.bank_name}</TableCell>
+                      <TableCell>{acc.bank_account}</TableCell>
+                      <TableCell>{acc.account_name}</TableCell>
+                      <TableCell className="w-[130px] truncate">{formatKST(acc.wdate)}</TableCell>
                       {/* 수정 삭제 버튼 */}
                       <TableCell>
                         <Button
@@ -790,7 +790,7 @@ export default function Mypage() {
                             setEditAccount(acc);
                             setOpen(true);
                           }}>
-                          <Edit className="size-4" />
+                          <Edit className="size-4 max-md:size-3.5" />
                         </Button>
 
                         <Button
@@ -813,7 +813,7 @@ export default function Mypage() {
                               },
                             })
                           }>
-                          <Delete className="size-4" />
+                          <Delete className="size-4 max-md:size-3.5" />
                         </Button>
                       </TableCell>
                     </TableRow>
