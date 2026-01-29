@@ -114,7 +114,7 @@ export const AttachmentField = React.memo(function AttachmentField({
       <input type="file" accept="image/*" multiple ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
 
       <div className="mb-2 flex h-6 items-center justify-between">
-        <p className="font-bold text-gray-950">증빙자료 #{rowIndex}</p>
+        <p className="text-[13px] font-bold text-gray-950 md:text-base">증빙자료 #{rowIndex}</p>
         {attachments.length ? (
           <button
             type="button"

@@ -938,11 +938,11 @@ export default function ProjectExpenseRegister() {
               )}
             </div>
 
-            <div className="my-10 flex justify-center gap-2">
-              <Button type="submit" className="min-w-[120px]">
+            <div className="mt-6 flex justify-center gap-2 md:my-10">
+              <Button type="submit" className="min-w-[120px] max-md:flex-1">
                 등록
               </Button>
-              <Button type="button" variant="outline" className="min-w-[120px]" asChild>
+              <Button type="button" variant="outline" className="min-w-[120px] max-md:flex-1" asChild>
                 <Link to={`/project/${projectId}/expense`}>취소</Link>
               </Button>
             </div>

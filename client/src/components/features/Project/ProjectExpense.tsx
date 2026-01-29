@@ -564,7 +564,9 @@ export default function Expense() {
                     수기 입력
                   </Button>
                 </div>
-                <input ref={fileInputRef} type="file" accept=".xlsx, .xls" className="h-0 w-0 text-[0]" onChange={handleExcelUpload} />
+                {!isMobile && (
+                  <input ref={fileInputRef} type="file" accept=".xlsx, .xls" className="h-0 w-0 text-[0]" onChange={handleExcelUpload} />
+                )}
               </>
             )}
           </div>
