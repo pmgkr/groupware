@@ -10,6 +10,7 @@ import { managerVacationApi } from '@/api/manager/vacation';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { MultiSelect } from '@components/multiselect/multi-select';
 import { VACATION_TYPE_OPTIONS, SPECIAL_VACATION_TYPES, OFFICIAL_VACATION_TYPES } from '@/utils/vacationHelper';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 dayjs.locale('ko');
 
@@ -22,6 +23,7 @@ export interface VacationHistoryProps {
 export default function VacationHistory({ userId, year, refreshTrigger }: VacationHistoryProps) {
   const { user } = useAuth();
   const location = useLocation();
+  const isMobile = useIsMobileViewport();
   
   // 연도 state - props로 받거나 기본값 사용
   const currentYear = new Date().getFullYear();
@@ -483,24 +485,24 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
       <Table key={`table-${page}`} variant="primary" align="center" className="table-fixed w-full">
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[20%] text-center p-2">기간</TableHead>
-            <TableHead className="w-[10%] text-center p-2">유형</TableHead>
-            <TableHead className="w-[10%] text-center p-2">휴가일수</TableHead>
-            <TableHead className="w-[15%] text-center p-2">승인일</TableHead>
-            <TableHead className="w-[35%] text-center p-2">설명</TableHead>
+            <TableHead className="w-[20%] text-center p-2 max-md:px-0.5 max-md:text-sm!">기간</TableHead>
+            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm!">유형</TableHead>
+            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm!">휴가일수</TableHead>
+            {!isMobile && <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm!">승인일</TableHead>}
+            <TableHead className="w-[35%] text-center p-2 max-md:px-0.5 max-md:text-sm!">설명</TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody key={`tbody-${page}`}>
         {loading ? (
-          <TableRow>
-            <TableCell className="h-100 text-gray-500 w-full" colSpan={5}>
+          <TableRow className="[&_td]:text-[13px]">
+            <TableCell className="h-100 text-gray-500 w-full p-2 max-md:px-0.5" colSpan={isMobile ? 4 : 5}>
               데이터 불러오는 중
             </TableCell>
           </TableRow>
         ) : !loading && paginatedData.length === 0 ? (
-          <TableRow>
-            <TableCell className="h-100 text-gray-500 w-full" colSpan={5}>
+          <TableRow className="[&_td]:text-[13px]">
+            <TableCell className="h-100 text-gray-500 w-full p-2 max-md:px-0.5" colSpan={isMobile ? 4 : 5}>
               데이터가 없습니다.
             </TableCell>
           </TableRow>
@@ -518,8 +520,8 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
                     : ''
                 }`}
               >
-                <TableCell className="text-center p-2">{formatPeriod(group.item.sdate, group.item.edate)}</TableCell>
-                <TableCell className="text-center p-2">
+                <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">{formatPeriod(group.item.sdate, group.item.edate)}</TableCell>
+                <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">
                   <div className="flex flex-col gap-0.5">
                     <span>{getVacationTypeText(group.item.v_type)}</span>
                     {hasCancelled && (
@@ -529,7 +531,7 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="text-center p-2">
+                <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">
                   <div className="flex flex-col gap-0.5">
                     <span>{group.item.v_count || '-'}</span>
                     {hasCancelled && (
@@ -537,15 +539,17 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="text-center p-2">
-                  <div className="flex flex-col gap-0.5">
-                    <span>{group.item.wdate ? dayjs(group.item.wdate).format('YYYY-MM-DD') : '-'}</span>
-                    {hasCancelled && (
-                      <span className="text-gray-800">{group.cancelledItem!.wdate ? dayjs(group.cancelledItem!.wdate).format('YYYY-MM-DD') : '-'}</span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-left p-2">
+                {!isMobile && (
+                  <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">
+                    <div className="flex flex-col gap-0.5">
+                      <span>{group.item.wdate ? dayjs(group.item.wdate).format('YYYY-MM-DD') : '-'}</span>
+                      {hasCancelled && (
+                        <span className="text-gray-800">{group.cancelledItem!.wdate ? dayjs(group.cancelledItem!.wdate).format('YYYY-MM-DD') : '-'}</span>
+                      )}
+                    </div>
+                  </TableCell>
+                )}
+                <TableCell className="text-left p-2 max-md:px-0.5 max-md:text-sm!">
                   <div className="flex flex-col gap-0.5">
                     <span>{group.item.remark || '-'}</span>
                     {hasCancelled && (

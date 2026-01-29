@@ -8,6 +8,7 @@ import { getTeams as getManagerTeams, type MyTeamItem } from '@/api/manager/team
 import { getMemberList } from '@/api/common/team';
 import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getGrowingYears } from '@/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 // 셀렉트 옵션 타입 정의
 export interface SelectOption {
@@ -54,6 +55,7 @@ export default function VacationToolbar({
   const { user } = useAuth();
   const location = useLocation();
   const isManagerContext = location.pathname.startsWith('/manager');
+  const isMobile = useIsMobileViewport();
   
   // 최고관리자-휴가관리-상세페이지
   const isAdminDetailPage = location.pathname.includes('/vacation/user/');
@@ -306,14 +308,15 @@ export default function VacationToolbar({
 
   return (
     <div className="w-full flex items-center justify-between mb-5">
-      <div className="flex items-center">
+
+      <div className="flex max-md:flex-wrap! max-md:w-full max-md:gap-2 max-md:justify-between">
         {/* 탭 버튼 */}
         { page === 'manager' && (
-          <div className="flex items-center gap-2 after:mx-5 after:inline-flex after:h-7 after:w-[1px] after:bg-gray-300 after:align-middle">
-            <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
+          <div className="flex items-center gap-2 after:mx-5 after:inline-flex after:h-7 after:w-[1px] after:bg-gray-300 after:align-middle max-md:w-full! max-md:after:hidden">
+            <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5 max-md:w-full!">
               <Button
                 onClick={() => onTabChange('vacation')}
-                className={`h-8 w-18 rounded-sm p-0 text-sm ${
+                className={`h-8 w-18 rounded-sm p-0 text-sm max-md:flex-1 ${
                   activeTab === 'vacation'
                     ? 'bg-primary hover:bg-primary active:bg-primary text-white'
                     : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
@@ -322,7 +325,7 @@ export default function VacationToolbar({
               </Button>
               <Button
                 onClick={() => onTabChange('event')}
-                className={`h-8 w-18 rounded-sm p-0 text-sm ${
+                className={`h-8 w-18 rounded-sm p-0 text-sm max-md:flex-1 ${
                   activeTab === 'event'
                     ? 'bg-primary hover:bg-primary active:bg-primary text-white'
                     : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
@@ -363,7 +366,7 @@ export default function VacationToolbar({
             searchable={true}
             hideSelectAll={false}
             autoSize={true}
-            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[80px]! max-md:w-[80px]! max-md:max-w-[80px]!"
           />
 
           {/* 팀원 선택 (Admin일 때만) */}
@@ -379,7 +382,7 @@ export default function VacationToolbar({
               searchable={true}
               hideSelectAll={isAdminDetailPage}
               autoSize={true}
-              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[80px]! max-md:w-[80px]! max-md:max-w-[80px]!"
               disabled={selectedTeams.length === 0}
             />
           )}
@@ -401,7 +404,7 @@ export default function VacationToolbar({
               searchable={false}
               hideSelectAll={false}
               autoSize={true}
-              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[80px]! max-md:w-[80px]! max-md:max-w-[80px]!"
             />
           )}
 
@@ -423,7 +426,7 @@ export default function VacationToolbar({
               searchable={false}
               hideSelectAll={false}
               autoSize={true}
-              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[80px]! max-md:w-[80px]! max-md:max-w-[80px]!"
             />
           )}
 
@@ -445,18 +448,31 @@ export default function VacationToolbar({
               searchable={false}
               hideSelectAll={false}
               autoSize={true}
-              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[80px]! max-md:w-[80px]! max-md:max-w-[80px]!"
             />
           </>
           )}
 
         </div>
+        
+        {/* 승인버튼(모바일) */}
+        {isMobile && (
+        <>
+          {page === 'manager' && (
+            <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>승인하기</Button>
+          )}
+          {page === 'admin' && isAdminDetailPage && (
+            <Button onClick={onListClick} variant="outline" size="sm">목록</Button>
+          )}
+        </>
+        )}
       </div>
-      
-      {page === 'manager' && (
+
+      {/* 승인버튼(데스크탑) */}
+      {!isMobile && page === 'manager' && (
         <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>승인하기</Button>
-      )}
-      {page === 'admin' && isAdminDetailPage && (
+        )}
+      {!isMobile && page === 'admin' && isAdminDetailPage && (
         <Button onClick={onListClick} variant="outline" size="sm">목록</Button>
       )}
     </div>

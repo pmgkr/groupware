@@ -12,6 +12,7 @@ import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams } from '@/api/manager/teams';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getAvatarFallback, SortIcon, getProfileImageUrl } from '@/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 /* ===========================================================
     타입 정의
@@ -50,7 +51,7 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
   const navigate = useNavigate();
   const location = useLocation();
   const isDetailPage = location.pathname.includes('/vacation/user/');
-
+  const isMobile = useIsMobileViewport();
   const [displayData, setDisplayData] = useState<DisplayDataItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -303,10 +304,10 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
   return (
     <Table variant="primary" align="center" className="table-fixed">
       <TableHeader>
-        <TableRow>
-          <TableHead className="w-[8%] text-center">부서</TableHead>
-          <TableHead className="w-[10%] text-center">이름</TableHead>
-          <TableHead className="w-[15%] text-center">
+        <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+          <TableHead className="w-[8%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:hidden">부서</TableHead>
+          <TableHead className="w-[12%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">이름</TableHead>
+          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:hidden">
             <div className="flex items-center justify-center gap-1">
               <span className="text-[13px]">입사일</span>
               <Button
@@ -321,10 +322,10 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
               </Button>
             </div>
           </TableHead>
-          <TableHead className="w-[10%] text-center">
-            <div className="flex items-center justify-center gap-1">
-              <span className="text-[13px]">잔여기본연차</span>
-              <Tooltip>
+          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
+            <div className="flex items-center justify-center gap-1 max-md:gap-0!">
+              <span className="text-[13px] max-md:text-sm!"><span className="max-md:hidden">잔여</span>기본연차</span>
+              {!isMobile && <Tooltip>
                 <TooltipTrigger
                   asChild
                 >
@@ -332,6 +333,8 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
                 </TooltipTrigger>
                 <TooltipContent>당해 지급 연차 + 주말&공휴일 보상휴가</TooltipContent>
               </Tooltip>
+              }
+              {!isMobile && (
               <Button
                 type="button"
                 variant="svgIcon"
@@ -342,12 +345,13 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
               >
                 <SortIcon order={sortState?.key === 'va_current' ? sortState.order : undefined} />
               </Button>
+              )}
             </div>
           </TableHead>
-          <TableHead className="w-[10%] text-center">
+          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
             <div className="flex items-center justify-center gap-1">
-              <span className="text-[13px]">잔여이월연차</span>
-              <Tooltip>
+              <span className="text-[13px] max-md:text-sm!"><span className="max-md:hidden">잔여</span>이월연차</span>
+              {!isMobile && <Tooltip>
                 <TooltipTrigger
                   asChild
                 >
@@ -355,6 +359,8 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
                 </TooltipTrigger>
                 <TooltipContent>당해 4월 소멸됨</TooltipContent>
               </Tooltip>
+              }
+              {!isMobile && (
               <Button
                 type="button"
                 variant="svgIcon"
@@ -365,13 +371,14 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
               >
                 <SortIcon order={sortState?.key === 'va_carryover' ? sortState.order : undefined} />
               </Button>
+              )}
             </div>
           </TableHead>
 
-          <TableHead className="w-[10%] text-center">
+          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
             <div className="flex items-center justify-center gap-1">
-              <span className="text-[13px]">잔여특별대휴</span>
-              <Tooltip>
+              <span className="text-[13px] max-md:text-sm!"><span className="max-md:hidden">잔여</span>특별대휴</span>
+              {!isMobile && <Tooltip>
                 <TooltipTrigger
                   asChild
                 >
@@ -379,6 +386,8 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
                 </TooltipTrigger>
                 <TooltipContent>토요일 근무 보상휴가</TooltipContent>
               </Tooltip>
+              }
+              {!isMobile && (
               <Button
                 type="button"
                 variant="svgIcon"
@@ -389,12 +398,14 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
               >
                 <SortIcon order={sortState?.key === 'va_comp' ? sortState.order : undefined} />
               </Button>
+              )}
             </div>
           </TableHead>
 
-          <TableHead className="w-[10%] text-center">
+          <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm! hidden">
             <div className="flex items-center justify-center gap-1">
-              <span className="text-[13px]">잔여공가</span>
+              <span className="text-[13px]"><span className="max-md:hidden">잔여</span>공가</span>
+              {!isMobile && (
               <Button
                 type="button"
                 variant="svgIcon"
@@ -405,33 +416,34 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
               >
                 <SortIcon order={sortState?.key === 'va_long' ? sortState.order : undefined} />
               </Button>
+              )}
             </div>
           </TableHead>
-          {!isManagerPage && <TableHead className="w-[10%] text-center">휴가관리</TableHead>}
+          {!isManagerPage && <TableHead className="w-[20%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">휴가관리</TableHead>}
         </TableRow>
       </TableHeader>
 
       <TableBody>
         {loading ? (
-          <TableRow>
-            <TableCell colSpan={columnCount} className="text-center">로딩 중…</TableCell>
+          <TableRow className="[&_td]:text-[13px]">
+            <TableCell colSpan={columnCount} className="text-center p-2 max-md:px-0.5">로딩 중…</TableCell>
           </TableRow>
         ) : sortedDisplayData.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={columnCount} className="text-center">데이터 없음</TableCell>
+          <TableRow className="[&_td]:text-[13px]">
+            <TableCell colSpan={columnCount} className="text-center p-2 max-md:px-0.5">데이터 없음</TableCell>
           </TableRow>
         ) : (
           sortedDisplayData.map(item => (
             <TableRow
               key={item.id}
-              className="cursor-pointer hover:bg-gray-200"
+              className="cursor-pointer hover:bg-gray-200 [&_td]:text-[13px]"
               onClick={(e) => handleRowClick(item.id, e)}
             >
-              <TableCell className="text-center">{item.department}</TableCell>
+              <TableCell className="text-center p-2 max-md:px-0.5 max-md:hidden">{item.department}</TableCell>
 
-              <TableCell className="text-center">
+              <TableCell className="text-center p-2 max-md:px-0.5">
                 <div className="flex items-center gap-2 justify-center">
-                  <Avatar className="w-8 h-8">
+                  <Avatar className="w-8 h-8 max-md:hidden">
                     {item.profile_image && (
                       <AvatarImage
                         src={getProfileImageUrl(item.profile_image)}
@@ -444,7 +456,7 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
                 </div>
               </TableCell>
 
-              <TableCell className="text-center">
+              <TableCell className="text-center p-2 max-md:px-0.5 max-md:hidden">
                 <div className="flex items-center justify-center gap-1">
                   <span className="text-sm">{item.hireDate}</span>
                   <span className="text-xs text-gray-500">({item.daycount}일)</span>
@@ -452,29 +464,29 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
               </TableCell>
 
               {/* 기본연차 */}
-              <TableCell className="text-center">
+              <TableCell className="text-center p-2 max-md:px-0.5">
                 <Badge variant={Number(item.va_current) < 0 ? "lightpink2" : Number(item.va_current) === 0 ? "grayish" : "secondary"} size="table">
                   {item.va_current}일
                 </Badge>
               </TableCell>
 
               {/* 이월 */}
-              <TableCell className="text-center">
+              <TableCell className="text-center p-2 max-md:px-0.5">
                 <Badge variant={Number(item.va_carryover) < 0 ? "lightpink2" : Number(item.va_carryover) === 0 ? "grayish" : "secondary"} size="table">{item.va_carryover}일</Badge>
               </TableCell>
 
               {/* 특별 */}
-              <TableCell className="text-center">
+              <TableCell className="text-center p-2 max-md:px-0.5">
                 <Badge variant={Number(item.va_comp) < 0 ? "lightpink2" : Number(item.va_comp) === 0 ? "grayish" : "secondary"} size="table">{item.va_comp}일</Badge>
               </TableCell>
 
               {/* 공가 (근속휴가) */}
-                <TableCell className="text-center">
+              <TableCell className="text-center p-2 max-md:px-0.5 hidden">
                 <Badge variant={Number(item.va_long) < 0 ? "lightpink2" : Number(item.va_long) === 0 ? "grayish" : "secondary"} size="table">{item.va_long}일</Badge>
               </TableCell>
 
               {!isManagerPage && (
-                <TableCell className="text-center">
+                <TableCell className="text-center p-2 max-md:px-0.5">
                   <Button size="sm" variant="outline"
                     onClick={() => handleOpenGrantDialog(item.id, item.name)}
                   >
