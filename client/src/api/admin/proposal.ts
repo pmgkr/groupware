@@ -11,40 +11,52 @@ export interface AdminReportCard extends ReportCard {
   approval_gm_display_state?: string;
 }
 
-function managerDisplayState(item: any) {
-  const state = (item.manager_state || '').trim();
-
-  if (state === '반려') return '반려';
-  if (state === '대기') return '팀장대기';
-  if (state === '완료') return '팀장완료';
-
-  return '';
-}
-
+// 회계 담당자용 상태 매핑 - 전체 결재 흐름 표시
 function financeDisplayState(item: any) {
-  // 회계는 팀장 승인 이후에만 의미 있음
-  if (item.manager_state !== '완료') return '';
+  const managerState = (item.manager_state || '').trim();
+  const financeState = (item.finance_state || '').trim();
+  const gmState = (item.gm_state || '').trim();
 
-  const state = (item.finance_state || '').trim();
+  // 반려 상태 체크
+  if (managerState === '반려' || financeState === '반려' || gmState === '반려') {
+    return '반려';
+  }
 
-  if (state === '반려') return '반려';
-  if (state === '대기') return '회계대기';
-  if (state === '완료') return '회계완료';
+  // 팀장 단계
+  if (managerState === '대기') return '팀장대기';
+  if (managerState === '완료' && financeState === '대기') return '회계대기';
 
-  return '';
+  // 회계 완료 후
+  if (managerState === '완료' && financeState === '완료') {
+    if (gmState === '대기') return 'GM대기';
+    if (gmState === '완료') return '승인완료';
+  }
+
+  return '팀장완료';
 }
+
+// GM용 상태 매핑 - 전체 결재 흐름 표시
 function gmDisplayState(item: any) {
-  // GM은 팀장 & 회계가 모두 완료된 후에만 유효한 단계!
-  if (item.manager_state !== '완료') return '';
-  if (item.finance_state !== '완료') return '';
+  const managerState = (item.manager_state || '').trim();
+  const financeState = (item.finance_state || '').trim();
+  const gmState = (item.gm_state || '').trim();
 
-  const state = (item.gm_state || '').trim();
+  // 반려 상태 체크
+  if (managerState === '반려' || financeState === '반려' || gmState === '반려') {
+    return '반려';
+  }
 
-  if (state === '반려') return '반려';
-  if (state === '대기') return 'GM대기';
-  if (state === '완료') return '승인완료';
+  // 팀장 단계
+  if (managerState === '대기') return '팀장대기';
 
-  return '';
+  // 회계 단계
+  if (managerState === '완료' && financeState === '대기') return '회계대기';
+  if (managerState === '완료' && financeState === '완료' && gmState === '대기') return 'GM대기';
+
+  // GM 완료
+  if (managerState === '완료' && financeState === '완료' && gmState === '완료') return '승인완료';
+
+  return '팀장완료';
 }
 
 export async function getReportListAdmin(params: {
@@ -58,7 +70,7 @@ export async function getReportListAdmin(params: {
   queryParams.append('page', params.page.toString());
   queryParams.append('size', params.size.toString());
 
-  // 🔥 status 그대로 서버로 전달
+  // status 그대로 서버로 전달
   if (params.status) queryParams.append('status', params.status);
   if (params.q) queryParams.append('q', params.q);
 
@@ -85,7 +97,7 @@ export async function getReportListAdmin(params: {
     finance_state: item.finance_state,
     gm_state: item.gm_state,
 
-    approval_manager_display_state: managerDisplayState(item),
+    approval_manager_display_state: '', // 어드민에서는 사용 안함
     approval_finance_display_state: financeDisplayState(item),
     approval_gm_display_state: gmDisplayState(item),
   }));
