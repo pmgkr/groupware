@@ -9,6 +9,14 @@ import { getMemberList } from '@/api/common/team';
 import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getGrowingYears } from '@/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/components/ui/drawer';
+import { ListFilter, RefreshCw } from 'lucide-react';
 
 // 셀렉트 옵션 타입 정의
 export interface SelectOption {
@@ -306,6 +314,22 @@ export default function VacationToolbar({
     }));
   }, [teamMembers]);
 
+  // 필터 초기화 함수 (모바일 Drawer용)
+  const handleReset = () => {
+    const defaultFilters: VacationFilters = {
+      year: new Date().getFullYear().toString(),
+      status: page === 'manager' ? ['H'] : [],
+      vacationType: [],
+      eventType: []
+    };
+    setFilters(defaultFilters);
+    setSelectedTeams([]);
+    setSelectedUsers([]);
+    onFilterChange(defaultFilters);
+    onTeamSelect([]);
+    onUserSelect([]);
+  };
+
   return (
     <div className="w-full flex items-center justify-between mb-5">
 
@@ -335,7 +359,157 @@ export default function VacationToolbar({
             </div>
           </div>
         )}
-        {/* 필터 셀렉트들 */}
+        {/* 모바일 + /manager/vacation 페이지일 때만: 필터 버튼 → Drawer (history 등 하위 경로 제외) */}
+        {isMobile && location.pathname === '/manager/vacation' ? (
+          <div className="flex w-full items-center justify-between">
+            <Drawer direction="bottom">
+              <DrawerTrigger asChild>
+                <Button size="sm" variant="ghost" className="has-[>svg]:px-0 text-gray-500">
+                  <ListFilter className="size-4" /> 필터
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent className="pointer-events-auto">
+                <DrawerHeader>
+                  <div className="flex justify-between">
+                    <DrawerTitle className="text-left">상세 필터</DrawerTitle>
+                    <Button type="button" variant="ghost" size="xs" className="hover:text-primary-blue-500 text-gray-600" onClick={handleReset}>
+                      <RefreshCw className="size-4" /> 초기화
+                    </Button>
+                  </div>
+                </DrawerHeader>
+                <div className="flex flex-col gap-y-2 px-4 pb-8">
+                  <div className="flex gap-x-2 w-full">
+                    <div className="w-1/2">
+                      <FilterTitle label="연도 선택" />
+                      <Select value={filters.year} onValueChange={(v) => handleSelectChange('year', v)}>
+                        <SelectTrigger className="w-full px-2">
+                          <SelectValue placeholder="연도 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {yearOptions.map((y) => (
+                              <SelectItem key={y} value={y}>{y}년</SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="w-1/2">
+                      <FilterTitle label="팀 선택" />
+                      <MultiSelect
+                        options={teamOptions}
+                        onValueChange={(value) => handleSelectChange('teams', value)}
+                        defaultValue={selectedTeams}
+                        placeholder="팀 선택"
+                        size="default"
+                        maxCount={1}
+                        searchable={true}
+                        hideSelectAll={false}
+                        autoSize={true}
+                        className="w-full max-w-full min-w-auto! multi-select"
+                        modalPopover={true}
+                      />
+                    </div>
+                  </div>
+                  {page === 'admin' && (
+                    <div>
+                      <FilterTitle label="팀원 선택" />
+                      <MultiSelect
+                        options={userOptions}
+                        onValueChange={(value) => handleSelectChange('users', value)}
+                        defaultValue={selectedUsers}
+                        placeholder="팀원 선택"
+                        size="default"
+                        maxCount={1}
+                        searchable={true}
+                        hideSelectAll={isAdminDetailPage}
+                        autoSize={true}
+                        className="w-full max-w-full min-w-auto! multi-select"
+                        modalPopover={true}
+                        disabled={selectedTeams.length === 0}
+                      />
+                    </div>
+                  )}
+                  {page === 'manager' && (
+                    <div>
+                      <FilterTitle label="상태 선택" />
+                      <MultiSelect
+                        options={[
+                          { value: 'H', label: '취소요청됨' },
+                          { value: 'Y', label: '승인완료' },
+                          { value: 'N', label: '취소완료' },
+                        ]}
+                        onValueChange={(value) => handleSelectChange('status', value)}
+                        defaultValue={filters.status}
+                        placeholder="상태"
+                        size="default"
+                        maxCount={3}
+                        searchable={false}
+                        hideSelectAll={false}
+                        autoSize={true}
+                        className="w-full max-w-full min-w-auto! multi-select"
+                        modalPopover={true}
+                      />
+                    </div>
+                  )}
+                  {page === 'manager' && activeTab === 'vacation' && (
+                    <div>
+                      <FilterTitle label="휴가 유형" />
+                      <MultiSelect
+                        options={[
+                          { value: 'day', label: '연차' },
+                          { value: 'half', label: '반차' },
+                          { value: 'quarter', label: '반반차' },
+                          { value: 'official', label: '공가' },
+                        ]}
+                        onValueChange={(value) => handleSelectChange('vacationType', value)}
+                        defaultValue={filters.vacationType}
+                        placeholder="휴가 유형"
+                        size="default"
+                        maxCount={4}
+                        searchable={false}
+                        hideSelectAll={false}
+                        autoSize={true}
+                        className="w-full max-w-full min-w-auto! multi-select"
+                        modalPopover={true}
+                      />
+                    </div>
+                  )}
+                  {activeTab === 'event' && (
+                    <div>
+                      <FilterTitle label="이벤트 유형" />
+                      <MultiSelect
+                        options={[
+                          { value: 'remote', label: '재택근무' },
+                          { value: 'field', label: '외부근무' },
+                          { value: 'etc', label: '기타' },
+                        ]}
+                        onValueChange={(value) => handleSelectChange('eventType', value)}
+                        defaultValue={filters.eventType}
+                        placeholder="이벤트 유형"
+                        size="default"
+                        maxCount={3}
+                        searchable={false}
+                        hideSelectAll={false}
+                        autoSize={true}
+                        className="w-full max-w-full min-w-auto! multi-select"
+                        modalPopover={true}
+                      />
+                    </div>
+                  )}
+                </div>
+              </DrawerContent>
+            </Drawer>
+            {page === 'manager' && (
+              <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>승인하기</Button>
+            )}
+            {page === 'admin' && isAdminDetailPage && (
+              <Button onClick={onListClick} variant="outline" size="sm">목록</Button>
+            )}
+          </div>
+        ) : (
+        <>
+        {/* 필터 셀렉트들 (데스크톱) */}
         <div className="flex items-center gap-2 ">
           
           {/* 연도 단일 선택 */}
@@ -382,7 +556,7 @@ export default function VacationToolbar({
               searchable={true}
               hideSelectAll={isAdminDetailPage}
               autoSize={true}
-              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[80px]! max-md:w-[80px]! max-md:max-w-[80px]!"
+              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[85px]! max-md:w-[85px]! max-md:max-w-[85px]!"
               disabled={selectedTeams.length === 0}
             />
           )}
@@ -454,28 +628,22 @@ export default function VacationToolbar({
           )}
 
         </div>
-        
-        {/* 승인버튼(모바일) */}
-        {isMobile && (
-        <>
-          {page === 'manager' && (
-            <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>승인하기</Button>
-          )}
-          {page === 'admin' && isAdminDetailPage && (
-            <Button onClick={onListClick} variant="outline" size="sm">목록</Button>
-          )}
         </>
         )}
       </div>
 
-      {/* 승인버튼(데스크탑) */}
-      {!isMobile && page === 'manager' && (
+      {/* 승인버튼들(데스크톱) */}
+      {page === 'manager' && location.pathname !== '/manager/vacation' && (
         <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>승인하기</Button>
-        )}
-      {!isMobile && page === 'admin' && isAdminDetailPage && (
+      )}
+      {page === 'admin' && isAdminDetailPage && (
         <Button onClick={onListClick} variant="outline" size="sm">목록</Button>
       )}
     </div>
   );
+}
+
+function FilterTitle({ label }: { label: string }) {
+  return <p className="mb-1 text-base font-medium text-gray-600">{label}</p>;
 }
 

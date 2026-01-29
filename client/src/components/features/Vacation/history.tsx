@@ -478,7 +478,7 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
           searchable={false}
           hideSelectAll={false}
           autoSize={true}
-          className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+          className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:w-[80px]! max-md:max-w-[80px]!"
         />
       </div>
       <div ref={tableRef} className="w-full">
