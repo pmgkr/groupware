@@ -91,7 +91,6 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
   };
 
   const applyFilters = () => {
-    onFilterChange('tab', activeTab);
     onFilterChange('year', draftYear);
     onFilterChange('type', draftType);
     onFilterChange('method', draftProof);
@@ -101,7 +100,6 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
 
   const handleTabChange = (tab: 'all' | 'saved') => {
     onTabChange(tab);
-    onFilterChange('tab', tab);
   };
 
   const handleApply = () => {

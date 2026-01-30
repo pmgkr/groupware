@@ -58,8 +58,6 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck, manager }: 
       </TableCell>
       <TableCell>{statusMap[item.status as keyof typeof statusMap]}</TableCell>
       <TableCell>{formatDate(item.wdate)}</TableCell>
-      <TableCell>{(item.status !== 'Rejected' && formatDate(item.ddate)) || '-'}</TableCell>
-      <TableCell>{(item.status !== 'Rejected' && formatDate(item.edate)) || '-'}</TableCell>
     </TableRow>
   );
 });

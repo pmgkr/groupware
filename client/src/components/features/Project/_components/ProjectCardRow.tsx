@@ -17,7 +17,7 @@ export const ProjectCardRow = memo(({ item, isFavorite = false, onToggleFavorite
   const status = statusMap[item.project_status as keyof typeof statusMap];
 
   return (
-    <div className="rounded-md border border-gray-300 bg-white px-4 py-2">
+    <div className="rounded-md border border-gray-300 bg-white p-4 pt-2">
       <div className="mb-1 flex items-center justify-between border-b border-gray-300 pb-1">
         <div className="flex items-center gap-1">
           <Button
@@ -34,7 +34,7 @@ export const ProjectCardRow = memo(({ item, isFavorite = false, onToggleFavorite
       </div>
 
       <Link to={`/project/${item.project_id}`} state={{ fromSearch: search }}>
-        <p className="truncate pt-2 text-lg leading-[1.3] font-bold">{item.project_title}</p>
+        <p className="truncate pt-2 text-lg leading-[1.3] font-bold tracking-tight">{item.project_title}</p>
 
         <div className="mt-1 flex items-center justify-between text-sm text-gray-500">
           <p className="flex flex-1 gap-2 overflow-hidden">
