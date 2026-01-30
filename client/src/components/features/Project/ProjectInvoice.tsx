@@ -146,7 +146,7 @@ export default function ProjectInvoice() {
             <MultiSelect
               size="sm"
               ref={statusRef}
-              className="max-w-[80px]!"
+              className="max-w-[84px]! transition-none"
               maxCount={0}
               autoSize={true}
               placeholder="상태 선택"
@@ -159,8 +159,8 @@ export default function ProjectInvoice() {
 
             <div className="relative">
               <Input
-                className="max-w-42 pr-6"
                 size="sm"
+                className="max-w-42 pr-6"
                 placeholder="검색어 입력"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}

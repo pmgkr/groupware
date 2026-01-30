@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import { formatAmount, formatKST, formatDate } from '@/utils';
-import type { pExpenseListItem } from '@/api';
+import { formatAmount, formatDate } from '@/utils';
+import type { ExpenseListItem } from '@/api';
 
 type ExpenseRowProps = {
-  item: pExpenseListItem;
+  item: ExpenseListItem;
   activeTab: 'all' | 'saved';
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
@@ -36,19 +36,8 @@ export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck }: Expen
   const parseCategories = (cate: string) => cate?.split('|').filter(Boolean) ?? [];
   const categories = Array.from(new Set(parseCategories(item.el_type))); // 중복 카테고리 제거
 
-  // 비용 항목 & 견적서 매칭 누락 체크용
-  const matchMissing = item.alloc_status === 'empty' && item.is_estimate === 'Y' && item.status !== 'Rejected' && (
-    <span className="absolute -top-1 -right-1 flex size-3.5">
-      {/* 애니메이션 */}
-      <span className={`absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-500 opacity-75`}></span>
-      {/* 도트 */}
-      <span className={`relative inline-flex size-3.5 rounded-full border border-white bg-orange-500`}></span>
-    </span>
-  );
-
   return (
     <div className="relative rounded-md border border-gray-300 bg-white p-4">
-      {matchMissing}
       <div className="mb-1 flex justify-between border-b border-gray-300 pb-1">
         <div className="flex items-center gap-2 text-sm text-gray-600">
           {activeTab === 'saved' && (
@@ -65,13 +54,13 @@ export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck }: Expen
         {status}
       </div>
 
-      <Link to={`/project/${item.project_id}/expense/${item.seq}${search}`}>
+      <Link to={`/expense/${item.exp_id}${search}`}>
         <div className="my-2 flex items-center gap-2 overflow-hidden text-lg tracking-tight">
           <p className="flex-1 truncate">{item.el_title}</p>
           <strong className="shrink-0 font-medium">{formatAmount(item.el_total)}원</strong>
         </div>
         <div className="flex items-center justify-between text-sm text-gray-500">
-          <p className="flex flex-1 gap-2 overflow-hidden">
+          <div className="flex flex-1 gap-2 overflow-hidden">
             <span className="relative pr-2 after:absolute after:top-1/2 after:left-full after:h-3 after:w-px after:-translate-y-1/2 after:bg-gray-300 after:content-['']">
               {formatDate(item.wdate, true)}
             </span>
@@ -97,7 +86,7 @@ export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck }: Expen
                 {categories.length > 1 && <TooltipContent>{categories.join(', ')}</TooltipContent>}
               </Tooltip>
             </TooltipProvider>
-          </p>
+          </div>
           <p className="shrink-0">{item.user_nm}</p>
         </div>
       </Link>

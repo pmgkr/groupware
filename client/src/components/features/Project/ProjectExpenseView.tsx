@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, useParams, Link } from 'react-router';
 import { cn } from '@/lib/utils';
-import { formatAmount, normalizeAttachmentUrl } from '@/utils';
-import { format } from 'date-fns';
+import { formatAmount, formatDate, normalizeAttachmentUrl } from '@/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 
 import { Badge } from '@components/ui/badge';
@@ -40,12 +39,6 @@ export default function ProjectExpenseView() {
   // 기안서 조회 State
   const [selectedProposal, setSelectedProposal] = useState<ReportDTO | null>(null);
   const [proposalLoading, setProposalLoading] = useState(false);
-
-  const formatDate = (d?: string | Date | null) => {
-    if (!d) return '';
-    const date = typeof d === 'string' ? new Date(d) : d;
-    return format(date, 'yyyy-MM-dd');
-  };
 
   /** -----------------------------------------
    *  핵심 매칭 로직 공유 훅
@@ -206,12 +199,12 @@ export default function ProjectExpenseView() {
               )}
               <ExpRow title="증빙수단" value={header.el_method} />
               <ExpRow title="작성자" value={header.user_nm} />
-              <ExpRow title="작성일" value={formatDate(header.wdate)} />
+              <ExpRow title="작성일" value={formatDate(header.wdate, true)} />
               <div className="mt-3 border-t-1 border-dashed pt-3">
                 <ExpRow title="은행명" value={header.bank_name} />
                 <ExpRow title="계좌번호" value={header.bank_account} />
                 <ExpRow title="예금주" value={header.account_name} />
-                <ExpRow title="입금희망일" value={header.el_deposit ? formatDate(header.el_deposit) : <span>-</span>} />
+                <ExpRow title="입금희망일" value={header.el_deposit ? formatDate(header.el_deposit, true) : <span>-</span>} />
                 {header.remark && <ExpRow title="비고" value={header.remark} />}
               </div>
             </div>
@@ -225,7 +218,7 @@ export default function ProjectExpenseView() {
                     <div key={item.seq} className="mb-3 border-b-1 border-dashed pb-3 last:border-b-0">
                       <ExpRow title="비용 용도" value={item.ei_type} />
                       <ExpRow title="가맹점명" value={item.ei_title} />
-                      <ExpRow title="매입일자" value={formatDate(item.ei_pdate)} />
+                      <ExpRow title="매입일자" value={formatDate(item.ei_pdate, true)} />
                       <dl className="flex justify-between py-1">
                         <dt className="text-[13px] text-gray-700">금액</dt>
                         <dd className="text-right text-[13px] font-medium">
@@ -575,7 +568,7 @@ function ExpRow({ title, value, bold }: { title: string; value: any; bold?: bool
   return (
     <dl className="flex items-center justify-between gap-2 py-1">
       <dt className="w-[20%] shrink-0 text-[13px] text-gray-700">{title}</dt>
-      <dd className={cn('text-right text-[13px] font-medium', bold && 'font-semibold')}>{value}</dd>
+      <dd className={cn('text-right text-[13px] font-medium break-keep', bold && 'font-semibold')}>{value}</dd>
     </dl>
   );
 }

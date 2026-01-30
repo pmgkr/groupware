@@ -25,10 +25,12 @@ export function formatKST(dateString?: string | Date | null, withOutTime = false
   return withOutTime ? `${year}-${month}-${day}` : `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
-export function formatDate(d?: string | Date | null) {
+// YYYY-MM-DD 형식으로 날짜변환 (2번째 인자에 true 넣으면 YYYY.MM.DD 형식으로 변환)
+export function formatDate(d?: string | Date | null, dot?: boolean) {
   if (!d) return '';
   const date = typeof d === 'string' ? new Date(d) : d;
-  return format(date, 'yyyy-MM-dd');
+
+  return dot ? format(date, 'yyyy.MM.dd') : format(date, 'yyyy-MM-dd');
 }
 
 /* 

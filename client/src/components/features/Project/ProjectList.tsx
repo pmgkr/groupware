@@ -126,7 +126,7 @@ export default function ProjectList() {
 
     // 6. 페이지
     setPage(Number(getParam('page') || 1));
-  }, []); // 🔥 반드시 1회
+  }, []);
 
   // 필터 변경 시 page 초기화
   const handleFilterChange = (key: string, value: any) => {
@@ -152,11 +152,6 @@ export default function ProjectList() {
         setSelectedStatus(value);
         break;
     }
-
-    updateSearchParams({
-      page: 1,
-      [key]: value,
-    });
   };
 
   // 탭 변경 시 필터 초기화
@@ -167,6 +162,7 @@ export default function ProjectList() {
     setSelectedTeam([]);
     setSelectedStatus([]);
     setSearchQuery('');
+    setSearchInput('');
     setShowFavoritesOnly(false);
 
     // MultiSelect 내부 상태 초기화
@@ -174,8 +170,6 @@ export default function ProjectList() {
     clientRef.current?.clear();
     teamRef.current?.clear();
     statusRef.current?.clear();
-
-    updateSearchParams({ page: 1 });
   };
 
   const handleTabChange = (tab: 'mine' | 'others') => {
@@ -183,7 +177,9 @@ export default function ProjectList() {
     setPage(1);
     resetAllFilters();
 
-    setSearchParams({ tab: tab, page: '1' });
+    if (tab === 'others') {
+      setSelectedYear(currentYear);
+    }
   };
 
   // 즐겨찾기 리스트 불러오기
@@ -229,7 +225,6 @@ export default function ProjectList() {
       });
 
       setSearchParams(params);
-      console.log(searchParams);
     },
     [searchParams, setSearchParams]
   );
@@ -291,6 +286,33 @@ export default function ProjectList() {
     selectedStatus,
     searchQuery,
     activeTab,
+    showFavoritesOnly,
+  ]);
+
+  // URL 파라미터 업데이트
+  useEffect(() => {
+    updateSearchParams({
+      tab: activeTab,
+      page,
+      project_year: activeTab === 'others' ? selectedYear : undefined,
+      brand: selectedBrand,
+      category: selectedCategory,
+      client_id: selectedClient,
+      team_id: selectedTeam,
+      status: selectedStatus,
+      s: searchQuery || undefined,
+      tagged: showFavoritesOnly ? 'Y' : undefined,
+    });
+  }, [
+    activeTab,
+    page,
+    selectedYear,
+    selectedBrand,
+    selectedCategory,
+    selectedClient,
+    selectedTeam,
+    selectedStatus,
+    searchQuery,
     showFavoritesOnly,
   ]);
 

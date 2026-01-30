@@ -36,7 +36,9 @@ export default function Expense() {
   const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
   // 상단 필터용 state
-  const [activeTab, setActiveTab] = useState<'all' | 'saved'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'saved'>(() => {
+    return (searchParams.get('tab') as 'all' | 'saved') || 'all';
+  });
   const currentYear = String(new Date().getFullYear()); // 올해 구하기
   const yearOptions = getGrowingYears(); // yearOptions
   const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || currentYear);
@@ -102,6 +104,9 @@ export default function Expense() {
     setPage(1);
 
     switch (key) {
+      case 'tab':
+        activeTab;
+        break;
       case 'year':
         setSelectedYear(value as string);
         break;
@@ -125,20 +130,6 @@ export default function Expense() {
       default:
         break;
     }
-
-    updateSearchParams({
-      page: 1,
-      [key]: value,
-    });
-  };
-
-  // 탭 변경 시 필터 초기화
-  const handleTabChange = (tab: 'saved' | 'all') => {
-    setActiveTab(tab);
-    setPage(1);
-    resetAllFilters();
-
-    setSearchParams({ tab: tab, page: '1' });
   };
 
   const resetAllFilters = () => {
@@ -154,8 +145,25 @@ export default function Expense() {
     statusRef.current?.clear();
     proofRef.current?.clear();
     proofStatusRef.current?.clear();
+  };
 
-    updateSearchParams({ page: 1 });
+  // 탭 변경 시 필터 초기화
+  const handleTabChange = (tab: 'saved' | 'all') => {
+    setActiveTab(tab);
+    setPage(1);
+
+    setSelectedYear(currentYear);
+    setSelectedType([]);
+    setSelectedStatus([]);
+    setSelectedProof([]);
+    setSelectedProofStatus([]);
+    setCheckedItems([]);
+
+    // MultiSelect 내부 상태 초기화
+    typeRef.current?.clear();
+    statusRef.current?.clear();
+    proofRef.current?.clear();
+    proofStatusRef.current?.clear();
   };
 
   // 체크박스 활성화 여부
@@ -391,22 +399,35 @@ export default function Expense() {
     })();
   }, []);
 
+  // params에 따라 상단 필터 복구
+  useEffect(() => {
+    const tab = (searchParams.get('tab') as 'all' | 'saved') || 'all';
+    setActiveTab(tab);
+
+    setSelectedYear(searchParams.get('year') || currentYear);
+    setSelectedType(searchParams.get('type')?.split(',') ?? []);
+    setSelectedStatus(searchParams.get('status')?.split(',') ?? []);
+    setSelectedProof(searchParams.get('method')?.split(',') ?? []);
+    setSelectedProofStatus(searchParams.get('attach')?.split(',') ?? []);
+
+    setPage(Number(searchParams.get('page') || 1));
+  }, []); // 최초 1회
+
   // 비용 리스트 가져오기 (상단 필터 변경 시마다 자동 실행)
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
+
         const params: Record<string, any> = {
           project_id: projectId,
           year: selectedYear,
           page,
         };
 
-        if (!selectedStatus.length) {
-          if (activeTab === 'saved') {
-            params.status = 'Saved';
-          }
-        } else {
+        if (activeTab === 'saved') {
+          params.status = 'Saved';
+        } else if (selectedStatus.length) {
           params.status = selectedStatus.join(',');
         }
 
@@ -414,11 +435,7 @@ export default function Expense() {
         if (selectedProof.length) params.method = selectedProof.join(',');
         if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
 
-        // setSearchParams(params);
         const res = await getProjectExpense(params);
-
-        console.log('📦 비용 리스트 요청 파라미터:', params);
-        console.log('✅ 비용 리스트 응답:', res);
 
         setExpenseList(res.items);
         setTotal(res.total);
@@ -429,6 +446,19 @@ export default function Expense() {
       }
     })();
   }, [activeTab, selectedYear, selectedType, selectedProof, selectedProofStatus, selectedStatus, page]);
+
+  // URL 파라미터 업데이트
+  useEffect(() => {
+    updateSearchParams({
+      tab: activeTab,
+      page,
+      year: selectedYear,
+      type: selectedType,
+      status: activeTab === 'saved' ? undefined : selectedStatus,
+      method: selectedProof,
+      attach: selectedProofStatus,
+    });
+  }, [activeTab, page, selectedYear, selectedType, selectedStatus, selectedProof, selectedProofStatus]);
 
   // 전체 선택 상태 반영
   useEffect(() => {
@@ -482,7 +512,7 @@ export default function Expense() {
 
     onTabChange: handleTabChange,
     onFilterChange: handleFilterChange,
-    onReset: handleTabChange,
+    onReset: resetAllFilters,
     onCreate: () => setRegisterDialog(true),
   };
 

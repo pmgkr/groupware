@@ -53,9 +53,8 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
   } = props;
 
   /* ---------------- draft state ---------------- */
-  type OpenKey = 'category' | 'client' | 'team' | 'status' | null;
-
   const [open, setOpen] = useState(false);
+  const currentYear = String(new Date().getFullYear()); // 올해 구하기
   const [draftYear, setDraftYear] = useState(selectedYear);
   const [draftBrand, setDraftBrand] = useState(selectedBrand);
   const [draftCategory, setDraftCategory] = useState<string[]>(selectedCategory);
@@ -63,8 +62,16 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
   const [draftTeam, setDraftTeam] = useState<string[]>(selectedTeam);
   const [draftStatus, setDraftStatus] = useState<string[]>(selectedStatus);
   const [draftSearch, setDraftSearch] = useState(searchInput);
+  const activeMultiSelectRef = useRef<MultiSelectRef | null>(null); // Drawer 컴포넌트 내 MultiSelect 제어용
 
-  const [openKey, setOpenKey] = useState<OpenKey>(null);
+  const multiOpen = (ref: MultiSelectRef | null) => {
+    if (!ref) return;
+
+    if (activeMultiSelectRef.current && activeMultiSelectRef.current !== ref) {
+      activeMultiSelectRef.current.close();
+    }
+    activeMultiSelectRef.current = ref;
+  };
 
   const syncDraft = () => {
     setDraftYear(selectedYear);
@@ -77,11 +84,35 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
   };
 
   const handleApply = () => {
-    setOpen(false);
+    applyFilters();
+
+    if (activeMultiSelectRef.current) {
+      activeMultiSelectRef.current.close();
+    }
 
     requestAnimationFrame(() => {
-      applyFilters();
+      setOpen(false);
     });
+  };
+
+  const handleReset = () => {
+    // 1. 부모 초기화
+    onReset();
+
+    // 2. draft 상태 초기화
+    setDraftYear(currentYear);
+    setDraftBrand('');
+    setDraftCategory([]);
+    setDraftClient([]);
+    setDraftTeam([]);
+    setDraftStatus([]);
+    setDraftSearch('');
+
+    // 3. MultiSelect UI 초기화
+    categoryRef.current?.clear();
+    clientRef.current?.clear();
+    teamRef.current?.clear();
+    statusRef.current?.clear();
   };
 
   const applyFilters = () => {
@@ -141,7 +172,12 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
               <DrawerHeader>
                 <div className="flex justify-between">
                   <DrawerTitle className="text-left">상세 필터</DrawerTitle>
-                  <Button type="button" variant="ghost" size="xs" className="hover:text-primary-blue-500 text-gray-600" onClick={onReset}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    className="hover:text-primary-blue-500 text-gray-600"
+                    onClick={handleReset}>
                     <RefreshCw className="size-4" /> 초기화
                   </Button>
                 </div>
@@ -194,8 +230,10 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
                         onValueChange={setDraftCategory}
                         simpleSelect={true}
                         hideSelectAll={true}
+                        closeOnSelect={true}
                         modalPopover={true}
                         searchable={false}
+                        onOpen={() => multiOpen(categoryRef.current)}
                       />
                     </div>
                   </div>
@@ -211,8 +249,10 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
                       defaultValue={draftClient}
                       onValueChange={setDraftClient}
                       simpleSelect={true}
+                      closeOnSelect={true}
                       hideSelectAll={true}
                       modalPopover={true}
+                      onOpen={() => multiOpen(clientRef.current)}
                     />
                   </div>
 
@@ -228,9 +268,11 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
                         defaultValue={draftTeam}
                         onValueChange={setDraftTeam}
                         simpleSelect={true}
+                        closeOnSelect={true}
                         hideSelectAll={true}
                         modalPopover={true}
                         searchable={false}
+                        onOpen={() => multiOpen(teamRef.current)}
                       />
                     </div>
 
@@ -245,9 +287,11 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
                         defaultValue={draftStatus}
                         onValueChange={setDraftStatus}
                         simpleSelect={true}
+                        closeOnSelect={true}
                         hideSelectAll={true}
                         modalPopover={true}
                         searchable={false}
+                        onOpen={() => multiOpen(statusRef.current)}
                       />
                     </div>
                   </div>

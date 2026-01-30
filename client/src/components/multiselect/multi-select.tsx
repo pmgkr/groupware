@@ -273,6 +273,11 @@ interface MultiSelectProps
    * 외부에서 선택된 값 제어를 위한 prop
    */
   value?: string[];
+
+  /**
+   * MultiSelect가 열릴 때 알려주는 콜백
+   */
+  onOpen?: () => void;
 }
 
 /**
@@ -299,6 +304,10 @@ export interface MultiSelectRef {
    * Focus the component
    */
   focus: () => void;
+  /**
+   * Close the multi-select popover
+   */
+  close: () => void;
 }
 
 export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
@@ -332,6 +341,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
       simpleSelect = false,
       invalid = false,
       value,
+      onOpen,
       ...props
     },
     ref
@@ -805,7 +815,15 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
           </div>
         </div>
 
-        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen} modal={modalPopover}>
+        <Popover
+          open={isPopoverOpen}
+          onOpenChange={(open) => {
+            if (open) {
+              onOpen?.(); // Drawer에 알림
+            }
+            setIsPopoverOpen(open);
+          }}
+          modal={modalPopover}>
           <div id={triggerDescriptionId} className="sr-only">
             Multi-select dropdown. Use arrow keys to navigate, Enter to select, and Escape to close.
           </div>
@@ -992,7 +1010,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                     <span
                       className={cn(
                         size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]',
-                        'text-muted-foreground max-md:text-[13px]'
+                        'text-muted-foreground'
                       )}>
                       {placeholder}
                     </span>
@@ -1015,11 +1033,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 )
               ) : (
                 <div className="mx-auto flex w-full items-center justify-between">
-                  <span
-                    className={cn(
-                      size === 'sm' ? 'text-sm max-md:text-[11px]' : 'text-base max-md:text-[13px]',
-                      'text-muted-foreground max-md:text-[13px]'
-                    )}>
+                  <span className={cn(size === 'sm' ? 'text-sm' : 'text-base max-md:text-[13px]', 'text-muted-foreground')}>
                     {placeholder}
                   </span>
                   <ChevronDown className="text-muted-foreground ml-2 h-4 cursor-pointer" />
