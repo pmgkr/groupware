@@ -539,7 +539,9 @@ export default function ExpenseList() {
         <DialogContent className="max-md:max-w-[calc(100%-var(--spacing)*8)] max-md:rounded-md">
           <DialogHeader>
             <DialogTitle>신규 비용 등록</DialogTitle>
-            <DialogDescription>매입 내역 Excel 파일을 업로드해 데이터를 불러오거나 수기로 입력할 수 있습니다.</DialogDescription>
+            <DialogDescription className="break-keep">
+              매입 내역 Excel 파일을 업로드해 데이터를 불러오거나 수기로 입력할 수 있습니다.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4 max-md:py-2">
             <p className="text-base max-md:text-[13px]">등록하실 비용 유형을 선택해주세요.</p>
