@@ -17,16 +17,16 @@ export const ProjectCardRow = memo(({ item, isFavorite = false, onToggleFavorite
   const status = statusMap[item.project_status as keyof typeof statusMap];
 
   return (
-    <div className="rounded-md border border-gray-300 bg-white p-4 pt-2">
+    <div className="rounded-md border border-gray-300 bg-white p-4 py-3">
       <div className="mb-1 flex items-center justify-between border-b border-gray-300 pb-1">
         <div className="flex items-center gap-1">
           <Button
             type="button"
             size="sm"
             variant="svgIcon"
-            className={`h-6 has-[>svg]:px-1 ${isFavorite ? 'text-primary-yellow-500' : 'hover:text-primary-yellow-500 text-gray-600'}`}
+            className={`has-[>svg]:px-1 max-md:h-6 ${isFavorite ? 'text-primary-yellow-500' : 'hover:text-primary-yellow-500 text-gray-500'}`}
             onClick={() => onToggleFavorite?.(item.project_id)}>
-            <Star className="size-3.5" fill={isFavorite ? 'currentColor' : 'none'} />
+            <Star className="size-4" fill={isFavorite ? 'currentColor' : 'none'} />
           </Button>
           <span className="text-sm text-gray-500">{item.project_id}</span>
         </div>
