@@ -277,7 +277,7 @@ export default function ExpenseView() {
                 <TableColumnHeaderCell>비고</TableColumnHeaderCell>
               </TableColumnHeader>
               <TableColumnBody>
-                <TableColumnCell className="leading-[1.3]">{header.remark}</TableColumnCell>
+                <TableColumnCell className="leading-[1.4] break-keep whitespace-pre">{header.remark}</TableColumnCell>
               </TableColumnBody>
             </TableColumn>
           )}
@@ -287,7 +287,7 @@ export default function ExpenseView() {
                 <TableColumnHeaderCell>반려 사유</TableColumnHeaderCell>
               </TableColumnHeader>
               <TableColumnBody>
-                <TableColumnCell className="text-destructive leading-[1.3]">
+                <TableColumnCell className="text-destructive leading-[1.4] whitespace-pre">
                   {header.rej_reason}{' '}
                   {header.rejected_by && `- ${header.rejected_by} (${formatDate(header.edate ? header.edate : header.cdate)} 반려됨)`}
                 </TableColumnCell>
@@ -305,7 +305,7 @@ export default function ExpenseView() {
                   <TableHead className="w-[14%]">금액</TableHead>
                   <TableHead className="w-[10%]">세금</TableHead>
                   <TableHead className="w-[14%]">합계</TableHead>
-                  <TableHead className="w-[24%]">증빙자료</TableHead>
+                  <TableHead className="w-[18%]">증빙자료</TableHead>
                   <TableHead className="w-[8%]">기안서</TableHead>
                 </TableRow>
               </TableHeader>
@@ -329,9 +329,7 @@ export default function ExpenseView() {
                                   rel="noopener noreferrer"
                                   className="flex items-center justify-center gap-1">
                                   <File className="size-3.5 shrink-0" />
-                                  <span className="overflow-hidden text-left text-ellipsis whitespace-nowrap hover:underline">
-                                    {att.ea_fname}
-                                  </span>
+                                  <span className="truncate text-left hover:underline">{att.ea_fname}</span>
                                 </a>
                               </li>
                             ))}

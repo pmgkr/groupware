@@ -185,6 +185,8 @@ export default function ProjectExpenseRegister() {
           ...form.getValues(),
           expense_items: mapped,
         });
+
+        recalcTotal();
       } else {
         form.reset({
           ...form.getValues(),
@@ -222,6 +224,7 @@ export default function ProjectExpenseRegister() {
         return;
       }
       remove(index);
+      recalcTotal();
       form.clearErrors('expense_items');
       setArticleCount((prev) => Math.max(prev - 1, 1));
     },

@@ -153,7 +153,8 @@ export default function ExpenseRegister() {
         }
 
         if (expResult.status === 'fulfilled') {
-          setExpenseTypes(expResult.value.map((t: any) => ({ label: t.code, value: t.code })));
+          // 프론트에서 회식비 제외 처리
+          setExpenseTypes(expResult.value.filter((t: any) => t.code !== '회식비').map((t: any) => ({ label: t.code, value: t.code })));
         } else {
           console.error('비용 유형 불러오기 실패:', expResult.reason);
         }
@@ -177,6 +178,8 @@ export default function ExpenseRegister() {
           ...form.getValues(),
           expense_items: mapped,
         });
+
+        recalcTotal();
       } else {
         form.reset({
           ...form.getValues(),
@@ -214,6 +217,7 @@ export default function ExpenseRegister() {
         return;
       }
       remove(index);
+      recalcTotal();
       form.clearErrors('expense_items');
       setArticleCount((prev) => Math.max(prev - 1, 1));
     },
