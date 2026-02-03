@@ -222,7 +222,7 @@ export default function HeaderMobile() {
   const getSubMenuLinkClassName = (isActive: boolean) =>
     cn(
       'flex h-9 items-center justify-center text-center rounded-sm text-base',
-      isActive ? 'text-primary-blue-500 bg-white font-semibold' : 'text-gray-700 hover:bg-primary-blue-50'
+      isActive ? 'text-primary-blue-500 bg-white font-semibold' : 'text-gray-500 hover:bg-primary-blue-50'
     );
 
   return (
@@ -282,7 +282,7 @@ export default function HeaderMobile() {
           {/* <div className="text-center">
             <p className="text-sm">{welcomeMessage}</p>
           </div> */}
-          <ul className="px-5 w-full flex flex-col justify-start gap-y-2.5 flex-1 overflow-y-auto fixed top-[18vh] left-[50%] translate-x-[-50%] max-h-[70vh]">
+          <ul className="px-5 w-full flex flex-col justify-start gap-y-2.5 flex-1 overflow-y-auto fixed top-[18vh] left-[50%] translate-x-[-50%] max-h-[60vh]">
             <li>
                 <NavLink
                 to="/dashboard"
@@ -300,7 +300,7 @@ export default function HeaderMobile() {
                     <span>프로젝트</span>
                 </NavLink>
                 {expandedMenu === 'project' && (
-                    <ul className="mt-1 flex flex-col gap-y-1">
+                    <ul className="mt-1 mb-2 flex flex-col gap-y-1">
                     {subMenus.project.map((item) => (
                         <li key={item.to}>
                         <NavLink
@@ -327,7 +327,7 @@ export default function HeaderMobile() {
                     <span>일반비용</span>
                 </NavLink>
                 {expandedMenu === 'expense' && (
-                    <ul className="mt-1 flex flex-col gap-y-1">
+                    <ul className="mt-1 mb-2 flex flex-col gap-y-1">
                     {subMenus.expense.map((item) => (
                         <li key={item.to}>
                         <NavLink
@@ -354,7 +354,7 @@ export default function HeaderMobile() {
                     <span>캘린더</span>
                 </NavLink>
                 {expandedMenu === 'calendar' && (
-                    <ul className="mt-1 flex flex-col gap-y-1">
+                    <ul className="mt-1 mb-2 flex flex-col gap-y-1">
                     {subMenus.calendar.map((item) => (
                         <li key={item.to}>
                         <NavLink
@@ -389,7 +389,7 @@ export default function HeaderMobile() {
                     <span>오피스</span>
                 </NavLink>
                 {expandedMenu === 'office' && (
-                    <ul className="mt-1 flex flex-col gap-y-1">
+                    <ul className="mt-1 mb-2 flex flex-col gap-y-1">
                     {subMenus.office.map((item) => (
                         <li key={item.to}>
                         <NavLink
@@ -417,7 +417,7 @@ export default function HeaderMobile() {
                     <span>관리자</span>
                     </NavLink>
                     {expandedMenu === 'manager' && (
-                    <ul className="mt-1 flex flex-col gap-y-1">
+                    <ul className="mt-1 mb-2 flex flex-col gap-y-1">
                         {subMenus.manager.map((item) => (
                         <li key={item.to}>
                             <NavLink
@@ -446,7 +446,7 @@ export default function HeaderMobile() {
                     <span>최고관리자</span>
                     </NavLink>
                     {expandedMenu === 'admin' && (
-                    <ul className="mt-1 flex flex-col gap-y-1">
+                    <ul className="mt-1 mb-2 flex flex-col gap-y-1">
                         {subMenus.admin.map((item) => (
                         <li key={item.to}>
                             <NavLink
