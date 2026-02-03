@@ -213,10 +213,10 @@ export default function HeaderMobile() {
   const welcomeMessage = useMemo(() => getWelcomeMessage(user_name, birth_date), [user_name, birth_date]);
 
   // 메뉴 항목 공통 스타일
-  const getMenuLinkClassName = (isActive: boolean) =>
+  const getMenuLinkClassName = (isActive: boolean, isExpanded?: boolean) =>
     cn(
       'flex h-12 items-center justify-center rounded-lg px-3 text-lg',
-      isActive ? 'text-primary bg-primary-blue-100 text-primary-blue-500 font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
+      isActive ? 'text-primary bg-primary-blue-100 text-primary-blue-500 font-semibold' : isExpanded ? 'text-primary-blue-500 font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
     );
 
   const getSubMenuLinkClassName = (isActive: boolean) =>
@@ -256,7 +256,7 @@ export default function HeaderMobile() {
           setExpandedMenu(null);
         }
       }}>
-        <SheetContent side="right" className="bg-white w-full p-0 flex flex-col">
+        <SheetContent side="right" className="bg-white w-full! max-w-full! p-0 flex flex-col">
           <SheetHeader className="p-5 border-b border-gray-300">
             <SheetTitle className="sr-only">메뉴</SheetTitle>
             <div className="flex items-center gap-2.5">
@@ -275,14 +275,14 @@ export default function HeaderMobile() {
                 <Link to="/mypage" onClick={() => setIsSidebarOpen(false)}>
                   <strong className="text-base font-medium text-gray-950">{user_name} <span className="text-sm text-gray-500">{job_role}</span></strong>
                 </Link>
-                <div className="text-xs"><Weather /></div>
+                <div className="text-sm"><Weather /></div>
               </div>
             </div>
           </SheetHeader>
           {/* <div className="text-center">
             <p className="text-sm">{welcomeMessage}</p>
           </div> */}
-          <ul className="mx-5 flex flex-col align-center justify-center gap-y-2.5 flex-1 overflow-y-auto">
+          <ul className="px-5 w-full flex flex-col justify-start gap-y-2.5 flex-1 overflow-y-auto fixed top-[18vh] left-[50%] translate-x-[-50%] max-h-[70vh]">
             <li>
                 <NavLink
                 to="/dashboard"
@@ -296,7 +296,7 @@ export default function HeaderMobile() {
                 <NavLink
                     to="/project"
                     onClick={handleMenuClick('project')}
-                    className={({ isActive }) => getMenuLinkClassName(isActive)}>
+                    className={({ isActive }) => getMenuLinkClassName(isActive, expandedMenu === 'project')}>
                     <span>프로젝트</span>
                 </NavLink>
                 {expandedMenu === 'project' && (
@@ -323,7 +323,7 @@ export default function HeaderMobile() {
                 <NavLink
                     to="/expense"
                     onClick={handleMenuClick('expense')}
-                    className={({ isActive }) => getMenuLinkClassName(isActive)}>
+                    className={({ isActive }) => getMenuLinkClassName(isActive, expandedMenu === 'expense')}>
                     <span>일반비용</span>
                 </NavLink>
                 {expandedMenu === 'expense' && (
@@ -350,7 +350,7 @@ export default function HeaderMobile() {
                 <NavLink
                     to="/calendar"
                     onClick={handleMenuClick('calendar')}
-                    className={({ isActive }) => getMenuLinkClassName(isActive)}>
+                    className={({ isActive }) => getMenuLinkClassName(isActive, expandedMenu === 'calendar')}>
                     <span>캘린더</span>
                 </NavLink>
                 {expandedMenu === 'calendar' && (
@@ -385,7 +385,7 @@ export default function HeaderMobile() {
                 <NavLink
                     to="/notice"
                     onClick={handleMenuClick('office')}
-                    className={({ isActive }) => getMenuLinkClassName(isActive || isOfficeActive)}>
+                    className={({ isActive }) => getMenuLinkClassName(isActive || isOfficeActive, expandedMenu === 'office')}>
                     <span>오피스</span>
                 </NavLink>
                 {expandedMenu === 'office' && (
@@ -413,7 +413,7 @@ export default function HeaderMobile() {
                     <NavLink
                     to="/manager/working"
                     onClick={handleMenuClick('manager')}
-                    className={({ isActive }) => getMenuLinkClassName(isActive || isManagerSection)}>
+                    className={({ isActive }) => getMenuLinkClassName(isActive || isManagerSection, expandedMenu === 'manager')}>
                     <span>관리자</span>
                     </NavLink>
                     {expandedMenu === 'manager' && (
@@ -442,7 +442,7 @@ export default function HeaderMobile() {
                     <NavLink
                     to="/admin/finance"
                     onClick={handleMenuClick('admin')}
-                    className={({ isActive }) => getMenuLinkClassName(isActive || isAdminSection)}>
+                    className={({ isActive }) => getMenuLinkClassName(isActive || isAdminSection, expandedMenu === 'admin')}>
                     <span>최고관리자</span>
                     </NavLink>
                     {expandedMenu === 'admin' && (
@@ -466,14 +466,25 @@ export default function HeaderMobile() {
                 </li>
             )}
         </ul>
-        <div className="mt-auto p-5 flex justify-end">
+        <div className="mt-auto p-5 flex items-center justify-center gap-1">
           <Button 
-            variant="svgIcon" 
-            size="icon" 
+            variant="ghost" 
+            size="sm" 
+            className="text-gray-500" 
+            aria-label="마이페이지" 
+            >
+            <Link to="/mypage" onClick={() => setIsSidebarOpen(false)}>
+              <span className="text-sm font-medium">마이페이지</span>
+            </Link>
+          </Button>
+          <span className="h-3 w-px bg-gray-300" aria-hidden />
+          <Button 
+            variant="ghost" 
+            size="sm" 
             className="text-gray-500" 
             aria-label="로그아웃" 
             onClick={logoutClick}>
-            <Logout className="size-5.5" />
+            <span className="text-sm font-medium">로그아웃</span>
           </Button>
         </div>
         </SheetContent>
