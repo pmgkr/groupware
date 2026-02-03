@@ -290,13 +290,13 @@ export default function EstimateView() {
         <div ref={leftRef} className="h-fit w-[74%] tracking-tight">
           <h2 className="mb-2 text-lg font-bold text-gray-800">견적서 정보</h2>
           <TableColumn className="[&_div]:text-[13px]">
-            <TableColumnHeader className="w-[18%]">
+            <TableColumnHeader className="w-[18%] max-2xl:w-[20%]">
               <TableColumnHeaderCell>견적서 제목</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody className="w-[32%]">
               <TableColumnCell className="leading-[1.3] break-all">{estData.header.est_title}</TableColumnCell>
             </TableColumnBody>
-            <TableColumnHeader className="w-[18%]">
+            <TableColumnHeader className="w-[18%] max-2xl:w-[20%]">
               <TableColumnHeaderCell>오너 · 작성자</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody className="w-[32%]">
@@ -307,22 +307,21 @@ export default function EstimateView() {
           </TableColumn>
 
           <TableColumn className="border-t-0 [&_div]:text-[13px]">
-            <TableColumnHeader className="w-[18%]">
+            <TableColumnHeader className="w-[18%] max-2xl:w-[20%]">
               <TableColumnHeaderCell>견적서 상태</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>
               <TableColumnCell>{statusMap[estData.header.est_valid as keyof typeof statusMap]}</TableColumnCell>
             </TableColumnBody>
-            <TableColumnHeader className="w-[18%]">
+            <TableColumnHeader className="w-[18%] max-2xl:w-[20%]">
               <TableColumnHeaderCell>견적서 작성일</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>
               <TableColumnCell>{formatKST(estData.header.wdate)}</TableColumnCell>
             </TableColumnBody>
           </TableColumn>
-
           <TableColumn className="border-t-0 [&_div]:text-[13px]">
-            <TableColumnHeader className="w-[18%]">
+            <TableColumnHeader className="w-[18%] max-2xl:w-[20%]">
               <TableColumnHeaderCell>가용 예산 / 견적서 총액</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>

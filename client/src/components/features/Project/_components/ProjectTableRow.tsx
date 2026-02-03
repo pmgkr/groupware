@@ -22,7 +22,7 @@ export const ProjectTableRow = memo(({ item, isFavorite = false, onToggleFavorit
   const status = statusMap[item.project_status as keyof typeof statusMap];
 
   return (
-    <TableRow className="[&_td]:px-2 [&_td]:text-sm [&_td]:leading-[1.3] xl:[&_td]:text-[13px]">
+    <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3] max-2xl:[&_td]:text-sm">
       {/* 즐겨찾기 */}
       <TableCell className="px-0!">
         <Button
@@ -36,7 +36,7 @@ export const ProjectTableRow = memo(({ item, isFavorite = false, onToggleFavorit
 
       {/* 프로젝트 ID */}
       <TableCell className="px-0!">
-        <Link to={`/project/${item.project_id}`} state={{ fromSearch: search }} className="rounded border bg-white px-2 py-1 text-sm">
+        <Link to={`/project/${item.project_id}`} state={{ fromSearch: search }} className="rounded-[4px] border bg-white px-2 py-1 text-sm">
           {item.project_id}
         </Link>
       </TableCell>

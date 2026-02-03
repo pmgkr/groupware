@@ -21,7 +21,7 @@ export function ExpenseTable({ items, loading, activeTab, checkAll, checkedItems
   return (
     <Table variant="primary" align="center" className="table-fixed">
       <TableHeader>
-        <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
+        <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:leading-[1.3] [&_th]:font-medium [&_th]:break-keep">
           <TableHead className={cn('w-[3%] px-0! transition-all duration-150', activeTab !== 'saved' && 'hidden')}>
             <Checkbox
               id="chk_all"
@@ -30,7 +30,7 @@ export function ExpenseTable({ items, loading, activeTab, checkAll, checkedItems
               onCheckedChange={(v) => onCheckAll(!!v)}
             />
           </TableHead>
-          <TableHead className="w-[8%]">EXP#</TableHead>
+          <TableHead className="w-[8%] max-2xl:w-[10%]">EXP#</TableHead>
           <TableHead className="w-[6%]">증빙 수단</TableHead>
           <TableHead className="w-[8%]">비용 용도</TableHead>
           <TableHead>비용 제목</TableHead>
@@ -39,7 +39,7 @@ export function ExpenseTable({ items, loading, activeTab, checkAll, checkedItems
           <TableHead className="w-[11%]">금액</TableHead>
           <TableHead className="w-[7%]">작성자</TableHead>
           <TableHead className="w-[7%]">상태</TableHead>
-          <TableHead className="w-[12%]">작성일</TableHead>
+          <TableHead className="w-[12%] max-2xl:w-[10%]">작성일</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
