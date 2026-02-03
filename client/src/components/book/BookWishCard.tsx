@@ -43,7 +43,7 @@ export default function BookWishCard({ posts, searchQuery, onSelect, isAdmin, se
             onClick={() => onSelect(post)}
             className={`cursor-pointer rounded-xl border px-4 py-4 ${isChecked ? 'border-primary-blue bg-primary-blue-50' : 'border-gray-300 bg-white'} `}>
             <div className="mb-2 flex items-center justify-between">
-              <div className="flex items-center gap-x-2">
+              <div className="flex w-[70%] items-center gap-x-2">
                 {/* 관리자 + 신청 상태일 때만 선택 */}
                 {isAdmin && post.status === '신청' && (
                   <Checkbox
@@ -58,6 +58,7 @@ export default function BookWishCard({ posts, searchQuery, onSelect, isAdmin, se
                   className={post.status === '신청' ? 'bg-primary-pink-100 text-primary-pink' : 'bg-primary-pink text-white'}>
                   {post.status}
                 </Badge>
+                <span className="w-[70%] truncate text-sm text-gray-600">{post.category}</span>
               </div>
 
               <span className="text-sm text-gray-500">{formatKST(post.purchaseAt, true)}</span>

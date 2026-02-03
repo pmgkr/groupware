@@ -61,6 +61,12 @@ export interface ReservationService {
   /** 회의실 예약 취소 (DELETE /user/meetingroom/cancle) */
   cancelReservation(reservationId: number): Promise<void>;
 }
+const LOCATION_ORDER = ['Beijing', 'Tokyo', 'Singapore', 'Bangkok', 'Manila'];
+
+const locationRank = (name?: string) => {
+  const idx = LOCATION_ORDER.findIndex((loc) => name?.includes(loc));
+  return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+};
 
 /* -------- HTTP 구현 -------- */
 export class HttpReservationService implements ReservationService {
@@ -73,12 +79,14 @@ export class HttpReservationService implements ReservationService {
     const rows = await http<any[]>('user/meetingroom/list');
     const rooms = (rows || []).map(toRoom);
 
-    // 층별로 정렬 (7F → 6F 순)
     return rooms.sort((a, b) => {
+      // 지역(베이징 → 도쿄 → 싱가폴)
+      const locDiff = locationRank(a.name) - locationRank(b.name);
+      if (locDiff !== 0) return locDiff;
+
+      // 같은 지역이면 층 내림차순
       const floorA = parseInt(a.floor || '0');
       const floorB = parseInt(b.floor || '0');
-
-      // 층 내림차순
       if (floorA !== floorB) return floorB - floorA;
 
       // 같은 층이면 이름순

@@ -17,6 +17,8 @@ import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { CircleCheck, CircleX } from 'lucide-react';
 import { notificationApi } from '@/api/notification';
 import { useUser } from '@/hooks/useUser';
+import { useIsMobileViewport } from '@/hooks/useViewport';
+import ProposalListCard from './ProposalListCard';
 
 interface ProposalListContentProps {
   reports?: ReportCard[] | ManagerReportCard[] | AdminReportCard[];
@@ -94,6 +96,7 @@ export default function ProposalList({
   onFetchData,
 }: ProposalListContentProps) {
   // ==================== Hooks & State ====================
+  const isMobile = useIsMobileViewport();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -519,24 +522,32 @@ export default function ProposalList({
 
   // ==================== Render ====================
   const usedTabs = tablist[getUserType()];
+  // 탭 라벨을 모바일용으로 짧게 변환하는 함수 추가
+  const getMobileLabel = (label: string) => {
+    if (isAdmin) {
+      return label.replace(' 문서', '');
+    }
+    return label;
+  };
   const categories = getCategoryOptions();
 
   return (
     <div>
       {/* 탭 + 필터 + 작성 버튼 */}
-      <div className="mb-5 flex items-center justify-between gap-3 max-sm:relative max-sm:flex-col max-sm:items-start">
-        <div className="flex items-center gap-3 max-sm:w-full max-sm:flex-col max-sm:items-start">
-          <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5 max-sm:w-full">
+      <div className="mb-5 flex items-center justify-between gap-3 max-md:relative max-md:flex-col max-md:items-start">
+        <div className="flex items-center gap-3 max-md:w-full max-md:flex-col max-md:items-start">
+          <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5 max-md:w-full max-md:gap-1">
             {usedTabs.map((tab) => (
               <Button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
-                className={`h-8 w-22 rounded-sm p-0 text-sm max-sm:w-[33%] ${
+                className={`h-8 rounded-sm p-0 text-sm max-md:min-w-0 max-md:flex-1 max-md:px-1 max-md:leading-tight max-md:break-all ${
                   activeTab === tab.key
                     ? 'bg-primary hover:bg-primary active:bg-primary text-white'
                     : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-                }`}>
-                {tab.label}
+                } ${usedTabs.length === 3 ? 'w-22 max-md:w-[33%]' : 'w-22 max-md:w-[25%]'}`}>
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="inline sm:hidden">{getMobileLabel(tab.label)}</span>
               </Button>
             ))}
           </div>
@@ -577,10 +588,10 @@ export default function ProposalList({
         )}
 
         {isAdmin && (
-          <div className="flex gap-x-2">
+          <div className="flex gap-x-2 max-md:w-full max-md:justify-between">
             <div className="relative w-[175px]">
               <Input
-                className="h-[32px] px-4 [&]:bg-white"
+                className="h-[32px]! px-4 [&]:bg-white"
                 placeholder="검색어 입력"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -606,88 +617,110 @@ export default function ProposalList({
       </div>
 
       {/* 리스트 테이블 */}
-      <Table variant="primary" align="center" className="table-fixed">
-        <TableHeader>
-          <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[8%]">번호</TableHead>
-            <TableHead className="w-[10%]">구분</TableHead>
-            <TableHead>제목</TableHead>
-            <TableHead className="w-[10%]">금액</TableHead>
-            <TableHead className="w-[10%]">비용 매칭</TableHead>
-            <TableHead className="w-[10%]">결재 상태</TableHead>
-            {showWriterInfo && (
-              <>
-                <TableHead className="w-[8%]">팀</TableHead>
-                <TableHead className="w-[8%]">작성자</TableHead>
-              </>
-            )}
-            <TableHead className="w-[12%]">작성일</TableHead>
-            {showBulkApproval && (
-              <TableHead className="w-[50px] px-2.5">
-                <Checkbox size="sm" checked={isAllSelected} onCheckedChange={handleSelectAll} className="bg-white" />
-              </TableHead>
-            )}
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
-          {paginatedReports.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={showBulkApproval ? (showWriterInfo ? 10 : 8) : showWriterInfo ? 9 : 7}
-                className="h-100 py-10 text-center text-gray-500">
-                등록된 기안서가 없습니다.
-              </TableCell>
+      {isMobile ? (
+        <ProposalListCard
+          reports={paginatedReports}
+          activeQuery={activeSearchQuery}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalCount={filteredReports.length}
+          activeTab={activeTab}
+          badgeStatus={badge_status}
+          costCategories={cost_categories}
+          isManager={isManager}
+          isAdmin={isAdmin}
+          adminRole={adminRole}
+          showBulkApproval={showBulkApproval}
+          selectedIds={selectedIds}
+          onSelectOne={handleSelectOne}
+          onRowClick={onRowClick}
+          isAllSelected={isAllSelected}
+          onSelectAll={handleSelectAll}
+        />
+      ) : (
+        <Table variant="primary" align="center" className="table-fixed">
+          <TableHeader>
+            <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+              <TableHead className="w-[8%]">번호</TableHead>
+              <TableHead className="w-[10%]">구분</TableHead>
+              <TableHead>제목</TableHead>
+              <TableHead className="w-[10%]">금액</TableHead>
+              <TableHead className="w-[10%]">비용 매칭</TableHead>
+              <TableHead className="w-[10%]">결재 상태</TableHead>
+              {showWriterInfo && (
+                <>
+                  <TableHead className="w-[8%]">팀</TableHead>
+                  <TableHead className="w-[8%]">작성자</TableHead>
+                </>
+              )}
+              <TableHead className="w-[12%]">작성일</TableHead>
+              {showBulkApproval && (
+                <TableHead className="w-[50px] px-2.5">
+                  <Checkbox size="sm" checked={isAllSelected} onCheckedChange={handleSelectAll} className="bg-white" />
+                </TableHead>
+              )}
             </TableRow>
-          ) : (
-            paginatedReports.map((report, index) => {
-              const rowNumber = filteredReports.length - ((currentPage - 1) * pageSize + index);
-              const isCostCategory = cost_categories.includes(report.category);
-              const isSelected = selectedIds.includes(report.id);
-              const displayStatus = getDisplayStatus(report);
-              const badgeConfig = badge_status[displayStatus] || { label: '진행' };
+          </TableHeader>
 
-              return (
-                <TableRow
-                  key={report.id}
-                  onClick={() => onRowClick(report.id, activeTab)}
-                  className="cursor-pointer hover:bg-gray-100 [&_td]:text-[13px] [&_td]:leading-[1.3]">
-                  <TableCell>{rowNumber}</TableCell>
-                  <TableCell>{report.category}</TableCell>
-                  <TableCell className="text-left">{report.title}</TableCell>
-                  <TableCell className="text-right">{formatAmount(report.price)}원</TableCell>
-                  <TableCell>
-                    {report.category === '구매요청'
-                      ? '-'
-                      : isCostCategory && (
-                          <Badge size="table" variant="outline" className={!report.expense_no ? 'border-gray-600 text-gray-600' : ''}>
-                            {report.expense_no ? '완료' : '매칭전'}
-                          </Badge>
-                        )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge size="table" variant={badgeConfig.variant as any} className={badgeConfig.className}>
-                      {badgeConfig.label}
-                    </Badge>
-                  </TableCell>
-                  {showWriterInfo && (
-                    <>
-                      <TableCell>{report.team}</TableCell>
-                      <TableCell>{report.user}</TableCell>
-                    </>
-                  )}
-                  <TableCell>{formatKST(report.date, true)}</TableCell>
-                  {showBulkApproval && (
-                    <TableCell onClick={(e) => e.stopPropagation()} className="px-2.5">
-                      <Checkbox checked={isSelected} onCheckedChange={() => handleSelectOne(report.id)} />
+          <TableBody>
+            {paginatedReports.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={showBulkApproval ? (showWriterInfo ? 10 : 8) : showWriterInfo ? 9 : 7}
+                  className="h-100 py-10 text-center text-gray-500">
+                  등록된 기안서가 없습니다.
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedReports.map((report, index) => {
+                const rowNumber = filteredReports.length - ((currentPage - 1) * pageSize + index);
+                const isCostCategory = cost_categories.includes(report.category);
+                const isSelected = selectedIds.includes(report.id);
+                const displayStatus = getDisplayStatus(report);
+                const badgeConfig = badge_status[displayStatus] || { label: '진행' };
+
+                return (
+                  <TableRow
+                    key={report.id}
+                    onClick={() => onRowClick(report.id, activeTab)}
+                    className="cursor-pointer hover:bg-gray-100 [&_td]:text-[13px] [&_td]:leading-[1.3]">
+                    <TableCell>{rowNumber}</TableCell>
+                    <TableCell>{report.category}</TableCell>
+                    <TableCell className="text-left">{report.title}</TableCell>
+                    <TableCell className="text-right">{formatAmount(report.price)}원</TableCell>
+                    <TableCell>
+                      {report.category === '구매요청'
+                        ? '-'
+                        : isCostCategory && (
+                            <Badge size="table" variant="outline" className={!report.expense_no ? 'border-gray-600 text-gray-600' : ''}>
+                              {report.expense_no ? '완료' : '매칭전'}
+                            </Badge>
+                          )}
                     </TableCell>
-                  )}
-                </TableRow>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
+                    <TableCell>
+                      <Badge size="table" variant={badgeConfig.variant as any} className={badgeConfig.className}>
+                        {badgeConfig.label}
+                      </Badge>
+                    </TableCell>
+                    {showWriterInfo && (
+                      <>
+                        <TableCell>{report.team}</TableCell>
+                        <TableCell>{report.user}</TableCell>
+                      </>
+                    )}
+                    <TableCell>{formatKST(report.date, true)}</TableCell>
+                    {showBulkApproval && (
+                      <TableCell onClick={(e) => e.stopPropagation()} className="px-2.5">
+                        <Checkbox checked={isSelected} onCheckedChange={() => handleSelectOne(report.id)} />
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      )}
 
       {/* 페이지네이션 */}
       {filteredReports.length > 0 && (

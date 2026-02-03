@@ -759,28 +759,28 @@ export default function Mypage() {
           <div>
             <Table className="mb-6 w-full table-fixed">
               <TableHeader>
-                <TableRow className="text-sm md:text-base max-md:[&>th]:h-9 max-md:[&>th]:p-1">
-                  <TableHead className="w-[30px] pr-0 md:w-[5%]"></TableHead>
-                  <TableHead className="w-[80px] md:w-[16%]">계좌 별명</TableHead>
-                  <TableHead className="w-[80px] md:w-[15%]">은행명</TableHead>
-                  <TableHead className="w-[120px]">계좌 번호</TableHead>
-                  <TableHead className="w-[80px] md:w-[15%]">예금주</TableHead>
-                  <TableHead className="w-[130px] md:w-[18%]">등록일시</TableHead>
-                  <TableHead className="w-[110px] md:w-[12%]"></TableHead>
+                <TableRow className="text-sm md:text-base max-md:[&>th]:h-9 max-md:[&>th]:p-0">
+                  <TableHead className="w-[25px] pr-0 md:w-[5%]"></TableHead>
+                  <TableHead className="w-[75px] md:w-[16%]">계좌 별명</TableHead>
+                  <TableHead className="w-[65px] md:w-[15%]">은행명</TableHead>
+                  <TableHead className="w-[95px]">계좌 번호</TableHead>
+                  <TableHead className="w-[70px] md:w-[15%]">예금주</TableHead>
+                  <TableHead className="w-[120px] md:w-[18%]">등록일시</TableHead>
+                  <TableHead className="w-[90px] md:w-[12%]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="text-sm md:text-base">
                 {accounts.length > 0 ? (
                   accounts.map((acc) => (
-                    <TableRow key={acc.seq} className="max-md:[&>td]:h-9 max-md:[&>td]:p-1">
+                    <TableRow key={acc.seq} className="max-md:[&>td]:h-9 max-md:[&>td]:p-0">
                       <TableCell className="w-[30px] pr-0 max-md:pl-0">
                         {acc.flag === 'mine' && <CrownIcon className="inline-block size-4 text-yellow-500 md:size-5" />}
                       </TableCell>
-                      <TableCell className="w-[80px] truncate">{acc.account_alias}</TableCell>
-                      <TableCell>{acc.bank_name}</TableCell>
+                      <TableCell className="w-[75px] truncate">{acc.account_alias}</TableCell>
+                      <TableCell className="w-[65px] truncate">{acc.bank_name}</TableCell>
                       <TableCell>{acc.bank_account}</TableCell>
                       <TableCell>{acc.account_name}</TableCell>
-                      <TableCell className="w-[130px] truncate">{formatKST(acc.wdate)}</TableCell>
+                      <TableCell className="w-[120px] truncate">{formatKST(acc.wdate)}</TableCell>
                       {/* 수정 삭제 버튼 */}
                       <TableCell>
                         <Button

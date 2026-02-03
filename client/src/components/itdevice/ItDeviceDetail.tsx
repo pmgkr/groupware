@@ -296,7 +296,7 @@ export default function itDeviceDetail() {
 
   return (
     <>
-      <h2 className="pt-3 text-3xl font-bold max-md:mb-6">
+      <h2 className="pt-3 text-3xl font-bold max-md:mb-6 max-md:text-2xl">
         [{posts?.device ?? '-'}] {posts?.model ?? '-'}
       </h2>
       <div className="flex gap-8 max-md:flex-col">
@@ -474,7 +474,7 @@ export default function itDeviceDetail() {
             반납 처리
           </Button>
         )}
-        <Button size={isMobile ? 'sm' : 'default'} onClick={() => navigate('/itdevice' + location.search)}>
+        <Button variant="outline" size={isMobile ? 'sm' : 'default'} onClick={() => navigate('/itdevice' + location.search)}>
           목록
         </Button>
       </div>
