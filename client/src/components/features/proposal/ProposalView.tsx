@@ -47,28 +47,28 @@ export default function ProposalView({
         <h2 className="border-gray-900 text-2xl font-bold">{report.rp_title}</h2>
       </div>
 
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex divide-x divide-gray-300 border-t border-b border-gray-300 p-4 text-base leading-tight text-gray-500">
-          <div className="px-3">
-            <span className="mr-2 text-gray-900">구분</span> {report.rp_category}
+      <div className="mb-4 flex items-center justify-between max-md:flex-col">
+        <div className="flex divide-x divide-gray-300 border-t border-b border-gray-300 p-4 text-base leading-tight text-gray-500 max-md:mb-5 max-md:w-full max-md:flex-col max-md:divide-x-0 max-md:rounded-md max-md:border max-md:p-5 max-md:pb-2 max-md:text-[13px] max-md:text-gray-950">
+          <div className="px-3 max-md:flex max-md:justify-between max-md:border-b max-md:border-b-gray-300 max-md:px-0 max-md:pb-2.5">
+            <span className="mr-2 text-gray-900 max-md:text-gray-500">구분</span> {report.rp_category}
           </div>
-          <div className="px-3">
-            <span className="mr-2 text-gray-900">금액</span> {formatAmount(report.rp_cost)}
+          <div className="px-3 max-md:flex max-md:justify-between max-md:border-b max-md:border-b-gray-300 max-md:px-0 max-md:py-2.5">
+            <span className="mr-2 text-gray-900 max-md:text-gray-500">금액</span> {formatAmount(report.rp_cost)}
           </div>
 
           {showWriterInfo && (
             <>
-              <div className="px-3">
-                <span className="mr-2 text-gray-900">팀</span> {report.team_name}
+              <div className="px-3 max-md:flex max-md:justify-between max-md:border-b max-md:border-b-gray-300 max-md:px-0 max-md:py-2.5">
+                <span className="mr-2 text-gray-900 max-md:text-gray-500">팀</span> {report.team_name}
               </div>
-              <div className="px-3">
-                <span className="mr-2 text-gray-900">작성자</span> {report.rp_user_name}
+              <div className="px-3 max-md:flex max-md:justify-between max-md:border-b max-md:border-b-gray-300 max-md:px-0 max-md:py-2.5">
+                <span className="mr-2 text-gray-900 max-md:text-gray-500">작성자</span> {report.rp_user_name}
               </div>
             </>
           )}
 
-          <div className="px-3">
-            <span className="mr-2 text-gray-900">작성일자</span>
+          <div className="px-3 max-md:flex max-md:justify-between max-md:px-0 max-md:py-2.5">
+            <span className="mr-2 text-gray-900 max-md:text-gray-500">작성일자</span>
             {formatKST(report.rp_date)}
           </div>
           {report.rp_expense_no &&
@@ -80,8 +80,8 @@ export default function ProposalView({
                 if (!projectCode || !expenseId) return null;
 
                 return (
-                  <div className="px-3">
-                    <span className="mr-2 text-gray-900">EXP#</span>
+                  <div className="px-3 max-md:flex max-md:justify-between max-md:border-t max-md:border-t-gray-300 max-md:px-0 max-md:py-2.5">
+                    <span className="mr-2 text-gray-900 max-md:text-gray-500">EXP#</span>
                     <Link
                       to={`/project/${projectCode}/expense/${expenseId}`}
                       className="text-primary hover:text-primary/80 underline"
@@ -93,8 +93,8 @@ export default function ProposalView({
               } else {
                 // 일반비용 (NE25-00122)
                 return (
-                  <div className="px-3">
-                    <span className="mr-2 text-gray-900">EXP#</span>
+                  <div className="px-3 max-md:flex max-md:justify-between max-md:border-t max-md:border-t-gray-300 max-md:px-0 max-md:py-2.5">
+                    <span className="mr-2 text-gray-900 max-md:text-gray-500">EXP#</span>
                     <Link
                       to={`/expense/${report.rp_expense_no}`}
                       className="text-primary hover:text-primary/80 underline"
@@ -107,13 +107,13 @@ export default function ProposalView({
             })()}
         </div>
 
-        <div className="w-[300px]">
+        <div className="w-[300px] max-md:w-full max-md:p-4">
           <ProposalProgress steps={steps} />
         </div>
       </div>
 
       <div className="ql-snow bg-gray-200 p-5">
-        <div className="ql-editor mb-6 text-gray-800" dangerouslySetInnerHTML={{ __html: report.rp_content }}></div>
+        <div className="ql-editor mb-6 text-gray-800 max-md:text-base" dangerouslySetInnerHTML={{ __html: report.rp_content }}></div>
       </div>
 
       {/* 첨부파일 */}

@@ -21,6 +21,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar, Close } from '@/assets/images/icons';
 import { FileText } from 'lucide-react';
+import { useIsMobileViewport } from '@/hooks/useViewport';
+import ExpenseProposalCard from '../_responsive/ExpenseProposalCard';
 
 type ExpenseRowProps = {
   index: number;
@@ -73,6 +75,10 @@ function ExpenseRowComponent({
     });
   };
 
+  const isMobile = useIsMobileViewport();
+  useEffect(() => {
+    console.log('[프로젝트] isMobile:', isMobile, 'window.innerWidth:', window.innerWidth);
+  }, [isMobile]);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [proposalList, setProposalList] = useState<ProposalItem[]>([]);
   const [selectedProposalId, setSelectedProposalId] = useState<number | null>(null);
@@ -102,15 +108,15 @@ function ExpenseRowComponent({
   return (
     <article className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0">
       {/* 상단 영역 */}
-      <div className="absolute top-1 left-0 flex w-full items-center justify-between gap-2 pl-[68%]">
+      <div className="absolute top-1 left-0 flex w-full items-center justify-end gap-2 pl-[68%] max-md:pl-[10%]">
         <button
           type="button"
-          className="text-primary-blue-500 flex cursor-pointer items-center gap-1 text-sm hover:underline"
+          className="text-primary-blue-500 flex cursor-pointer items-center gap-1 text-sm hover:underline max-md:w-[200px] max-md:justify-end max-md:truncate"
           onClick={() => {
             setActiveFile(String(index));
             handleOpenMatchingDialog();
           }}>
-          <FileText className="size-3.5" />
+          <FileText className="size-3.5 shrink-0" />
           {selectedProposal ? `${selectedProposal.rp_title}` : '기안서 매칭'}
         </button>
         <Button type="button" variant="svgIcon" size="icon" onClick={() => onRemove(index)}>
@@ -297,57 +303,68 @@ function ExpenseRowComponent({
       </div>
       {/* 기안서 매칭 다이얼로그 */}
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-5xl">
+        <DialogContent className="max-w-5xl rounded-lg max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)]">
           <DialogHeader>
             <DialogTitle>기안서 매칭</DialogTitle>
           </DialogHeader>
-          <Table variant="primary">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">구분</TableHead>
-                <TableHead>제목</TableHead>
-                <TableHead className="w-[120px]">금액</TableHead>
-                <TableHead className="w-[240px]">작성일</TableHead>
-                <TableHead className="w-[40px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {hasProposalList ? (
+          {isMobile ? (
+            <ExpenseProposalCard
+              proposalList={proposalList}
+              selectedProposalId={selectedProposalId}
+              onSelect={(p) => {
+                setSelectedProposalId(p ? p.rp_seq : null);
+                setSelectedProposal(p);
+              }}
+            />
+          ) : (
+            <Table variant="primary">
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center text-[13px] text-gray-500">
-                    등록된 기안서가 없습니다.
-                  </TableCell>
+                  <TableHead className="w-[100px]">구분</TableHead>
+                  <TableHead>제목</TableHead>
+                  <TableHead className="w-[120px]">금액</TableHead>
+                  <TableHead className="w-[240px]">작성일</TableHead>
+                  <TableHead className="w-[40px]"></TableHead>
                 </TableRow>
-              ) : (
-                proposalList.map((p) => {
-                  const isSelected = selectedProposalId === p.rp_seq;
-                  const isDisabled = selectedProposalId !== null && !isSelected;
+              </TableHeader>
 
-                  return (
-                    <TableRow key={p.rp_seq} className="hover:bg-gray-100">
-                      <TableCell>{p.rp_category}</TableCell>
-                      <TableCell className="text-left">{p.rp_title}</TableCell>
-                      <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
-                      <TableCell>{formatKST(p.rp_date)}</TableCell>
-                      <TableCell className="px-2.5 [&]:pr-3!">
-                        <Checkbox
-                          size="sm"
-                          id={`proposal-${p.rp_seq}`}
-                          checked={isSelected}
-                          disabled={isDisabled}
-                          onCheckedChange={(checked) => {
-                            setSelectedProposalId(checked ? p.rp_seq : null);
-                            setSelectedProposal(checked ? p : null);
-                          }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
+              <TableBody>
+                {hasProposalList ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-10 text-center text-[13px] text-gray-500">
+                      등록된 기안서가 없습니다.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  proposalList.map((p) => {
+                    const isSelected = selectedProposalId === p.rp_seq;
+                    const isDisabled = selectedProposalId !== null && !isSelected;
+
+                    return (
+                      <TableRow key={p.rp_seq} className="hover:bg-gray-100">
+                        <TableCell>{p.rp_category}</TableCell>
+                        <TableCell className="text-left">{p.rp_title}</TableCell>
+                        <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
+                        <TableCell>{formatKST(p.rp_date)}</TableCell>
+                        <TableCell className="px-2.5 [&]:pr-3!">
+                          <Checkbox
+                            size="sm"
+                            id={`proposal-${p.rp_seq}`}
+                            checked={isSelected}
+                            disabled={isDisabled}
+                            onCheckedChange={(checked) => {
+                              setSelectedProposalId(checked ? p.rp_seq : null);
+                              setSelectedProposal(checked ? p : null);
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          )}
 
           <div className="mt-6 flex justify-end gap-2">
             <Button size="sm" variant="outline" onClick={() => setDialogOpen(false)}>

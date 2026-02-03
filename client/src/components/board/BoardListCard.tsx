@@ -56,7 +56,7 @@ export default function BoardCardList({ notices, posts, isSuggestBoard, activeQu
               <span className="text-sm font-medium">No. {number}</span>
               {!isSuggestBoard && post.category && (
                 <Badge variant="secondary">
-                  <span className="text-sm">{post.category}</span>
+                  <span className="text-xs">{post.category}</span>
                 </Badge>
               )}
             </div>

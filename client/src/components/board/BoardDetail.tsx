@@ -249,7 +249,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       {/* 본문 */}
       <div className="ql-snow">
         <div
-          className="ql-editor border-b border-gray-400 p-4 !py-10 text-base leading-relaxed whitespace-pre-line max-sm:!pt-7 md:text-lg"
+          className="ql-editor border-b border-gray-400 p-4 !py-10 text-base leading-relaxed whitespace-pre-line max-md:!pt-7 md:text-lg"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
       </div>
@@ -456,7 +456,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       </div>
 
       <div className="mt-3 text-right">
-        <Button size="sm" onClick={() => navigate('..')}>
+        <Button variant="outline" size="sm" onClick={() => navigate('..')}>
           목록
         </Button>
       </div>
