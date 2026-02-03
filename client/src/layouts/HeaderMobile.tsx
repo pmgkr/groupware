@@ -417,64 +417,22 @@ export default function HeaderMobile() {
             </li>
             {(user?.user_level === 'manager' || user?.user_level === 'admin') && (
                 <li>
-                <div>
-                    <NavLink
+                <NavLink
                     to="/manager/working"
-                    onClick={handleMenuClick('manager')}
-                    className={({ isActive }) => getMenuLinkClassName(isActive || isManagerSection, expandedMenu === 'manager')}>
+                    onClick={() => setIsSidebarOpen(false)}
+                    className={({ isActive }) => getMenuLinkClassName(isActive || isManagerSection)}>
                     <span>관리자</span>
-                    </NavLink>
-                    <div className={cn('grid transition-[grid-template-rows] duration-500 ease-out', expandedMenu === 'manager' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
-                    <div className="overflow-hidden min-h-0">
-                    <ul className="mt-1 mb-2 flex flex-col gap-y-1">
-                        {subMenus.manager.map((item) => (
-                        <li key={item.to}>
-                            <NavLink
-                            to={item.to}
-                            onClick={() => {
-                                setIsSidebarOpen(false);
-                                setExpandedMenu(null);
-                            }}
-                            className={({ isActive }) => getSubMenuLinkClassName(isActive)}>
-                            {item.label}
-                            </NavLink>
-                        </li>
-                        ))}
-                    </ul>
-                    </div>
-                    </div>
-                </div>
+                </NavLink>
                 </li>
             )}
             {user?.user_level === 'admin' && (
                 <li>
-                <div>
-                    <NavLink
+                <NavLink
                     to="/admin/finance"
-                    onClick={handleMenuClick('admin')}
-                    className={({ isActive }) => getMenuLinkClassName(isActive || isAdminSection, expandedMenu === 'admin')}>
+                    onClick={() => setIsSidebarOpen(false)}
+                    className={({ isActive }) => getMenuLinkClassName(isActive || isAdminSection)}>
                     <span>최고관리자</span>
-                    </NavLink>
-                    <div className={cn('grid transition-[grid-template-rows] duration-500 ease-out', expandedMenu === 'admin' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
-                    <div className="overflow-hidden min-h-0">
-                    <ul className="mt-1 mb-2 flex flex-col gap-y-1">
-                        {subMenus.admin.map((item) => (
-                        <li key={item.to}>
-                            <NavLink
-                            to={item.to}
-                            onClick={() => {
-                                setIsSidebarOpen(false);
-                                setExpandedMenu(null);
-                            }}
-                            className={({ isActive }) => getSubMenuLinkClassName(isActive)}>
-                            {item.label}
-                            </NavLink>
-                        </li>
-                        ))}
-                    </ul>
-                    </div>
-                    </div>
-                </div>
+                </NavLink>
                 </li>
             )}
         </ul>
