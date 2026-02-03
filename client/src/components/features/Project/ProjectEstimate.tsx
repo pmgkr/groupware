@@ -158,7 +158,7 @@ export default function ProjectEstimate() {
             <TableBody>
               {estimateList.length ? (
                 estimateList.map((item, idx) => (
-                  <TableRow className="[&_td]:text-[13px]" key={item.est_id}>
+                  <TableRow className="[&_td]:text-[13px] max-2xl:[&_td]:text-sm" key={item.est_id}>
                     <TableCell>{estimateList.length - idx}</TableCell>
                     <TableCell className="text-left">
                       <Link to={`${item.est_id}`} className="hover:underline">

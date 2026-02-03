@@ -46,7 +46,7 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
   );
 
   return (
-    <TableRow className="[&_td]:px-2 [&_td]:text-[13px]">
+    <TableRow className="[&_td]:px-2 [&_td]:text-[13px] max-2xl:[&_td]:px-1 max-2xl:[&_td]:text-sm">
       <TableCell className={cn('px-0!', activeTab !== 'saved' && 'hidden')}>
         <Checkbox
           id={`chk_${item.seq}`}
@@ -59,7 +59,7 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
       <TableCell>
         <Link
           to={`/project/${item.project_id}/expense/${item.seq}${search}`}
-          className="rounded-[4px] border-1 bg-white p-1 text-[11px] 2xl:text-sm">
+          className="rounded-[4px] border-1 bg-white p-1 text-sm max-2xl:text-[11px]">
           {item.exp_id}
         </Link>
       </TableCell>

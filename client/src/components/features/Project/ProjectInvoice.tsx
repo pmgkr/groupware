@@ -274,11 +274,11 @@ export default function ProjectInvoice() {
           <Table variant="primary" align="center" className="table-fixed">
             <TableHeader>
               <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
-                <TableHead className="w-[8%]">인보이스 #</TableHead>
+                <TableHead className="w-[8%] max-2xl:w-[10%]">인보이스 #</TableHead>
                 <TableHead className="px-4!">인보이스 제목</TableHead>
-                <TableHead className="w-[8%]">공급가액</TableHead>
-                <TableHead className="w-[8%]">세금</TableHead>
-                <TableHead className="w-[9%]">합계</TableHead>
+                <TableHead className="w-[8%] max-2xl:w-[10%]">공급가액</TableHead>
+                <TableHead className="w-[8%] max-2xl:w-[10%]">세금</TableHead>
+                <TableHead className="w-[9%] max-2xl:w-[10%]">합계</TableHead>
                 <TableHead className="w-[10%] px-4!">작성자</TableHead>
                 <TableHead className="w-[6%]">상태</TableHead>
                 <TableHead className="w-[12%]">작성일</TableHead>
@@ -287,11 +287,11 @@ export default function ProjectInvoice() {
             <TableBody>
               {invoiceList.length ? (
                 invoiceList.map((item, idx) => (
-                  <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]" key={item.seq}>
+                  <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3] max-2xl:[&_td]:text-sm" key={item.seq}>
                     <TableCell className="whitespace-nowrap">
                       <button
                         type="button"
-                        className="cursor-pointer rounded-[4px] border bg-white px-2 py-1 text-sm leading-[1.3]"
+                        className="cursor-pointer rounded-[4px] border-1 bg-white p-1 text-sm leading-[1.3] max-2xl:text-[11px]"
                         onClick={() => handleDetailOpen(item.seq)}>
                         {item.invoice_id}
                       </button>

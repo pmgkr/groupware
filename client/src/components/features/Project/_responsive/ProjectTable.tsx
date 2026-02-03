@@ -14,7 +14,7 @@ export function ProjectTable({ projects, favorites, onToggleFavorite, search }: 
   return (
     <Table variant="primary" className="table-fixed">
       <TableHeader>
-        <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
+        <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:leading-[1.3] [&_th]:font-medium">
           <TableHead className="w-12 px-0!"></TableHead>
           <TableHead className="w-24 px-0!">프로젝트#</TableHead>
           <TableHead className="w-[6%] max-xl:hidden">프로젝트 법인</TableHead>
@@ -22,7 +22,7 @@ export function ProjectTable({ projects, favorites, onToggleFavorite, search }: 
           <TableHead>프로젝트 이름</TableHead>
           <TableHead className="w-[14%]">클라이언트</TableHead>
           <TableHead className="w-[8%]">오너</TableHead>
-          <TableHead className="w-[6%]">팀</TableHead>
+          <TableHead className="w-[6%] max-2xl:w-[8%]">팀</TableHead>
           <TableHead className="w-[8%] xl:w-[6%]">상태</TableHead>
           <TableHead className="w-[10%] max-xl:hidden">시작일</TableHead>
         </TableRow>
