@@ -231,7 +231,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
                     disabled={false}
                     variant={getOvertimeButtonVariant(row.overtimeStatus)}
                     size="default"
-                    className="w-full">
+                    className="w-full bg-primary-blue-100/60 border border-primary-blue-100 text-primary-blue-500">
                     연장근무 {row.overtimeStatus}
                   </Button>
                 </div>
