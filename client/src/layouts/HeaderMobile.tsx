@@ -216,7 +216,7 @@ export default function HeaderMobile() {
   const getMenuLinkClassName = (isActive: boolean, isExpanded?: boolean) =>
     cn(
       'flex h-12 items-center justify-center rounded-lg px-3 text-lg',
-      isActive ? 'text-primary bg-primary-blue-100 text-primary-blue-500 font-semibold' : isExpanded ? 'text-primary-blue-500 font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
+      isActive ? 'text-primary bg-primary-blue-100/50 text-primary-blue-500 font-semibold' : isExpanded ? 'text-primary-blue-500 font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
     );
 
   const getSubMenuLinkClassName = (isActive: boolean) =>
@@ -282,7 +282,7 @@ export default function HeaderMobile() {
           {/* <div className="text-center">
             <p className="text-sm">{welcomeMessage}</p>
           </div> */}
-          <ul className="px-5 w-full flex flex-col justify-start gap-y-2.5 flex-1 overflow-y-auto fixed top-[18vh] left-[50%] translate-x-[-50%] max-h-[60vh]">
+          <ul className="px-5 w-full flex flex-col justify-start gap-y-2.5 flex-1 overflow-y-auto fixed top-[50%] translate-y-[-50%] left-[50%] translate-x-[-50%] max-h-[70vh]">
             <li>
                 <NavLink
                 to="/dashboard"
@@ -299,7 +299,8 @@ export default function HeaderMobile() {
                     className={({ isActive }) => getMenuLinkClassName(isActive, expandedMenu === 'project')}>
                     <span>프로젝트</span>
                 </NavLink>
-                {expandedMenu === 'project' && (
+                <div className={cn('grid transition-[grid-template-rows] duration-300 ease-out', expandedMenu === 'project' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
+                    <div className="overflow-hidden min-h-0">
                     <ul className="mt-1 mb-2 flex flex-col gap-y-1">
                     {subMenus.project.map((item) => (
                         <li key={item.to}>
@@ -315,7 +316,8 @@ export default function HeaderMobile() {
                         </li>
                     ))}
                     </ul>
-                )}
+                    </div>
+                </div>
                 </div>
             </li>
             <li>
@@ -326,7 +328,8 @@ export default function HeaderMobile() {
                     className={({ isActive }) => getMenuLinkClassName(isActive, expandedMenu === 'expense')}>
                     <span>일반비용</span>
                 </NavLink>
-                {expandedMenu === 'expense' && (
+                <div className={cn('grid transition-[grid-template-rows] duration-300 ease-out', expandedMenu === 'expense' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
+                    <div className="overflow-hidden min-h-0">
                     <ul className="mt-1 mb-2 flex flex-col gap-y-1">
                     {subMenus.expense.map((item) => (
                         <li key={item.to}>
@@ -342,7 +345,8 @@ export default function HeaderMobile() {
                         </li>
                     ))}
                     </ul>
-                )}
+                    </div>
+                </div>
                 </div>
             </li>
             <li>
@@ -353,7 +357,8 @@ export default function HeaderMobile() {
                     className={({ isActive }) => getMenuLinkClassName(isActive, expandedMenu === 'calendar')}>
                     <span>캘린더</span>
                 </NavLink>
-                {expandedMenu === 'calendar' && (
+                <div className={cn('grid transition-[grid-template-rows] duration-300 ease-out', expandedMenu === 'calendar' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
+                    <div className="overflow-hidden min-h-0">
                     <ul className="mt-1 mb-2 flex flex-col gap-y-1">
                     {subMenus.calendar.map((item) => (
                         <li key={item.to}>
@@ -369,7 +374,8 @@ export default function HeaderMobile() {
                         </li>
                     ))}
                     </ul>
-                )}
+                    </div>
+                </div>
                 </div>
             </li>
             <li>
@@ -388,7 +394,8 @@ export default function HeaderMobile() {
                     className={({ isActive }) => getMenuLinkClassName(isActive || isOfficeActive, expandedMenu === 'office')}>
                     <span>오피스</span>
                 </NavLink>
-                {expandedMenu === 'office' && (
+                <div className={cn('grid transition-[grid-template-rows] duration-300 ease-out', expandedMenu === 'office' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
+                    <div className="overflow-hidden min-h-0">
                     <ul className="mt-1 mb-2 flex flex-col gap-y-1">
                     {subMenus.office.map((item) => (
                         <li key={item.to}>
@@ -404,7 +411,8 @@ export default function HeaderMobile() {
                         </li>
                     ))}
                     </ul>
-                )}
+                    </div>
+                </div>
                 </div>
             </li>
             {(user?.user_level === 'manager' || user?.user_level === 'admin') && (
@@ -416,7 +424,8 @@ export default function HeaderMobile() {
                     className={({ isActive }) => getMenuLinkClassName(isActive || isManagerSection, expandedMenu === 'manager')}>
                     <span>관리자</span>
                     </NavLink>
-                    {expandedMenu === 'manager' && (
+                    <div className={cn('grid transition-[grid-template-rows] duration-300 ease-out', expandedMenu === 'manager' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
+                    <div className="overflow-hidden min-h-0">
                     <ul className="mt-1 mb-2 flex flex-col gap-y-1">
                         {subMenus.manager.map((item) => (
                         <li key={item.to}>
@@ -432,7 +441,8 @@ export default function HeaderMobile() {
                         </li>
                         ))}
                     </ul>
-                    )}
+                    </div>
+                    </div>
                 </div>
                 </li>
             )}
@@ -445,7 +455,8 @@ export default function HeaderMobile() {
                     className={({ isActive }) => getMenuLinkClassName(isActive || isAdminSection, expandedMenu === 'admin')}>
                     <span>최고관리자</span>
                     </NavLink>
-                    {expandedMenu === 'admin' && (
+                    <div className={cn('grid transition-[grid-template-rows] duration-300 ease-out', expandedMenu === 'admin' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
+                    <div className="overflow-hidden min-h-0">
                     <ul className="mt-1 mb-2 flex flex-col gap-y-1">
                         {subMenus.admin.map((item) => (
                         <li key={item.to}>
@@ -461,7 +472,8 @@ export default function HeaderMobile() {
                         </li>
                         ))}
                     </ul>
-                    )}
+                    </div>
+                    </div>
                 </div>
                 </li>
             )}
