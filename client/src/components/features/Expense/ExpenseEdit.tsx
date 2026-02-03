@@ -296,7 +296,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
       });
 
       await delExpenseAttachment(seq);
-      console.log(`✅ 첨부파일 #${seq} 삭제 완료`);
+      console.log(` 첨부파일 #${seq} 삭제 완료`);
     } catch (err) {
       console.error('❌ 삭제 실패, 복구 진행:', err);
       setRowAttachments((prev) => ({
@@ -315,6 +315,14 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
 
   const handleOpenMatchingDialog = async () => {
     setDialogOpen(true);
+
+    // 현재 활성 row에 이미 선택된 기안서가 있으면 해당 값으로 초기화
+    if (activeRowIndex !== null) {
+      const currentRowProId = selectedProposalByRow[activeRowIndex] ?? data?.items?.[activeRowIndex]?.pro_id ?? null;
+      setSelectedProposalId(currentRowProId);
+    } else {
+      setSelectedProposalId(null);
+    }
 
     const flag = 'N';
 
@@ -369,7 +377,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                 const safeUserNm = (header.user_nm || 'unknown').replace(/[^\w가-힣]/g, '');
                 const safeElType = (header.el_type || '기타').replace(/[^\w가-힣]/g, '');
 
-                // ✅ 1️⃣ 기존 첨부파일 중 가장 큰 인덱스 찾기
+                //  1️⃣ 기존 첨부파일 중 가장 큰 인덱스 찾기
                 const existingFiles = rowAttachments[f.rowIdx] ?? [];
                 let maxIndex = -1;
 
@@ -381,14 +389,14 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                   }
                 });
 
-                // ✅ 2️⃣ 같은 rowIdx의 새 파일 중 순서(index)
+                //  2️⃣ 같은 rowIdx의 새 파일 중 순서(index)
                 const newFilesInRow = allNewFiles.filter((nf) => nf.rowIdx === f.rowIdx);
                 const localIndex = newFilesInRow.indexOf(f);
 
-                // ✅ 3️⃣ 최종 인덱스 = (기존 파일 중 최대 인덱스 + 1) + 로컬 인덱스
+                //  3️⃣ 최종 인덱스 = (기존 파일 중 최대 인덱스 + 1) + 로컬 인덱스
                 const nextIndex = maxIndex + 1 + localIndex;
 
-                // ✅ 4️⃣ 최종 파일명
+                //  4️⃣ 최종 파일명
                 const newFileName = `${safeUserNm}_${safeElType}_${purchaseDate}_${nextIndex}.${ext}`;
 
                 return new File([blob], newFileName, { type: f.type || 'image/png' });
@@ -401,7 +409,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
               ...file,
               rowIdx: allNewFiles[i]?.rowIdx ?? 0,
             }));
-            console.log('✅ 업로드 완료:', uploadedFiles);
+            console.log(' 업로드 완료:', uploadedFiles);
           }
 
           // 4️⃣ 업로드된 파일을 항목별로 매핑
@@ -417,6 +425,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
           // 5️⃣ expense_items 병합
           const enrichedItems = (values.expense_items ?? []).map((item, idx) => {
             const rowIdx = idx + 1;
+            // selectedProposalByRow에서 해당 row의 값을 우선 사용, 없으면 원본 pro_id 유지
             const selectedProId = selectedProposalByRow[idx] ?? (item.pro_id ? Number(item.pro_id) : null);
 
             // (1) 기존 서버 첨부파일
@@ -443,7 +452,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
               ei_amount: Number(item.price || 0),
               ei_tax: Number(item.tax || 0),
               ei_total: Number(item.total || 0),
-              pro_id: selectedProId ?? item.pro_id,
+              pro_id: selectedProId,
               attachments: [...existingAtt, ...newAtt],
             };
           });
@@ -472,7 +481,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
               ei_amount: item.ei_amount,
               ei_tax: item.ei_tax,
               ei_total: item.ei_total,
-              pro_id: selectedProposalId,
+              pro_id: item.pro_id ?? null,
               attachments: item.attachments.map((att: any) => ({
                 filename: att.fname,
                 savename: att.sname,
@@ -488,9 +497,6 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
           console.log(res);
 
           if (res.ok) {
-            // ✅  기안서 매칭 (선택된 경우만)
-            // 기안서 매칭이 바뀌지 않았으면 아래 기안서 매칭 API는 돌지 않아야함 (신규로 매칭 or 다른 기안서로 매칭하는 경우에만 API 호출)
-
             const itemSeq = (res as any).updated?.item_seqs ?? [];
 
             if (itemSeq.length === 0) {
@@ -500,54 +506,52 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
               setAlertOpen(true);
               return;
             }
-            const selectedProId = enrichedItems.find((item) => item.pro_id !== null)?.pro_id ?? null;
 
-            // 원본 데이터의 기안서 ID와 비교
-            const originalProId = data?.items?.[0]?.pro_id ?? null;
-            const isProposalChanged = selectedProId !== originalProId;
+            //각 row별로 원본 pro_id와 현재 pro_id를 비교하여, 변경된 row만 매칭 API 호출
+            const matchTargets = enrichedItems
+              .map((item, index) => {
+                const originalProId = data?.items?.[index]?.pro_id ?? null;
+                const currentProId = item.pro_id;
+                const isChanged = currentProId !== originalProId;
 
-            console.log('🔍 기안서 변경 여부:', {
-              원본: originalProId,
-              현재: selectedProId,
-              변경됨: isProposalChanged,
-            });
+                console.log(`🔍 row[${index}] 기안서 변경 여부 - 원본: ${originalProId}, 현재: ${currentProId}, 변경됨: ${isChanged}`);
 
-            if (selectedProId && isProposalChanged) {
+                return {
+                  pro_id: currentProId,
+                  item_seq: itemSeq[index],
+                  isChanged,
+                };
+              })
+              // pro_id가 있고, 원본과 다른 row만 필터링
+              .filter(({ pro_id, item_seq, isChanged }) => pro_id && item_seq !== undefined && isChanged);
+
+            if (matchTargets.length === 0) {
+              console.log('ℹ️ 기안서 변경된 row 없음 - 매칭 API 호출 스킵');
+            } else {
               try {
-                // enrichedItems와 itemSeqs의 순서가 동일하므로 매핑
-                const matchPromises = enrichedItems
-                  .map((item, index) => ({
-                    pro_id: item.pro_id,
-                    item_seq: itemSeq[index],
-                  }))
-                  .filter(({ pro_id, item_seq }) => pro_id && item_seq !== undefined) // item_seq가 존재하는지 확인
-                  .map(async ({ pro_id, item_seq }) => {
-                    const matchResult = (await matchNonProjectWithProposal(pro_id as number, item_seq as number)) as {
-                      success: boolean;
-                      result: { type: string };
-                    };
+                const matchPromises = matchTargets.map(async ({ pro_id, item_seq }) => {
+                  const matchResult = (await matchNonProjectWithProposal(pro_id as number, item_seq as number)) as {
+                    success: boolean;
+                    result: { type: string };
+                  };
 
-                    if (matchResult.success) {
-                      console.log(`✅ 기안서 ${pro_id} - 아이템 ${item_seq} 매칭 완료`);
-                    } else {
-                      console.error(`❌ 기안서 ${pro_id} - 아이템 ${item_seq} 매칭 실패`);
-                    }
-
-                    return matchResult.success;
-                  });
-
-                if (matchPromises.length === 0) {
-                  console.log('ℹ️ 매칭할 아이템 없음');
-                } else {
-                  const results = await Promise.all(matchPromises);
-                  const allSuccess = results.every((r) => r);
-
-                  if (!allSuccess) {
-                    throw new Error('일부 매칭 실패');
+                  if (matchResult.success) {
+                    console.log(`✅ 기안서 ${pro_id} - 아이템 ${item_seq} 매칭 완료`);
+                  } else {
+                    console.error(`❌ 기안서 ${pro_id} - 아이템 ${item_seq} 매칭 실패`);
                   }
 
-                  console.log('✅ 모든 기안서 매칭 완료');
+                  return matchResult.success;
+                });
+
+                const results = await Promise.all(matchPromises);
+                const allSuccess = results.every((r) => r);
+
+                if (!allSuccess) {
+                  throw new Error('일부 매칭 실패');
                 }
+
+                console.log('✅ 모든 기안서 매칭 완료');
               } catch (e) {
                 console.error('❌ 기안서 매칭 실패:', e);
                 setAlertTitle('부분 실패');
@@ -555,8 +559,6 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                 setAlertOpen(true);
                 return;
               }
-            } else if (selectedProId && !isProposalChanged) {
-              console.log('ℹ️ 기안서 변경 없음 - 매칭 API 호출 스킵');
             }
 
             addAlert({
