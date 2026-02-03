@@ -13,6 +13,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Badge } from '@/components/ui/badge';
 import type { WorkData } from '@/types/working';
+import { useIsMobileViewport } from '@/hooks/useViewport';
+import { cn } from '@/lib/utils';
 dayjs.locale('ko');
 
 export interface MyOvertimeHistoryProps {
@@ -23,6 +25,7 @@ export interface MyOvertimeHistoryProps {
 export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear = new Date().getFullYear() }: MyOvertimeHistoryProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobileViewport();
     
   // 데이터 state
   const [allData, setAllData] = useState<MyOvertimeItem[]>([]);
@@ -371,42 +374,46 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
     }
   };
 
+  const isMobileNoData = isMobile && !loading && paginatedData.length === 0;
+
   return (
     <>
       <div ref={tableRef} className="w-full">
-      <Table key={`table-${page}`} variant="primary" align="center" className="w-full">
+      <Table key={`table-${page}`} variant="primary" align="center" className={cn('w-full', isMobileNoData ? 'table-auto' : 'table-fixed')}>
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="text-center p-2 w-[10%]">연장근무날짜</TableHead>
+            <TableHead className={cn('text-center p-2 w-[10%] max-md:px-0.5 max-md:text-sm! max-md:min-w-[90px]! max-md:w-unset!', isMobileNoData && 'w-auto')}>
+              <span className="max-md:hidden">연장</span>근무날짜
+            </TableHead>
             {activeTab === 'weekday' ? (
               <>
-                <TableHead className="text-center p-2 w-[10%]">예상퇴근시간</TableHead>
-                <TableHead className="text-center p-2 w-[8%]">식대</TableHead>
-                <TableHead className="text-center p-2 w-[8%]">교통비</TableHead>
+                <TableHead className={cn('text-center p-2 w-[10%] max-md:px-0.5 max-md:text-sm! max-md:min-w-[90px]! max-md:w-unset!', isMobileNoData && 'w-auto')}>예상퇴근시간</TableHead>
+                {!isMobile && <TableHead className="text-center p-2 w-[8%]">식대</TableHead>}
+                {!isMobile && <TableHead className="text-center p-2 w-[8%]">교통비</TableHead>}
               </>
             ) : (
               <>
-                <TableHead className="text-center p-2 w-[10%]">예상근무시간</TableHead>
-                <TableHead className="text-center p-2 w-[12%]">보상방식</TableHead>
+                <TableHead className={cn('text-center p-2 w-[10%] max-md:px-0.5 max-md:text-sm! max-md:min-w-[90px]! max-md:w-unset!', isMobileNoData && 'w-auto')}>예상근무시간</TableHead>
+                <TableHead className={cn('text-center p-2 w-[12%] max-md:px-0.5 max-md:text-sm!', isMobileNoData && 'w-auto')}>보상방식</TableHead>
               </>
             )}
-            <TableHead className="text-center p-2 w-[15%]">클라이언트명</TableHead>
-            <TableHead className="text-center p-2 w-auto">작업내용</TableHead>
-            <TableHead className="text-center p-2 w-[13%]">신청일</TableHead>
-            <TableHead className="text-center p-2 w-[8%]">상태</TableHead>
+            {!isMobile && <TableHead className="text-center p-2 w-[15%]">클라이언트명</TableHead>}
+            {!isMobile && <TableHead className="text-center p-2 w-auto">작업내용</TableHead>}
+            {!isMobile && <TableHead className="text-center p-2 w-[13%]">신청일</TableHead>}
+            <TableHead className={cn('text-center p-2 w-[8%] max-md:px-0.5 max-md:text-sm!', isMobileNoData && 'w-auto')}>상태</TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody key={`tbody-${page}`}>
         {loading ? (
           <TableRow>
-            <TableCell className="h-100 text-gray-500 text-center p-2" colSpan={activeTab === 'weekday' ? 9 : 8}>
+            <TableCell className="h-100 text-gray-500 text-center p-2" colSpan={activeTab === 'weekday' ? (isMobile ? 3 : 9) : (isMobile ? 4 : 8)}>
               데이터 불러오는 중
             </TableCell>
           </TableRow>
         ) : !loading && paginatedData.length === 0 ? (
           <TableRow>
-            <TableCell className="h-100 text-gray-500 text-center p-2" colSpan={activeTab === 'weekday' ? 9 : 8}>
+            <TableCell className="h-100 text-gray-500 text-center p-2" colSpan={activeTab === 'weekday' ? (isMobile ? 3 : 9) : (isMobile ? 4 : 8)}>
               데이터가 없습니다.
             </TableCell>
           </TableRow>
@@ -417,37 +424,43 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
               className={`[&_td]:text-[13px] cursor-pointer hover:bg-gray-50 ${item.ot_status === 'N' ? 'opacity-40' : ''}`}
               onClick={() => handleOvertimeClick(item)}
             >
-              <TableCell className="text-center p-2">
-                {item.ot_date ? dayjs(item.ot_date).format('YYYY-MM-DD (ddd)') : '-'}
+              <TableCell className="text-center p-2 max-md:px-0.5 max-md:min-w-[90px]! max-md:w-unset!">
+                {item.ot_date ? dayjs(item.ot_date).format(isMobile ? 'MM-DD' : 'YYYY-MM-DD (ddd)') : '-'}
               </TableCell>
               {activeTab === 'weekday' ? (
                 <>
-                  <TableCell className="text-center p-2">{formatTime(item.ot_etime)}</TableCell>
-                  <TableCell className="text-center p-2">{getYNText(item.ot_food)}</TableCell>
-                  <TableCell className="text-center p-2">{getYNText(item.ot_trans)}</TableCell>
+                  <TableCell className="text-center p-2 max-md:px-0.5">{formatTime(item.ot_etime)}</TableCell>
+                  {!isMobile && <TableCell className="text-center p-2">{getYNText(item.ot_food)}</TableCell>}
+                  {!isMobile && <TableCell className="text-center p-2">{getYNText(item.ot_trans)}</TableCell>}
                 </>
               ) : (
                 <>
-                  <TableCell className="text-center p-2 whitespace-nowrap">
-                    {formatTime(item.ot_stime)}-{formatTime(item.ot_etime)} ({formatHours(item.ot_hours)})
+                  <TableCell className="text-center p-2 max-md:px-0.5 max-md:min-w-[90px]! max-md:w-unset! max-md:flex max-md:flex-col max-md:gap-0">
+                    {formatTime(item.ot_stime)}-{formatTime(item.ot_etime)} <span className="text-gray-500 text-sm font-normal max-md:block">({formatHours(item.ot_hours)})</span>
                   </TableCell>
-                  <TableCell className="text-center p-2">{getRewardText(item.ot_reward)}</TableCell>
+                  <TableCell className="text-center p-2 max-md:px-0.5">{getRewardText(item.ot_reward)}</TableCell>
                 </>
               )}
-              <TableCell className="text-center p-2 overflow-hidden text-ellipsis whitespace-nowrap max-w-0">
-                <span className="block overflow-hidden text-ellipsis whitespace-nowrap" title={item.ot_client || '-'}>
-                  {item.ot_client || '-'}
-                </span>
-              </TableCell>
-              <TableCell className="text-left p-2 overflow-hidden text-ellipsis whitespace-nowrap max-w-0">
-                <span className="block overflow-hidden text-ellipsis whitespace-nowrap" title={item.ot_description || '-'}>
-                  {item.ot_description || '-'}
-                </span>
-              </TableCell>
-              <TableCell className="text-center p-2">
-                {item.ot_created_at ? dayjs(item.ot_created_at).format('YYYY-MM-DD HH:mm:ss') : '-'}
-              </TableCell>
-              <TableCell className="text-center p-2">
+              {!isMobile && (
+                <TableCell className="text-center p-2 overflow-hidden text-ellipsis whitespace-nowrap max-w-0">
+                  <span className="block overflow-hidden text-ellipsis whitespace-nowrap" title={item.ot_client || '-'}>
+                    {item.ot_client || '-'}
+                  </span>
+                </TableCell>
+              )}
+              {!isMobile && (
+                <TableCell className="text-left p-2 overflow-hidden text-ellipsis whitespace-nowrap max-w-0">
+                  <span className="block overflow-hidden text-ellipsis whitespace-nowrap" title={item.ot_description || '-'}>
+                    {item.ot_description || '-'}
+                  </span>
+                </TableCell>
+              )}
+              {!isMobile && (
+                <TableCell className="text-center p-2">
+                  {item.ot_created_at ? dayjs(item.ot_created_at).format('YYYY-MM-DD HH:mm:ss') : '-'}
+                </TableCell>
+              )}
+              <TableCell className="text-center p-2 max-md:px-0.5">
                 {item.ot_status === 'H' && (
                   <Badge variant="default" size="table" title="승인대기">
                     {getStatusText(item.ot_status)}

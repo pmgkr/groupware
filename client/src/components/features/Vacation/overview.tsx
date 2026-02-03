@@ -7,6 +7,7 @@ import { InfoIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getAvatarFallback, getProfileImageUrl } from '@/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 interface OverviewProps {
   year: string;
@@ -16,6 +17,7 @@ export default function Overview({
   year
 }: OverviewProps) {
   const { user } = useAuth();
+  const isMobile = useIsMobileViewport();
   const [selectedYearSummary, setSelectedYearSummary] = useState<MyVacationInfo | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -58,62 +60,62 @@ export default function Overview({
     <div className="w-full flex flex-col mb-8">
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-[12%] text-center text-[13px]">이름</TableHead>
-            <TableHead className="w-[18%] text-center text-[13px]">입사일</TableHead>
-            <TableHead className="w-[10%] text-center">
-              <div className="flex items-center justify-center gap-1">
-              <span className="text-[13px]">기본연차</span>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <InfoIcon className="w-3 h-3 text-gray-400" />
-                </TooltipTrigger>
-                <TooltipContent>당해 지급 연차 + 주말&공휴일 보상휴가</TooltipContent>
-              </Tooltip>
+          <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+            <TableHead className="w-[12%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:hidden">이름</TableHead>
+            <TableHead className="w-[18%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:hidden">입사일</TableHead>
+            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
+              <div className="flex items-center justify-center gap-1 max-md:gap-0!">
+                <span className="text-[13px] max-md:text-sm!">기본연차</span>
+                {!isMobile && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoIcon className="w-3 h-3 text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>당해 지급 연차 + 주말&공휴일 보상휴가</TooltipContent>
+                  </Tooltip>
+                )}
               </div>
             </TableHead>
-            <TableHead className="w-[10%] text-center">
-              <div className="flex items-center justify-center gap-1">
-                <span className="text-[13px]">이월연차</span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <InfoIcon className="w-3 h-3 text-gray-400" />
-                  </TooltipTrigger>
-                  <TooltipContent>당해 4월 소멸됨</TooltipContent>
-                </Tooltip>
-              </div>
-            </TableHead>
-
-            <TableHead className="w-[10%] text-center">
-              <div className="flex items-center justify-center gap-1">
-                <span className="text-[13px]">특별대휴</span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <InfoIcon className="w-3 h-3 text-gray-400" />
-                  </TooltipTrigger>
-                  <TooltipContent>토요일 근무 보상휴가</TooltipContent>
-                </Tooltip>
+            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
+              <div className="flex items-center justify-center gap-1 max-md:gap-0!">
+                <span className="text-[13px] max-md:text-sm!">이월연차</span>
+                {!isMobile && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoIcon className="w-3 h-3 text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>당해 4월 소멸됨</TooltipContent>
+                  </Tooltip>
+                )}
               </div>
             </TableHead>
 
-            <TableHead className="w-[10%] text-center">
-              <div className="flex items-center justify-center gap-1">
-                <span className="text-[13px]">공가</span>
-                {/* <Tooltip>
-                  <TooltipTrigger asChild>
-                    <InfoIcon className="w-3 h-3 text-gray-400" />
-                  </TooltipTrigger>
-                  <TooltipContent>총 휴가일수, 누적 휴가일수에 포함 안됨</TooltipContent>
-                </Tooltip> */}
+            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
+              <div className="flex items-center justify-center gap-1 max-md:gap-0!">
+                <span className="text-[13px] max-md:text-sm!">특별대휴</span>
+                {!isMobile && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoIcon className="w-3 h-3 text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>토요일 근무 보상휴가</TooltipContent>
+                  </Tooltip>
+                )}
               </div>
             </TableHead>
-            <TableHead className="w-[12%] text-center">총 사용휴가일수</TableHead>
+
+            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
+              <div className="flex items-center justify-center gap-1">
+                <span className="text-[13px] max-md:text-sm!">공가</span>
+              </div>
+            </TableHead>
+            <TableHead className="w-[12%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">총 사용휴가<span className="max-md:hidden">일수</span></TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody>
-          <TableRow>
-            <TableCell className="text-center">
+          <TableRow className="[&_td]:text-[13px]">
+            <TableCell className="text-center p-2 max-md:px-0.5 max-md:hidden">
               <div className="flex items-center gap-2 justify-center">
                 <Avatar className="w-8 h-8">
                   {user?.profile_image && (
@@ -127,33 +129,33 @@ export default function Overview({
                 {user?.user_name}
               </div>
             </TableCell>
-            <TableCell className="text-center">
+            <TableCell className="text-center p-2 max-md:px-0.5 max-md:hidden">
               <div className="flex items-center justify-center gap-1">
                 <span className="text-sm">{hireInfo.date}</span>
                 <span className="text-xs text-gray-500">({hireInfo.days}일)</span>
               </div>
             </TableCell>
-            <TableCell className="text-center">
+            <TableCell className="text-center p-2 max-md:px-0.5">
               <Badge variant={Number(selectedYearSummary?.va_current) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_current) === 0 ? "grayish" : "secondary"} size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_current || '0'}일`}
               </Badge>
             </TableCell>
-            <TableCell className="text-center">
+            <TableCell className="text-center p-2 max-md:px-0.5">
               <Badge variant={Number(selectedYearSummary?.va_carryover) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_carryover) === 0 ? "grayish" : "secondary"} size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_carryover || '0'}일`}
               </Badge>
             </TableCell>
-            <TableCell className="text-center">
+            <TableCell className="text-center p-2 max-md:px-0.5">
               <Badge variant={Number(selectedYearSummary?.va_comp) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_comp) === 0 ? "grayish" : "secondary"} size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_comp || '0'}일`}
               </Badge>
             </TableCell>
-            <TableCell className="text-center">
+            <TableCell className="text-center p-2 max-md:px-0.5">
               <Badge variant={Number(selectedYearSummary?.va_long) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_long) === 0 ? "grayish" : "secondary"} size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_long || '0'}일`}
               </Badge>
             </TableCell>
-            <TableCell className="text-center">
+            <TableCell className="text-center p-2 max-md:px-0.5">
               <Badge variant="outline" size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_used || '0'}일`}
               </Badge>
