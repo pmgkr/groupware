@@ -461,7 +461,7 @@ export default function ProjectExpenseEdit() {
           ei_tax: item.ei_tax,
           ei_total: item.ei_total,
           //pro_id: item.pro_id,
-          pro_id: selectedProposalId,
+          pro_id: item.pro_id,
           attachments: item.attachments.map((att: any) => ({
             filename: att.fname,
             savename: att.sname,
