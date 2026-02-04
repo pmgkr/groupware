@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { updateMemberStatus } from '@/api/manager/member';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
+import { Pin, Manager } from '@/assets/images/icons';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { CheckCircle, OctagonAlert } from 'lucide-react';
@@ -33,6 +34,9 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState(member.user_status);
   const initialStatus = member.user_status;
+  const [userLevel, setUserLevel] = useState(member.user_level);
+  const initialUserLevel = member.user_level;
+
   const { user_id } = useUser();
   const { addAlert } = useAppAlert();
   const [saving, setSaving] = useState(false);
@@ -48,8 +52,14 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
   }, [member.user_id]);
   const badge = STATUS_BADGE_MAP[member.user_status as keyof typeof STATUS_BADGE_MAP];
 
+  const roleIcon = useMemo(() => {
+    if (member.user_level === 'admin') return <Pin className="h-6 w-6" />;
+    if (member.user_level === 'manager') return <Manager className="h-6 w-6" />;
+    return null;
+  }, [member.user_level]);
+
   const handleSave = async () => {
-    if (status === initialStatus) return;
+    if (status === initialStatus && userLevel === initialUserLevel) return;
 
     try {
       setSaving(true);
@@ -57,33 +67,30 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
       await updateMemberStatus({
         user_id: member.user_id,
         status,
+        user_level: userLevel,
       });
 
       setOpen(false);
       onRefresh();
 
       addAlert({
-        title: '상태 변경 완료',
+        title: '정보 변경 완료',
         message: `
-          <p>
-            <span class="font-semibold text-primary-blue-500">
+          <p class="text-center">
+            <span class="font-bold text-primary-blue-500">
               ${member.user_name}
-            </span> 님의 상태가
-            <span class="font-semibold text-primary-blue-500">
-              ${STATUS_OPTIONS.find((o) => o.value === status)?.label}
-            </span>
-            로 변경되었습니다.
+            </span> 님의 정보가 수정되었습니다.
           </p>
         `,
         icon: <CheckCircle />,
         duration: 3000,
       });
     } catch (e) {
-      console.error('상태 변경 실패', e);
+      console.error('정보 변경 실패', e);
 
       addAlert({
-        title: '상태 변경 실패',
-        message: '상태 변경 중 오류가 발생했습니다. 다시 시도해 주세요.',
+        title: '정보 변경 실패',
+        message: '정보 변경 중 오류가 발생했습니다. 다시 시도해 주세요.',
         icon: <OctagonAlert />,
         duration: 3000,
       });
@@ -115,6 +122,9 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
             </div>
             {/* inactive / suspended만 뱃지 */}
             {badge && <Badge className={badge.className}>{badge.label}</Badge>}
+
+            {/* 권한 아이콘 (admin / manager) */}
+            {roleIcon && <div className="mt-1">{roleIcon}</div>}
           </div>
 
           <div className="flex-1">
@@ -204,6 +214,25 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
                           {opt.label}
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </span>
+              </li>
+              <li>
+                <span>권한</span>
+                <span className="block w-full">
+                  <Select value={userLevel} onValueChange={(v: any) => setUserLevel(v)}>
+                    <SelectTrigger
+                      className={cn(
+                        'h-full! w-full border-0 bg-transparent p-0 text-[13px]! shadow-none [&]:hover:bg-transparent',
+                        userLevel !== initialUserLevel && 'text-primary-blue'
+                      )}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user" size="sm">일반사용자</SelectItem>
+                      <SelectItem value="manager" size="sm">관리자(팀장)</SelectItem>
+                      <SelectItem value="admin" size="sm">최고관리자</SelectItem>
                     </SelectContent>
                   </Select>
                 </span>

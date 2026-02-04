@@ -14,6 +14,7 @@ export default function Member() {
 
   const [teams, setTeams] = useState<any[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<number | undefined>();
+  const [selectedRole, setSelectedRole] = useState<string>('all');
   const [members, setMembers] = useState<any[]>([]);
   const [keyword, setKeyword] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,9 +32,10 @@ export default function Member() {
   useEffect(() => {
     getManagerMemberList({
       team_id: selectedTeamId,
+      role: selectedRole,
       q: keyword.trim() || undefined,
     }).then(setMembers);
-  }, [selectedTeamId, keyword]);
+  }, [selectedTeamId, keyword, selectedRole]);
 
   // 탭 + 팀 조합 필터
   const filteredMembers = useMemo(() => {
@@ -48,6 +50,7 @@ export default function Member() {
   const refreshMembers = async () => {
     const list = await getManagerMemberList({
       team_id: selectedTeamId,
+      role: selectedRole,
       q: keyword.trim() || undefined,
     });
     setMembers(list);
@@ -85,6 +88,21 @@ export default function Member() {
                       {team.team_name}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-x-2 before:mr-3 before:ml-3 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300">
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <SelectTrigger className="w-[200px]" size="sm">
+                  <SelectValue placeholder="권한 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-gray" size="sm">
+                    전체
+                  </SelectItem>
+                  <SelectItem value="user" className="text-gray" size="sm">일반사용자</SelectItem>
+                  <SelectItem value="manager" className="text-gray" size="sm">관리자(팀장)</SelectItem>
+                  <SelectItem value="admin" className="text-gray" size="sm">최고관리자</SelectItem>
                 </SelectContent>
               </Select>
             </div>
