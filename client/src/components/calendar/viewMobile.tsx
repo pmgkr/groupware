@@ -143,7 +143,7 @@ export default function CalendarViewMobile({
         ))}
       </ul>
       <div className="flex-1 min-h-0 overflow-y-auto rounded-xl p-4 max-2xl:p-2 max-md:px-0!">
-        <ul className="grid grid-cols-3 gap-2 gap-y-4 max-2xl:grid-cols-2 max-2xl:gap-x-1 max-2xl:gap-y-2 max-md:grid-cols-3!">
+        <ul className="grid grid-cols-3 gap-2 gap-y-4 max-2xl:grid-cols-2 max-2xl:gap-x-1 max-2xl:gap-y-2 max-md:grid-cols-4! px-3">
           {calendarData.length === 0 ? (
             <li className="col-span-full text-center">
               <span className="text-base text-gray-500">등록된 일정이 없습니다.</span>
@@ -156,7 +156,7 @@ export default function CalendarViewMobile({
                   event.title === '생일' ? '' : 'cursor-pointer hover:bg-gray-50'
                 }`}
                 onClick={event.title === '생일' ? undefined : () => handleCalendarClick(event)}>
-                <Avatar>
+                <Avatar className="hidden">
                   <AvatarImage src={getProfileImageUrl(undefined)} alt={event.author} />
                   <AvatarFallback>{getAvatarFallback(event.resource?.userId || '')}</AvatarFallback>
                 </Avatar>
