@@ -7,20 +7,37 @@ export interface ManagerReportCard extends ReportCard {
   finance_state: string;
   gm_state: string;
   approval_manager_display_state?: string;
+  approval_finance_display_state?: string;
+  approval_gm_display_state?: string;
 }
 
-// 🔥 매니저 전용 상태 매핑
+// 매니저 전용 상태 매핑 - 전체 결재 흐름 표시
 function mapManagerDisplayState(item: any) {
-  const state = (item.manager_state || '').trim();
+  const managerState = (item.manager_state || '').trim();
+  const financeState = (item.finance_state || '').trim();
+  const gmState = (item.gm_state || '').trim();
 
-  if (state === '반려') return '반려';
-  if (state === '대기') return '팀장대기';
-  if (state === '완료') return '팀장완료';
+  // 반려 상태 체크 (어느 단계에서든 반려되면 반려 표시)
+  if (managerState === '반려' || financeState === '반려' || gmState === '반려') {
+    return '반려';
+  }
 
-  return '';
+  // 팀장 단계
+  if (managerState === '대기') return '팀장대기';
+
+  // 팀장 완료 후 단계들
+  if (managerState === '완료') {
+    if (financeState === '대기') return '회계대기';
+    if (financeState === '완료') {
+      if (gmState === '대기') return 'GM대기';
+      if (gmState === '완료') return '승인완료';
+    }
+  }
+
+  return '팀장완료'; // 기본값
 }
 
-// 🔥 수정: flag 파라미터를 쿼리스트링으로 전달
+// flag 파라미터를 쿼리스트링으로 전달
 export async function getReportListManager(flag: '대기' | '완료' | '반려', type: 'project' | 'non_project'): Promise<ManagerReportCard[]> {
   const url = `/manager/report/list?size=100000&flag=${flag}&type=${type}`;
 

@@ -379,7 +379,7 @@ export default function PexpenseView() {
                 <TableColumnHeaderCell>비고</TableColumnHeaderCell>
               </TableColumnHeader>
               <TableColumnBody>
-                <TableColumnCell className="leading-[1.3]">{header.remark}</TableColumnCell>
+                <TableColumnCell className="leading-[1.4] break-keep whitespace-pre">{header.remark}</TableColumnCell>
               </TableColumnBody>
             </TableColumn>
           )}
@@ -389,7 +389,7 @@ export default function PexpenseView() {
                 <TableColumnHeaderCell>반려 사유</TableColumnHeaderCell>
               </TableColumnHeader>
               <TableColumnBody>
-                <TableColumnCell className="text-destructive leading-[1.3]">
+                <TableColumnCell className="text-destructive leading-[1.4] break-keep whitespace-pre">
                   {header.rej_reason} {header.rejected_by && `- ${header.rejected_by}`}
                 </TableColumnCell>
               </TableColumnBody>
@@ -407,7 +407,7 @@ export default function PexpenseView() {
                   <TableHead className="w-[14%]">금액 (A)</TableHead>
                   <TableHead className="w-[10%]">세금</TableHead>
                   <TableHead className="w-[14%]">합계</TableHead>
-                  <TableHead className="w-[20%]">증빙자료</TableHead>
+                  <TableHead className="w-[18%]">증빙자료</TableHead>
                   <TableHead className="w-[8%]">{data.header.is_estimate === 'Y' ? '견적서' : '기안서'}</TableHead>
                 </TableRow>
               </TableHeader>

@@ -1,6 +1,8 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useParams, useOutletContext } from 'react-router';
 import * as XLSX from 'xlsx';
+import { useUser } from '@/hooks/useUser';
+import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import { getEstimateList, type EstimateListItem, type projectEstimateParams } from '@/api';
 import { formatDate, formatAmount } from '@/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
@@ -10,14 +12,14 @@ import { Button } from '@components/ui/button';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogClose, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
+import { Excel } from '@/assets/images/icons';
 
 export default function ProjectEstimate() {
   const navigate = useNavigate();
   const { projectId } = useParams();
+  const { user_id } = useUser();
+  const { data, members } = useOutletContext<ProjectLayoutContext>();
   const isMobile = useIsMobileViewport();
-
-  const { data } = useOutletContext<ProjectLayoutContext>();
 
   // 상단 필터용 state
   const [registerDialog, setRegisterDialog] = useState(false); // Dialog용 State
@@ -98,6 +100,8 @@ export default function ProjectEstimate() {
     N: <Badge variant="grayish">과거견적</Badge>,
   } as const;
 
+  const isProjectMember = useMemo(() => members.some((m) => m.user_id === user_id), [members, user_id]);
+
   return (
     <>
       {isMobile ? (
@@ -147,7 +151,6 @@ export default function ProjectEstimate() {
               <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
                 <TableHead className="w-[6%]">#</TableHead>
                 <TableHead className="text-left">견적서 제목</TableHead>
-                {/* <TableHead className="w-[12%]">클라이언트</TableHead> */}
                 <TableHead className="w-[10%]">견적서 총액</TableHead>
                 <TableHead className="w-[10%]">가용 예산</TableHead>
                 <TableHead className="w-[8%]">작성자</TableHead>
@@ -165,7 +168,6 @@ export default function ProjectEstimate() {
                         {item.est_title}
                       </Link>
                     </TableCell>
-                    {/* <TableCell>{data.client_nm}</TableCell> */}
                     <TableCell>{formatAmount(item.est_amount)}</TableCell>
                     <TableCell>{formatAmount(item.est_budget)}</TableCell>
                     <TableCell>{item.user_nm}</TableCell>

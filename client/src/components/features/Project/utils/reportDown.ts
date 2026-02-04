@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx-js-style';
 import { format } from 'date-fns';
 import type { ProjectListItem, ProjectListResponse } from '@/api/admin/project';
+import { is } from 'date-fns/locale';
 
 /* =======================
  *  Styles
@@ -68,6 +69,7 @@ const columns = [
   'Net Profit', // 수익금
   'GPM(%)',
   'Status',
+  'isLocked', // 프로젝트 잠금 여부
 ];
 
 /* =======================
@@ -122,6 +124,7 @@ function buildRows(items: ProjectListItem[]) {
     'Net Profit': { v: item.netprofit ?? 0, t: 'n', s: amountCellStyle },
     'GPM(%)': item.GPM ? `${item.GPM}%` : '-',
     Status: item.project_status,
+    isLocked: item.is_locked,
   }));
 }
 
@@ -157,6 +160,7 @@ function buildSummaryRow(label: string, data: ProjectListResponse['subtotal']) {
       },
     },
     Status: '',
+    isLocked: '',
   };
 }
 
@@ -203,7 +207,7 @@ export function downloadReportExcel(res: ProjectListResponse, params: { year?: s
     },
     {
       s: { r: subTotalRowIndex, c: 10 },
-      e: { r: subTotalRowIndex, c: 11 },
+      e: { r: subTotalRowIndex, c: 12 },
     },
 
     // Grand Total 병합 (A~E)
@@ -213,7 +217,7 @@ export function downloadReportExcel(res: ProjectListResponse, params: { year?: s
     },
     {
       s: { r: grandTotalRowIndex, c: 10 },
-      e: { r: grandTotalRowIndex, c: 11 },
+      e: { r: grandTotalRowIndex, c: 12 },
     },
   ];
 
@@ -254,6 +258,7 @@ export function downloadReportExcel(res: ProjectListResponse, params: { year?: s
     { wch: 20 }, // Net Profit
     { wch: 10 }, // GPM (%)
     { wch: 12 }, // Status
+    { wch: 10 }, // isLocked
   ];
 
   const wb = XLSX.utils.book_new();

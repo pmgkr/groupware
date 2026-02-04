@@ -4,6 +4,7 @@ import { Outlet, useNavigate, useLocation, useParams } from 'react-router';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
 import { notificationApi } from '@/api/notification';
+import { projectLock, projectUnLock } from '@/api/admin/project';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
@@ -14,8 +15,8 @@ import { getProjectView, type projectOverview, ProjectStatusChange, getProjectLo
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
 import { RadioGroup, RadioButton } from '@components/ui/radioButton';
-import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Settings, Star, ArrowLeft, OctagonAlert } from 'lucide-react';
+import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Settings, Star, ArrowLeft, OctagonAlert, Lock, LockOpen } from 'lucide-react';
 
 export type ProjectLayoutContext = {
   projectId?: string;
@@ -92,6 +93,7 @@ export default function ProjectLayout() {
   const [selectedStatus, setSelectedStatus] = useState<ProjectStatus | null>(null);
 
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isLocked, setIsLocked] = useState(false); // 프로젝트 잠금 상태
   const [projectDialog, setProjectDialog] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -107,6 +109,7 @@ export default function ProjectLayout() {
     setData(projectRes);
     setMembers(memberRes);
     setLogs(logRes.reverse());
+    projectRes.info.is_locked === 'Y' ? setIsLocked(true) : setIsLocked(false);
   }, [projectId]);
 
   // 프로젝트 초기 로딩
@@ -132,7 +135,7 @@ export default function ProjectLayout() {
         setLoading(false);
       }
     })();
-  }, [projectId, fetchProject, navigate]);
+  }, [projectId, fetchProject, navigate, isLocked]);
 
   // 프로젝트 상태 수정 다이얼로그 오픈 시 세팅
   useEffect(() => {
@@ -168,11 +171,30 @@ export default function ProjectLayout() {
     }
   }, [isFavorite, projectId]);
 
+  // 프로젝트 잠금 토글 기능
+  const toggleLock = useCallback(async () => {
+    if (!projectId) return;
+
+    addDialog({
+      title: isLocked ? '프로젝트 잠금 해제' : '프로젝트 잠금',
+      message: isLocked ? '프로젝트의 잠금을 해제하시겠습니까?' : '프로젝트를 잠그시겠습니까?<br/>잠긴 프로젝트는 수정이 불가합니다.',
+      confirmText: '확인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          isLocked ? await projectUnLock(projectId) : await projectLock(projectId);
+          setIsLocked((prev) => !prev);
+        } catch (err) {
+          console.error('프로젝트 잠금 토글 실패:', err);
+        }
+      },
+    });
+  }, [isLocked, projectId]);
+
   const isProjectMember = useMemo(() => members.some((m) => m.user_id === user_id), [members, user_id]);
 
   if (loading) return <div className="flex h-[50vh] items-center justify-center text-gray-500">로딩 중...</div>;
-
-  if (!data) return <div className="p-6 text-center">데이터 없음</div>;
+  if (!data) return <div className="h-[50vh] text-center">프로젝트 데이터를 찾을 수 없습니다.</div>;
 
   // 비용 상태별 Badge 맵핑
   const statusMap = {
@@ -240,7 +262,6 @@ export default function ProjectLayout() {
   const applyStatusChange = async (status: 'in-progress' | 'Closed' | 'Cancelled') => {
     if (!projectId) return;
 
-    console.log(status);
     await ProjectStatusChange(projectId, status);
 
     setData((prev) =>
@@ -310,13 +331,27 @@ export default function ProjectLayout() {
               </Button>
             </>
           )}
+
+          {user_id === 'yeaji.kim@pmgasia.com' || user_id === 'sangmin.kang@pmgasia.com' ? ( // 지사장님 계정만 잠금 토글 가능
+            <Button type="button" variant="svgIcon" onClick={toggleLock} className="text-gray-600 has-[>svg]:p-1">
+              {isLocked ? <Lock className="size-5" /> : <LockOpen className="size-5" />}
+            </Button>
+          ) : isLocked ? (
+            <div className="p-1">
+              <Lock className="size-5 text-gray-600" />
+            </div>
+          ) : (
+            <div className="p-1">
+              <LockOpen className="size-5 text-gray-600" />
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-1">
           <Button variant="svgIcon" onClick={() => navigate(fallbackListPath)} className="text-gray-500 max-md:hidden">
             <ArrowLeft className="size-5" />
           </Button>
-          {info.project_status === 'in-progress' && isProjectMember && (
+          {info.project_status === 'in-progress' && isProjectMember && !isLocked && (
             <Button
               variant="svgIcon"
               className="text-gray-500 max-md:hidden"
@@ -401,6 +436,9 @@ export default function ProjectLayout() {
             </div>
           </RadioGroup>
           <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">취소</Button>
+            </DialogClose>
             <Button type="button" onClick={handleStatusChange}>
               변경사항 저장
             </Button>

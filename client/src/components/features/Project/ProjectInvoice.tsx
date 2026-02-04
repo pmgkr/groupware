@@ -264,7 +264,7 @@ export default function ProjectInvoice() {
                 )}
               </div>
 
-              {data.project_status === 'in-progress' && (
+              {data.project_status === 'in-progress' && data.is_locked === 'N' && (
                 <Button size="sm" onClick={() => setRegisterDialog(true)}>
                   인보이스 작성
                 </Button>

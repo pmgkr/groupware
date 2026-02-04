@@ -37,7 +37,11 @@ export async function getMembersByTeams(teamIds: number[]) {
   return unique;
 }
 
-export async function getManagerMemberList(params?: { team_id?: number; q?: string }): Promise<Member[]> {
+export async function getManagerMemberList(params?: {
+  team_id?: number;
+  q?: string;
+  role?: string;
+}): Promise<Member[]> {
   const searchParams = new URLSearchParams();
 
   if (params?.team_id) {
@@ -48,12 +52,20 @@ export async function getManagerMemberList(params?: { team_id?: number; q?: stri
     searchParams.append('q', params.q);
   }
 
+  if (params?.role && params.role !== 'all') {
+    searchParams.append('role', params.role);
+  }
+
   const url = `/user/common/memberlist${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
   return await http<Member[]>(url, { method: 'GET' });
 }
 
 // 매니저 구성원 상태 변경
-export async function updateMemberStatus(params: { user_id: string; status: 'active' | 'inactive' | 'suspended' }) {
+export async function updateMemberStatus(params: {
+  user_id: string;
+  status?: 'active' | 'inactive' | 'suspended';
+  user_level?: 'admin' | 'manager' | 'user';
+}) {
   console.log('[updateMemberStatus] payload:', params);
   return await http('/manager/member/status', {
     method: 'PATCH',

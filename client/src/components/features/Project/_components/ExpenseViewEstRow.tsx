@@ -57,7 +57,7 @@ export default function ExpenseViewEstRow({
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-1">
                   <File className="size-3.5 shrink-0" />
-                  <span className="overflow-hidden text-left text-ellipsis whitespace-nowrap hover:underline">{att.ea_fname}</span>
+                  <span className="truncate text-left hover:underline">{att.ea_fname}</span>
                 </a>
               </li>
             ))}
