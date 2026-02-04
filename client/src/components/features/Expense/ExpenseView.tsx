@@ -10,16 +10,13 @@ import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
 import ReportMatched from '@components/features/Project/_components/ReportMatched';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
-import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
-import { Download, Edit } from '@/assets/images/icons';
+import { Edit } from '@/assets/images/icons';
 import { File, Link as LinkIcon, OctagonAlert, Files, SquareArrowOutUpRight } from 'lucide-react';
-
-import { format } from 'date-fns';
 
 export default function ExpenseView() {
   const { expId } = useParams();
@@ -28,7 +25,6 @@ export default function ExpenseView() {
   const isMobile = useIsMobileViewport();
 
   const { addAlert } = useAppAlert();
-  const { addDialog } = useAppDialog();
 
   const [data, setData] = useState<ExpenseViewDTO | null>(null);
   const [loading, setLoading] = useState(true);

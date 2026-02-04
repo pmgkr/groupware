@@ -1,10 +1,8 @@
 // _filters/ExpenseFilterMo.tsx
 import { useState, useRef } from 'react';
-import { cn } from '@/lib/utils';
 import type { ExpenseFilterProps } from '../types/ExpenseFilterProps';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup } from '@/components/ui/select';
 import {
   Drawer,
@@ -22,6 +20,7 @@ import { Star, RefreshCw, ListFilter, X } from 'lucide-react';
 
 export function ExpenseFilterMo(props: ExpenseFilterProps) {
   const {
+    data,
     activeTab,
     yearOptions,
     selectedYear,
@@ -280,9 +279,11 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
           </Drawer>
         </div>
 
-        <Button size="sm" onClick={onCreate}>
-          비용 작성하기
-        </Button>
+        {data.project_status === 'in-progress' && data.is_locked === 'N' && (
+          <Button size="sm" onClick={onCreate}>
+            비용 작성하기
+          </Button>
+        )}
       </div>
     </div>
   );

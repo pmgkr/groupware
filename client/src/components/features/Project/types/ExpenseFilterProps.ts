@@ -1,6 +1,8 @@
+import { type projectOverview } from '@/api/project';
 import type { MultiSelectOption, MultiSelectRef } from '@/components/multiselect/multi-select';
 
 export type ExpenseFilterProps = {
+  data: projectOverview['info'];
   activeTab: 'all' | 'saved';
   yearOptions: string[];
   selectedYear: string;

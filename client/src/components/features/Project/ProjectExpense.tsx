@@ -492,6 +492,7 @@ export default function Expense() {
   );
 
   const filterProps = {
+    data,
     activeTab,
     yearOptions,
     selectedYear,
