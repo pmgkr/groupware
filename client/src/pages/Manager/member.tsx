@@ -107,7 +107,7 @@ export default function Member() {
           {filteredMembers.length === 0 ? (
             <div className="mt-20 text-center text-[13px] text-gray-400">해당 구성원이 없습니다.</div>
           ) : (
-            <div className="mt-8 grid grid-cols-4 gap-5">
+            <div className="mt-8 grid grid-cols-4 gap-5 max-xl:grid-cols-3 max-lg:gap-2 max-md:grid-cols-2!">
               {filteredMembers.map((member) => (
                 <MemberList key={member.user_id} member={member} onRefresh={refreshMembers} />
               ))}
@@ -119,7 +119,7 @@ export default function Member() {
           {filteredMembers.length === 0 ? (
             <div className="mt-20 text-center text-[13px] text-gray-400">해당 구성원이 없습니다.</div>
           ) : (
-            <div className="mt-8 grid grid-cols-4 gap-5">
+            <div className="mt-8 grid grid-cols-4 gap-5 max-xl:grid-cols-3 max-lg:gap-2 max-md:grid-cols-2!">
               {filteredMembers.map((member) => (
                 <MemberList key={member.user_id} member={member} onRefresh={refreshMembers} />
               ))}
