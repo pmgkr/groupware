@@ -20,6 +20,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getProposalList, type ProposalItem } from '@/api/expense/proposal';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useIsMobileViewport } from '@/hooks/useViewport';
+import ExpenseProposalCard from '../_responsive/ExpenseProposalCard';
 
 type ExpenseRowProps = {
   index: number;
@@ -78,6 +80,10 @@ function ExpenseRowComponent({
   const [proposalList, setProposalList] = useState<ProposalItem[]>([]);
   const [selectedProposalId, setSelectedProposalId] = useState<number | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
+  const isMobile = useIsMobileViewport();
+  useEffect(() => {
+    console.log('[프로젝트] isMobile:', isMobile, 'innerWidth:', window.innerWidth);
+  }, [isMobile, isDialogOpen]);
 
   const handleOpenMatchingDialog = async () => {
     setDialogOpen(true);
@@ -101,11 +107,11 @@ function ExpenseRowComponent({
   return (
     <article className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0">
       {/* 상단 영역 */}
-      <div className="absolute top-1 left-0 flex w-full items-center justify-between gap-2 pl-[68%]">
+      <div className="absolute top-1 left-0 flex w-full items-center justify-between gap-2 pl-[68%] max-md:justify-end max-md:pl-[10%]">
         {projectType === 'pro' && ( // 견적서 외 비용 선택 시에만 기안서 매칭 노출
           <button
             type="button"
-            className="text-primary-blue-500 flex w-[260px] cursor-pointer items-center gap-1 truncate text-sm hover:underline"
+            className="text-primary-blue-500 flex cursor-pointer items-center gap-1 text-sm hover:underline max-md:w-[200px] max-md:justify-end max-md:truncate"
             onClick={() => {
               setActiveFile(String(index));
               handleOpenMatchingDialog();
@@ -116,14 +122,14 @@ function ExpenseRowComponent({
             </span>
           </button>
         )}
-        <Button type="button" variant="svgIcon" size="icon" className="ml-auto" onClick={() => onRemove(index)}>
+        <Button type="button" variant="svgIcon" size="icon" className="ml-auto max-md:ml-0" onClick={() => onRemove(index)}>
           <Close className="size-4" />
         </Button>
       </div>
 
-      <div className="flex justify-between">
+      <div className="flex flex-col justify-between gap-2 md:flex-row md:gap-0">
         {/* 왼쪽 입력필드 그룹 */}
-        <div className="grid w-[66%] grid-cols-3 gap-4 tracking-tight">
+        <div className="grid w-full grid-cols-2 gap-4 tracking-tight md:w-[66%] md:grid-cols-3">
           {/* 비용 유형 */}
           <FormField
             control={control}
@@ -286,7 +292,7 @@ function ExpenseRowComponent({
         </div>
 
         {/* 오른쪽 첨부 */}
-        <div className="w-[32%] pl-2">
+        <div className="w-full md:w-[32%] md:pl-2">
           <AttachmentField
             name={`expense_attachment${index}`}
             rowIndex={index + 1}
@@ -301,57 +307,68 @@ function ExpenseRowComponent({
 
       {/* 기안서 매칭 다이얼로그 */}
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-5xl">
+        <DialogContent className="max-w-5xl rounded-lg max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)]">
           <DialogHeader>
             <DialogTitle>기안서 매칭</DialogTitle>
           </DialogHeader>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">구분</TableHead>
-                <TableHead>제목</TableHead>
-                <TableHead className="w-[120px]">금액</TableHead>
-                <TableHead className="w-[240px]">작성일</TableHead>
-                <TableHead className="w-[40px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {proposalList.length === 0 ? (
+          {isMobile ? (
+            <ExpenseProposalCard
+              proposalList={proposalList}
+              selectedProposalId={selectedProposalId}
+              onSelect={(p) => {
+                setSelectedProposalId(p ? p.rp_seq : null);
+                setSelectedProposal(p);
+              }}
+            />
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground py-8 text-center text-sm">
-                    작성된 기안서가 없습니다.
-                  </TableCell>
+                  <TableHead className="w-[100px]">구분</TableHead>
+                  <TableHead>제목</TableHead>
+                  <TableHead className="w-[120px]">금액</TableHead>
+                  <TableHead className="w-[240px]">작성일</TableHead>
+                  <TableHead className="w-[40px]"></TableHead>
                 </TableRow>
-              ) : (
-                proposalList.map((p) => {
-                  const isSelected = selectedProposalId === p.rp_seq;
-                  const isDisabled = selectedProposalId !== null && !isSelected;
+              </TableHeader>
 
-                  return (
-                    <TableRow key={p.rp_seq} className="hover:bg-gray-100 [&_td]:text-[13px]">
-                      <TableCell>{p.rp_category}</TableCell>
-                      <TableCell className="text-left">{p.rp_title}</TableCell>
-                      <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
-                      <TableCell>{formatKST(p.rp_date)}</TableCell>
-                      <TableCell className="[&]:pr-3!">
-                        <Checkbox
-                          size="sm"
-                          id={`proposal-${p.rp_seq}`}
-                          checked={isSelected}
-                          disabled={isDisabled}
-                          onCheckedChange={(checked) => {
-                            setSelectedProposalId(checked ? p.rp_seq : null);
-                            setSelectedProposal(checked ? p : null);
-                          }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
+              <TableBody>
+                {proposalList.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-muted-foreground py-8 text-center text-sm">
+                      작성된 기안서가 없습니다.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  proposalList.map((p) => {
+                    const isSelected = selectedProposalId === p.rp_seq;
+                    const isDisabled = selectedProposalId !== null && !isSelected;
+
+                    return (
+                      <TableRow key={p.rp_seq} className="hover:bg-gray-100 [&_td]:text-[13px]">
+                        <TableCell>{p.rp_category}</TableCell>
+                        <TableCell className="text-left">{p.rp_title}</TableCell>
+                        <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
+                        <TableCell>{formatKST(p.rp_date)}</TableCell>
+                        <TableCell className="[&]:pr-3!">
+                          <Checkbox
+                            size="sm"
+                            id={`proposal-${p.rp_seq}`}
+                            checked={isSelected}
+                            disabled={isDisabled}
+                            onCheckedChange={(checked) => {
+                              setSelectedProposalId(checked ? p.rp_seq : null);
+                              setSelectedProposal(checked ? p : null);
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          )}
 
           <div className="mt-6 flex justify-end gap-2">
             <Button size="sm" variant="outline" onClick={() => setDialogOpen(false)}>
@@ -361,16 +378,13 @@ function ExpenseRowComponent({
               size="sm"
               onClick={() => {
                 if (!selectedProposalId) return;
-                console.log('선택된 기안서:', selectedProposalId);
 
                 setValue(`expense_items.${index}.pro_id`, selectedProposalId, {
                   shouldDirty: true,
                   shouldValidate: false,
                 });
 
-                // 부모 컴포넌트로 선택된 기안서 전달
                 onSelectProposal?.(selectedProposalId);
-
                 setDialogOpen(false);
               }}>
               선택하기

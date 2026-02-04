@@ -663,18 +663,18 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
             />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="max-md:flex-row max-md:flex-nowrap max-md:gap-2">
           {selectedDay?.overtimeStatus === '승인대기' ? (
             <>
-              <Button variant="destructive" onClick={onCancel}>신청 취소하기</Button>
-              <Button variant="outline" onClick={handleClose}>닫기</Button>
+              <Button variant="outline" onClick={handleClose} className="max-md:flex-1">닫기</Button>
+              <Button variant="destructive" onClick={onCancel} className="max-md:flex-1">신청 취소하기</Button>
             </>
           ) : (
             <>
-              <Button onClick={handleSave} disabled={isSubmitting}>
+              <Button variant="outline" onClick={handleClose} disabled={isSubmitting} className="max-md:flex-1">닫기</Button>
+              <Button onClick={handleSave} disabled={isSubmitting} className="max-md:flex-1">
                 {isSubmitting ? '처리 중' : '신청하기'}
               </Button>
-              <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>닫기</Button>
             </>
           )}
         </DialogFooter>

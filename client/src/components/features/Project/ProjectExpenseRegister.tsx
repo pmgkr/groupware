@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useToggleState } from '@/hooks/useToggleState';
 import { useUser } from '@/hooks/useUser';
 import { mapExcelToExpenseItems } from '@/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 import { uploadFilesToServer, projectExpenseRegister, getBankList, getExpenseType, type BankList } from '@/api';
 import { type SingleSelectOption } from '@components/ui/SearchableSelect';
@@ -69,6 +70,7 @@ const expenseSchema = z.object({
 export default function ProjectExpenseRegister() {
   const navigate = useNavigate();
   const { projectId } = useParams();
+  const isMobile = useIsMobileViewport();
   const { user_id, user_name, team_id, user_level } = useUser();
 
   const [zoomBoundary, setZoomBoundary] = useState<DOMRect | null>(null);
@@ -613,9 +615,9 @@ export default function ProjectExpenseRegister() {
       <ZoomBoundaryContext.Provider value={zoomBoundary}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="grid min-h-160 grid-cols-6 grid-rows-1 gap-6">
-              <div ref={contentRef} className="col-span-4">
-                <SectionHeader title="기본 정보" className="mb-4" />
+            <div className="grid grid-rows-1 gap-6 md:min-h-160 md:grid-cols-6">
+              <div ref={contentRef} className="md:col-span-4">
+                <SectionHeader title="기본 정보" className="mb-2 md:mb-4" />
                 {/* 기본정보 입력 폼 */}
                 <div className="mb-6">
                   <FormField
@@ -627,7 +629,10 @@ export default function ProjectExpenseRegister() {
                           증빙 수단<span className="text-primary-blue-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-x-1.5 [&_button]:mb-0">
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="grid grid-cols-4 gap-2 md:flex md:gap-1.5 [&_button]:mb-0">
                             <RadioButton value="PMG" label="PMG" variant="dynamic" iconHide />
                             <RadioButton value="MCS" label="MCS" variant="dynamic" iconHide />
                             <RadioButton value="개인카드" label="개인카드" variant="dynamic" iconHide />
@@ -641,7 +646,7 @@ export default function ProjectExpenseRegister() {
                     )}
                   />
                 </div>
-                <div className="grid-row-3 mb-12 grid grid-cols-4 gap-y-6 tracking-tight">
+                <div className="grid-row-3 mb-12 grid grid-cols-4 gap-2 gap-y-4 tracking-tight md:gap-0 md:gap-y-6">
                   <div className="col-span-4 text-base leading-[1.5] text-gray-700">
                     <FormField
                       control={form.control}
@@ -672,7 +677,7 @@ export default function ProjectExpenseRegister() {
                     />
                   </div>
 
-                  <div className="pr-5 text-base leading-[1.5] text-gray-700">
+                  <div className="col-span-2 text-base leading-[1.5] text-gray-700 md:col-span-1 md:pr-5">
                     <FormField
                       control={form.control}
                       name="bank_account"
@@ -727,7 +732,7 @@ export default function ProjectExpenseRegister() {
                       onSelect={handleSelectAccount}
                     />
                   </div>
-                  <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
+                  <div className="md:long-v-divider col-span-2 text-base leading-[1.5] text-gray-700 md:col-span-1 md:px-5">
                     <FormField
                       control={form.control}
                       name="bank_code"
@@ -767,7 +772,7 @@ export default function ProjectExpenseRegister() {
                       )}
                     />
                   </div>
-                  <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
+                  <div className="md:long-v-divider col-span-2 text-base leading-[1.5] text-gray-700 md:col-span-1 md:px-5">
                     <FormField
                       control={form.control}
                       name="account_name"
@@ -786,7 +791,7 @@ export default function ProjectExpenseRegister() {
                       )}
                     />
                   </div>
-                  <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
+                  <div className="md:long-v-divider col-span-2 text-base leading-[1.5] text-gray-700 md:col-span-1 md:px-5">
                     <FormField
                       control={form.control}
                       name="el_deposit"
@@ -886,53 +891,61 @@ export default function ProjectExpenseRegister() {
                     </Button>
                   </div>
                   <div className="bg-primary-blue-100 mt-2 flex justify-between px-4 py-4 text-base font-medium">
-                    <div className="flex w-[66%] justify-between">
+                    <div className="flex w-full justify-between md:w-[66%]">
                       <span>총 비용</span>
                       <span>{formattedTotal ? formattedTotal : 0} 원</span>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="relative col-span-2">
-                <div className="sticky top-20 left-0 flex h-[calc(100vh-var(--spacing)*22)] flex-col justify-center gap-3 rounded-xl bg-gray-300 p-5">
-                  <div className="flex flex-none items-center justify-end">
-                    {/* <Link to="" className="text-primary-blue-500 flex gap-0.5 text-sm font-medium">
-                    <TooltipNoti className="size-5" />
-                    비용 관리 증빙자료 업로드 가이드
-                  </Link> */}
-                    {hasFiles && (
-                      <Button type="button" size="sm" onClick={handleAddUploadClick}>
-                        추가 업로드
-                      </Button>
-                    )}
-                  </div>
-                  <UploadArea
-                    ref={uploadRef}
-                    files={files}
-                    setFiles={setFiles}
-                    onFilesChange={handleFilesChange}
-                    linkedRows={linkedRows}
-                    activeFile={activeFile}
-                    setActiveFile={setActiveFile}
-                  />
-                  <div className="flex flex-none justify-between">
-                    <div className="flex gap-1.5">
-                      <Button type="button" variant="outline" size="sm" onClick={() => uploadRef.current?.deleteSelectedFiles()}>
-                        선택 삭제
-                      </Button>
-                      <Button type="button" variant="outline" size="sm" onClick={() => uploadRef.current?.deleteAllFiles()}>
-                        전체 삭제
-                      </Button>
+              {!isMobile && (
+                <>
+                  <div className="relative col-span-2">
+                    <div className="sticky top-20 left-0 flex h-[calc(100vh-var(--spacing)*22)] flex-col justify-center gap-3 rounded-xl bg-gray-300 p-5">
+                      <div className="flex flex-none items-center justify-end">
+                        <Link
+                          to="https://pmgwiki.co.kr/view/pmg/66"
+                          target="_blank"
+                          className="text-primary-blue-500 flex gap-0.5 text-sm font-medium">
+                          <TooltipNoti className="size-5" />
+                          비용 관리 증빙자료 업로드 가이드
+                        </Link>
+                        {hasFiles && (
+                          <Button type="button" size="sm" onClick={handleAddUploadClick}>
+                            추가 업로드
+                          </Button>
+                        )}
+                      </div>
+                      <UploadArea
+                        ref={uploadRef}
+                        files={files}
+                        setFiles={setFiles}
+                        onFilesChange={handleFilesChange}
+                        linkedRows={linkedRows}
+                        activeFile={activeFile}
+                        setActiveFile={setActiveFile}
+                      />
+                      <div className="flex flex-none justify-between">
+                        <div className="flex gap-1.5">
+                          <Button type="button" variant="outline" size="sm" onClick={() => uploadRef.current?.deleteSelectedFiles()}>
+                            선택 삭제
+                          </Button>
+                          <Button type="button" variant="outline" size="sm" onClick={() => uploadRef.current?.deleteAllFiles()}>
+                            전체 삭제
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                </>
+              )}
             </div>
-            <div className="my-10 flex justify-center gap-2">
-              <Button type="submit" className="min-w-[120px]">
+
+            <div className="mt-6 flex justify-center gap-2 md:my-10">
+              <Button type="submit" className="min-w-[120px] max-md:flex-1">
                 등록
               </Button>
-              <Button type="button" variant="outline" className="min-w-[120px]" asChild>
+              <Button type="button" variant="outline" className="min-w-[120px] max-md:flex-1" asChild>
                 <Link to={`/project/${projectId}/expense`}>취소</Link>
               </Button>
             </div>

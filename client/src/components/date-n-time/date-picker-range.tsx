@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { DayPicker } from '@/components/daypicker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 export function DatePickerWithRange({
   className,
@@ -26,6 +27,7 @@ export function DatePickerWithRange({
 }) {
   const [date, setDate] = React.useState<DateRange | undefined>(selected);
   const [open, setOpen] = React.useState(false);
+  const isMobile = useIsMobileViewport();
 
   React.useEffect(() => {
     setDate(selected);
@@ -53,7 +55,7 @@ export function DatePickerWithRange({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="z-[1000] w-auto p-0" align="start" onPointerDown={(e) => e.stopPropagation()}>
+        <PopoverContent className="z-[1000] w-auto p-0 max-md:max-h-[90vh] max-md:overflow-y-auto" align="start" onPointerDown={(e) => e.stopPropagation()}>
           <div className="flex flex-col">
             <DayPicker
               initialFocus
@@ -78,7 +80,7 @@ export function DatePickerWithRange({
                   onSelect?.(selectedRange);
                 }
               }}
-              numberOfMonths={2}
+              numberOfMonths={isMobile ? 1 : 2}
             />
 
             {!buttonHidden && date?.from && date?.to && (

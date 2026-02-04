@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
 import { notificationApi } from '@/api/notification';
 import { projectLock, projectUnLock } from '@/api/admin/project';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
@@ -79,6 +80,7 @@ export default function ProjectLayout() {
   const location = useLocation();
   const { projectId } = useParams();
   const { user_id, user_name } = useUser();
+  const isMobile = useIsMobileViewport();
 
   const { addAlert } = useAppAlert();
   const { addDialog } = useAppDialog();
@@ -309,22 +311,26 @@ export default function ProjectLayout() {
   };
 
   return (
-    <section>
+    <section className="max-md:min-h-[90vh]">
       {/* 상단 프로젝트 공통 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-3xl font-bold text-gray-950">{info.project_title}</h2>
-          {status}
-          <Button
-            type="button"
-            variant="svgIcon"
-            onClick={toggleFavorite}
-            className={cn(
-              'text-gray-600 transition-colors has-[>svg]:p-0',
-              isFavorite ? 'text-primary-yellow-500 [&_svg]:fill-current' : 'hover:text-primary-yellow-500 hover:[&_svg]:fill-current'
-            )}>
-            <Star fill={isFavorite ? 'currentColor' : 'none'} className="size-5" />
-          </Button>
+          <h2 className="text-2xl leading-[1.2] font-bold text-gray-950 md:text-3xl md:leading-[1.3]">{info.project_title}</h2>
+          {!isMobile && (
+            <>
+              {status}
+              <Button
+                type="button"
+                variant="svgIcon"
+                onClick={toggleFavorite}
+                className={cn(
+                  'text-gray-600 transition-colors has-[>svg]:p-0',
+                  isFavorite ? 'text-primary-yellow-500 [&_svg]:fill-current' : 'hover:text-primary-yellow-500 hover:[&_svg]:fill-current'
+                )}>
+                <Star fill={isFavorite ? 'currentColor' : 'none'} className="size-5" />
+              </Button>
+            </>
+          )}
 
           {user_id === 'yeaji.kim@pmgasia.com' || user_id === 'sangmin.kang@pmgasia.com' ? ( // 지사장님 계정만 잠금 토글 가능
             <Button type="button" variant="svgIcon" onClick={toggleLock} className="text-gray-600 has-[>svg]:p-1">
@@ -342,13 +348,13 @@ export default function ProjectLayout() {
         </div>
 
         <div className="flex items-center gap-1">
-          <Button variant="svgIcon" onClick={() => navigate(fallbackListPath)} className="text-gray-500">
+          <Button variant="svgIcon" onClick={() => navigate(fallbackListPath)} className="text-gray-500 max-md:hidden">
             <ArrowLeft className="size-5" />
           </Button>
           {info.project_status === 'in-progress' && isProjectMember && !isLocked && (
             <Button
               variant="svgIcon"
-              className="text-gray-500"
+              className="text-gray-500 max-md:hidden"
               onClick={() => {
                 setProjectDialog(true);
               }}>
@@ -359,7 +365,7 @@ export default function ProjectLayout() {
       </div>
 
       {/* 탭 메뉴: URL 이동 기반 */}
-      <nav className="flex gap-4">
+      <nav className="flex gap-4 max-md:mt-2 max-md:-ml-5 max-md:w-[calc(100%+var(--spacing)*10)] max-md:border-b-2 max-md:border-gray-300 max-md:px-5">
         {tabs.map((tab) => {
           const basePath = tab.path === '' ? `/project/${projectId}` : `/project/${projectId}/${tab.path}`;
 
@@ -373,10 +379,10 @@ export default function ProjectLayout() {
               key={tab.key}
               variant="ghost"
               onClick={() => navigate(basePath)}
-              className={cn(
+              className={`${cn(
                 'hover:text-primary relative h-8 px-1 hover:bg-transparent',
                 isActive ? 'text-primary font-bold' : 'hover:text-primary/80 text-gray-500'
-              )}>
+              )} max-md:-mb-[2px]`}>
               {tab.label}
               {isActive && <span className="bg-primary absolute right-0 bottom-0 left-0 h-[2px]" />}
             </Button>
@@ -385,7 +391,7 @@ export default function ProjectLayout() {
       </nav>
 
       {/* 하위 페이지 Outlet + context 전달 */}
-      <div className="pt-6">
+      <div className="py-6">
         <Outlet
           context={
             {

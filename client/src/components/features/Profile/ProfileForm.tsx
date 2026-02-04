@@ -32,8 +32,6 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
 
   const [uinfo, setUinfo] = useState<any>(null); // 초기 데이터 저장용
 
-
-
   const [dobOpen, setDobOpen] = useState(false); // 생년월일 팝오버용
   const [hireOpen, setHireOpen] = useState(false); // 입사일 팝오버용
   const [submitting, setSubmitting] = useState(false);
@@ -83,10 +81,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
         setTeamLoading(true);
 
         // 2. 데이터 병렬 Fetch (내 정보 + 팀 목록)
-        const [userData, teamsData] = await Promise.all([
-          initFormApi(token_user_id, onboardingToken),
-          getTeams({ level: 1 }),
-        ]);
+        const [userData, teamsData] = await Promise.all([initFormApi(token_user_id, onboardingToken), getTeams({ level: 1 })]);
 
         if (!alive) return;
 
@@ -118,16 +113,16 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
           // 초기 이미지 프리뷰 설정
           if (userData.profile_image) {
             // 이미 전체 URL인 경우 그대로 사용, 아니면 기존 경로 추가
-            const imageUrl = userData.profile_image.startsWith('http://') || userData.profile_image.startsWith('https://')
-              ? userData.profile_image
-              : `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${userData.profile_image}`;
+            const imageUrl =
+              userData.profile_image.startsWith('http://') || userData.profile_image.startsWith('https://')
+                ? userData.profile_image
+                : `${import.meta.env.VITE_API_ORIGIN}/uploads/mypage/${userData.profile_image}`;
             setImagePreview(imageUrl);
           }
         } else if (teamsData.length > 0) {
           // 사용자 정보는 없지만 팀 목록은 로드된 경우 (예외적 상황)
           form.setValue('team_id', teamsData[0].team_id);
         }
-
       } catch (e: any) {
         if (!alive) return;
         // 401 Unauthorized or other critical errors
@@ -262,7 +257,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
               <div ref={imageUploadAreaRef} className="flex flex-col items-center gap-2">
                 <div
                   className={cn(
-                    'group relative flex size-32 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-full border-2 border-dashed transition-colors',
+                    'group relative flex size-40 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-full border-2 border-dashed transition-colors md:size-32',
                     isDragging ? 'border-primary bg-primary/10' : 'border-gray-300 bg-gray-50 hover:bg-gray-100',
                     imagePreview && 'border-none',
                     form.formState.errors.profile_image && 'border-destructive'
@@ -283,16 +278,14 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
                   ) : (
                     <div className="flex flex-col items-center gap-1 text-gray-400">
                       <Upload className="size-8" />
-                      <p className="text-[10px] font-medium text-center px-2">이미지 업로드</p>
+                      <p className="px-2 text-center text-[10px] font-medium">이미지 업로드</p>
                     </div>
                   )}
                 </div>
                 {form.formState.errors.profile_image ? (
                   <FormMessage />
                 ) : (
-                  <p className="text-xs text-muted-foreground text-center">
-                    클릭하거나 이미지를 드래그하여 프로필 사진을 등록해 주세요.
-                  </p>
+                  <p className="text-muted-foreground text-center text-xs">클릭하거나 이미지를 드래그하여 프로필 사진을 등록해 주세요.</p>
                 )}
               </div>
             </FormItem>
@@ -307,7 +300,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
             <FormItem>
               <FormLabel>이메일</FormLabel>
               <FormControl>
-                <Input {...field} disabled />
+                <Input {...field} className="max-md:h-11" disabled />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -322,21 +315,15 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
             <FormItem>
               <FormLabel>비밀번호</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  type="password"
-                  placeholder="영문+숫자 8자 이상"
-                  autoComplete="new-password"
-                />
+                <Input {...field} type="password" placeholder="영문+숫자 8자 이상" className="max-md:h-11" autoComplete="new-password" />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="w-full grid grid-cols-2 gap-2">
-
-        {/* 이름 */}
+        <div className="grid w-full grid-cols-2 gap-2">
+          {/* 이름 */}
           <FormField
             control={form.control}
             name="user_name"
@@ -344,7 +331,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
               <FormItem>
                 <FormLabel>이름(한글)</FormLabel>
                 <FormControl>
-                  <Input placeholder="홍길동" {...field} />
+                  <Input placeholder="홍길동" className="max-md:h-11" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -359,7 +346,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
               <FormItem>
                 <FormLabel>이름(영문)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Gildong Hong" {...field} />
+                  <Input placeholder="Gildong Hong" className="max-md:h-11" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -377,6 +364,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
                 <Input
                   inputMode="numeric"
                   placeholder="'-' 없이 입력해 주세요"
+                  className="max-md:h-11"
                   value={formatPhone(field.value)}
                   onChange={(e) => field.onChange(e.target.value)}
                   maxLength={13}
@@ -394,7 +382,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
             name="team_id"
             render={({ field }) => (
               <FormItem className="mb-auto">
-                <FormLabel>팀</FormLabel>
+                <FormLabel className="h-3.5">팀</FormLabel>
                 <Select
                   onValueChange={(v) => field.onChange(Number(v))}
                   value={field.value ? String(field.value) : undefined}
@@ -402,7 +390,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
                   name={field.name}
                   disabled={teamLoading}>
                   <FormControl>
-                    <SelectTrigger className="aria-[invalid=true]:border-destructive w-full">
+                    <SelectTrigger className="aria-[invalid=true]:border-destructive w-full data-[size=default]:max-md:h-11.5">
                       <SelectValue placeholder="팀 선택" />
                     </SelectTrigger>
                   </FormControl>
@@ -429,19 +417,17 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
                 <FormLabel className="flex items-center gap-1">
                   포지션
                   <Tooltip>
-                    <TooltipTrigger><Info className="size-3.5 text-gray-500" /></TooltipTrigger>
+                    <TooltipTrigger>
+                      <Info className="size-3.5 text-gray-500" />
+                    </TooltipTrigger>
                     <TooltipContent>
                       <p>Microsoft에서 사용하는 포지션 이름을 선택해주세요.</p>
                     </TooltipContent>
                   </Tooltip>
-                  </FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value || undefined}
-                  key={field.value}
-                  name={field.name}>
+                </FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || undefined} key={field.value} name={field.name}>
                   <FormControl>
-                    <SelectTrigger className="aria-[invalid=true]:border-destructive w-full">
+                    <SelectTrigger className="aria-[invalid=true]:border-destructive w-full data-[size=default]:max-md:h-11.5">
                       <SelectValue placeholder="포지션 선택" />
                     </SelectTrigger>
                   </FormControl>
@@ -484,7 +470,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
                       <Button
                         variant={'outline'}
                         className={cn(
-                          'border-input text-accent-foreground h-11 w-full px-3 text-left text-base font-normal hover:bg-[none]',
+                          'border-input text-accent-foreground h-11 w-full px-3 text-left text-base font-normal hover:bg-[none] max-md:h-11.5',
                           !field.value && 'text-muted-foreground hover:text-muted-foreground'
                         )}>
                         {field.value ? String(field.value) : <span>YYYY-MM-DD</span>}
@@ -523,7 +509,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
                         <Button
                           variant={'outline'}
                           className={cn(
-                            'border-input text-accent-foreground h-11 w-full px-3 text-left text-base font-normal hover:bg-[none]',
+                            'border-input text-accent-foreground h-11 w-full px-3 text-left text-base font-normal hover:bg-[none] max-md:h-11.5',
                             !field.value && 'text-muted-foreground hover:text-muted-foreground'
                           )}>
                           {field.value ? String(field.value) : <span>YYYY-MM-DD</span>}
@@ -561,7 +547,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
             <FormItem>
               <FormLabel>거주지 주소</FormLabel>
               <FormControl>
-                <Input placeholder="서울 강남구 테헤란로 132" {...field} />
+                <Input placeholder="서울 강남구 테헤란로 132" className="max-md:h-11.5" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -578,7 +564,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
                 비상 연락망 <small>(이름, 관계, 연락처)</small>
               </FormLabel>
               <FormControl>
-                <Input placeholder="홍희동, 아버지, 010-0000-0000" {...field} />
+                <Input placeholder="홍희동, 아버지, 010-0000-0000" className="max-md:h-11.5" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -586,7 +572,7 @@ export default function ProfileForm({ email, onboardingToken, profileImage, clas
         />
 
         <div className="flex gap-2 pt-2">
-          <Button type="submit" size="full" disabled={submitting}>
+          <Button type="submit" size="full" disabled={submitting} className="max-md:h-11.5">
             {submitting ? '저장 중' : '프로필 저장'}
           </Button>
         </div>

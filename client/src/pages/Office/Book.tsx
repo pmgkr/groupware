@@ -6,9 +6,13 @@ import BookWish from '@/components/book/BookWish';
 export default function Book() {
   return (
     <Tabs defaultValue="list">
-      <TabsList>
-        <TabsTrigger value="list">도서 목록</TabsTrigger>
-        <TabsTrigger value="wish">도서 신청</TabsTrigger>
+      <TabsList className="max-md:block max-md:w-full">
+        <TabsTrigger value="list" className="max-md:h-[40px] max-md:w-[50%] max-md:py-2">
+          도서 목록
+        </TabsTrigger>
+        <TabsTrigger value="wish" className="max-md:h-[40px] max-md:w-[50%] max-md:py-2">
+          도서 신청
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="list">
         <BookList></BookList>

@@ -11,7 +11,7 @@ export default function AdminProposalList() {
   const { user_id, user_level } = useUser();
 
   const isAdmin = user_level === 'admin';
-  const GM_ADMINS = ['sangmin.kang@pmgasia.com'];
+  const GM_ADMINS = ['sangmin.kang@pmgasia.com', 'admin@pmgasia.com'];
 
   const adminRole = useMemo<'finance' | 'gm' | null>(() => {
     if (!isAdmin) return null;

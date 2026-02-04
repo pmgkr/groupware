@@ -1,7 +1,8 @@
 import { useRef } from 'react';
 import { Button } from '@components/ui/button';
-import { File as FileIcon, CircleX } from '@/assets/images/icons';
+import { CircleX } from '@/assets/images/icons';
 import { validateFiles } from '@/utils';
+import { File } from 'lucide-react';
 
 export type PreviewFile = File | { id: number; name: string; nf_name: string; size?: number; type?: string };
 
@@ -51,9 +52,13 @@ export function BoardAttachFile({ files, setFiles, onRemoveExisting }: BoardAtta
   };
 
   return (
-    <div className="flex gap-1.5">
-      <Button type="button" variant="outline" className="[&]:border-primary-blue-500 text-primary-blue-500" onClick={handleAttachFile}>
-        {/* <File className="mr-1 size-6" /> */}
+    <div className="flex gap-1.5 max-sm:flex-col">
+      <Button
+        type="button"
+        variant="outline"
+        className="[&]:border-primary-blue-500 text-primary-blue-500 max-md:w-[100px]"
+        onClick={handleAttachFile}>
+        <File className="mr-1 size-4" />
         파일 첨부
       </Button>
 
@@ -62,7 +67,7 @@ export function BoardAttachFile({ files, setFiles, onRemoveExisting }: BoardAtta
       <div className="flex flex-wrap items-center gap-1.5">
         {files.map((file) => (
           <div key={file.name} className="flex items-center rounded-md border border-gray-300 p-1 pl-4">
-            <span className="text-base text-gray-500">{file.name}</span>
+            <span className="text-base text-gray-500 max-md:text-sm">{file.name}</span>
             <Button
               type="button"
               variant="svgIcon"

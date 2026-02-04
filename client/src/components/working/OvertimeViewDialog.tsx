@@ -303,11 +303,11 @@ export default function OvertimeViewDialog({
             <>
               <div className="space-y-2">
                 <Label htmlFor="expected-end-time">예상 퇴근 시간</Label>
-                <div className="flex-1 flex gap-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
-                  <span className="text-base">
+                <div className="h-11 flex-1 flex items-center gap-1 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:h-10 max-md:rounded-sm">
+                  <span className="text-base max-md:text-[13px]">
                     {overtimeData.expectedEndTime}시
                   </span>
-                  <span className="text-base">
+                  <span className="text-base max-md:text-[13px]">
                     {overtimeData.expectedEndMinute}분
                   </span>
                 </div>
@@ -360,15 +360,15 @@ export default function OvertimeViewDialog({
             <>
               <div className="space-y-2">
                 <Label htmlFor="expected-start-time">근무 시간</Label>
-                <div className="flex-1 flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
-                  <span className="text-base">
+                <div className="h-11 flex-1 flex items-center gap-1 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:h-10 max-md:rounded-sm">
+                  <span className="text-base max-md:text-[13px]">
                     {overtimeData.expectedStartTime}시 {overtimeData.expectedStartTimeMinute}분
                   </span>
                   -
-                  <span className="text-base">
+                  <span className="text-base max-md:text-[13px]">
                     {overtimeData.expectedEndTime}시 {overtimeData.expectedEndMinute}분
                   </span>
-                  <span className="text-base text-gray-600">
+                  <span className="text-base max-md:text-[13px] text-gray-600">
                     (인정 근무시간: <span className="text-primary-blue-500">{overtimeData.overtimeHours}시간 {overtimeData.overtimeMinutes}분</span>)
                   </span>
                 </div>
@@ -415,32 +415,32 @@ export default function OvertimeViewDialog({
           {/* 공통 필드 */}
           <div className="space-y-2">
             <Label htmlFor="client-name">클라이언트명</Label>
-            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100 break-all">
-              <span className="text-base">{overtimeData.clientName}</span>
+            <div className="h-11 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:h-10 max-md:rounded-sm flex items-center break-all">
+              <span className="text-base max-md:text-[13px]">{overtimeData.clientName}</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="work-description">업무 내용</Label>
-            <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100 min-h-[80px] break-all whitespace-pre-wrap">
-              <span className="text-base">{overtimeData.workDescription}</span>
+            <div className="min-h-[80px] px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:rounded-sm flex items-start pt-3 break-all whitespace-pre-wrap">
+              <span className="text-base max-md:text-[13px]">{overtimeData.workDescription}</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>신청 상태</Label>
-            <div className="px-4 py-2 rounded-lg border border-gray-300 bg-gray-100">
+            <div className="min-h-[44px] px-3 py-1 rounded-lg border border-gray-300 bg-gray-100 max-md:rounded-sm flex items-center">
                 <div>
-                  <span className="text-base font-semibold text-gray-800">
+                  <span className="text-base max-md:text-[13px] font-semibold text-gray-800">
                     {status}
                   </span>
                   {/* 승인완료 시 승인일 표시는 백엔드 데이터 연동 시 추가 예정 */}
                   {status === "취소완료" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
                     <>
-                    <p className="text-sm text-gray-800 mt-1">
+                    <p className="text-sm max-md:text-[11px] text-gray-800 mt-1">
                         반려일: {dayjs(selectedDay.rejectionDate).format('YYYY년 MM월 DD일')}
                     </p>
-                    <p className="text-sm text-gray-800">
+                    <p className="text-sm max-md:text-[11px] text-gray-800">
                         반려사유: {selectedDay.rejectionReason}
                     </p>
                     </>
@@ -476,32 +476,32 @@ export default function OvertimeViewDialog({
             </div>
           )}
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 max-md:flex-row max-md:flex-nowrap">
             {/* 관리자 모드 - 승인대기 상태일 때 승인/반려 버튼 */}
             {isManager && status === "승인대기" && (
               <>
                 {!showRejectInput ? (
                   <>
                     {onApprove && (
-                      <Button variant="default" onClick={handleApproveClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
+                      <Button variant="default" onClick={handleApproveClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0 max-md:flex-1">
                         {isPage === 'admin' && isWeekendOrHolidayDay && (user?.team_id === 1 || user?.team_id === 5) ? '보상 지급하기' : '승인하기'}
                       </Button>
                     )}
                     {onReject && (
-                      <Button variant="destructive" onClick={() => setShowRejectInput(true)} className="bg-destructive hover:bg-destructive mr-0">
+                      <Button variant="destructive" onClick={() => setShowRejectInput(true)} className="bg-destructive hover:bg-destructive mr-0 max-md:flex-1">
                         반려하기
                       </Button>
                     )}
                   </>
                 ) : (
                   <>
-                    <Button variant="default" onClick={handleRejectSubmit}>
+                    <Button variant="default" onClick={handleRejectSubmit} className="max-md:flex-1">
                       반려 확정
                     </Button>
                     <Button variant="outline" onClick={() => {
                       setShowRejectInput(false);
                       setRejectReason('');
-                    }}>
+                    }} className="max-md:flex-1">
                       취소
                     </Button>
                   </>
@@ -515,25 +515,25 @@ export default function OvertimeViewDialog({
                 {!showRejectInput ? (
                   <>
                     {onCompensation && (
-                      <Button variant="default" onClick={handleCompensationClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0">
+                      <Button variant="default" onClick={handleCompensationClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0 max-md:flex-1">
                         {isPage === 'admin' && isWeekendOrHolidayDay && (user?.team_id === 1 || user?.team_id === 5) ? '보상 지급하기' : '승인하기'}
                       </Button>
                     )}
                     {onReject && (
-                      <Button variant="destructive" onClick={() => setShowRejectInput(true)} className="bg-destructive hover:bg-destructive mr-0">
+                      <Button variant="destructive" onClick={() => setShowRejectInput(true)} className="bg-destructive hover:bg-destructive mr-0 max-md:flex-1">
                         반려하기
                       </Button>
                     )}
                   </>
                 ) : (
                   <>
-                    <Button variant="default" onClick={handleRejectSubmit}>
+                    <Button variant="default" onClick={handleRejectSubmit} className="max-md:flex-1">
                       반려 확정
                     </Button>
                     <Button variant="outline" onClick={() => {
                       setShowRejectInput(false);
                       setRejectReason('');
-                    }}>
+                    }} className="max-md:flex-1">
                       취소
                     </Button>
                   </>
@@ -545,17 +545,17 @@ export default function OvertimeViewDialog({
             {(isOwnRequest || !isManager) && (
               <>
                 {status === "취소완료" && onReapply && (
-                  <Button variant="default" onClick={onReapply} className="mr-0">재신청하기</Button>
+                  <Button variant="default" onClick={onReapply} className="mr-0 max-md:flex-1">재신청하기</Button>
                 )}
                 {status === "승인대기" && (
-                  <Button variant="destructive" onClick={handleCancelClick} className="mr-0">신청 취소하기</Button>
+                  <Button variant="destructive" onClick={handleCancelClick} className="mr-0 max-md:flex-1">신청 취소하기</Button>
                 )}
               </>
             )}
 
             {/* 닫기 버튼 (항상 표시) */}
             {!showRejectInput && (
-              <Button variant="outline" onClick={onClose}>닫기</Button>
+              <Button variant="outline" onClick={onClose} className="max-md:flex-1">닫기</Button>
             )}
           </DialogFooter>
       </DialogContent>

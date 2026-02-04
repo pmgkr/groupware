@@ -84,11 +84,10 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
   };
 
   return (
-    <div className="flex items-center justify-between mb-5 relative">
+    <div className="w-full flex items-center justify-between mb-5 relative max-md:items-start max-md:gap-2 max-md:flex-wrap">
 
-      {/* 왼쪽: 네비게이션 버튼들 */}
-      <div className="flex items-center gap-2">
-
+      {/* 왼쪽: 필터 셀렉트들 */}
+      <div className="flex items-center gap-2 max-md:flex-wrap max-md:order-2 max-md:w-auto max-md:gap-1">
         {/* 팀 선택 */}
         <MultiSelect
           simpleSelect={true}
@@ -101,7 +100,7 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
           searchable={true}
           hideSelectAll={false}
           autoSize={true}
-          className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+          className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[90px]! max-md:w-[90px]! max-md:max-w-[90px]!"
         />
 
         {/* 동적 셀렉트 렌더링 */}
@@ -118,12 +117,13 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
             searchable={config.searchable}
             hideSelectAll={config.hideSelectAll}
             autoSize={config.autoSize}
-            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[90px]! max-md:w-[90px]! max-md:max-w-[90px]!"
           />
         ))}
+      </div>
 
         {/* 중앙: 현재 날짜 표시 */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5">
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5 max-md:w-full max-md:relative max-md:gap-0 max-md:justify-center max-md:order-1 max-md:flex-wrap">
           <Button
             onClick={() => onNavigate('PREV')}
             variant="ghost"
@@ -135,7 +135,7 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
             </svg>
           </Button>
 
-          <div className="text-xl font-semibold text-gray-950 px-2">
+        <div className="text-xl font-semibold text-gray-950 px-2 max-md:text-lg">
             {formatDate(currentDate)}
           </div>
 
@@ -150,12 +150,9 @@ export default function CustomToolbar({ onNavigate, onView, currentView, current
             </svg>
           </Button>
         </div>
-      </div>
-
-
 
       {/* 오른쪽: 뷰 변경 버튼들 */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 float-right ml-auto max-md:justify-end max-md:order-3 max-md:w-auto">
         <Button
           onClick={onAddEvent}
           variant="outline"

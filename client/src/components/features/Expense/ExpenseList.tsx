@@ -1,8 +1,8 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import * as XLSX from 'xlsx';
-import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 import { findManager, getGrowingYears } from '@/utils';
 import { notificationApi } from '@/api/notification';
 
@@ -10,25 +10,28 @@ import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { Button } from '@components/ui/button';
-import { Checkbox } from '@components/ui/checkbox';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { MultiSelectOption, MultiSelectRef } from '@components/multiselect/multi-select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Excel } from '@/assets/images/icons';
 import { OctagonAlert } from 'lucide-react';
 
 import { getExpenseLists, type ExpenseListItem, getExpenseType, deleteTempExpense, claimTempExpense } from '@/api';
-import { ExpenseListFilter } from './_components/ExpenseListFilter';
-import { ExpenseRow } from './_components/ExpenseListRow';
+import { ExpenseFilterPC } from './_responsive/ExpenseFilterPC';
+import { ExpenseFilterMo } from './_responsive/ExpenseFilterMo';
+import { ExpenseTable } from './_responsive/ExpenseTable';
+import { ExpenseCardList } from './_responsive/ExpenseCardList';
 
 export default function ExpenseList() {
   const navigate = useNavigate();
+  const isMobile = useIsMobileViewport();
   const { user_id, user_name, team_id, user_level } = useUser();
   const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
   // 상단 필터용 state
-  const [activeTab, setActiveTab] = useState<'all' | 'saved'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'saved'>(() => {
+    return (searchParams.get('tab') as 'all' | 'saved') || 'all';
+  });
   const currentYear = String(new Date().getFullYear()); // 올해 구하기
   const yearOptions = getGrowingYears(); // yearOptions
   const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || currentYear);
@@ -89,9 +92,50 @@ export default function ExpenseList() {
   const pageSize = 15; // 한 페이지에 보여줄 개수
 
   // 필터 변경 시 page 초기화
-  const handleFilterChange = (setter: any, value: any) => {
-    setter(value);
+  const handleFilterChange = (key: string, value: any) => {
     setPage(1);
+
+    switch (key) {
+      case 'year':
+        setSelectedYear(value as string);
+        break;
+
+      case 'type':
+        setSelectedType(value as string[]);
+        break;
+
+      case 'status':
+        setSelectedStatus(value as string[]);
+        break;
+
+      case 'method':
+        setSelectedProof(value as string[]);
+        break;
+
+      case 'attach':
+        setSelectedProofStatus(value as string[]);
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  // 탭 변경 시 필터 초기화
+  const resetAllFilters = () => {
+    setSelectedYear(currentYear);
+    setSelectedType([]);
+    setSelectedStatus([]);
+    setSelectedProof([]);
+    setSelectedProofStatus([]);
+    setCheckedItems([]);
+    setPage(1);
+
+    // MultiSelect 내부 상태 초기화
+    typeRef.current?.clear();
+    statusRef.current?.clear();
+    proofRef.current?.clear();
+    proofStatusRef.current?.clear();
   };
 
   // 탭 변경 시 필터 초기화
@@ -105,6 +149,13 @@ export default function ExpenseList() {
     setSelectedProof([]);
     setSelectedProofStatus([]);
     setCheckedItems([]);
+    setPage(1);
+
+    // MultiSelect 내부 상태 초기화
+    typeRef.current?.clear();
+    statusRef.current?.clear();
+    proofRef.current?.clear();
+    proofStatusRef.current?.clear();
   };
 
   // 전체 선택 체크박스 핸들러
@@ -281,6 +332,30 @@ export default function ExpenseList() {
     });
   };
 
+  // 필터 옵션 정의
+  const statusOptions: MultiSelectOption[] = [
+    { label: '임시저장', value: 'Saved' },
+    { label: '승인대기', value: 'Claimed' },
+    { label: '승인완료', value: 'Confirmed' },
+    // { label: '지급대기', value: 'Approved' },
+    { label: '지급완료', value: 'Completed' },
+    { label: '반려됨', value: 'Rejected' },
+  ];
+
+  const proofMethod: MultiSelectOption[] = [
+    { label: 'PMG', value: 'PMG' },
+    { label: 'MCS', value: 'MCS' },
+    { label: '개인카드', value: '개인카드' },
+    { label: '세금계산서', value: '세금계산서' },
+    { label: '현금영수증', value: '현금영수증' },
+    { label: '기타', value: '기타' },
+  ];
+
+  const proofStatusOptions: MultiSelectOption[] = [
+    { label: '제출', value: 'Y' },
+    { label: '미제출', value: 'N' },
+  ];
+
   // 비용 유형 가져오기
   useEffect(() => {
     (async () => {
@@ -300,21 +375,34 @@ export default function ExpenseList() {
     })();
   }, []);
 
+  // params에 따라 상단 필터 복구
+  useEffect(() => {
+    const tab = (searchParams.get('tab') as 'all' | 'saved') || 'all';
+    setActiveTab(tab);
+
+    setSelectedYear(searchParams.get('year') || currentYear);
+    setSelectedType(searchParams.get('type')?.split(',') ?? []);
+    setSelectedStatus(searchParams.get('status')?.split(',') ?? []);
+    setSelectedProof(searchParams.get('method')?.split(',') ?? []);
+    setSelectedProofStatus(searchParams.get('attach')?.split(',') ?? []);
+
+    setPage(Number(searchParams.get('page') || 1));
+  }, []); // 최초 1회
+
   // 비용 리스트 가져오기 (상단 필터 변경 시마다 자동 실행)
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
+
         const params: Record<string, any> = {
           year: selectedYear,
           page,
         };
 
-        if (!selectedStatus.length) {
-          if (activeTab === 'saved') {
-            params.status = 'Saved';
-          }
-        } else {
+        if (activeTab === 'saved') {
+          params.status = 'Saved';
+        } else if (selectedStatus.length) {
           params.status = selectedStatus.join(',');
         }
 
@@ -322,10 +410,7 @@ export default function ExpenseList() {
         if (selectedProof.length) params.method = selectedProof.join(',');
         if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
 
-        setSearchParams(params);
         const res = await getExpenseLists(params);
-        console.log('📦 비용 리스트 요청 파라미터:', params);
-        console.log('✅ 비용 리스트 응답:', res);
 
         setExpenseList(res.items);
         setTotal(res.total);
@@ -337,6 +422,19 @@ export default function ExpenseList() {
     })();
   }, [activeTab, selectedYear, selectedType, selectedProof, selectedProofStatus, selectedStatus, page]);
 
+  // URL 파라미터 업데이트
+  useEffect(() => {
+    updateSearchParams({
+      tab: activeTab,
+      page,
+      year: selectedYear,
+      type: selectedType,
+      status: activeTab === 'saved' ? undefined : selectedStatus,
+      method: selectedProof,
+      attach: selectedProofStatus,
+    });
+  }, [activeTab, page, selectedYear, selectedType, selectedStatus, selectedProof, selectedProofStatus]);
+
   // 전체 선택 상태 반영
   useEffect(() => {
     if (expenseList.length === 0) return;
@@ -344,81 +442,76 @@ export default function ExpenseList() {
     setCheckAll(allSeq.length > 0 && allSeq.every((seq) => checkedItems.includes(seq)));
   }, [checkedItems, expenseList]);
 
+  // 파라미터 업데이트 유틸 함수
+  const updateSearchParams = useCallback(
+    (next: Record<string, any>) => {
+      const params = new URLSearchParams(searchParams);
+
+      Object.entries(next).forEach(([key, value]) => {
+        if (!value || (Array.isArray(value) && value.length === 0)) {
+          params.delete(key);
+        } else {
+          params.set(key, Array.isArray(value) ? value.join(',') : String(value));
+        }
+      });
+
+      setSearchParams(params);
+      console.log('파라미터', params);
+    },
+    [searchParams, setSearchParams]
+  );
+
+  const filterProps = {
+    activeTab,
+    yearOptions,
+    selectedYear,
+    selectedType,
+    selectedStatus,
+    selectedProof,
+    selectedProofStatus,
+
+    typeOptions,
+    statusOptions,
+    proofMethod,
+    proofStatusOptions,
+
+    typeRef,
+    statusRef,
+    proofRef,
+    proofStatusRef,
+
+    onTabChange: handleTabChange,
+    onFilterChange: handleFilterChange,
+    onReset: resetAllFilters,
+    onCreate: () => setRegisterDialog(true),
+  };
+
   return (
     <>
-      <ExpenseListFilter
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        selectedYear={selectedYear}
-        yearOptions={yearOptions}
-        selectedType={selectedType}
-        selectedStatus={selectedStatus}
-        selectedProof={selectedProof}
-        selectedProofStatus={selectedProofStatus}
-        typeRef={typeRef}
-        statusRef={statusRef}
-        proofRef={proofRef}
-        proofStatusRef={proofStatusRef}
-        typeOptions={typeOptions}
-        onYearChange={(v) => handleFilterChange(setSelectedYear, v)}
-        onTypeChange={(v) => handleFilterChange(setSelectedType, v)}
-        onStatusChange={(v) => handleFilterChange(setSelectedStatus, v)}
-        onProofChange={(v) => handleFilterChange(setSelectedProof, v)}
-        onProofStatusChange={(v) => handleFilterChange(setSelectedProofStatus, v)}
-        onRefresh={() => handleTabChange(activeTab)}
-        onOpenRegisterDialog={() => setRegisterDialog(true)}
-      />
+      {/* -------- 상단 필터 -------- */}
+      {isMobile ? <ExpenseFilterMo {...filterProps} /> : <ExpenseFilterPC {...filterProps} />}
 
-      <Table variant="primary" align="center" className="table-fixed">
-        <TableHeader>
-          <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className={cn('w-[3%] px-0 transition-all duration-150', activeTab !== 'saved' && 'hidden')}>
-              <Checkbox
-                id="chk_all"
-                className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
-                checked={checkAll}
-                onCheckedChange={(v) => handleCheckAll(!!v)}
-              />
-            </TableHead>
-            <TableHead className="w-[8%]">EXP#</TableHead>
-            <TableHead className="w-[6%]">증빙 수단</TableHead>
-            <TableHead className="w-[8%]">비용 용도</TableHead>
-            <TableHead>비용 제목</TableHead>
-            <TableHead className="w-[6%]">증빙 상태</TableHead>
-            <TableHead className="w-[11%]">금액</TableHead>
-            <TableHead className="w-[7%]">상태</TableHead>
-            <TableHead className="w-[7%]">작성일</TableHead>
-            <TableHead className="w-[7%]">지급예정일</TableHead>
-            <TableHead className="w-[7%]">지급완료일</TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
-          {loading ? (
-            <TableRow>
-              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 11 : 10}>
-                비용 리스트 불러오는 중 . . .
-              </TableCell>
-            </TableRow>
-          ) : expenseList.length === 0 ? (
-            <TableRow>
-              <TableCell className="h-100 text-gray-500" colSpan={activeTab === 'saved' ? 11 : 10}>
-                리스트가 없습니다.
-              </TableCell>
-            </TableRow>
-          ) : (
-            expenseList.map((item) => (
-              <ExpenseRow
-                key={item.seq}
-                item={item}
-                activeTab={activeTab}
-                checked={checkedItems.includes(item.seq)}
-                onCheck={handleCheckItem}
-              />
-            ))
-          )}
-        </TableBody>
-      </Table>
+      {isMobile ? (
+        <ExpenseCardList
+          items={expenseList}
+          activeTab={activeTab}
+          checkedItems={checkedItems}
+          checkAll={checkAll}
+          onCheckAll={handleCheckAll}
+          onCheck={handleCheckItem}
+          loading={loading}
+        />
+      ) : (
+        <ExpenseTable
+          items={expenseList}
+          activeTab={activeTab}
+          checkedItems={checkedItems}
+          checkAll={checkAll}
+          onCheckAll={handleCheckAll}
+          onCheck={handleCheckItem}
+          loading={loading}
+        />
+      )}
 
       {activeTab === 'saved' && (
         <div className="mt-4 flex gap-2">
@@ -443,22 +536,28 @@ export default function ExpenseList() {
       </div>
 
       <Dialog open={registerDialog} onOpenChange={setRegisterDialog}>
-        <DialogContent>
+        <DialogContent className="max-md:max-w-[calc(100%-var(--spacing)*8)] max-md:rounded-md">
           <DialogHeader>
             <DialogTitle>신규 비용 등록</DialogTitle>
-            <DialogDescription>매입 내역 Excel 파일을 업로드해 데이터를 불러오거나 수기로 입력할 수 있습니다.</DialogDescription>
+            <DialogDescription className="break-keep">
+              매입 내역 Excel 파일을 업로드해 데이터를 불러오거나 수기로 입력할 수 있습니다.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-4">
-            <p className="text-base">등록하실 비용 유형을 선택해주세요.</p>
-            <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" onClick={openFileDialog}>
-                <Excel className="size-4.5" /> Excel 업로드
-              </Button>
+          <div className="space-y-3 py-4 max-md:py-2">
+            <p className="text-base max-md:text-[13px]">등록하실 비용 유형을 선택해주세요.</p>
+            <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
+              {!isMobile && (
+                <Button variant="outline" onClick={openFileDialog}>
+                  <Excel className="size-4.5" /> Excel 업로드
+                </Button>
+              )}
               <Button variant="outline" asChild>
                 <Link to="/expense/register">수기 입력</Link>
               </Button>
             </div>
-            <input ref={fileInputRef} type="file" accept=".xlsx, .xls" className="h-0 w-0 text-[0]" onChange={handleExcelUpload} />
+            {!isMobile && (
+              <input ref={fileInputRef} type="file" accept=".xlsx, .xls" className="h-0 w-0 text-[0]" onChange={handleExcelUpload} />
+            )}
           </div>
         </DialogContent>
       </Dialog>

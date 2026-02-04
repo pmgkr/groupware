@@ -1,23 +1,14 @@
 import { memo } from 'react';
 import { Link } from 'react-router';
 import { format } from 'date-fns';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TableRow, TableCell } from '@/components/ui/table';
-import { Star, Ellipsis } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { Star } from 'lucide-react';
 import { type ProjectListItem } from '@/api';
-
-// 상태 라벨/색상 매핑
-const statusMap = {
-  'in-progress': <Badge variant="secondary">진행중</Badge>,
-  Closed: <Badge className="bg-primary-blue">종료됨</Badge>,
-  Completed: <Badge variant="grayish">정산완료</Badge>,
-  Cancelled: <Badge className="bg-destructive">취소됨</Badge>,
-};
-
-// 카테고리 분리 유틸
-const parseCategories = (cate: string) => cate?.split('|').filter(Boolean) ?? [];
+import { statusMap, parseCategories } from '../utils/projectUtil';
 
 type Props = {
   item: ProjectListItem;
@@ -26,18 +17,18 @@ type Props = {
   search: string;
 };
 
-export const ProjectRow = memo(({ item, isFavorite = false, onToggleFavorite, search }: Props) => {
+export const ProjectTableRow = memo(({ item, isFavorite = false, onToggleFavorite, search }: Props) => {
   const categories = parseCategories(item.project_cate);
   const status = statusMap[item.project_status as keyof typeof statusMap];
 
   return (
-    <TableRow key={item.project_id} className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]">
+    <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3] max-2xl:[&_td]:text-sm">
       {/* 즐겨찾기 */}
       <TableCell className="px-0!">
         <Button
           type="button"
           variant="svgIcon"
-          className={`inline-block h-8 p-2 ${isFavorite ? 'text-primary-yellow-500' : 'hover:text-primary-yellow-500 text-gray-600'}`}
+          className={`h-8 p-2 ${isFavorite ? 'text-primary-yellow-500' : 'hover:text-primary-yellow-500 text-gray-600'}`}
           onClick={() => onToggleFavorite?.(item.project_id)}>
           <Star fill={isFavorite ? 'currentColor' : 'none'} />
         </Button>
@@ -50,13 +41,13 @@ export const ProjectRow = memo(({ item, isFavorite = false, onToggleFavorite, se
         </Link>
       </TableCell>
 
-      {/* 브랜드 / 카테고리 / 제목 등 */}
-      <TableCell>{item.project_brand}</TableCell>
+      <TableCell className="max-xl:hidden">{item.project_brand}</TableCell>
 
+      {/* 카테고리 */}
       <TableCell>
         <TooltipProvider>
           <Tooltip>
-            <div className="flex cursor-default items-center justify-center gap-1">
+            <div className="flex items-center justify-center gap-1">
               {categories.length === 1 ? (
                 <span>{categories[0]}</span>
               ) : (
@@ -74,16 +65,18 @@ export const ProjectRow = memo(({ item, isFavorite = false, onToggleFavorite, se
           </Tooltip>
         </TooltipProvider>
       </TableCell>
-      <TableCell className="text-left leading-[1.2]">
+
+      <TableCell className="text-left">
         <Link to={`/project/${item.project_id}`} state={{ fromSearch: search }} className="hover:underline">
           {item.project_title}
         </Link>
       </TableCell>
-      <TableCell className="leading-[1.2]">{item.client_nm}</TableCell>
+
+      <TableCell>{item.client_nm}</TableCell>
       <TableCell>{item.owner_nm}</TableCell>
       <TableCell>{item.team_name}</TableCell>
       <TableCell>{status}</TableCell>
-      <TableCell>{format(new Date(item.project_sdate), 'yyyy-MM-dd')}</TableCell>
+      <TableCell className="max-xl:hidden">{format(new Date(item.project_sdate), 'yyyy-MM-dd')}</TableCell>
     </TableRow>
   );
 });

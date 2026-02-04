@@ -246,11 +246,11 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
               />
             </div>
         </div>
-        <DialogFooter>
-          <Button onClick={handleSubmit} disabled={loading}>
+        <DialogFooter className="max-md:justify-end max-md:flex-row max-md:flex-nowrap max-md:gap-2">
+          <Button onClick={handleSubmit} disabled={loading} className="max-md:flex-1">
             {loading ? '처리 중' : '부여하기'}
           </Button>
-          <Button variant="outline" onClick={onClose} disabled={loading}>
+          <Button variant="outline" onClick={onClose} disabled={loading} className="max-md:flex-1">
             닫기
           </Button>
         </DialogFooter>

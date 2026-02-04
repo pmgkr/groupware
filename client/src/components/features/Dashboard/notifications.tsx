@@ -10,6 +10,7 @@ import { Alarm } from '@/assets/images/icons';
 import { notificationApi, type Notification } from '@/api/notification';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 import { getImageUrl, getAvatarFallback } from '@/utils';
 import { getProfileImageUrl } from '@/utils/profileImageHelper';
 import dayjs from 'dayjs';
@@ -84,6 +85,7 @@ function formatNotiMessage(msg: string) {
 export function Notification() {
   const { user } = useAuth();
   const { addDialog } = useAppDialog();
+  const isMobile = useIsMobileViewport();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeTab, setActiveTab] = useState<string>('today');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -160,8 +162,10 @@ export function Notification() {
     };
   }, [isOpen, activeTab, fetchNotifications]);
 
-  // 알림 클릭 시 읽음 처리
+  // 알림 클릭 시
   const handleNotificationClick = async (noti: Notification) => {
+
+    // 읽음 처리
     if (noti.noti_is_read === 'N') {
       try {
         await notificationApi.readNotification(noti.noti_id);
@@ -176,10 +180,13 @@ export function Notification() {
       }
     }
 
-    // 알림 URL로 이동
     if (noti.noti_url) {
       navigate(noti.noti_url);
     }
+    if (isMobile) {
+      setIsOpen(false);
+    }
+
   };
 
   const handleNotificationRemove = async () => {
@@ -245,13 +252,13 @@ export function Notification() {
             <Alarm className="size-6" />
           </Button>
         </SheetTrigger>
-        <SheetContent className="flex flex-col">
+        <SheetContent className="flex flex-col max-md:w-full">
           <SheetHeader>
             <SheetTitle>알림</SheetTitle>
           </SheetHeader>
           <div className="flex-1">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full w-full">
-              <TabsList className="h-12 w-full px-4 py-2">
+              <TabsList className="h-12 w-full px-4 py-2 max-md:py-1">
                 <TabsTrigger value="today">오늘</TabsTrigger>
                 <TabsTrigger value="recent">최근 알림</TabsTrigger>
               </TabsList>

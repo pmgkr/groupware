@@ -102,15 +102,15 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
   return (
     <>
       {/* ===== 카드 ===== */}
-      <div className="relative w-full rounded-xl border border-gray-300 px-5 py-8 pb-7">
+      <div className="relative w-full rounded-xl border border-gray-300 px-5 py-8 pb-7 max-lg:px-3 max-lg:pb-5">
         <div className="absolute top-2.5 right-4">
           <Button size="xs" variant="outline" className="border-0 shadow-none" onClick={() => setOpen(true)}>
             <Ellipsis className="size-4" />
           </Button>
         </div>
 
-        <div className="flex">
-          <div className="mr-5 flex flex-col items-center">
+        <div className="flex max-lg:flex-col">
+          <div className="mr-5 flex flex-col items-center max-lg:mr-0">
             <div className="mb-2.5 aspect-square w-18 overflow-hidden rounded-full bg-gray-300">
               {profileImageUrl ? (
                 <img src={profileImageUrl} alt={member.user_name} className="h-full w-full object-cover" />
@@ -127,24 +127,29 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
             {roleIcon && <div className="mt-1">{roleIcon}</div>}
           </div>
 
-          <div className="flex-1">
-            <div className="border-b border-gray-200 pb-3">
-              <p className="mb-0.5 font-bold">
-                {member.user_name}
-                {member.user_name_en && ` / ${member.user_name_en}`}
+          <div className="min-w-0 flex-1">
+            <div className="border-b border-gray-200 pb-3 max-lg:text-center max-md:mb-3">
+              <p className="mb-0.5 truncate font-bold">
+                {member.user_name} <br className="hidden max-lg:block" />
+                {member.user_name_en && (
+                  <>
+                    <span className="hidden lg:inline"> / </span>
+                    <span>{member.user_name_en}</span>
+                  </>
+                )}
               </p>
               <p className="text-[13px] text-gray-500">{member.job_role}</p>
             </div>
 
-            <div className="pt-4 text-sm">
-              <p className="mb-1 flex items-center">
-                <Mail className="mr-2.5 size-4" />
-                {member.user_id}
+            <div className="pt-4 text-sm max-lg:pt-0">
+              <p className="mb-1 flex w-full min-w-0 items-center">
+                <Mail className="mr-2.5 size-4 shrink-0 max-lg:size-3" />
+                <span className="truncate">{member.user_id}</span>
               </p>
               {member.phone && (
-                <p className="flex items-center">
-                  <Phone className="mr-2.5 size-4" />
-                  {member.phone}
+                <p className="flex w-full min-w-0 items-center truncate">
+                  <Phone className="mr-2.5 size-4 shrink-0 max-lg:size-3" />
+                  <span className="truncate">{member.phone}</span>
                 </p>
               )}
             </div>
@@ -154,7 +159,7 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
 
       {/* ===== 상세 다이얼로그 ===== */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-lg max-lg:w-[400px] max-lg:max-w-[calc(100%-var(--spacing)*8)]">
           <DialogHeader></DialogHeader>
 
           <div className="space-y-6">

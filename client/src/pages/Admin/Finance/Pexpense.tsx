@@ -296,6 +296,8 @@ export default function Pexpense() {
       const payload = [{ seq, ddate }];
       const res = await setDdate(payload);
 
+      console.log('지급예정일 front', payload);
+
       if (res.updatedCount) {
         addAlert({
           title: '지급 예정일 지정',

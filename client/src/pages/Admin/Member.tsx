@@ -63,20 +63,20 @@ export default function Member() {
   return (
     <div>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'Enable' | 'Disable')}>
-        <div className="flex w-full items-center justify-between border-b border-gray-300 pb-5">
-          <div className="flex items-center gap-3">
+        <div className="flex w-full items-center justify-between border-b border-gray-300 pb-5 max-md:relative max-md:flex-col max-md:items-start">
+          <div className="flex items-center gap-3 max-md:w-full max-md:flex-col max-md:items-start">
             {/* 상태 탭 */}
-            <TabsList>
+            <TabsList className="max-md:w-full max-md:gap-1 max-md:[&>button]:h-10 max-md:[&>button]:text-[13px]">
               <TabsTrigger value="Enable">사용중</TabsTrigger>
               <TabsTrigger value="Disable">비활성화</TabsTrigger>
             </TabsList>
 
             {/* 팀 선택 */}
-            <div className="flex items-center gap-x-2 before:mr-3 before:ml-3 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300">
+            <div className="flex items-center gap-x-2 before:mr-3 before:ml-3 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 max-md:w-full max-md:before:hidden">
               <Select
                 value={selectedTeamId?.toString() ?? 'all'}
                 onValueChange={(v) => setSelectedTeamId(v === 'all' ? undefined : Number(v))}>
-                <SelectTrigger className="w-[200px]" size="sm">
+                <SelectTrigger className="w-[200px] max-md:w-[48%] max-md:max-w-[250px]" size="sm">
                   <SelectValue placeholder="팀 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -107,10 +107,10 @@ export default function Member() {
               </Select>
             </div>
           </div>
-          <div className="flex gap-x-2">
-            <div className="relative w-[175px]">
+          <div className="flex gap-x-2 max-md:absolute max-md:right-0 max-md:bottom-5 max-md:w-full max-md:justify-end">
+            <div className="relative w-[175px] max-md:w-[48%] max-md:max-w-[250px]">
               <Input
-                className="h-[32px] px-4 [&]:bg-white"
+                className="h-[32px]! px-4 [&]:bg-white"
                 placeholder="검색어 입력"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -133,7 +133,7 @@ export default function Member() {
           {filteredMembers.length === 0 ? (
             <div className="mt-20 text-center text-[13px] text-gray-400">해당 구성원이 없습니다.</div>
           ) : (
-            <div className="mt-8 grid grid-cols-4 gap-5">
+            <div className="mt-8 grid grid-cols-4 gap-5 max-xl:grid-cols-3 max-lg:gap-2 max-md:grid-cols-2!">
               {filteredMembers.map((member) => (
                 <MemberList key={member.user_id} member={member} onRefresh={refreshMembers} />
               ))}
@@ -146,7 +146,7 @@ export default function Member() {
           {filteredMembers.length === 0 ? (
             <div className="mt-20 text-center text-[13px] text-gray-400">해당 구성원이 없습니다.</div>
           ) : (
-            <div className="mt-8 grid grid-cols-4 gap-5">
+            <div className="mt-8 grid grid-cols-4 gap-5 max-xl:grid-cols-3 max-lg:gap-2 max-md:grid-cols-2!">
               {filteredMembers.map((member) => (
                 <MemberList key={member.user_id} member={member} onRefresh={refreshMembers} />
               ))}

@@ -10,13 +10,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { workingApi } from '@/api/working';
 import { managerOvertimeApi } from '@/api/manager/overtime';
 import { managerWorkingApi } from '@/api/manager/working';
-import { Settings } from 'lucide-react';
+import { Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { getCachedHolidays } from '@/services/holidayApi';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { getWorkTypeColor } from '@/utils/workTypeHelper';
 import { SortIcon } from '@/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
+import { Icons } from '@components/icons';
 
 export interface DayWorkInfo {
   workType: string;
@@ -92,6 +94,38 @@ export default function WorkingList({
   
   // 관리자 여부
   const isManager = user?.user_level === 'manager' || user?.user_level === 'admin';
+
+  // 모바일 뷰포트 확인
+  const isMobile = useIsMobileViewport();
+
+  // 모바일 뷰에서 각 사용자별 펼침/접힘 상태
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  // 토글 함수
+  const toggleItem = (itemId: string) => {
+    setExpandedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  // 오늘 날짜 확인 함수
+  const isToday = (date: string) => {
+    return dayjs(date).isSame(dayjs(), 'day');
+  };
+
+  // 요일 색상 함수
+  const getDayColor = (dayOfWeek: string, holidayName?: string) => {
+    if (holidayName) return 'text-red-600';
+    if (dayOfWeek === '토') return 'text-blue-600';
+    if (dayOfWeek === '일') return 'text-red-600';
+    return 'text-gray-800';
+  };
 
   // 각 요일의 날짜 계산
   const getDayDate = (dayIndex: number) => {
@@ -514,6 +548,274 @@ export default function WorkingList({
     );
   };
 
+  // totalTime 파싱 함수 (예: "8h 30m" → { hours: 8, minutes: 30 })
+  const parseTotalTime = (totalTime: string) => {
+    if (!totalTime || totalTime === '-') return { hours: 0, minutes: 0 };
+    const match = totalTime.match(/(\d+)h\s*(\d+)m/);
+    if (!match) return { hours: 0, minutes: 0 };
+    return {
+      hours: parseInt(match[1], 10),
+      minutes: parseInt(match[2], 10)
+    };
+  };
+
+  // 모바일 뷰 렌더링
+  if (isMobile) {
+    const dayKeys: Array<keyof Pick<WorkingListItem, 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'>> = 
+      ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+
+    return (
+      <>
+        <div className="flex flex-col gap-2 max-md:mt-5 max-md:-ml-5 max-md:w-[calc(100%+var(--spacing)*10)] max-md:bg-gray-200 max-md:p-5">
+          {loading ? (
+            <div className="text-center text-gray-500 py-10 text-base">근태 데이터 불러오는 중</div>
+          ) : data.length === 0 ? (
+            <div className="text-center text-gray-500 py-10 text-base">근태 데이터가 없습니다.</div>
+          ) : (
+            sortedData.map((item) => {
+              return (
+                <div
+                  key={item.id}
+                  className="bg-white border border-gray-300 rounded-md p-4 mb-0"
+                >
+                  {/* 헤더: 유저 이름 + 팀 이름 / WorkHoursBar / 주간 총 근무시간 */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1">
+                      <p className="text-base font-semibold text-gray-800 w-[38px]">{item.name}</p>
+                      <p className="text-sm text-gray-500 w-[45px] overflow-hidden text-ellipsis whitespace-nowrap">{item.department}</p>
+                    </div>
+                    <WorkHoursBar 
+                      hours={parseWeeklyTotal(item.weeklyTotal)} 
+                      className="w-[35%]" 
+                      hide40h={true}
+                      hide52h={true}
+                    />
+                    <div className="flex items-center justify-around gap-1 cursor-pointer w-[90px]" onClick={() => toggleItem(item.id)}>
+                      <p className="text-sm font-semibold text-gray-800"><span className="text-gray-500">총</span> {item.weeklyTotal}</p>
+                      {expandedItems.has(item.id) ? (
+                        <ChevronUp className="w-4 h-4 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-gray-500" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 요일별 정보 리스트 */}
+                  {expandedItems.has(item.id) && (
+                  <div className="border-t border-gray-200 mt-2 pt-2 space-y-1">
+                    {dayKeys.map((dayKey, dayIndex) => {
+                      const dayInfo = item[dayKey];
+                      const date = weekStartDate ? dayjs(weekStartDate).add(dayIndex, 'day') : null;
+                      const dayOfWeek = dayNames[dayIndex];
+                      const holidayName = holidayNames[dayIndex];
+                      const totalTimeParsed = parseTotalTime(dayInfo.totalTime);
+                      const dateStr = date ? date.format('YYYY-MM-DD') : '';
+                      const hasWorkTime = dayInfo.startTime && dayInfo.startTime !== '-';
+
+                      // workTypes 배열이 있고 여러 개인 경우
+                      const hasMultipleWorkTypes = dayInfo.workTypes && dayInfo.workTypes.length > 1;
+                      const latestWorkType = hasMultipleWorkTypes ? dayInfo.workTypes![0] : null;
+                      const otherWorkTypes = hasMultipleWorkTypes ? dayInfo.workTypes!.slice(1) : [];
+                      
+                      // 표시할 workType 결정
+                      const displayWorkType = hasMultipleWorkTypes ? latestWorkType!.type : dayInfo.workType;
+
+                      return (
+                        <div
+                          key={dayKey}
+                          className={`flex items-center justify-between py-1 ${dayIndex < dayKeys.length - 1 ? 'border-b border-gray-100' : ''} ${date && isToday(dateStr) ? 'bg-primary-blue-50 -mx-4 px-4 rounded' : ''}`}
+                        >
+                          {/* 요일 / 근무형태 / 출퇴근시간, 수정아이콘 */}
+                          <div className="flex items-center gap-2">
+                            <p className={`text-sm font-semibold ${getDayColor(dayOfWeek, holidayName ?? undefined)}`}>
+                              {dayOfWeek}요일
+                            </p>
+                            <span className="text-gray-300">|</span>
+                            <span className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full ${getWorkTypeColor(displayWorkType)}`}>
+                              {displayWorkType}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {isManager ? (
+                                <>
+                                  {hasWorkTime ? (
+                                    <>
+                                      <span className={`text-sm ${dayInfo.workType === '-' ? 'text-gray-400' : 'text-gray-800'}`}>
+                                        {formatTimeDisplay(dayInfo.startTime, false)}{dayInfo.endTime && dayInfo.endTime !== '-' ? ` - ${formatTimeDisplay(dayInfo.endTime, true)}` : ' - 진행중'}
+                                      </span>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleWorkTimeEditClick(item.id, item.name, dayKey, dayIndex, dayInfo);
+                                        }}
+                                        className="p-0.5 hover:bg-gray-200 rounded transition-colors cursor-pointer"
+                                        title="출퇴근시간 수정"
+                                      >
+                                        <Settings className="w-3 h-3 text-gray-500" />
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleWorkTimeEditClick(item.id, item.name, dayKey, dayIndex, dayInfo);
+                                      }}
+                                      className="p-0.5 hover:bg-gray-200 rounded transition-colors cursor-pointer"
+                                      title="출퇴근시간 수정"
+                                    >
+                                      <Settings className="w-3 h-3 text-gray-500" />
+                                    </button>
+                                  )}
+                                </>
+                              ) : (
+                                <span className={`text-sm ${dayInfo.workType === '-' ? 'text-gray-400' : 'text-gray-800'}`}>
+                                  {dayInfo.startTime ? `${formatTimeDisplay(dayInfo.startTime, false)}${dayInfo.endTime ? ` - ${formatTimeDisplay(dayInfo.endTime, true)}` : ' - 진행중'}` : '-'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {/* 총근무시간 */}
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-500">총</span>
+                            <p className={`text-sm font-bold ${dayInfo.workType === '-' ? 'text-gray-400' : 'text-gray-900'}`}>
+                              {dayInfo.workType === '-' ? '-' : `${totalTimeParsed.hours}시간 ${String(totalTimeParsed.minutes || 0).padStart(2, '0')}분`}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* 다이얼로그들 */}
+        {selectedUser && weekStartDate && (
+          <WorkingDetailDialog
+            isOpen={isDetailDialogOpen}
+            onClose={handleCloseDetailDialog}
+            userId={selectedUser.id}
+            userName={selectedUser.name}
+            weekStartDate={weekStartDate}
+          />
+        )}
+
+        {selectedOvertime && weekStartDate && (() => {
+          const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+          const dayIndex = dayKeys.indexOf(selectedOvertime.dayKey);
+          const selectedItem = data.find(item => item.id === selectedOvertime.userId);
+          const selectedDayInfo = selectedItem?.[selectedOvertime.dayKey as keyof Pick<WorkingListItem, 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'>] as DayWorkInfo | undefined;
+          const isOwnRequest = selectedOvertime.userId === user?.user_id;
+          
+          const convertOvertimeData = () => {
+            if (!overtimeDetailData?.info) return undefined;
+            
+            const info = overtimeDetailData.info;
+            
+            let expectedStartHour = "";
+            let expectedStartMinute = "";
+            if (info.ot_stime) {
+              const timeStr = info.ot_stime.includes('T') ? info.ot_stime.split('T')[1] : info.ot_stime;
+              const timeParts = timeStr.split(':');
+              expectedStartHour = timeParts[0];
+              expectedStartMinute = timeParts[1];
+            }
+            
+            let expectedEndHour = "";
+            let expectedEndMinute = "";
+            if (info.ot_etime) {
+              const timeStr = info.ot_etime.includes('T') ? info.ot_etime.split('T')[1] : info.ot_etime;
+              const timeParts = timeStr.split(':');
+              expectedEndHour = timeParts[0];
+              expectedEndMinute = timeParts[1];
+            }
+            
+            const hours = info.ot_hours ? parseFloat(info.ot_hours) : 0;
+            
+            return {
+              expectedStartTime: expectedStartHour,
+              expectedStartTimeMinute: expectedStartMinute,
+              expectedEndTime: expectedEndHour,
+              expectedEndMinute: expectedEndMinute,
+              mealAllowance: info.ot_food === 'Y' ? 'yes' : 'no',
+              transportationAllowance: info.ot_trans === 'Y' ? 'yes' : 'no',
+              overtimeHours: String(Math.floor(hours)),
+              overtimeMinutes: String(Math.round((hours % 1) * 60)),
+              overtimeType: info.ot_reward === 'special' ? 'special_vacation' : 
+                           info.ot_reward === 'annual' ? 'compensation_vacation' : 'event',
+              clientName: info.ot_client || "",
+              workDescription: info.ot_description || ""
+            };
+          };
+          
+          const mapStatus = (status: string) => {
+            if (status === 'H') return '승인대기';
+            if (status === 'T') return '승인완료';
+            if (status === 'Y') return '보상완료';
+            if (status === 'N') return '취소완료';
+            return '신청하기';
+          };
+          
+          return (
+            <OvertimeViewDialog
+              isOpen={isOvertimeDialogOpen}
+              onClose={handleCloseOvertimeDialog}
+              onCancel={async () => {
+                if (selectedOvertime.overtimeId) {
+                  await workingApi.cancelOvertime(parseInt(selectedOvertime.overtimeId));
+                  if (onRefresh) {
+                    onRefresh();
+                  } else {
+                    window.location.reload();
+                  }
+                }
+              }}
+              onApprove={isManager && !isOwnRequest ? handleApproveOvertime : undefined}
+              onReject={isManager && !isOwnRequest ? handleRejectOvertime : undefined}
+              isManager={isManager}
+              isOwnRequest={isOwnRequest}
+              selectedDay={{
+                date: dayjs(weekStartDate).add(dayIndex, 'day').format('YYYY-MM-DD'),
+                dayOfWeek: ['월', '화', '수', '목', '금', '토', '일'][dayIndex],
+                workType: (selectedDayInfo?.workType || '-') as "-" | "일반근무" | "외부근무" | "재택근무" | "연차" | "오전반차" | "오전반반차" | "오후반차" | "오후반반차" | "공가" | "공휴일",
+                isHoliday: selectedDayInfo?.workType === '공휴일' ? true : undefined,
+                holidayName: selectedDayInfo?.workType === '공휴일' ? selectedDayInfo?.holidayName || null : null,
+                startTime: selectedDayInfo?.startTime || '-',
+                endTime: selectedDayInfo?.endTime || '-',
+                basicHours: 0,
+                basicMinutes: 0,
+                overtimeHours: 0,
+                overtimeMinutes: 0,
+                totalHours: 0,
+                totalMinutes: 0,
+                overtimeStatus: overtimeDetailData?.info ? mapStatus(overtimeDetailData.info.ot_status) : 
+                              (selectedDayInfo?.overtimeStatus || '신청하기') as "신청하기" | "승인대기" | "승인완료" | "보상완료" | "취소완료" | "보상대기",
+                overtimeData: convertOvertimeData()
+              }}
+            />
+          );
+        })()}
+
+        {selectedWorkTime && (
+          <WorkTimeEditDialog
+            isOpen={isWorkTimeEditDialogOpen}
+            onClose={handleCloseWorkTimeEditDialog}
+            onSave={handleSaveWorkTime}
+            userId={selectedWorkTime.userId}
+            userName={selectedWorkTime.userName}
+            date={selectedWorkTime.date}
+            startTime={selectedWorkTime.startTime}
+            endTime={selectedWorkTime.endTime}
+          />
+        )}
+      </>
+    );
+  }
+
+  // 데스크톱 뷰 렌더링
   return (
     <>
       <Table variant="primary" align="center" className="table-fixed">
@@ -602,14 +904,14 @@ export default function WorkingList({
                     <WorkHoursBar hours={parseWeeklyTotal(item.weeklyTotal)} className="w-full" hide40h={true} />
                   </div>
                 </TableCell>
-                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.monday, item.id, item.name, 'monday', 0)}</TableCell>
-                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.tuesday, item.id, item.name, 'tuesday', 1)}</TableCell>
-                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.wednesday, item.id, item.name, 'wednesday', 2)}</TableCell>
-                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.thursday, item.id, item.name, 'thursday', 3)}</TableCell>
-                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.friday, item.id, item.name, 'friday', 4)}</TableCell>
-                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.saturday, item.id, item.name, 'saturday', 5)}</TableCell>
-                <TableCell className="max-[1800px]:px-2">{formatDayWork(item.sunday, item.id, item.name, 'sunday', 6)}</TableCell>
-                <TableCell className="max-[1800px]:px-2">
+                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.monday, item.id, item.name, 'monday', 0)}</TableCell>
+                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.tuesday, item.id, item.name, 'tuesday', 1)}</TableCell>
+                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.wednesday, item.id, item.name, 'wednesday', 2)}</TableCell>
+                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.thursday, item.id, item.name, 'thursday', 3)}</TableCell>
+                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.friday, item.id, item.name, 'friday', 4)}</TableCell>
+                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.saturday, item.id, item.name, 'saturday', 5)}</TableCell>
+                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.sunday, item.id, item.name, 'sunday', 6)}</TableCell>
+                <TableCell className="max-[1800px]:px-2 whitespace-nowrap">
                   <Button 
                     size="sm" 
                     variant="outline"
