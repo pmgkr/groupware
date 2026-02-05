@@ -76,28 +76,28 @@ export default function ExpenseView() {
   // 비용 상태별 Badge 맵핑
   const statusMap = {
     Saved: (
-      <Badge variant="grayish" size="md">
+      <Badge variant="grayish" size={isMobile ? 'md' : 'table'}>
         임시저장
       </Badge>
     ),
     Claimed: (
-      <Badge variant="secondary" size="md">
+      <Badge variant="secondary" size={isMobile ? 'md' : 'table'}>
         승인대기
       </Badge>
     ),
-    Confirmed: <Badge size="md">승인완료</Badge>,
+    Confirmed: <Badge size={isMobile ? 'md' : 'table'}>승인완료</Badge>,
     Approved: (
-      <Badge className="bg-primary-blue/80" size="md">
+      <Badge className="bg-primary-blue/80" size={isMobile ? 'md' : 'table'}>
         지급대기
       </Badge>
     ),
     Completed: (
-      <Badge className="bg-primary-blue" size="md">
+      <Badge className="bg-primary-blue" size={isMobile ? 'md' : 'table'}>
         지급완료
       </Badge>
     ),
     Rejected: (
-      <Badge className="bg-destructive" size="md">
+      <Badge className="bg-destructive" size={isMobile ? 'md' : 'table'}>
         반려됨
       </Badge>
     ),
@@ -165,7 +165,7 @@ export default function ExpenseView() {
                 {status}
               </div>
               <div className="my-2">
-                <h3 className="text-lg leading-[1.2] font-light">{header.el_title}</h3>
+                <h3 className="mb-1 text-lg leading-[1.3] font-light">{header.el_title}</h3>
                 <div className="flex items-center text-xl font-bold">
                   <strong className="text-[1.3em]">{formatAmount(header.el_total)}</strong>원
                 </div>

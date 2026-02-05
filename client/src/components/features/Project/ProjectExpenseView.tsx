@@ -184,7 +184,7 @@ export default function ProjectExpenseView() {
                 {statusBadge}
               </div>
               <div className="my-2">
-                <h3 className="text-lg leading-[1.2] font-light">{header.el_title}</h3>
+                <h3 className="mb-1 text-lg leading-[1.3] font-light">{header.el_title}</h3>
                 <div className="flex items-center text-xl font-bold">
                   <strong className="text-[1.3em]">{formatAmount(header.el_total)}</strong>원
                 </div>

@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 import { formatDate, getGrowingYears, sanitizeFilename, formatYYMMDD } from '@/utils';
 import { downloadExpenseExcel } from '@/components/features/Project/utils/excelDown';
 
@@ -24,7 +25,9 @@ import {
   type ExpenseListItems,
 } from '@/api/admin/pexpense';
 import { AdminListFilter } from '@components/features/Project/_components/AdminListFilter';
-import AdminExpenseList from '@components/features/Project/AdminExpenseList';
+import { AdminListFilterMo } from '@components/features/Project/_components/AdminListFilterMo';
+import AdminExpenseCard from '@components/features/Project/_responsive/AdminExpenseCard';
+import AdminExpenseTable from '@components/features/Project/_responsive/AdminExpenseTable';
 import { CBoxDialog } from '@/components/features/Expense/_components/AdminCBox';
 import { triggerDownload } from '@components/features/Project/utils/download';
 
@@ -36,6 +39,7 @@ const parseCBoxMemo = (memo: string): string[] => {
 };
 
 export default function Pexpense() {
+  const isMobile = useIsMobileViewport();
   const { user_id } = useUser();
   const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
@@ -52,8 +56,8 @@ export default function Pexpense() {
   const [selectedDdate, setSelectedDdate] = useState(() => searchParams.get('ddate') || '');
   const [datePickerKey, setDatePickerKey] = useState(0); // DateRange 마운트용 State
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange | undefined>(undefined);
-  const [searchInput, setSearchInput] = useState(''); // 사용자가 입력중인 Input 저장값
-  const [searchQuery, setSearchQuery] = useState(''); // 실제 검색 Input 저장값
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('q') || ''); // 사용자가 입력중인 Input 저장값
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || ''); // 실제 검색 Input 저장값
   const [page, setPage] = useState<number>(() => Number(searchParams.get('page') || 1));
 
   const typeRef = useRef<MultiSelectRef>(null);
@@ -148,8 +152,8 @@ export default function Pexpense() {
     setSearchInput(val);
   };
 
-  const handleSearchSubmit = () => {
-    setSearchQuery(searchInput);
+  const handleSearchSubmit = (value?: string) => {
+    setSearchQuery(value ?? searchInput);
   };
 
   const handleClearSearch = () => {
@@ -464,57 +468,111 @@ export default function Pexpense() {
     return;
   };
 
+  // 필터 옵션 정의
+  const statusOptions: MultiSelectOption[] = [
+    { label: '임시저장', value: 'Saved' },
+    { label: '승인대기', value: 'Claimed' },
+    { label: '승인완료', value: 'Confirmed' },
+    // { label: '지급대기', value: 'Waiting' },
+    { label: '지급완료', value: 'Completed' },
+    { label: '반려됨', value: 'Rejected' },
+  ];
+
+  const proofMethod: MultiSelectOption[] = [
+    { label: 'PMG', value: 'PMG' },
+    { label: 'MCS', value: 'MCS' },
+    { label: '개인카드', value: '개인카드' },
+    { label: '세금계산서', value: '세금계산서' },
+    { label: '현금영수증', value: '현금영수증' },
+    { label: '기타', value: '기타' },
+  ];
+
+  const proofStatusOptions: MultiSelectOption[] = [
+    { label: '제출', value: 'Y' },
+    { label: '미제출', value: 'N' },
+  ];
+
+  const filterProps = {
+    yearOptions,
+
+    selectedYear,
+    selectedType,
+    selectedStatus,
+    selectedProof,
+    selectedProofStatus,
+    selectedDdate,
+
+    typeOptions,
+    statusOptions,
+    proofMethod,
+    proofStatusOptions,
+
+    typeRef,
+    statusRef,
+    proofRef,
+    proofStatusRef,
+    checkedItems,
+    searchInput,
+    datePickerKey,
+    selectedDateRange,
+
+    onYearChange: setSelectedYear,
+    onTypeChange: setSelectedType,
+    onStatusChange: setSelectedStatus,
+    onProofChange: setSelectedProof,
+    onProofStatusChange: setSelectedProofStatus,
+    onDdateChange: setSelectedDdate,
+    onSearchInputChange: handleSearchInputChange,
+    onSearchSubmit: handleSearchSubmit,
+    onClearSearch: handleClearSearch,
+    onDateRangeChange: handleDateRange,
+
+    onRefresh: () => resetAllFilters(),
+    onConfirm: () => handleConfirm(),
+    onReject: () => handleReject(),
+  };
+
   return (
     <>
-      <AdminListFilter
-        selectedYear={selectedYear}
-        yearOptions={yearOptions}
-        selectedType={selectedType}
-        selectedStatus={selectedStatus}
-        selectedProof={selectedProof}
-        selectedProofStatus={selectedProofStatus}
-        selectedDdate={selectedDdate}
-        typeRef={typeRef}
-        statusRef={statusRef}
-        proofRef={proofRef}
-        proofStatusRef={proofStatusRef}
-        typeOptions={typeOptions}
-        checkedItems={checkedItems}
-        onYearChange={setSelectedYear}
-        onTypeChange={setSelectedType}
-        onStatusChange={setSelectedStatus}
-        onProofChange={setSelectedProof}
-        onProofStatusChange={setSelectedProofStatus}
-        onDdateChange={setSelectedDdate}
-        onRefresh={() => resetAllFilters()}
-        onConfirm={() => handleConfirm()}
-        onReject={() => handleReject()}
-        searchInput={searchInput}
-        onSearchInputChange={handleSearchInputChange}
-        onSearchSubmit={handleSearchSubmit}
-        onClearSearch={handleClearSearch}
-        datePickerKey={datePickerKey}
-        selectedDateRange={selectedDateRange}
-        onDateRangeChange={handleDateRange}
-      />
+      {isMobile ? <AdminListFilterMo {...filterProps} /> : <AdminListFilter {...filterProps} />}
 
-      <AdminExpenseList
-        loading={loading}
-        expenseList={expenseList}
-        checkAll={checkAll}
-        checkedItems={checkedItems}
-        handleCheckAll={handleCheckAll}
-        handleCheckItem={handleCheckItem}
-        handleSetDdate={handleSetDdate}
-        handlePDFDownload={handlePDFDownload}
-        handleMultiPDFDownload={handleMultiPDFDownload}
-        handleExcelDownload={handleExcelDownload}
-        onOpenCBox={handleOpenCBox}
-        total={total}
-        page={page}
-        pageSize={pageSize}
-        onPageChange={setPage}
-      />
+      {isMobile ? (
+        <AdminExpenseCard
+          loading={loading}
+          expenseList={expenseList}
+          checkAll={checkAll}
+          checkedItems={checkedItems}
+          handleCheckAll={handleCheckAll}
+          handleCheckItem={handleCheckItem}
+          handleSetDdate={handleSetDdate}
+          handlePDFDownload={handlePDFDownload}
+          handleMultiPDFDownload={handleMultiPDFDownload}
+          handleExcelDownload={handleExcelDownload}
+          onOpenCBox={handleOpenCBox}
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+        />
+      ) : (
+        <AdminExpenseTable
+          loading={loading}
+          expenseList={expenseList}
+          checkAll={checkAll}
+          checkedItems={checkedItems}
+          handleCheckAll={handleCheckAll}
+          handleCheckItem={handleCheckItem}
+          handleSetDdate={handleSetDdate}
+          handlePDFDownload={handlePDFDownload}
+          handleMultiPDFDownload={handleMultiPDFDownload}
+          handleExcelDownload={handleExcelDownload}
+          onOpenCBox={handleOpenCBox}
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+        />
+      )}
 
       <CBoxDialog
         open={isCBoxOpen}
