@@ -199,104 +199,84 @@ export default function Overview() {
    *  상태 Badge
    ----------------------------------------- */
   const statusMap = {
-    Saved: (
-      <Badge variant="grayish" size="md">
-        임시저장
-      </Badge>
-    ),
-    Claimed: (
-      <Badge variant="secondary" size="md">
-        승인대기
-      </Badge>
-    ),
-    Confirmed: <Badge size="md">승인완료</Badge>,
-    Approved: (
-      <Badge className="bg-primary-blue/80" size="md">
-        지급대기
-      </Badge>
-    ),
-    Completed: (
-      <Badge className="bg-primary-blue" size="md">
-        지급완료
-      </Badge>
-    ),
-    Rejected: (
-      <Badge className="bg-destructive" size="md">
-        반려됨
-      </Badge>
-    ),
+    'in-progress': <Badge variant="secondary">진행중</Badge>,
+    Closed: <Badge className="bg-primary-blue">종료됨</Badge>,
+    Completed: <Badge variant="grayish">정산완료</Badge>,
+    Cancelled: <Badge className="bg-destructive">취소됨</Badge>,
   };
+
   const status = statusMap[data.project_status as keyof typeof statusMap];
+
+  console.log('상태', status);
 
   return (
     <>
       <div className="flex flex-wrap justify-between md:min-h-240 md:py-2">
         <div className="w-full tracking-tight md:w-[76%]">
           <div className="flex flex-wrap gap-[3%]">
-            <div className="w-full">
-              {isMobile ? (
-                <>
+            {isMobile ? (
+              <div className="-mx-4.5 w-[calc(100%+var(--spacing)*9)]">
+                <div className="px-5 pb-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="mb-1 text-lg font-bold text-gray-800 md:mb-2">프로젝트 정보</h3>
-
+                    <h3 className="mb-4 text-lg font-bold text-gray-800 md:mb-2">프로젝트 정보</h3>
                     {status}
                   </div>
-                  <div className="space-y-2 rounded-md border border-gray-300 bg-white p-4">
-                    <ProjectInfoRow title="프로젝트 #" value={data.project_id} />
-                    <ProjectInfoRow title="클라이언트" value={data.client_nm} />
-                    <ProjectInfoRow title="프로젝트 오너" value={data.owner_nm} />
-                    <ProjectInfoRow title="프로젝트 기간" value={`${formatDate(data.project_sdate)} ~ ${formatDate(data.project_edate)}`} />
-                    <ProjectInfoRow title="프로젝트 견적" value={`${formatAmount(data.est_amount) ?? 0} 원`} bold={true} />
-                    <ProjectInfoRow title="프로젝트 예상 지출" value={`${formatAmount(data.exp_cost) ?? 0} 원`} bold={true} />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between">
-                    <h3 className="mb-1 text-lg font-bold text-gray-800 md:mb-2">프로젝트 정보</h3>
-                    {data.project_status === 'in-progress' && isProjectMember && data.is_locked === 'N' && (
-                      <Button
-                        type="button"
-                        variant="svgIcon"
-                        size="sm"
-                        className="text-gray-600 hover:text-gray-700 max-md:hidden"
-                        onClick={() => setUpdateDialogOpen(true)}>
-                        <Edit className="size-4" />
-                      </Button>
-                    )}
-                  </div>
-                  <TableColumn>
-                    <TableColumnHeader className="w-[18%] 2xl:w-[15%]">
-                      <TableColumnHeaderCell>프로젝트 #</TableColumnHeaderCell>
-                      <TableColumnHeaderCell>프로젝트 오너</TableColumnHeaderCell>
-                      <TableColumnHeaderCell>프로젝트 견적</TableColumnHeaderCell>
-                    </TableColumnHeader>
-                    <TableColumnBody>
-                      <TableColumnCell>{data.project_id}</TableColumnCell>
-                      <TableColumnCell>{data.owner_nm}</TableColumnCell>
-                      <TableColumnCell>{formatAmount(data.est_amount) ?? 0} 원</TableColumnCell>
-                    </TableColumnBody>
-                    <TableColumnHeader className="w-[18%] 2xl:w-[15%]">
-                      <TableColumnHeaderCell>클라이언트</TableColumnHeaderCell>
-                      <TableColumnHeaderCell>프로젝트 기간</TableColumnHeaderCell>
-                      <TableColumnHeaderCell>프로젝트 예상 지출</TableColumnHeaderCell>
-                    </TableColumnHeader>
-                    <TableColumnBody>
-                      <TableColumnCell>{data.client_nm}</TableColumnCell>
-                      <TableColumnCell>{`${formatDate(data.project_sdate)} ~ ${formatDate(data.project_edate)}`}</TableColumnCell>
-                      <TableColumnCell>{formatAmount(data.exp_cost) ?? 0} 원</TableColumnCell>
-                    </TableColumnBody>
-                  </TableColumn>
-                </>
-              )}
-            </div>
-            <div className="mt-4 w-full gap-4 space-y-4 md:mt-8 md:grid md:grid-cols-2 md:grid-rows-2 md:space-y-0">
-              <Card className="rounded-none border-0 bg-white text-gray-800 max-md:rounded-md max-md:border-1 max-md:border-gray-300 max-md:shadow-none">
-                <CardHeader className="p-4 pb-0 md:p-6 md:pb-4">
+                  <ProjectInfoRow title="프로젝트 #" value={data.project_id} />
+                  <ProjectInfoRow title="클라이언트" value={data.client_nm} />
+                  <ProjectInfoRow title="프로젝트 오너" value={data.owner_nm} />
+                  <ProjectInfoRow title="프로젝트 기간" value={`${formatDate(data.project_sdate)} ~ ${formatDate(data.project_edate)}`} />
+                  <ProjectInfoRow title="프로젝트 견적" value={`${formatAmount(data.est_amount) ?? 0} 원`} bold={true} />
+                  <ProjectInfoRow title="프로젝트 예상 지출" value={`${formatAmount(data.exp_cost) ?? 0} 원`} bold={true} />
+                </div>
+                <HorzBar />
+              </div>
+            ) : (
+              <div className="w-full">
+                <div className="flex items-center justify-between">
+                  <h3 className="mb-1 text-lg font-bold text-gray-800 md:mb-2">프로젝트 정보</h3>
+                  {data.project_status === 'in-progress' && isProjectMember && data.is_locked === 'N' && (
+                    <Button
+                      type="button"
+                      variant="svgIcon"
+                      size="sm"
+                      className="text-gray-600 hover:text-gray-700 max-md:hidden"
+                      onClick={() => setUpdateDialogOpen(true)}>
+                      <Edit className="size-4" />
+                    </Button>
+                  )}
+                </div>
+                <TableColumn>
+                  <TableColumnHeader className="w-[18%] 2xl:w-[15%]">
+                    <TableColumnHeaderCell>프로젝트 #</TableColumnHeaderCell>
+                    <TableColumnHeaderCell>프로젝트 오너</TableColumnHeaderCell>
+                    <TableColumnHeaderCell>프로젝트 견적</TableColumnHeaderCell>
+                  </TableColumnHeader>
+                  <TableColumnBody>
+                    <TableColumnCell>{data.project_id}</TableColumnCell>
+                    <TableColumnCell>{data.owner_nm}</TableColumnCell>
+                    <TableColumnCell>{formatAmount(data.est_amount) ?? 0} 원</TableColumnCell>
+                  </TableColumnBody>
+                  <TableColumnHeader className="w-[18%] 2xl:w-[15%]">
+                    <TableColumnHeaderCell>클라이언트</TableColumnHeaderCell>
+                    <TableColumnHeaderCell>프로젝트 기간</TableColumnHeaderCell>
+                    <TableColumnHeaderCell>프로젝트 예상 지출</TableColumnHeaderCell>
+                  </TableColumnHeader>
+                  <TableColumnBody>
+                    <TableColumnCell>{data.client_nm}</TableColumnCell>
+                    <TableColumnCell>{`${formatDate(data.project_sdate)} ~ ${formatDate(data.project_edate)}`}</TableColumnCell>
+                    <TableColumnCell>{formatAmount(data.exp_cost) ?? 0} 원</TableColumnCell>
+                  </TableColumnBody>
+                </TableColumn>
+              </div>
+            )}
+
+            <div className="mt-4 w-full gap-4 space-y-4 py-4 md:mt-8 md:grid md:grid-cols-2 md:grid-rows-2 md:space-y-0 md:py-0">
+              <Card className="rounded-none border-0 bg-white text-gray-800 max-md:mb-8 max-md:border-b-1 max-md:border-dashed max-md:border-gray-300 max-md:pb-8 max-md:shadow-none">
+                <CardHeader className="p-0 md:p-6 md:pb-4">
                   <CardTitle className="text-lg leading-[1.1] font-bold md:text-xl md:leading-[1.3]">프로젝트 GPM</CardTitle>
                   <CardDescription>인보이스 발행금액 대비 지출 비용을 제외한 순이익 비율을 제공합니다.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center gap-2 pb-4 md:flex-row md:gap-4">
+                <CardContent className="flex flex-col items-center gap-2 p-0 md:flex-row md:gap-4 md:p-6 md:pt-0">
                   <div className="relative aspect-square w-3/4 md:w-[50%]">
                     <HalfDonut value={summary[0]?.GPM ?? 0} netProfit={summary[0]?.netprofit ?? 0} />
                     <span className="centered absolute text-center text-lg leading-[1.2] font-bold">
@@ -324,12 +304,12 @@ export default function Overview() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="rounded-none border-0 bg-white text-gray-800 max-md:rounded-md max-md:border-1 max-md:border-gray-300 max-md:shadow-none">
-                <CardHeader className="p-4 pb-0 md:p-6 md:pb-4">
+              <Card className="rounded-none border-0 bg-white text-gray-800 max-md:mb-8 max-md:border-b-1 max-md:border-dashed max-md:border-gray-300 max-md:pb-8 max-md:shadow-none">
+                <CardHeader className="p-0 md:p-6 md:pb-4">
                   <CardTitle className="text-lg leading-[1.1] font-bold md:text-xl md:leading-[1.3]">비용 차트</CardTitle>
                   <CardDescription>비용 용도별 지출 금액을 기준으로 상위 6개 항목을 제공합니다.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center gap-2 pb-4 md:flex-row md:gap-4">
+                <CardContent className="flex flex-col items-center gap-2 p-0 md:flex-row md:gap-4 md:p-6 md:pt-0">
                   <div className="relative aspect-square w-3/4 md:w-[50%]">
                     <GapPieChart data={expenseChartData} />
                   </div>
@@ -348,12 +328,12 @@ export default function Overview() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="rounded-none border-0 bg-white text-gray-800 max-md:rounded-md max-md:border-1 max-md:border-gray-300 max-md:shadow-none">
-                <CardHeader className="p-4 pb-0 md:p-6 md:pb-4">
+              <Card className="rounded-none border-0 bg-white text-gray-800 max-md:mb-8 max-md:border-b-1 max-md:border-dashed max-md:border-gray-300 max-md:pb-8 max-md:shadow-none">
+                <CardHeader className="p-0 md:p-6 md:pb-4">
                   <CardTitle className="text-lg leading-[1.1] font-bold md:text-xl md:leading-[1.3]">인보이스</CardTitle>
                   <CardDescription>인보이스가 발행된 업체별 비율을 제공합니다.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center gap-2 pb-4 md:flex-row md:gap-4">
+                <CardContent className="flex flex-col items-center gap-2 p-0 md:flex-row md:gap-4 md:p-6 md:pt-0">
                   <div className="relative aspect-square w-3/4 md:w-[50%]">
                     <GapPieChart data={invoiceChartData} />
                   </div>
@@ -372,12 +352,12 @@ export default function Overview() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="rounded-none border-0 bg-white text-gray-800 max-md:rounded-md max-md:border-1 max-md:border-gray-300 max-md:shadow-none">
-                <CardHeader className="p-4 pb-0 md:p-6 md:pb-4">
+              <Card className="rounded-none border-0 bg-white text-gray-800 max-md:shadow-none">
+                <CardHeader className="p-0 md:p-6 md:pb-4">
                   <CardTitle className="text-lg leading-[1.1] font-bold md:text-xl md:leading-[1.3]">비용 유형</CardTitle>
                   <CardDescription>등록된 비용을 견적서, 기안서, 야근 식대·교통비 기준으로 분류해 제공합니다.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center gap-2 pb-4 md:flex-row md:gap-4">
+                <CardContent className="flex flex-col items-center gap-2 p-0 md:flex-row md:gap-4 md:p-6 md:pt-0">
                   <div className="relative aspect-square w-3/4 md:w-[50%]">
                     <GapPieChart data={expenseTypeChartData} />
                   </div>
@@ -461,11 +441,15 @@ export default function Overview() {
   );
 }
 
+function HorzBar() {
+  return <div className="h-4 border-t-1 border-gray-300 bg-gray-200"></div>;
+}
+
 function ProjectInfoRow({ title, value, bold }: { title: string; value: string; bold?: boolean }) {
   return (
-    <dl className="flex items-center justify-between border-b-1 border-gray-300/50 py-1 first:pt-0 last:border-b-0 last:pb-0">
-      <dt className="text-sm font-medium text-gray-600">{title}</dt>
-      <dd className={cn('text-[13px]', bold && 'font-semibold')}>{value}</dd>
+    <dl className="flex items-center justify-between gap-2 py-1">
+      <dt className="w-[30%] shrink-0 text-[13px] text-gray-700">{title}</dt>
+      <dd className={cn('text-right text-[13px] break-keep', bold && 'font-semibold')}>{value}</dd>
     </dl>
   );
 }
