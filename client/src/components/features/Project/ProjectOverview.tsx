@@ -289,41 +289,6 @@ export default function Overview() {
                   </TableColumn>
                 </>
               )}
-              <div className="flex items-center justify-between">
-                <h3 className="mb-2 text-lg font-bold text-gray-800">프로젝트 정보</h3>
-                {data.project_status === 'in-progress' && isProjectMember && data.is_locked === 'N' && (
-                  <Button
-                    type="button"
-                    variant="svgIcon"
-                    size="sm"
-                    className="text-gray-600 hover:text-gray-700"
-                    onClick={() => setUpdateDialogOpen(true)}>
-                    <Edit className="size-4" />
-                  </Button>
-                )}
-              </div>
-              <TableColumn>
-                <TableColumnHeader className="w-[15%] max-[1441px]:w-[18%]">
-                  <TableColumnHeaderCell>프로젝트 #</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>프로젝트 오너</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>프로젝트 견적</TableColumnHeaderCell>
-                </TableColumnHeader>
-                <TableColumnBody>
-                  <TableColumnCell>{data.project_id}</TableColumnCell>
-                  <TableColumnCell>{data.owner_nm}</TableColumnCell>
-                  <TableColumnCell>{formatAmount(data.est_amount) ?? 0} 원</TableColumnCell>
-                </TableColumnBody>
-                <TableColumnHeader className="w-[15%] max-[1441px]:w-[18%]">
-                  <TableColumnHeaderCell>클라이언트</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>프로젝트 기간</TableColumnHeaderCell>
-                  <TableColumnHeaderCell>프로젝트 예상 지출</TableColumnHeaderCell>
-                </TableColumnHeader>
-                <TableColumnBody>
-                  <TableColumnCell>{data.client_nm}</TableColumnCell>
-                  <TableColumnCell>{`${formatDate(data.project_sdate)} ~ ${formatDate(data.project_edate)}`}</TableColumnCell>
-                  <TableColumnCell>{formatAmount(data.exp_cost) ?? 0} 원</TableColumnCell>
-                </TableColumnBody>
-              </TableColumn>
             </div>
             <div className="mt-4 w-full gap-4 space-y-4 md:mt-8 md:grid md:grid-cols-2 md:grid-rows-2 md:space-y-0">
               <Card className="rounded-none border-0 bg-white text-gray-800 max-md:rounded-md max-md:border-1 max-md:border-gray-300 max-md:shadow-none">
