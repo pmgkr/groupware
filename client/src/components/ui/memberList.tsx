@@ -52,9 +52,25 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
   }, [member.user_id]);
   const badge = STATUS_BADGE_MAP[member.user_status as keyof typeof STATUS_BADGE_MAP];
 
-  const roleIcon = useMemo(() => {
+  /*   const roleIcon = useMemo(() => {
     if (member.user_level === 'admin') return <Pin className="h-6 w-6" />;
     if (member.user_level === 'manager') return <Manager className="h-6 w-6" />;
+    return null;
+  }, [member.user_level]); */
+
+  const roleIcon = useMemo(() => {
+    if (member.user_level === 'admin')
+      return (
+        <Badge size="default" variant="outline" className="px-1 py-0">
+          Admin
+        </Badge>
+      );
+    if (member.user_level === 'manager')
+      return (
+        <Badge size="default" variant="outline" className="border-primary-purple-500 text-primary-purple-500 px-1 py-0">
+          Manager
+        </Badge>
+      );
     return null;
   }, [member.user_level]);
 
@@ -102,8 +118,8 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
   return (
     <>
       {/* ===== 카드 ===== */}
-      <div className="relative w-full rounded-xl border border-gray-300 px-5 py-8 pb-7 max-lg:px-3 max-lg:pb-5">
-        <div className="absolute top-2.5 right-4">
+      <div className="relative w-full rounded-xl border border-gray-300 px-5 pt-8.5 pb-7 max-lg:px-3 max-lg:pb-5">
+        <div className="absolute top-2 right-4">
           <Button size="xs" variant="outline" className="border-0 shadow-none" onClick={() => setOpen(true)}>
             <Ellipsis className="size-4" />
           </Button>
@@ -122,14 +138,13 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
             </div>
             {/* inactive / suspended만 뱃지 */}
             {badge && <Badge className={badge.className}>{badge.label}</Badge>}
-
             {/* 권한 아이콘 (admin / manager) */}
-            {roleIcon && <div className="mt-1">{roleIcon}</div>}
+            {roleIcon && <span className="max-lg:absolute max-lg:top-1.5 max-lg:left-3">{roleIcon}</span>}
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="border-b border-gray-200 pb-3 max-lg:text-center max-md:mb-3">
-              <p className="mb-0.5 truncate font-bold">
+            <div className="border-b border-gray-200 pb-3 max-lg:text-center max-md:mb-2 max-md:pb-2">
+              <p className="mb-0.5 truncate font-bold max-md:text-base max-md:leading-4.5">
                 {member.user_name} <br className="hidden max-lg:block" />
                 {member.user_name_en && (
                   <>
@@ -138,11 +153,11 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
                   </>
                 )}
               </p>
-              <p className="text-[13px] text-gray-500">{member.job_role}</p>
+              <p className="text-[13px] text-gray-500 max-md:text-sm">{member.job_role}</p>
             </div>
 
             <div className="pt-4 text-sm max-lg:pt-0">
-              <p className="mb-1 flex w-full min-w-0 items-center">
+              <p className="mb-1 flex w-full min-w-0 items-center max-md:mb-0">
                 <Mail className="mr-2.5 size-4 shrink-0 max-lg:size-3" />
                 <span className="truncate">{member.user_id}</span>
               </p>
@@ -235,9 +250,15 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="user" size="sm">일반사용자</SelectItem>
-                      <SelectItem value="manager" size="sm">관리자(팀장)</SelectItem>
-                      <SelectItem value="admin" size="sm">최고관리자</SelectItem>
+                      <SelectItem value="user" size="sm">
+                        일반사용자
+                      </SelectItem>
+                      <SelectItem value="manager" size="sm">
+                        관리자(팀장)
+                      </SelectItem>
+                      <SelectItem value="admin" size="sm">
+                        최고관리자
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </span>
