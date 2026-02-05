@@ -322,7 +322,7 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
               </Button>
             </div>
           </TableHead>
-          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
+          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[30%]">
             <div className="flex items-center justify-center gap-1 max-md:gap-0!">
               <span className="text-[13px] max-md:text-sm!"><span className="max-md:hidden">잔여</span>기본연차</span>
               {!isMobile && <Tooltip>
@@ -348,7 +348,7 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
               )}
             </div>
           </TableHead>
-          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
+          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[30%]">
             <div className="flex items-center justify-center gap-1">
               <span className="text-[13px] max-md:text-sm!"><span className="max-md:hidden">잔여</span>이월연차</span>
               {!isMobile && <Tooltip>
@@ -375,7 +375,7 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
             </div>
           </TableHead>
 
-          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
+          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[30%]">
             <div className="flex items-center justify-center gap-1">
               <span className="text-[13px] max-md:text-sm!"><span className="max-md:hidden">잔여</span>특별대휴</span>
               {!isMobile && <Tooltip>
