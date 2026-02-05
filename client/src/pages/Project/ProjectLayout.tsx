@@ -365,7 +365,7 @@ export default function ProjectLayout() {
       </div>
 
       {/* 탭 메뉴: URL 이동 기반 */}
-      <nav className="flex gap-4 max-md:mt-2 max-md:-ml-5 max-md:w-[calc(100%+var(--spacing)*10)] max-md:border-b-2 max-md:border-gray-300 max-md:px-5">
+      <nav className="flex gap-4 max-md:-mx-4.5 max-md:mt-1 max-md:w-[calc(100%+var(--spacing)*9)] max-md:border-b-2 max-md:border-gray-300 max-md:px-4.5">
         {tabs.map((tab) => {
           const basePath = tab.path === '' ? `/project/${projectId}` : `/project/${projectId}/${tab.path}`;
 

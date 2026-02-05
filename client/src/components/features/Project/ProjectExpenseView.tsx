@@ -175,7 +175,7 @@ export default function ProjectExpenseView() {
     <>
       {isMobile ? (
         <>
-          <div className="-mx-5 -my-6 bg-white">
+          <div className="-mx-4.5 -my-6 bg-white">
             <div className="p-5 tracking-tight">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1 text-[13px] text-gray-600" onClick={() => copyExpId(header.exp_id)}>
@@ -213,7 +213,6 @@ export default function ProjectExpenseView() {
               <h3 className="text-lg leading-[1.2] font-bold">비용 항목</h3>
               <div className="py-2">
                 {items.map((item) => {
-                  console.log('항목', item);
                   return (
                     <div key={item.seq} className="mb-3 border-b-1 border-dashed pb-3 last:border-b-0">
                       <ExpRow title="비용 용도" value={item.ei_type} />
@@ -267,10 +266,7 @@ export default function ProjectExpenseView() {
                           <dt className="text-[13px] text-gray-700">기안서</dt>
                           <dd className="text-right text-sm font-medium text-gray-700">
                             {item.pro_id ? (
-                              <Link
-                                to={`/project/proposal/view/${item.pro_id}`}
-                                target="_blank"
-                                className="text-primary flex items-center gap-0.5">
+                              <Link to={`/project/proposal/view/${item.pro_id}`} className="text-primary flex items-center gap-0.5">
                                 기안서보기 <SquareArrowOutUpRight className="size-3" />
                               </Link>
                             ) : (
