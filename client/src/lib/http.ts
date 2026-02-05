@@ -19,35 +19,16 @@ export class HttpError extends Error {
   }
 }
 
-// 리프레시 토큰을 헤더로 전송해서 새로운 Access Token을 발급
+// 리프레시 토큰 쿠키를 서버에 전송해서 새로운 Access Token을 발급
 // 성공 시 tokenStore에 setToken으로 새 토큰 저장
-import { getRefreshToken, setRefreshToken } from './refreshTokenStore';
-
 export async function refreshAccessToken() {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) throw new Error('Refresh token missing');
-
   const res = await fetch(`${API}/refresh`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Refresh-Token': refreshToken,
-    },
     credentials: 'include',
   });
-  if (!res.ok) {
-    // refresh token이 유효하지 않으면 삭제
-    if (res.status === 401 || res.status === 403) {
-      setRefreshToken(undefined);
-    }
-    throw new Error('Refresh failed');
-  }
+  if (!res.ok) throw new Error('Refresh failed');
   const data = await res.json();
   setToken(data.accessToken);
-  // 새로운 refresh token이 있으면 저장
-  if (data.refreshToken) {
-    setRefreshToken(data.refreshToken);
-  }
   return data.accessToken as string;
 }
 
