@@ -3,6 +3,7 @@ import type { UserDTO } from '@/api/auth';
 import { getUser, logoutApi } from '@/api/auth';
 import { refreshAccessToken } from '@/lib/http';
 import { setToken as setTokenStore } from '@/lib/tokenStore';
+import { setRefreshToken } from '@/lib/refreshTokenStore';
 
 const LOGOUT_FLAG = 'auth:logged_out';
 
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {}
     setUser(null);
     setTokenStore(undefined);
+    setRefreshToken(undefined);
     // 로그아웃 플래그 설정 (세션 범위)
     sessionStorage.setItem(LOGOUT_FLAG, 'true');
   };

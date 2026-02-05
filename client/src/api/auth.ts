@@ -1,5 +1,6 @@
 // src/api/auth.ts
 import { http } from '@/lib/http';
+import { setRefreshToken } from '@/lib/refreshTokenStore';
 
 export type LoginPayload = { user_id: string; user_pw: string };
 export type OnboardingPayload = {
@@ -35,10 +36,15 @@ export type UserDTO = {
 
 // Login 테이블 조회 API
 export async function loginApi(payload: LoginPayload) {
-  return http<{ message: string; accessToken: string; user: UserDTO; CODE?: string; code?: string; onboardingToken?: string }>('/login', {
+  const res = await http<{ message: string; accessToken: string; refreshToken?: string; user: UserDTO; CODE?: string; code?: string; onboardingToken?: string }>('/login', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+  // refresh token이 있으면 저장
+  if (res.refreshToken) {
+    setRefreshToken(res.refreshToken);
+  }
+  return res;
 }
 
 export async function onboardingApi(payload: OnboardingPayload, token: string) {
@@ -57,7 +63,12 @@ export async function getUser() {
 }
 
 export async function logoutApi() {
-  return http<{ message: string }>('/user/logout', { method: 'POST' });
+  try {
+    await http<{ message: string }>('/user/logout', { method: 'POST' });
+  } finally {
+    // 로그아웃 시 refresh token 삭제
+    setRefreshToken(undefined);
+  }
 }
 
 export async function initFormApi(token_user_id: string, onboardingToken: string) {
