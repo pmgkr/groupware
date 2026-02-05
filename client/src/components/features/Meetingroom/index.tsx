@@ -34,7 +34,7 @@ const CLOSE_HOUR = 20;
 const SLOT_MINUTES = 30;
 const SLOT_COUNT = (CLOSE_HOUR - OPEN_HOUR) * (60 / SLOT_MINUTES);
 const ROW_H = 40;
-const HEADER_H_CLASS = 'h-54'; // 헤더 고정 높이(12rem)
+const HEADER_H_CLASS = 'h-54 max-md:h-32'; // 헤더 고정 높이(12rem)
 
 type Slot = { index: number; start: Date; end: Date; label: string };
 
@@ -280,8 +280,8 @@ export default function MeetingRoomsAllPage() {
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between rounded-sm bg-gray-200 p-4">
-        <div className="flex items-center gap-x-2">
+      <div className="mb-4 flex items-center justify-between rounded-sm bg-gray-200 p-4 max-md:p-3">
+        <div className="flex items-center gap-x-2 max-md:gap-1">
           <Button variant="outline" size="sm" onClick={handleGoToday}>
             오늘
           </Button>
@@ -330,9 +330,17 @@ export default function MeetingRoomsAllPage() {
       </div>
 
       <div>
-        <div className="rounded-sm bg-gray-200">
-          <div className="grid grid-cols-[80px_1fr] py-4 pr-2">
-            <div className={`${HEADER_H_CLASS} border-b border-gray-400/50`} />
+        <div className="rounded-sm bg-gray-200 max-md:max-h-[70vh] max-md:overflow-x-auto">
+          <div
+            className="grid grid-cols-[80px_1fr] py-4 pr-2 max-md:min-w-[900px] max-md:grid-cols-[60px_1fr]"
+            style={{ minWidth: 80 + rooms.length * 160 }}>
+            {/* <div className={`${HEADER_H_CLASS} border-b border-gray-400/50`} /> */}
+            <div
+              className={cn(
+                HEADER_H_CLASS,
+                'max-md:sticky max-md:left-0 max-md:z-8 max-md:border-b max-md:border-gray-400/50 max-md:bg-gray-200'
+              )}
+            />
 
             {/* 우측-헤더행: 미팅룸 카드 */}
             <div className="grid grid-cols-5">
@@ -342,7 +350,7 @@ export default function MeetingRoomsAllPage() {
             </div>
 
             {/* 좌측-바디행: 시간 라벨들 */}
-            <div>
+            <div className="max-md:sticky max-md:left-0 max-md:z-6 max-md:bg-gray-200">
               {slots.map((s) => (
                 <div key={s.index} className="flex h-10 items-center justify-center border-b border-gray-400/50 pr-3 text-xs text-gray-700">
                   {s.label}
@@ -408,7 +416,9 @@ export default function MeetingRoomsAllPage() {
 
         {/* 생성 다이얼로그 */}
         <Dialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
-          <DialogContent className="sm:max-w-[700px]" aria-describedby={undefined}>
+          <DialogContent
+            className="rounded-lg max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)] sm:max-w-[700px]"
+            aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle>미팅룸 예약하기</DialogTitle>
             </DialogHeader>
@@ -530,7 +540,7 @@ function RoomHeader({ room, showRightBorder }: { room: Room; showRightBorder: bo
         <img src={getImageUrl(`dummy/${room.imageUrl}`)} alt="프로필 이미지" className="h-full w-full object-cover" />
       </div>
       <div className="mt-2 text-base font-bold">{room.name}</div>
-      <div className="flex gap-x-1 text-sm text-gray-500">
+      <div className="flex gap-x-1 text-sm text-gray-500 max-md:hidden">
         {room.floor}
         {room.capacity ? (
           <div className="flex items-center">

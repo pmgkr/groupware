@@ -241,7 +241,7 @@ export default function ReactQuillEditor({ value, onChange }: ReactQuillEditorPr
       onChange={onChange}
       modules={modules}
       formats={formats}
-      style={{ height: '460px' }}
+      style={{ height: 'calc(100% - 44px)' }}
       placeholder="여기에 입력하세요..."
     />
   );

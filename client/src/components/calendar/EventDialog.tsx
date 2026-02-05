@@ -499,7 +499,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
             <RadioGroup
               value={formData.category}
               onValueChange={(value) => handleInputChange('category', value)}
-              className="grid grid-cols-2 gap-4"
+              className="grid grid-cols-2 gap-4 max-md:gap-2"
             >
               <RadioButton
                 value="vacation"
@@ -549,7 +549,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
               <RadioGroup
                 value={formData.eventType}
                 onValueChange={(value) => handleInputChange('eventType', value)}
-                className="grid grid-cols-3 gap-3"
+                className="grid grid-cols-3 gap-3 max-md:gap-2"
               >
                 {(formData.category === 'vacation' ? vacationTypes : eventTypes).map((type) => (
                   <RadioButton
@@ -627,12 +627,12 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
+        <DialogFooter className="max-md:flex-row max-md:flex-nowrap max-md:gap-2">
+          <Button variant="outline" onClick={handleClose} className="max-md:flex-1">
             취소
           </Button>
-          <Button onClick={handleSave}>
-            저장
+          <Button onClick={handleSave} className="max-md:flex-1">
+            등록
           </Button>
         </DialogFooter>
       </DialogContent>

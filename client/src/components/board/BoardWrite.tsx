@@ -173,11 +173,11 @@ export default function BoardWrite() {
         <Checkbox id="notice" label="공지 설정" checked={isNotice === 'Y'} onCheckedChange={(v) => setIsNotice(v === true ? 'Y' : 'N')} />
       </div>
 
-      <div className="mb-3 flex gap-x-2.5">
+      <div className="mb-3 gap-x-2.5 md:flex">
         {/* 제보게시판이 아닐 때만 카테고리 선택 표시 */}
         {!isSuggestBoard && (
           <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="!h-[50px] w-[180px]">
+            <SelectTrigger className="mb-3 h-[40px] w-full md:mb-0 md:!h-[50px] md:w-[180px]">
               <SelectValue placeholder="카테고리" />
             </SelectTrigger>
             <SelectContent>
@@ -201,11 +201,11 @@ export default function BoardWrite() {
       </div>
 
       {/* 본문 에디터 */}
-      <div style={{ height: '58vh' }}>
+      <div className="h-[58vh] max-md:h-[40vh]">
         <ReactQuillEditor value={content} onChange={setContent} />
       </div>
 
-      <div className="mt-2 flex justify-between">
+      <div className="mt-20 flex justify-between md:mt-5">
         {/* 첨부파일 업로더 컴포넌트 */}
         <BoardAttachFile files={files} setFiles={setFiles} onRemoveExisting={(id) => setDeletedFileIds((prev) => [...prev, id])} />
 

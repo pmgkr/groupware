@@ -131,26 +131,26 @@ export function DateTimePicker24h({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-auto p-0 z-[1000]" 
+        className="w-auto p-0 z-[1000] max-md:max-w-[100vw] max-md:overflow-x-auto" 
         onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col">
-          <div className="sm:flex">
+          <div className="flex">
             <DayPicker
               mode="single"
               selected={date}
               onSelect={handleDateSelect}
               initialFocus
             />
-            <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-            <ScrollArea className="w-64 sm:w-auto">
-              <div className="flex sm:flex-col p-2">
+            <div className="flex flex-row sm:h-[300px] divide-x max-md:h-auto">
+            <ScrollArea className="flex-1 sm:w-auto max-md:h-[100%]">
+              <div className="flex flex-row sm:flex-col p-2 max-md:gap-1">
                 {hours.map((hour) => (
                   <Button
                     key={hour}
                     size="icon"
                     variant={date && date.getHours() === hour ? "default" : "ghost"}
-                    className="sm:w-full shrink-0 aspect-square"
+                    className="sm:w-full shrink-0 aspect-square max-md:text-sm"
                     onClick={() => handleTimeChange("hour", hour.toString())}
                   >
                     {hour}
@@ -159,14 +159,14 @@ export function DateTimePicker24h({
               </div>
               <ScrollBar orientation="horizontal" className="sm:hidden" />
             </ScrollArea>
-            <ScrollArea className="w-64 sm:w-auto">
-              <div className="flex sm:flex-col p-2">
+            <ScrollArea className="flex-1 sm:w-auto max-md:h-[100%]">
+              <div className="flex flex-row sm:flex-col p-2 max-md:gap-1">
                 {availableMinutes.map((minute) => (
                   <Button
                     key={minute}
                     size="icon"
                     variant={date && date.getMinutes() === minute ? "default" : "ghost"}
-                    className="sm:w-full shrink-0 aspect-square"
+                    className="sm:w-full shrink-0 aspect-square max-md:text-sm"
                     onClick={() => handleTimeChange("minute", minute.toString())}
                   >
                     {minute.toString().padStart(2, '0')}

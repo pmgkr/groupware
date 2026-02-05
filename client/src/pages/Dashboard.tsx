@@ -1,10 +1,12 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { Link } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { useDashboard } from '@/hooks/useDashboard';
 import { getProfileImageUrl, getAvatarFallback } from '@/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 import Header from '@/layouts/Header';
+import HeaderMobile from '@/layouts/HeaderMobile';
 
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { Badge } from '@components/ui/badge';
@@ -15,6 +17,8 @@ import WorkHoursBar from '@/components/ui/WorkHoursBar';
 import { Icons } from '@components/icons';
 import EventViewDialog from '@/components/calendar/EventViewDialog';
 import Weather from '@components/features/Dashboard/weather';
+import { Expense as ExpenseIcon } from '@/assets/images/icons';
+import { ClipboardList as NoticeIcon, Users as MeetingroomIcon, ChevronRight } from 'lucide-react';
 
 import type { Calendar, Meetingroom, Wlog, VacationSummaryItem, Notice, Expense } from '@/api/dashboard';
 
@@ -37,7 +41,15 @@ const statusMap: Record<string, string> = {
   Rejected: '거부',
 };
 
+// DayPicker를 메모이제이션하여 불필요한 리렌더링 방지
+const MemoizedDayPicker = memo(({ selected, onSelect }: { selected: Date | undefined; onSelect: (date: Date | undefined) => void }) => {
+  return <DayPicker mode="single" variant="dashboard" selected={selected} onSelect={onSelect} className="max-md:p-0" />;
+});
+MemoizedDayPicker.displayName = 'MemoizedDayPicker';
+
 export default function Dashboard() {
+  const isMobile = useIsMobileViewport();
+  
   // Daypicker 선택된 날짜 관리 (Default : Today)
   const [selected, setSelected] = useState<Date | undefined>(new Date());
 
@@ -50,6 +62,11 @@ export default function Dashboard() {
     }, 1000); // 1초마다 업데이트
 
     return () => clearInterval(timer);
+  }, []);
+
+  // DayPicker의 onSelect 핸들러를 메모이제이션하여 불필요한 리렌더링 방지
+  const handleDateSelect = useCallback((date: Date | undefined) => {
+    setSelected(date);
   }, []);
 
   // 선택된 날짜에 따라 캘린더 데이터만 가져오기
@@ -95,14 +112,17 @@ export default function Dashboard() {
 
   return (
     <>
-      <Header />
-      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 flex-col gap-y-2 px-16 py-8 max-[1441px]:ml-50 max-[1441px]:px-6">
-        <div className="flex items-center justify-between text-base text-gray-800">
-          <p>{welcomeMessage}</p>
-          <Weather />
-        </div>
-        <div className="grid h-200 grid-cols-3 grid-rows-4 gap-6 max-[1441px]:gap-4">
-          <div className="row-span-2 flex flex-col justify-start rounded-md border border-gray-300 bg-white p-6">
+      {!isMobile && <Header />}
+      {isMobile && <HeaderMobile />}
+      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 max-h-screen flex-col gap-y-2 px-16 py-8 max-2xl:ml-50 max-2xl:px-6 max-md:m-0! max-md:mt-[50px]! max-md:max-h-none! max-md:p-4.5! max-md:pb-[80px]!">
+        {!isMobile && (
+          <div className="flex items-center justify-between text-base text-gray-800">
+            <p>{welcomeMessage}</p>
+            <Weather />
+          </div>
+        )}
+        <div className="grid min-h-200 h-full grid-cols-3 grid-rows-4 gap-6 max-2xl:gap-4 max-md:grid-cols-1 max-md:grid-rows-1 max-md:h-auto">
+          <div className="row-span-2 flex min-h-0 flex-col justify-start rounded-md border border-gray-300 bg-white p-6 max-md:h-auto max-md:p-4.5!">
             <SectionHeader
               title="근무 시간"
               description={dayjs(currentTime).format('YYYY년 MM월 DD일 (ddd) HH:mm:ss')}
@@ -115,27 +135,27 @@ export default function Dashboard() {
             <div className="mb-6 flex flex-col items-center justify-center gap-y-3 rounded-md bg-gray-100 p-5">
               <div className="flex flex-wrap justify-center gap-2">
                 {displayWorkTypes.map((type, idx) => (
-                  <div key={idx} className={cn('rounded-sm px-4 py-1.5 text-[0.8em] font-bold', getWorkTypeColor(type))}>
+                  <div key={idx} className={cn('rounded-sm px-4 py-1.5 text-[0.8em] font-bold max-md:text-sm max-md:px-3 max-md:py-1', getWorkTypeColor(type))}>
                     {type}
                   </div>
                 ))}
               </div>
               <div className="flex items-center justify-center gap-x-10">
                 <div className="align-center flex flex-col justify-center text-center">
-                  <p className="text-base text-gray-500">출근시간</p>
+                  <p className="text-base text-gray-500 max-md:text-[13px]">출근시간</p>
                   <p className="text-xl font-medium text-gray-800">{formatTime(wlog.wlogToday[0]?.stime || null)}</p>
                 </div>
                 <Icons.arrowRightCustom />
                 <div className="align-center flex flex-col justify-center text-center">
-                  <p className="text-base text-gray-500">퇴근시간</p>
+                  <p className="text-base text-gray-500 max-md:text-[13px]">퇴근시간</p>
                   <p className="text-xl font-medium text-gray-800">{formatTime(wlog.wlogToday[0]?.etime || null)}</p>
                 </div>
               </div>
             </div>
-            <div>
+            <div className="flex-1 flex flex-col">
               <div className="mt-1 flex flex-col gap-0">
                 <div className="flex items-center gap-1">
-                  <span className="text-xl font-black text-gray-800">주간누적</span>
+                  <span className="text-lg font-black text-gray-800">주간누적</span>
                   {(() => {
                     const weekData = Array.isArray(wlog.wlogWeek) ? wlog.wlogWeek[0] : wlog.wlogWeek;
                     return (
@@ -164,8 +184,8 @@ export default function Dashboard() {
               />
             </div>
           </div>
-          <div className="row-span-2 flex flex-col gap-4">
-            <div className="rounded-md border border-gray-300 bg-white px-6 py-5">
+          <div className="row-span-2 flex min-h-0 flex-col gap-4 max-md:h-auto">
+            <div className="rounded-md border border-gray-300 bg-white px-6 py-5 max-md:p-4.5!">
               <SectionHeader
                 title="잔여 휴가 ⛱️"
                 buttonText="전체보기"
@@ -175,56 +195,97 @@ export default function Dashboard() {
                 className="mb-4"
               />
               <ul className="grid grid-cols-4">
-                <li className="flex flex-col text-center text-base">
+                <li className="flex flex-col text-center text-base max-md:text-[13px]">
                   <span>기본연차</span>
                   <strong className="text-[1.4em]">{vacation?.va_current || 0}</strong>
                 </li>
-                <li className="short-v-divider flex flex-col text-center text-base">
+                <li className="short-v-divider flex flex-col text-center text-base max-md:text-[13px]">
                   <span>이월연차</span>
                   <strong className="text-[1.4em]">{vacation?.va_carryover || 0}</strong>
                 </li>
-                <li className="short-v-divider flex flex-col text-center text-base">
+                <li className="short-v-divider flex flex-col text-center text-base max-md:text-[13px]">
                   <span>특별대휴</span>
                   <strong className="text-[1.4em]">{vacation?.va_comp || 0}</strong>
                 </li>
-                <li className="short-v-divider flex flex-col text-center text-base">
+                <li className="short-v-divider flex flex-col text-center text-base max-md:text-[13px]">
                   <span>총 사용</span>
                   <strong className="text-[1.4em]">{vacation?.va_used || 0}</strong>
                 </li>
               </ul>
             </div>
-            <div className="h-full rounded-md border border-gray-300 bg-white px-6 py-5">
-              <SectionHeader
-                title="공지사항"
-                buttonText="전체보기"
-                buttonVariant="outline"
-                buttonSize="sm"
-                buttonHref="/notice"
-                className="mb-4"
-              />
-              <div>
-                <ul className="flex flex-col gap-y-2 px-2 text-base tracking-tight text-gray-700">
-                  {notice.length === 0 ? (
-                    <span className="text-base text-gray-500">등록된 공지사항이 없습니다.</span>
-                  ) : (
-                    notice.map((notice) => (
-                      <li
-                        key={notice.n_seq}
-                        className="flex items-center gap-x-1.5 before:h-1 before:w-1 before:rounded-[50%] before:bg-gray-700">
-                        <Link to={`/notice/${notice.n_seq}`} className="group flex items-center justify-between gap-x-1.5">
-                          <p className="overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline">
-                            [{notice.category}] {notice.title}
-                          </p>
-                        </Link>
-                      </li>
-                    ))
-                  )}
-                </ul>
+            {!isMobile && (
+              <div className="h-full rounded-md border border-gray-300 bg-white px-6 py-5">
+                <SectionHeader
+                  title="공지사항"
+                  buttonText="전체보기"
+                  buttonVariant="outline"
+                  buttonSize="sm"
+                  buttonHref="/notice"
+                  className="mb-4"
+                />
+                <div>
+                  <ul className="flex flex-col gap-y-2 px-2 text-base tracking-tight text-gray-700">
+                    {notice.length === 0 ? (
+                      <span className="text-base text-gray-500">등록된 공지사항이 없습니다.</span>
+                    ) : (
+                      notice.map((notice) => (
+                        <li
+                          key={notice.n_seq}
+                          className="flex items-center gap-x-1.5 before:h-1 before:w-1 before:rounded-[50%] before:bg-gray-700">
+                          <Link to={`/notice/${notice.n_seq}`} className="group flex items-center justify-between gap-x-1.5">
+                            <p className="overflow-hidden text-ellipsis whitespace-nowrap group-hover:underline">
+                              [{notice.category}] {notice.title}
+                            </p>
+                          </Link>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
               </div>
-            </div>
+            )}
           </div>
+          
+          {/* 빠른 메뉴 */}
+          {isMobile && (
+            <div className="grid grid-cols-3 gap-2">
+            <Link
+              to="/notice"
+              className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
+              <div className="flex items-center justify-center rounded-full bg-primary-blue-100 p-1.5">
+                <NoticeIcon className="size-4.5 text-primary-blue-500" />
+              </div>
+              <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
+                공지사항
+                <ChevronRight className="size-3 text-gray-500" />
+              </span>
+            </Link>
+            <Link
+              to="/meetingroom"
+              className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
+              <div className="flex items-center justify-center rounded-full bg-primary-blue-100 p-1.5">
+                <MeetingroomIcon className="size-4.5 text-primary-blue-500" />
+              </div>
+              <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
+                미팅룸
+                <ChevronRight className="size-3 text-gray-500" />
+              </span>
+            </Link>
+            <Link
+              to="/mypage/expense"
+              className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
+              <div className="flex items-center justify-center rounded-full bg-primary-blue-100 p-1.5">
+                <ExpenseIcon className="size-4.5 text-primary-blue-500" />
+              </div>
+              <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
+                비용관리
+                <ChevronRight className="size-3 text-gray-500" />
+              </span>
+            </Link>
+          </div>
+          )}
 
-          <div className="row-span-4 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
+          <div className="row-span-4 flex h-full min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5 max-md:h-auto max-md:p-4.5!">
             <SectionHeader
               title="캘린더"
               buttonText="전체보기"
@@ -234,9 +295,9 @@ export default function Dashboard() {
               className="mb-4 shrink-0"
             />
             <div className="shrink-0">
-              <DayPicker mode="single" variant="dashboard" selected={selected} onSelect={setSelected} />
+              <MemoizedDayPicker selected={selected} onSelect={handleDateSelect} />
             </div>
-            <ul className="flex items-center justify-end gap-x-1.5 px-4 py-2 max-[1441px]:flex-wrap">
+            <ul className="flex shrink-0 items-center justify-end gap-x-1.5 px-4 py-2 flex-wrap max-md:px-0! max-md:gap-0! max-md:py-3">
               {calendarBadges.map((label) => (
                 <li key={label}>
                   <Badge variant="dot" className={getBadgeColor(label)}>
@@ -245,10 +306,12 @@ export default function Dashboard() {
                 </li>
               ))}
             </ul>
-            <div className="overflow-y-auto rounded-xl p-4 max-[1441px]:p-2">
-              <ul className="grid grid-cols-3 gap-2 gap-y-4 max-[1441px]:grid-cols-2 max-[1441px]:gap-x-1 max-[1441px]:gap-y-2">
+            <div className="flex-1 min-h-0 overflow-y-auto rounded-xl p-4 max-2xl:p-2 max-md:px-0!">
+              <ul className="grid grid-cols-3 gap-2 gap-y-4 max-2xl:grid-cols-2 max-2xl:gap-x-1 max-2xl:gap-y-2 max-md:grid-cols-3! max-md:gap-x-0!">
                 {calendarData.length === 0 ? (
-                  <span className="text-base text-gray-500">등록된 일정이 없습니다.</span>
+                  <li className="col-span-full text-center">
+                    <span className="text-base text-gray-500">등록된 일정이 없습니다.</span>
+                  </li>
                 ) : (
                   calendarData.map((calendar, index) => (
                     <li
@@ -261,17 +324,17 @@ export default function Dashboard() {
                         <AvatarImage src={getProfileImageUrl(calendar.profile_image ?? undefined)} alt={calendar.user_name} />
                         <AvatarFallback>{getAvatarFallback(calendar.user_id || '')}</AvatarFallback>
                       </Avatar>
-                      <div className="flex flex-col text-base">
-                        <strong className="leading-[1.2]">{calendar.user_name}</strong>
+                      <div className="flex flex-col text-base max-md:text-">
+                        <strong className="leading-[1.2] max-md:text-sm">{calendar.user_name}</strong>
                         {calendar.sch_label === '생일' ? (
                           <Badge
                             variant="dot"
                             className="rounded-none border-none p-0 before:mr-0.5 before:h-auto before:w-auto before:rounded-none before:bg-transparent before:content-['🎂']">
-                            <span className="text-[11px]">{calendar.sch_label}</span>
+                            <span className="text-[11px] max-md:text-xs">{calendar.sch_label}</span>
                           </Badge>
                         ) : (
                           <Badge variant="dot" className={`rounded-none border-none p-0 ${getBadgeColor(calendar.sch_label)}`}>
-                            <span className="text-[11px]">{calendar.sch_label}</span>
+                            <span className="text-[11px] max-md:text-xs">{calendar.sch_label}</span>
                           </Badge>
                         )}
                       </div>
@@ -282,35 +345,38 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="row-span-2 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
-            <SectionHeader
-              title="미팅룸"
-              buttonText="전체보기"
-              buttonVariant="outline"
-              buttonSize="sm"
-              buttonHref="/meetingroom"
-              className="shrink-0"
-            />
-            <div className="overflow-y-auto">
-              <ul className="flex flex-col gap-y-2 text-base tracking-tight text-gray-700">
-                {meetingroom.length === 0 ? (
-                  <span className="text-base text-gray-500">등록된 예약이 없습니다.</span>
-                ) : (
-                  meetingroom.map((meetingroom) => (
-                    <li key={`${meetingroom.mr_name}-${meetingroom.stime}-${meetingroom.etime}`} className="flex items-center gap-x-1.5">
-                      <Badge className={getMeetingroomBadgeColor(meetingroom.mr_name)}>
-                        {getMeetingroomKoreanName(meetingroom.mr_name)}
-                      </Badge>
-                      <p className="overflow-hidden text-ellipsis whitespace-nowrap">
-                        {formatTime(meetingroom.stime)} - {formatTime(meetingroom.etime)} {`${meetingroom.title}`}
-                      </p>
-                    </li>
-                  ))
-                )}
-              </ul>
+          {!isMobile && (
+            <div className="row-span-2 flex min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
+              <SectionHeader
+                title="미팅룸"
+                buttonText="전체보기"
+                buttonVariant="outline"
+                buttonSize="sm"
+                buttonHref="/meetingroom"
+                className="shrink-0"
+              />
+              <div className="overflow-y-auto">
+                <ul className="flex flex-col gap-y-2 text-base tracking-tight text-gray-700">
+                  {meetingroom.length === 0 ? (
+                    <span className="text-base text-gray-500">등록된 예약이 없습니다.</span>
+                  ) : (
+                    meetingroom.map((meetingroom) => (
+                      <li key={`${meetingroom.mr_name}-${meetingroom.stime}-${meetingroom.etime}`} className="flex items-center gap-x-1.5">
+                        <Badge className={getMeetingroomBadgeColor(meetingroom.mr_name)}>
+                          {getMeetingroomKoreanName(meetingroom.mr_name)}
+                        </Badge>
+                        <p className="overflow-hidden text-ellipsis whitespace-nowrap">
+                          {formatTime(meetingroom.stime)} - {formatTime(meetingroom.etime)} {`${meetingroom.title}`}
+                        </p>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
             </div>
-          </div>
-          <div className="row-span-2 flex flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
+          )}
+          {!isMobile && (
+            <div className="row-span-2 flex min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
             <SectionHeader
               title="비용 관리"
               buttonText="전체보기"
@@ -345,6 +411,7 @@ export default function Dashboard() {
               </ul>
             </div>
           </div>
+          )}
         </div>
       </section>
 

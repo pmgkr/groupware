@@ -184,18 +184,39 @@ export default function BoardDetail({ id }: BoardDetailProps) {
 
   return (
     <article>
-      <div className="flex justify-between border-b p-4 pr-1">
-        <h2 className="border-gray-900 text-2xl font-bold">{post.title}</h2>
-        <div className="flex items-center">
+      <div className="flex justify-between border-b p-2.5 md:p-4 md:pr-1">
+        <h2 className="truncate border-gray-900 text-xl font-bold md:text-2xl">{post.title}</h2>
+        <div className="hidden md:flex md:items-center">
           <p className="mr-2 w-[30px] text-right text-base">{likeCount}</p>
           <Button variant="svgIcon" size="icon" onClick={handleLike} className="size-5" aria-label="게시글 좋아요">
             {liked ? <HeartFull className="scale-110" /> : <Heart />}
           </Button>
         </div>
+        {user?.user_id === post.user_id && (
+          <div className="shrink-0 text-gray-700 md:hidden">
+            <Button variant="svgIcon" size="icon" onClick={handleEdit} className="hover:text-primary-blue-500" aria-label="수정">
+              <Edit className="size-4" />
+            </Button>
+            <Button
+              variant="svgIcon"
+              size="icon"
+              className="hover:text-primary-blue-500"
+              aria-label="삭제"
+              /* onClick={() => openConfirm('게시글을 삭제하시겠습니까?', handleDelete, '삭제', 'destructive')} */
+              onClick={() =>
+                confirmDelete('게시글', async () => {
+                  await deactivateBoard(Number(routeId));
+                  navigate('/notice');
+                })
+              }>
+              <Delete className="size-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-between border-b border-gray-300">
-        <div className="flex divide-x divide-gray-300 p-4 text-sm leading-tight text-gray-500">
+        <div className="flex divide-x divide-gray-300 px-4 py-2.5 text-[11px] leading-tight text-gray-500 md:p-4 md:text-sm">
           <div className="px-3 pl-0">{post.category}</div>
           <div className="px-3">{post.user_name}</div>
           <div className="px-3">{post?.reg_date?.substring(0, 10) ?? ''}</div>
@@ -203,7 +224,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
         </div>
 
         {user?.user_id === post.user_id && (
-          <div className="text-gray-700">
+          <div className="hidden text-gray-700 md:block">
             <Button variant="svgIcon" size="icon" onClick={handleEdit} className="hover:text-primary-blue-500" aria-label="수정">
               <Edit className="size-4" />
             </Button>
@@ -228,7 +249,7 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       {/* 본문 */}
       <div className="ql-snow">
         <div
-          className="ql-editor border-b border-gray-400 p-4 !py-10 leading-relaxed whitespace-pre-line"
+          className="ql-editor border-b border-gray-400 p-4 !py-10 text-base leading-relaxed whitespace-pre-line max-md:!pt-7 md:text-lg"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
       </div>
@@ -253,61 +274,63 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       )}
 
       {/* 댓글 영역 */}
-      <div className="bg-gray-100 p-7 pr-10">
+      <div className="bg-gray-100 p-4 pr-2 md:p-7 md:pr-10">
         {/* 댓글 작성 */}
-        <div className="mb-5 flex items-start justify-between gap-5">
-          <h2 className="w-[100px] text-base font-bold">댓글</h2>
-          <div className="w-full flex-1">
-            <Textarea
-              size="default"
-              className="w-full"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              /* onKeyDown={(e) => {
+        <div className="mb-5 items-start justify-between gap-5 md:flex">
+          <h2 className="mb-1 w-[100px] text-base md:font-bold">댓글</h2>
+          <div className="flex w-full justify-between gap-2 md:gap-5">
+            <div className="w-full flex-1">
+              <Textarea
+                size="default"
+                className="w-full max-md:h-10 max-md:min-h-10"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                /* onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
                   handleAddComment(Number(postId));
                 }
               }} */
-            />
+              />
+            </div>
+            <Button
+              variant="svgIcon"
+              size="icon"
+              aria-label="댓글 게시"
+              className="h-10 w-10 border border-gray-950 px-3 md:h-[64px] md:w-[64px] md:px-6"
+              onClick={() => handleAddComment(Number(postId))}>
+              <Send className="size-3" />
+            </Button>
           </div>
-          <Button
-            variant="svgIcon"
-            size="icon"
-            aria-label="댓글 게시"
-            className="h-[64px] w-[64px] border border-gray-950 px-6"
-            onClick={() => handleAddComment(Number(postId))}>
-            <Send />
-          </Button>
         </div>
 
         {/* 댓글 목록 */}
         <div className="flex flex-col">
           {comments.map((c) => (
-            <div className="mb-3 flex items-start justify-between gap-5" key={c.bc_seq}>
-              <div className="w-[100px] pt-1.5 text-base text-gray-700">{c.user_name}</div>
-              {/* 댓글 내용 / 수정 */}
-              <div className="flex w-[1200px] justify-start">
+            <div className="mb-3 items-start gap-3 md:flex" key={c.bc_seq}>
+              <div className="w-[60px] shrink-0 pt-1 text-base text-black md:w-[100px] md:text-gray-700">{c.user_name}</div>
+              <div className="flex w-full flex-col items-end md:flex-row md:items-center md:justify-between">
+                {/* 댓글 내용 / 수정 */}
                 {editCommentModeId === c.bc_seq ? (
                   //수정중
-                  <div className="flex w-full flex-1 items-start justify-between text-base">
+                  <div className="w-full text-[13px] md:text-base">
                     <Textarea
-                      size="sm"
-                      className="w-[1212px] flex-1"
+                      className="max-md:h-10 max-md:min-h-10"
                       value={editCommentText[c.bc_seq] ?? ''}
                       onChange={(e) => setEditCommentText((prev) => ({ ...prev, [c.bc_seq]: e.target.value }))}
                     />
                   </div>
                 ) : (
                   //일반 댓글 목록
-                  <div className="flex justify-start">
-                    <p className="max-w-[1050px] pt-1 text-base whitespace-pre-line text-gray-700">{c.comment}</p>
+                  <div className="flex w-full justify-start">
+                    <p className="pt-1 text-[13px] whitespace-pre-line text-gray-700 md:max-w-[1050px] md:text-base">{c.comment}</p>
                     {user?.user_id === c.user_id && (
-                      <div className="pl-6 text-gray-600">
+                      <div className="hidden shrink-0 items-center pl-0 text-gray-600 md:flex md:pl-6">
                         <Button
                           variant="svgIcon"
                           size="icon"
                           aria-label="댓글 수정"
+                          className=""
                           onClick={() => {
                             setEditCommentMode(true);
                             setEditCommentModeId(c.bc_seq);
@@ -320,9 +343,6 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                           variant="svgIcon"
                           size="icon"
                           aria-label="댓글 삭제"
-                          /* onClick={() =>
-                            openConfirm('댓글을 삭제하시겠습니까?', () => handleDeleteComment(c.bc_seq), '삭제', 'destructive')
-                          } */
                           onClick={() =>
                             confirmDelete('댓글', async () => {
                               await removeComment(c.bc_seq);
@@ -336,56 +356,91 @@ export default function BoardDetail({ id }: BoardDetailProps) {
                     )}
                   </div>
                 )}
-              </div>
 
-              {/* 수정모드일때 일시 숨기기 */}
-              {!(editCommentMode && editCommentModeId === c.bc_seq) && (
-                <div className="w-[123px] pt-1.5 text-sm text-gray-600">{formatKST(c.created_at)}</div>
-              )}
-              {/* 수정 모드일 때 "댓글작성으로 돌아가기" 버튼 */}
+                {/* 수정모드일때 일시 숨기기 */}
+                {!(editCommentMode && editCommentModeId === c.bc_seq) && (
+                  <div className="flex w-full shrink-0 items-center pt-1.5 text-sm text-gray-600 md:w-[130px]">
+                    {formatKST(c.created_at)}
 
-              {editCommentModeId === c.bc_seq && (
-                <div className="flex w-[64px]">
-                  {user?.user_id === c.user_id && (
-                    <div className="flex text-gray-600">
-                      {/* 수정완료 버튼 */}
-                      <Button
-                        variant="svgIcon"
-                        size="icon"
-                        aria-label="댓글 수정완료"
-                        onClick={async () => {
-                          try {
-                            const updatedText = editCommentText[c.bc_seq] ?? '';
-                            await editComment(c.bc_seq, { comment: updatedText });
+                    {/* 모바일 댓글 수정 삭제 버튼 */}
+                    {user?.user_id === c.user_id && (
+                      <div className="flex shrink-0 items-center gap-x-4 pl-6 text-gray-600 md:hidden">
+                        <Button
+                          variant="svgIcon"
+                          size="icon"
+                          className="size-3"
+                          aria-label="댓글 수정"
+                          onClick={() => {
+                            setEditCommentMode(true);
+                            setEditCommentModeId(c.bc_seq);
+                            setEditCommentText((prev) => ({ ...prev, [c.bc_seq]: c.comment }));
+                          }}>
+                          <Edit />
+                        </Button>
+
+                        <Button
+                          variant="svgIcon"
+                          size="icon"
+                          className="size-3"
+                          aria-label="댓글 삭제"
+                          onClick={() =>
+                            confirmDelete('댓글', async () => {
+                              await removeComment(c.bc_seq);
+                              const updated = await getComment(Number(postId));
+                              setComments(updated);
+                            })
+                          }>
+                          <Delete />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* 수정 모드일 때 "댓글작성으로 돌아가기" 버튼 */}
+
+                {editCommentModeId === c.bc_seq && (
+                  <div className="ml-5 flex w-[64px]">
+                    {user?.user_id === c.user_id && (
+                      <div className="flex text-gray-600">
+                        {/* 수정완료 버튼 */}
+                        <Button
+                          variant="svgIcon"
+                          size="icon"
+                          aria-label="댓글 수정완료"
+                          onClick={async () => {
+                            try {
+                              const updatedText = editCommentText[c.bc_seq] ?? '';
+                              await editComment(c.bc_seq, { comment: updatedText });
+                              setEditCommentMode(false);
+                              setEditCommentModeId(null);
+                              setEditCommentText((prev) => ({ ...prev, [c.bc_seq]: '' }));
+                              const updated = await getComment(Number(postId));
+                              setComments(updated);
+                            } catch (err) {
+                              console.error('댓글 수정 실패:', err);
+                              alert('댓글 수정 중 오류가 발생했습니다.');
+                            }
+                          }}>
+                          <Check />
+                        </Button>
+
+                        {/* 나가기(수정 취소) 버튼 */}
+                        <Button
+                          variant="svgIcon"
+                          size="icon"
+                          aria-label="수정 취소"
+                          onClick={() => {
                             setEditCommentMode(false);
                             setEditCommentModeId(null);
-                            setEditCommentText((prev) => ({ ...prev, [c.bc_seq]: '' }));
-                            const updated = await getComment(Number(postId));
-                            setComments(updated);
-                          } catch (err) {
-                            console.error('댓글 수정 실패:', err);
-                            alert('댓글 수정 중 오류가 발생했습니다.');
-                          }
-                        }}>
-                        <Check />
-                      </Button>
-
-                      {/* 나가기(수정 취소) 버튼 */}
-                      <Button
-                        variant="svgIcon"
-                        size="icon"
-                        aria-label="수정 취소"
-                        onClick={() => {
-                          setEditCommentMode(false);
-                          setEditCommentModeId(null);
-                          setNewComment('');
-                        }}>
-                        <CircleX />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
+                            setNewComment('');
+                          }}>
+                          <CircleX />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
           {/* 공통 다이얼로그 */}
@@ -401,7 +456,9 @@ export default function BoardDetail({ id }: BoardDetailProps) {
       </div>
 
       <div className="mt-3 text-right">
-        <Button onClick={() => navigate('..')}>목록</Button>
+        <Button variant="outline" size="sm" onClick={() => navigate('..')}>
+          목록
+        </Button>
       </div>
     </article>
   );

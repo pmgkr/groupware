@@ -81,12 +81,12 @@ export default function ProposalAttachFiles({ mode, files = [], onAddFiles, onRe
 
       {/* ================= view UI  ================= */}
       {mode === 'view' && viewFiles.length > 0 && (
-        <div className="flex w-full gap-1.5 border-b border-gray-300 bg-gray-50 p-4 pt-0">
+        <div className="flex w-full gap-1.5 border-b border-gray-300 bg-gray-50 p-4 pt-0 max-md:flex-wrap max-md:px-0">
           {viewFiles.map((file, index) => (
             <Button
               key={`${file.url}-${index}`}
               variant="secondary"
-              className="hover:bg-primary-blue-100 hover:text-primary-blue-500 mr-2text-sm [&]:border-gray-300 [&]:p-4"
+              className="hover:bg-primary-blue-100 hover:text-primary-blue-500 mr-2 text-sm [&]:border-gray-300 [&]:p-4"
               onClick={() => handleDownload(file.url, file.name)}>
               <div className="flex items-center gap-2">
                 <span className="font-normal">{file.name}</span>

@@ -21,6 +21,9 @@ interface ExpenseListFilterProps {
   proofStatusRef: React.RefObject<MultiSelectRef | null>;
 
   typeOptions: MultiSelectOption[];
+  statusOptions: MultiSelectOption[];
+  proofMethod: MultiSelectOption[];
+  proofStatusOptions: MultiSelectOption[];
 
   onYearChange: (val: string) => void;
   onTypeChange: (val: string[]) => void;
@@ -28,7 +31,7 @@ interface ExpenseListFilterProps {
   onProofChange: (val: string[]) => void;
   onProofStatusChange: (val: string[]) => void;
 
-  onRefresh: () => void;
+  onReset: () => void;
 }
 
 export function ExpenseMineFilter({
@@ -47,6 +50,9 @@ export function ExpenseMineFilter({
   proofStatusRef,
 
   typeOptions,
+  statusOptions,
+  proofMethod,
+  proofStatusOptions,
 
   onYearChange,
   onTypeChange,
@@ -54,32 +60,8 @@ export function ExpenseMineFilter({
   onProofChange,
   onProofStatusChange,
 
-  onRefresh,
+  onReset,
 }: ExpenseListFilterProps) {
-  // 필터 옵션 정의
-  const statusOptions: MultiSelectOption[] = [
-    { label: '임시저장', value: 'Saved' },
-    { label: '승인대기', value: 'Claimed' },
-    { label: '승인완료', value: 'Confirmed' },
-    { label: '지급대기', value: 'Approved' },
-    { label: '지급완료', value: 'Completed' },
-    { label: '반려됨', value: 'Rejected' },
-  ];
-
-  const proofMethod: MultiSelectOption[] = [
-    { label: 'PMG', value: 'PMG' },
-    { label: 'MCS', value: 'MCS' },
-    { label: '개인카드', value: '개인카드' },
-    { label: '세금계산서', value: '세금계산서' },
-    { label: '현금영수증', value: '현금영수증' },
-    { label: '기타', value: '기타' },
-  ];
-
-  const proofStatusOptions: MultiSelectOption[] = [
-    { label: '제출', value: 'Y' },
-    { label: '미제출', value: 'N' },
-  ];
-
   return (
     <div className="mb-4 flex items-center justify-between">
       <div className="flex items-center">
@@ -191,7 +173,7 @@ export function ExpenseMineFilter({
             type="button"
             variant="svgIcon"
             size="icon"
-            onClick={onRefresh}
+            onClick={onReset}
             className="hover:text-primary-blue-500 size-6 text-gray-600 hover:rotate-45">
             <RefreshCw />
           </Button>

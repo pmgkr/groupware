@@ -96,8 +96,8 @@ export function LoginForm() {
             control={form.control}
             name="user_id"
             render={({ field }) => (
-              <FormItem className="relative mb-2 pb-6">
-                <FormLabel className="text-xl font-semibold data-[error=true]:text-gray-900">Email</FormLabel>
+              <FormItem className="relative pb-6 md:mb-2">
+                <FormLabel className="text-xl font-semibold data-[error=true]:text-gray-900 max-md:text-base">Email</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -105,7 +105,7 @@ export function LoginForm() {
                     inputMode="email"
                     autoComplete="email"
                     placeholder="이메일을 입력해 주세요"
-                    className="h-12"
+                    className="h-12 max-md:h-11"
                     onChange={(e) => {
                       form.clearErrors('root');
                       field.onChange(e);
@@ -121,14 +121,14 @@ export function LoginForm() {
             name="user_pw"
             render={({ field }) => (
               <FormItem className="relative pb-6">
-                <FormLabel className="text-xl font-semibold data-[error=true]:text-gray-900">Password</FormLabel>
+                <FormLabel className="text-xl font-semibold data-[error=true]:text-gray-900 max-md:text-base">Password</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     type="password"
                     autoComplete="current-password"
                     placeholder="비밀번호를 입력해 주세요"
-                    className="h-12"
+                    className="h-12 max-md:h-11"
                     onChange={(e) => {
                       form.clearErrors('root');
                       field.onChange(e);
@@ -141,7 +141,7 @@ export function LoginForm() {
             )}
           />
 
-          <div className="mt-4 mb-6 flex items-center justify-between">
+          <div className="mb-6 flex items-center justify-between md:mt-4">
             <FormField
               control={form.control}
               name="remember"
@@ -156,21 +156,21 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
-            <Link to="/forgot" className="text-primary-blue-500 text-sm font-medium hover:underline">
+            {/* <Link to="/forgot" className="text-primary-blue-500 text-sm font-medium hover:underline">
               비밀번호를 잊으셨나요?
-            </Link>
+            </Link> */}
           </div>
 
-          <Button type="submit" size="full">
+          <Button type="submit" size="full" className="max-md:h-11.5">
             로그인
           </Button>
         </form>
       </Form>
       <div>
-        <div className="mb-8 flex items-center justify-between gap-x-2 text-xl text-gray-400 before:h-[1px] before:flex-1 before:bg-gray-400 after:h-[1px] after:flex-1 after:bg-gray-400">
+        <div className="mb-4 flex items-center justify-between gap-x-2 text-xl text-gray-400 before:h-[1px] before:flex-1 before:bg-gray-400 after:h-[1px] after:flex-1 after:bg-gray-400 md:mb-8">
           OR
         </div>
-        <Button variant="outlinePrimary" size="full">
+        <Button variant="outlinePrimary" size="full" className="max-md:h-11.5">
           Microsoft 로그인
         </Button>
       </div>

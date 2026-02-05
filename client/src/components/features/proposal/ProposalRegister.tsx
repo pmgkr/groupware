@@ -241,13 +241,13 @@ export default function ProposalRegister() {
         <div className="mt-6 mb-4 overflow-hidden">
           <TableColumn className="[&_div]:text-[13px] [&_input]:text-[13px]">
             {/* 카테고리 */}
-            <TableColumnHeader className="w-[14%]">
-              <TableColumnHeaderCell>카테고리</TableColumnHeaderCell>
+            <TableColumnHeader className="w-[14%] max-md:w-[25%]">
+              <TableColumnHeaderCell className="max-md:p-2.5">카테고리</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>
               <TableColumnCell>
                 {isProject ? (
-                  <div className="px-0 py-1 text-[13px]!">프로젝트</div>
+                  <div className="text-[13px]! max-md:h-[20px] md:px-0 md:py-1">프로젝트</div>
                 ) : (
                   <FormField
                     control={form.control}
@@ -259,7 +259,7 @@ export default function ProposalRegister() {
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <SelectTrigger
                             size="sm"
-                            className={`h-full! w-full border-0 p-0 text-[13px]! shadow-none ${error ? 'text-red-500!' : ''}`}>
+                            className={`h-full! w-full border-0 p-0 text-[13px]! shadow-none max-md:h-[20px] ${error ? 'text-red-500!' : ''}`}>
                             <SelectValue placeholder={error ? error.toString() : '선택'} />
                           </SelectTrigger>
                           <SelectContent>
@@ -276,10 +276,10 @@ export default function ProposalRegister() {
             </TableColumnBody>
 
             {/* 금액 */}
-            <TableColumnHeader className="w-[14%]">
+            <TableColumnHeader className="w-[14%] max-md:hidden">
               <TableColumnHeaderCell>금액</TableColumnHeaderCell>
             </TableColumnHeader>
-            <TableColumnBody>
+            <TableColumnBody className="max-md:hidden">
               <TableColumnCell>
                 <FormField
                   control={form.control}
@@ -309,10 +309,45 @@ export default function ProposalRegister() {
             </TableColumnBody>
           </TableColumn>
 
+          {/* 모바일 금액 */}
+          <TableColumn className="border-t-0 md:hidden">
+            <TableColumnHeader className="w-[25%]">
+              <TableColumnHeaderCell className="max-md:p-2.5">금액</TableColumnHeaderCell>
+            </TableColumnHeader>
+            <TableColumnBody>
+              <TableColumnCell>
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => {
+                    const error = form.formState.errors.price?.message;
+
+                    return (
+                      <Input
+                        placeholder={error ? error.toString() : '0'}
+                        className={`h-[20px]! w-full border-0 p-0 text-[13px] shadow-none ${
+                          error ? 'placeholder-red-500!' : ''
+                        } placeholder:text-[13px]!`}
+                        inputMode="numeric"
+                        value={formattedPrice}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/,/g, '');
+                          if (!/^\d*$/.test(raw)) return;
+                          field.onChange(raw);
+                          setFormattedPrice(raw ? formatAmount(raw) : '');
+                        }}
+                      />
+                    );
+                  }}
+                />
+              </TableColumnCell>
+            </TableColumnBody>
+          </TableColumn>
+
           {/* 제목 */}
           <TableColumn className="border-t-0 [&_div]:text-[13px] [&_input]:text-[13px]">
-            <TableColumnHeader className="w-[14%]">
-              <TableColumnHeaderCell>제목</TableColumnHeaderCell>
+            <TableColumnHeader className="w-[14%] max-md:w-[25%]">
+              <TableColumnHeaderCell className="max-md:p-2.5">제목</TableColumnHeaderCell>
             </TableColumnHeader>
             <TableColumnBody>
               <TableColumnCell>
@@ -326,7 +361,7 @@ export default function ProposalRegister() {
                       <Input
                         {...field}
                         placeholder={error ? error.toString() : '제목을 입력하세요'}
-                        className={`h-full w-full border-0 p-0 text-[13px] shadow-none ${
+                        className={`h-full w-full border-0 p-0 text-[13px] shadow-none max-md:h-[20px] ${
                           error ? 'placeholder-red-500!' : ''
                         } placeholder:text-[13px]!`}
                       />
@@ -343,7 +378,7 @@ export default function ProposalRegister() {
           control={form.control}
           name="content"
           render={({ field }) => (
-            <FormItem className="h-[56vh]">
+            <FormItem className="h-[58vh] max-md:h-[40vh]">
               <FormControl>
                 <ReactQuillEditor value={field.value} onChange={field.onChange} />
               </FormControl>
@@ -353,7 +388,7 @@ export default function ProposalRegister() {
         />
 
         {/* ================= 하단 ================= */}
-        <div className="flex items-center justify-between">
+        <div className="mt-20 flex items-center justify-between md:mt-5">
           <div className="flex items-center gap-x-2">
             <ProposalAttachFiles mode="upload" files={files} onAddFiles={handleAddFiles} onRemove={handleRemoveFile} />
 

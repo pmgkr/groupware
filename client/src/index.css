@@ -144,16 +144,16 @@
 
   --spacing: 0.25rem;
 
-  --breakpoint-sm: calc(40rem + 1px);
-  /* 640px */
-  --breakpoint-md: calc(48rem + 1px);
-  /* 768px */
-  --breakpoint-lg: calc(64rem + 1px);
-  /* 1024px */
-  --breakpoint-xl: calc(80rem + 1px);
-  /* 1280px */
   --breakpoint-2xl: calc(90rem + 1px);
   /* 1440px */
+  --breakpoint-xl: calc(80rem + 1px);
+  /* 1280px */
+  --breakpoint-lg: calc(64rem + 1px);
+  /* 1024px */
+  --breakpoint-md: calc(48rem + 1px);
+  /* 768px */
+  --breakpoint-sm: calc(40rem + 1px);
+  /* 640px */
 
   --container-3xs: 16rem;
   /* 256px */

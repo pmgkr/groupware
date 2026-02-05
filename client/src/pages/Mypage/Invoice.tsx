@@ -10,6 +10,7 @@ import {
 } from '@/api/mypage/invoice';
 import { InvoicePreviewDialog } from '@components/features/Project/_components/InvoiceDetail';
 import { formatDate, formatAmount } from '@/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ export function mapInvoiceDetail(raw: any): InvoiceDetailDTO {
 }
 
 export default function ProjectInvoice() {
+  const isMobile = useIsMobileViewport();
   const navigate = useNavigate();
   const { projectId } = useParams();
 
@@ -135,102 +137,181 @@ export default function ProjectInvoice() {
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between">
-        {/* 상단 좌측 필터 */}
-        <div className="flex items-center gap-x-2">
-          <MultiSelect
-            size="sm"
-            ref={statusRef}
-            className="max-w-[80px] min-w-auto!"
-            maxCount={0}
-            autoSize={true}
-            placeholder="상태 선택"
-            options={statusOptions}
-            onValueChange={(v) => handleFilterChange(setSelectedStatus, v)}
-            simpleSelect={true}
-            hideSelectAll={true}
-          />
-        </div>
-
-        <div className="flex gap-x-2">
-          <div className="relative">
-            <Input
-              className="max-w-42 pr-6"
+      {isMobile ? (
+        <>
+          <div className="mb-4 flex items-center gap-x-2">
+            <MultiSelect
               size="sm"
-              placeholder="검색어 입력"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setSearchQuery(searchInput);
-                }
-              }}
+              ref={statusRef}
+              className="max-w-[84px]! transition-none"
+              maxCount={0}
+              autoSize={true}
+              placeholder="상태 선택"
+              options={statusOptions}
+              onValueChange={(v) => handleFilterChange(setSelectedStatus, v)}
+              searchable={false}
+              simpleSelect={true}
+              hideSelectAll={true}
             />
-            {searchInput && (
-              <Button
-                type="button"
-                variant="svgIcon"
-                className="absolute top-0 right-0 h-full w-6 px-0 text-gray-500"
-                onClick={resetAllFilters}>
-                <X className="size-3.5" />
-              </Button>
+
+            <div className="relative flex-1">
+              <Input
+                size="sm"
+                className="w-full pr-6"
+                placeholder="검색어 입력"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setSearchQuery(searchInput);
+                  }
+                }}
+              />
+              {searchInput && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="svgIcon"
+                  className="absolute top-0 right-0 h-full w-6 px-0 text-gray-500"
+                  onClick={resetAllFilters}>
+                  <X className="size-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {invoiceList.length ? (
+              invoiceList.map((item, idx) => (
+                <div className="rounded-md border border-gray-300 bg-white px-4 py-2">
+                  <div className="mb-1 flex justify-between border-b border-gray-300 pb-1">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <span>#{item.invoice_id}</span>
+                    </div>
+                    {statusMap[item.invoice_status as keyof typeof statusMap]}
+                  </div>
+                  <div className="" onClick={() => handleDetailOpen(item.seq)}>
+                    <div className="my-2 flex items-center gap-2 overflow-hidden text-lg tracking-tight">
+                      <p className="flex-1 truncate">{item.invoice_title}</p>
+                      <strong className="shrink-0 font-medium">{formatAmount(item.invoice_total)}원</strong>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between text-sm text-gray-500">
+                      <div className="flex gap-2">
+                        <span className="relative pr-2 after:absolute after:top-1/2 after:left-full after:h-3 after:w-px after:-translate-y-1/2 after:bg-gray-300 after:content-['']">
+                          공급가액 {formatAmount(item.invoice_amount)}
+                        </span>
+                        <span>세금 {formatAmount(item.invoice_tax)}</span>
+                      </div>
+                      <p className="shrink-0">{item.user_nm}</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="py-50 text-center text-base text-gray-500">등록된 인보이스가 없습니다.</p>
             )}
           </div>
-        </div>
-      </div>
-      <Table variant="primary" align="center" className="table-fixed">
-        <TableHeader>
-          <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[7%]">프로젝트 #</TableHead>
-            <TableHead className="w-[7%]">인보이스 #</TableHead>
-            <TableHead className="px-4!">인보이스 제목</TableHead>
-            <TableHead className="w-[10%]">인보이스 수신</TableHead>
-            <TableHead className="w-[8%]">공급가액</TableHead>
-            <TableHead className="w-[8%]">세금</TableHead>
-            <TableHead className="w-[9%]">합계</TableHead>
-            <TableHead className="w-[7%]">작성자</TableHead>
-            <TableHead className="w-[6%]">상태</TableHead>
-            <TableHead className="w-[8%]">작성일</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {invoiceList.length ? (
-            invoiceList.map((item, idx) => (
-              <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]" key={item.seq}>
-                <TableCell className="whitespace-nowrap">
-                  <Link to={`/project/${item.project_id}`} className="rounded-[4px] border-1 bg-white p-1 text-sm">
-                    {item.project_id}
-                  </Link>
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <button
+        </>
+      ) : (
+        <>
+          <div className="mb-4 flex items-center justify-between">
+            {/* 상단 좌측 필터 */}
+            <div className="flex items-center gap-x-2">
+              <MultiSelect
+                size="sm"
+                ref={statusRef}
+                className="max-w-[80px] min-w-auto! transition-none"
+                maxCount={0}
+                autoSize={true}
+                placeholder="상태 선택"
+                options={statusOptions}
+                onValueChange={(v) => handleFilterChange(setSelectedStatus, v)}
+                simpleSelect={true}
+                hideSelectAll={true}
+              />
+            </div>
+
+            <div className="flex gap-x-2">
+              <div className="relative">
+                <Input
+                  className="max-w-42 pr-6"
+                  size="sm"
+                  placeholder="검색어 입력"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setSearchQuery(searchInput);
+                    }
+                  }}
+                />
+                {searchInput && (
+                  <Button
                     type="button"
-                    className="cursor-pointer rounded-[4px] border bg-white px-2 py-1 text-sm leading-[1.3]"
-                    onClick={() => handleDetailOpen(item.seq)}>
-                    {item.invoice_id}
-                  </button>
-                </TableCell>
-                <TableCell className="cursor-pointer px-4! text-left hover:underline" onClick={() => handleDetailOpen(item.seq)}>
-                  {item.invoice_title}
-                </TableCell>
-                <TableCell>{item.client_nm}</TableCell>
-                <TableCell className="text-right">{formatAmount(item.invoice_amount)}</TableCell>
-                <TableCell className="text-right">{formatAmount(item.invoice_tax)}</TableCell>
-                <TableCell className="text-right">{formatAmount(item.invoice_total)}</TableCell>
-                <TableCell className="px-4!">{item.user_nm}</TableCell>
-                <TableCell>{statusMap[item.invoice_status as keyof typeof statusMap]}</TableCell>
-                <TableCell>{formatDate(item.wdate)}</TableCell>
+                    variant="svgIcon"
+                    className="absolute top-0 right-0 h-full w-6 px-0 text-gray-500"
+                    onClick={resetAllFilters}>
+                    <X className="size-3.5" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+          <Table variant="primary" align="center" className="table-fixed">
+            <TableHeader>
+              <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
+                <TableHead className="w-[7%]">프로젝트 #</TableHead>
+                <TableHead className="w-[7%]">인보이스 #</TableHead>
+                <TableHead className="px-4!">인보이스 제목</TableHead>
+                <TableHead className="w-[10%]">인보이스 수신</TableHead>
+                <TableHead className="w-[8%]">공급가액</TableHead>
+                <TableHead className="w-[8%]">세금</TableHead>
+                <TableHead className="w-[9%]">합계</TableHead>
+                <TableHead className="w-[7%]">작성자</TableHead>
+                <TableHead className="w-[6%]">상태</TableHead>
+                <TableHead className="w-[8%]">작성일</TableHead>
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={8} className="py-50 text-center text-gray-500">
-                등록된 인보이스가 없습니다.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            </TableHeader>
+            <TableBody>
+              {invoiceList.length ? (
+                invoiceList.map((item, idx) => (
+                  <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]" key={item.seq}>
+                    <TableCell className="whitespace-nowrap">
+                      <Link to={`/project/${item.project_id}`} className="rounded-[4px] border-1 bg-white p-1 text-sm">
+                        {item.project_id}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <button
+                        type="button"
+                        className="cursor-pointer rounded-[4px] border bg-white px-2 py-1 text-sm leading-[1.3]"
+                        onClick={() => handleDetailOpen(item.seq)}>
+                        {item.invoice_id}
+                      </button>
+                    </TableCell>
+                    <TableCell className="cursor-pointer px-4! text-left hover:underline" onClick={() => handleDetailOpen(item.seq)}>
+                      {item.invoice_title}
+                    </TableCell>
+                    <TableCell>{item.client_nm}</TableCell>
+                    <TableCell className="text-right">{formatAmount(item.invoice_amount)}</TableCell>
+                    <TableCell className="text-right">{formatAmount(item.invoice_tax)}</TableCell>
+                    <TableCell className="text-right">{formatAmount(item.invoice_total)}</TableCell>
+                    <TableCell className="px-4!">{item.user_nm}</TableCell>
+                    <TableCell>{statusMap[item.invoice_status as keyof typeof statusMap]}</TableCell>
+                    <TableCell>{formatDate(item.wdate)}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-50 text-center text-gray-500">
+                    등록된 인보이스가 없습니다.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </>
+      )}
 
       {/* ---------------- 페이지네이션 ---------------- */}
       {invoiceList.length !== 0 && (

@@ -166,7 +166,7 @@ export default function ManagerWorking() {
   };
 
   return (
-    <div className="mb-5">
+    <div className="mb-5 max-md:mb-[-20px]">
       <Toolbar 
         currentDate={currentDate} 
         onDateChange={handleDateChange} 

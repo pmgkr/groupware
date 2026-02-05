@@ -11,8 +11,11 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { getBookList, registerBook, type Book, type BookRegisterPayload } from '@/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatKST } from '@/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
+import BookListCard from './BookListCard';
 
 export default function BookList() {
+  const isMobile = useIsMobileViewport();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [total, setTotal] = useState(0);
@@ -146,12 +149,12 @@ export default function BookList() {
 
   const Administrator = 'admin';
   return (
-    <div className="relative">
+    <div className="relative max-md:mt-2">
       {/* 검색창 */}
-      <div className="absolute -top-11 right-0 flex justify-end gap-3">
+      <div className="absolute -top-11 right-0 flex justify-end gap-3 max-md:relative max-md:top-0">
         <div className="relative mb-4 w-[175px]">
           <Input
-            className="h-[32px] px-4 [&]:bg-white"
+            className="h-[32px]! px-4 max-md:placeholder:text-sm [&]:bg-white"
             placeholder="검색어 입력"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -177,16 +180,18 @@ export default function BookList() {
             <DialogTrigger asChild>
               <Button size="sm">도서 등록</Button>
             </DialogTrigger>
-            <DialogContent className="p-7">
+            <DialogContent className="rounded-lg p-7 max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)]">
               <DialogHeader>
                 <DialogTitle className="mb-3">도서 등록</DialogTitle>
               </DialogHeader>
               <BookForm form={form} onChange={handleChange} mode="create"></BookForm>
-              <DialogFooter className="mt-5">
-                <Button variant="outline" onClick={() => setOpen(false)}>
+              <DialogFooter className="mt-5 max-md:flex-row max-md:gap-x-3">
+                <Button variant="outline" onClick={() => setOpen(false)} className="max-md:flex-1">
                   취소
                 </Button>
-                <Button onClick={handleRegisterClick}>완료</Button>
+                <Button onClick={handleRegisterClick} className="max-md:flex-1">
+                  완료
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -194,44 +199,49 @@ export default function BookList() {
       </div>
 
       {/* 게시판 테이블 */}
-      <Table className="table-fixed">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[8%]">번호</TableHead>
-            <TableHead className="w-[12%]">카테고리</TableHead>
-            <TableHead className="">도서명</TableHead>
-            <TableHead className="w-[12%]">저자</TableHead>
-            <TableHead className="w-[12%]">출판사</TableHead>
-            <TableHead className="w-[8%]">팀</TableHead>
-            <TableHead className="w-[8%]">신청자</TableHead>
-            <TableHead className="w-[12%]">날짜</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody className="text-[13px]">
-          {posts.length > 0 ? (
-            posts.map((post, index) => {
-              return (
-                <TableRow key={post.id}>
-                  <TableCell>{total - startNo - index}</TableCell>
-                  <TableCell className="max-w-[130px] truncate">{post.category}</TableCell>
-                  <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
-                  <TableCell className="max-w-[150px] truncate">{post.publish}</TableCell>
-                  <TableCell className="max-w-[130px] truncate">{post.team_name}</TableCell>
-                  <TableCell>{post.user_name}</TableCell>
-                  <TableCell>{formatKST(post.purchaseAt, true)}</TableCell>
-                </TableRow>
-              );
-            })
-          ) : (
+      {isMobile ? (
+        <BookListCard posts={posts} total={total} startNo={startNo} searchQuery={searchQuery} />
+      ) : (
+        <Table className="table-fixed">
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={10} className="h-100 py-10 text-center text-gray-500">
-                {searchQuery ? `‘${searchQuery}’에 대한 검색 결과가 없습니다.` : '등록된 도서가 없습니다.'}
-              </TableCell>
+              <TableHead className="w-[8%]">번호</TableHead>
+              <TableHead className="w-[12%]">카테고리</TableHead>
+              <TableHead className="">도서명</TableHead>
+              <TableHead className="w-[12%]">저자</TableHead>
+              <TableHead className="w-[12%]">출판사</TableHead>
+              <TableHead className="w-[8%]">팀</TableHead>
+              <TableHead className="w-[8%]">신청자</TableHead>
+              <TableHead className="w-[12%]">날짜</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody className="text-[13px]">
+            {posts.length > 0 ? (
+              posts.map((post, index) => {
+                return (
+                  <TableRow key={post.id}>
+                    <TableCell>{total - startNo - index}</TableCell>
+                    <TableCell className="max-w-[130px] truncate">{post.category}</TableCell>
+                    <TableCell className="max-w-[400px] truncate">{post.title}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">{post.author}</TableCell>
+                    <TableCell className="max-w-[150px] truncate">{post.publish}</TableCell>
+                    <TableCell className="max-w-[130px] truncate">{post.team_name}</TableCell>
+                    <TableCell>{post.user_name}</TableCell>
+                    <TableCell>{formatKST(post.purchaseAt, true)}</TableCell>
+                  </TableRow>
+                );
+              })
+            ) : (
+              <TableRow>
+                <TableCell colSpan={10} className="h-100 py-10 text-center text-gray-500">
+                  {searchQuery ? `‘${searchQuery}’에 대한 검색 결과가 없습니다.` : '등록된 도서가 없습니다.'}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      )}
+
       {/* 공통 다이얼로그 */}
       <ConfirmDialog
         open={confirmState.open}

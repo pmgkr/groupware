@@ -217,19 +217,19 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
                   <TableHeader>
                     <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
                       <TableHead className="w-[8%] text-center p-0">부서</TableHead>
-                      <TableHead className="w-[10%]">이름</TableHead>
-                      <TableHead className="w-[15%]">근무유형</TableHead>
-                      <TableHead className="w-[13%]">출근시간</TableHead>
-                      <TableHead className="w-[13%]">퇴근시간</TableHead>
-                      <TableHead className="w-[13%]">총 근무시간</TableHead>
+                      <TableHead className="w-[10%] max-md:px-1">이름</TableHead>
+                      <TableHead className="w-[15%] max-md:px-1">근무유형</TableHead>
+                      <TableHead className="w-[13%] max-md:px-1">출근시간</TableHead>
+                      <TableHead className="w-[13%] max-md:px-1">퇴근시간</TableHead>
+                      <TableHead className="w-[13%] max-md:hidden max-md:p-0">총 근무시간</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {latecomers.map((latecomer) => (
                       <TableRow key={`${latecomer.userId}-${date}`} className="[&_td]:text-[13px]">
                         <TableCell className="text-center p-0">{latecomer.department}</TableCell>
-                        <TableCell>{latecomer.userName}</TableCell>
-                        <TableCell>
+                        <TableCell className="max-md:px-1">{latecomer.userName}</TableCell>
+                        <TableCell className="max-md:px-1">
                           {(() => {
                             const hasMultipleWorkTypes = latecomer.workTypes && latecomer.workTypes.length > 1;
                             const latestWorkType = hasMultipleWorkTypes ? latecomer.workTypes![0].type : null;
@@ -265,13 +265,13 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
                             );
                           })()}
                         </TableCell>
-                        <TableCell className="text-red-600">
+                        <TableCell className="text-red-600 max-md:px-1">
                           {latecomer.checkInTime}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="max-md:px-1">
                           {latecomer.checkOutTime || '-'}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="max-md:hidden">
                           {latecomer.totalTime || '-'}
                         </TableCell>
                       </TableRow>

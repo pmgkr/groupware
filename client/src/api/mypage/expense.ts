@@ -12,7 +12,7 @@ export interface ExpenseListParams {
   type?: string;
   status?: string;
   method?: string;
-  q?: string;
+  attach?: string;
 }
 
 interface BaseExpenseListResponse {

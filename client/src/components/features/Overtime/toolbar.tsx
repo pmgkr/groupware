@@ -6,6 +6,18 @@ import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams, type MyTeamItem } from '@/api/manager/teams';
 import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getGrowingYears } from '@/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/components/ui/drawer';
+import { ListFilter, RefreshCw } from 'lucide-react';
 
 // 셀렉트 옵션 타입 정의
 export interface SelectOption {
@@ -43,6 +55,7 @@ export default function OvertimeToolbar({
   maxCount = 0
 }: OvertimeToolbarProps) {
   const { user } = useAuth();
+  const isMobile = useIsMobileViewport();
   
   // 팀 관련 state
   const [teams, setTeams] = useState<MyTeamItem[]>([]);
@@ -216,152 +229,336 @@ export default function OvertimeToolbar({
     }
   }, [activeTab, page]);
 
+  // 필터 초기화 함수
+  const handleReset = () => {
+    const defaultFilters: OvertimeFilters = {
+      year: new Date().getFullYear().toString(),
+      status: page === 'admin' && activeTab === 'weekend' ? ['approved'] : (page === 'admin' ? [] : ['pending']),
+      mealAllowance: [],
+      transportAllowance: [],
+      compensation: []
+    };
+    setFilters(defaultFilters);
+    setSelectedTeams([]);
+    onFilterChange(defaultFilters);
+    onTeamSelect([]);
+  };
+
   return (
     <div className="w-full flex items-center justify-between mb-5">
-      <div className="flex items-center">
-        {/* 탭 버튼 */}
-        <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
-          <Button
-            onClick={() => onTabChange('weekday')}
-            className={`h-8 w-22 rounded-sm p-0 text-sm ${
-              activeTab === 'weekday'
-                ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-            }`}>
-            평일 연장근무
-          </Button>
-          <Button
-            onClick={() => onTabChange('weekend')}
-            className={`h-8 w-18 rounded-sm p-0 text-sm ${
-              activeTab === 'weekend'
-                ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-            }`}>
-            휴일 근무
-          </Button>
-        </div>
-
-        {/* 필터 셀렉트들 */}
-        <div className="flex items-center gap-2 before:mx-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
-          
-          {/* 연도 단일 선택 */}
-          <Select value={filters.year} onValueChange={(v) => handleSelectChange('year', v)}>
-              <SelectTrigger size="sm" className="px-2">
-                <SelectValue placeholder="연도 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {yearOptions.map((y) => (
-                    <SelectItem size="sm" key={y} value={y}>
-                      {y}년
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          
-          {/* 팀 선택 */}
-          <MultiSelect
-            simpleSelect={true}
-            options={teamOptions}
-            onValueChange={(value) => handleSelectChange('teams', value)}
-            defaultValue={selectedTeams}
-            placeholder="팀 선택"
-            size="sm"
-            maxCount={0}
-            searchable={true}
-            hideSelectAll={false}
-            autoSize={true}
-            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
-          />
-
-          {/* 상태 선택 */}
-          <MultiSelect
-            simpleSelect={true}
-            options={statusOptions}
-            onValueChange={(value) => handleSelectChange('status', value)}
-            defaultValue={filters.status}
-            placeholder="상태"
-            size="sm"
-            maxCount={0}
-            searchable={false}
-            hideSelectAll={false}
-            autoSize={true}
-            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
-          />
-
-          {activeTab === 'weekday' && (
-            <>
-            {/* 식대 선택 */}
-            <MultiSelect
-              simpleSelect={true}
-              options={[
-                { value: 'used', label: '사용' },
-                { value: 'notUsed', label: '미사용' },
-              ]}
-              onValueChange={(value) => handleSelectChange('mealAllowance', value)}
-              defaultValue={filters.mealAllowance}
-              placeholder="식대"
-              size="sm"
-              maxCount={0}
-              searchable={false}
-              hideSelectAll={false}
-              autoSize={true}
-              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
-            />
-
-            {/* 교통비 선택 */}
-            <MultiSelect
-              simpleSelect={true}
-              options={[
-                { value: 'used', label: '사용' },
-                { value: 'notUsed', label: '미사용' },
-              ]}
-              onValueChange={(value) => handleSelectChange('transportAllowance', value)}
-              defaultValue={filters.transportAllowance}
-              placeholder="교통비"
-              size="sm"
-              maxCount={0}
-              searchable={false}
-              hideSelectAll={false}
-              autoSize={true}
-              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
-            />
-            </>
-          )}
-
-          {activeTab === 'weekend' && (
-            <>
-            {/* 보상 선택 */}
-            <MultiSelect
-              simpleSelect={true}
-              options={[
-                { value: 'special', label: '특별대휴' },
-                { value: 'compensatory', label: '보상휴가' },
-                { value: 'allowance', label: '수당지급' },
-              ]}
-              onValueChange={(value) => handleSelectChange('compensation', value)}
-              defaultValue={filters.compensation}
-              placeholder="보상"
-              size="sm"
-              maxCount={0}
-              searchable={false}
-              hideSelectAll={false}
-              autoSize={true}
-              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
-            />
-          </>
-          )}
-
-        </div>
-      </div>
       
-      {!(page === 'admin' && activeTab === 'weekday') && (
-        <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>
-          {page === 'admin' && activeTab === 'weekend' ? '보상 지급하기' : '승인하기'}
-        </Button>
-      )}
+        <div className="flex max-md:flex-wrap! max-md:w-full max-md:gap-2">
+          {/* 탭 버튼 */}
+          <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5 max-md:w-full!">
+            <Button
+              onClick={() => onTabChange('weekday')}
+              className={`h-8 w-22 rounded-sm p-0 text-sm max-md:flex-1 ${
+                activeTab === 'weekday'
+                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+              }`}>
+              평일 연장근무
+            </Button>
+            <Button
+              onClick={() => onTabChange('weekend')}
+              className={`h-8 w-18 rounded-sm p-0 text-sm max-md:flex-1 ${
+                activeTab === 'weekend'
+                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+              }`}>
+              휴일 근무
+            </Button>
+          </div>
+          {isMobile ? (
+            <>
+            {/* 필터 버튼 및 승인 버튼 */}
+            <div className="flex w-full items-center justify-between">
+              <Drawer direction="bottom">
+                <DrawerTrigger asChild>
+                  <Button size="sm" variant="ghost" className="has-[>svg]:px-0 text-gray-500">
+                    <ListFilter className="size-4" /> 필터
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent className="pointer-events-auto">
+                  <DrawerHeader>
+                    <div className="flex justify-between">
+                      <DrawerTitle className="text-left">상세 필터</DrawerTitle>
+                      <Button type="button" variant="ghost" size="xs" className="hover:text-primary-blue-500 text-gray-600" onClick={handleReset}>
+                        <RefreshCw className="size-4" /> 초기화
+                      </Button>
+                    </div>
+                  </DrawerHeader>
+                  <div className="flex flex-col gap-y-2 px-4 pb-8">
+
+                    <div className="flex gap-x-2 w-full">
+                      {/* 연도 단일 선택 */}
+                      <div className="w-1/2">
+                        <FilterTitle label="연도 선택" />
+                        <Select value={filters.year} onValueChange={(v) => handleSelectChange('year', v)}>
+                          <SelectTrigger className="w-full px-2">
+                            <SelectValue placeholder="연도 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {yearOptions.map((y) => (
+                                <SelectItem key={y} value={y}>
+                                  {y}년
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* 팀 선택 */}
+                      <div className="w-1/2">
+                        <FilterTitle label="팀 선택" />
+                        <MultiSelect
+                          // simpleSelect={true}
+                          options={teamOptions}
+                          onValueChange={(value) => handleSelectChange('teams', value)}
+                          defaultValue={selectedTeams}
+                          placeholder="팀 선택"
+                          size="default"
+                          maxCount={1}
+                          searchable={true}
+                          hideSelectAll={false}
+                          autoSize={true}
+                          className="w-full max-w-full min-w-auto! multi-select"
+                          modalPopover={true}
+                        />
+                      </div>
+                    </div>
+
+                    {/* 상태 선택 */}
+                    <div>
+                      <FilterTitle label="상태 선택" />
+                      <MultiSelect
+                        // simpleSelect={true}
+                        options={statusOptions}
+                        onValueChange={(value) => handleSelectChange('status', value)}
+                        defaultValue={filters.status}
+                        placeholder="상태"
+                        size="default"
+                        maxCount={3}
+                        searchable={false}
+                        hideSelectAll={false}
+                        autoSize={true}
+                        className="w-full max-w-full min-w-auto! multi-select"
+                        modalPopover={true}
+                      />
+                    </div>
+
+                    {activeTab === 'weekday' && (
+                      <div className="flex gap-x-2 w-full">
+                        {/* 식대 선택 */}
+                        <div className="w-1/2">
+                          <FilterTitle label="식대 선택" />
+                          <MultiSelect
+                            // simpleSelect={true}
+                            options={[
+                              { value: 'used', label: '사용' },
+                              { value: 'notUsed', label: '미사용' },
+                            ]}
+                            onValueChange={(value) => handleSelectChange('mealAllowance', value)}
+                            defaultValue={filters.mealAllowance}
+                            placeholder="식대"
+                            size="default"
+                            maxCount={2}
+                            searchable={false}
+                            hideSelectAll={false}
+                            autoSize={true}
+                            className="w-full max-w-full min-w-auto! multi-select"
+                            modalPopover={true}
+                          />
+                        </div>
+
+                        {/* 교통비 선택 */}
+                        <div className="w-1/2">
+                          <FilterTitle label="교통비 선택" />
+                          <MultiSelect
+                            // simpleSelect={true}
+                            options={[
+                              { value: 'used', label: '사용' },
+                              { value: 'notUsed', label: '미사용' },
+                            ]}
+                            onValueChange={(value) => handleSelectChange('transportAllowance', value)}
+                            defaultValue={filters.transportAllowance}
+                            placeholder="교통비"
+                            size="default"
+                            maxCount={2}
+                            searchable={false}
+                            hideSelectAll={false}
+                            autoSize={true}
+                            className="w-full max-w-full min-w-auto! multi-select"
+                            modalPopover={true}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === 'weekend' && (
+                      <div>
+                        <FilterTitle label="보상 선택" />
+                        <MultiSelect
+                          // simpleSelect={true}
+                          options={[
+                            { value: 'special', label: '특별대휴' },
+                            { value: 'compensatory', label: '보상휴가' },
+                            { value: 'allowance', label: '수당지급' },
+                          ]}
+                          onValueChange={(value) => handleSelectChange('compensation', value)}
+                          defaultValue={filters.compensation}
+                          placeholder="보상"
+                          size="default"
+                          maxCount={3}
+                          searchable={false}
+                          hideSelectAll={false}
+                          autoSize={true}
+                          className="w-full max-w-full min-w-auto! multi-select"
+                          modalPopover={true}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </DrawerContent>
+              </Drawer>
+              {!(page === 'admin' && activeTab === 'weekday') && (
+                <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>
+                  {page === 'admin' && activeTab === 'weekend' ? '보상 지급하기' : '승인하기'}
+                </Button>
+              )}
+            </div>
+            </>
+            ) : (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                {/* 필터 셀렉트들 */}
+                <div className="flex items-center gap-2 before:mx-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
+                {/* 연도 단일 선택 */}
+                <Select value={filters.year} onValueChange={(v) => handleSelectChange('year', v)}>
+                    <SelectTrigger size="sm" className="px-2">
+                      <SelectValue placeholder="연도 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {yearOptions.map((y) => (
+                          <SelectItem size="sm" key={y} value={y}>
+                            {y}년
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                
+                {/* 팀 선택 */}
+                <MultiSelect
+                  simpleSelect={true}
+                  options={teamOptions}
+                  onValueChange={(value) => handleSelectChange('teams', value)}
+                  defaultValue={selectedTeams}
+                  placeholder="팀 선택"
+                  size="sm"
+                  maxCount={0}
+                  searchable={true}
+                  hideSelectAll={false}
+                  autoSize={true}
+                  className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+                />
+
+                {/* 상태 선택 */}
+                <MultiSelect
+                  simpleSelect={true}
+                  options={statusOptions}
+                  onValueChange={(value) => handleSelectChange('status', value)}
+                  defaultValue={filters.status}
+                  placeholder="상태"
+                  size="sm"
+                  maxCount={0}
+                  searchable={false}
+                  hideSelectAll={false}
+                  autoSize={true}
+                  className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+                />
+
+                {activeTab === 'weekday' && (
+                  <>
+                  {/* 식대 선택 */}
+                  <MultiSelect
+                    simpleSelect={true}
+                    options={[
+                      { value: 'used', label: '사용' },
+                      { value: 'notUsed', label: '미사용' },
+                    ]}
+                    onValueChange={(value) => handleSelectChange('mealAllowance', value)}
+                    defaultValue={filters.mealAllowance}
+                    placeholder="식대"
+                    size="sm"
+                    maxCount={0}
+                    searchable={false}
+                    hideSelectAll={false}
+                    autoSize={true}
+                    className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+                  />
+
+                  {/* 교통비 선택 */}
+                  <MultiSelect
+                    simpleSelect={true}
+                    options={[
+                      { value: 'used', label: '사용' },
+                      { value: 'notUsed', label: '미사용' },
+                    ]}
+                    onValueChange={(value) => handleSelectChange('transportAllowance', value)}
+                    defaultValue={filters.transportAllowance}
+                    placeholder="교통비"
+                    size="sm"
+                    maxCount={0}
+                    searchable={false}
+                    hideSelectAll={false}
+                    autoSize={true}
+                    className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+                  />
+                  </>
+                )}
+
+                {activeTab === 'weekend' && (
+                  <>
+                  {/* 보상 선택 */}
+                  <MultiSelect
+                    simpleSelect={true}
+                    options={[
+                      { value: 'special', label: '특별대휴' },
+                      { value: 'compensatory', label: '보상휴가' },
+                      { value: 'allowance', label: '수당지급' },
+                    ]}
+                    onValueChange={(value) => handleSelectChange('compensation', value)}
+                    defaultValue={filters.compensation}
+                    placeholder="보상"
+                    size="sm"
+                    maxCount={0}
+                    searchable={false}
+                    hideSelectAll={false}
+                    autoSize={true}
+                    className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+                  />
+                </>
+                )}
+
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+                                
+        {!isMobile && !(page === 'admin' && activeTab === 'weekday') && (
+          <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>
+            {page === 'admin' && activeTab === 'weekend' ? '보상 지급하기' : '승인하기'}
+          </Button>
+        )}
     </div>
   );
 }
 
+function FilterTitle({ label }: { label: string }) {
+  return <p className="mb-1 text-base font-medium text-gray-600">{label}</p>;
+}

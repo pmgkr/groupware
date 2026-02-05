@@ -225,7 +225,7 @@ export default function InvoiceCreateForm({ onClose, onSuccess }: Props) {
   return (
     <Dialog>
       <Form {...form}>
-        <form className="space-y-5">
+        <form className="flex h-full flex-col space-y-5 pt-4">
           <div className="grid grid-cols-2 items-start gap-4">
             {registerStep === 'info' && (
               <InvoiceInfoForm control={form.control} watch={form.watch} setValue={form.setValue} formatDate={formatDate} />
@@ -239,23 +239,23 @@ export default function InvoiceCreateForm({ onClose, onSuccess }: Props) {
           </div>
 
           {/* bottom buttons */}
-          <div className="flex justify-between gap-3 pt-3">
-            <Button type="button" variant="outline" onClick={handleCancel}>
+          <div className="mt-auto flex justify-between gap-3 pt-3">
+            <Button type="button" variant="outline" className="max-md:flex-1" onClick={handleCancel}>
               취소
             </Button>
 
             {registerStep === 'info' && (
-              <Button type="button" onClick={() => formValidate('items')}>
+              <Button type="button" className="max-md:flex-1" onClick={() => formValidate('items')}>
                 항목 작성
               </Button>
             )}
 
             {registerStep === 'items' && (
               <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={() => setRegisterStep('info')}>
+                <Button type="button" variant="outline" className="max-md:flex-1" onClick={() => setRegisterStep('info')}>
                   이전
                 </Button>
-                <Button type="button" onClick={() => formValidate('confirm')}>
+                <Button type="button" className="max-md:flex-1" onClick={() => formValidate('confirm')}>
                   정보 확인
                 </Button>
               </div>
@@ -263,10 +263,10 @@ export default function InvoiceCreateForm({ onClose, onSuccess }: Props) {
 
             {registerStep === 'confirm' && (
               <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={() => setRegisterStep('items')}>
+                <Button type="button" variant="outline" className="max-md:flex-1" onClick={() => setRegisterStep('items')}>
                   이전
                 </Button>
-                <Button type="button" onClick={handleRegister}>
+                <Button type="button" className="max-md:flex-1" onClick={handleRegister}>
                   인보이스 등록
                 </Button>
               </div>

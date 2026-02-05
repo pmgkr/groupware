@@ -45,7 +45,7 @@ export function SectionHeader({
   return (
     <div className={cn('mb-6 flex items-center justify-between border-b border-b-gray-300 pb-1.5', className)}>
       <div className="flex flex-col">
-        <h2 className="text-xl font-bold text-gray-950">{title}</h2>
+        <h2 className="text-xl font-bold text-gray-950 max-md:text-lg">{title}</h2>
         {description && <p className="text-sm text-gray-700">{description}</p>}
       </div>
       {buttonText ? (

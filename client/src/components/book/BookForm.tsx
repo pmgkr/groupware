@@ -46,8 +46,8 @@ export function BookForm(props: BookFormProps) {
   const handleChange = mode === 'view' ? undefined : props.onChange;
 
   return (
-    <TableColumn>
-      <TableColumnHeader className="text-base">
+    <TableColumn className="max-md:w-full max-md:min-w-0 [&>div]:text-[13px]">
+      <TableColumnHeader className="max-md:[&>div] text-base max-md:w-22.5 max-md:border-r-0 max-md:[&>div]:bg-white max-md:[&>div]:px-3 max-md:[&>div]:font-normal max-md:[&>div]:text-gray-600">
         <TableColumnHeaderCell>카테고리</TableColumnHeaderCell>
         <TableColumnHeaderCell>도서명</TableColumnHeaderCell>
         <TableColumnHeaderCell>저자명</TableColumnHeaderCell>
@@ -58,7 +58,7 @@ export function BookForm(props: BookFormProps) {
         {mode === 'create' && <TableColumnHeaderCell>구매일자</TableColumnHeaderCell>}
       </TableColumnHeader>
 
-      <TableColumnBody className="text-base">
+      <TableColumnBody className="w-full min-w-0 text-base [&>div]:text-black max-md:[&>div]:justify-end max-md:[&>div]:truncate max-md:[&>div]:px-3">
         {/* 카테고리 */}
         <TableColumnCell>
           {readOnly ? (
@@ -128,7 +128,7 @@ export function BookForm(props: BookFormProps) {
                   href={form.buylink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="max-w-[300px] truncate text-blue-600 underline hover:text-blue-800">
+                  className="w-full max-w-[300px] truncate break-all text-blue-600 underline hover:text-blue-800 max-md:w-full max-md:text-right">
                   {form.buylink}
                 </a>
               ) : (
@@ -154,14 +154,14 @@ export function BookForm(props: BookFormProps) {
 
         {/* 구매일자 (create 전용) */}
         {mode === 'create' && (
-          <TableColumnCell className="p-0">
+          <TableColumnCell className="p-0 max-md:justify-start! max-md:py-2.5">
             <Popover open={open} onOpenChange={setOpen}>
               <div className="relative">
                 <PopoverTrigger asChild>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-[45px] w-full rounded-none border-0 px-5 text-left font-normal text-gray-900 shadow-none">
+                    className="h-[45px] w-full items-center rounded-none border-0 px-5 text-left font-normal text-gray-900 shadow-none max-md:px-0!">
                     <Calendar className="ml-auto size-4.5 opacity-50" />
                     {selectDate}
                   </Button>

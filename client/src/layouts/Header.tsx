@@ -273,7 +273,7 @@ export default function Header() {
       </header>
       <div
         ref={sidebarRef}
-        className="bg-primary-blue-100 fixed top-18 left-0 h-full w-60 max-[1441px]:w-50"
+        className="bg-primary-blue-100 fixed top-18 left-0 h-full w-60 max-2xl:w-50 max-md:hidden"
         onMouseLeave={handleSidebarMouseLeave}>
         <div className="my-8.5 px-8">
           <Link to="/mypage">
