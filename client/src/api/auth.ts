@@ -48,7 +48,7 @@ export async function loginApi(payload: LoginPayload) {
 }
 
 export async function onboardingApi(payload: OnboardingPayload, token: string) {
-  return http<{ message: string; accessToken: string; user: UserDTO }>('/onboarding', {
+  const res = await http<{ message: string; accessToken: string; refreshToken?: string; user: UserDTO }>('/onboarding', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -56,6 +56,11 @@ export async function onboardingApi(payload: OnboardingPayload, token: string) {
     },
     body: JSON.stringify(payload),
   });
+  // refresh token이 있으면 저장
+  if (res.refreshToken) {
+    setRefreshToken(res.refreshToken);
+  }
+  return res;
 }
 
 export async function getUser() {

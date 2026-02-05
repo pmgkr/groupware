@@ -25,7 +25,7 @@ import { getRefreshToken, setRefreshToken } from './refreshTokenStore';
 
 export async function refreshAccessToken() {
   const refreshToken = getRefreshToken();
-  if (!refreshToken) throw new Error('Refresh token missing');
+  if (!refreshToken) { throw new Error('Refresh token missing');}
 
   const res = await fetch(`${API}/refresh`, {
     method: 'POST',
