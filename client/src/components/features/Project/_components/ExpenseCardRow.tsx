@@ -71,7 +71,7 @@ export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck }: Expen
           <strong className="shrink-0 font-medium">{formatAmount(item.el_total)}원</strong>
         </div>
         <div className="flex items-center justify-between text-sm text-gray-500">
-          <p className="flex flex-1 gap-2 overflow-hidden">
+          <div className="flex flex-1 gap-2 overflow-hidden">
             <span className="relative pr-2 after:absolute after:top-1/2 after:left-full after:h-3 after:w-px after:-translate-y-1/2 after:bg-gray-300 after:content-['']">
               {formatDate(item.wdate, true)}
             </span>
@@ -97,7 +97,7 @@ export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck }: Expen
                 {categories.length > 1 && <TooltipContent>{categories.join(', ')}</TooltipContent>}
               </Tooltip>
             </TooltipProvider>
-          </p>
+          </div>
           <p className="shrink-0">{item.user_nm}</p>
         </div>
       </Link>

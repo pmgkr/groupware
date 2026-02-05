@@ -904,13 +904,13 @@ export default function WorkingList({
                     <WorkHoursBar hours={parseWeeklyTotal(item.weeklyTotal)} className="w-full" hide40h={true} />
                   </div>
                 </TableCell>
-                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.monday, item.id, item.name, 'monday', 0)}</TableCell>
-                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.tuesday, item.id, item.name, 'tuesday', 1)}</TableCell>
-                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.wednesday, item.id, item.name, 'wednesday', 2)}</TableCell>
-                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.thursday, item.id, item.name, 'thursday', 3)}</TableCell>
-                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.friday, item.id, item.name, 'friday', 4)}</TableCell>
-                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.saturday, item.id, item.name, 'saturday', 5)}</TableCell>
-                <TableCell className="max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.sunday, item.id, item.name, 'sunday', 6)}</TableCell>
+                <TableCell className="px-4 max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.monday, item.id, item.name, 'monday', 0)}</TableCell>
+                <TableCell className="px-4 max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.tuesday, item.id, item.name, 'tuesday', 1)}</TableCell>
+                <TableCell className="px-4 max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.wednesday, item.id, item.name, 'wednesday', 2)}</TableCell>
+                <TableCell className="px-4 max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.thursday, item.id, item.name, 'thursday', 3)}</TableCell>
+                <TableCell className="px-4 max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.friday, item.id, item.name, 'friday', 4)}</TableCell>
+                <TableCell className="px-4 max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.saturday, item.id, item.name, 'saturday', 5)}</TableCell>
+                <TableCell className="px-4 max-[1800px]:px-2 whitespace-nowrap max-md:min-w-[40px]">{formatDayWork(item.sunday, item.id, item.name, 'sunday', 6)}</TableCell>
                 <TableCell className="max-[1800px]:px-2 whitespace-nowrap">
                   <Button 
                     size="sm" 
