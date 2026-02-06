@@ -155,9 +155,15 @@ export default function ExpenseRegister() {
         }
 
         if (expResult.status === 'fulfilled') {
-          // 프론트에서 회식비 제외 처리 (임시 주석 처리)
-          // setExpenseTypes(expResult.value.filter((t: any) => t.code !== '회식비').map((t: any) => ({ label: t.code, value: t.code })));
-          setExpenseTypes(expResult.value.map((t: any) => ({ label: t.code, value: t.code })));
+          // 프론트에서 회식비 제외 처리
+          const isMealAllowd = user_id === 'sangmin.kang@pmgasia.com' || user_id === 'jaeil.chung@pmgasia.com' ? true : false;
+          setExpenseTypes(
+            expResult.value.filter((t: any) => isMealAllowd || t.code !== '회식비')
+            .map((t: any) => ({
+              label: t.code,
+              value: t.code,
+            }))
+          );
         } else {
           console.error('비용 유형 불러오기 실패:', expResult.reason);
         }
