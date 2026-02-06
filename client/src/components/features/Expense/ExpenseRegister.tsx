@@ -156,7 +156,7 @@ export default function ExpenseRegister() {
 
         if (expResult.status === 'fulfilled') {
           // 프론트에서 회식비 제외 처리
-          const isMealAllowed = user_id === 'sangmin.kang@pmgasia.com' || user_id === 'jaeil.chung@pmgasia.com' ? true : false;
+          const isMealAllowed = user_id === 'sangmin.kang@pmgasia.com' || user_id === 'jaeil.chung@pmgasia.com';
           setExpenseTypes(
             expResult.value.filter((t: any) => isMealAllowed || t.code !== '회식비')
             .map((t: any) => ({
