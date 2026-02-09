@@ -52,7 +52,7 @@ export async function getManagerExpenseList(params: ExpenseListParams) {
 
   // 쿼리스트링으로 변환
   const query = new URLSearchParams(clean as Record<string, string>).toString();
-  const res = await http<{ items: ExpenseListItems[]; total: number }>(`/manager/nexpense/listmine?${query}`, { method: 'GET' });
+  const res = await http<{ items: ExpenseListItems[]; total: number }>(`/manager/nexpense/listAll?${query}`, { method: 'GET' });
 
   return res;
 }
