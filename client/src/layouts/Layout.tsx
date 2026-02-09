@@ -60,7 +60,7 @@ export default function Layout() {
             </h1>
             {/* 2차 메뉴 노출 */}
             {!hideChildNav && childNav && childNav.length > 0 && (
-              <nav className="scrollbar-hide relative flex-1 overflow-x-auto whitespace-nowrap max-md:-mr-[18px] max-md:pr-[18px] md:overflow-visible">
+              <nav className="flex items-center scrollbar-hide relative flex-1 overflow-x-auto overflow-y-hidden whitespace-nowrap max-md:h-[28px] max-md:-mr-[18px] max-md:[touch-action:pan-x] max-md:pr-[18px] md:overflow-visible">
                 <ul className="inline-flex items-center gap-x-1">
                   {childNav.map((item, idx) => (
                     <li

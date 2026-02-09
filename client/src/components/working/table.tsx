@@ -184,14 +184,14 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
               <div className="flex items-center justify-center gap-x-10 mb-3 bg-gray-100 p-2 rounded-base">
                 <div className="align-center flex flex-col justify-center text-center">
                   <p className="text-sm text-gray-500">출근시간</p>
-                  <p className={`text-base font-medium ${row.workType === '-' ? 'text-gray-400' : 'text-gray-800'}`}>
+                  <p className={`text-[15px] font-semibold ${row.workType === '-' ? 'text-gray-400' : 'text-gray-800'}`}>
                     {row.workType === '-' ? '-' : row.startTime}
                   </p>
                 </div>
                 <Icons.arrowRightCustom />
                 <div className="align-center flex flex-col justify-center text-center">
                   <p className="text-sm text-gray-500">퇴근시간</p>
-                  <p className={`text-base font-medium ${row.workType === '-' ? 'text-gray-400' : 'text-gray-800'}`}>
+                  <p className={`text-[15px] font-semibold ${row.workType === '-' ? 'text-gray-400' : 'text-gray-800'}`}>
                     {row.workType === '-' ? '-' : row.endTime}
                   </p>
                 </div>
@@ -231,7 +231,7 @@ export default function Table({ data, onDataRefresh, readOnly = false }: TablePr
                     disabled={false}
                     variant={getOvertimeButtonVariant(row.overtimeStatus)}
                     size="default"
-                    className="w-full">
+                    className="w-full font-light">
                     연장근무 {row.overtimeStatus}
                   </Button>
                 </div>
