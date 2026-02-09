@@ -239,10 +239,7 @@ export default function ExpenseView() {
                         <dt className="text-[13px] text-gray-700">기안서</dt>
                         <dd className="text-right text-sm font-medium text-gray-700">
                           {item.pro_id ? (
-                            <Link
-                              to={`/project/proposal/view/${item.pro_id}`}
-                              target="_blank"
-                              className="text-primary flex items-center gap-0.5">
+                            <Link to={`/expense/proposal/view/${item.pro_id}`} className="text-primary flex items-center gap-0.5">
                               기안서보기 <SquareArrowOutUpRight className="size-3" />
                             </Link>
                           ) : (
