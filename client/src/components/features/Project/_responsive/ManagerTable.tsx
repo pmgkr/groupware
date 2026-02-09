@@ -4,9 +4,10 @@ import { Checkbox } from '@components/ui/checkbox';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-import { ManagerListRow } from './_components/ManagerListRow';
+import { ManagerListRow } from '../_components/ManagerListRow';
 
 interface ExpenseListProps {
+  activeTab: 'all' | 'claimed';
   loading: boolean;
   expenseList: ExpenseListItems[];
   checkAll: boolean;
@@ -22,6 +23,7 @@ interface ExpenseListProps {
 }
 
 export default function ManagerExpenseList({
+  activeTab,
   loading,
   expenseList,
   checkAll,
@@ -72,7 +74,7 @@ export default function ManagerExpenseList({
           ) : expenseList.length === 0 ? (
             <TableRow>
               <TableCell className="h-100 text-gray-500" colSpan={12}>
-                리스트가 없습니다.
+                등록된 비용이 없습니다.
               </TableCell>
             </TableRow>
           ) : (

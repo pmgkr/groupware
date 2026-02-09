@@ -5,7 +5,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@/components/multiselect/multi-select';
 import { RefreshCw } from 'lucide-react';
 
-export function ManagerListFilter(props: ManagerFilterProps) {
+export function ManagerFilterPC(props: ManagerFilterProps) {
   const {
     activeTab,
     onTabChange,

@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { Link, useParams, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
@@ -9,63 +9,65 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { formatAmount, formatKST, formatDate } from '@/utils';
 import type { pExpenseListItem } from '@/api';
 
+const statusMap = {
+  Saved: <Badge variant="grayish">임시저장</Badge>,
+  Claimed: <Badge variant="secondary">승인대기</Badge>,
+  Confirmed: <Badge>승인완료</Badge>,
+  Approved: <Badge className="bg-primary-blue/80">지급대기</Badge>,
+  Completed: <Badge className="bg-primary-blue">지급완료</Badge>,
+  Rejected: <Badge className="bg-destructive">반려됨</Badge>,
+} as const;
+
+const parseCategories = (value?: string) => (value ? Array.from(new Set(value.split('|').filter(Boolean))) : []);
+
 type ExpenseRowProps = {
+  role?: 'manager';
+  activeTab: 'all' | 'saved' | 'claimed';
   item: pExpenseListItem;
-  activeTab: 'all' | 'saved';
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
 };
 
-export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRowProps) => {
+export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck, role }: ExpenseRowProps) => {
   const { user_id } = useUser();
-  const { projectId } = useParams();
   const { search } = useLocation();
 
-  const statusMap = {
-    Saved: <Badge variant="grayish">임시저장</Badge>,
-    Claimed: <Badge variant="secondary">승인대기</Badge>,
-    Confirmed: <Badge>승인완료</Badge>,
-    Approved: <Badge className="bg-primary-blue/80">지급대기</Badge>,
-    Completed: <Badge className="bg-primary-blue">지급완료</Badge>,
-    Rejected: <Badge className="bg-destructive">반려됨</Badge>,
-  } as const;
+  const categories = useMemo(() => parseCategories(item.el_type), [item.el_type]);
 
-  const status = statusMap[item.status as keyof typeof statusMap];
+  const canCheck = (activeTab === 'saved' && item.user_id === user_id) || (activeTab === 'claimed' && item.status === 'Claimed');
+  const showCheckbox = activeTab === 'saved' || activeTab === 'claimed';
 
-  // 비용 용도 슬라이드 유틸함수
-  const parseCategories = (cate: string) => cate?.split('|').filter(Boolean) ?? [];
-  const categories = Array.from(new Set(parseCategories(item.el_type))); // 중복 카테고리 제거
+  const showMatchMissing = item.alloc_status === 'empty' && item.is_estimate === 'Y' && item.status !== 'Rejected';
 
-  // 비용 항목 & 견적서 매칭 누락 체크용
-  const matchMissing = item.alloc_status === 'empty' && item.is_estimate === 'Y' && item.status !== 'Rejected' && (
-    <span className="absolute -top-1 -right-1 flex size-3.5">
-      {/* 애니메이션 */}
-      <span className={`absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-500 opacity-75`}></span>
-      {/* 도트 */}
-      <span className={`relative inline-flex size-3.5 rounded-full border border-white bg-orange-500`}></span>
-    </span>
-  );
+  const expenseDetail = useMemo(() => {
+    return role === 'manager' ? `/manager/pexpense/${item.seq}${search}` : `/project/${item.project_id}/expense/${item.seq}${search}`;
+  }, [role, item.seq, item.project_id, search]);
 
   return (
     <div className="relative rounded-md border border-gray-300 bg-white p-4">
-      {matchMissing}
+      {showMatchMissing && (
+        <span className="absolute -top-1 -right-1 flex size-3.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-500 opacity-75" />
+          <span className="relative inline-flex size-3.5 rounded-full border border-white bg-orange-500" />
+        </span>
+      )}
       <div className="mb-1 flex justify-between border-b border-gray-300 pb-1">
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          {activeTab === 'saved' && (
+          {showCheckbox && (
             <Checkbox
               id={`chk_${item.seq}`}
               className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
               checked={checked}
+              disabled={!canCheck}
               onCheckedChange={(v) => onCheck(item.seq, !!v)}
-              disabled={item.user_id !== user_id}
             />
           )}
           <span>EXP #{item.exp_id}</span>
         </div>
-        {status}
+        {statusMap[item.status as keyof typeof statusMap]}
       </div>
 
-      <Link to={`/project/${item.project_id}/expense/${item.seq}${search}`}>
+      <Link to={expenseDetail}>
         <div className="my-2 flex items-center gap-2 overflow-hidden text-lg tracking-tight">
           <p className="flex-1 truncate">{item.el_title}</p>
           <strong className="shrink-0 font-medium">{formatAmount(item.el_total)}원</strong>
