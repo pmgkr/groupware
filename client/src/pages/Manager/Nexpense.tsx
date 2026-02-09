@@ -2,21 +2,28 @@ import { useRef, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { getGrowingYears } from '@/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
+
+import { ManagerFilterPC } from '@/components/features/Expense/_responsive/ManagerFilterPC';
+import { ManagerFilterMo } from '@/components/features/Expense/_responsive/ManagerFilterMo';
+import { ManagerCardList } from '@/components/features/Expense/_responsive/ManagerCardList';
+import ManagerExpenseList from '@/components/features/Expense/_responsive/ManagerTable';
 
 import { type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
 import { OctagonAlert } from 'lucide-react';
 
 import { getExpenseType } from '@/api';
 import { getManagerExpenseList, getManagerExpenseMine, confirmExpense, type ExpenseListItems } from '@/api/manager/nexpense';
-import { ManagerListFilter } from '@components/features/Expense/_components/ManagerListFilter';
-import ManagerExpenseList from '@components/features/Expense/ManagerExpenseList';
+// import { ManagerListFilter } from '@components/features/Expense/_components/ManagerListFilter';
+// import ManagerExpenseList from '@components/features/Expense/ManagerExpenseList';
 
 export default function Nexpense() {
   const { user_id } = useUser();
+  const isMobile = useIsMobileViewport();
   const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
   // ============================
@@ -234,46 +241,115 @@ export default function Nexpense() {
     });
   };
 
+  const statusOptions: MultiSelectOption[] = [
+    { label: '임시저장', value: 'Saved' },
+    { label: '승인대기', value: 'Claimed' },
+    { label: '승인완료', value: 'Confirmed' },
+    { label: '지급대기', value: 'Approved' },
+    { label: '지급완료', value: 'Completed' },
+    { label: '반려됨', value: 'Rejected' },
+  ];
+
+  const proofMethod: MultiSelectOption[] = [
+    { label: 'PMG', value: 'PMG' },
+    { label: 'MCS', value: 'MCS' },
+    { label: '개인카드', value: '개인카드' },
+    { label: '세금계산서', value: '세금계산서' },
+    { label: '현금영수증', value: '현금영수증' },
+    { label: '기타', value: '기타' },
+  ];
+
+  const proofStatusOptions: MultiSelectOption[] = [
+    { label: '제출', value: 'Y' },
+    { label: '미제출', value: 'N' },
+  ];
+
+  const filterProps = {
+    activeTab,
+    onTabChange: handleTabChange,
+
+    selectedYear,
+    yearOptions,
+    onYearChange: (v: string) => {
+      setSelectedYear(v);
+      setPage(1);
+    },
+
+    selectedType,
+    selectedStatus,
+    selectedProof,
+    selectedProofStatus,
+
+    typeOptions,
+    statusOptions,
+    proofMethod,
+    proofStatusOptions,
+
+    typeRef,
+    statusRef,
+    proofRef,
+    proofStatusRef,
+
+    onTypeChange: (v: string[]) => {
+      setSelectedType(v);
+      setPage(1);
+    },
+    onStatusChange: (v: string[]) => {
+      setSelectedStatus(v);
+      setPage(1);
+    },
+    onProofChange: (v: string[]) => {
+      setSelectedProof(v);
+      setPage(1);
+    },
+    onProofStatusChange: (v: string[]) => {
+      setSelectedProofStatus(v);
+      setPage(1);
+    },
+
+    checkedItems,
+    onRefresh: resetAllFilters,
+    onConfirm: handleConfirm,
+  };
+
   return (
     <>
-      <ManagerListFilter
-        activeTab={activeTab}
-        onTabChange={(tab) => {
-          handleTabChange(tab);
-        }}
-        selectedYear={selectedYear}
-        yearOptions={yearOptions}
-        selectedType={selectedType}
-        selectedStatus={selectedStatus}
-        selectedProof={selectedProof}
-        selectedProofStatus={selectedProofStatus}
-        typeRef={typeRef}
-        statusRef={statusRef}
-        proofRef={proofRef}
-        proofStatusRef={typeRef}
-        typeOptions={typeOptions}
-        checkedItems={checkedItems}
-        onYearChange={setSelectedYear}
-        onTypeChange={setSelectedType}
-        onStatusChange={setSelectedStatus}
-        onProofChange={setSelectedProof}
-        onProofStatusChange={setSelectedProofStatus}
-        onRefresh={() => resetAllFilters()}
-        onConfirm={() => handleConfirm()}
-      />
+      {isMobile ? (
+        <>
+          <ManagerFilterMo {...filterProps} />
 
-      <ManagerExpenseList
-        loading={loading}
-        expenseList={expenseList}
-        checkAll={checkAll}
-        checkedItems={checkedItems}
-        handleCheckAll={handleCheckAll}
-        handleCheckItem={handleCheckItem}
-        total={total}
-        page={page}
-        pageSize={pageSize}
-        onPageChange={setPage}
-      />
+          <ManagerCardList
+            activeTab={activeTab}
+            loading={loading}
+            expenseList={expenseList}
+            checkAll={checkAll}
+            checkedItems={checkedItems}
+            handleCheckAll={handleCheckAll}
+            handleCheckItem={handleCheckItem}
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
+        </>
+      ) : (
+        <>
+          <ManagerFilterPC {...filterProps} />
+          <ManagerExpenseList
+            activeTab={activeTab}
+            loading={loading}
+            expenseList={expenseList}
+            checkAll={checkAll}
+            checkedItems={checkedItems}
+            handleCheckAll={handleCheckAll}
+            handleCheckItem={handleCheckItem}
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
+        </>
+      )}
     </>
   );
 }
