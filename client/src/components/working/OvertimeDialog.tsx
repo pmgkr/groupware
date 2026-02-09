@@ -349,12 +349,12 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                       <SelectItem value="22">22시</SelectItem>
                       <SelectItem value="23">23시</SelectItem>
                       <SelectItem value="24">24시</SelectItem>
-                      <SelectItem value="25">1시</SelectItem>
-                      <SelectItem value="26">2시</SelectItem>
-                      <SelectItem value="27">3시</SelectItem>
-                      <SelectItem value="28">4시</SelectItem>
-                      <SelectItem value="29">5시</SelectItem>
-                      <SelectItem value="30">6시</SelectItem>
+                      <SelectItem value="25">01시 (25시)</SelectItem>
+                      <SelectItem value="26">02시 (26시)</SelectItem>
+                      <SelectItem value="27">03시 (27시)</SelectItem>
+                      <SelectItem value="28">04시 (28시)</SelectItem>
+                      <SelectItem value="29">05시 (29시)</SelectItem>
+                      <SelectItem value="30">06시 (30시)</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select
@@ -544,12 +544,12 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                       <SelectItem value="22">22시</SelectItem>
                       <SelectItem value="23">23시</SelectItem>
                       <SelectItem value="24">24시</SelectItem>
-                      <SelectItem value="25">1시</SelectItem>
-                      <SelectItem value="26">2시</SelectItem>
-                      <SelectItem value="27">3시</SelectItem>
-                      <SelectItem value="28">4시</SelectItem>
-                      <SelectItem value="29">5시</SelectItem>
-                      <SelectItem value="30">6시</SelectItem>
+                      <SelectItem value="25">01시 (25시)</SelectItem>
+                      <SelectItem value="26">02시 (26시)</SelectItem>
+                      <SelectItem value="27">03시 (27시)</SelectItem>
+                      <SelectItem value="28">04시 (28시)</SelectItem>
+                      <SelectItem value="29">05시 (29시)</SelectItem>
+                      <SelectItem value="30">06시 (30시)</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select
