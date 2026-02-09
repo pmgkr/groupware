@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { Link, useParams, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
@@ -9,52 +9,58 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { formatAmount, formatDate } from '@/utils';
 import type { ExpenseListItem } from '@/api';
 
+const statusMap = {
+  Saved: <Badge variant="grayish">임시저장</Badge>,
+  Claimed: <Badge variant="secondary">승인대기</Badge>,
+  Confirmed: <Badge>승인완료</Badge>,
+  Approved: <Badge className="bg-primary-blue/80">지급대기</Badge>,
+  Completed: <Badge className="bg-primary-blue">지급완료</Badge>,
+  Rejected: <Badge className="bg-destructive">반려됨</Badge>,
+} as const;
+
+const parseCategories = (value?: string) => (value ? Array.from(new Set(value.split('|').filter(Boolean))) : []);
+
 type ExpenseRowProps = {
   item: ExpenseListItem;
-  activeTab: 'all' | 'saved';
+  activeTab: 'all' | 'saved' | 'claimed';
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
+  role?: 'manager';
 };
 
-export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRowProps) => {
+export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck, role }: ExpenseRowProps) => {
   const { user_id } = useUser();
-  const { projectId } = useParams();
   const { search } = useLocation();
 
-  const statusMap = {
-    Saved: <Badge variant="grayish">임시저장</Badge>,
-    Claimed: <Badge variant="secondary">승인대기</Badge>,
-    Confirmed: <Badge>승인완료</Badge>,
-    Approved: <Badge className="bg-primary-blue/80">지급대기</Badge>,
-    Completed: <Badge className="bg-primary-blue">지급완료</Badge>,
-    Rejected: <Badge className="bg-destructive">반려됨</Badge>,
-  } as const;
-
-  const status = statusMap[item.status as keyof typeof statusMap];
-
   // 비용 용도 슬라이드 유틸함수
-  const parseCategories = (cate: string) => cate?.split('|').filter(Boolean) ?? [];
   const categories = Array.from(new Set(parseCategories(item.el_type))); // 중복 카테고리 제거
+
+  const canCheck = (activeTab === 'saved' && item.user_id === user_id) || (activeTab === 'claimed' && item.status === 'Claimed');
+  const showCheckbox = activeTab === 'saved' || activeTab === 'claimed';
+
+  const expenseDetail = useMemo(() => {
+    return role === 'manager' ? `/manager/nexpense/${item.exp_id}${search}` : `/expense/${item.exp_id}${search}`;
+  }, [role, item.seq, search]);
 
   return (
     <div className="relative rounded-md border border-gray-300 bg-white p-4">
       <div className="mb-1 flex justify-between border-b border-gray-300 pb-1">
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          {activeTab === 'saved' && (
+          {showCheckbox && (
             <Checkbox
               id={`chk_${item.seq}`}
               className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
               checked={checked}
               onCheckedChange={(v) => onCheck(item.seq, !!v)}
-              disabled={item.user_id !== user_id}
+              disabled={!canCheck}
             />
           )}
           <span>EXP #{item.exp_id}</span>
         </div>
-        {status}
+        {statusMap[item.status as keyof typeof statusMap]}
       </div>
 
-      <Link to={`/expense/${item.exp_id}${search}`}>
+      <Link to={expenseDetail}>
         <div className="my-2 flex items-center gap-2 overflow-hidden text-lg tracking-tight">
           <p className="flex-1 truncate">{item.el_title}</p>
           <strong className="shrink-0 font-medium">{formatAmount(item.el_total)}원</strong>

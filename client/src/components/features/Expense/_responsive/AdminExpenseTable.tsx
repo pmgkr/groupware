@@ -28,7 +28,7 @@ interface ExpenseListProps {
   onOpenCBox: () => void;
 }
 
-export default function ManagerExpenseList({
+export default function AdminExpenseTable({
   loading,
   expenseList,
   checkAll,

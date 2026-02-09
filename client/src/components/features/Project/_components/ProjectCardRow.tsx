@@ -28,7 +28,7 @@ export const ProjectCardRow = memo(({ item, isFavorite = false, onToggleFavorite
             onClick={() => onToggleFavorite?.(item.project_id)}>
             <Star className="size-4" fill={isFavorite ? 'currentColor' : 'none'} />
           </Button>
-          <span className="text-sm text-gray-500">{item.project_id}</span>
+          <span className="text-sm text-gray-500">#{item.project_id}</span>
         </div>
         {status}
       </div>

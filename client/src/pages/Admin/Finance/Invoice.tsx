@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { formatDate, formatAmount } from '@/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 
 import { notificationApi } from '@/api/notification';
 import { uploadFilesToServer } from '@/api';
@@ -29,6 +30,7 @@ import { OctagonAlert, X } from 'lucide-react';
 export default function Invoice() {
   const { user_id } = useUser();
   const { search } = useLocation();
+  const isMobile = useIsMobileViewport();
   const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
   const [invoiceList, setInvoiceList] = useState<InvoiceListItem[]>([]);
@@ -280,14 +282,13 @@ export default function Invoice() {
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between max-md:flex-col">
         {/* 상단 좌측 필터 */}
-        <div className="flex items-center gap-x-2">
-          {/* Tabs */}
-          <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
+        <div className="flex items-center gap-x-2 max-md:mb-3 max-md:w-full">
+          <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5 max-md:w-full">
             <Button
               onClick={() => handleTabChange('claimed')}
-              className={`h-8 w-18 rounded-sm p-0 text-sm ${
+              className={`h-8 w-18 rounded-sm p-0 text-sm max-md:flex-1 ${
                 activeTab === 'claimed'
                   ? 'bg-primary hover:bg-primary active:bg-primary text-white'
                   : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
@@ -297,7 +298,7 @@ export default function Invoice() {
 
             <Button
               onClick={() => handleTabChange('confirmed')}
-              className={`h-8 w-18 rounded-sm p-0 text-sm ${
+              className={`h-8 w-18 rounded-sm p-0 text-sm max-md:flex-1 ${
                 activeTab === 'confirmed'
                   ? 'bg-primary hover:bg-primary active:bg-primary text-white'
                   : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
@@ -307,7 +308,7 @@ export default function Invoice() {
 
             <Button
               onClick={() => handleTabChange('rejected')}
-              className={`h-8 w-18 rounded-sm p-0 text-sm ${
+              className={`h-8 w-18 rounded-sm p-0 text-sm max-md:flex-1 ${
                 activeTab === 'rejected'
                   ? 'bg-primary hover:bg-primary active:bg-primary text-white'
                   : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
@@ -315,7 +316,7 @@ export default function Invoice() {
               반려됨
             </Button>
           </div>
-          <div className="flex items-center gap-x-2 before:mr-3 before:ml-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
+          <div className="flex items-center gap-x-2 before:mr-3 before:ml-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle max-md:hidden">
             <Select
               value={String(pageSize)}
               onValueChange={(value) => {
@@ -343,10 +344,10 @@ export default function Invoice() {
           </div>
         </div>
 
-        <div className="flex gap-x-2">
-          <div className="relative">
+        <div className="flex gap-x-2 max-md:w-full">
+          <div className="relative max-md:flex-1">
             <Input
-              className="max-w-42 pr-6"
+              className="max-w-42 pr-6 max-md:w-full max-md:max-w-full"
               size="sm"
               placeholder="제목 또는 작성자명 검색"
               value={searchInput}
@@ -361,7 +362,7 @@ export default function Invoice() {
               <Button
                 type="button"
                 variant="svgIcon"
-                className="absolute top-0 right-0 h-full w-6 px-0 text-gray-500"
+                className="absolute top-1/2 right-0 h-full w-6 -translate-y-1/2 transform px-0 text-gray-500"
                 onClick={resetAllFilters}>
                 <X className="size-3.5" />
               </Button>
@@ -370,9 +371,6 @@ export default function Invoice() {
 
           {activeTab === 'claimed' && (
             <>
-              {/* <Button size="sm" variant="destructive" onClick={() => {}} disabled={checkedItems.length === 0}>
-                반려하기
-              </Button> */}
               <Button size="sm" onClick={handleConfirm} disabled={checkedItems.length === 0}>
                 승인하기
               </Button>
@@ -380,129 +378,187 @@ export default function Invoice() {
           )}
         </div>
       </div>
-      <Table variant="primary" align="center" className="table-fixed">
-        <TableHeader>
-          <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[8%]">인보이스 #</TableHead>
-            <TableHead>인보이스 제목</TableHead>
-            <TableHead className="w-[10%]">인보이스 수신</TableHead>
-            <TableHead className="w-[8%]">공급가액</TableHead>
-            <TableHead className="w-[8%]">세금</TableHead>
-            <TableHead className="w-[9%]">합계</TableHead>
-            <TableHead className="w-[7%]">작성자</TableHead>
-            <TableHead className="w-[6%]">상태</TableHead>
-            <TableHead className="w-[8%]">작성일</TableHead>
-            {activeTab === 'claimed' && (
-              <TableHead className="w-[3%] px-0! transition-all duration-150">
-                <Checkbox
-                  id="chk_all"
-                  className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
-                  checked={checkAll}
-                  onCheckedChange={(v) => handleCheckAll(!!v)}
-                />
-              </TableHead>
-            )}
-            {activeTab === 'confirmed' && <TableHead className="w-[10%]">파일</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {invoiceList.length ? (
-            invoiceList.map((item, idx) => (
-              <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]" key={item.seq}>
-                <TableCell className="whitespace-nowrap">
-                  <Link to={`/admin/finance/invoice/${item.seq}${search}`} className="rounded-[4px] border-1 bg-white p-1 text-sm">
-                    {item.invoice_id}
-                  </Link>
-                </TableCell>
-                <TableCell className="cursor-pointer px-4! text-left hover:underline">
-                  <Link to={`/admin/finance/invoice/${item.seq}${search}`}>{item.invoice_title}</Link>
-                </TableCell>
-                <TableCell className="break-all">{item.client_nm}</TableCell>
-                <TableCell className="text-right">{formatAmount(item.invoice_amount)}</TableCell>
-                <TableCell className="text-right">{formatAmount(item.invoice_tax)}</TableCell>
-                <TableCell className="text-right">{formatAmount(item.invoice_total)}</TableCell>
-                <TableCell className="px-4!">{item.user_nm}</TableCell>
-                <TableCell>{statusMap[item.invoice_status as keyof typeof statusMap]}</TableCell>
-                <TableCell>{formatDate(item.wdate)}</TableCell>
-                {activeTab === 'claimed' && (
-                  <TableCell className="px-0!">
-                    <Checkbox
-                      id={`chk_${item.seq}`}
-                      className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
-                      checked={checkedItems.includes(item.seq)}
-                      onCheckedChange={(v) => handleCheckItem(item.seq, !!v)}
-                      disabled={item.invoice_status !== 'Claimed'}
-                    />
-                  </TableCell>
-                )}
-                {activeTab === 'confirmed' &&
-                  (item.attachments.length === 0 ? (
-                    <TableCell>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="application/pdf"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-
-                          handleUploadFile(item.seq, file);
-                          e.currentTarget.value = ''; // 동일 파일 재업로드 허용
-                        }}
-                      />
-
-                      <div
-                        onClick={() => {
-                          if (uploadStateMap[item.seq] !== 'uploading') {
-                            fileInputRef.current?.click();
-                          }
-                        }}
-                        onDragEnter={() => setDraggingSeq(item.seq)}
-                        onDragLeave={() => setDraggingSeq((prev) => (prev === item.seq ? null : prev))}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          setDraggingSeq(null);
-
-                          if (uploadStateMap[item.seq] === 'uploading') return;
-
-                          const file = e.dataTransfer.files?.[0];
-                          if (file) handleUploadFile(item.seq, file);
-                        }}
-                        className={`cursor-pointer rounded border border-dashed p-2 text-center text-xs transition-colors ${
-                          draggingSeq === item.seq ? 'bg-primary-blue-100 border-primary text-primary' : 'text-muted-foreground'
-                        } `}>
-                        {uploadStateMap[item.seq] === 'uploading' ? '업로드 중...' : 'PDF 드래그 또는 클릭'}
-                      </div>
-                    </TableCell>
-                  ) : (
-                    <TableCell>
-                      {item.attachments.map((att) => (
-                        <div className="flex items-center gap-1 overflow-hidden text-sm" key={att.ia_sname}>
-                          <Link to={att.ia_url} className="truncate">
-                            {att.ia_fname}
-                          </Link>
-                          <Button type="button" variant="svgIcon" size="icon" className="size-4" onClick={() => handleDelFile(item.seq)}>
-                            <X className="size-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </TableCell>
-                  ))}
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell
-                colSpan={activeTab === 'claimed' || activeTab === 'confirmed' ? 10 : 9}
-                className="py-50 text-center text-gray-500">
-                등록된 인보이스가 없습니다.
-              </TableCell>
-            </TableRow>
+      {isMobile ? (
+        <>
+          {activeTab === 'claimed' && (
+            <div className="mb-2 flex items-center">
+              <Checkbox
+                id="chk_all"
+                label="전체 선택"
+                className="flex size-4 items-center justify-center bg-white leading-none"
+                checked={checkAll}
+                onCheckedChange={(v) => handleCheckAll(!!v)}
+              />
+            </div>
           )}
-        </TableBody>
-      </Table>
+          <div className="space-y-4">
+            {invoiceList.length ? (
+              invoiceList.map((item) => (
+                <div key={item.seq} className="rounded-md border border-gray-300 bg-white px-4 py-2">
+                  <div className="mb-1 flex justify-between border-b border-gray-300 pb-1">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      {activeTab === 'claimed' && (
+                        <Checkbox
+                          id={`chk_${item.seq}`}
+                          className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
+                          checked={checkedItems.includes(item.seq)}
+                          onCheckedChange={(v) => handleCheckItem(item.seq, !!v)}
+                          disabled={item.invoice_status !== 'Claimed'}
+                        />
+                      )}
+                      <span>#{item.invoice_id}</span>
+                    </div>
+                    {statusMap[item.invoice_status as keyof typeof statusMap]}
+                  </div>
+                  <div>
+                    <Link to={`/admin/finance/invoice/${item.seq}${search}`}>
+                      <div className="my-2 flex items-center gap-2 overflow-hidden text-lg tracking-tight">
+                        <p className="flex-1 truncate">{item.invoice_title}</p>
+                        <strong className="shrink-0 font-medium">{formatAmount(item.invoice_total)}원</strong>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between text-sm text-gray-500">
+                        <div className="flex gap-2">
+                          <span className="relative pr-2 after:absolute after:top-1/2 after:left-full after:h-3 after:w-px after:-translate-y-1/2 after:bg-gray-300 after:content-['']">
+                            공급가액 {formatAmount(item.invoice_amount)}
+                          </span>
+                          <span>세금 {formatAmount(item.invoice_tax)}</span>
+                        </div>
+                        <p className="shrink-0">{item.user_nm}</p>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="py-50 text-center text-base text-gray-500">등록된 인보이스가 없습니다.</p>
+            )}
+          </div>
+        </>
+      ) : (
+        <Table variant="primary" align="center" className="table-fixed">
+          <TableHeader>
+            <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
+              <TableHead className="w-[8%]">인보이스 #</TableHead>
+              <TableHead>인보이스 제목</TableHead>
+              <TableHead className="w-[10%]">인보이스 수신</TableHead>
+              <TableHead className="w-[8%]">공급가액</TableHead>
+              <TableHead className="w-[8%]">세금</TableHead>
+              <TableHead className="w-[9%]">합계</TableHead>
+              <TableHead className="w-[7%]">작성자</TableHead>
+              <TableHead className="w-[6%]">상태</TableHead>
+              <TableHead className="w-[8%]">작성일</TableHead>
+              {activeTab === 'claimed' && (
+                <TableHead className="w-[3%] px-0! transition-all duration-150">
+                  <Checkbox
+                    id="chk_all"
+                    className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
+                    checked={checkAll}
+                    onCheckedChange={(v) => handleCheckAll(!!v)}
+                  />
+                </TableHead>
+              )}
+              {activeTab === 'confirmed' && <TableHead className="w-[10%]">파일</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {invoiceList.length ? (
+              invoiceList.map((item, idx) => (
+                <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3]" key={item.seq}>
+                  <TableCell className="whitespace-nowrap">
+                    <Link to={`/admin/finance/invoice/${item.seq}${search}`} className="rounded-[4px] border-1 bg-white p-1 text-sm">
+                      {item.invoice_id}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="cursor-pointer px-4! text-left hover:underline">
+                    <Link to={`/admin/finance/invoice/${item.seq}${search}`}>{item.invoice_title}</Link>
+                  </TableCell>
+                  <TableCell className="break-all">{item.client_nm}</TableCell>
+                  <TableCell className="text-right">{formatAmount(item.invoice_amount)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(item.invoice_tax)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(item.invoice_total)}</TableCell>
+                  <TableCell className="px-4!">{item.user_nm}</TableCell>
+                  <TableCell>{statusMap[item.invoice_status as keyof typeof statusMap]}</TableCell>
+                  <TableCell>{formatDate(item.wdate)}</TableCell>
+                  {activeTab === 'claimed' && (
+                    <TableCell className="px-0!">
+                      <Checkbox
+                        id={`chk_${item.seq}`}
+                        className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
+                        checked={checkedItems.includes(item.seq)}
+                        onCheckedChange={(v) => handleCheckItem(item.seq, !!v)}
+                        disabled={item.invoice_status !== 'Claimed'}
+                      />
+                    </TableCell>
+                  )}
+                  {activeTab === 'confirmed' &&
+                    (item.attachments.length === 0 ? (
+                      <TableCell>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="application/pdf"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+
+                            handleUploadFile(item.seq, file);
+                            e.currentTarget.value = ''; // 동일 파일 재업로드 허용
+                          }}
+                        />
+
+                        <div
+                          onClick={() => {
+                            if (uploadStateMap[item.seq] !== 'uploading') {
+                              fileInputRef.current?.click();
+                            }
+                          }}
+                          onDragEnter={() => setDraggingSeq(item.seq)}
+                          onDragLeave={() => setDraggingSeq((prev) => (prev === item.seq ? null : prev))}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            setDraggingSeq(null);
+
+                            if (uploadStateMap[item.seq] === 'uploading') return;
+
+                            const file = e.dataTransfer.files?.[0];
+                            if (file) handleUploadFile(item.seq, file);
+                          }}
+                          className={`cursor-pointer rounded border border-dashed p-2 text-center text-xs transition-colors ${
+                            draggingSeq === item.seq ? 'bg-primary-blue-100 border-primary text-primary' : 'text-muted-foreground'
+                          } `}>
+                          {uploadStateMap[item.seq] === 'uploading' ? '업로드 중...' : 'PDF 드래그 또는 클릭'}
+                        </div>
+                      </TableCell>
+                    ) : (
+                      <TableCell>
+                        {item.attachments.map((att) => (
+                          <div className="flex items-center gap-1 overflow-hidden text-sm" key={att.ia_sname}>
+                            <Link to={att.ia_url} className="truncate">
+                              {att.ia_fname}
+                            </Link>
+                            <Button type="button" variant="svgIcon" size="icon" className="size-4" onClick={() => handleDelFile(item.seq)}>
+                              <X className="size-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </TableCell>
+                    ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={activeTab === 'claimed' || activeTab === 'confirmed' ? 10 : 9}
+                  className="py-50 text-center text-gray-500">
+                  등록된 인보이스가 없습니다.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      )}
 
       <div className="mt-5">
         {invoiceList.length !== 0 && (
