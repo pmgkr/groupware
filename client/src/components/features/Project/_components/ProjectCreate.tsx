@@ -233,15 +233,11 @@ export function ProjectCreateForm({ onClose, onSuccess }: Props) {
     });
   };
 
-  const onError = (errors: any) => {
-    console.error('폼 검증 에러:', errors);
-  };
-
   return (
     <div className="flex-1">
       <Form {...form}>
         <Dialog>
-          <form onSubmit={form.handleSubmit(onSubmit, onError)} className="flex h-full flex-col pt-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex h-full flex-col pt-4">
             <div className="space-y-5">
               <div className="grid grid-cols-2 items-start gap-4">
                 {/* 생성년도 */}

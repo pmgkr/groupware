@@ -184,7 +184,7 @@ export default function ProjectExpenseView() {
                 {statusBadge}
               </div>
               <div className="my-2">
-                <h3 className="text-lg leading-[1.2] font-light">{header.el_title}</h3>
+                <h3 className="mb-1 text-lg leading-[1.3] font-light">{header.el_title}</h3>
                 <div className="flex items-center text-xl font-bold">
                   <strong className="text-[1.3em]">{formatAmount(header.el_total)}</strong>원
                 </div>
@@ -562,9 +562,9 @@ function HorzBar() {
 
 function ExpRow({ title, value, bold }: { title: string; value: any; bold?: boolean }) {
   return (
-    <dl className="flex items-center justify-between gap-2 py-1">
+    <dl className="flex justify-between gap-2 py-1">
       <dt className="w-[20%] shrink-0 text-[13px] text-gray-700">{title}</dt>
-      <dd className={cn('text-right text-[13px] font-medium break-keep', bold && 'font-semibold')}>{value}</dd>
+      <dd className={cn('text-right text-[13px] font-medium break-keep whitespace-pre', bold && 'font-semibold')}>{value}</dd>
     </dl>
   );
 }

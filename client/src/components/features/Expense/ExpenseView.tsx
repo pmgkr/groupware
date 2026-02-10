@@ -76,28 +76,28 @@ export default function ExpenseView() {
   // 비용 상태별 Badge 맵핑
   const statusMap = {
     Saved: (
-      <Badge variant="grayish" size="md">
+      <Badge variant="grayish" size={isMobile ? 'md' : 'table'}>
         임시저장
       </Badge>
     ),
     Claimed: (
-      <Badge variant="secondary" size="md">
+      <Badge variant="secondary" size={isMobile ? 'md' : 'table'}>
         승인대기
       </Badge>
     ),
-    Confirmed: <Badge size="md">승인완료</Badge>,
+    Confirmed: <Badge size={isMobile ? 'md' : 'table'}>승인완료</Badge>,
     Approved: (
-      <Badge className="bg-primary-blue/80" size="md">
+      <Badge className="bg-primary-blue/80" size={isMobile ? 'md' : 'table'}>
         지급대기
       </Badge>
     ),
     Completed: (
-      <Badge className="bg-primary-blue" size="md">
+      <Badge className="bg-primary-blue" size={isMobile ? 'md' : 'table'}>
         지급완료
       </Badge>
     ),
     Rejected: (
-      <Badge className="bg-destructive" size="md">
+      <Badge className="bg-destructive" size={isMobile ? 'md' : 'table'}>
         반려됨
       </Badge>
     ),
@@ -165,7 +165,7 @@ export default function ExpenseView() {
                 {status}
               </div>
               <div className="my-2">
-                <h3 className="text-lg leading-[1.2] font-light">{header.el_title}</h3>
+                <h3 className="mb-1 text-lg leading-[1.3] font-light">{header.el_title}</h3>
                 <div className="flex items-center text-xl font-bold">
                   <strong className="text-[1.3em]">{formatAmount(header.el_total)}</strong>원
                 </div>
@@ -239,10 +239,7 @@ export default function ExpenseView() {
                         <dt className="text-[13px] text-gray-700">기안서</dt>
                         <dd className="text-right text-sm font-medium text-gray-700">
                           {item.pro_id ? (
-                            <Link
-                              to={`/project/proposal/view/${item.pro_id}`}
-                              target="_blank"
-                              className="text-primary flex items-center gap-0.5">
+                            <Link to={`/expense/proposal/view/${item.pro_id}`} className="text-primary flex items-center gap-0.5">
                               기안서보기 <SquareArrowOutUpRight className="size-3" />
                             </Link>
                           ) : (
@@ -493,9 +490,9 @@ function HorzBar() {
 
 function ExpRow({ title, value, bold }: { title: string; value: any; bold?: boolean }) {
   return (
-    <dl className="flex items-center justify-between gap-2 py-1">
+    <dl className="flex justify-between gap-2 py-1">
       <dt className="w-[20%] shrink-0 text-[13px] text-gray-700">{title}</dt>
-      <dd className={cn('text-right text-[13px] font-medium break-keep', bold && 'font-semibold')}>{value}</dd>
+      <dd className={cn('text-right text-[13px] font-medium break-keep whitespace-pre', bold && 'font-semibold')}>{value}</dd>
     </dl>
   );
 }

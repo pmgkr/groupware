@@ -1,39 +1,54 @@
-// _filters/ExpenseFilterMo.tsx
 import { useState, useRef } from 'react';
-import type { ExpenseFilterProps } from '../types/ExpenseFilterProps';
+import { type AdminFilterProps } from '../types/AdminFilterProps';
+import { DatePickerWithRange } from '@/components/date-n-time/date-picker-range';
 
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup } from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
 import { MultiSelect, type MultiSelectRef } from '@/components/multiselect/multi-select';
+import { ListFilter, RefreshCw, X } from 'lucide-react';
+import { set } from 'date-fns';
 
-import { Star, RefreshCw, ListFilter, X } from 'lucide-react';
-
-export function ExpenseFilterMo(props: ExpenseFilterProps) {
+export function AdminListFilterMo(props: AdminFilterProps) {
   const {
-    data,
-    activeTab,
     yearOptions,
+
     selectedYear,
     selectedType,
     selectedStatus,
     selectedProof,
     selectedProofStatus,
-
-    typeRef,
-    statusRef,
-    proofRef,
-    proofStatusRef,
+    selectedDdate,
 
     typeOptions,
     statusOptions,
     proofMethod,
     proofStatusOptions,
 
-    onTabChange,
-    onFilterChange,
-    onReset,
-    onCreate,
+    typeRef,
+    statusRef,
+    proofRef,
+    proofStatusRef,
+    checkedItems,
+    searchInput,
+    datePickerKey,
+    selectedDateRange,
+
+    onYearChange,
+    onTypeChange,
+    onStatusChange,
+    onProofChange,
+    onProofStatusChange,
+    onDdateChange,
+    onSearchInputChange,
+    onSearchSubmit,
+    onClearSearch,
+    onDateRangeChange,
+
+    onRefresh,
+    onConfirm,
+    onReject,
   } = props;
 
   const [open, setOpen] = useState(false);
@@ -43,6 +58,9 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
   const [draftProof, setDraftProof] = useState(selectedProof);
   const [draftProofStatus, setDraftProofStatus] = useState(selectedProofStatus);
   const [draftStatus, setDraftStatus] = useState(selectedStatus);
+  const [draftDdate, setDraftDdate] = useState(selectedDdate);
+  const [draftDateRange, setDraftDateRange] = useState(selectedDateRange);
+  const [draftSearch, setDraftSearch] = useState(searchInput);
   const activeMultiSelectRef = useRef<MultiSelectRef | null>(null); // Drawer 컴포넌트 내 MultiSelect 제어용
 
   const multiOpen = (ref: MultiSelectRef | null) => {
@@ -60,38 +78,9 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
     setDraftProof(selectedProof);
     setDraftProofStatus(selectedProofStatus);
     setDraftStatus(selectedStatus);
-  };
-
-  const handleReset = () => {
-    // 1. 부모 초기화
-    onReset(activeTab);
-
-    // 2. draft 상태 초기화
-    setDraftYear(currentYear);
-    setDraftType([]);
-    setDraftProof([]);
-    setDraftProofStatus([]);
-    setDraftStatus([]);
-
-    // 3. MultiSelect UI 초기화
-    typeRef.current?.clear();
-    proofRef.current?.clear();
-    proofStatusRef.current?.clear();
-    statusRef.current?.clear();
-  };
-
-  const applyFilters = () => {
-    onFilterChange('tab', activeTab);
-    onFilterChange('year', draftYear);
-    onFilterChange('type', draftType);
-    onFilterChange('method', draftProof);
-    onFilterChange('attach', draftProofStatus);
-    onFilterChange('status', draftStatus);
-  };
-
-  const handleTabChange = (tab: 'all' | 'saved') => {
-    onTabChange(tab);
-    onFilterChange('tab', tab);
+    setDraftDdate(selectedDdate);
+    setDraftDateRange(selectedDateRange);
+    setDraftSearch(searchInput);
   };
 
   const handleApply = () => {
@@ -106,31 +95,43 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
     });
   };
 
+  const handleReset = () => {
+    // 1. 부모 초기화
+    onRefresh();
+
+    // 2. draft 상태 초기화
+    setDraftYear(currentYear);
+    setDraftType([]);
+    setDraftProof([]);
+    setDraftProofStatus([]);
+    setDraftStatus([]);
+    setDraftDdate('');
+    setDraftDateRange(undefined);
+    setDraftSearch('');
+    onClearSearch();
+
+    // 3. MultiSelect UI 초기화
+    typeRef.current?.clear();
+    proofRef.current?.clear();
+    proofStatusRef.current?.clear();
+    statusRef.current?.clear();
+  };
+
+  const applyFilters = () => {
+    onYearChange(draftYear);
+    onTypeChange(draftType);
+    onProofChange(draftProof);
+    onProofStatusChange(draftProofStatus);
+    onStatusChange(draftStatus);
+    onDdateChange(draftDdate);
+    onDateRangeChange(draftDateRange);
+
+    onSearchInputChange(draftSearch);
+    onSearchSubmit(draftSearch);
+  };
+
   return (
     <div className="mb-4">
-      {/* 탭 */}
-      <div className="mb-3 flex rounded-sm bg-gray-300 p-1">
-        <Button
-          onClick={() => handleTabChange('all')}
-          className={`h-8 w-1/2 rounded-sm p-0 text-sm ${
-            activeTab === 'all'
-              ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-              : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-          }`}>
-          전체
-        </Button>
-        <Button
-          onClick={() => handleTabChange('saved')}
-          className={`h-8 w-1/2 rounded-sm p-0 text-sm ${
-            activeTab === 'saved'
-              ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-              : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-          }`}>
-          임시 저장
-        </Button>
-      </div>
-
-      {/* 필터 */}
       <div className="flex items-center justify-between">
         <div className="flex gap-2 text-gray-500">
           <Drawer direction="bottom" open={open} onOpenChange={setOpen}>
@@ -161,20 +162,34 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
               </DrawerHeader>
               <div className="flex flex-col gap-y-2 px-4 pb-8">
                 <>
-                  <div>
-                    <FilterTitle label="년도 선택" />
-                    <Select value={draftYear} onValueChange={setDraftYear}>
-                      <SelectTrigger className="w-full px-2">
-                        <SelectValue placeholder="년도 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {yearOptions.map((y) => (
-                          <SelectItem key={y} value={y}>
-                            {y}년
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="flex justify-between gap-2">
+                    <div className="flex-1">
+                      <FilterTitle label="년도 선택" />
+                      <Select value={draftYear} onValueChange={setDraftYear}>
+                        <SelectTrigger className="w-full px-2">
+                          <SelectValue placeholder="년도 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {yearOptions.map((y) => (
+                            <SelectItem key={y} value={y}>
+                              {y}년
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1">
+                      <FilterTitle label="지급예정일 유무" />
+                      <Select value={draftDdate} onValueChange={setDraftDdate}>
+                        <SelectTrigger className="w-full px-2">
+                          <SelectValue placeholder="지급예정일 유무" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Y">있음</SelectItem>
+                          <SelectItem value="N">없음</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div className="flex justify-between gap-2">
@@ -259,6 +274,28 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
                       />
                     </div>
                   </div>
+
+                  <div>
+                    <FilterTitle label="검색 날짜 범위" />
+                    <DatePickerWithRange
+                      key={datePickerKey}
+                      className="[&_button]:text-muted-foreground [&_button]:h-10 [&_button]:gap-x-0.5 [&_button]:text-[13px]"
+                      selected={draftDateRange}
+                      onSelect={setDraftDateRange}
+                    />
+                  </div>
+
+                  <div>
+                    <FilterTitle label="비용 검색" />
+                    <div className="relative">
+                      <Input
+                        className="w-full max-w-full"
+                        placeholder="비용 제목 또는 작성자 검색"
+                        value={draftSearch}
+                        onChange={(e) => setDraftSearch(e.target.value)}
+                      />
+                    </div>
+                  </div>
                 </>
               </div>
               <DrawerFooter className="flex gap-2">
@@ -270,11 +307,9 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
           </Drawer>
         </div>
 
-        {data.project_status === 'in-progress' && data.is_locked === 'N' && (
-          <Button size="sm" onClick={onCreate}>
-            비용 작성하기
-          </Button>
-        )}
+        <Button size="sm" onClick={onConfirm} disabled={checkedItems.length === 0}>
+          지급하기
+        </Button>
       </div>
     </div>
   );

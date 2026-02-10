@@ -1,6 +1,6 @@
 // _filters/ExpenseFilterMo.tsx
 import { useState, useRef } from 'react';
-import type { ExpenseFilterProps } from '../types/ExpenseFilterProps';
+import type { ManagerFilterProps } from '../types/ManagerFilterProps';
 
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup } from '@/components/ui/select';
@@ -9,31 +9,38 @@ import { MultiSelect, type MultiSelectRef } from '@/components/multiselect/multi
 
 import { Star, RefreshCw, ListFilter, X } from 'lucide-react';
 
-export function ExpenseFilterMo(props: ExpenseFilterProps) {
+export function ManagerFilterMo(props: ManagerFilterProps) {
   const {
-    data,
     activeTab,
-    yearOptions,
+    onTabChange,
+
     selectedYear,
+    yearOptions,
+    onYearChange,
+
     selectedType,
     selectedStatus,
     selectedProof,
     selectedProofStatus,
-
-    typeRef,
-    statusRef,
-    proofRef,
-    proofStatusRef,
 
     typeOptions,
     statusOptions,
     proofMethod,
     proofStatusOptions,
 
-    onTabChange,
-    onFilterChange,
-    onReset,
-    onCreate,
+    typeRef,
+    statusRef,
+    proofRef,
+    proofStatusRef,
+
+    onTypeChange,
+    onStatusChange,
+    onProofChange,
+    onProofStatusChange,
+
+    checkedItems,
+    onRefresh,
+    onConfirm,
   } = props;
 
   const [open, setOpen] = useState(false);
@@ -64,7 +71,7 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
 
   const handleReset = () => {
     // 1. 부모 초기화
-    onReset(activeTab);
+    onRefresh();
 
     // 2. draft 상태 초기화
     setDraftYear(currentYear);
@@ -81,17 +88,22 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
   };
 
   const applyFilters = () => {
-    onFilterChange('tab', activeTab);
-    onFilterChange('year', draftYear);
-    onFilterChange('type', draftType);
-    onFilterChange('method', draftProof);
-    onFilterChange('attach', draftProofStatus);
-    onFilterChange('status', draftStatus);
+    onYearChange(draftYear);
+    onTypeChange(draftType);
+    onProofChange(draftProof);
+    onProofStatusChange(draftProofStatus);
+
+    if (activeTab === 'all') {
+      onStatusChange(draftStatus);
+    } else {
+      onStatusChange([]); // claimed 탭에서는 강제 초기화
+    }
   };
 
-  const handleTabChange = (tab: 'all' | 'saved') => {
+  const handleTabChange = (tab: 'all' | 'claimed') => {
     onTabChange(tab);
-    onFilterChange('tab', tab);
+
+    syncDraft();
   };
 
   const handleApply = () => {
@@ -111,6 +123,15 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
       {/* 탭 */}
       <div className="mb-3 flex rounded-sm bg-gray-300 p-1">
         <Button
+          onClick={() => handleTabChange('claimed')}
+          className={`h-8 w-1/2 rounded-sm p-0 text-sm ${
+            activeTab === 'claimed'
+              ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+              : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+          }`}>
+          승인 대기
+        </Button>
+        <Button
           onClick={() => handleTabChange('all')}
           className={`h-8 w-1/2 rounded-sm p-0 text-sm ${
             activeTab === 'all'
@@ -118,15 +139,6 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
               : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
           }`}>
           전체
-        </Button>
-        <Button
-          onClick={() => handleTabChange('saved')}
-          className={`h-8 w-1/2 rounded-sm p-0 text-sm ${
-            activeTab === 'saved'
-              ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-              : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-          }`}>
-          임시 저장
         </Button>
       </div>
 
@@ -239,25 +251,27 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
                       />
                     </div>
 
-                    <div className="flex-1">
-                      <FilterTitle label="비용 상태" />
-                      {/* 상태 다중 선택 */}
-                      <MultiSelect
-                        className="w-full max-w-full min-w-auto!"
-                        placeholder="비용 상태"
-                        ref={statusRef}
-                        options={statusOptions}
-                        defaultValue={draftStatus}
-                        onValueChange={setDraftStatus}
-                        maxCount={0}
-                        hideSelectAll={true}
-                        closeOnSelect={true}
-                        searchable={false}
-                        simpleSelect={true}
-                        modalPopover={true}
-                        onOpen={() => multiOpen(statusRef.current)}
-                      />
-                    </div>
+                    {activeTab === 'all' && (
+                      <div className="flex-1">
+                        <FilterTitle label="비용 상태" />
+                        {/* 상태 다중 선택 */}
+                        <MultiSelect
+                          className="w-full max-w-full min-w-auto!"
+                          placeholder="비용 상태"
+                          ref={statusRef}
+                          options={statusOptions}
+                          defaultValue={draftStatus}
+                          onValueChange={setDraftStatus}
+                          maxCount={0}
+                          hideSelectAll={true}
+                          closeOnSelect={true}
+                          searchable={false}
+                          simpleSelect={true}
+                          modalPopover={true}
+                          onOpen={() => multiOpen(statusRef.current)}
+                        />
+                      </div>
+                    )}
                   </div>
                 </>
               </div>
@@ -270,11 +284,9 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
           </Drawer>
         </div>
 
-        {data.project_status === 'in-progress' && data.is_locked === 'N' && (
-          <Button size="sm" onClick={onCreate}>
-            비용 작성하기
-          </Button>
-        )}
+        <Button size="sm" onClick={onConfirm} disabled={checkedItems.length === 0}>
+          승인하기
+        </Button>
       </div>
     </div>
   );

@@ -2,12 +2,16 @@ import { useRef, useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { cn } from '@/lib/utils';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 import { formatDate, formatAmount, getGrowingYears, SortIcon } from '@/utils';
 import { downloadReportExcel } from '@/components/features/Project/utils/reportDown';
 
 import { getClientList, getTeamList } from '@/api';
 import { getProjectList, getAdminReportExcel, updateExpcost } from '@/api/admin/project';
 import type { ProjectListResponse, ProjectListItem } from '@/api/admin/project';
+
+import { ReportFilterPC } from '@/components/features/Project/_responsive/ReportFilterPC';
+import { ReportFilterMobile } from '@/components/features/Project/_responsive/ReportFilterMo';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
@@ -30,6 +34,7 @@ type SortState = {
 export default function Report() {
   const { user_id } = useUser();
   const { search } = useLocation();
+  const isMobile = useIsMobileViewport();
   const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
   const [reportData, setReportData] = useState<ProjectListResponse | null>(null);
@@ -271,141 +276,62 @@ export default function Report() {
     loadList();
   };
 
+  const filterProps = {
+    /* pagination */
+    pageSize,
+    onPageSizeChange: (size: number) => {
+      setPageSize(size);
+      setPage(1);
+    },
+
+    /* year */
+    yearOptions,
+    selectedYear,
+    onYearChange: (v: string) => handleFilterChange(setSelectedYear, v),
+
+    /* client / team / status */
+    selectedClient,
+    selectedTeam,
+    selectedStatus,
+    isLocked,
+
+    clientOptions,
+    teamOptions,
+    statusOptions,
+
+    clientRef,
+    teamRef,
+    statusRef,
+
+    onClientChange: (v: string[]) => handleFilterChange(setSelectedClient, v),
+    onTeamChange: (v: string[]) => handleFilterChange(setSelectedTeam, v),
+    onStatusChange: (v: string[]) => handleFilterChange(setSelectedStatus, v),
+
+    /* search */
+    searchInput,
+    onSearchInputChange: setSearchInput,
+    onSearchSubmit: () => {
+      setSearchQuery(searchInput);
+      setPage(1);
+    },
+    onReset: resetAllFilters,
+
+    /* lock */
+    onLockToggle: handleLockChange,
+  };
+
   return (
     <>
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-x-2">
-          <Select
-            value={String(pageSize)}
-            onValueChange={(value) => {
-              setPageSize(Number(value));
-              setPage(1);
-            }}>
-            <SelectTrigger size="sm">
-              <SelectValue placeholder="Row 선택" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="15" size="sm">
-                15 Rows
-              </SelectItem>
-              <SelectItem value="30" size="sm">
-                30 Rows
-              </SelectItem>
-              <SelectItem value="50" size="sm">
-                50 Rows
-              </SelectItem>
-              <SelectItem value="100" size="sm">
-                100 Rows
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedYear} onValueChange={(v) => handleFilterChange(setSelectedYear, v)}>
-            <SelectTrigger size="sm" className="px-2">
-              <SelectValue placeholder="년도 선택" />
-            </SelectTrigger>
-            <SelectContent>
-              {yearOptions.map((y) => (
-                <SelectItem size="sm" key={y} value={y}>
-                  {y}년
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <MultiSelect
-            size="sm"
-            ref={clientRef}
-            className="max-w-[80px] min-w-auto!"
-            maxCount={0}
-            autoSize={true}
-            placeholder="클라이언트 선택"
-            options={clientOptions}
-            onValueChange={(v) => handleFilterChange(setSelectedClient, v)}
-            simpleSelect={true}
-            hideSelectAll={true}
-          />
-
-          <MultiSelect
-            size="sm"
-            ref={teamRef}
-            className="max-w-[80px] min-w-auto!"
-            maxCount={0}
-            autoSize={true}
-            placeholder="팀 선택"
-            options={teamOptions}
-            onValueChange={(v) => handleFilterChange(setSelectedTeam, v)}
-            simpleSelect={true}
-            hideSelectAll={true}
-          />
-
-          <MultiSelect
-            size="sm"
-            ref={statusRef}
-            className="max-w-[80px] min-w-auto!"
-            maxCount={0}
-            autoSize={true}
-            placeholder="상태 선택"
-            options={statusOptions}
-            defaultValue={selectedStatus}
-            onValueChange={(v) => handleFilterChange(setSelectedStatus, v)}
-            simpleSelect={true}
-          />
-
-          <Button
-            type="button"
-            variant="svgIcon"
-            size="icon"
-            className={cn('size-6 text-gray-600', isLocked === '' ? 'hover:text-primary-blue-500' : '[&_rect]:fill-gray-600')}
-            onClick={handleLockChange}>
-            {isLocked === 'N' ? <LockOpen /> : <Lock />}
-          </Button>
-
-          <Button
-            type="button"
-            variant="svgIcon"
-            size="icon"
-            className="hover:text-primary-blue-500 size-6 text-gray-600"
-            onClick={resetAllFilters}>
-            <RefreshCw />
-          </Button>
-        </div>
-
-        <div className="flex gap-x-2">
-          <div className="relative">
-            <Input
-              className="max-w-42 pr-6"
-              size="sm"
-              placeholder="검색어를 입력해 주세요."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setSearchQuery(searchInput);
-                }
-              }}
-            />
-            {searchInput && (
-              <Button
-                type="button"
-                variant="svgIcon"
-                className="absolute top-0 right-0 h-full w-6 px-0 text-gray-500"
-                onClick={resetAllFilters}>
-                <X className="size-3.5" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
+      {isMobile ? <ReportFilterMobile {...filterProps} /> : <ReportFilterPC {...filterProps} />}
 
       {/* ---------------- 테이블 ---------------- */}
-      <Table variant="primary" align="center" className="table-fixed">
+      <Table variant="primary" align="center" className="table-fixed max-md:w-320">
         <TableHeader>
           <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className="w-24 px-0!">프로젝트#</TableHead>
             <TableHead className="">프로젝트 이름</TableHead>
             <TableHead className="w-[12%]">클라이언트</TableHead>
-            <TableHead className="w-[6.5%]">프로젝트 오너</TableHead>
+            <TableHead className="w-[6.5%] max-md:w-[8%]">프로젝트 오너</TableHead>
             <TableHead className="w-[8%]">
               <Button
                 type="button"
