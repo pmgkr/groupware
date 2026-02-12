@@ -113,10 +113,13 @@ export const AccountSelectDialog: React.FC<Props> = ({ open, onOpenChange, accou
 
   const onSubmit = async (data: AccountFormData) => {
     try {
+      const selectedBank = bankCodes.find((b) => b.code === data.bank_name);
+
       const dto = {
         flag: data.flag || 'exp',
         account_alias: data.account_alias,
-        bank_name: data.bank_name,
+        bank_code: data.bank_name,
+        bank_name: selectedBank?.name || '',
         bank_account: data.bank_account,
         account_name: data.account_name,
       };
@@ -242,7 +245,7 @@ export const AccountSelectDialog: React.FC<Props> = ({ open, onOpenChange, accou
                           </SelectTrigger>
                           <SelectContent>
                             {bankCodes.map((bank) => (
-                              <SelectItem key={bank.code} value={bank.name}>
+                              <SelectItem key={bank.code} value={bank.code}>
                                 {bank.name}
                               </SelectItem>
                             ))}
