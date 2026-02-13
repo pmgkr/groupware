@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup } from '@/components/ui/select';
 import { MultiSelect } from '@/components/multiselect/multi-select';
 
-import { Star, RefreshCw } from 'lucide-react';
+import { Star, RefreshCw, X } from 'lucide-react';
 
 export function ProjectFilterPC(props: ProjectFilterProps) {
   const {
@@ -171,14 +171,26 @@ export function ProjectFilterPC(props: ProjectFilterProps) {
 
       {/* 검색 + 생성 */}
       <div className="flex gap-x-2">
-        <Input
-          className="max-w-42"
-          size="sm"
-          placeholder="검색어 입력"
-          value={searchInput}
-          onChange={(e) => onSearchInputChange(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
-        />
+        <div className="relative">
+          <Input
+            className="max-w-42"
+            size="sm"
+            placeholder="검색어 입력"
+            value={searchInput}
+            onChange={(e) => onSearchInputChange(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
+          />
+
+          {searchInput && (
+            <Button
+              type="button"
+              variant="svgIcon"
+              className="absolute top-1/2 right-0 h-full w-6 -translate-y-[50%] px-0 text-gray-500"
+              onClick={onReset}>
+              <X className="size-3.5" />
+            </Button>
+          )}
+        </div>
 
         <Button size="sm" onClick={onCreate}>
           프로젝트 생성

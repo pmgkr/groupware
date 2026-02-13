@@ -10,6 +10,7 @@ export type ExpenseFilterProps = {
   selectedStatus: string[];
   selectedProof: string[];
   selectedProofStatus: string[];
+  searchInput: string;
 
   typeOptions: MultiSelectOption[];
   statusOptions: MultiSelectOption[];
@@ -23,6 +24,8 @@ export type ExpenseFilterProps = {
 
   onTabChange: (tab: 'all' | 'saved') => void;
   onFilterChange: (key: string, value: string | string[]) => void;
+  onSearchInputChange: (v: string) => void;
+  onSearchSubmit: (v: string) => void;
   onReset: (tab: 'all' | 'saved') => void;
   onCreate: () => void;
 };

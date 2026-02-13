@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react';
 import type { ExpenseFilterProps } from '../types/ExpenseFilterProps';
 
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup } from '@/components/ui/select';
 import { Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
@@ -19,6 +20,7 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
     selectedStatus,
     selectedProof,
     selectedProofStatus,
+    searchInput,
 
     typeRef,
     statusRef,
@@ -32,6 +34,8 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
 
     onTabChange,
     onFilterChange,
+    onSearchInputChange,
+    onSearchSubmit,
     onReset,
     onCreate,
   } = props;
@@ -43,6 +47,7 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
   const [draftProof, setDraftProof] = useState(selectedProof);
   const [draftProofStatus, setDraftProofStatus] = useState(selectedProofStatus);
   const [draftStatus, setDraftStatus] = useState(selectedStatus);
+  const [draftSearch, setDraftSearch] = useState(searchInput);
   const activeMultiSelectRef = useRef<MultiSelectRef | null>(null); // Drawer 컴포넌트 내 MultiSelect 제어용
 
   const multiOpen = (ref: MultiSelectRef | null) => {
@@ -60,6 +65,7 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
     setDraftProof(selectedProof);
     setDraftProofStatus(selectedProofStatus);
     setDraftStatus(selectedStatus);
+    setDraftSearch(searchInput);
   };
 
   const handleReset = () => {
@@ -72,6 +78,7 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
     setDraftProof([]);
     setDraftProofStatus([]);
     setDraftStatus([]);
+    setDraftSearch('');
 
     // 3. MultiSelect UI 초기화
     typeRef.current?.clear();
@@ -87,6 +94,9 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
     onFilterChange('method', draftProof);
     onFilterChange('attach', draftProofStatus);
     onFilterChange('status', draftStatus);
+
+    onSearchInputChange(draftSearch);
+    onSearchSubmit(draftSearch);
   };
 
   const handleTabChange = (tab: 'all' | 'saved') => {
@@ -258,6 +268,16 @@ export function ExpenseFilterMo(props: ExpenseFilterProps) {
                         onOpen={() => multiOpen(statusRef.current)}
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <FilterTitle label="비용 검색" />
+                    <Input
+                      className="w-full max-w-full"
+                      placeholder="비용 제목 또는 작성자 검색"
+                      value={draftSearch}
+                      onChange={(e) => setDraftSearch(e.target.value)}
+                    />
                   </div>
                 </>
               </div>

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup } from '@/components/ui/select';
 import { MultiSelect } from '@/components/multiselect/multi-select';
 
-import { Star, RefreshCw } from 'lucide-react';
+import { RefreshCw, X } from 'lucide-react';
 
 export function ExpenseFilterPC(props: ExpenseFilterProps) {
   const {
@@ -18,6 +18,7 @@ export function ExpenseFilterPC(props: ExpenseFilterProps) {
     selectedStatus,
     selectedProof,
     selectedProofStatus,
+    searchInput,
 
     typeRef,
     statusRef,
@@ -31,6 +32,8 @@ export function ExpenseFilterPC(props: ExpenseFilterProps) {
 
     onTabChange,
     onFilterChange,
+    onSearchInputChange,
+    onSearchSubmit,
     onReset,
     onCreate,
   } = props;
@@ -152,11 +155,34 @@ export function ExpenseFilterPC(props: ExpenseFilterProps) {
         </div>
       </div>
 
-      {data.project_status === 'in-progress' && data.is_locked === 'N' && (
-        <Button size="sm" onClick={onCreate}>
-          비용 작성하기
-        </Button>
-      )}
+      <div className="flex gap-x-2">
+        <div className="relative">
+          <Input
+            className="max-w-42"
+            size="sm"
+            placeholder="비용 제목 또는 작성자 검색"
+            value={searchInput}
+            onChange={(e) => onSearchInputChange(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit(searchInput)}
+          />
+
+          {searchInput && (
+            <Button
+              type="button"
+              variant="svgIcon"
+              className="absolute top-1/2 right-0 h-full w-6 -translate-y-[50%] px-0 text-gray-500"
+              onClick={() => onReset(activeTab)}>
+              <X className="size-3.5" />
+            </Button>
+          )}
+        </div>
+
+        {data.project_status === 'in-progress' && data.is_locked === 'N' && (
+          <Button size="sm" onClick={onCreate}>
+            비용 작성하기
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

@@ -46,6 +46,7 @@ export type projectExpenseParams = {
   status?: string;
   page?: number;
   size?: number;
+  q?: string;
 };
 
 // 프로젝트 비용 리스트 Reponse
