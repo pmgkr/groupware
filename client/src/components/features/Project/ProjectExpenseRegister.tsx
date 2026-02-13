@@ -53,16 +53,62 @@ const expenseSchema = z.object({
   remark: z.string().optional(),
   expense_items: z
     .array(
-      z.object({
-        number: z.string().optional(),
-        type: z.string().optional(),
-        title: z.string().optional(),
-        date: z.string().optional(),
-        price: z.string().optional(),
-        tax: z.string().optional(),
-        total: z.string().optional(),
-        pro_id: z.number().nullable().optional(),
-      })
+      z
+        .object({
+          number: z.string().optional(),
+          type: z.string().optional(),
+          title: z.string().optional(),
+          date: z.string().optional(),
+          price: z.string().optional(),
+          tax: z.string().optional(),
+          total: z.string().optional(),
+          pro_id: z.number().nullable().optional(),
+
+          // 외주용역비 전용
+          tax_type: z.string().optional(),
+          work_day: z.string().optional(),
+          work_term: z.string().optional(),
+          h_name: z.string().optional(),
+          h_ssn: z.string().optional(),
+          h_tel: z.string().optional(),
+          h_addr: z.string().optional(),
+
+          // 접대비 전용
+          ent_member: z.string().optional(),
+          ent_reason: z.string().optional(),
+        })
+        .superRefine((data, ctx) => {
+          if (data.type === '외주용역비') {
+            const requiredFields = ['tax_type', 'work_day', 'work_term', 'h_name', 'h_ssn', 'h_tel', 'h_addr'] as const;
+
+            requiredFields.forEach((field) => {
+              if (!data[field]) {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  message: '필수 입력 항목입니다.',
+                  path: [field],
+                });
+              }
+            });
+          }
+
+          if (data.type === '접대비') {
+            if (!data.ent_member) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: '접대 대상은 필수입니다.',
+                path: ['ent_member'],
+              });
+            }
+            if (!data.ent_reason) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: '접대 사유는 필수입니다.',
+                path: ['ent_reason'],
+              });
+            }
+          }
+        })
     )
     .optional(),
 });
@@ -123,6 +169,17 @@ export default function ProjectExpenseRegister() {
         tax: '',
         total: '',
         pro_id: null,
+
+        tax_type: '',
+        work_day: '',
+        work_term: '',
+        h_name: '',
+        h_ssn: '',
+        h_tel: '',
+        h_addr: '',
+
+        ent_member: '',
+        ent_reason: '',
       })),
     },
   });
@@ -201,6 +258,17 @@ export default function ProjectExpenseRegister() {
             tax: '',
             total: '',
             pro_id: null,
+
+            tax_type: '',
+            work_day: '',
+            work_term: '',
+            h_name: '',
+            h_ssn: '',
+            h_tel: '',
+            h_addr: '',
+
+            ent_member: '',
+            ent_reason: '',
           })),
         });
       }
@@ -210,7 +278,27 @@ export default function ProjectExpenseRegister() {
   // 항목 추가 버튼 클릭 시
   const handleAddArticle = useCallback(() => {
     setArticleCount((prev) => prev + 1);
-    append({ type: '', title: '', number: '', date: '', price: '', tax: '', total: '', pro_id: null });
+    append({
+      type: '',
+      title: '',
+      number: '',
+      date: '',
+      price: '',
+      tax: '',
+      total: '',
+      pro_id: null,
+
+      tax_type: '',
+      work_day: '',
+      work_term: '',
+      h_name: '',
+      h_ssn: '',
+      h_tel: '',
+      h_addr: '',
+
+      ent_member: '',
+      ent_reason: '',
+    });
   }, [append]);
 
   // 항목 삭제 버튼 클릭 시
