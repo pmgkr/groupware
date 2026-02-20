@@ -22,9 +22,9 @@ export default function ExpenseViewRow({ item, onProposal, onAddInfo }: ExpenseV
     <TableRow className="[&_td]:text-[13px]">
       <TableCell>
         {(item.ei_type === '외주용역비' || item.ei_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
-          <Button type="button" variant="outline" size="xs" className="h-7 rounded-[4px]" onClick={() => onAddInfo(item.expense_add_info)}>
+          <span className="text-primary cursor-pointer underline" onClick={() => onAddInfo(item.expense_add_info)}>
             {item.ei_type}
-          </Button>
+          </span>
         ) : (
           item.ei_type
         )}

@@ -11,14 +11,16 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 import { type ExpenseListItems } from '@/api/manager/pexpense';
+import { UserRoundPen } from 'lucide-react';
 
 type ExpenseRowProps = {
   item: ExpenseListItems;
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
+  onAInfo: (item: ExpenseListItems) => void;
 };
 
-export const ManagerListRow = memo(({ item, checked, onCheck }: ExpenseRowProps) => {
+export const ManagerListRow = memo(({ item, checked, onCheck, onAInfo }: ExpenseRowProps) => {
   const { user_id } = useUser();
   const { search } = useLocation();
 
@@ -71,6 +73,8 @@ export const ManagerListRow = memo(({ item, checked, onCheck }: ExpenseRowProps)
     </span>
   );
 
+  const isAddInfo = (item.add_info ?? []).length;
+
   return (
     <TableRow className="[&_td]:px-2 [&_td]:text-sm [&_td]:leading-[1.3] 2xl:[&_td]:text-[13px]">
       <TableCell className="whitespace-nowrap">
@@ -112,6 +116,14 @@ export const ManagerListRow = memo(({ item, checked, onCheck }: ExpenseRowProps)
         <Link to={`/manager/pexpense/${item.seq}${search}`} className="hover:underline">
           {item.el_title}
         </Link>
+        {isAddInfo > 0 && (
+          <span
+            className="ml-1 inline-flex cursor-pointer items-center gap-0.5 align-middle text-xs text-gray-500"
+            onClick={() => onAInfo(item)}>
+            <UserRoundPen className="size-3" />
+            {isAddInfo}
+          </span>
+        )}
       </TableCell>
       <TableCell>{item.el_attach === 'Y' ? <Badge variant="secondary">제출</Badge> : <Badge variant="grayish">미제출</Badge>}</TableCell>
       <TableCell>

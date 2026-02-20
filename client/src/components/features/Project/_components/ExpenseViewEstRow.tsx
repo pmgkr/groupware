@@ -44,7 +44,7 @@ export default function ExpenseViewEstRow({
     <TableRow key={item.seq} className="[&_td]:text-[13px]">
       <TableCell>
         {(item.ei_type === '외주용역비' || item.ei_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
-          <span className="text-primary underline" onClick={() => onAddInfo(item.expense_add_info)}>
+          <span className="text-primary cursor-pointer underline" onClick={() => onAddInfo(item.expense_add_info)}>
             {item.ei_type}
           </span>
         ) : (
