@@ -35,6 +35,7 @@ export type pExpenseListItem = {
   is_estimate?: string; // 견적서 비용 or 견적서 외 비용
   alloc_status?: string; // 견적서 매칭 상태
   allocated_amount?: number; // 견적서 매칭 합계
+  add_info?: addInfoDTO[];
 };
 
 export type projectExpenseParams = {
@@ -89,6 +90,7 @@ export interface pExpenseItemBase {
   pro_id?: number | null;
   is_estimate?: string;
   attachments?: pExpenseAttachment[];
+  expense_add_info?: addInfoDTO[];
 }
 
 export interface pExpenseHeaderBase {
@@ -254,4 +256,40 @@ export async function projectExpenseUpdate(expid: string, payload: pExpenseEditP
 // 프로젝트 비용 증빙자료 삭제
 export async function delProjectExpenseAttachment(seq: number): Promise<void> {
   return http<void>(`/user/pexpense/update/attachment/delete/${seq}`, { method: 'DELETE' });
+}
+
+// 외주용역비 및 접대비 유형 생성
+export interface ainfoCreatePayload {
+  exp_idx: number;
+  exp_kind_idx: number;
+  tax_type?: string;
+  work_term?: string;
+  work_day?: string;
+  h_name?: string;
+  h_ssn?: string;
+  h_tel?: string;
+  h_addr?: string;
+  ent_member?: string;
+  ent_reason?: string;
+}
+
+export interface addInfoDTO {
+  seq: number;
+  exp_idx: number;
+  exp_kind_idx: number;
+  tax_type?: string;
+  work_term?: string;
+  work_day?: string;
+  h_name?: string;
+  h_ssn?: string;
+  h_tel?: string;
+  h_addr?: string;
+  ent_member?: string;
+  ent_reason?: string;
+  user_id: string;
+  wdate: string;
+}
+
+export async function ainfoCreate(payload: ainfoCreatePayload) {
+  return http<addInfoDTO>(`/user/pexpense/ainfo/create`, { method: 'POST', body: JSON.stringify(payload) });
 }

@@ -14,7 +14,7 @@ import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
-import { getProjectExpenseView } from '@/api/project';
+import { getProjectExpenseView, type addInfoDTO } from '@/api/project';
 import { useProjectExpenseMatching } from './hooks/useProjectExpenseMatching';
 
 import EstimateSelectDialog from './_components/EstimateSelectDialog';
@@ -23,6 +23,7 @@ import EstimateMatched from './_components/EstimateMatched';
 import ExpenseViewRow from './_components/ExpenseViewRow';
 import ExpenseViewEstRow from './_components/ExpenseViewEstRow';
 import ReportMatched from './_components/ReportMatched';
+import { AddInfoDialog } from './_components/addInfoDialog';
 
 import { RotateCcw, OctagonAlert, Files, File, SquareArrowOutUpRight, Copy } from 'lucide-react';
 
@@ -39,6 +40,10 @@ export default function ProjectExpenseView() {
   // 기안서 조회 State
   const [selectedProposal, setSelectedProposal] = useState<ReportDTO | null>(null);
   const [proposalLoading, setProposalLoading] = useState(false);
+
+  // Add Info Modal State
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedAddInfos, setSelectedAddInfos] = useState<addInfoDTO[]>([]);
 
   /** -----------------------------------------
    *  핵심 매칭 로직 공유 훅
@@ -87,6 +92,8 @@ export default function ProjectExpenseView() {
     );
 
   const { header, items } = data;
+
+  console.log(items);
 
   /** -----------------------------------------
    *  상태 Badge
@@ -171,6 +178,12 @@ export default function ProjectExpenseView() {
   // 마이페이지 > 비용 내역에서 넘어왔는 지 파악
   const hasFlag = new URLSearchParams(search).has('flag');
 
+  // 외주용역비 or 접대비 버튼 클릭 시
+  const handleAddInfo = async (addInfos?: addInfoDTO[]) => {
+    setSelectedAddInfos(addInfos ?? []);
+    setDetailOpen(true);
+  };
+
   return (
     <>
       {isMobile ? (
@@ -213,9 +226,22 @@ export default function ProjectExpenseView() {
               <h3 className="text-lg leading-[1.2] font-bold">비용 항목</h3>
               <div className="py-2">
                 {items.map((item) => {
+                  console.log('항목', item);
+
                   return (
                     <div key={item.seq} className="mb-3 border-b-1 border-dashed pb-3 last:border-b-0">
-                      <ExpRow title="비용 용도" value={item.ei_type} />
+                      <dl className="flex justify-between gap-2 py-1">
+                        <dt className="w-[20%] shrink-0 text-[13px] text-gray-700">비용 용도</dt>
+                        <dd className="text-right text-[13px] font-medium break-keep whitespace-pre">
+                          {(item.ei_type === '외주용역비' || item.ei_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
+                            <span className="text-primary underline" onClick={() => handleAddInfo(item.expense_add_info)}>
+                              {item.ei_type}
+                            </span>
+                          ) : (
+                            item.ei_type
+                          )}
+                        </dd>
+                      </dl>
                       <ExpRow title="가맹점명" value={item.ei_title} />
                       <ExpRow title="매입일자" value={formatDate(item.ei_pdate, true)} />
                       <dl className="flex justify-between py-1">
@@ -466,10 +492,18 @@ export default function ProjectExpenseView() {
                             isMatched={isMatched}
                             isMatching={isMatching}
                             isWaiting={isWaiting}
+                            onAddInfo={handleAddInfo}
                           />
                         );
                       })
-                    : items.map((item) => <ExpenseViewRow key={item.seq} item={item} onProposal={() => setReportInfo(item.pro_id)} />)}
+                    : items.map((item) => (
+                        <ExpenseViewRow
+                          key={item.seq}
+                          item={item}
+                          onProposal={() => setReportInfo(item.pro_id)}
+                          onAddInfo={handleAddInfo}
+                        />
+                      ))}
 
                   <TableRow className="bg-primary-blue-50 [&_td]:py-3">
                     <TableCell className="font-semibold" colSpan={3}>
@@ -552,6 +586,8 @@ export default function ProjectExpenseView() {
         selectedEstId={selectedEstId}
         setSelectedEstId={setSelectedEstId}
       />
+
+      <AddInfoDialog open={detailOpen} onOpenChange={setDetailOpen} addInfos={selectedAddInfos} />
     </>
   );
 }

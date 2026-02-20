@@ -1,6 +1,5 @@
 // components/ExpenseViewRow.tsx
-import { Link } from 'react-router';
-
+import { type addInfoDTO } from '@/api/project';
 import { formatAmount, normalizeAttachmentUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { TableRow, TableCell } from '@/components/ui/table';
@@ -9,9 +8,10 @@ import type { pExpenseItemDTO } from '@/api';
 interface ExpenseViewRowProps {
   item: pExpenseItemDTO;
   onProposal?: () => void;
+  onAddInfo: (addInfos?: addInfoDTO[]) => void;
 }
 
-export default function ExpenseViewRow({ item, onProposal }: ExpenseViewRowProps) {
+export default function ExpenseViewRow({ item, onProposal, onAddInfo }: ExpenseViewRowProps) {
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
     const date = typeof d === 'string' ? new Date(d) : d;
@@ -20,7 +20,15 @@ export default function ExpenseViewRow({ item, onProposal }: ExpenseViewRowProps
 
   return (
     <TableRow className="[&_td]:text-[13px]">
-      <TableCell>{item.ei_type}</TableCell>
+      <TableCell>
+        {(item.ei_type === '외주용역비' || item.ei_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
+          <Button type="button" variant="outline" size="xs" className="h-7 rounded-[4px]" onClick={() => onAddInfo(item.expense_add_info)}>
+            {item.ei_type}
+          </Button>
+        ) : (
+          item.ei_type
+        )}
+      </TableCell>
       <TableCell>{item.ei_title}</TableCell>
 
       {/* 매입일자 */}

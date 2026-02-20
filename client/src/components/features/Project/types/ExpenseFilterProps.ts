@@ -1,4 +1,4 @@
-import { type projectOverview } from '@/api/project';
+import { type pExpenseListItem, type projectOverview } from '@/api/project';
 import type { MultiSelectOption, MultiSelectRef } from '@/components/multiselect/multi-select';
 
 export type ExpenseFilterProps = {

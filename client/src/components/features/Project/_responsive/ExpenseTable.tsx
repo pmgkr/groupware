@@ -13,9 +13,10 @@ type Props = {
   checkedItems: number[];
   onCheckAll: (checked: boolean) => void;
   onCheck: (seq: number, checked: boolean) => void;
+  onAInfo: (item: pExpenseListItem) => void;
 };
 
-export function ExpenseTable({ items, loading, activeTab, checkAll, checkedItems, onCheckAll, onCheck }: Props) {
+export function ExpenseTable({ items, loading, activeTab, checkAll, checkedItems, onCheckAll, onCheck, onAInfo }: Props) {
   const isEmpty = items.length === 0;
 
   return (
@@ -57,7 +58,14 @@ export function ExpenseTable({ items, loading, activeTab, checkAll, checkedItems
           </TableRow>
         ) : (
           items.map((item) => (
-            <ExpenseRow key={item.seq} item={item} activeTab={activeTab} checked={checkedItems.includes(item.seq)} onCheck={onCheck} />
+            <ExpenseRow
+              key={item.seq}
+              item={item}
+              activeTab={activeTab}
+              checked={checkedItems.includes(item.seq)}
+              onCheck={onCheck}
+              onAInfo={onAInfo}
+            />
           ))
         )}
       </TableBody>

@@ -3,7 +3,7 @@ import { useOutletContext, useNavigate, useParams, useSearchParams } from 'react
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import * as XLSX from 'xlsx';
 import { useUser } from '@/hooks/useUser';
-import { findManager, getGrowingYears } from '@/utils';
+import { findManager, getGrowingYears, formatDate } from '@/utils';
 import { notificationApi } from '@/api/notification';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -21,8 +21,16 @@ import { ExpenseFilterPC } from './_responsive/ExpenseFilterPC';
 import { ExpenseFilterMo } from './_responsive/ExpenseFilterMo';
 import { ExpenseTable } from './_responsive/ExpenseTable';
 import { ExpenseCardList } from './_responsive/ExpenseCardList';
+import { AddInfoDialog } from './_components/addInfoDialog';
 
-import { getProjectExpense, type pExpenseListItem, getProjectExpenseType, deleteProjectTempExpense, claimProjectTempExpense } from '@/api';
+import {
+  getProjectExpense,
+  type addInfoDTO,
+  type pExpenseListItem,
+  getProjectExpenseType,
+  deleteProjectTempExpense,
+  claimProjectTempExpense,
+} from '@/api';
 
 export default function Expense() {
   const navigate = useNavigate();
@@ -50,6 +58,10 @@ export default function Expense() {
   const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || ''); // 실제 검색 Input 저장값
   const [registerDialog, setRegisterDialog] = useState(false); // Dialog용 State
   const [registerType, setRegisterType] = useState<'est' | 'pro' | null>(null); // Dialog Type용 State
+
+  // Add Info Modal State
+  const [selectedAddInfos, setSelectedAddInfos] = useState<addInfoDTO[]>([]);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const typeRef = useRef<MultiSelectRef>(null);
   const statusRef = useRef<MultiSelectRef>(null);
@@ -369,6 +381,12 @@ export default function Expense() {
     });
   };
 
+  // 외주용역비 or 접대비 버튼 클릭 시
+  const handleAddInfo = async (item: pExpenseListItem) => {
+    setSelectedAddInfos(item.add_info ?? []);
+    setDetailOpen(true);
+  };
+
   // 필터 옵션 정의
   const statusOptions: MultiSelectOption[] = [
     { label: '임시저장', value: 'Saved' },
@@ -554,6 +572,7 @@ export default function Expense() {
           checkAll={checkAll}
           onCheckAll={handleCheckAll}
           onCheck={handleCheckItem}
+          onAInfo={handleAddInfo}
           loading={loading}
         />
       ) : (
@@ -564,6 +583,7 @@ export default function Expense() {
           checkAll={checkAll}
           onCheckAll={handleCheckAll}
           onCheck={handleCheckItem}
+          onAInfo={handleAddInfo}
           loading={loading}
         />
       )}
@@ -589,6 +609,8 @@ export default function Expense() {
           />
         )}
       </div>
+
+      <AddInfoDialog open={detailOpen} onOpenChange={setDetailOpen} addInfos={selectedAddInfos} />
 
       <Dialog open={registerDialog} onOpenChange={setRegisterDialog}>
         <DialogContent className="max-md:max-w-[calc(100%-var(--spacing)*8)] max-md:rounded-md">

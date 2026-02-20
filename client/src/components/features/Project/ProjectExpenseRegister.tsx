@@ -8,6 +8,7 @@ import { useUser } from '@/hooks/useUser';
 import { mapExcelToExpenseItems } from '@/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 
+import { ainfoCreate } from '@/api/project/expense';
 import { uploadFilesToServer, projectExpenseRegister, getBankList, getExpenseType, type BankList } from '@/api';
 import { type SingleSelectOption } from '@components/ui/SearchableSelect';
 import { ExpenseRow } from './_components/ExpenseRegisterRow';
@@ -575,7 +576,66 @@ export default function ProjectExpenseRegister() {
 
           if (result.ok) {
             const item_count = result.count_items;
-            const itemSeqs = result.item_seqs; // [42, 43, 44]
+            const itemSeqs = result.item_seqs; // pexpense_item.seq 배열
+
+            // 외주용역비 / 접대비 추가 정보 저장
+            try {
+              const listSeq = result.list_seq; // pexpense_list.seq
+
+              const ainfoPromises = items.map((item: any, index: number) => {
+                const itemSeq = itemSeqs[index];
+
+                if (!itemSeq) return null;
+
+                // 외주용역비
+                if (item.type === '외주용역비') {
+                  const payload = {
+                    exp_idx: listSeq,
+                    exp_kind_idx: itemSeq,
+                    tax_type: item.tax_type || '',
+                    work_term: item.work_term || '',
+                    work_day: item.work_day ? `${item.work_day}일` : '',
+                    h_name: item.h_name || '',
+                    h_ssn: item.h_ssn || '',
+                    h_tel: item.h_tel || '',
+                    h_addr: item.h_addr || '',
+                  };
+
+                  return ainfoCreate(payload);
+                }
+
+                // 접대비
+                if (item.type === '접대비') {
+                  const payload = {
+                    exp_idx: listSeq,
+                    exp_kind_idx: itemSeq,
+                    ent_member: item.ent_member || '',
+                    ent_reason: item.ent_reason || '',
+                  };
+
+                  return ainfoCreate(payload);
+                }
+
+                return null;
+              });
+
+              // null 제거
+              const filteredPromises = ainfoPromises.filter(Boolean);
+
+              if (filteredPromises.length > 0) {
+                await Promise.all(filteredPromises);
+                console.log('✅ ainfoCreate 완료');
+              }
+            } catch (ainfoError) {
+              console.error('❌ ainfoCreate 실패:', ainfoError);
+
+              addAlert({
+                title: '추가 정보 저장 실패',
+                message: '외주/접대 추가 정보 저장 중 오류가 발생했습니다.',
+                icon: <OctagonAlert />,
+                duration: 2000,
+              });
+            }
 
             // payload의 items에서 pro_id 추출 (중복 제거)
             const uniqueProposalIds = new Set<number>();

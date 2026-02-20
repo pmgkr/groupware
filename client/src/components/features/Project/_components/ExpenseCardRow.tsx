@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { formatAmount, formatKST, formatDate } from '@/utils';
 import type { pExpenseListItem } from '@/api';
+import { UserRoundPen } from 'lucide-react';
 
 const statusMap = {
   Saved: <Badge variant="grayish">임시저장</Badge>,
@@ -26,9 +27,10 @@ type ExpenseRowProps = {
   item: pExpenseListItem;
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
+  onAInfo: (item: pExpenseListItem) => void;
 };
 
-export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck, role }: ExpenseRowProps) => {
+export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck, role, onAInfo }: ExpenseRowProps) => {
   const { user_id } = useUser();
   const { search } = useLocation();
 
@@ -42,6 +44,8 @@ export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck, role }:
   const expenseDetail = useMemo(() => {
     return role === 'manager' ? `/manager/pexpense/${item.seq}${search}` : `/project/${item.project_id}/expense/${item.seq}${search}`;
   }, [role, item.seq, item.project_id, search]);
+
+  const isAddInfo = (item.add_info ?? []).length;
 
   return (
     <div className="relative rounded-md border border-gray-300 bg-white p-4">
@@ -63,6 +67,14 @@ export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck, role }:
             />
           )}
           <span>EXP #{item.exp_id}</span>
+          {isAddInfo > 0 && (
+            <span
+              className="ml-1 inline-flex cursor-pointer items-center gap-0.5 align-middle text-xs text-gray-500"
+              onClick={() => onAInfo(item)}>
+              <UserRoundPen className="size-3" />
+              {isAddInfo}
+            </span>
+          )}
         </div>
         {statusMap[item.status as keyof typeof statusMap]}
       </div>
