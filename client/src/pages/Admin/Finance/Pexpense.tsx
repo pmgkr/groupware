@@ -564,6 +564,7 @@ export default function Pexpense() {
           page={page}
           pageSize={pageSize}
           onPageChange={setPage}
+          onAInfo={handleAddInfo}
         />
       ) : (
         <AdminExpenseTable
@@ -582,6 +583,7 @@ export default function Pexpense() {
           page={page}
           pageSize={pageSize}
           onPageChange={setPage}
+          onAInfo={handleAddInfo}
         />
       )}
 

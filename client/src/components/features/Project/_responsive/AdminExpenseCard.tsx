@@ -26,6 +26,7 @@ interface ExpenseListProps {
   handleExcelDownload: () => void;
 
   onOpenCBox: () => void;
+  onAInfo: (item: ExpenseListItems) => void;
 }
 
 export default function AdminExpenseCard({
@@ -47,6 +48,7 @@ export default function AdminExpenseCard({
   handleExcelDownload,
 
   onOpenCBox,
+  onAInfo,
 }: ExpenseListProps) {
   const isEmpty = expenseList.length === 0;
 
@@ -77,6 +79,7 @@ export default function AdminExpenseCard({
                 onCheck={handleCheckItem}
                 onDdate={handleSetDdate}
                 handlePDFDownload={handlePDFDownload}
+                onAInfo={onAInfo}
               />
             ))}
           </div>
