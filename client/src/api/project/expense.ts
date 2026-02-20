@@ -259,7 +259,22 @@ export async function delProjectExpenseAttachment(seq: number): Promise<void> {
 }
 
 // 외주용역비 및 접대비 유형 생성
-export interface ainfoCreatePayload {
+export interface pInfoCreatePayload {
+  exp_idx: number;
+  exp_kind_idx: number;
+  tax_type?: string;
+  work_term?: string;
+  work_day?: string;
+  h_name?: string;
+  h_ssn?: string;
+  h_tel?: string;
+  h_addr?: string;
+  ent_member?: string;
+  ent_reason?: string;
+}
+
+export interface pInfoUpdatePayload {
+  seq: number;
   exp_idx: number;
   exp_kind_idx: number;
   tax_type?: string;
@@ -290,6 +305,10 @@ export interface addInfoDTO {
   wdate: string;
 }
 
-export async function ainfoCreate(payload: ainfoCreatePayload) {
+export async function pInfoCreate(payload: pInfoCreatePayload) {
   return http<addInfoDTO>(`/user/pexpense/ainfo/create`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function pInfoUpdate(payload: pInfoUpdatePayload) {
+  return http<addInfoDTO>(`/user/pexpense/ainfo/update`, { method: 'PATCH', body: JSON.stringify(payload) });
 }

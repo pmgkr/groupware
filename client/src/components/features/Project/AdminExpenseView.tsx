@@ -6,6 +6,7 @@ import { useIsMobileViewport } from '@/hooks/useViewport';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
 import { notificationApi } from '@/api/notification';
+import type { addInfoDTO } from '@/api/project';
 import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
 import { getAdminExpenseView, confirmExpense, rejectExpense, getPDFDownload } from '@/api/admin/pexpense';
 
@@ -27,6 +28,7 @@ import EstimateMatched from './_components/EstimateMatched';
 import ExpenseViewRow from './_components/ExpenseViewRow';
 import ExpenseViewEstRow from './_components/ExpenseViewEstRow';
 import ReportMatched from './_components/ReportMatched';
+import { AddInfoDialog } from './_components/addInfoDialog';
 import { triggerDownload } from '@components/features/Project/utils/download';
 
 import { File, Link as LinkIcon, OctagonAlert, Files, SquareArrowOutUpRight } from 'lucide-react';
@@ -47,6 +49,10 @@ export default function ProjectExpenseView() {
   // 기안서 조회 State
   const [selectedProposal, setSelectedProposal] = useState<ReportDTO | null>(null);
   const [proposalLoading, setProposalLoading] = useState(false);
+
+  // Add Info Modal State
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedAddInfos, setSelectedAddInfos] = useState<addInfoDTO[]>([]);
 
   /** -----------------------------------------
    *  핵심 매칭 로직 공유 훅
@@ -273,6 +279,12 @@ export default function ProjectExpenseView() {
   };
 
   const isActionable = header.status !== 'Saved' && header.status !== 'Rejected';
+
+  // 외주용역비 or 접대비 버튼 클릭 시
+  const handleAddInfo = async (addInfos?: addInfoDTO[]) => {
+    setSelectedAddInfos(addInfos ?? []);
+    setDetailOpen(true);
+  };
 
   return (
     <>
@@ -589,10 +601,18 @@ export default function ProjectExpenseView() {
                             isMatched={isMatched}
                             isMatching={isMatching}
                             isWaiting={isWaiting}
+                            onAddInfo={handleAddInfo}
                           />
                         );
                       })
-                    : items.map((item) => <ExpenseViewRow key={item.seq} item={item} onProposal={() => setReportInfo(item.pro_id)} />)}
+                    : items.map((item) => (
+                        <ExpenseViewRow
+                          key={item.seq}
+                          item={item}
+                          onProposal={() => setReportInfo(item.pro_id)}
+                          onAddInfo={handleAddInfo}
+                        />
+                      ))}
 
                   <TableRow className="bg-primary-blue-50 hover:bg-primary-blue-50 [&_td]:py-3">
                     <TableCell className="font-semibold" colSpan={3}>
@@ -687,6 +707,8 @@ export default function ProjectExpenseView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AddInfoDialog open={detailOpen} onOpenChange={setDetailOpen} addInfos={selectedAddInfos} />
     </>
   );
 }

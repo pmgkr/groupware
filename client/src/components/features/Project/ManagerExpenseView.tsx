@@ -5,6 +5,7 @@ import { formatAmount, formatDate, normalizeAttachmentUrl } from '@/utils';
 import { cn } from '@/lib/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 
+import type { addInfoDTO } from '@/api/project';
 import { notificationApi } from '@/api/notification';
 import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
 import { getManagerExpenseView, confirmExpense, rejectExpense } from '@/api/manager/pexpense';
@@ -16,6 +17,7 @@ import EstimateMatched from './_components/EstimateMatched';
 import ExpenseViewRow from './_components/ExpenseViewRow';
 import ExpenseViewEstRow from './_components/ExpenseViewEstRow';
 import ReportMatched from './_components/ReportMatched';
+import { AddInfoDialog } from './_components/addInfoDialog';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
@@ -45,6 +47,10 @@ export default function PexpenseView() {
   // 기안서 조회 State
   const [selectedProposal, setSelectedProposal] = useState<ReportDTO | null>(null);
   const [proposalLoading, setProposalLoading] = useState(false);
+
+  // Add Info Modal State
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedAddInfos, setSelectedAddInfos] = useState<addInfoDTO[]>([]);
 
   /** -----------------------------------------
      *  핵심 매칭 로직 공유 훅
@@ -253,6 +259,12 @@ export default function PexpenseView() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  // 외주용역비 or 접대비 버튼 클릭 시
+  const handleAddInfo = async (addInfos?: addInfoDTO[]) => {
+    setSelectedAddInfos(addInfos ?? []);
+    setDetailOpen(true);
   };
 
   return (
@@ -568,10 +580,18 @@ export default function PexpenseView() {
                             isMatched={isMatched}
                             isMatching={isMatching}
                             isWaiting={isWaiting}
+                            onAddInfo={handleAddInfo}
                           />
                         );
                       })
-                    : items.map((item) => <ExpenseViewRow key={item.seq} item={item} onProposal={() => setReportInfo(item.pro_id)} />)}
+                    : items.map((item) => (
+                        <ExpenseViewRow
+                          key={item.seq}
+                          item={item}
+                          onProposal={() => setReportInfo(item.pro_id)}
+                          onAddInfo={handleAddInfo}
+                        />
+                      ))}
 
                   <TableRow className="bg-primary-blue-50 hover:bg-primary-blue-50 [&_td]:py-3">
                     <TableCell className="font-semibold" colSpan={3}>
@@ -661,6 +681,8 @@ export default function PexpenseView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AddInfoDialog open={detailOpen} onOpenChange={setDetailOpen} addInfos={selectedAddInfos} />
     </>
   );
 }

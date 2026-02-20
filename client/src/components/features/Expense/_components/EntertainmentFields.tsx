@@ -9,15 +9,13 @@ type EntertainmentProps = {
 
 export function EntertainmentFields({ control, index }: EntertainmentProps) {
   return (
-    <div className="mt-6 grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4">
+    <div className="mt-6 grid w-full grid-cols-2 gap-4 border-t-1 border-dashed border-gray-300 pt-6 tracking-tight">
       <FormField
         control={control}
         name={`expense_items.${index}.ent_member`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
-              접대 대상 <span className="text-red-500">*</span>
-            </FormLabel>
+            <FormLabel className="gap-.5 font-bold text-gray-950">접대 대상</FormLabel>
             <FormControl>
               <Input placeholder="접대 대상 입력" {...field} />
             </FormControl>
@@ -31,9 +29,7 @@ export function EntertainmentFields({ control, index }: EntertainmentProps) {
         name={`expense_items.${index}.ent_reason`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
-              접대 사유 <span className="text-red-500">*</span>
-            </FormLabel>
+            <FormLabel className="gap-.5 font-bold text-gray-950">접대 사유</FormLabel>
             <FormControl>
               <Input placeholder="접대 사유 입력" {...field} />
             </FormControl>

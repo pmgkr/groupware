@@ -8,7 +8,7 @@ import { useUser } from '@/hooks/useUser';
 import { mapExcelToExpenseItems } from '@/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 
-import { ainfoCreate } from '@/api/project/expense';
+import { pInfoCreate } from '@/api/project/expense';
 import { uploadFilesToServer, projectExpenseRegister, getBankList, getExpenseType, type BankList } from '@/api';
 import { type SingleSelectOption } from '@components/ui/SearchableSelect';
 import { ExpenseRow } from './_components/ExpenseRegisterRow';
@@ -601,7 +601,7 @@ export default function ProjectExpenseRegister() {
                     h_addr: item.h_addr || '',
                   };
 
-                  return ainfoCreate(payload);
+                  return pInfoCreate(payload);
                 }
 
                 // 접대비
@@ -613,7 +613,7 @@ export default function ProjectExpenseRegister() {
                     ent_reason: item.ent_reason || '',
                   };
 
-                  return ainfoCreate(payload);
+                  return pInfoCreate(payload);
                 }
 
                 return null;
@@ -624,10 +624,10 @@ export default function ProjectExpenseRegister() {
 
               if (filteredPromises.length > 0) {
                 await Promise.all(filteredPromises);
-                console.log('✅ ainfoCreate 완료');
+                console.log('✅ pInfoCreate 완료');
               }
             } catch (ainfoError) {
-              console.error('❌ ainfoCreate 실패:', ainfoError);
+              console.error('❌ pInfoCreate 실패:', ainfoError);
 
               addAlert({
                 title: '추가 정보 저장 실패',

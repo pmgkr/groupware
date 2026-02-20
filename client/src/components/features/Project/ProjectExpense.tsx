@@ -3,7 +3,7 @@ import { useOutletContext, useNavigate, useParams, useSearchParams } from 'react
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import * as XLSX from 'xlsx';
 import { useUser } from '@/hooks/useUser';
-import { findManager, getGrowingYears, formatDate } from '@/utils';
+import { findManager, getGrowingYears } from '@/utils';
 import { notificationApi } from '@/api/notification';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
