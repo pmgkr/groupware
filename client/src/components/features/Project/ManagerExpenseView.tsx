@@ -311,7 +311,18 @@ export default function PexpenseView() {
                 {items.map((item) => {
                   return (
                     <div key={item.seq} className="mb-3 border-b-1 border-dashed pb-3 last:border-b-0">
-                      <ExpRow title="비용 용도" value={item.ei_type} />
+                      <dl className="flex justify-between gap-2 py-1">
+                        <dt className="w-[20%] shrink-0 text-[13px] text-gray-700">비용 용도</dt>
+                        <dd className="text-right text-[13px] font-medium break-keep whitespace-pre">
+                          {(item.ei_type === '외주용역비' || item.ei_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
+                            <span className="text-primary underline" onClick={() => handleAddInfo(item.expense_add_info)}>
+                              {item.ei_type}
+                            </span>
+                          ) : (
+                            item.ei_type
+                          )}
+                        </dd>
+                      </dl>
                       <ExpRow title="가맹점명" value={item.ei_title} />
                       <ExpRow title="매입일자" value={formatDate(item.ei_pdate, true)} />
                       <dl className="flex justify-between py-1">

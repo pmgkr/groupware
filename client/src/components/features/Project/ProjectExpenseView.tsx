@@ -226,8 +226,6 @@ export default function ProjectExpenseView() {
               <h3 className="text-lg leading-[1.2] font-bold">비용 항목</h3>
               <div className="py-2">
                 {items.map((item) => {
-                  console.log('항목', item);
-
                   return (
                     <div key={item.seq} className="mb-3 border-b-1 border-dashed pb-3 last:border-b-0">
                       <dl className="flex justify-between gap-2 py-1">
