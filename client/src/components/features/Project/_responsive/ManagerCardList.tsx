@@ -18,6 +18,7 @@ type Props = {
 
   handleCheckAll: (val: boolean) => void;
   handleCheckItem: (seq: number, checked: boolean) => void;
+  onAInfo: (item: pExpenseListItem) => void;
 };
 
 export function ManagerCardList({
@@ -34,6 +35,7 @@ export function ManagerCardList({
 
   handleCheckAll,
   handleCheckItem,
+  onAInfo,
 }: Props) {
   const isEmpty = expenseList.length === 0;
 
@@ -64,6 +66,7 @@ export function ManagerCardList({
               activeTab={activeTab}
               checked={checkedItems.includes(item.seq)}
               onCheck={handleCheckItem}
+              onAInfo={onAInfo}
               role="manager"
             />
           ))}

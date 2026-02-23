@@ -3,21 +3,26 @@ import { memo } from 'react';
 import { Link, useParams, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
-import { TableCell, TableRow } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { TableCell, TableRow } from '@/components/ui/table';
+
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { formatAmount, formatDate } from '@/utils';
 import type { pExpenseListItem } from '@/api';
+import { UserRoundPen } from 'lucide-react';
 
 type ExpenseRowProps = {
   item: pExpenseListItem;
   activeTab: 'all' | 'saved';
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
+  onAInfo: (item: pExpenseListItem) => void;
 };
 
-export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRowProps) => {
+export const ExpenseRow = memo(({ item, activeTab, checked, onCheck, onAInfo }: ExpenseRowProps) => {
   const { user_id } = useUser();
   const { projectId } = useParams();
   const { search } = useLocation();
@@ -44,6 +49,8 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
       <span className={`relative inline-flex size-3 rounded-full border border-white bg-orange-500`}></span>
     </span>
   );
+
+  const isAddInfo = (item.add_info ?? []).length;
 
   return (
     <TableRow className="[&_td]:px-2 [&_td]:text-[13px] max-2xl:[&_td]:px-1 max-2xl:[&_td]:text-sm">
@@ -89,6 +96,14 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck }: ExpenseRo
         <Link to={`/project/${projectId}/expense/${item.seq}${search}`} className="relative hover:underline">
           {item.el_title}
         </Link>
+        {isAddInfo > 0 && (
+          <span
+            className="ml-1 inline-flex cursor-pointer items-center gap-0.5 align-middle text-xs text-gray-500"
+            onClick={() => onAInfo(item)}>
+            <UserRoundPen className="size-3" />
+            {isAddInfo}
+          </span>
+        )}
       </TableCell>
       <TableCell>{item.el_attach === 'Y' ? <Badge variant="secondary">제출</Badge> : <Badge variant="grayish">미제출</Badge>}</TableCell>
       <TableCell>

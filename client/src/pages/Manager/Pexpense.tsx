@@ -12,11 +12,12 @@ import { ManagerFilterPC } from '@/components/features/Project/_responsive/Manag
 import { ManagerFilterMo } from '@/components/features/Project/_responsive/ManagerFilterMo';
 import { ManagerCardList } from '@/components/features/Project/_responsive/ManagerCardList';
 import ManagerExpenseList from '@/components/features/Project/_responsive/ManagerTable';
+import { AddInfoDialog } from '@/components/features/Project/_components/addInfoDialog';
 
 import { type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
 import { OctagonAlert } from 'lucide-react';
 
-import { getExpenseType } from '@/api';
+import { getExpenseType, type addInfoDTO, type pExpenseListItem } from '@/api';
 import { getManagerExpenseList, getManagerExpenseMine, confirmExpense, type ExpenseListItems } from '@/api/manager/pexpense';
 
 export default function Pexpense() {
@@ -60,6 +61,10 @@ export default function Pexpense() {
 
   const [total, setTotal] = useState(0);
   const [pageSize, setPageSize] = useState(15); // 한 페이지에 보여줄 개수
+
+  // Add Info Modal State
+  const [selectedAddInfos, setSelectedAddInfos] = useState<addInfoDTO[]>([]);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   // ============================
   // 비용유형 가져오기
@@ -264,6 +269,12 @@ export default function Pexpense() {
     { label: '미제출', value: 'N' },
   ];
 
+  // 외주용역비 or 접대비 버튼 클릭 시
+  const handleAddInfo = async (item: pExpenseListItem) => {
+    setSelectedAddInfos(item.add_info ?? []);
+    setDetailOpen(true);
+  };
+
   const filterProps = {
     activeTab,
     onTabChange: handleTabChange,
@@ -329,6 +340,7 @@ export default function Pexpense() {
             page={page}
             pageSize={pageSize}
             onPageChange={setPage}
+            onAInfo={handleAddInfo}
           />
         </>
       ) : (
@@ -346,9 +358,12 @@ export default function Pexpense() {
             page={page}
             pageSize={pageSize}
             onPageChange={setPage}
+            onAInfo={handleAddInfo}
           />
         </>
       )}
+
+      <AddInfoDialog open={detailOpen} onOpenChange={setDetailOpen} addInfos={selectedAddInfos} />
     </>
   );
 }
