@@ -21,8 +21,16 @@ import { ExpenseFilterPC } from './_responsive/ExpenseFilterPC';
 import { ExpenseFilterMo } from './_responsive/ExpenseFilterMo';
 import { ExpenseTable } from './_responsive/ExpenseTable';
 import { ExpenseCardList } from './_responsive/ExpenseCardList';
+import { AddInfoDialog } from './_components/addInfoDialog';
 
-import { getProjectExpense, type pExpenseListItem, getProjectExpenseType, deleteProjectTempExpense, claimProjectTempExpense } from '@/api';
+import {
+  getProjectExpense,
+  type addInfoDTO,
+  type pExpenseListItem,
+  getProjectExpenseType,
+  deleteProjectTempExpense,
+  claimProjectTempExpense,
+} from '@/api';
 
 export default function Expense() {
   const navigate = useNavigate();
@@ -46,8 +54,14 @@ export default function Expense() {
   const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('status')?.split(',') ?? []);
   const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
   const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>(() => searchParams.get('attach')?.split(',') ?? []);
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('q') || ''); // 사용자가 입력중인 Input 저장값
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || ''); // 실제 검색 Input 저장값
   const [registerDialog, setRegisterDialog] = useState(false); // Dialog용 State
   const [registerType, setRegisterType] = useState<'est' | 'pro' | null>(null); // Dialog Type용 State
+
+  // Add Info Modal State
+  const [selectedAddInfos, setSelectedAddInfos] = useState<addInfoDTO[]>([]);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const typeRef = useRef<MultiSelectRef>(null);
   const statusRef = useRef<MultiSelectRef>(null);
@@ -139,6 +153,8 @@ export default function Expense() {
     setSelectedProof([]);
     setSelectedProofStatus([]);
     setCheckedItems([]);
+    setSearchQuery('');
+    setSearchInput('');
 
     // MultiSelect 내부 상태 초기화
     typeRef.current?.clear();
@@ -165,6 +181,16 @@ export default function Expense() {
     proofRef.current?.clear();
     proofStatusRef.current?.clear();
   };
+
+  const handleSearchSubmit = useCallback(
+    (value?: string) => {
+      const finalValue = value ?? searchInput;
+
+      setSearchQuery(finalValue);
+      setPage(1);
+    },
+    [searchInput]
+  );
 
   // 체크박스 활성화 여부
   const isCheckable = (item: pExpenseListItem) => {
@@ -355,6 +381,12 @@ export default function Expense() {
     });
   };
 
+  // 외주용역비 or 접대비 버튼 클릭 시
+  const handleAddInfo = async (item: pExpenseListItem) => {
+    setSelectedAddInfos(item.add_info ?? []);
+    setDetailOpen(true);
+  };
+
   // 필터 옵션 정의
   const statusOptions: MultiSelectOption[] = [
     { label: '임시저장', value: 'Saved' },
@@ -401,6 +433,7 @@ export default function Expense() {
 
   // params에 따라 상단 필터 복구
   useEffect(() => {
+    const q = searchParams.get('q') || '';
     const tab = (searchParams.get('tab') as 'all' | 'saved') || 'all';
     setActiveTab(tab);
 
@@ -409,6 +442,9 @@ export default function Expense() {
     setSelectedStatus(searchParams.get('status')?.split(',') ?? []);
     setSelectedProof(searchParams.get('method')?.split(',') ?? []);
     setSelectedProofStatus(searchParams.get('attach')?.split(',') ?? []);
+
+    setSearchInput(q);
+    setSearchQuery(q);
 
     setPage(Number(searchParams.get('page') || 1));
   }, []); // 최초 1회
@@ -434,6 +470,7 @@ export default function Expense() {
         if (selectedType.length) params.type = selectedType.join(',');
         if (selectedProof.length) params.method = selectedProof.join(',');
         if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
+        if (searchQuery.length) params.q = searchQuery;
 
         const res = await getProjectExpense(params);
 
@@ -445,7 +482,7 @@ export default function Expense() {
         setLoading(false);
       }
     })();
-  }, [activeTab, selectedYear, selectedType, selectedProof, selectedProofStatus, selectedStatus, page]);
+  }, [activeTab, selectedYear, selectedType, selectedProof, selectedProofStatus, selectedStatus, searchQuery, page]);
 
   // URL 파라미터 업데이트
   useEffect(() => {
@@ -457,8 +494,9 @@ export default function Expense() {
       status: activeTab === 'saved' ? undefined : selectedStatus,
       method: selectedProof,
       attach: selectedProofStatus,
+      q: searchQuery,
     });
-  }, [activeTab, page, selectedYear, selectedType, selectedStatus, selectedProof, selectedProofStatus]);
+  }, [activeTab, page, selectedYear, selectedType, selectedStatus, selectedProof, selectedProofStatus, searchQuery]);
 
   // 전체 선택 상태 반영
   useEffect(() => {
@@ -500,6 +538,7 @@ export default function Expense() {
     selectedStatus,
     selectedProof,
     selectedProofStatus,
+    searchInput,
 
     typeOptions,
     statusOptions,
@@ -513,6 +552,8 @@ export default function Expense() {
 
     onTabChange: handleTabChange,
     onFilterChange: handleFilterChange,
+    onSearchInputChange: setSearchInput,
+    onSearchSubmit: handleSearchSubmit,
     onReset: resetAllFilters,
     onCreate: () => setRegisterDialog(true),
   };
@@ -531,6 +572,7 @@ export default function Expense() {
           checkAll={checkAll}
           onCheckAll={handleCheckAll}
           onCheck={handleCheckItem}
+          onAInfo={handleAddInfo}
           loading={loading}
         />
       ) : (
@@ -541,6 +583,7 @@ export default function Expense() {
           checkAll={checkAll}
           onCheckAll={handleCheckAll}
           onCheck={handleCheckItem}
+          onAInfo={handleAddInfo}
           loading={loading}
         />
       )}
@@ -566,6 +609,8 @@ export default function Expense() {
           />
         )}
       </div>
+
+      <AddInfoDialog open={detailOpen} onOpenChange={setDetailOpen} addInfos={selectedAddInfos} />
 
       <Dialog open={registerDialog} onOpenChange={setRegisterDialog}>
         <DialogContent className="max-md:max-w-[calc(100%-var(--spacing)*8)] max-md:rounded-md">

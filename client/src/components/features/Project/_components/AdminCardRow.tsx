@@ -10,17 +10,18 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
-import { ChevronDown, Download } from 'lucide-react';
+import { ChevronDown, UserRoundPen } from 'lucide-react';
 
 type ExpenseRowProps = {
   item: ExpenseListItems;
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
   onDdate: (seq: number, ddate: Date) => void;
+  onAInfo: (item: ExpenseListItems) => void;
   handlePDFDownload: (seq: number, expId: string, userName: string) => void;
 };
 
-export const AdminCardRow = memo(({ item, checked, onCheck, onDdate, handlePDFDownload }: ExpenseRowProps) => {
+export const AdminCardRow = memo(({ item, checked, onCheck, onDdate, onAInfo, handlePDFDownload }: ExpenseRowProps) => {
   const { search } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -47,6 +48,8 @@ export const AdminCardRow = memo(({ item, checked, onCheck, onDdate, handlePDFDo
     </span>
   );
 
+  const isAddInfo = (item.add_info ?? []).length;
+
   return (
     <div className="relative rounded-md border border-gray-300 bg-white p-4">
       {matchMissing}
@@ -60,6 +63,14 @@ export const AdminCardRow = memo(({ item, checked, onCheck, onDdate, handlePDFDo
             disabled={item.status === 'Saved' || item.status === 'Rejected'}
           />
           <span>EXP #{item.exp_id}</span>
+          {isAddInfo > 0 && (
+            <span
+              className="ml-1 inline-flex cursor-pointer items-center gap-0.5 align-middle text-xs text-gray-500"
+              onClick={() => onAInfo(item)}>
+              <UserRoundPen className="size-3" />
+              {isAddInfo}
+            </span>
+          )}
         </div>
         {status}
       </div>

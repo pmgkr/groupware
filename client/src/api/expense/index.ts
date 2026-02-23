@@ -116,6 +116,38 @@ export interface ExpenseRegisterResponse {
   };
 }
 
+// 외주용역비 및 접대비 유형 생성
+export interface ainfoCreatePayload {
+  exp_idx: number;
+  exp_kind_idx: number;
+  tax_type?: string;
+  work_term?: string;
+  work_day?: string;
+  h_name?: string;
+  h_ssn?: string;
+  h_tel?: string;
+  h_addr?: string;
+  ent_member?: string;
+  ent_reason?: string;
+}
+
+export interface ainfoCreateResponse {
+  seq: number;
+  exp_idx: number;
+  exp_kind_idx: number;
+  tax_type?: string;
+  work_term?: string;
+  work_day?: string;
+  h_name?: string;
+  h_ssn?: string;
+  h_tel?: string;
+  h_addr?: string;
+  ent_member?: string;
+  ent_reason?: string;
+  user_id: string;
+  wdate: string;
+}
+
 // ------------------------------
 // 상세보기용 (View)
 // ------------------------------
@@ -269,4 +301,8 @@ export async function expenseUpdate(expid: string, payload: ExpenseEditPayload) 
 // 일반비용 증빙자료 삭제
 export async function delExpenseAttachment(seq: number): Promise<void> {
   return http<void>(`/user/nexpense/update/attachment/delete/${seq}`, { method: 'DELETE' });
+}
+
+export async function ainfoCreate(payload: ainfoCreatePayload) {
+  return http<ainfoCreateResponse>(`/user/nexpense/ainfo/create`, { method: 'POST', body: JSON.stringify(payload) });
 }
