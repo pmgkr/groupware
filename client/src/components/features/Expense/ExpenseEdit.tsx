@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { cn } from '@/lib/utils';
@@ -12,15 +12,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getProposalList, matchNonProjectWithProposal, type ProposalItem } from '@/api/expense/proposal';
 import { formatKST, formatAmount } from '@/utils';
-import {
-  getExpenseView,
-  getBankList,
-  type BankList,
-  uploadFilesToServer,
-  type ExpenseViewDTO,
-  delExpenseAttachment,
-  expenseUpdate,
-} from '@/api';
+
+import type { BankList, ExpenseViewDTO } from '@/api';
+import { getExpenseView, getBankList, uploadFilesToServer, delExpenseAttachment, expenseUpdate } from '@/api';
+import { pInfoUpdate, type pInfoUpdatePayload } from '@/api/project/expense';
 
 import {
   AlertDialog,
@@ -40,7 +35,6 @@ import { Input } from '@components/ui/input';
 import { Textarea } from '@components/ui/textarea';
 import { Button } from '@components/ui/button';
 import { DayPicker } from '@components/daypicker';
-import { Spinner } from '@components/ui/spinner';
 import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
@@ -55,6 +49,8 @@ import { getMyAccounts, type BankAccount } from '@/api/mypage';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { AccountSelectDialog } from './_components/AccountSelectDialog';
+import { OutsourceFields } from './../Expense/_components/OutsourceFields';
+import { EntertainmentFields } from './../Expense/_components/EntertainmentFields';
 
 // ✅ zod schema
 const editSchema = z.object({
@@ -69,9 +65,9 @@ const editSchema = z.object({
     .nonempty('계좌번호를 입력해 주세요.'),
   el_deposit: z.string().optional(),
   remark: z.string().optional(),
-  expense_items: z
-    .array(
-      z.object({
+  expense_items: z.array(
+    z
+      .object({
         number: z.string().optional(),
         type: z.string().optional(),
         title: z.string().optional(),
@@ -80,9 +76,54 @@ const editSchema = z.object({
         tax: z.string().optional(),
         total: z.string().optional(),
         pro_id: z.string().nullable().optional(),
+
+        // 외주용역비 전용
+        add_info_seq: z.number().nullable().optional(),
+        tax_type: z.string().optional(),
+        work_day: z.string().optional(),
+        work_term: z.string().optional(),
+        h_name: z.string().optional(),
+        h_ssn: z.string().optional(),
+        h_tel: z.string().optional(),
+        h_addr: z.string().optional(),
+
+        // 접대비 전용
+        ent_member: z.string().optional(),
+        ent_reason: z.string().optional(),
       })
-    )
-    .optional(),
+      .superRefine((data, ctx) => {
+        if (data.type === '외주용역비') {
+          const requiredFields = ['tax_type', 'work_day', 'work_term', 'h_name', 'h_ssn', 'h_tel', 'h_addr'] as const;
+
+          requiredFields.forEach((field) => {
+            if (!data[field]) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: '필수 입력 항목입니다.',
+                path: [field],
+              });
+            }
+          });
+        }
+
+        if (data.type === '접대비') {
+          if (!data.ent_member) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: '접대 대상은 필수입니다.',
+              path: ['ent_member'],
+            });
+          }
+          if (!data.ent_reason) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: '접대 사유는 필수입니다.',
+              path: ['ent_reason'],
+            });
+          }
+        }
+      })
+  ),
 });
 
 type UploadedPreviewFile = {
@@ -224,15 +265,35 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
         console.log('📥 비용 상세 데이터:', res);
 
         const h = res.header;
-        const mappedItems = res.items.map((i) => ({
-          type: h.el_type,
-          title: i.ei_title,
-          date: formatDate(i.ei_pdate),
-          price: i.ei_amount.toString(),
-          tax: i.ei_tax.toString(),
-          total: i.ei_total.toString(),
-          pro_id: i.pro_id ? String(i.pro_id) : null,
-        }));
+        const mappedItems = res.items.map((i) => {
+          const addInfo = i.expense_add_info?.[0];
+
+          console.log(i);
+
+          return {
+            type: h.el_type,
+            title: i.ei_title,
+            date: formatDate(i.ei_pdate),
+            price: i.ei_amount.toString(),
+            tax: i.ei_tax.toString(),
+            total: i.ei_total.toString(),
+            pro_id: i.pro_id ? String(i.pro_id) : null,
+
+            // 외주용역비
+            add_info_seq: addInfo?.seq ?? null,
+            tax_type: addInfo?.tax_type ?? '',
+            work_day: addInfo?.work_day ?? '',
+            work_term: addInfo?.work_term ?? '',
+            h_name: addInfo?.h_name ?? '',
+            h_ssn: addInfo?.h_ssn ?? '',
+            h_tel: addInfo?.h_tel ?? '',
+            h_addr: addInfo?.h_addr ?? '',
+
+            // 접대비
+            ent_member: addInfo?.ent_member ?? '',
+            ent_reason: addInfo?.ent_reason ?? '',
+          };
+        });
 
         reset({
           el_method: h.el_method,
@@ -245,6 +306,8 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
           remark: h.remark || '',
           expense_items: mappedItems,
         });
+
+        replace(mappedItems);
 
         const groupedAttachments: Record<number, UploadedPreviewFile[]> = {};
 
@@ -262,7 +325,6 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
         });
 
         setRowAttachments(groupedAttachments);
-
         setLoading(false);
       } catch (err) {
         console.error('❌ 상세 조회 실패:', err);
@@ -494,10 +556,47 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
 
           const res = await expenseUpdate(header.seq, payload);
 
-          console.log(res);
+          console.log('반환 타입', res);
 
           if (res.ok) {
-            const itemSeq = (res as any).updated?.item_seqs ?? [];
+            const expIdx = data?.header?.seq; // nexpense_list.seq
+            const itemSeq = (res as any).updated?.item_seqs ?? []; // nexpense_item.seq
+
+            console.log('nexpense_list.seq', expIdx);
+
+            const updatePromises = values.expense_items
+              .map((item, index) => {
+                const exp_kind_idx = itemSeq[index];
+                const seq = item.add_info_seq; // 기존 add_info seq
+
+                if (!exp_kind_idx || !seq || !expIdx) return null;
+
+                if (item.type === '외주용역비' || item.type === '접대비') {
+                  const payload: pInfoUpdatePayload = {
+                    seq, // 기존이면 update, 없으면 새로 처리 방식 고려
+                    exp_idx: expIdx,
+                    exp_kind_idx,
+                    tax_type: item.tax_type,
+                    work_term: item.work_term,
+                    work_day: item.work_day,
+                    h_name: item.h_name,
+                    h_ssn: item.h_ssn?.includes('*') ? undefined : item.h_ssn,
+                    h_tel: item.h_tel,
+                    h_addr: item.h_addr,
+                    ent_member: item.ent_member,
+                    ent_reason: item.ent_reason,
+                  };
+
+                  return pInfoUpdate(payload);
+                }
+
+                return null;
+              })
+              .filter(Boolean);
+
+            if (updatePromises.length > 0) {
+              await Promise.all(updatePromises);
+            }
 
             if (itemSeq.length === 0) {
               console.error('❌ 응답에서 item_seqs를 찾을 수 없음');
@@ -861,6 +960,8 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                   const currentProTitle = currentProId
                     ? proposalList.find((p) => p.rp_seq === currentProId)?.rp_title || data?.items?.[index]?.rp_title
                     : null;
+                  const type = watchedItems?.[index]?.type;
+
                   return (
                     <article
                       key={`${field.id}`}
@@ -1100,6 +1201,9 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                           />
                         </div>
                       </div>
+
+                      {type === '외주용역비' && <OutsourceFields control={control} index={index} setValue={form.setValue} />}
+                      {type === '접대비' && <EntertainmentFields control={control} index={index} />}
                     </article>
                   );
                 })}

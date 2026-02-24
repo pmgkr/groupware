@@ -93,8 +93,6 @@ export default function ProjectExpenseView() {
 
   const { header, items } = data;
 
-  console.log(items);
-
   /** -----------------------------------------
    *  상태 Badge
    ----------------------------------------- */

@@ -206,9 +206,11 @@ export default function ProjectExpenseEdit() {
       }
     })();
   }, []);
+
   //내계좌 불러오기
   const [accountList, setAccountList] = useState<BankAccount[]>([]);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+
   useEffect(() => {
     (async () => {
       try {
@@ -219,6 +221,7 @@ export default function ProjectExpenseEdit() {
       }
     })();
   }, []);
+
   const handleFillMyMainAccount = () => {
     const mainAcc = accountList.find((acc) => acc.flag === 'mine');
 
@@ -532,7 +535,6 @@ export default function ProjectExpenseEdit() {
           ei_amount: item.ei_amount,
           ei_tax: item.ei_tax,
           ei_total: item.ei_total,
-          //pro_id: item.pro_id,
           pro_id: item.pro_id,
           attachments: item.attachments.map((att: any) => ({
             filename: att.fname,
@@ -685,8 +687,6 @@ export default function ProjectExpenseEdit() {
   // 폼 제출
   const onSubmit = async (values: EditFormValues) => {
     const isEstimate = header.is_estimate === 'Y';
-
-    console.log('폼', values);
 
     addDialog({
       title: '프로젝트 비용 수정',

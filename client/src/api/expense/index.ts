@@ -1,5 +1,6 @@
 // 📦 일반비용 (Non-Expense) API
 import { http } from '@/lib/http';
+import type { addInfoDTO } from '../project';
 import type { ExpenseType, BankList } from '@/api/common/types';
 
 // ------------------------------
@@ -41,6 +42,7 @@ export type ExpenseListItem = {
   edate?: string | null;
   cdate?: string | null;
   remark: string;
+  add_info?: addInfoDTO[];
 };
 
 // ------------------------------
@@ -72,6 +74,7 @@ export interface ExpenseItemBase {
   ei_total: number;
   pro_id?: number | null;
   attachments?: ExpenseAttachment[];
+  expense_add_info?: addInfoDTO[];
 }
 
 export interface ExpenseHeaderBase {

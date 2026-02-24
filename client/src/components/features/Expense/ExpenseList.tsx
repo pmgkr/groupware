@@ -16,11 +16,12 @@ import type { MultiSelectOption, MultiSelectRef } from '@components/multiselect/
 import { Excel } from '@/assets/images/icons';
 import { OctagonAlert } from 'lucide-react';
 
-import { getExpenseLists, type ExpenseListItem, getExpenseType, deleteTempExpense, claimTempExpense } from '@/api';
+import { getExpenseLists, type addInfoDTO, type ExpenseListItem, getExpenseType, deleteTempExpense, claimTempExpense } from '@/api';
 import { ExpenseFilterPC } from './_responsive/ExpenseFilterPC';
 import { ExpenseFilterMo } from './_responsive/ExpenseFilterMo';
 import { ExpenseTable } from './_responsive/ExpenseTable';
 import { ExpenseCardList } from './_responsive/ExpenseCardList';
+import { AddInfoDialog } from '@/components/features/Project/_components/addInfoDialog';
 
 export default function ExpenseList() {
   const navigate = useNavigate();
@@ -40,6 +41,10 @@ export default function ExpenseList() {
   const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
   const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>(() => searchParams.get('attach')?.split(',') ?? []);
   const [registerDialog, setRegisterDialog] = useState(false);
+
+  // Add Info Modal State
+  const [selectedAddInfos, setSelectedAddInfos] = useState<addInfoDTO[]>([]);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const typeRef = useRef<MultiSelectRef>(null);
   const statusRef = useRef<MultiSelectRef>(null);
@@ -332,6 +337,12 @@ export default function ExpenseList() {
     });
   };
 
+  // 외주용역비 or 접대비 버튼 클릭 시
+  const handleAddInfo = async (item: ExpenseListItem) => {
+    setSelectedAddInfos(item.add_info ?? []);
+    setDetailOpen(true);
+  };
+
   // 필터 옵션 정의
   const statusOptions: MultiSelectOption[] = [
     { label: '임시저장', value: 'Saved' },
@@ -499,6 +510,7 @@ export default function ExpenseList() {
           checkAll={checkAll}
           onCheckAll={handleCheckAll}
           onCheck={handleCheckItem}
+          onAInfo={handleAddInfo}
           loading={loading}
         />
       ) : (
@@ -509,6 +521,7 @@ export default function ExpenseList() {
           checkAll={checkAll}
           onCheckAll={handleCheckAll}
           onCheck={handleCheckItem}
+          onAInfo={handleAddInfo}
           loading={loading}
         />
       )}
@@ -534,6 +547,8 @@ export default function ExpenseList() {
           />
         )}
       </div>
+
+      <AddInfoDialog open={detailOpen} onOpenChange={setDetailOpen} addInfos={selectedAddInfos} />
 
       <Dialog open={registerDialog} onOpenChange={setRegisterDialog}>
         <DialogContent className="max-md:max-w-[calc(100%-var(--spacing)*8)] max-md:rounded-md">

@@ -33,8 +33,8 @@ export default function ReportMatched({ report }: ReportMatchedProps) {
           ) : (
             <TableRow className="[&_td]:h-11 [&_td]:px-2 [&_td]:text-[12px]">
               <TableCell className="text-left">
-                <Link to={`/project/proposal/view/${report.rp_seq}`} target="_blank" className="flex items-center gap-0.5 hover:underline">
-                  {report.rp_title} <SquareArrowOutUpRight className="size-3" />
+                <Link to={`/project/proposal/view/${report.rp_seq}`} target="_blank" className="block gap-0.5 hover:underline">
+                  {report.rp_title} <SquareArrowOutUpRight className="inline-block size-3 align-middle" />
                 </Link>
               </TableCell>
               <TableCell className="text-right">{formatAmount(report.rp_cost)}</TableCell>
