@@ -1,4 +1,4 @@
-import { type ExpenseListItem } from '@/api';
+import { type ExpenseListItems } from '@/api/manager/nexpense';
 
 import { Checkbox } from '@components/ui/checkbox';
 import { ExpenseCardRow } from '../_components/ExpenseCardRow';
@@ -7,7 +7,7 @@ import { AppPagination } from '@/components/ui/AppPagination';
 type Props = {
   activeTab: 'all' | 'claimed';
   loading: boolean;
-  expenseList: ExpenseListItem[];
+  expenseList: ExpenseListItems[];
   checkAll: boolean;
   checkedItems: number[];
 
@@ -18,6 +18,7 @@ type Props = {
 
   handleCheckAll: (val: boolean) => void;
   handleCheckItem: (seq: number, checked: boolean) => void;
+  onAInfo: (item: ExpenseListItems) => void;
 };
 
 export function ManagerCardList({
@@ -34,6 +35,7 @@ export function ManagerCardList({
 
   handleCheckAll,
   handleCheckItem,
+  onAInfo,
 }: Props) {
   const isEmpty = expenseList.length === 0;
 
@@ -64,6 +66,7 @@ export function ManagerCardList({
               activeTab={activeTab}
               checked={checkedItems.includes(item.seq)}
               onCheck={handleCheckItem}
+              onAInfo={onAInfo}
               role="manager"
             />
           ))}
