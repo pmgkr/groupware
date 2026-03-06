@@ -267,12 +267,12 @@ export default function ProjectLayout() {
     setData((prev) =>
       prev
         ? {
-            ...prev,
-            info: {
-              ...prev.info,
-              project_status: status,
-            },
-          }
+          ...prev,
+          info: {
+            ...prev.info,
+            project_status: status,
+          },
+        }
         : prev
     );
 
@@ -332,7 +332,7 @@ export default function ProjectLayout() {
             </>
           )}
 
-          {user_id === 'yeaji.kim@pmgasia.com' || user_id === 'sangmin.kang@pmgasia.com' ? ( // 지사장님 계정만 잠금 토글 가능
+          {user_id === 'yeaji.kim@pmgasia.com' || user_id === 'sangmin.kang@pmgasia.com' || user_id === 'kangho.kim@pmgasia.com' || user_id === 'jihyo.kim@pmgasia.com' ? ( // 지사장님 계정만 잠금 토글 가능
             <Button type="button" variant="svgIcon" onClick={toggleLock} className="text-gray-600 has-[>svg]:p-1">
               {isLocked ? <Lock className="size-5" /> : <LockOpen className="size-5" />}
             </Button>
