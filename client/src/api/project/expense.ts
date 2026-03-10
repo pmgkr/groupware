@@ -271,6 +271,7 @@ export interface pInfoCreatePayload {
   h_addr?: string;
   ent_member?: string;
   ent_reason?: string;
+  exp_type?: string;
 }
 
 export interface pInfoUpdatePayload {
@@ -314,5 +315,5 @@ export async function pInfoUpdate(payload: pInfoUpdatePayload) {
 }
 
 export async function pInfoDelete(seq: number) {
-  return http<{ ok: boolean }>(`/user/pexpense/ainfo/delete`, { method: 'DELETE', body: JSON.stringify(seq) });
+  return http<{ ok: boolean }>(`/user/pexpense/ainfo/delete`, { method: 'DELETE', body: JSON.stringify({ seq }) });
 }

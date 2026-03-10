@@ -16,7 +16,15 @@ import type { MultiSelectOption, MultiSelectRef } from '@components/multiselect/
 import { Excel } from '@/assets/images/icons';
 import { OctagonAlert } from 'lucide-react';
 
-import { getExpenseLists, type addInfoDTO, type ExpenseListItem, getExpenseType, deleteTempExpense, claimTempExpense } from '@/api';
+import {
+  getExpenseLists,
+  type addInfoDTO,
+  type ExpenseListItem,
+  getExpenseType,
+  deleteTempExpense,
+  claimTempExpense,
+  pInfoDelete,
+} from '@/api';
 import { ExpenseFilterPC } from './_responsive/ExpenseFilterPC';
 import { ExpenseFilterMo } from './_responsive/ExpenseFilterMo';
 import { ExpenseTable } from './_responsive/ExpenseTable';
@@ -305,6 +313,23 @@ export default function ExpenseList() {
       cancelText: '취소',
       onConfirm: async () => {
         try {
+          // 선택된 항목 중 add_info의 seq 추출
+          const addInfoSeqsToDelete = selectedRows
+            .flatMap((row) => row.add_info || [])
+            .map((info) => info.seq)
+            .filter((seq) => seq !== undefined && seq !== null);
+
+          if (addInfoSeqsToDelete.length > 0) {
+            for (const addInfoSeq of addInfoSeqsToDelete) {
+              try {
+                await pInfoDelete(addInfoSeq);
+              } catch (delErr) {
+                console.error(`❌ add_info (seq: ${addInfoSeq}) 삭제 실패:`, delErr);
+              }
+            }
+            console.log('✅ add_info 삭제 완료:', addInfoSeqsToDelete);
+          }
+
           const payload = { seqs: checkedItems };
           const res = await deleteTempExpense(payload);
 
@@ -422,6 +447,8 @@ export default function ExpenseList() {
         if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
 
         const res = await getExpenseLists(params);
+
+        console.log('비용 리스트', res);
 
         setExpenseList(res.items);
         setTotal(res.total);

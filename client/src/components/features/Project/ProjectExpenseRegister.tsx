@@ -598,6 +598,7 @@ export default function ProjectExpenseRegister() {
                     h_ssn: item.h_ssn || '',
                     h_tel: item.h_tel || '',
                     h_addr: item.h_addr || '',
+                    exp_type: 'P',
                   };
 
                   return pInfoCreate(payload);
@@ -610,6 +611,7 @@ export default function ProjectExpenseRegister() {
                     exp_kind_idx: itemSeq,
                     ent_member: item.ent_member || '',
                     ent_reason: item.ent_reason || '',
+                    exp_type: 'P',
                   };
 
                   return pInfoCreate(payload);
