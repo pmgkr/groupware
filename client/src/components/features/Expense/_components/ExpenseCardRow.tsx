@@ -2,7 +2,7 @@ import { memo, useMemo } from 'react';
 import { Link, useParams, useLocation } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { formatAmount, formatDate } from '@/utils';
-import type { ExpenseListItems } from '@/api/manager/nexpense';
+import { type ExpenseListItem } from '@/api';
 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -23,11 +23,11 @@ const parseCategories = (value?: string) => (value ? Array.from(new Set(value.sp
 
 type ExpenseRowProps = {
   role?: 'manager';
-  item: ExpenseListItems;
+  item: ExpenseListItem;
   activeTab: 'all' | 'saved' | 'claimed';
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
-  onAInfo: (item: ExpenseListItems) => void;
+  onAInfo: (item: ExpenseListItem) => void;
 };
 
 export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck, role, onAInfo }: ExpenseRowProps) => {
