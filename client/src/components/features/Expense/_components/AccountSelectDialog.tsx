@@ -182,7 +182,7 @@ export const AccountSelectDialog: React.FC<Props> = ({ open, onOpenChange, accou
           isMobile ? (
             <MobileAccountList accounts={normalizedAccounts} onSelect={onSelect} />
           ) : (
-            <div className="h-full">
+            <div className="h-full flex-auto">
               <div className="max-h-[300px] space-y-2 overflow-y-auto">
                 {!hasAccounts ? (
                   <div>등록된 계좌가 없습니다.</div>
