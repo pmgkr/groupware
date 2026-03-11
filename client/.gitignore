@@ -28,3 +28,4 @@ storybook-static
 
 .vercel
 .env
+.DS_Store
