@@ -2,21 +2,24 @@
 import { memo } from 'react';
 import { Link, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
+import { formatAmount, formatDate } from '@/utils';
+import type { ExpenseListItem } from '@/api';
+
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { formatAmount, formatDate } from '@/utils';
-import type { ExpenseListItem } from '@/api';
+
+import { UserRoundPen } from 'lucide-react';
 
 type ExpenseRowProps = {
   item: ExpenseListItem;
   activeTab: 'all' | 'saved';
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
-  manager?: boolean;
+  onAInfo: (item: ExpenseListItem) => void;
 };
 
-export const ExpenseRow = memo(({ item, activeTab, checked, onCheck, manager }: ExpenseRowProps) => {
+export const ExpenseRow = memo(({ item, activeTab, checked, onCheck, onAInfo }: ExpenseRowProps) => {
   const { search } = useLocation();
 
   const statusMap = {
@@ -27,6 +30,8 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck, manager }: 
     Completed: <Badge className="bg-primary-blue">지급완료</Badge>,
     Rejected: <Badge className="bg-destructive">반려됨</Badge>,
   } as const;
+
+  const isAddInfo = (item.add_info ?? []).length;
 
   return (
     <TableRow className="[&_td]:px-3 [&_td]:text-[13px]">
@@ -50,6 +55,14 @@ export const ExpenseRow = memo(({ item, activeTab, checked, onCheck, manager }: 
         <Link to={`/expense/${item.exp_id}${search}`} className="hover:underline">
           {item.el_title}
         </Link>
+        {isAddInfo > 0 && (
+          <span
+            className="ml-1 inline-flex cursor-pointer items-center gap-0.5 align-middle text-xs text-gray-500"
+            onClick={() => onAInfo(item)}>
+            <UserRoundPen className="size-3" />
+            {isAddInfo}
+          </span>
+        )}
       </TableCell>
       <TableCell>{item.el_attach === 'Y' ? <Badge variant="secondary">제출</Badge> : <Badge variant="grayish">미제출</Badge>}</TableCell>
       <TableCell className="text-right">

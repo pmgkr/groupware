@@ -1,13 +1,14 @@
 import { memo, useMemo } from 'react';
 import { Link, useParams, useLocation } from 'react-router';
-import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
-import { Button } from '@/components/ui/button';
+import { formatAmount, formatDate } from '@/utils';
+import { type ExpenseListItem } from '@/api';
+
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import { formatAmount, formatDate } from '@/utils';
-import type { ExpenseListItem } from '@/api';
+
+import { UserRoundPen } from 'lucide-react';
 
 const statusMap = {
   Saved: <Badge variant="grayish">임시저장</Badge>,
@@ -21,14 +22,15 @@ const statusMap = {
 const parseCategories = (value?: string) => (value ? Array.from(new Set(value.split('|').filter(Boolean))) : []);
 
 type ExpenseRowProps = {
+  role?: 'manager';
   item: ExpenseListItem;
   activeTab: 'all' | 'saved' | 'claimed';
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
-  role?: 'manager';
+  onAInfo: (item: ExpenseListItem) => void;
 };
 
-export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck, role }: ExpenseRowProps) => {
+export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck, role, onAInfo }: ExpenseRowProps) => {
   const { user_id } = useUser();
   const { search } = useLocation();
 
@@ -41,6 +43,8 @@ export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck, role }:
   const expenseDetail = useMemo(() => {
     return role === 'manager' ? `/manager/nexpense/${item.exp_id}${search}` : `/expense/${item.exp_id}${search}`;
   }, [role, item.seq, search]);
+
+  const isAddInfo = (item.add_info ?? []).length;
 
   return (
     <div className="relative rounded-md border border-gray-300 bg-white p-4">
@@ -56,6 +60,14 @@ export const ExpenseCardRow = memo(({ item, activeTab, checked, onCheck, role }:
             />
           )}
           <span>EXP #{item.exp_id}</span>
+          {isAddInfo > 0 && (
+            <span
+              className="ml-1 inline-flex cursor-pointer items-center gap-0.5 align-middle text-xs text-gray-500"
+              onClick={() => onAInfo(item)}>
+              <UserRoundPen className="size-3" />
+              {isAddInfo}
+            </span>
+          )}
         </div>
         {statusMap[item.status as keyof typeof statusMap]}
       </div>

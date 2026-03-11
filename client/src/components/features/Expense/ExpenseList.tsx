@@ -16,11 +16,20 @@ import type { MultiSelectOption, MultiSelectRef } from '@components/multiselect/
 import { Excel } from '@/assets/images/icons';
 import { OctagonAlert } from 'lucide-react';
 
-import { getExpenseLists, type ExpenseListItem, getExpenseType, deleteTempExpense, claimTempExpense } from '@/api';
+import {
+  getExpenseLists,
+  type addInfoDTO,
+  type ExpenseListItem,
+  getExpenseType,
+  deleteTempExpense,
+  claimTempExpense,
+  pInfoDelete,
+} from '@/api';
 import { ExpenseFilterPC } from './_responsive/ExpenseFilterPC';
 import { ExpenseFilterMo } from './_responsive/ExpenseFilterMo';
 import { ExpenseTable } from './_responsive/ExpenseTable';
 import { ExpenseCardList } from './_responsive/ExpenseCardList';
+import { AddInfoDialog } from '@/components/features/Project/_components/addInfoDialog';
 
 export default function ExpenseList() {
   const navigate = useNavigate();
@@ -40,6 +49,10 @@ export default function ExpenseList() {
   const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
   const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>(() => searchParams.get('attach')?.split(',') ?? []);
   const [registerDialog, setRegisterDialog] = useState(false);
+
+  // Add Info Modal State
+  const [selectedAddInfos, setSelectedAddInfos] = useState<addInfoDTO[]>([]);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const typeRef = useRef<MultiSelectRef>(null);
   const statusRef = useRef<MultiSelectRef>(null);
@@ -300,6 +313,23 @@ export default function ExpenseList() {
       cancelText: '취소',
       onConfirm: async () => {
         try {
+          // 선택된 항목 중 add_info의 seq 추출
+          const addInfoSeqsToDelete = selectedRows
+            .flatMap((row) => row.add_info || [])
+            .map((info) => info.seq)
+            .filter((seq) => seq !== undefined && seq !== null);
+
+          if (addInfoSeqsToDelete.length > 0) {
+            for (const addInfoSeq of addInfoSeqsToDelete) {
+              try {
+                await pInfoDelete(addInfoSeq);
+              } catch (delErr) {
+                console.error(`❌ add_info (seq: ${addInfoSeq}) 삭제 실패:`, delErr);
+              }
+            }
+            console.log('✅ add_info 삭제 완료:', addInfoSeqsToDelete);
+          }
+
           const payload = { seqs: checkedItems };
           const res = await deleteTempExpense(payload);
 
@@ -330,6 +360,12 @@ export default function ExpenseList() {
         }
       },
     });
+  };
+
+  // 외주용역비 or 접대비 버튼 클릭 시
+  const handleAddInfo = async (item: ExpenseListItem) => {
+    setSelectedAddInfos(item.add_info ?? []);
+    setDetailOpen(true);
   };
 
   // 필터 옵션 정의
@@ -411,6 +447,8 @@ export default function ExpenseList() {
         if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
 
         const res = await getExpenseLists(params);
+
+        console.log('비용 리스트', res);
 
         setExpenseList(res.items);
         setTotal(res.total);
@@ -499,6 +537,7 @@ export default function ExpenseList() {
           checkAll={checkAll}
           onCheckAll={handleCheckAll}
           onCheck={handleCheckItem}
+          onAInfo={handleAddInfo}
           loading={loading}
         />
       ) : (
@@ -509,6 +548,7 @@ export default function ExpenseList() {
           checkAll={checkAll}
           onCheckAll={handleCheckAll}
           onCheck={handleCheckItem}
+          onAInfo={handleAddInfo}
           loading={loading}
         />
       )}
@@ -534,6 +574,8 @@ export default function ExpenseList() {
           />
         )}
       </div>
+
+      <AddInfoDialog open={detailOpen} onOpenChange={setDetailOpen} addInfos={selectedAddInfos} />
 
       <Dialog open={registerDialog} onOpenChange={setRegisterDialog}>
         <DialogContent className="max-md:max-w-[calc(100%-var(--spacing)*8)] max-md:rounded-md">

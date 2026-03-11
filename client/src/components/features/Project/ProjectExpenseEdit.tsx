@@ -206,19 +206,24 @@ export default function ProjectExpenseEdit() {
       }
     })();
   }, []);
+
   //내계좌 불러오기
   const [accountList, setAccountList] = useState<BankAccount[]>([]);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+
+  const fetchMyAccounts = async () => {
+    try {
+      const data = await getMyAccounts();
+      setAccountList(data);
+    } catch (err) {
+      console.error('❌ 계좌 목록 불러오기 실패:', err);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await getMyAccounts();
-        setAccountList(data);
-      } catch (err) {
-        console.error('❌ 계좌 목록 불러오기 실패:', err);
-      }
-    })();
+    fetchMyAccounts();
   }, []);
+
   const handleFillMyMainAccount = () => {
     const mainAcc = accountList.find((acc) => acc.flag === 'mine');
 
@@ -532,7 +537,6 @@ export default function ProjectExpenseEdit() {
           ei_amount: item.ei_amount,
           ei_tax: item.ei_tax,
           ei_total: item.ei_total,
-          //pro_id: item.pro_id,
           pro_id: item.pro_id,
           attachments: item.attachments.map((att: any) => ({
             filename: att.fname,
@@ -685,8 +689,6 @@ export default function ProjectExpenseEdit() {
   // 폼 제출
   const onSubmit = async (values: EditFormValues) => {
     const isEstimate = header.is_estimate === 'Y';
-
-    console.log('폼', values);
 
     addDialog({
       title: '프로젝트 비용 수정',
@@ -891,8 +893,8 @@ export default function ProjectExpenseEdit() {
                   open={accountDialogOpen}
                   onOpenChange={setAccountDialogOpen}
                   accounts={accountList}
-                  bankList={bankList}
                   onSelect={handleSelectAccount}
+                  onRefresh={fetchMyAccounts}
                 />
 
                 <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">

@@ -30,6 +30,7 @@ import {
   getProjectExpenseType,
   deleteProjectTempExpense,
   claimProjectTempExpense,
+  pInfoDelete,
 } from '@/api';
 
 export default function Expense() {
@@ -349,6 +350,23 @@ export default function Expense() {
       cancelText: '취소',
       onConfirm: async () => {
         try {
+          // 선택된 항목 중 add_info의 seq 추출
+          const addInfoSeqsToDelete = selectedRows
+            .flatMap((row) => row.add_info || [])
+            .map((info) => info.seq)
+            .filter((seq) => seq !== undefined && seq !== null);
+
+          if (addInfoSeqsToDelete.length > 0) {
+            for (const addInfoSeq of addInfoSeqsToDelete) {
+              try {
+                await pInfoDelete(addInfoSeq);
+              } catch (delErr) {
+                console.error(`❌ add_info (seq: ${addInfoSeq}) 삭제 실패:`, delErr);
+              }
+            }
+            console.log('✅ add_info 삭제 완료:', addInfoSeqsToDelete);
+          }
+
           const payload = { seqs: checkedItems };
           const res = await deleteProjectTempExpense(payload);
 

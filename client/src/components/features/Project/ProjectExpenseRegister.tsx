@@ -24,7 +24,6 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { Input } from '@components/ui/input';
 import { Textarea } from '@components/ui/textarea';
 import { Button } from '@components/ui/button';
-import { Spinner } from '@components/ui/spinner';
 
 import { DayPicker } from '@components/daypicker';
 import { RadioButton, RadioGroup } from '@components/ui/radioButton';
@@ -372,16 +371,19 @@ export default function ProjectExpenseRegister() {
   //내계좌 불러오기
   const [accountList, setAccountList] = useState<BankAccount[]>([]);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  const fetchMyAccounts = async () => {
+    try {
+      const data = await getMyAccounts();
+      setAccountList(data);
+    } catch (err) {
+      console.error('❌ 계좌 목록 불러오기 실패:', err);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await getMyAccounts();
-        setAccountList(data);
-      } catch (err) {
-        console.error('❌ 계좌 목록 불러오기 실패:', err);
-      }
-    })();
+    fetchMyAccounts();
   }, []);
+
   const handleFillMyMainAccount = () => {
     const mainAcc = accountList.find((acc) => acc.flag === 'mine');
 
@@ -599,6 +601,7 @@ export default function ProjectExpenseRegister() {
                     h_ssn: item.h_ssn || '',
                     h_tel: item.h_tel || '',
                     h_addr: item.h_addr || '',
+                    exp_type: 'P',
                   };
 
                   return pInfoCreate(payload);
@@ -611,6 +614,7 @@ export default function ProjectExpenseRegister() {
                     exp_kind_idx: itemSeq,
                     ent_member: item.ent_member || '',
                     ent_reason: item.ent_reason || '',
+                    exp_type: 'P',
                   };
 
                   return pInfoCreate(payload);
@@ -876,8 +880,8 @@ export default function ProjectExpenseRegister() {
                       open={accountDialogOpen}
                       onOpenChange={setAccountDialogOpen}
                       accounts={accountList}
-                      bankList={bankList}
                       onSelect={handleSelectAccount}
+                      onRefresh={fetchMyAccounts}
                     />
                   </div>
                   <div className="md:long-v-divider col-span-2 text-base leading-[1.5] text-gray-700 md:col-span-1 md:px-5">

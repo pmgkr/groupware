@@ -19,6 +19,7 @@ interface ExpenseListProps {
 
   handleCheckAll: (val: boolean) => void;
   handleCheckItem: (seq: number, checked: boolean) => void;
+  onAInfo: (item: ExpenseListItems) => void;
 }
 
 export default function ManagerExpenseList({
@@ -34,6 +35,7 @@ export default function ManagerExpenseList({
 
   handleCheckAll,
   handleCheckItem,
+  onAInfo,
 }: ExpenseListProps) {
   return (
     <>
@@ -75,7 +77,13 @@ export default function ManagerExpenseList({
             </TableRow>
           ) : (
             expenseList.map((item) => (
-              <ManagerListRow key={item.seq} item={item} checked={checkedItems.includes(item.seq)} onCheck={handleCheckItem} />
+              <ManagerListRow
+                key={item.seq}
+                item={item}
+                checked={checkedItems.includes(item.seq)}
+                onCheck={handleCheckItem}
+                onAInfo={onAInfo}
+              />
             ))
           )}
         </TableBody>

@@ -1,6 +1,6 @@
 // src/components/features/Expense/_components/ExpenseRegisterRow.tsx
 import { useEffect, useState, useCallback, memo } from 'react';
-import type { Control, UseFormGetValues, UseFormSetValue } from 'react-hook-form';
+import { type Control, type UseFormGetValues, type UseFormSetValue, useWatch } from 'react-hook-form';
 import { useToggleState } from '@/hooks/useToggleState';
 import { cn } from '@/lib/utils';
 import { formatAmount, formatKST } from '@/utils';
@@ -22,7 +22,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar, Close } from '@/assets/images/icons';
 import { FileText } from 'lucide-react';
 import { useIsMobileViewport } from '@/hooks/useViewport';
+
 import ExpenseProposalCard from '../_responsive/ExpenseProposalCard';
+import { OutsourceFields } from './OutsourceFields';
+import { EntertainmentFields } from './EntertainmentFields';
 
 type ExpenseRowProps = {
   index: number;
@@ -56,6 +59,28 @@ function ExpenseRowComponent({
   onTotalChange,
 }: ExpenseRowProps) {
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
+
+  // Row별 비용 유형 useWatch (외주용역비 & 접대비)
+  const typeValue = useWatch({
+    control,
+    name: `expense_items.${index}.type`,
+  });
+  useEffect(() => {
+    if (typeValue !== '외주용역비') {
+      setValue(`expense_items.${index}.tax_type`, '');
+      setValue(`expense_items.${index}.work_day`, '');
+      setValue(`expense_items.${index}.work_term`, '');
+      setValue(`expense_items.${index}.h_name`, '');
+      setValue(`expense_items.${index}.h_ssn`, '');
+      setValue(`expense_items.${index}.h_tel`, '');
+      setValue(`expense_items.${index}.h_addr`, '');
+    }
+
+    if (typeValue !== '접대비') {
+      setValue(`expense_items.${index}.ent_member`, '');
+      setValue(`expense_items.${index}.ent_reason`, '');
+    }
+  }, [typeValue, index, setValue]);
 
   // 로컬 상태 (핵심)
   const [price, setPrice] = useState('');
@@ -301,6 +326,10 @@ function ExpenseRowComponent({
           />
         </div>
       </div>
+
+      {typeValue === '외주용역비' && <OutsourceFields control={control} index={index} setValue={setValue} />}
+      {typeValue === '접대비' && <EntertainmentFields control={control} index={index} />}
+
       {/* 기안서 매칭 다이얼로그 */}
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-5xl rounded-lg max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)]">
