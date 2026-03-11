@@ -211,15 +211,17 @@ export default function ProjectExpenseEdit() {
   const [accountList, setAccountList] = useState<BankAccount[]>([]);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
 
+  const fetchMyAccounts = async () => {
+    try {
+      const data = await getMyAccounts();
+      setAccountList(data);
+    } catch (err) {
+      console.error('❌ 계좌 목록 불러오기 실패:', err);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await getMyAccounts();
-        setAccountList(data);
-      } catch (err) {
-        console.error('❌ 계좌 목록 불러오기 실패:', err);
-      }
-    })();
+    fetchMyAccounts();
   }, []);
 
   const handleFillMyMainAccount = () => {
@@ -891,8 +893,8 @@ export default function ProjectExpenseEdit() {
                   open={accountDialogOpen}
                   onOpenChange={setAccountDialogOpen}
                   accounts={accountList}
-                  bankList={bankList}
                   onSelect={handleSelectAccount}
+                  onRefresh={fetchMyAccounts}
                 />
 
                 <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">

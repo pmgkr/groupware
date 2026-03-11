@@ -479,9 +479,10 @@ export default function ExpenseView() {
                       </TableRow>
                     );
                   })}
-                  <TableRow className="bg-primary-blue-50">
-                    <TableCell className="font-semibold">총 비용</TableCell>
-                    <TableCell className="text-left"></TableCell>
+                  <TableRow className="bg-primary-blue-50 hover:bg-primary-blue-50">
+                    <TableCell className="font-semibold" colSpan={3}>
+                      총 비용
+                    </TableCell>
                     <TableCell className="text-right font-semibold">{formatAmount(totals.amount)}원</TableCell>
                     <TableCell className="text-right font-semibold">{formatAmount(totals.tax)}원</TableCell>
                     <TableCell className="text-right font-semibold">{formatAmount(totals.total)}원</TableCell>
