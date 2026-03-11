@@ -10,6 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -64,7 +65,7 @@ const AccountList = React.memo(
   }) => {
     return (
       <div className="w-full">
-        <div className="max-h-[280px] space-y-2 overflow-y-auto">
+        <div className="max-h-[280px] space-y-2 overflow-y-auto max-md:max-h-[270px]">
           {accounts.map((acc, index) => (
             <div
               key={acc.seq}
@@ -77,15 +78,22 @@ const AccountList = React.memo(
                   onError={handleImageError}
                 />
               </div>
-              <div>
-                <strong className="font-bold">{acc.account_alias}</strong>
+              <div className="pr-14">
+                <div className="flex items-center gap-2">
+                  <strong className="truncate font-bold">{acc.account_alias}</strong>
+                  {acc.flag === 'mine' && (
+                    <Badge variant="secondary" className="shrink-0">
+                      대표
+                    </Badge>
+                  )}
+                </div>
                 <div
-                  className="flex cursor-pointer items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-600 md:text-[13px]"
+                  className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 transition-colors hover:text-gray-700 md:text-[13px]"
                   onClick={() => copyAccount(acc.bank_account)}>
                   {acc.bank_name} {acc.bank_account}
                   <Copy className="size-3" />
                 </div>
-                <dd className="text-sm text-gray-500 md:text-[13px]">{acc.account_name}</dd>
+                <dd className="text-sm text-gray-600 md:text-[13px]">{acc.account_name}</dd>
               </div>
               <Button type="button" size="sm" onClick={() => onSelect(acc)} className="absolute top-3 right-3">
                 선택
@@ -310,6 +318,10 @@ export const AccountSelectDialog: React.FC<Props> = ({ open, onOpenChange, accou
 
   // 모달 오픈 시 은행 코드 최초 1회 로드
   useEffect(() => {
+    if (open) {
+      setTab('select');
+    }
+
     let isMounted = true;
     if (open && bankCodes.length === 0) {
       getBankCodes()
@@ -367,7 +379,7 @@ export const AccountSelectDialog: React.FC<Props> = ({ open, onOpenChange, accou
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex min-h-90 max-w-lg flex-col gap-6 rounded-lg max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)] max-md:px-4">
+      <DialogContent className="flex min-h-90 max-w-lg flex-col gap-6 rounded-lg max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)] max-md:gap-4 max-md:px-4">
         <DialogHeader className="shrink-0">
           <DialogTitle>
             <button

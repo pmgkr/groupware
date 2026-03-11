@@ -1,4 +1,4 @@
-import { useLocation, useNavigate, Link } from 'react-router';
+import { useLocation, useNavigate, Link, useRouteError } from 'react-router';
 
 import { Button } from '@components/ui/button';
 import errorImage from '@/assets/images/common/error_image.svg';
@@ -6,6 +6,33 @@ import errorImage from '@/assets/images/common/error_image.svg';
 export default function ErrorPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const error: any = useRouteError();
+
+  if (
+    error?.message?.includes('Failed to fetch dynamically imported module') ||
+    error?.message?.includes('Importing a module script failed')
+  ) {
+    window.location.reload();
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-gray-200 p-25">
+        <div
+          // 💡 로딩 중인 느낌을 주기 위해 animate-pulse 추가
+          className="flex w-full max-w-210 animate-pulse flex-col gap-[50px] p-3"
+          style={{
+            backgroundImage: `url(${errorImage})`,
+            backgroundSize: 'auto 100%',
+            backgroundPosition: 'right center',
+            backgroundRepeat: 'no-repeat',
+          }}>
+          <div className="flex flex-col gap-2">
+            <h1 className="text-primary text-8xl font-bold tracking-tight">Page Update</h1>
+            <p className="text-primary text-4xl font-bold">최신 버전을 불러오는 중입니다.</p>
+            <p className="mt-2 text-2xl font-medium text-gray-700">잠시만 기다려주세요...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const code = location.state?.code || '404 ERROR';
   const title = location.state?.title || 'Page Not Found';

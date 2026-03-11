@@ -72,11 +72,11 @@ export default function Mypage() {
     key: keyof NonNullable<typeof editedUser>;
     label: string;
   }[] = [
-      { key: 'phone', label: '휴대폰 번호' },
-      { key: 'birth_date', label: '생년월일' },
-      { key: 'hire_date', label: '입사일' },
-      { key: 'address', label: '주소' },
-    ];
+    { key: 'phone', label: '휴대폰 번호' },
+    { key: 'birth_date', label: '생년월일' },
+    { key: 'hire_date', label: '입사일' },
+    { key: 'address', label: '주소' },
+  ];
   //프로필 수정 저장
   const handleEditSave = async () => {
     if (!editedUser) return;
@@ -394,7 +394,7 @@ export default function Mypage() {
   return (
     <>
       <section className="flex flex-col gap-y-5">
-        <div className="flex items-center gap-x-7 rounded-md border border-gray-300 px-5 py-[31px] sm:px-8 md:gap-x-10 md:px-14 md:py-6 lg:gap-x-14 lg:px-10 xl:px-20">
+        <div className="flex items-center gap-x-7 rounded-md border border-gray-300 px-4 py-[31px] sm:px-8 md:gap-x-10 md:px-14 md:py-6 lg:gap-x-14 lg:px-10 xl:px-20">
           <div className="group relative aspect-square w-[90px] shrink-0 overflow-hidden rounded-[50%] md:w-25 lg:w-36">
             {profileImageUrl ? (
               <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
@@ -444,7 +444,7 @@ export default function Mypage() {
                 <MailMin className="size-5" />
                 <span>{user?.user_id}</span>
               </li>
-              <li className="flex flex-1 items-center gap-x-1.5">
+              <li className="flex flex-1 items-center gap-x-1.5 max-md:flex-wrap">
                 <PhoneMin className="size-5 shrink-0" />
                 {isEditing ? (
                   <Input
@@ -463,15 +463,14 @@ export default function Mypage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-[24px] px-2 text-xs text-primary-blue-500"
+                      className="text-primary-blue-500 h-6 px-2 text-xs max-md:mt-2 max-md:w-full"
                       onClick={() => {
                         setIsPasswordChangeOpen(true);
                         setPasswordChangeStep(1);
                         setCurrentPassword('');
                         setNewPassword('');
                         setNewPasswordConfirm('');
-                      }}
-                    >
+                      }}>
                       비밀번호변경
                     </Button>
                   </>
@@ -480,7 +479,7 @@ export default function Mypage() {
             </ul>
           </div>
         </div>
-        <div className="rounded-md border border-gray-300 px-5 py-8 max-md:py-7 md:py-12.5 lg:px-10 xl:px-18.5">
+        <div className="rounded-md border border-gray-300 px-4 py-8 max-md:py-7 md:py-12.5 lg:px-10 xl:px-18.5">
           <div className="mb-5 flex items-center justify-between border-b border-b-gray-300 pb-1.5 md:mb-6">
             <SectionHeader title="프로필 수정" className="mb-0 border-0" />
             <div className="flex gap-x-2">
@@ -678,11 +677,7 @@ export default function Mypage() {
                 )}
               </div>
               <DialogFooter className="pt-8 max-sm:flex-row max-sm:justify-center max-sm:gap-x-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsPasswordChangeOpen(false)}
-                  className="max-sm:flex-1">
+                <Button type="button" variant="outline" onClick={() => setIsPasswordChangeOpen(false)} className="max-sm:flex-1">
                   취소
                 </Button>
                 {passwordChangeStep === 1 ? (
@@ -925,7 +920,6 @@ export default function Mypage() {
               </Form>
             </DialogContent>
           </Dialog>
-
           <div>
             <Table className="mb-6 w-full table-fixed">
               <TableHeader>
@@ -933,16 +927,16 @@ export default function Mypage() {
                   <TableHead className="w-[25px] pr-0 md:w-[5%]"></TableHead>
                   <TableHead className="w-[75px] md:w-[16%]">계좌 별명</TableHead>
                   <TableHead className="w-[65px] md:w-[15%]">은행명</TableHead>
-                  <TableHead className="w-[95px]">계좌 번호</TableHead>
+                  <TableHead className="w-[120px]">계좌 번호</TableHead>
                   <TableHead className="w-[70px] md:w-[15%]">예금주</TableHead>
-                  <TableHead className="w-[120px] md:w-[18%]">등록일시</TableHead>
+                  <TableHead className="w-[80px] md:w-[18%]">등록일시</TableHead>
                   <TableHead className="w-[90px] md:w-[12%]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="text-sm md:text-base">
                 {accounts.length > 0 ? (
                   accounts.map((acc) => (
-                    <TableRow key={acc.seq} className="max-md:[&>td]:h-9 max-md:[&>td]:p-0">
+                    <TableRow key={acc.seq} className="max-md:[&_td]:leading-[1.2] max-md:[&>td]:px-0">
                       <TableCell className="w-[30px] pr-0 max-md:pl-0">
                         {acc.flag === 'mine' && <CrownIcon className="inline-block size-4 text-yellow-500 md:size-5" />}
                       </TableCell>
@@ -950,7 +944,7 @@ export default function Mypage() {
                       <TableCell className="w-[65px] truncate">{acc.bank_name}</TableCell>
                       <TableCell>{acc.bank_account}</TableCell>
                       <TableCell>{acc.account_name}</TableCell>
-                      <TableCell className="w-[120px] truncate">{formatKST(acc.wdate)}</TableCell>
+                      <TableCell>{formatKST(acc.wdate)}</TableCell>
                       {/* 수정 삭제 버튼 */}
                       <TableCell>
                         <Button
