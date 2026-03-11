@@ -180,7 +180,7 @@ export default function EstimateView() {
   } as const;
 
   return isMobile ? (
-    <div className="-mx-5 -my-6 bg-white">
+    <div className="-mx-4.5 -my-6 bg-white">
       <div className="p-5 tracking-tight">
         <div className="mb-2">
           <div className="flex items-center justify-between">

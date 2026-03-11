@@ -267,12 +267,12 @@ export default function ProjectLayout() {
     setData((prev) =>
       prev
         ? {
-            ...prev,
-            info: {
-              ...prev.info,
-              project_status: status,
-            },
-          }
+          ...prev,
+          info: {
+            ...prev.info,
+            project_status: status,
+          },
+        }
         : prev
     );
 
@@ -332,17 +332,25 @@ export default function ProjectLayout() {
             </>
           )}
 
-          {user_id === 'yeaji.kim@pmgasia.com' || user_id === 'sangmin.kang@pmgasia.com' ? ( // 지사장님 계정만 잠금 토글 가능
-            <Button type="button" variant="svgIcon" onClick={toggleLock} className="text-gray-600 has-[>svg]:p-1">
+          {user_id === 'sangmin.kang@pmgasia.com' ||
+            user_id === 'kangho.kim@pmgasia.com' ||
+            user_id === 'yeaji.kim@pmgasia.com' ||
+            user_id === 'jihyo.kim@pmgasia.com' ? (
+            <Button
+              type="button"
+              variant="svgIcon"
+              onClick={toggleLock}
+              className={cn('has-[>svg]:p-1', isLocked ? 'text-green-600' : 'text-gray-500')}
+            >
               {isLocked ? <Lock className="size-5" /> : <LockOpen className="size-5" />}
             </Button>
           ) : isLocked ? (
             <div className="p-1">
-              <Lock className="size-5 text-gray-600" />
+              <Lock className="text-green-600 size-5" />
             </div>
           ) : (
             <div className="p-1">
-              <LockOpen className="size-5 text-gray-600" />
+              <LockOpen className="text-gray-500 size-5" />
             </div>
           )}
         </div>
@@ -365,7 +373,7 @@ export default function ProjectLayout() {
       </div>
 
       {/* 탭 메뉴: URL 이동 기반 */}
-      <nav className="flex gap-4 max-md:mt-2 max-md:-ml-5 max-md:w-[calc(100%+var(--spacing)*10)] max-md:border-b-2 max-md:border-gray-300 max-md:px-5">
+      <nav className="flex gap-4 max-md:-mx-4.5 max-md:mt-1 max-md:w-[calc(100%+var(--spacing)*9)] max-md:border-b-2 max-md:border-gray-300 max-md:px-4.5">
         {tabs.map((tab) => {
           const basePath = tab.path === '' ? `/project/${projectId}` : `/project/${projectId}/${tab.path}`;
 

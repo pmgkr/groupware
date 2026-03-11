@@ -28,16 +28,21 @@ function HalfDonutTooltip({ active, payload }: any) {
 }
 
 export function HalfDonut({ value, netProfit }: { value: number; netProfit: number }) {
+  const isInvalid = value < 0;
+
+  const safeValue = isInvalid ? 0 : Math.min(value, 100);
+  const restValue = 100 - safeValue;
+
   const data = [
     {
       name: 'GPM',
-      value, // 퍼센트 비율
-      netProfit, // 🔑 Tooltip용 실제 값
+      value: safeValue, // 퍼센트 비율
+      netProfit, // Tooltip용 실제 값
       color: '#6366F1', // primary-blue
     },
     {
       name: 'rest',
-      value: 100 - value,
+      value: restValue,
       color: '#E5E7EB',
     },
   ];
@@ -55,7 +60,7 @@ export function HalfDonut({ value, netProfit }: { value: number; netProfit: numb
             outerRadius="80%"
             paddingAngle={0}
             stroke="none">
-            <Cell className="fill-primary-blue-500" />
+            <Cell className="fill-primary-blue-500" style={{ display: safeValue === 0 ? 'none' : 'block' }} />
             <Cell className="fill-gray-300" />
           </Pie>
           <Tooltip content={<HalfDonutTooltip />} cursor={false} />

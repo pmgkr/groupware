@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, Outlet } from 'react-router';
 import type { RouteObject } from 'react-router';
 import { lazy, Suspense, type ReactElement } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import ScrollToTop from '@/components/common/ScrollToTop';
 
 // Lazy loading for layouts
 const AuthLayout = lazy(() => import('@/layouts/AuthLayout'));
@@ -88,6 +89,7 @@ export const router = createBrowserRouter([
   {
     element: (
       <Suspense fallback={<LoadingSpinner />}>
+        <ScrollToTop />
         <PublicLayout />
       </Suspense>
     ),
@@ -115,6 +117,7 @@ export const router = createBrowserRouter([
   {
     element: (
       <Suspense fallback={<LoadingSpinner />}>
+        <ScrollToTop />
         <AuthLayout />
       </Suspense>
     ),
@@ -152,6 +155,7 @@ export const router = createBrowserRouter([
     path: '*',
     element: (
       <Suspense fallback={<LoadingSpinner />}>
+        <ScrollToTop />
         <ErrorPage />
       </Suspense>
     ),

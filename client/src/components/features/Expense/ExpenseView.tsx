@@ -5,9 +5,11 @@ import { formatAmount, formatDate, normalizeAttachmentUrl } from '@/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 
 import { getExpenseView } from '@/api/expense';
+import { type addInfoDTO } from '@/api/project';
 import type { ExpenseViewDTO } from '@/api/expense';
 import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
 import ReportMatched from '@components/features/Project/_components/ReportMatched';
+import { AddInfoDialog } from '@components/features/Project/_components/addInfoDialog';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 
@@ -32,6 +34,10 @@ export default function ExpenseView() {
   // 기안서 조회 State
   const [selectedProposal, setSelectedProposal] = useState<ReportDTO | null>(null);
   const [proposalLoading, setProposalLoading] = useState(false);
+
+  // Add Info Modal State
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedAddInfos, setSelectedAddInfos] = useState<addInfoDTO[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -76,28 +82,28 @@ export default function ExpenseView() {
   // 비용 상태별 Badge 맵핑
   const statusMap = {
     Saved: (
-      <Badge variant="grayish" size="md">
+      <Badge variant="grayish" size={isMobile ? 'md' : 'table'}>
         임시저장
       </Badge>
     ),
     Claimed: (
-      <Badge variant="secondary" size="md">
+      <Badge variant="secondary" size={isMobile ? 'md' : 'table'}>
         승인대기
       </Badge>
     ),
-    Confirmed: <Badge size="md">승인완료</Badge>,
+    Confirmed: <Badge size={isMobile ? 'md' : 'table'}>승인완료</Badge>,
     Approved: (
-      <Badge className="bg-primary-blue/80" size="md">
+      <Badge className="bg-primary-blue/80" size={isMobile ? 'md' : 'table'}>
         지급대기
       </Badge>
     ),
     Completed: (
-      <Badge className="bg-primary-blue" size="md">
+      <Badge className="bg-primary-blue" size={isMobile ? 'md' : 'table'}>
         지급완료
       </Badge>
     ),
     Rejected: (
-      <Badge className="bg-destructive" size="md">
+      <Badge className="bg-destructive" size={isMobile ? 'md' : 'table'}>
         반려됨
       </Badge>
     ),
@@ -152,6 +158,12 @@ export default function ExpenseView() {
   // 마이페이지 > 비용 내역에서 넘어왔는 지 파악
   const hasFlag = new URLSearchParams(search).has('flag');
 
+  // 외주용역비 or 접대비 버튼 클릭 시
+  const handleAddInfo = async (addInfos?: addInfoDTO[]) => {
+    setSelectedAddInfos(addInfos ?? []);
+    setDetailOpen(true);
+  };
+
   return (
     <>
       {isMobile ? (
@@ -165,7 +177,7 @@ export default function ExpenseView() {
                 {status}
               </div>
               <div className="my-2">
-                <h3 className="text-lg leading-[1.2] font-light">{header.el_title}</h3>
+                <h3 className="mb-1 text-lg leading-[1.3] font-light">{header.el_title}</h3>
                 <div className="flex items-center text-xl font-bold">
                   <strong className="text-[1.3em]">{formatAmount(header.el_total)}</strong>원
                 </div>
@@ -194,10 +206,20 @@ export default function ExpenseView() {
               <h3 className="text-lg leading-[1.2] font-bold">비용 항목</h3>
               <div className="py-2">
                 {items.map((item) => {
-                  console.log('항목', item);
                   return (
                     <div key={item.seq} className="mb-3 border-b-1 border-dashed pb-3 last:border-b-0">
-                      <ExpRow title="비용 용도" value={item.ei_type} />
+                      <dl className="flex justify-between gap-2 py-1">
+                        <dt className="w-[20%] shrink-0 text-[13px] text-gray-700">비용 용도</dt>
+                        <dd className="text-right text-[13px] font-medium break-keep whitespace-pre">
+                          {(header.el_type === '외주용역비' || header.el_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
+                            <span className="text-primary underline" onClick={() => handleAddInfo(item.expense_add_info)}>
+                              {header.el_type}
+                            </span>
+                          ) : (
+                            header.el_type
+                          )}
+                        </dd>
+                      </dl>
                       <ExpRow title="가맹점명" value={item.ei_title} />
                       <ExpRow title="매입일자" value={formatDate(item.ei_pdate, true)} />
                       <dl className="flex justify-between py-1">
@@ -239,10 +261,7 @@ export default function ExpenseView() {
                         <dt className="text-[13px] text-gray-700">기안서</dt>
                         <dd className="text-right text-sm font-medium text-gray-700">
                           {item.pro_id ? (
-                            <Link
-                              to={`/project/proposal/view/${item.pro_id}`}
-                              target="_blank"
-                              className="text-primary flex items-center gap-0.5">
+                            <Link to={`/expense/proposal/view/${item.pro_id}`} className="text-primary flex items-center gap-0.5">
                               기안서보기 <SquareArrowOutUpRight className="size-3" />
                             </Link>
                           ) : (
@@ -398,12 +417,13 @@ export default function ExpenseView() {
               <Table variant="primary" align="center" className="table-fixed">
                 <TableHeader>
                   <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+                    <TableHead className="w-[10%]">비용 용도</TableHead>
                     <TableHead className="w-[20%]">가맹점명</TableHead>
                     <TableHead className="w-[10%] px-4">매입일자</TableHead>
                     <TableHead className="w-[14%]">금액</TableHead>
                     <TableHead className="w-[10%]">세금</TableHead>
                     <TableHead className="w-[14%]">합계</TableHead>
-                    <TableHead className="w-[18%]">증빙자료</TableHead>
+                    <TableHead className="w-[20%]">증빙자료</TableHead>
                     <TableHead className="w-[8%]">기안서</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -411,6 +431,15 @@ export default function ExpenseView() {
                   {items.map((item) => {
                     return (
                       <TableRow key={item.seq} className="[&_td]:text-[13px]">
+                        <TableCell>
+                          {(header.el_type === '외주용역비' || header.el_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
+                            <span className="text-primary cursor-pointer underline" onClick={() => handleAddInfo(item.expense_add_info)}>
+                              {header.el_type}
+                            </span>
+                          ) : (
+                            header.el_type
+                          )}
+                        </TableCell>
                         <TableCell>{item.ei_title}</TableCell>
                         <TableCell className="px-4">{formatDate(item.ei_pdate)}</TableCell>
                         <TableCell className="text-right">{formatAmount(item.ei_amount)}원</TableCell>
@@ -450,9 +479,10 @@ export default function ExpenseView() {
                       </TableRow>
                     );
                   })}
-                  <TableRow className="bg-primary-blue-50">
-                    <TableCell className="font-semibold">총 비용</TableCell>
-                    <TableCell className="text-left"></TableCell>
+                  <TableRow className="bg-primary-blue-50 hover:bg-primary-blue-50">
+                    <TableCell className="font-semibold" colSpan={3}>
+                      총 비용
+                    </TableCell>
                     <TableCell className="text-right font-semibold">{formatAmount(totals.amount)}원</TableCell>
                     <TableCell className="text-right font-semibold">{formatAmount(totals.tax)}원</TableCell>
                     <TableCell className="text-right font-semibold">{formatAmount(totals.total)}원</TableCell>
@@ -483,6 +513,8 @@ export default function ExpenseView() {
           </div>
         </div>
       )}
+
+      <AddInfoDialog open={detailOpen} onOpenChange={setDetailOpen} addInfos={selectedAddInfos} />
     </>
   );
 }
@@ -493,9 +525,9 @@ function HorzBar() {
 
 function ExpRow({ title, value, bold }: { title: string; value: any; bold?: boolean }) {
   return (
-    <dl className="flex items-center justify-between gap-2 py-1">
+    <dl className="flex justify-between gap-2 py-1">
       <dt className="w-[20%] shrink-0 text-[13px] text-gray-700">{title}</dt>
-      <dd className={cn('text-right text-[13px] font-medium break-keep', bold && 'font-semibold')}>{value}</dd>
+      <dd className={cn('text-right text-[13px] font-medium break-keep whitespace-pre', bold && 'font-semibold')}>{value}</dd>
     </dl>
   );
 }

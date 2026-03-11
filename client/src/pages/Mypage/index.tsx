@@ -16,6 +16,8 @@ import {
   registerAccount,
   updateAccount,
   uploadProfileImage,
+  checkPassword,
+  changePassword,
   type BankAccount,
   type BankCode,
   type UserDTO,
@@ -46,6 +48,13 @@ export default function Mypage() {
   const [isHireOpen, setIsHireOpen] = useState(false);
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
 
+  // 비밀번호 변경 모달 상태
+  const [isPasswordChangeOpen, setIsPasswordChangeOpen] = useState(false);
+  const [passwordChangeStep, setPasswordChangeStep] = useState<1 | 2>(1);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+
   useEffect(() => {
     (async () => {
       try {
@@ -63,11 +72,11 @@ export default function Mypage() {
     key: keyof NonNullable<typeof editedUser>;
     label: string;
   }[] = [
-    { key: 'phone', label: '휴대폰 번호' },
-    { key: 'birth_date', label: '생년월일' },
-    { key: 'hire_date', label: '입사일' },
-    { key: 'address', label: '주소' },
-  ];
+      { key: 'phone', label: '휴대폰 번호' },
+      { key: 'birth_date', label: '생년월일' },
+      { key: 'hire_date', label: '입사일' },
+      { key: 'address', label: '주소' },
+    ];
   //프로필 수정 저장
   const handleEditSave = async () => {
     if (!editedUser) return;
@@ -449,7 +458,23 @@ export default function Mypage() {
                     }}
                   />
                 ) : (
-                  <span>{formatPhone(user?.phone)}</span>
+                  <>
+                    <span className="inline-block w-[110px]">{formatPhone(user?.phone)}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-[24px] px-2 text-xs text-primary-blue-500"
+                      onClick={() => {
+                        setIsPasswordChangeOpen(true);
+                        setPasswordChangeStep(1);
+                        setCurrentPassword('');
+                        setNewPassword('');
+                        setNewPasswordConfirm('');
+                      }}
+                    >
+                      비밀번호변경
+                    </Button>
+                  </>
                 )}
               </li>
             </ul>
@@ -601,6 +626,151 @@ export default function Mypage() {
               </div>
             </div>
           </div>
+
+          <Dialog
+            open={isPasswordChangeOpen}
+            onOpenChange={(isOpen) => {
+              setIsPasswordChangeOpen(isOpen);
+              if (!isOpen) {
+                setPasswordChangeStep(1);
+                setCurrentPassword('');
+                setNewPassword('');
+                setNewPasswordConfirm('');
+              }
+            }}>
+            <DialogContent className="w-[400px] gap-y-6 px-4 max-md:max-w-[calc(100%-var(--spacing)*8)] max-md:rounded-md lg:px-6">
+              <DialogHeader>
+                <DialogTitle>비밀번호 변경</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {passwordChangeStep === 1 && (
+                  <div>
+                    <Label className="mb-2 block">현재 비밀번호</Label>
+                    <Input
+                      type="password"
+                      placeholder="현재 비밀번호를 입력해주세요"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                    />
+                  </div>
+                )}
+                {passwordChangeStep === 2 && (
+                  <>
+                    <div>
+                      <Label className="mb-2 block">새 비밀번호</Label>
+                      <Input
+                        type="password"
+                        placeholder="새 비밀번호를 입력해주세요"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label className="mb-2 block">새 비밀번호 확인</Label>
+                      <Input
+                        type="password"
+                        placeholder="새 비밀번호를 다시 입력해주세요"
+                        value={newPasswordConfirm}
+                        onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+              <DialogFooter className="pt-8 max-sm:flex-row max-sm:justify-center max-sm:gap-x-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsPasswordChangeOpen(false)}
+                  className="max-sm:flex-1">
+                  취소
+                </Button>
+                {passwordChangeStep === 1 ? (
+                  <Button
+                    type="button"
+                    className="max-sm:flex-1"
+                    onClick={async () => {
+                      if (!currentPassword) {
+                        addAlert({
+                          title: '알림',
+                          message: '<p>현재 비밀번호를 입력해주세요.</p>',
+                          icon: <OctagonAlert className="text-red-500" />,
+                          duration: 2000,
+                        });
+                        return;
+                      }
+                      try {
+                        const res = await checkPassword(currentPassword);
+                        if (res.isMatch) {
+                          setPasswordChangeStep(2);
+                        } else {
+                          addAlert({
+                            title: '오류',
+                            message: '<p>비밀번호가 일치하지 않습니다.</p>',
+                            icon: <OctagonAlert className="text-red-500" />,
+                            duration: 2000,
+                          });
+                        }
+                      } catch (err) {
+                        console.error('Password check failed:', err);
+                        addAlert({
+                          title: '오류',
+                          message: '<p>비밀번호 확인 중 오류가 발생했습니다.</p>',
+                          icon: <OctagonAlert className="text-red-500" />,
+                          duration: 2000,
+                        });
+                      }
+                    }}>
+                    확인
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    className="max-sm:flex-1"
+                    onClick={async () => {
+                      if (!newPassword || !newPasswordConfirm) {
+                        addAlert({
+                          title: '알림',
+                          message: '<p>새 비밀번호를 입력해주세요.</p>',
+                          icon: <OctagonAlert className="text-red-500" />,
+                          duration: 2000,
+                        });
+                        return;
+                      }
+                      if (newPassword !== newPasswordConfirm) {
+                        addAlert({
+                          title: '오류',
+                          message: '<p>새 비밀번호가 일치하지 않습니다.</p>',
+                          icon: <OctagonAlert className="text-red-500" />,
+                          duration: 2000,
+                        });
+                        return;
+                      }
+                      try {
+                        await changePassword(newPassword);
+                        addAlert({
+                          title: '완료',
+                          message: '<p>비밀번호가 변경되었습니다.</p>',
+                          icon: <CheckCircle className="text-green-500" />,
+                          duration: 2000,
+                        });
+                        setIsPasswordChangeOpen(false);
+                      } catch (err) {
+                        console.error('Password change failed:', err);
+                        addAlert({
+                          title: '오류',
+                          message: '<p>비밀번호 변경 중 오류가 발생했습니다.</p>',
+                          icon: <OctagonAlert className="text-red-500" />,
+                          duration: 2000,
+                        });
+                      }
+                    }}>
+                    변경
+                  </Button>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <Dialog
             open={open}

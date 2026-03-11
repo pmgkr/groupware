@@ -67,17 +67,17 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
           </AlertDialogHeader>
           {dialog?.content && <div className="w-full max-w-full" dangerouslySetInnerHTML={{ __html: dialog.content }}></div>}
           {(dialog?.confirmText || dialog?.cancelText) && (
-            <AlertDialogFooter>
+            <AlertDialogFooter className="max-md:mt-4 max-md:flex-row max-md:gap-2">
               {dialog?.confirmText && (
                 <AlertDialogAction asChild>
-                  <Button onClick={handleConfirm} className="h-9 min-w-[80px]">
+                  <Button onClick={handleConfirm} className="h-9 min-w-[80px] max-md:flex-1">
                     {dialog.confirmText}
                   </Button>
                 </AlertDialogAction>
               )}
               {dialog?.cancelText && (
                 <AlertDialogCancel asChild>
-                  <Button variant="outline" onClick={handleCancel} className="h-9 min-w-[80px]">
+                  <Button variant="outline" onClick={handleCancel} className="h-9 min-w-[80px] max-md:flex-1">
                     {dialog.cancelText}
                   </Button>
                 </AlertDialogCancel>

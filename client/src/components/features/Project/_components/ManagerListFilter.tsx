@@ -1,89 +1,43 @@
+import type { ManagerFilterProps } from '../types/ManagerFilterProps';
+
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@/components/multiselect/multi-select';
 import { RefreshCw } from 'lucide-react';
 
-interface ExpenseListFilterProps {
-  activeTab: 'all' | 'claimed';
-  onTabChange: (tab: 'all' | 'claimed') => void;
+export function ManagerListFilter(props: ManagerFilterProps) {
+  const {
+    activeTab,
+    onTabChange,
 
-  selectedYear: string;
-  yearOptions: string[];
-  selectedType: string[];
-  selectedStatus: string[];
-  selectedProof: string[];
-  selectedProofStatus: string[];
+    selectedYear,
+    yearOptions,
+    onYearChange,
 
-  typeRef: React.RefObject<MultiSelectRef | null>;
-  statusRef: React.RefObject<MultiSelectRef | null>;
-  proofRef: React.RefObject<MultiSelectRef | null>;
-  proofStatusRef: React.RefObject<MultiSelectRef | null>;
+    selectedType,
+    selectedStatus,
+    selectedProof,
+    selectedProofStatus,
 
-  typeOptions: MultiSelectOption[];
-  checkedItems: number[];
+    typeOptions,
+    statusOptions,
+    proofMethod,
+    proofStatusOptions,
 
-  onYearChange: (val: string) => void;
-  onTypeChange: (val: string[]) => void;
-  onStatusChange: (val: string[]) => void;
-  onProofChange: (val: string[]) => void;
-  onProofStatusChange: (val: string[]) => void;
+    typeRef,
+    statusRef,
+    proofRef,
+    proofStatusRef,
 
-  onRefresh: () => void;
-  onConfirm: () => void;
-}
+    onTypeChange,
+    onStatusChange,
+    onProofChange,
+    onProofStatusChange,
 
-export function ManagerListFilter({
-  activeTab,
-  onTabChange,
-
-  selectedYear,
-  yearOptions,
-
-  selectedType,
-  selectedStatus,
-  selectedProof,
-  selectedProofStatus,
-  typeRef,
-  statusRef,
-  proofRef,
-  proofStatusRef,
-
-  typeOptions,
-
-  checkedItems,
-
-  onYearChange,
-  onTypeChange,
-  onStatusChange,
-  onProofChange,
-  onProofStatusChange,
-
-  onRefresh,
-  onConfirm,
-}: ExpenseListFilterProps) {
-  // 필터 옵션 정의
-  const statusOptions: MultiSelectOption[] = [
-    { label: '임시저장', value: 'Saved' },
-    { label: '승인대기', value: 'Claimed' },
-    { label: '승인완료', value: 'Confirmed' },
-    { label: '지급대기', value: 'Approved' },
-    { label: '지급완료', value: 'Completed' },
-    { label: '반려됨', value: 'Rejected' },
-  ];
-
-  const proofMethod: MultiSelectOption[] = [
-    { label: 'PMG', value: 'PMG' },
-    { label: 'MCS', value: 'MCS' },
-    { label: '개인카드', value: '개인카드' },
-    { label: '세금계산서', value: '세금계산서' },
-    { label: '현금영수증', value: '현금영수증' },
-    { label: '기타', value: '기타' },
-  ];
-
-  const proofStatusOptions: MultiSelectOption[] = [
-    { label: '제출', value: 'Y' },
-    { label: '미제출', value: 'N' },
-  ];
+    checkedItems,
+    onRefresh,
+    onConfirm,
+  } = props;
 
   return (
     <div className="mb-4 flex items-center justify-between">

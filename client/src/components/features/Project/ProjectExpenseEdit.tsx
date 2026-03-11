@@ -10,13 +10,19 @@ import { AttachmentFieldEdit } from './_components/AttachmentFieldEdit';
 import { useUser } from '@/hooks/useUser';
 import { formatKST, formatAmount } from '@/utils';
 import { getBankList, uploadFilesToServer, type BankList, type pExpenseViewDTO } from '@/api';
-import { getProjectExpenseView, projectExpenseUpdate, delProjectExpenseAttachment } from '@/api/project/expense';
+import {
+  getProjectExpenseView,
+  projectExpenseUpdate,
+  delProjectExpenseAttachment,
+  pInfoUpdate,
+  type pInfoUpdatePayload,
+} from '@/api/project/expense';
 
 import { useLoading } from '@/components/common/ui/Loading/Loading';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { SectionHeader } from '@components/ui/SectionHeader';
-import { Spinner } from '@components/ui/spinner';
+
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
 import { Textarea } from '@components/ui/textarea';
@@ -32,10 +38,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, parseISO } from 'date-fns';
 import { statusIconMap, getLogMessage } from '../Expense/utils/statusUtils';
 
+import { getProposalList, matchProjectWithProposal, type ProposalItem } from '@/api/expense/proposal';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getMyAccounts, type BankAccount } from '@/api/mypage';
 import { AccountSelectDialog } from '../Expense/_components/AccountSelectDialog';
-import { getProposalList, matchProjectWithProposal, type ProposalItem } from '@/api/expense/proposal';
+import { OutsourceFields } from './../Expense/_components/OutsourceFields';
+import { EntertainmentFields } from './../Expense/_components/EntertainmentFields';
 import { Checkbox } from '@/components/ui/checkbox';
 
 // ✅ zod schema
@@ -51,9 +60,9 @@ const editSchema = z.object({
     .nonempty('계좌번호를 입력해 주세요.'),
   el_deposit: z.string().optional(),
   remark: z.string().optional(),
-  expense_items: z
-    .array(
-      z.object({
+  expense_items: z.array(
+    z
+      .object({
         number: z.string().optional(),
         type: z.string().optional(),
         title: z.string().optional(),
@@ -61,10 +70,55 @@ const editSchema = z.object({
         price: z.string().optional(),
         tax: z.string().optional(),
         total: z.string().optional(),
-        pro_id: z.string().nullable().optional(),
+        pro_id: z.number().nullable().optional(),
+
+        // 외주용역비 전용
+        add_info_seq: z.number().nullable().optional(),
+        tax_type: z.string().optional(),
+        work_day: z.string().optional(),
+        work_term: z.string().optional(),
+        h_name: z.string().optional(),
+        h_ssn: z.string().optional(),
+        h_tel: z.string().optional(),
+        h_addr: z.string().optional(),
+
+        // 접대비 전용
+        ent_member: z.string().optional(),
+        ent_reason: z.string().optional(),
       })
-    )
-    .optional(),
+      .superRefine((data, ctx) => {
+        if (data.type === '외주용역비') {
+          const requiredFields = ['tax_type', 'work_day', 'work_term', 'h_name', 'h_ssn', 'h_tel', 'h_addr'] as const;
+
+          requiredFields.forEach((field) => {
+            if (!data[field]) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: '필수 입력 항목입니다.',
+                path: [field],
+              });
+            }
+          });
+        }
+
+        if (data.type === '접대비') {
+          if (!data.ent_member) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: '접대 대상은 필수입니다.',
+              path: ['ent_member'],
+            });
+          }
+          if (!data.ent_reason) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: '접대 사유는 필수입니다.',
+              path: ['ent_reason'],
+            });
+          }
+        }
+      })
+  ),
 });
 
 type UploadedPreviewFile = {
@@ -152,19 +206,24 @@ export default function ProjectExpenseEdit() {
       }
     })();
   }, []);
+
   //내계좌 불러오기
   const [accountList, setAccountList] = useState<BankAccount[]>([]);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+
+  const fetchMyAccounts = async () => {
+    try {
+      const data = await getMyAccounts();
+      setAccountList(data);
+    } catch (err) {
+      console.error('❌ 계좌 목록 불러오기 실패:', err);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await getMyAccounts();
-        setAccountList(data);
-      } catch (err) {
-        console.error('❌ 계좌 목록 불러오기 실패:', err);
-      }
-    })();
+    fetchMyAccounts();
   }, []);
+
   const handleFillMyMainAccount = () => {
     const mainAcc = accountList.find((acc) => acc.flag === 'mine');
 
@@ -214,16 +273,34 @@ export default function ProjectExpenseEdit() {
         console.log('📥 비용 데이터:', res);
 
         const h = res.header;
-        const mappedItems = res.items.map((i) => ({
-          type: i.ei_type,
-          title: i.ei_title,
-          date: formatDate(i.ei_pdate),
-          price: i.ei_amount.toString(),
-          tax: i.ei_tax.toString(),
-          total: i.ei_total.toString(),
-          pro_id: i.pro_id ? String(i.pro_id) : null,
-          rp_title: i.rp_title || null,
-        }));
+        const mappedItems = res.items.map((i) => {
+          const addInfo = i.expense_add_info?.[0];
+
+          return {
+            type: i.ei_type,
+            title: i.ei_title,
+            date: formatDate(i.ei_pdate),
+            price: i.ei_amount.toString(),
+            tax: i.ei_tax.toString(),
+            total: i.ei_total.toString(),
+            pro_id: i.pro_id ? Number(i.pro_id) : null,
+            rp_title: i.rp_title || null,
+
+            // 외주용역비
+            add_info_seq: addInfo?.seq ?? null,
+            tax_type: addInfo?.tax_type ?? '',
+            work_day: addInfo?.work_day ?? '',
+            work_term: addInfo?.work_term ?? '',
+            h_name: addInfo?.h_name ?? '',
+            h_ssn: addInfo?.h_ssn ?? '',
+            h_tel: addInfo?.h_tel ?? '',
+            h_addr: addInfo?.h_addr ?? '',
+
+            // 접대비
+            ent_member: addInfo?.ent_member ?? '',
+            ent_reason: addInfo?.ent_reason ?? '',
+          };
+        });
 
         reset({
           el_method: h.el_method,
@@ -460,7 +537,6 @@ export default function ProjectExpenseEdit() {
           ei_amount: item.ei_amount,
           ei_tax: item.ei_tax,
           ei_total: item.ei_total,
-          //pro_id: item.pro_id,
           pro_id: item.pro_id,
           attachments: item.attachments.map((att: any) => ({
             filename: att.fname,
@@ -471,13 +547,46 @@ export default function ProjectExpenseEdit() {
       };
 
       console.log('📦 최종 수정 payload:', payload);
-
       const res = await projectExpenseUpdate(expId!, payload);
-
       console.log('반환 타입', res);
 
       if (res.ok) {
-        const itemSeq = (res as any).updated?.item_seqs ?? [];
+        const expIdx = data?.header?.seq; // pexpense_list.seq
+        const itemSeq = res.updated?.item_seqs ?? []; // pexpense_item.seq
+
+        const updatePromises = values.expense_items
+          .map((item, index) => {
+            const exp_kind_idx = itemSeq[index];
+            const seq = item.add_info_seq; // 기존 add_info seq
+
+            if (!exp_kind_idx || !seq || !expIdx) return null;
+
+            if (item.type === '외주용역비' || item.type === '접대비') {
+              const payload: pInfoUpdatePayload = {
+                seq, // 기존이면 update, 없으면 새로 처리 방식 고려
+                exp_idx: expIdx,
+                exp_kind_idx,
+                tax_type: item.tax_type,
+                work_term: item.work_term,
+                work_day: item.work_day,
+                h_name: item.h_name,
+                h_ssn: item.h_ssn?.includes('*') ? undefined : item.h_ssn,
+                h_tel: item.h_tel,
+                h_addr: item.h_addr,
+                ent_member: item.ent_member,
+                ent_reason: item.ent_reason,
+              };
+
+              return pInfoUpdate(payload);
+            }
+
+            return null;
+          })
+          .filter(Boolean);
+
+        if (updatePromises.length > 0) {
+          await Promise.all(updatePromises);
+        }
 
         if (itemSeq.length === 0) {
           console.error('❌ 응답에서 item_seqs를 찾을 수 없음');
@@ -580,8 +689,6 @@ export default function ProjectExpenseEdit() {
   // 폼 제출
   const onSubmit = async (values: EditFormValues) => {
     const isEstimate = header.is_estimate === 'Y';
-
-    console.log('폼', values);
 
     addDialog({
       title: '프로젝트 비용 수정',
@@ -786,8 +893,8 @@ export default function ProjectExpenseEdit() {
                   open={accountDialogOpen}
                   onOpenChange={setAccountDialogOpen}
                   accounts={accountList}
-                  bankList={bankList}
                   onSelect={handleSelectAccount}
+                  onRefresh={fetchMyAccounts}
                 />
 
                 <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
@@ -864,6 +971,8 @@ export default function ProjectExpenseEdit() {
                   const currentProTitle = currentProId
                     ? proposalList.find((p) => p.rp_seq === currentProId)?.rp_title || data?.items?.[index]?.rp_title
                     : null;
+                  const type = watchedItems?.[index]?.type;
+
                   return (
                     <article
                       key={`${field.id}`}
@@ -1105,6 +1214,9 @@ export default function ProjectExpenseEdit() {
                           />
                         </div>
                       </div>
+
+                      {type === '외주용역비' && <OutsourceFields control={control} index={index} setValue={form.setValue} />}
+                      {type === '접대비' && <EntertainmentFields control={control} index={index} />}
                     </article>
                   );
                 })}

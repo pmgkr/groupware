@@ -81,14 +81,14 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof OvertimeData, string>> = {};
-    
+
     if (!formData.clientName.trim()) {
       newErrors.clientName = "클라이언트명을 선택해주세요.";
     }
     if (!formData.workDescription.trim()) {
       newErrors.workDescription = "업무 내용을 입력해주세요.";
     }
-    
+
     if (selectedDay && !isWeekendOrHoliday(
       selectedDay.dayOfWeek,
       selectedDay.workType,
@@ -101,7 +101,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
       if (!formData.mealAllowance) newErrors.mealAllowance = "식대 사용여부를 선택해주세요.";
       if (!formData.transportationAllowance) newErrors.transportationAllowance = "교통비 사용여부를 선택해주세요.";
     }
-    
+
     if (selectedDay && isWeekendOrHoliday(
       selectedDay.dayOfWeek,
       selectedDay.workType,
@@ -115,46 +115,46 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
       if (!formData.expectedEndMinute) newErrors.expectedEndMinute = "예상 퇴근 분을 선택해주세요.";
       if (!formData.overtimeType) newErrors.overtimeType = "보상 지급방식을 선택해주세요.";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSave = async () => {
     if (!validateForm() || !selectedDay) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const apiParams = buildOvertimeApiParams(selectedDay, formData, clientList);
-      
+
       const response = await workingApi.requestOvertime(apiParams);
-      
+
       const isManagerOrAdmin = user?.user_level === 'manager' || user?.user_level === 'admin';
       if (isManagerOrAdmin) {
         let otSeq = response?.ot_seq || response?.id || response?.data?.ot_seq || response?.data?.id;
-        
+
         if (!otSeq) {
           try {
-            const formattedDate = selectedDay.date.includes('T') 
-              ? selectedDay.date.split('T')[0] 
+            const formattedDate = selectedDay.date.includes('T')
+              ? selectedDay.date.split('T')[0]
               : selectedDay.date;
-            
+
             for (let retryCount = 0; retryCount < 5 && !otSeq; retryCount++) {
               if (retryCount > 0) {
                 await new Promise(resolve => setTimeout(resolve, 300));
               }
-              
+
               const overtimeList = await workingApi.getOvertimeList({
                 page: 1,
                 size: 20,
                 user_id: user?.user_id
               });
-              
+
               const pendingOvertimes = overtimeList.items?.filter(
                 (item: any) => item.ot_date === formattedDate && item.ot_status === 'H'
               ) || [];
-              
+
               if (pendingOvertimes.length > 0) {
                 const latestOvertime = pendingOvertimes.reduce((latest: any, current: any) => {
                   const latestTime = new Date(latest.ot_created_at || 0).getTime();
@@ -169,7 +169,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
             // 목록 조회 실패 시 무시
           }
         }
-        
+
         if (otSeq) {
           try {
             await managerOvertimeApi.approveOvertime(otSeq);
@@ -210,7 +210,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
     setErrors({});
   };
 
-  
+
   const isSaturday = (dayOfWeek: string) => dayOfWeek === '토';
   const isSundayOrHoliday = (dayOfWeek: string, workType: string, isHoliday?: boolean, holidayName?: string | null) => {
     if (isHoliday || holidayName) return true;
@@ -331,7 +331,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
         </DialogHeader>
         <div className="space-y-4 py-4">
           {/* 평일 (월-금) 신청 시 표시되는 내용 */}
-            {selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
+          {selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
             <>
               <div className="space-y-3">
                 <Label htmlFor="expected-end-time">예상 퇴근 시간을 선택해주세요.</Label>
@@ -348,13 +348,13 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                       <SelectItem value="21">21시</SelectItem>
                       <SelectItem value="22">22시</SelectItem>
                       <SelectItem value="23">23시</SelectItem>
-                      <SelectItem value="0">24시</SelectItem>
-                      <SelectItem value="1">1시</SelectItem>
-                      <SelectItem value="2">2시</SelectItem>
-                      <SelectItem value="3">3시</SelectItem>
-                      <SelectItem value="4">4시</SelectItem>
-                      <SelectItem value="5">5시</SelectItem>
-                      <SelectItem value="6">6시</SelectItem>
+                      <SelectItem value="24">24시</SelectItem>
+                      <SelectItem value="25">01시 (25시)</SelectItem>
+                      <SelectItem value="26">02시 (26시)</SelectItem>
+                      <SelectItem value="27">03시 (27시)</SelectItem>
+                      <SelectItem value="28">04시 (28시)</SelectItem>
+                      <SelectItem value="29">05시 (29시)</SelectItem>
+                      <SelectItem value="30">06시 (30시)</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select
@@ -514,7 +514,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                   퇴근 시간을 선택해주세요.
                   <Tooltip>
                     <TooltipTrigger asChild>
-                    <InfoIcon className="w-4 h-4 text-gray-400" />
+                      <InfoIcon className="w-4 h-4 text-gray-400" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>주말, 공휴일 휴게시간은 주간/야간/휴일 여부와 무관하게 ‘총 근로시간’을 기준으로 결정됨</p>
@@ -544,12 +544,12 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                       <SelectItem value="22">22시</SelectItem>
                       <SelectItem value="23">23시</SelectItem>
                       <SelectItem value="24">24시</SelectItem>
-                      <SelectItem value="25">1시</SelectItem>
-                      <SelectItem value="26">2시</SelectItem>
-                      <SelectItem value="27">3시</SelectItem>
-                      <SelectItem value="28">4시</SelectItem>
-                      <SelectItem value="29">5시</SelectItem>
-                      <SelectItem value="30">6시</SelectItem>
+                      <SelectItem value="25">01시 (25시)</SelectItem>
+                      <SelectItem value="26">02시 (26시)</SelectItem>
+                      <SelectItem value="27">03시 (27시)</SelectItem>
+                      <SelectItem value="28">04시 (28시)</SelectItem>
+                      <SelectItem value="29">05시 (29시)</SelectItem>
+                      <SelectItem value="30">06시 (30시)</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select
@@ -600,7 +600,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                       className='mb-0'
                     />
                   )}
-                  
+
                   {/* 일요일 또는 공휴일인 경우: 보상휴가, 수당지급 표시 */}
                   {isSundayOrHoliday(
                     selectedDay.dayOfWeek,
@@ -608,23 +608,23 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                     selectedDay.isHoliday,
                     selectedDay.holidayName
                   ) && (
-                    <>
-                      <RadioButton
-                        value="compensation_vacation"
-                        label="보상휴가"
-                        variant="dynamic"
-                        size='md'
-                        className='mb-0'
-                      />
-                      <RadioButton
-                        value="event"
-                        label="수당지급"
-                        variant="dynamic"
-                        size='md'
-                        className='mb-0'
-                      />
-                    </>
-                  )}
+                      <>
+                        <RadioButton
+                          value="compensation_vacation"
+                          label="보상휴가"
+                          variant="dynamic"
+                          size='md'
+                          className='mb-0'
+                        />
+                        <RadioButton
+                          value="event"
+                          label="수당지급"
+                          variant="dynamic"
+                          size='md'
+                          className='mb-0'
+                        />
+                      </>
+                    )}
                 </RadioGroup>
                 {errors.overtimeType && (
                   <p className="text-sm text-red-500">{errors.overtimeType}</p>
@@ -649,7 +649,7 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
               <p className="text-sm text-red-500">{errors.clientName}</p>
             )}
           </div>
-          
+
           <div className="space-y-3">
             <Label htmlFor="work-description">업무 내용을 작성해주세요.</Label>
             <Textarea

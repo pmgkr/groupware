@@ -1,27 +1,31 @@
 // src/components/features/Expense/_components/ExpenseRegisterRow.tsx
 import { useState, useEffect, useCallback, memo } from 'react';
-import type { Control, UseFormGetValues, UseFormSetValue } from 'react-hook-form';
-
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
-import { Input } from '@components/ui/input';
-import { Button } from '@components/ui/button';
-import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
-import { SearchableSelect, type SingleSelectOption } from '@components/ui/SearchableSelect';
-import { DayPicker } from '@components/daypicker';
+import { type Control, useWatch, type UseFormGetValues, type UseFormSetValue } from 'react-hook-form';
 import { cn } from '@/lib/utils';
-import { Calendar, Close } from '@/assets/images/icons';
-import { FileText } from 'lucide-react';
 import { useToggleState } from '@/hooks/useToggleState';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 import { format } from 'date-fns';
 import { formatAmount, formatKST } from '@/utils';
-import { AttachmentField } from '../../Expense/_components/AttachmentField';
-import type { PreviewFile } from '../../Expense/_components/UploadArea';
+import { getProposalList, type ProposalItem } from '@/api/expense/proposal';
+
+import { Input } from '@components/ui/input';
+import { Button } from '@components/ui/button';
+import { DayPicker } from '@components/daypicker';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
+import { SearchableSelect, type SingleSelectOption } from '@components/ui/SearchableSelect';
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getProposalList, type ProposalItem } from '@/api/expense/proposal';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useIsMobileViewport } from '@/hooks/useViewport';
+
 import ExpenseProposalCard from '../_responsive/ExpenseProposalCard';
+import type { PreviewFile } from '../../Expense/_components/UploadArea';
+import { AttachmentField } from '../../Expense/_components/AttachmentField';
+import { OutsourceFields } from '../../Expense/_components/OutsourceFields';
+import { EntertainmentFields } from '../../Expense/_components/EntertainmentFields';
+
+import { FileText } from 'lucide-react';
+import { Calendar, Close } from '@/assets/images/icons';
 
 type ExpenseRowProps = {
   index: number;
@@ -56,7 +60,30 @@ function ExpenseRowComponent({
   onSelectProposal,
   onTotalChange,
 }: ExpenseRowProps) {
+  const isMobile = useIsMobileViewport();
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : '');
+
+  // Row별 비용 유형 useWatch (외주용역비 & 접대비)
+  const typeValue = useWatch({
+    control,
+    name: `expense_items.${index}.type`,
+  });
+  useEffect(() => {
+    if (typeValue !== '외주용역비') {
+      setValue(`expense_items.${index}.tax_type`, '');
+      setValue(`expense_items.${index}.work_day`, '');
+      setValue(`expense_items.${index}.work_term`, '');
+      setValue(`expense_items.${index}.h_name`, '');
+      setValue(`expense_items.${index}.h_ssn`, '');
+      setValue(`expense_items.${index}.h_tel`, '');
+      setValue(`expense_items.${index}.h_addr`, '');
+    }
+
+    if (typeValue !== '접대비') {
+      setValue(`expense_items.${index}.ent_member`, '');
+      setValue(`expense_items.${index}.ent_reason`, '');
+    }
+  }, [typeValue, index, setValue]);
 
   // 로컬 상태 (핵심)
   const [price, setPrice] = useState('');
@@ -80,10 +107,6 @@ function ExpenseRowComponent({
   const [proposalList, setProposalList] = useState<ProposalItem[]>([]);
   const [selectedProposalId, setSelectedProposalId] = useState<number | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
-  const isMobile = useIsMobileViewport();
-  useEffect(() => {
-    console.log('[프로젝트] isMobile:', isMobile, 'innerWidth:', window.innerWidth);
-  }, [isMobile, isDialogOpen]);
 
   const handleOpenMatchingDialog = async () => {
     setDialogOpen(true);
@@ -304,6 +327,9 @@ function ExpenseRowComponent({
           />
         </div>
       </div>
+
+      {typeValue === '외주용역비' && <OutsourceFields control={control} index={index} setValue={setValue} />}
+      {typeValue === '접대비' && <EntertainmentFields control={control} index={index} />}
 
       {/* 기안서 매칭 다이얼로그 */}
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>

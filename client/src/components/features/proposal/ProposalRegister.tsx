@@ -137,6 +137,10 @@ export default function ProposalRegister() {
     });
   };
 
+  const sanitizeContent = (html: string) => {
+    return html.replace(/<img[^>]+src="data:image\/[^">]+"[^>]*>/g, '');
+  };
+
   const handleFinalSubmit = async (data: FormValues) => {
     //console.log('📋 현재 uploadedFiles:', uploadedFiles);
 
@@ -146,7 +150,7 @@ export default function ProposalRegister() {
         rp_title: data.title,
         rp_state: '진행',
         rp_cost: Number(data.price),
-        rp_content: data.content,
+        rp_content: sanitizeContent(data.content),
         rp_project_type: isProject ? 'project' : 'non_project',
         rp_expense_no: '',
         references: [],
@@ -154,6 +158,16 @@ export default function ProposalRegister() {
       };
 
       console.log('🔥 register payload', payload);
+
+      // 본문 용량 방어 (submit 직전)
+      if (payload.rp_content.length > 50000) {
+        addAlert({
+          title: '본문 용량 초과',
+          message: '본문 내용이 너무 큽니다. 이미지는 이미지 버튼으로 업로드해주세요.',
+          duration: 2000,
+        });
+        return;
+      }
 
       // 1. 기안서 등록
       await registerReport(payload);

@@ -77,8 +77,8 @@ export default function Member() {
     <div>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'Enable' | 'Disable')} className="gap-0">
         <div className="flex w-full items-center justify-between border-b border-gray-300 pb-5">
-          <div className="flex items-center gap-3">
-            <TabsList>
+          <div className="flex items-center gap-3 max-md:w-full max-md:flex-col max-md:items-start">
+            <TabsList className="max-md:w-full max-md:gap-1 max-md:[&>button]:h-10 max-md:[&>button]:text-[13px]">
               <TabsTrigger value="Enable">사용중</TabsTrigger>
               <TabsTrigger value="Disable">비활성화</TabsTrigger>
             </TabsList>
@@ -107,7 +107,7 @@ export default function Member() {
           {filteredMembers.length === 0 ? (
             <div className="mt-20 text-center text-[13px] text-gray-400">해당 구성원이 없습니다.</div>
           ) : (
-            <div className="mt-8 grid grid-cols-4 gap-5 max-xl:grid-cols-3 max-lg:gap-2 max-md:grid-cols-2!">
+            <div className="mt-8 grid grid-cols-4 gap-5 max-xl:grid-cols-3 max-lg:gap-3 max-md:grid-cols-2!">
               {filteredMembers.map((member) => (
                 <MemberList key={member.user_id} member={member} onRefresh={refreshMembers} />
               ))}
@@ -119,7 +119,7 @@ export default function Member() {
           {filteredMembers.length === 0 ? (
             <div className="mt-20 text-center text-[13px] text-gray-400">해당 구성원이 없습니다.</div>
           ) : (
-            <div className="mt-8 grid grid-cols-4 gap-5 max-xl:grid-cols-3 max-lg:gap-2 max-md:grid-cols-2!">
+            <div className="mt-8 grid grid-cols-4 gap-5 max-xl:grid-cols-3 max-lg:gap-3 max-md:grid-cols-2!">
               {filteredMembers.map((member) => (
                 <MemberList key={member.user_id} member={member} onRefresh={refreshMembers} />
               ))}

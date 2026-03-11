@@ -20,7 +20,7 @@ export default function FinanceLayout() {
   return (
     <>
       {/* 탭 메뉴: URL 이동 기반 */}
-      <nav className="mb-4 flex gap-4">
+      <nav className="mb-4 flex gap-4 max-md:-mx-4.5 max-md:mt-1 max-md:w-[calc(100%+var(--spacing)*9)] max-md:border-b-2 max-md:border-gray-300 max-md:px-4.5">
         {tabs.map((tab) => {
           let isActive = false;
 
@@ -37,10 +37,10 @@ export default function FinanceLayout() {
               key={tab.key}
               variant="ghost"
               onClick={() => navigate(tab.path)}
-              className={cn(
+              className={`${cn(
                 'hover:text-primary relative h-8 px-1 hover:bg-transparent',
                 isActive ? 'text-primary font-bold' : 'hover:text-primary/80 text-gray-500'
-              )}>
+              )} max-md:-mb-[2px]`}>
               {tab.label}
               {isActive && <span className="bg-primary absolute right-0 bottom-0 left-0 h-[2px]" />}
             </Button>

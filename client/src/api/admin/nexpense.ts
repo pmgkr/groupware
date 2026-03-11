@@ -51,7 +51,25 @@ export type ExpenseListItems = {
   team_name: string;
   reg_year: string;
   rejected_by?: string | null;
+  add_info?: addInfoDTO[];
 };
+
+export interface addInfoDTO {
+  seq: number;
+  exp_idx: number;
+  exp_kind_idx: number;
+  tax_type?: string;
+  work_term?: string;
+  work_day?: string;
+  h_name?: string;
+  h_ssn?: string;
+  h_tel?: string;
+  h_addr?: string;
+  ent_member?: string;
+  ent_reason?: string;
+  user_id: string;
+  wdate: string;
+}
 
 // 어드민 > 일반 비용 전체 리스트 리스폰 (Excel 다운로드용)
 export interface AdminExpenseExcelResponse {
@@ -70,7 +88,7 @@ export async function getAdminExpenseList(params: ExpenseListParams) {
   return res;
 }
 
-// 어드민 > 프로젝트 비용 조회
+// 어드민 > 일반 비용 조회
 export async function getAdminExpenseView(exp_id: string | undefined): Promise<ExpenseViewDTO> {
   if (!exp_id) throw new Error('expid가 필요합니다.');
   return http<ExpenseViewDTO>(`/admin/nexpense/info/${exp_id}`, { method: 'GET' });

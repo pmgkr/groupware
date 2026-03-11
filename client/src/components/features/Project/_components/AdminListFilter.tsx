@@ -1,4 +1,4 @@
-import type { DateRange } from 'react-day-picker';
+import { type AdminFilterProps } from '../types/AdminFilterProps';
 import { DatePickerWithRange } from '@/components/date-n-time/date-picker-range';
 
 import { Input } from '@/components/ui/input';
@@ -7,104 +7,46 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@/components/multiselect/multi-select';
 import { RefreshCw, X } from 'lucide-react';
 
-interface ExpenseListFilterProps {
-  selectedYear: string;
-  yearOptions: string[];
-  selectedType: string[];
-  selectedStatus: string[];
-  selectedProof: string[];
-  selectedProofStatus: string[];
-  selectedDdate: string;
+export function AdminListFilter(props: AdminFilterProps) {
+  const {
+    yearOptions,
 
-  typeRef: React.RefObject<MultiSelectRef | null>;
-  statusRef: React.RefObject<MultiSelectRef | null>;
-  proofRef: React.RefObject<MultiSelectRef | null>;
-  proofStatusRef: React.RefObject<MultiSelectRef | null>;
+    selectedYear,
+    selectedType,
+    selectedStatus,
+    selectedProof,
+    selectedProofStatus,
+    selectedDdate,
 
-  typeOptions: MultiSelectOption[];
-  checkedItems: number[];
+    typeOptions,
+    statusOptions,
+    proofMethod,
+    proofStatusOptions,
 
-  onYearChange: (val: string) => void;
-  onTypeChange: (val: string[]) => void;
-  onStatusChange: (val: string[]) => void;
-  onProofChange: (val: string[]) => void;
-  onProofStatusChange: (val: string[]) => void;
-  onDdateChange: (val: string) => void;
+    typeRef,
+    statusRef,
+    proofRef,
+    proofStatusRef,
+    checkedItems,
+    searchInput,
+    datePickerKey,
+    selectedDateRange,
 
-  onRefresh: () => void;
-  onConfirm: () => void;
-  onReject: () => void;
+    onYearChange,
+    onTypeChange,
+    onStatusChange,
+    onProofChange,
+    onProofStatusChange,
+    onDdateChange,
+    onSearchInputChange,
+    onSearchSubmit,
+    onClearSearch,
+    onDateRangeChange,
 
-  searchInput: string;
-  onSearchInputChange: (val: string) => void;
-  onSearchSubmit: () => void;
-  onClearSearch: () => void;
-
-  datePickerKey: number;
-  selectedDateRange?: DateRange;
-  onDateRangeChange: (range: DateRange | undefined) => void;
-}
-
-export function AdminListFilter({
-  selectedYear,
-  yearOptions,
-
-  selectedType,
-  selectedStatus,
-  selectedProof,
-  selectedProofStatus,
-  selectedDdate,
-  typeRef,
-  statusRef,
-  proofRef,
-  proofStatusRef,
-
-  typeOptions,
-  checkedItems,
-
-  onYearChange,
-  onTypeChange,
-  onStatusChange,
-  onProofChange,
-  onProofStatusChange,
-  onDdateChange,
-
-  onRefresh,
-  onConfirm,
-  onReject,
-
-  searchInput,
-  onSearchInputChange,
-  onSearchSubmit,
-  onClearSearch,
-
-  datePickerKey,
-  selectedDateRange,
-  onDateRangeChange,
-}: ExpenseListFilterProps) {
-  // 필터 옵션 정의
-  const statusOptions: MultiSelectOption[] = [
-    { label: '임시저장', value: 'Saved' },
-    { label: '승인대기', value: 'Claimed' },
-    { label: '승인완료', value: 'Confirmed' },
-    // { label: '지급대기', value: 'Waiting' },
-    { label: '지급완료', value: 'Completed' },
-    { label: '반려됨', value: 'Rejected' },
-  ];
-
-  const proofMethod: MultiSelectOption[] = [
-    { label: 'PMG', value: 'PMG' },
-    { label: 'MCS', value: 'MCS' },
-    { label: '개인카드', value: '개인카드' },
-    { label: '세금계산서', value: '세금계산서' },
-    { label: '현금영수증', value: '현금영수증' },
-    { label: '기타', value: '기타' },
-  ];
-
-  const proofStatusOptions: MultiSelectOption[] = [
-    { label: '제출', value: 'Y' },
-    { label: '미제출', value: 'N' },
-  ];
+    onRefresh,
+    onConfirm,
+    onReject,
+  } = props;
 
   return (
     <div className="mb-4 flex items-center justify-between">
