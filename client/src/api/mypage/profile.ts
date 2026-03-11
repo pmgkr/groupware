@@ -46,6 +46,24 @@ export async function editMyProfile(data: {
   });
 }
 
+//비밀번호 확인
+export async function checkPassword(password: string) {
+  return http<{ isMatch: boolean }>(`/mypage/oldPword`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
+}
+
+//비밀번호 변경
+export async function changePassword(password: string) {
+  return http(`/mypage/pword`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
+}
+
 //프로필 이미지 수정
 export async function uploadProfileImage(file: File, subdir = 'mypage') {
   // 클라우드에 파일 업로드

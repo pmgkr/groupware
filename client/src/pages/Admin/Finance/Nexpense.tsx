@@ -15,7 +15,7 @@ import { type MultiSelectOption, type MultiSelectRef } from '@components/multise
 import type { DateRange } from 'react-day-picker';
 import { OctagonAlert } from 'lucide-react';
 
-import { getExpenseType } from '@/api';
+import { getExpenseType, type addInfoDTO } from '@/api';
 import {
   getAdminExpenseList,
   confirmExpense,
@@ -30,6 +30,7 @@ import { AdminListFilter } from '@components/features/Expense/_components/AdminL
 import { AdminListFilterMo } from '@components/features/Expense/_components/AdminListFilterMo';
 import AdminExpenseCard from '@components/features/Expense/_responsive/AdminExpenseCard';
 import AdminExpenseTable from '@components/features/Expense/_responsive/AdminExpenseTable';
+import { AddInfoDialog } from '@/components/features/Project/_components/addInfoDialog';
 import { CBoxDialog } from '@/components/features/Expense/_components/AdminCBox';
 
 const parseCBoxMemo = (memo: string): string[] => {
@@ -60,6 +61,10 @@ export default function Nexpense() {
   const [searchInput, setSearchInput] = useState(() => searchParams.get('q') || ''); // 사용자가 입력중인 Input 저장값
   const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || ''); // 실제 검색 Input 저장값
   const [page, setPage] = useState<number>(() => Number(searchParams.get('page') || 1));
+
+  // Add Info Modal State
+  const [selectedAddInfos, setSelectedAddInfos] = useState<addInfoDTO[]>([]);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const typeRef = useRef<MultiSelectRef>(null);
   const statusRef = useRef<MultiSelectRef>(null);
@@ -460,6 +465,12 @@ export default function Nexpense() {
     return;
   };
 
+  // 외주용역비 or 접대비 버튼 클릭 시
+  const handleAddInfo = async (item: ExpenseListItems) => {
+    setSelectedAddInfos(item.add_info ?? []);
+    setDetailOpen(true);
+  };
+
   // 필터 옵션 정의
   const statusOptions: MultiSelectOption[] = [
     { label: '임시저장', value: 'Saved' },
@@ -545,6 +556,7 @@ export default function Nexpense() {
           page={page}
           pageSize={pageSize}
           onPageChange={setPage}
+          onAInfo={handleAddInfo}
         />
       ) : (
         <AdminExpenseTable
@@ -563,6 +575,7 @@ export default function Nexpense() {
           page={page}
           pageSize={pageSize}
           onPageChange={setPage}
+          onAInfo={handleAddInfo}
         />
       )}
 
@@ -573,6 +586,8 @@ export default function Nexpense() {
           handleSubmitCBox(value);
         }}
       />
+
+      <AddInfoDialog open={detailOpen} onOpenChange={setDetailOpen} addInfos={selectedAddInfos} />
     </>
   );
 }

@@ -13,6 +13,7 @@ import { ExpenseRow } from './_components/ExpenseRegisterRow';
 import { ZoomBoundaryContext } from './context/ZoomContext';
 import { UploadArea, type UploadAreaHandle, type PreviewFile } from './_components/UploadArea';
 
+import { pInfoCreate } from '@/api/project/expense';
 import { useLoading } from '@/components/common/ui/Loading/Loading';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
@@ -51,16 +52,62 @@ const expenseSchema = z.object({
   remark: z.string().optional(),
   expense_items: z
     .array(
-      z.object({
-        number: z.string().optional(),
-        type: z.string().optional(),
-        title: z.string().optional(),
-        date: z.string().optional(),
-        price: z.string().optional(),
-        tax: z.string().optional(),
-        total: z.string().optional(),
-        pro_id: z.number().nullable().optional(),
-      })
+      z
+        .object({
+          number: z.string().optional(),
+          type: z.string().optional(),
+          title: z.string().optional(),
+          date: z.string().optional(),
+          price: z.string().optional(),
+          tax: z.string().optional(),
+          total: z.string().optional(),
+          pro_id: z.number().nullable().optional(),
+
+          // 외주용역비 전용
+          tax_type: z.string().optional(),
+          work_day: z.string().optional(),
+          work_term: z.string().optional(),
+          h_name: z.string().optional(),
+          h_ssn: z.string().optional(),
+          h_tel: z.string().optional(),
+          h_addr: z.string().optional(),
+
+          // 접대비 전용
+          ent_member: z.string().optional(),
+          ent_reason: z.string().optional(),
+        })
+        .superRefine((data, ctx) => {
+          if (data.type === '외주용역비') {
+            const requiredFields = ['tax_type', 'work_day', 'work_term', 'h_name', 'h_ssn', 'h_tel', 'h_addr'] as const;
+
+            requiredFields.forEach((field) => {
+              if (!data[field]) {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  message: '필수 입력 항목입니다.',
+                  path: [field],
+                });
+              }
+            });
+          }
+
+          if (data.type === '접대비') {
+            if (!data.ent_member) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: '접대 대상은 필수입니다.',
+                path: ['ent_member'],
+              });
+            }
+            if (!data.ent_reason) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: '접대 사유는 필수입니다.',
+                path: ['ent_reason'],
+              });
+            }
+          }
+        })
     )
     .optional(),
 });
@@ -79,9 +126,9 @@ export default function ExpenseRegister() {
   const { addDialog } = useAppDialog();
 
   const { state } = useLocation(); // Excel 업로드 시 state.excelData 로 전달
+
   // 비용 항목 기본 세팅값 : Excel 업로드 시 0으로 세팅, 수기 작성 시 5개로 세팅
   const [articleCount, setArticleCount] = useState(state?.excelData ? 0 : 5);
-
   const [bankList, setBankList] = useState<BankList[]>([]);
   const [expenseTypes, setExpenseTypes] = useState<SingleSelectOption[]>([]); // 비용 유형 API State
 
@@ -115,6 +162,17 @@ export default function ExpenseRegister() {
         tax: '',
         total: '',
         pro_id: null,
+
+        tax_type: '',
+        work_day: '',
+        work_term: '',
+        h_name: '',
+        h_ssn: '',
+        h_tel: '',
+        h_addr: '',
+
+        ent_member: '',
+        ent_reason: '',
       })),
     },
   });
@@ -158,11 +216,12 @@ export default function ExpenseRegister() {
           // 프론트에서 회식비 제외 처리
           const isMealAllowed = user_id === 'sangmin.kang@pmgasia.com' || user_id === 'jaeil.chung@pmgasia.com';
           setExpenseTypes(
-            expResult.value.filter((t: any) => isMealAllowed || t.code !== '회식비')
-            .map((t: any) => ({
-              label: t.code,
-              value: t.code,
-            }))
+            expResult.value
+              .filter((t: any) => isMealAllowed || t.code !== '회식비')
+              .map((t: any) => ({
+                label: t.code,
+                value: t.code,
+              }))
           );
         } else {
           console.error('비용 유형 불러오기 실패:', expResult.reason);
@@ -201,6 +260,17 @@ export default function ExpenseRegister() {
             tax: '',
             total: '',
             pro_id: null,
+
+            tax_type: '',
+            work_day: '',
+            work_term: '',
+            h_name: '',
+            h_ssn: '',
+            h_tel: '',
+            h_addr: '',
+
+            ent_member: '',
+            ent_reason: '',
           })),
         });
       }
@@ -210,7 +280,27 @@ export default function ExpenseRegister() {
   // 항목 추가 버튼 클릭 시
   const handleAddArticle = useCallback(() => {
     setArticleCount((prev) => prev + 1);
-    append({ type: '', title: '', number: '', date: '', price: '', tax: '', total: '', pro_id: null });
+    append({
+      type: '',
+      title: '',
+      number: '',
+      date: '',
+      price: '',
+      tax: '',
+      total: '',
+      pro_id: null,
+
+      tax_type: '',
+      work_day: '',
+      work_term: '',
+      h_name: '',
+      h_ssn: '',
+      h_tel: '',
+      h_addr: '',
+
+      ent_member: '',
+      ent_reason: '',
+    });
   }, [append]);
 
   // 항목 삭제 버튼 클릭 시
@@ -283,16 +373,19 @@ export default function ExpenseRegister() {
   //내계좌 불러오기
   const [accountList, setAccountList] = useState<BankAccount[]>([]);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  const fetchMyAccounts = async () => {
+    try {
+      const data = await getMyAccounts();
+      setAccountList(data);
+    } catch (err) {
+      console.error('❌ 계좌 목록 불러오기 실패:', err);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await getMyAccounts();
-        setAccountList(data);
-      } catch (err) {
-        console.error('❌ 계좌 목록 불러오기 실패:', err);
-      }
-    })();
+    fetchMyAccounts();
   }, []);
+
   const handleFillMyMainAccount = () => {
     const mainAcc = accountList.find((acc) => acc.flag === 'mine');
 
@@ -475,11 +568,93 @@ export default function ExpenseRegister() {
           // 모든 리스트 병렬 API 호출 (성공/실패 결과 각각 수집)
           const result = await expenseRegister(payload);
 
+          console.log('작성 결과', result);
+
           if (result.ok && result.docs?.inserted) {
+            const itemSeqs = result.docs?.results?.[0]?.item_seqs;
             const { list_count, item_count } = result.docs.inserted;
 
-            // 응답에서 item_seqs 가져오기
-            const itemSeqs = result.docs?.results?.[0]?.item_seqs;
+            // ✅ 1. 백엔드 결과(results)를 el_type 기준으로 매핑 그룹 생성
+            // 배열을 복사([...res.item_seqs])해서 나중에 순차적으로 하나씩 빼서(shift) 씁니다.
+            const resultGroup: Record<string, { list_seq: number; item_seqs: number[] }> = {};
+            result.docs.results.forEach((res: any) => {
+              resultGroup[res.el_type] = {
+                list_seq: res.list_seq,
+                item_seqs: [...res.item_seqs],
+              };
+            });
+
+            // ✅ 2. 기존 items 배열의 순서와 동일하게 listSeq, itemSeq를 할당
+            const mappedSeqs = items.map((item: any) => {
+              const group = resultGroup[item.type];
+              if (!group) return { listSeq: null, itemSeq: null };
+
+              return {
+                listSeq: group.list_seq,
+                // 같은 타입이 여러 개일 경우를 대비해 배열 앞에서부터 하나씩 꺼냄
+                itemSeq: group.item_seqs.shift() || null,
+              };
+            });
+
+            // 외주용역비 / 접대비 추가 정보 저장
+            try {
+              const ainfoPromises = items.map((item: any, index: number) => {
+                const { listSeq, itemSeq } = mappedSeqs[index];
+
+                if (!listSeq || !itemSeq) return null;
+
+                // 외주용역비
+                if (item.type === '외주용역비') {
+                  const payload = {
+                    exp_idx: listSeq,
+                    exp_kind_idx: itemSeq,
+                    tax_type: item.tax_type || '',
+                    work_term: item.work_term || '',
+                    work_day: item.work_day ? `${item.work_day}일` : '',
+                    h_name: item.h_name || '',
+                    h_ssn: item.h_ssn || '',
+                    h_tel: item.h_tel || '',
+                    h_addr: item.h_addr || '',
+                    exp_type: 'N',
+                  };
+
+                  return pInfoCreate(payload);
+                }
+
+                // 접대비
+                if (item.type === '접대비') {
+                  const payload = {
+                    exp_idx: listSeq,
+                    exp_kind_idx: itemSeq,
+                    ent_member: item.ent_member || '',
+                    ent_reason: item.ent_reason || '',
+                    exp_type: 'N',
+                  };
+
+                  return pInfoCreate(payload);
+                }
+
+                return null;
+              });
+
+              // null 제거 후 병렬 전송
+              const filteredPromises = ainfoPromises.filter(Boolean);
+
+              if (filteredPromises.length > 0) {
+                await Promise.all(filteredPromises);
+                console.log('✅ pInfoCreate 완료');
+              }
+            } catch (ainfoError) {
+              console.error('❌ pInfoCreate 실패:', ainfoError);
+
+              addAlert({
+                title: '추가 정보 저장 실패',
+                message: '외주/접대 추가 정보 저장 중 오류가 발생했습니다.',
+                icon: <OctagonAlert />,
+                duration: 2000,
+              });
+            }
+
             const uniqueProposalIds = new Set<number>();
             payload.items.forEach((item: any) => {
               if (item.pro_id) {
@@ -695,8 +870,8 @@ export default function ExpenseRegister() {
                     open={accountDialogOpen}
                     onOpenChange={setAccountDialogOpen}
                     accounts={accountList}
-                    bankList={bankList}
                     onSelect={handleSelectAccount}
+                    onRefresh={fetchMyAccounts}
                   />
 
                   <div className="md:long-v-divider col-span-2 text-base leading-[1.5] text-gray-700 md:col-span-1 md:px-5">

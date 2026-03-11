@@ -26,6 +26,7 @@ interface ExpenseListProps {
   handleExcelDownload: () => void;
 
   onOpenCBox: () => void;
+  onAInfo: (item: ExpenseListItems) => void;
 }
 
 export default function AdminExpenseTable({
@@ -47,6 +48,7 @@ export default function AdminExpenseTable({
   handleExcelDownload,
 
   onOpenCBox,
+  onAInfo,
 }: ExpenseListProps) {
   return (
     <>
@@ -98,6 +100,7 @@ export default function AdminExpenseTable({
                 checked={checkedItems.includes(item.seq)}
                 onCheck={handleCheckItem}
                 onDdate={handleSetDdate}
+                onAInfo={onAInfo}
                 handlePDFDownload={handlePDFDownload}
               />
             ))

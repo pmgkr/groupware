@@ -43,9 +43,9 @@ interface EventViewDialogProps {
   isPage?: 'manager' | 'admin'; // 페이지 타입 (manager/admin)
 }
 
-export default function EventViewDialog({ 
-  isOpen, 
-  onClose, 
+export default function EventViewDialog({
+  isOpen,
+  onClose,
   onRequestCancel,
   onApproveCancel,
   selectedEvent,
@@ -54,27 +54,27 @@ export default function EventViewDialog({
   const { user_id, user_level, team_id, user_name } = useUser();
   const { addDialog } = useAppDialog();
   const { addAlert } = useAppAlert();
-  
+
   // 본인의 일정인지 확인 (user_id로 비교)
   const isMyEvent = user_id && selectedEvent?.userId === user_id;
-  
+
   // manager/admin 권한 확인
   const isManager = user_level === 'manager' || user_level === 'admin';
-  
+
   // 관리 권한이 있는지 확인 (어드민은 모든 팀, 매니저는 본인 팀)
   const hasAuthority = user_level === 'admin' || (user_level === 'manager' && team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId);
   // 취소 요청 승인 버튼 노출 조건: 같은 팀의 매니저만 가능
-  const isSameTeamManager = (user_level === 'manager' || user_level === 'admin') && team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId;
-  
+  const isSameTeamManager = user_level === 'admin' || (user_level === 'manager' && team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId);
+
   // 상태 표시: 본인이 보면 "취소 요청됨", 매니저가 보면 "취소 요청됨"
   const status = (() => {
     const baseStatus = selectedEvent?.status || "등록 완료";
-    
+
     // "취소 완료" 상태는 그대로 반환 (버튼 표시 안 함)
     if (baseStatus === "취소 완료") {
       return "취소 완료";
     }
-    
+
     // "취소 요청됨" 상태인 경우
     if (baseStatus === "취소 요청됨") {
       // 권한이 있으면서 본인 일정이 아닌 경우 "취소 요청됨"로 표시
@@ -82,7 +82,7 @@ export default function EventViewDialog({
         return "취소 요청됨";
       }
     }
-    
+
     return baseStatus;
   })();
 
@@ -90,11 +90,11 @@ export default function EventViewDialog({
   const handleCancelRequest = () => {
     // manager/admin은 바로 취소, user는 취소 신청
     const isUser = user_level === 'user';
-    
+
     addDialog({
       title: `<span class="text-primary-blue-500 font-semibold">${isUser ? '취소 신청 확인' : '취소 확인'}</span>`,
-      message: isUser 
-        ? '이 일정을 정말 취소 신청하시겠습니까?' 
+      message: isUser
+        ? '이 일정을 정말 취소 신청하시겠습니까?'
         : '이 일정을 정말 취소하시겠습니까?',
       confirmText: isUser ? '취소 신청하기' : '취소하기',
       cancelText: '닫기',
@@ -144,22 +144,22 @@ export default function EventViewDialog({
               await onApproveCancel();
             }
           }
-          
+
           // 성공 알림 먼저 표시
           addAlert({
             title: isUser ? '취소 신청 완료' : '취소 완료',
-            message: isUser 
-              ? '일정 취소 신청이 성공적으로 완료되었습니다.' 
+            message: isUser
+              ? '일정 취소 신청이 성공적으로 완료되었습니다.'
               : '일정이 취소되었습니다.',
             icon: <OctagonAlert />,
             duration: 3000,
           });
-          
+
           // 알림 표시 후 다이얼로그 닫기
           setTimeout(() => {
             onClose();
           }, 300);
-          
+
         } catch (error) {
           // 실패 알림 표시
           const errorMessage = error instanceof Error ? error.message : '취소에 실패했습니다. 다시 시도해주세요.';
@@ -187,7 +187,7 @@ export default function EventViewDialog({
           if (onApproveCancel) {
             await onApproveCancel();
           }
-          
+
           // 알림 전송
           const eventLabel = selectedEvent?.title || defaultEventTitleMapper(selectedEvent?.eventType || '') || '일정';
           const rangeText = getDateRangeTextSimple(selectedEvent?.startDate, selectedEvent?.endDate, selectedEvent?.allDay);
@@ -200,7 +200,7 @@ export default function EventViewDialog({
             noti_type: selectedEvent?.category || '',
             noti_url: '/calendar',
           });
-          
+
           // 성공 알림 먼저 표시
           addAlert({
             title: '승인 완료',
@@ -208,12 +208,12 @@ export default function EventViewDialog({
             icon: <OctagonAlert />,
             duration: 3000,
           });
-          
+
           // 알림 표시 후 다이얼로그 닫기
           setTimeout(() => {
             onClose();
           }, 300);
-          
+
         } catch (error) {
           // 실패 알림 표시
           const errorMessage = error instanceof Error ? error.message : '승인 처리에 실패했습니다. 다시 시도해주세요.';
@@ -241,7 +241,7 @@ export default function EventViewDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
-            
+
           {/* 작성자 */}
           <div className="space-y-2">
             <Label>작성자</Label>
@@ -252,14 +252,14 @@ export default function EventViewDialog({
 
           {/* 일정 유형 */}
           <div className="space-y-2">
-            <Label>{selectedEvent?.category === 'vacation' ? '휴가' : '이벤트'  } 유형</Label>
+            <Label>{selectedEvent?.category === 'vacation' ? '휴가' : '이벤트'} 유형</Label>
             <div className="h-11 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:h-10 max-md:rounded-sm flex items-center">
               <span className="text-base max-md:text-[13px]">
                 {selectedEvent?.title}
               </span>
             </div>
           </div>
-          
+
           {/* 기간 */}
           <div className="space-y-2">
             <Label>기간</Label>

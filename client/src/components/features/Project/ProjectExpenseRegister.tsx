@@ -8,6 +8,7 @@ import { useUser } from '@/hooks/useUser';
 import { mapExcelToExpenseItems } from '@/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 
+import { pInfoCreate } from '@/api/project/expense';
 import { uploadFilesToServer, projectExpenseRegister, getBankList, getExpenseType, type BankList } from '@/api';
 import { type SingleSelectOption } from '@components/ui/SearchableSelect';
 import { ExpenseRow } from './_components/ExpenseRegisterRow';
@@ -23,7 +24,6 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { Input } from '@components/ui/input';
 import { Textarea } from '@components/ui/textarea';
 import { Button } from '@components/ui/button';
-import { Spinner } from '@components/ui/spinner';
 
 import { DayPicker } from '@components/daypicker';
 import { RadioButton, RadioGroup } from '@components/ui/radioButton';
@@ -53,16 +53,62 @@ const expenseSchema = z.object({
   remark: z.string().optional(),
   expense_items: z
     .array(
-      z.object({
-        number: z.string().optional(),
-        type: z.string().optional(),
-        title: z.string().optional(),
-        date: z.string().optional(),
-        price: z.string().optional(),
-        tax: z.string().optional(),
-        total: z.string().optional(),
-        pro_id: z.number().nullable().optional(),
-      })
+      z
+        .object({
+          number: z.string().optional(),
+          type: z.string().optional(),
+          title: z.string().optional(),
+          date: z.string().optional(),
+          price: z.string().optional(),
+          tax: z.string().optional(),
+          total: z.string().optional(),
+          pro_id: z.number().nullable().optional(),
+
+          // 외주용역비 전용
+          tax_type: z.string().optional(),
+          work_day: z.string().optional(),
+          work_term: z.string().optional(),
+          h_name: z.string().optional(),
+          h_ssn: z.string().optional(),
+          h_tel: z.string().optional(),
+          h_addr: z.string().optional(),
+
+          // 접대비 전용
+          ent_member: z.string().optional(),
+          ent_reason: z.string().optional(),
+        })
+        .superRefine((data, ctx) => {
+          if (data.type === '외주용역비') {
+            const requiredFields = ['tax_type', 'work_day', 'work_term', 'h_name', 'h_ssn', 'h_tel', 'h_addr'] as const;
+
+            requiredFields.forEach((field) => {
+              if (!data[field]) {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  message: '필수 입력 항목입니다.',
+                  path: [field],
+                });
+              }
+            });
+          }
+
+          if (data.type === '접대비') {
+            if (!data.ent_member) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: '접대 대상은 필수입니다.',
+                path: ['ent_member'],
+              });
+            }
+            if (!data.ent_reason) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: '접대 사유는 필수입니다.',
+                path: ['ent_reason'],
+              });
+            }
+          }
+        })
     )
     .optional(),
 });
@@ -123,6 +169,17 @@ export default function ProjectExpenseRegister() {
         tax: '',
         total: '',
         pro_id: null,
+
+        tax_type: '',
+        work_day: '',
+        work_term: '',
+        h_name: '',
+        h_ssn: '',
+        h_tel: '',
+        h_addr: '',
+
+        ent_member: '',
+        ent_reason: '',
       })),
     },
   });
@@ -201,6 +258,17 @@ export default function ProjectExpenseRegister() {
             tax: '',
             total: '',
             pro_id: null,
+
+            tax_type: '',
+            work_day: '',
+            work_term: '',
+            h_name: '',
+            h_ssn: '',
+            h_tel: '',
+            h_addr: '',
+
+            ent_member: '',
+            ent_reason: '',
           })),
         });
       }
@@ -210,7 +278,27 @@ export default function ProjectExpenseRegister() {
   // 항목 추가 버튼 클릭 시
   const handleAddArticle = useCallback(() => {
     setArticleCount((prev) => prev + 1);
-    append({ type: '', title: '', number: '', date: '', price: '', tax: '', total: '', pro_id: null });
+    append({
+      type: '',
+      title: '',
+      number: '',
+      date: '',
+      price: '',
+      tax: '',
+      total: '',
+      pro_id: null,
+
+      tax_type: '',
+      work_day: '',
+      work_term: '',
+      h_name: '',
+      h_ssn: '',
+      h_tel: '',
+      h_addr: '',
+
+      ent_member: '',
+      ent_reason: '',
+    });
   }, [append]);
 
   // 항목 삭제 버튼 클릭 시
@@ -283,16 +371,19 @@ export default function ProjectExpenseRegister() {
   //내계좌 불러오기
   const [accountList, setAccountList] = useState<BankAccount[]>([]);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  const fetchMyAccounts = async () => {
+    try {
+      const data = await getMyAccounts();
+      setAccountList(data);
+    } catch (err) {
+      console.error('❌ 계좌 목록 불러오기 실패:', err);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await getMyAccounts();
-        setAccountList(data);
-      } catch (err) {
-        console.error('❌ 계좌 목록 불러오기 실패:', err);
-      }
-    })();
+    fetchMyAccounts();
   }, []);
+
   const handleFillMyMainAccount = () => {
     const mainAcc = accountList.find((acc) => acc.flag === 'mine');
 
@@ -487,7 +578,68 @@ export default function ProjectExpenseRegister() {
 
           if (result.ok) {
             const item_count = result.count_items;
-            const itemSeqs = result.item_seqs; // [42, 43, 44]
+            const itemSeqs = result.item_seqs; // pexpense_item.seq 배열
+
+            // 외주용역비 / 접대비 추가 정보 저장
+            try {
+              const listSeq = result.list_seq; // pexpense_list.seq
+
+              const ainfoPromises = items.map((item: any, index: number) => {
+                const itemSeq = itemSeqs[index];
+
+                if (!itemSeq) return null;
+
+                // 외주용역비
+                if (item.type === '외주용역비') {
+                  const payload = {
+                    exp_idx: listSeq,
+                    exp_kind_idx: itemSeq,
+                    tax_type: item.tax_type || '',
+                    work_term: item.work_term || '',
+                    work_day: item.work_day ? `${item.work_day}일` : '',
+                    h_name: item.h_name || '',
+                    h_ssn: item.h_ssn || '',
+                    h_tel: item.h_tel || '',
+                    h_addr: item.h_addr || '',
+                    exp_type: 'P',
+                  };
+
+                  return pInfoCreate(payload);
+                }
+
+                // 접대비
+                if (item.type === '접대비') {
+                  const payload = {
+                    exp_idx: listSeq,
+                    exp_kind_idx: itemSeq,
+                    ent_member: item.ent_member || '',
+                    ent_reason: item.ent_reason || '',
+                    exp_type: 'P',
+                  };
+
+                  return pInfoCreate(payload);
+                }
+
+                return null;
+              });
+
+              // null 제거
+              const filteredPromises = ainfoPromises.filter(Boolean);
+
+              if (filteredPromises.length > 0) {
+                await Promise.all(filteredPromises);
+                console.log('✅ pInfoCreate 완료');
+              }
+            } catch (ainfoError) {
+              console.error('❌ pInfoCreate 실패:', ainfoError);
+
+              addAlert({
+                title: '추가 정보 저장 실패',
+                message: '외주/접대 추가 정보 저장 중 오류가 발생했습니다.',
+                icon: <OctagonAlert />,
+                duration: 2000,
+              });
+            }
 
             // payload의 items에서 pro_id 추출 (중복 제거)
             const uniqueProposalIds = new Set<number>();
@@ -728,8 +880,8 @@ export default function ProjectExpenseRegister() {
                       open={accountDialogOpen}
                       onOpenChange={setAccountDialogOpen}
                       accounts={accountList}
-                      bankList={bankList}
                       onSelect={handleSelectAccount}
+                      onRefresh={fetchMyAccounts}
                     />
                   </div>
                   <div className="md:long-v-divider col-span-2 text-base leading-[1.5] text-gray-700 md:col-span-1 md:px-5">

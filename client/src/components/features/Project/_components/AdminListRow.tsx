@@ -12,17 +12,18 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { DayPicker } from '@components/daypicker';
 
-import { CalendarIcon, Download } from 'lucide-react';
+import { CalendarIcon, Download, UserRoundPen } from 'lucide-react';
 
 type ExpenseRowProps = {
   item: ExpenseListItems;
   checked: boolean;
   onCheck: (seq: number, checked: boolean) => void;
   onDdate: (seq: number, ddate: Date) => void;
+  onAInfo: (item: ExpenseListItems) => void;
   handlePDFDownload: (seq: number, expId: string, userName: string) => void;
 };
 
-export const AdminListRow = memo(({ item, checked, onCheck, onDdate, handlePDFDownload }: ExpenseRowProps) => {
+export const AdminListRow = memo(({ item, checked, onCheck, onDdate, onAInfo, handlePDFDownload }: ExpenseRowProps) => {
   const { search } = useLocation();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -80,6 +81,8 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate, handlePDFDo
     </span>
   );
 
+  const isAddInfo = (item.add_info ?? []).length;
+
   return (
     <TableRow className="[&_td]:px-2 [&_td]:text-sm [&_td]:leading-[1.3] 2xl:[&_td]:text-[13px]">
       <TableCell className="whitespace-nowrap">
@@ -126,6 +129,14 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate, handlePDFDo
         <Link to={`/admin/finance/pexpense/${item.seq}${search}`} className="hover:underline">
           {item.el_title}
         </Link>
+        {isAddInfo > 0 && (
+          <span
+            className="ml-1 inline-flex cursor-pointer items-center gap-0.5 align-middle text-xs text-gray-500"
+            onClick={() => onAInfo(item)}>
+            <UserRoundPen className="size-3" />
+            {isAddInfo}
+          </span>
+        )}
       </TableCell>
       <TableCell>{item.el_attach === 'Y' ? <Badge variant="secondary">제출</Badge> : <Badge variant="grayish">미제출</Badge>}</TableCell>
       <TableCell>

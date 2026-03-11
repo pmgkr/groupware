@@ -16,7 +16,7 @@ import { getCachedHolidays } from '@/services/holidayApi';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@components/ui/tooltip';
 import { TooltipIcon } from '@components/ui/tooltip';
 import { getMyVacation, type MyVacationInfo } from '@/api/common/vacation';
-import { Clock } from 'lucide-react';
+import { Clock, CalendarMinus, Calculator } from 'lucide-react';
 
 interface EventDialogProps {
   isOpen: boolean;
@@ -600,8 +600,8 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
                       placeholder="기간을 선택해주세요"
                     />
                     {formData.category === 'vacation' && formData.category === 'vacation' && calculatedVacationDays > 0 && (
-                      <div className="text-xs text-gray-600 mt-1">
-                        실제 사용 연차: <span className="font-semibold text-[var(--color-primary-blue-500)]">{calculatedVacationDays}일</span> (주말 및 공휴일 제외)
+                      <div className="text-sm text-gray-600 flex items-center gap-1">
+                        <CalendarMinus className="size-3" /> 실제 사용 휴가: <span className="font-semibold text-[var(--color-primary-blue-500)]">{calculatedVacationDays}일</span> (주말 및 공휴일 제외)
                       </div>
                     )}
                     {errors.selectedDateRange && (

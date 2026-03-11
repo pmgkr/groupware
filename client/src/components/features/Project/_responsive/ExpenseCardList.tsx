@@ -11,9 +11,10 @@ type Props = {
   checkedItems: number[];
   onCheckAll: (checked: boolean) => void;
   onCheck: (seq: number, checked: boolean) => void;
+  onAInfo: (item: pExpenseListItem) => void;
 };
 
-export function ExpenseCardList({ items, loading, activeTab, checkAll, checkedItems, onCheckAll, onCheck }: Props) {
+export function ExpenseCardList({ items, loading, activeTab, checkAll, checkedItems, onCheckAll, onCheck, onAInfo }: Props) {
   const isEmpty = items.length === 0;
 
   return (
@@ -37,7 +38,14 @@ export function ExpenseCardList({ items, loading, activeTab, checkAll, checkedIt
       ) : (
         <div className="space-y-4">
           {items.map((item) => (
-            <ExpenseCardRow key={item.seq} item={item} activeTab={activeTab} checked={checkedItems.includes(item.seq)} onCheck={onCheck} />
+            <ExpenseCardRow
+              key={item.seq}
+              item={item}
+              activeTab={activeTab}
+              checked={checkedItems.includes(item.seq)}
+              onCheck={onCheck}
+              onAInfo={onAInfo}
+            />
           ))}
         </div>
       )}
