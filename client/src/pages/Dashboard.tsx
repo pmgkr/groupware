@@ -367,10 +367,12 @@ export default function Dashboard() {
                   ) : (
                     meetingroom.map((meetingroom) => (
                       <li key={`${meetingroom.mr_name}-${meetingroom.stime}-${meetingroom.etime}`} className="flex items-center gap-x-1.5">
-                        <Badge className={getMeetingroomBadgeColor(meetingroom.mr_name)}>
-                          {getMeetingroomKoreanName(meetingroom.mr_name)}
-                        </Badge>
-                        <p className="overflow-hidden text-ellipsis whitespace-nowrap">
+                        <span className="w-14 shrink-0">
+                          <Badge className={getMeetingroomBadgeColor(meetingroom.mr_name)}>
+                            {getMeetingroomKoreanName(meetingroom.mr_name)}
+                          </Badge>
+                        </span>
+                        <p className="flex-1 truncate">
                           {formatTime(meetingroom.stime)} - {formatTime(meetingroom.etime)} {`${meetingroom.title}`}
                         </p>
                       </li>

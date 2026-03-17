@@ -21,6 +21,7 @@ const getMeetingroomKoreanName = (mrName: string): string => {
     'Sydney Room': '시드니룸',
     'Manila Room': '마닐라룸',
     'Bangkok Room': '방콕룸',
+    'Studio Room': '스튜디오',
   };
   return nameMap[mrName] || mrName;
 };
@@ -29,10 +30,11 @@ const getMeetingroomBadgeColor = (mrName: string): string => {
   const colorMap: Record<string, string> = {
     'Beijing Room': 'bg-[#F3AD47]',
     'Tokyo Room': 'bg-[#4DB6AC]',
-    'Singapore Room': 'bg-[#E57373]',
+    'Singapore Room': 'bg-[#F37F7F]',
     'Sydney Room': 'bg-[#81C784]',
     'Manila Room': 'bg-[#64B5F6]',
     'Bangkok Room': 'bg-[#D493EA]',
+    'Studio Room': 'bg-[#4D5FB6]',
   };
   return colorMap[mrName] || 'bg-gray-500';
 };
