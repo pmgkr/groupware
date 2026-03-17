@@ -7,11 +7,16 @@ import { isHolidayCached, getHolidayNameCached } from '@/services/holidayApi';
  */
 const getOvertimeStatus = (status: string): WorkData['overtimeStatus'] => {
   switch (status) {
-    case 'H': return '승인대기';
-    case 'T': return '승인완료';
-    case 'Y': return '보상완료';
-    case 'N': return '취소완료';
-    default: return '신청하기';
+    case 'H':
+      return '승인대기';
+    case 'T':
+      return '승인완료';
+    case 'Y':
+      return '보상완료';
+    case 'N':
+      return '취소완료';
+    default:
+      return '신청하기';
   }
 };
 
@@ -46,9 +51,7 @@ const extractTimeFromISO = (timeString: string): { hour: string; minute: string 
  * 휴가/이벤트 kind, time 보정
  */
 const resolveVacationKind = (vacation: any): string => {
-  const candidates = [
-    vacation?.kind, vacation?.sch_vacation_type, vacation?.sch_event_type, vacation?.type,
-  ];
+  const candidates = [vacation?.kind, vacation?.sch_vacation_type, vacation?.sch_event_type, vacation?.type];
   const found = candidates.find((k) => k && k !== '-');
   return found || '-';
 };
@@ -215,7 +218,7 @@ const calculateWorkHours = (wlog: any, overtime: any) => {
 
   // 연장근무 신청이 있고 식대를 사용한 경우 저녁시간 1시간(60분) 추가 차감
   if (overtime && overtime.ot_food === 'Y' && overtimeHours > 0) {
-    const totalOvertimeMinutes = (overtimeHours * 60) + overtimeMinutes - 60;
+    const totalOvertimeMinutes = overtimeHours * 60 + overtimeMinutes - 60;
     overtimeHours = Math.max(0, Math.floor(totalOvertimeMinutes / 60));
     overtimeMinutes = Math.max(0, totalOvertimeMinutes % 60);
   }
@@ -226,7 +229,7 @@ const calculateWorkHours = (wlog: any, overtime: any) => {
     overtimeHours,
     overtimeMinutes,
     totalHours: hours,
-    totalMinutes: minutes
+    totalMinutes: minutes,
   };
 };
 
@@ -277,10 +280,18 @@ export const convertApiDataToWorkData = async (
       // sch_created_at, created_at, 또는 기타 날짜 필드 확인
       const dateA = a.sch_created_at
         ? new Date(a.sch_created_at).getTime()
-        : (a.created_at ? new Date(a.created_at).getTime() : (a.va_created_at ? new Date(a.va_created_at).getTime() : 0));
+        : a.created_at
+          ? new Date(a.created_at).getTime()
+          : a.va_created_at
+            ? new Date(a.va_created_at).getTime()
+            : 0;
       const dateB = b.sch_created_at
         ? new Date(b.sch_created_at).getTime()
-        : (b.created_at ? new Date(b.created_at).getTime() : (b.va_created_at ? new Date(b.va_created_at).getTime() : 0));
+        : b.created_at
+          ? new Date(b.created_at).getTime()
+          : b.va_created_at
+            ? new Date(b.va_created_at).getTime()
+            : 0;
       return dateB - dateA; // 내림차순 (최신이 먼저)
     });
 
@@ -362,7 +373,7 @@ export const convertApiDataToWorkData = async (
         workType,
         workTypes: workTypesArray.length > 0 ? workTypesArray : undefined,
         startTime,
-        endTime: "-",
+        endTime: '-',
         basicHours: 0,
         basicMinutes: 0,
         overtimeHours: 0,
@@ -422,4 +433,3 @@ export const convertApiDataToWorkData = async (
 
   return weekData;
 };
-

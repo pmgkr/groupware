@@ -8,10 +8,10 @@ export default function AdminVacation() {
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
   // 선택된 유저 ID 목록
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-  
+
   // 활성 탭 (휴가 vs 이벤트)
   const [activeTab, setActiveTab] = useState<'vacation' | 'event'>('vacation');
-  
+
   // 필터 상태
   const [filters, setFilters] = useState<VacationFilters>({});
 
@@ -27,12 +27,12 @@ export default function AdminVacation() {
   const handleUserSelect = (userIds: string[]) => {
     setSelectedUserIds(userIds);
   };
-  
+
   // 필터 변경 핸들러
   const handleFilterChange = (newFilters: VacationFilters) => {
     setFilters(newFilters);
   };
-  
+
   // 일괄 승인 핸들러
   const handleApproveAll = () => {
     // window 객체에 VacationList에서 등록한 함수 호출
@@ -45,7 +45,7 @@ export default function AdminVacation() {
 
   return (
     <>
-      <Toolbar 
+      <Toolbar
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onTeamSelect={handleTeamSelect}
@@ -55,11 +55,7 @@ export default function AdminVacation() {
         onApproveAll={handleApproveAll}
         page="admin"
       />
-      <UserList 
-        year={year}
-        teamIds={selectedTeamIds}
-        userIds={selectedUserIds}
-      />
+      <UserList year={year} teamIds={selectedTeamIds} userIds={selectedUserIds} />
     </>
   );
 }

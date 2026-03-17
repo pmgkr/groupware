@@ -24,20 +24,14 @@ export const determineOvertimeType = (
 /**
  * 주말 또는 공휴일 여부 확인
  */
-export const isWeekendOrHoliday = (
-  dayOfWeek: string,
-  isHoliday: boolean,
-  workType: string
-): boolean => {
+export const isWeekendOrHoliday = (dayOfWeek: string, isHoliday: boolean, workType: string): boolean => {
   return dayOfWeek === '토' || dayOfWeek === '일' || isHoliday || workType === '공휴일';
 };
 
 /**
  * 보상 타입 변환 (UI -> API)
  */
-export const convertRewardType = (
-  overtimeType: string
-): 'special' | 'annual' | 'pay' | '' => {
+export const convertRewardType = (overtimeType: string): 'special' | 'annual' | 'pay' | '' => {
   switch (overtimeType) {
     case 'special_vacation':
       return 'special'; // 특별대휴
@@ -86,15 +80,8 @@ export interface OvertimeApiParams {
  * - 평일: 입력된 시간/분 필드(overtimeHours/Minutes) 기반
  *   (평일은 시작 시간이 없으므로 미리 계산된 값이 있을 때만 사용)
  */
-export const calculateOvertimeHours = (
-  selectedDay: WorkData,
-  formData: OvertimeFormData
-): string => {
-  const isWeekendOrHol = isWeekendOrHoliday(
-    selectedDay.dayOfWeek,
-    selectedDay.isHoliday || false,
-    selectedDay.workType
-  );
+export const calculateOvertimeHours = (selectedDay: WorkData, formData: OvertimeFormData): string => {
+  const isWeekendOrHol = isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.isHoliday || false, selectedDay.workType);
 
   if (!isWeekendOrHol) {
     const baseHours = Number(formData.overtimeHours || 0);
@@ -110,14 +97,8 @@ export const calculateOvertimeHours = (
     return h * 60 + m;
   };
 
-  const startMinutes = toMinutes(
-    formData.expectedStartTime,
-    formData.expectedStartTimeMinute
-  );
-  const endMinutes = toMinutes(
-    formData.expectedEndTime,
-    formData.expectedEndMinute
-  );
+  const startMinutes = toMinutes(formData.expectedStartTime, formData.expectedStartTimeMinute);
+  const endMinutes = toMinutes(formData.expectedEndTime, formData.expectedEndMinute);
 
   if (startMinutes == null || endMinutes == null) return '0';
 
@@ -146,17 +127,9 @@ export const buildOvertimeApiParams = (
   formData: OvertimeFormData,
   clientList: ClientList[] = []
 ): OvertimeApiParams => {
-  const otType = determineOvertimeType(
-    selectedDay.dayOfWeek,
-    selectedDay.isHoliday || false,
-    selectedDay.workType
-  );
+  const otType = determineOvertimeType(selectedDay.dayOfWeek, selectedDay.isHoliday || false, selectedDay.workType);
 
-  const isWeekendOrHol = isWeekendOrHoliday(
-    selectedDay.dayOfWeek,
-    selectedDay.isHoliday || false,
-    selectedDay.workType
-  );
+  const isWeekendOrHol = isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.isHoliday || false, selectedDay.workType);
 
   // 날짜를 YYYY-MM-DD 형식으로 변환 (ISO 형식인 경우 처리)
   let formattedDate = selectedDay.date;
@@ -164,19 +137,19 @@ export const buildOvertimeApiParams = (
     // ISO 형식인 경우 YYYY-MM-DD로 변환
     formattedDate = formattedDate.split('T')[0];
   }
-  
+
   // clientName이 cl_seq(숫자)인 경우 클라이언트 이름으로 변환
   let clientName = formData.clientName || '';
   if (clientName && clientList.length > 0) {
     const clientSeq = parseInt(clientName, 10);
     if (!isNaN(clientSeq)) {
-      const client = clientList.find(c => c.cl_seq === clientSeq);
+      const client = clientList.find((c) => c.cl_seq === clientSeq);
       if (client) {
         clientName = client.cl_name;
       }
     }
   }
-  
+
   // 기본 필수 필드
   const apiParams: OvertimeApiParams = {
     ot_type: otType,
@@ -208,7 +181,7 @@ export const buildOvertimeApiParams = (
       const hour = startHour >= 24 ? String(startHour - 24).padStart(2, '0') : String(startHour).padStart(2, '0');
       apiParams.ot_stime = `${hour}:${startMinute}:00`;
     }
-    
+
     // 퇴근 시간
     if (formData.expectedEndTime && formData.expectedEndMinute) {
       const endHour = parseInt(formData.expectedEndTime) || 0;
@@ -216,14 +189,13 @@ export const buildOvertimeApiParams = (
       const hour = endHour >= 24 ? String(endHour - 24).padStart(2, '0') : String(endHour).padStart(2, '0');
       apiParams.ot_etime = `${hour}:${endMinute}:00`;
     }
-    
+
     // 프론트에서 계산한 OT 시간 전송
     apiParams.ot_hours = calculateOvertimeHours(selectedDay, formData);
-    
+
     // 보상 지급방식
     apiParams.ot_reward = convertRewardType(formData.overtimeType);
   }
 
   return apiParams;
 };
-

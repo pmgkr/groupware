@@ -26,7 +26,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
   const { user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobileViewport();
-    
+
   // 데이터 state
   const [allData, setAllData] = useState<MyOvertimeItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,7 +57,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
       setSearchParams(newParams, { replace: true });
     }
   }, [page, searchParams, setSearchParams]);
-  
+
   // 연장근무 다이얼로그 state
   const [isOvertimeDialogOpen, setIsOvertimeDialogOpen] = useState(false);
   const [isReapplyDialogOpen, setIsReapplyDialogOpen] = useState(false);
@@ -95,37 +95,37 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
   useEffect(() => {
     fetchOvertimeData();
   }, [fetchOvertimeData]);
-  
+
   // selectedYear 변경 시 페이지 리셋 (이미 위에 있지만 중복 제거)
   // selectedYear가 변경되면 fetchOvertimeData가 재생성되고 자동으로 호출됨
 
   // 탭에 따라 필터링된 데이터
   const filteredData = useMemo(() => {
     let result = [...allData];
-    
+
     // 연도 필터링 (selectedYear와 일치하는 데이터만)
-    result = result.filter(item => {
+    result = result.filter((item) => {
       if (!item.ot_date) return false;
       const itemYear = dayjs(item.ot_date).year();
       return itemYear === selectedYear;
     });
-    
+
     // 탭 필터 (평일 연장근무 vs 휴일 근무)
     if (activeTab === 'weekday') {
       // 평일 연장근무: weekday
-      result = result.filter(item => item.ot_type === 'weekday' || item.ot_type === 'week');
+      result = result.filter((item) => item.ot_type === 'weekday' || item.ot_type === 'week');
     } else if (activeTab === 'weekend') {
       // 휴일 근무: saturday, sunday, holiday
-      result = result.filter(item => ['saturday', 'sunday', 'holiday', 'sat', 'sun'].includes(item.ot_type));
+      result = result.filter((item) => ['saturday', 'sunday', 'holiday', 'sat', 'sun'].includes(item.ot_type));
     }
-    
+
     // 신청일 기준으로 정렬 (최신순)
     result.sort((a, b) => {
       const dateA = dayjs(a.ot_created_at);
       const dateB = dayjs(b.ot_created_at);
       return dateB.diff(dateA);
     });
-    
+
     return result;
   }, [allData, activeTab, selectedYear]);
 
@@ -151,7 +151,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
   // 시간 문자열에서 HH:mm 추출
   const formatTime = (timeStr: string | null) => {
     if (!timeStr) return '-';
-    
+
     // ISO 형식인 경우
     if (timeStr.includes('T')) {
       const timePart = timeStr.split('T')[1];
@@ -161,112 +161,115 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
       }
       return timePart;
     }
-    
+
     // HH:mm:ss 형식인 경우
     const parts = timeStr.split(':');
     if (parts.length >= 2) {
       return `${parts[0]}:${parts[1]}`;
     }
-    
+
     return timeStr;
   };
 
   // 시간 문자열에서 시간/분 추출 (ISO 형식 또는 HH:mm:ss 형식)
   const extractTimeFromISO = (timeString: string): { hour: string; minute: string } => {
     if (!timeString) return { hour: '', minute: '' };
-    
+
     // ISO 형식 (예: "2024-01-01T09:00:00" 또는 "2024-01-01T09:00:00Z")
     const isoMatch = timeString.match(/T(\d{2}):(\d{2})/);
     if (isoMatch) {
       return {
         hour: String(parseInt(isoMatch[1])),
-        minute: String(parseInt(isoMatch[2]))
+        minute: String(parseInt(isoMatch[2])),
       };
     }
-    
+
     // HH:mm:ss 형식 (예: "09:00:00")
     const timeMatch = timeString.match(/^(\d{2}):(\d{2})/);
     if (timeMatch) {
       return {
         hour: String(parseInt(timeMatch[1])),
-        minute: String(parseInt(timeMatch[2]))
+        minute: String(parseInt(timeMatch[2])),
       };
     }
-    
+
     return { hour: '', minute: '' };
   };
 
   // MyOvertimeItem을 WorkData로 변환하는 함수
-  const convertToWorkData = useCallback((item: MyOvertimeItem): WorkData => {
-    // ot_stime에서 시/분 추출 (출근 시간)
-    const startTime = item.ot_stime ? extractTimeFromISO(item.ot_stime.toString()) : { hour: '', minute: '' };
-    
-    // ot_etime에서 시/분 추출 (퇴근 시간)
-    const endTime = item.ot_etime ? extractTimeFromISO(item.ot_etime.toString()) : { hour: '', minute: '' };
-    
-    // ot_hours에서 시간/분 추출
-    const hours = item.ot_hours ? parseFloat(item.ot_hours) : 0;
-    const overtimeHours = String(Math.floor(hours));
-    const overtimeMinutes = String(Math.round((hours % 1) * 60));
-    
-    // 상태 매핑
-    const mapStatus = (status: string): WorkData['overtimeStatus'] => {
-      if (status === 'H') return '승인대기';
-      if (status === 'T') {
-        return activeTab === 'weekday' ? '승인완료' : '보상대기';
-      }
-      if (status === 'N') return '취소완료';
-      if (status === 'Y') return '승인완료';
-      return '신청하기';
-    };
-    
-    // 보상 방식 매핑
-    const mapRewardType = (reward: string) => {
-      if (reward === 'special') return 'special_vacation';
-      if (reward === 'annual') return 'compensation_vacation';
-      if (reward === 'pay') return 'event';
-      return '';
-    };
-    
-    // 요일 계산 (한국어 요일 배열 사용)
-    const date = dayjs(item.ot_date);
-    const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
-    const dayOfWeek = daysOfWeek[date.day()] as '월' | '화' | '수' | '목' | '금' | '토' | '일';
-    
-    const isHoliday = item.ot_type === 'holiday';
-    const workType = isHoliday ? '공휴일' : '-';
+  const convertToWorkData = useCallback(
+    (item: MyOvertimeItem): WorkData => {
+      // ot_stime에서 시/분 추출 (출근 시간)
+      const startTime = item.ot_stime ? extractTimeFromISO(item.ot_stime.toString()) : { hour: '', minute: '' };
 
-    return {
-      date: item.ot_date,
-      dayOfWeek: dayOfWeek,
-      workType,
-      isHoliday,
-      holidayName: null,
-      startTime: item.ot_stime ? formatTime(item.ot_stime) : '-',
-      endTime: item.ot_etime ? formatTime(item.ot_etime) : '-',
-      basicHours: 0,
-      basicMinutes: 0,
-      overtimeHours: 0,
-      overtimeMinutes: 0,
-      totalHours: 0,
-      totalMinutes: 0,
-      overtimeStatus: mapStatus(item.ot_status),
-      overtimeId: item.id,
-      overtimeData: {
-        expectedStartTime: startTime.hour,
-        expectedStartTimeMinute: startTime.minute,
-        expectedEndTime: endTime.hour,
-        expectedEndMinute: endTime.minute,
-        mealAllowance: item.ot_food === 'Y' ? 'yes' : 'no',
-        transportationAllowance: item.ot_trans === 'Y' ? 'yes' : 'no',
-        overtimeHours: overtimeHours,
-        overtimeMinutes: overtimeMinutes,
-        overtimeType: mapRewardType(item.ot_reward),
-        clientName: item.ot_client || "",
-        workDescription: item.ot_description || ""
-      }
-    };
-  }, [activeTab]);
+      // ot_etime에서 시/분 추출 (퇴근 시간)
+      const endTime = item.ot_etime ? extractTimeFromISO(item.ot_etime.toString()) : { hour: '', minute: '' };
+
+      // ot_hours에서 시간/분 추출
+      const hours = item.ot_hours ? parseFloat(item.ot_hours) : 0;
+      const overtimeHours = String(Math.floor(hours));
+      const overtimeMinutes = String(Math.round((hours % 1) * 60));
+
+      // 상태 매핑
+      const mapStatus = (status: string): WorkData['overtimeStatus'] => {
+        if (status === 'H') return '승인대기';
+        if (status === 'T') {
+          return activeTab === 'weekday' ? '승인완료' : '보상대기';
+        }
+        if (status === 'N') return '취소완료';
+        if (status === 'Y') return '승인완료';
+        return '신청하기';
+      };
+
+      // 보상 방식 매핑
+      const mapRewardType = (reward: string) => {
+        if (reward === 'special') return 'special_vacation';
+        if (reward === 'annual') return 'compensation_vacation';
+        if (reward === 'pay') return 'event';
+        return '';
+      };
+
+      // 요일 계산 (한국어 요일 배열 사용)
+      const date = dayjs(item.ot_date);
+      const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
+      const dayOfWeek = daysOfWeek[date.day()] as '월' | '화' | '수' | '목' | '금' | '토' | '일';
+
+      const isHoliday = item.ot_type === 'holiday';
+      const workType = isHoliday ? '공휴일' : '-';
+
+      return {
+        date: item.ot_date,
+        dayOfWeek: dayOfWeek,
+        workType,
+        isHoliday,
+        holidayName: null,
+        startTime: item.ot_stime ? formatTime(item.ot_stime) : '-',
+        endTime: item.ot_etime ? formatTime(item.ot_etime) : '-',
+        basicHours: 0,
+        basicMinutes: 0,
+        overtimeHours: 0,
+        overtimeMinutes: 0,
+        totalHours: 0,
+        totalMinutes: 0,
+        overtimeStatus: mapStatus(item.ot_status),
+        overtimeId: item.id,
+        overtimeData: {
+          expectedStartTime: startTime.hour,
+          expectedStartTimeMinute: startTime.minute,
+          expectedEndTime: endTime.hour,
+          expectedEndMinute: endTime.minute,
+          mealAllowance: item.ot_food === 'Y' ? 'yes' : 'no',
+          transportationAllowance: item.ot_trans === 'Y' ? 'yes' : 'no',
+          overtimeHours: overtimeHours,
+          overtimeMinutes: overtimeMinutes,
+          overtimeType: mapRewardType(item.ot_reward),
+          clientName: item.ot_client || '',
+          workDescription: item.ot_description || '',
+        },
+      };
+    },
+    [activeTab]
+  );
 
   // 연장근무 클릭 핸들러
   const handleOvertimeClick = async (item: MyOvertimeItem) => {
@@ -283,7 +286,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
   // 연장근무 취소 핸들러
   const handleCancelOvertime = async () => {
     if (!selectedOvertime?.id) return;
-    
+
     try {
       await workingApi.cancelOvertime(selectedOvertime.id);
       fetchOvertimeData();
@@ -309,18 +312,18 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
   // 재신청 저장 핸들러
   const handleReapplySave = async (overtimeData: any) => {
     if (!selectedOvertime) return;
-    
+
     try {
       // 연장근무 API 파라미터 구성
       const selectedDay = convertToWorkData(selectedOvertime);
       const apiParams = buildOvertimeApiParams(selectedDay, overtimeData, []);
-      
+
       // API 호출(Dialog에서 저장하므로 해당 코드 삭제)
       // await workingApi.requestOvertime(apiParams);
-      
+
       // 성공 시 데이터 다시 로드
       fetchOvertimeData();
-      
+
       handleCloseReapplyDialog();
     } catch (error: any) {
       const errorMessage = error?.message || error?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
@@ -346,31 +349,44 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
   // 보상 방식 텍스트 변환
   const getRewardText = (reward: string) => {
     switch (reward) {
-      case 'special': return '특별대휴';
-      case 'annual': return '보상휴가';
-      case 'pay': return '수당지급';
-      default: return reward;
+      case 'special':
+        return '특별대휴';
+      case 'annual':
+        return '보상휴가';
+      case 'pay':
+        return '수당지급';
+      default:
+        return reward;
     }
   };
 
   // 상태 텍스트 변환
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'H': return '승인대기';
-      case 'T': return activeTab === 'weekday' ? '승인완료' : '보상대기';
-      case 'Y': return '보상완료';
-      case 'N': return '취소완료';
-      default: return status;
+      case 'H':
+        return '승인대기';
+      case 'T':
+        return activeTab === 'weekday' ? '승인완료' : '보상대기';
+      case 'Y':
+        return '보상완료';
+      case 'N':
+        return '취소완료';
+      default:
+        return status;
     }
   };
 
   // 상태 색상 클래스
   const getStatusColorClass = (status: string) => {
     switch (status) {
-      case 'H': return 'text-orange-600 font-semibold'; // 승인대기
-      case 'T': return 'text-green-600 font-semibold'; // 승인완료
-      case 'N': return 'text-red-600 font-semibold'; // 취소완료
-      default: return 'text-gray-600';
+      case 'H':
+        return 'text-orange-600 font-semibold'; // 승인대기
+      case 'T':
+        return 'text-green-600 font-semibold'; // 승인완료
+      case 'N':
+        return 'text-red-600 font-semibold'; // 취소완료
+      default:
+        return 'text-gray-600';
     }
   };
 
@@ -379,129 +395,154 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
   return (
     <>
       <div ref={tableRef} className="w-full">
-      <Table key={`table-${page}`} variant="primary" align="center" className={cn('w-full', isMobileNoData ? 'table-auto' : 'table-fixed')}>
-        <TableHeader>
-          <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className={cn('text-center p-2 w-[10%] max-md:px-0.5 max-md:text-sm! max-md:min-w-[90px]! max-md:w-unset!', isMobileNoData && 'w-auto')}>
-              <span className="max-md:hidden">연장</span>근무날짜
-            </TableHead>
-            {activeTab === 'weekday' ? (
-              <>
-                <TableHead className={cn('text-center p-2 w-[10%] max-md:px-0.5 max-md:text-sm! max-md:min-w-[90px]! max-md:w-unset!', isMobileNoData && 'w-auto')}>예상퇴근시간</TableHead>
-                {!isMobile && <TableHead className="text-center p-2 w-[8%]">식대</TableHead>}
-                {!isMobile && <TableHead className="text-center p-2 w-[8%]">교통비</TableHead>}
-              </>
-            ) : (
-              <>
-                <TableHead className={cn('text-center p-2 w-[10%] max-md:px-0.5 max-md:text-sm! max-md:min-w-[90px]! max-md:w-unset!', isMobileNoData && 'w-auto')}>예상근무시간</TableHead>
-                <TableHead className={cn('text-center p-2 w-[12%] max-md:px-0.5 max-md:text-sm!', isMobileNoData && 'w-auto')}>보상방식</TableHead>
-              </>
-            )}
-            {!isMobile && <TableHead className="text-center p-2 w-[15%]">클라이언트명</TableHead>}
-            {!isMobile && <TableHead className="text-center p-2 w-auto">작업내용</TableHead>}
-            {!isMobile && <TableHead className="text-center p-2 w-[13%]">신청일</TableHead>}
-            <TableHead className={cn('text-center p-2 w-[8%] max-md:px-0.5 max-md:text-sm!', isMobileNoData && 'w-auto')}>상태</TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody key={`tbody-${page}`}>
-        {loading ? (
-          <TableRow>
-            <TableCell className="h-100 text-gray-500 text-center p-2" colSpan={activeTab === 'weekday' ? (isMobile ? 3 : 9) : (isMobile ? 4 : 8)}>
-              데이터 불러오는 중
-            </TableCell>
-          </TableRow>
-        ) : !loading && paginatedData.length === 0 ? (
-          <TableRow>
-            <TableCell className="h-100 text-gray-500 text-center p-2" colSpan={activeTab === 'weekday' ? (isMobile ? 3 : 9) : (isMobile ? 4 : 8)}>
-              데이터가 없습니다.
-            </TableCell>
-          </TableRow>
-        ) : (
-          paginatedData.map((item, index) => (
-            <TableRow 
-              key={`${item.id}-${index}`}
-              className={`[&_td]:text-[13px] cursor-pointer hover:bg-gray-50 ${item.ot_status === 'N' ? 'opacity-40' : ''}`}
-              onClick={() => handleOvertimeClick(item)}
-            >
-              <TableCell className="text-center p-2 max-md:px-0.5 max-md:min-w-[90px]! max-md:w-unset!">
-                {item.ot_date ? dayjs(item.ot_date).format(isMobile ? 'MM-DD' : 'YYYY-MM-DD (ddd)') : '-'}
-              </TableCell>
+        <Table
+          key={`table-${page}`}
+          variant="primary"
+          align="center"
+          className={cn('w-full', isMobileNoData ? 'table-auto' : 'table-fixed')}>
+          <TableHeader>
+            <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+              <TableHead
+                className={cn(
+                  'max-md:w-unset! w-[10%] p-2 text-center max-md:min-w-[90px]! max-md:px-0.5 max-md:text-sm!',
+                  isMobileNoData && 'w-auto'
+                )}>
+                <span className="max-md:hidden">연장</span>근무날짜
+              </TableHead>
               {activeTab === 'weekday' ? (
                 <>
-                  <TableCell className="text-center p-2 max-md:px-0.5">{formatTime(item.ot_etime)}</TableCell>
-                  {!isMobile && <TableCell className="text-center p-2">{getYNText(item.ot_food)}</TableCell>}
-                  {!isMobile && <TableCell className="text-center p-2">{getYNText(item.ot_trans)}</TableCell>}
+                  <TableHead
+                    className={cn(
+                      'max-md:w-unset! w-[10%] p-2 text-center max-md:min-w-[90px]! max-md:px-0.5 max-md:text-sm!',
+                      isMobileNoData && 'w-auto'
+                    )}>
+                    예상퇴근시간
+                  </TableHead>
+                  {!isMobile && <TableHead className="w-[8%] p-2 text-center">식대</TableHead>}
+                  {!isMobile && <TableHead className="w-[8%] p-2 text-center">교통비</TableHead>}
                 </>
               ) : (
                 <>
-                  <TableCell className="text-center p-2 max-md:px-0.5 max-md:min-w-[90px]! max-md:w-unset! max-md:flex max-md:flex-col max-md:gap-0">
-                    {formatTime(item.ot_stime)}-{formatTime(item.ot_etime)} <span className="text-gray-500 text-sm font-normal max-md:block">({formatHours(item.ot_hours)})</span>
-                  </TableCell>
-                  <TableCell className="text-center p-2 max-md:px-0.5">{getRewardText(item.ot_reward)}</TableCell>
+                  <TableHead
+                    className={cn(
+                      'max-md:w-unset! w-[10%] p-2 text-center max-md:min-w-[90px]! max-md:px-0.5 max-md:text-sm!',
+                      isMobileNoData && 'w-auto'
+                    )}>
+                    예상근무시간
+                  </TableHead>
+                  <TableHead className={cn('w-[12%] p-2 text-center max-md:px-0.5 max-md:text-sm!', isMobileNoData && 'w-auto')}>
+                    보상방식
+                  </TableHead>
                 </>
               )}
-              {!isMobile && (
-                <TableCell className="text-center p-2 overflow-hidden text-ellipsis whitespace-nowrap max-w-0">
-                  <span className="block overflow-hidden text-ellipsis whitespace-nowrap" title={item.ot_client || '-'}>
-                    {item.ot_client || '-'}
-                  </span>
-                </TableCell>
-              )}
-              {!isMobile && (
-                <TableCell className="text-left p-2 overflow-hidden text-ellipsis whitespace-nowrap max-w-0">
-                  <span className="block overflow-hidden text-ellipsis whitespace-nowrap" title={item.ot_description || '-'}>
-                    {item.ot_description || '-'}
-                  </span>
-                </TableCell>
-              )}
-              {!isMobile && (
-                <TableCell className="text-center p-2">
-                  {item.ot_created_at ? dayjs(item.ot_created_at).format('YYYY-MM-DD HH:mm:ss') : '-'}
-                </TableCell>
-              )}
-              <TableCell className="text-center p-2 max-md:px-0.5">
-                {item.ot_status === 'H' && (
-                  <Badge variant="default" size="table" title="승인대기">
-                    {getStatusText(item.ot_status)}
-                  </Badge>
-                )}
-                {item.ot_status === 'T' && (
-                  <Badge 
-                    variant={activeTab === 'weekday' ? 'outline' : 'secondary'} 
-                    size="table" 
-                    title={activeTab === 'weekday' ? '승인완료' : '보상대기'}
-                  >
-                    {getStatusText(item.ot_status)}
-                  </Badge>
-                )}
-                {item.ot_status === 'Y' && (
-                  <Badge variant="outline" size="table" title="보상완료">
-                    {getStatusText(item.ot_status)}
-                  </Badge>
-                )}
-                {item.ot_status === 'N' && (
-                  <Badge variant="grayish" size="table" title="취소완료">
-                    {getStatusText(item.ot_status)}
-                  </Badge>
-                )}
-              </TableCell>
+              {!isMobile && <TableHead className="w-[15%] p-2 text-center">클라이언트명</TableHead>}
+              {!isMobile && <TableHead className="w-auto p-2 text-center">작업내용</TableHead>}
+              {!isMobile && <TableHead className="w-[13%] p-2 text-center">신청일</TableHead>}
+              <TableHead className={cn('w-[8%] p-2 text-center max-md:px-0.5 max-md:text-sm!', isMobileNoData && 'w-auto')}>상태</TableHead>
             </TableRow>
-          ))
-        )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+
+          <TableBody key={`tbody-${page}`}>
+            {loading ? (
+              <TableRow>
+                <TableCell
+                  className="h-100 p-2 text-center text-gray-500"
+                  colSpan={activeTab === 'weekday' ? (isMobile ? 3 : 9) : isMobile ? 4 : 8}>
+                  데이터 불러오는 중
+                </TableCell>
+              </TableRow>
+            ) : !loading && paginatedData.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  className="h-100 p-2 text-center text-gray-500"
+                  colSpan={activeTab === 'weekday' ? (isMobile ? 3 : 9) : isMobile ? 4 : 8}>
+                  데이터가 없습니다.
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedData.map((item, index) => (
+                <TableRow
+                  key={`${item.id}-${index}`}
+                  className={`cursor-pointer hover:bg-gray-50 [&_td]:text-[13px] ${item.ot_status === 'N' ? 'opacity-40' : ''}`}
+                  onClick={() => handleOvertimeClick(item)}>
+                  <TableCell className="max-md:w-unset! p-2 text-center max-md:min-w-[90px]! max-md:px-0.5">
+                    {item.ot_date ? dayjs(item.ot_date).format(isMobile ? 'MM-DD' : 'YYYY-MM-DD (ddd)') : '-'}
+                  </TableCell>
+                  {activeTab === 'weekday' ? (
+                    <>
+                      <TableCell className="p-2 text-center max-md:px-0.5">{formatTime(item.ot_etime)}</TableCell>
+                      {!isMobile && <TableCell className="p-2 text-center">{getYNText(item.ot_food)}</TableCell>}
+                      {!isMobile && <TableCell className="p-2 text-center">{getYNText(item.ot_trans)}</TableCell>}
+                    </>
+                  ) : (
+                    <>
+                      <TableCell className="max-md:w-unset! p-2 text-center max-md:flex max-md:min-w-[90px]! max-md:flex-col max-md:gap-0 max-md:px-0.5">
+                        {formatTime(item.ot_stime)}-{formatTime(item.ot_etime)}{' '}
+                        <span className="text-sm font-normal text-gray-500 max-md:block">({formatHours(item.ot_hours)})</span>
+                      </TableCell>
+                      <TableCell className="p-2 text-center max-md:px-0.5">{getRewardText(item.ot_reward)}</TableCell>
+                    </>
+                  )}
+                  {!isMobile && (
+                    <TableCell className="max-w-0 overflow-hidden p-2 text-center text-ellipsis whitespace-nowrap">
+                      <span className="block overflow-hidden text-ellipsis whitespace-nowrap" title={item.ot_client || '-'}>
+                        {item.ot_client || '-'}
+                      </span>
+                    </TableCell>
+                  )}
+                  {!isMobile && (
+                    <TableCell className="max-w-0 overflow-hidden p-2 text-left text-ellipsis whitespace-nowrap">
+                      <span className="block overflow-hidden text-ellipsis whitespace-nowrap" title={item.ot_description || '-'}>
+                        {item.ot_description || '-'}
+                      </span>
+                    </TableCell>
+                  )}
+                  {!isMobile && (
+                    <TableCell className="p-2 text-center">
+                      {item.ot_created_at ? dayjs(item.ot_created_at).format('YYYY-MM-DD HH:mm:ss') : '-'}
+                    </TableCell>
+                  )}
+                  <TableCell className="p-2 text-center max-md:px-0.5">
+                    {item.ot_status === 'H' && (
+                      <Badge variant="default" size="table" title="승인대기">
+                        {getStatusText(item.ot_status)}
+                      </Badge>
+                    )}
+                    {item.ot_status === 'T' && (
+                      <Badge
+                        variant={activeTab === 'weekday' ? 'outline' : 'secondary'}
+                        size="table"
+                        title={activeTab === 'weekday' ? '승인완료' : '보상대기'}>
+                        {getStatusText(item.ot_status)}
+                      </Badge>
+                    )}
+                    {item.ot_status === 'Y' && (
+                      <Badge variant="outline" size="table" title="보상완료">
+                        {getStatusText(item.ot_status)}
+                      </Badge>
+                    )}
+                    {item.ot_status === 'N' && (
+                      <Badge variant="grayish" size="table" title="취소완료">
+                        {getStatusText(item.ot_status)}
+                      </Badge>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
       {total > 0 && (
         <div className="mt-5">
-          <AppPagination 
+          <AppPagination
             key={`pagination-${page}`}
-            totalPages={totalPages} 
-            initialPage={page} 
-            visibleCount={10} 
+            totalPages={totalPages}
+            initialPage={page}
+            visibleCount={10}
             onPageChange={(p) => {
               setPage(p);
-            }} 
+            }}
           />
         </div>
       )}
@@ -530,7 +571,6 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
           onSave={handleReapplySave}
         />
       )}
-
     </>
   );
 }

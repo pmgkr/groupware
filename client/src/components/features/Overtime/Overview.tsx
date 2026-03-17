@@ -9,11 +9,7 @@ interface OverviewProps {
   onYearChange?: (year: string) => void;
 }
 
-export default function Overview({
-  activeTab = 'weekday',
-  onTabChange = () => {},
-  onYearChange = () => {}
-}: OverviewProps) {
+export default function Overview({ activeTab = 'weekday', onTabChange = () => {}, onYearChange = () => {} }: OverviewProps) {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
 
@@ -25,7 +21,7 @@ export default function Overview({
   };
 
   return (
-    <div className="w-full flex items-center flex-wrap gap-2 mb-5 max-md:gap-2">
+    <div className="mb-5 flex w-full flex-wrap items-center gap-2 max-md:gap-2">
       {/* 탭 버튼 */}
       <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5 max-md:w-full max-md:p-1">
         <Button
@@ -49,10 +45,7 @@ export default function Overview({
       </div>
 
       <Select value={selectedYear} onValueChange={handleYearChange}>
-        <SelectTrigger
-          size="sm"
-          className="ml-4 w-[120px] max-md:ml-0 max-md:w-[100px]"
-        >
+        <SelectTrigger size="sm" className="ml-4 w-[120px] max-md:ml-0 max-md:w-[100px]">
           <SelectValue placeholder="연도 선택" />
         </SelectTrigger>
         <SelectContent>
@@ -68,4 +61,3 @@ export default function Overview({
     </div>
   );
 }
-

@@ -62,7 +62,7 @@ export const defaultSelectConfigs: SelectConfig[] = [
     autoSize: true,
     searchable: true,
     hideSelectAll: false,
-    maxCount: 0
+    maxCount: 0,
   },
   {
     id: 'type',
@@ -80,18 +80,18 @@ export const defaultSelectConfigs: SelectConfig[] = [
     searchable: true,
     hideSelectAll: false,
     maxCount: 0,
-  }
+  },
 ];
 
 // 기본 이벤트 필터링 함수
 export const defaultEventFilter: EventFilter = (events, selectConfigs) => {
   let filteredEvents = [...events];
-  
+
   // 팀 필터링
-  const teamConfig = selectConfigs.find(config => config.id === 'team');
+  const teamConfig = selectConfigs.find((config) => config.id === 'team');
   if (teamConfig && teamConfig.value && teamConfig.value.length > 0) {
-    filteredEvents = filteredEvents.filter(event => {
-      return teamConfig.value?.some(selectedTeam => {
+    filteredEvents = filteredEvents.filter((event) => {
+      return teamConfig.value?.some((selectedTeam) => {
         if (!event.resource.teamName) return false;
         switch (selectedTeam) {
           case 'team_dev':
@@ -108,15 +108,15 @@ export const defaultEventFilter: EventFilter = (events, selectConfigs) => {
       });
     });
   }
-  
+
   // 타입 필터링 (휴가 타입)
-  const typeConfig = selectConfigs.find(config => config.id === 'type');
+  const typeConfig = selectConfigs.find((config) => config.id === 'type');
   if (typeConfig && typeConfig.value && typeConfig.value.length > 0) {
-    filteredEvents = filteredEvents.filter(event => {
+    filteredEvents = filteredEvents.filter((event) => {
       const eventType = event.resource.schType;
       const vacationType = event.resource.schVacationType;
-      
-      return typeConfig.value?.some(selectedType => {
+
+      return typeConfig.value?.some((selectedType) => {
         switch (selectedType) {
           case 'type_vacation':
             return eventType === 'vacation' && vacationType === 'day';
@@ -136,7 +136,7 @@ export const defaultEventFilter: EventFilter = (events, selectConfigs) => {
       });
     });
   }
-  
+
   return filteredEvents;
 };
 
@@ -158,7 +158,7 @@ export const customSelectConfigs: SelectConfig[] = [
     searchable: true,
     hideSelectAll: false,
     maxCount: 0,
-  }
+  },
 ];
 
 // 이벤트 제목 매핑 커스터마이징
@@ -188,14 +188,14 @@ export const customEventTitleMapper: EventTitleMapper = (eventType: string) => {
 // 이벤트 필터링 커스터마이징 (타입 필터만)
 export const customEventFilter: EventFilter = (events: CalendarEvent[], selectConfigs: SelectConfig[]) => {
   let filteredEvents = [...events];
-  
+
   // 타입 필터링 (휴가 타입)
-  const typeConfig = selectConfigs.find(config => config.id === 'type');
+  const typeConfig = selectConfigs.find((config) => config.id === 'type');
   if (typeConfig && typeConfig.value && typeConfig.value.length > 0) {
-    filteredEvents = filteredEvents.filter(event => {
+    filteredEvents = filteredEvents.filter((event) => {
       const eventType = event.resource.schType;
       const vacationType = event.resource.schVacationType;
-      
+
       return typeConfig.value?.some((selectedType: string) => {
         switch (selectedType) {
           case 'type_vacation':
@@ -216,7 +216,6 @@ export const customEventFilter: EventFilter = (events: CalendarEvent[], selectCo
       });
     });
   }
-  
+
   return filteredEvents;
 };
-

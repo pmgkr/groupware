@@ -24,18 +24,18 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
   const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobileViewport();
-  
+
   // 연도 state - props로 받거나 기본값 사용
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(year || currentYear);
-  
+
   // userId가 변경되면 selectedYear도 업데이트
   useEffect(() => {
     if (year !== undefined) {
       setSelectedYear(year);
     }
   }, [year]);
-  
+
   // userId가 변경되면 데이터 초기화 및 fetch key 리셋
   useEffect(() => {
     if (userId) {
@@ -43,11 +43,11 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
       lastFetchKeyRef.current = ''; // fetch key 리셋하여 재호출 가능하게
     }
   }, [userId]);
-  
+
   // 데이터 state
   const [allData, setAllData] = useState<VacationItem[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
   // 중복 호출 방지 ref
   const loadingRef = useRef(false);
   const lastFetchKeyRef = useRef<string>('');
@@ -57,7 +57,7 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const pageSize = 15;
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
-  
+
   // userId가 props로 전달되면 Admin/Manager API 사용, 없으면 MyPage API 사용
   const isExternalUser = !!userId;
 
@@ -82,18 +82,17 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
       setSearchParams(newParams, { replace: true });
     }
   }, [page, searchParams, setSearchParams]);
-  
+
   // 필터 변경 시 첫 페이지로 이동
   useEffect(() => {
     setPage(1);
   }, [typeFilter]);
-  
 
   // 데이터 조회 함수
   const fetchScheduleData = useCallback(async () => {
     // userId가 props로 전달되면 해당 유저의 데이터를 조회, 없으면 현재 로그인한 유저의 데이터 조회
     const targetUserId = userId || user?.user_id;
-    
+
     if (!targetUserId) {
       setAllData([]);
       return;
@@ -101,10 +100,11 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
 
     // 중복 호출 방지: 같은 파라미터로 이미 호출 중이면 스킵
     // refreshTrigger가 있으면 fetchKey에 포함시켜서 강제로 새로고침
-    const fetchKey = refreshTrigger !== undefined && refreshTrigger > 0
-      ? `${targetUserId}-${selectedYear}-refresh-${refreshTrigger}`
-      : `${targetUserId}-${selectedYear}`;
-    
+    const fetchKey =
+      refreshTrigger !== undefined && refreshTrigger > 0
+        ? `${targetUserId}-${selectedYear}-refresh-${refreshTrigger}`
+        : `${targetUserId}-${selectedYear}`;
+
     if (loadingRef.current || lastFetchKeyRef.current === fetchKey) {
       return;
     }
@@ -114,20 +114,20 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
     setLoading(true);
     try {
       let vacationData: VacationItem[];
-      
+
       if (isExternalUser) {
         // 관리자/매니저 외부 조회 (userId 존재): admin은 /admin/vacation/info, manager는 /manager/vacation/info
         vacationData = [];
         let currentPage = 1;
         const fetchSize = 100; // 한 번에 가져올 데이터 수
         let hasMore = true;
-        
+
         while (hasMore) {
           const response = location.pathname.startsWith('/manager')
             ? await managerVacationApi.getVacationInfo(targetUserId, selectedYear, currentPage, fetchSize)
             : await adminVacationApi.getVacationInfo(targetUserId, selectedYear, currentPage, fetchSize);
 
-          const pageData = (response.body || []).map(item => ({
+          const pageData = (response.body || []).map((item) => ({
             sch_id: item.sch_id,
             v_year: item.v_year,
             v_type: item.v_type,
@@ -135,11 +135,11 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
             sdate: item.sdate,
             edate: item.edate,
             remark: item.remark,
-            wdate: item.wdate
+            wdate: item.wdate,
           }));
-          
+
           vacationData = [...vacationData, ...pageData];
-          
+
           // footer 정보로 다음 페이지가 있는지 확인
           if (response.footer) {
             const total = response.footer.total || 0;
@@ -149,9 +149,9 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
             // footer가 없으면 현재 페이지에 데이터가 없으면 종료
             hasMore = pageData.length > 0;
           }
-          
+
           currentPage++;
-          
+
           // 무한 루프 방지 (최대 100페이지까지만)
           if (currentPage > 100) {
             break;
@@ -161,7 +161,7 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
         // VacationHistory API 사용
         vacationData = await fetchVacationHistory(selectedYear);
       }
-      
+
       setAllData(vacationData);
       setLoading(false);
     } catch (error) {
@@ -180,31 +180,31 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
       // 중복 호출 방지 로직 완전히 우회
       lastFetchKeyRef.current = '';
       loadingRef.current = false;
-      
+
       // 서버에 데이터가 반영되는 시간을 고려하여 500ms 딜레이 후 호출
       const timeoutId = setTimeout(async () => {
         const targetUserId = userId || user?.user_id;
-        
+
         if (!targetUserId) {
           return;
         }
 
         // fetchKey에 refreshTrigger 포함하여 중복 호출 방지 완전히 우회
         const fetchKey = `${targetUserId}-${selectedYear}-refresh-${refreshTrigger}`;
-        
+
         loadingRef.current = true;
         lastFetchKeyRef.current = fetchKey;
         setLoading(true);
-        
+
         try {
           let vacationData: VacationItem[] = [];
-          
+
           if (isExternalUser) {
             // 관리자/매니저 외부 조회
             let currentPage = 1;
             const fetchSize = 100;
             let hasMore = true;
-            
+
             while (hasMore) {
               const response = location.pathname.startsWith('/manager')
                 ? await managerVacationApi.getVacationInfo(targetUserId, selectedYear, currentPage, fetchSize)
@@ -218,11 +218,11 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
                 sdate: item.sdate,
                 edate: item.edate,
                 remark: item.remark,
-                wdate: item.wdate
+                wdate: item.wdate,
               }));
-              
+
               vacationData = [...vacationData, ...pageData];
-              
+
               if (response.footer) {
                 const total = response.footer.total || 0;
                 const fetched = vacationData.length;
@@ -230,14 +230,14 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
               } else {
                 hasMore = pageData.length > 0;
               }
-              
+
               currentPage++;
               if (currentPage > 100) break;
             }
           } else {
             vacationData = await fetchVacationHistory(selectedYear);
           }
-          
+
           setAllData(vacationData);
           setLoading(false);
         } catch (error) {
@@ -248,14 +248,14 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
           loadingRef.current = false;
         }
       }, 500);
-      
+
       return () => {
         clearTimeout(timeoutId);
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger]);
-    
+
   // 데이터 조회
   useEffect(() => {
     fetchScheduleData();
@@ -265,44 +265,46 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
   const groupedData = useMemo(() => {
     const result: Array<{ item: VacationItem; cancelledItem?: VacationItem }> = [];
     const processedItems = new Set<VacationItem>(); // 처리된 항목을 직접 추적
-    
+
     // 모든 항목을 순회하면서 원본과 취소 항목을 매칭
-    allData.forEach(item => {
+    allData.forEach((item) => {
       // 이미 처리된 항목은 건너뛰기
       if (processedItems.has(item)) {
         return;
       }
-      
+
       // 취소 완료된 항목인 경우 (sch_status === 'N' 또는 v_type === 'cancel')
       const isCancelled = item.sch_status === 'N' || item.v_type === 'cancel';
-      
+
       if (isCancelled) {
         // 같은 sch_id를 가진 원본 항목 찾기 (아직 처리되지 않은 것만)
         let originalItem = allData.find(
-          other => other.sch_id === item.sch_id && 
-                   other.sch_status !== 'N' &&
-                   other.v_type !== 'cancel' &&
-                   other !== item &&
-                   !processedItems.has(other)
+          (other) =>
+            other.sch_id === item.sch_id &&
+            other.sch_status !== 'N' &&
+            other.v_type !== 'cancel' &&
+            other !== item &&
+            !processedItems.has(other)
         );
-        
+
         // sch_id로 찾지 못한 경우, 같은 기간과 유형을 가진 원본 항목 찾기
         if (!originalItem) {
           originalItem = allData.find(
-            other => other.sdate === item.sdate &&
-                     other.edate === item.edate &&
-                     other.v_type !== 'cancel' &&
-                     other.sch_status !== 'N' &&
-                     other !== item &&
-                     !processedItems.has(other)
+            (other) =>
+              other.sdate === item.sdate &&
+              other.edate === item.edate &&
+              other.v_type !== 'cancel' &&
+              other.sch_status !== 'N' &&
+              other !== item &&
+              !processedItems.has(other)
           );
         }
-        
+
         if (originalItem) {
           // 원본 항목과 취소 항목을 함께 표시
           result.push({
             item: originalItem,
-            cancelledItem: item
+            cancelledItem: item,
           });
           processedItems.add(item);
           processedItems.add(originalItem);
@@ -310,7 +312,7 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
           // 원본 항목을 찾지 못한 경우 취소 항목만 표시
           result.push({
             item: item,
-            cancelledItem: undefined
+            cancelledItem: undefined,
           });
           processedItems.add(item);
         }
@@ -318,28 +320,30 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
         // 원본 항목인 경우
         // 같은 sch_id를 가진 취소 항목 찾기 (아직 처리되지 않은 것만)
         let cancelledItem = allData.find(
-          other => other.sch_id === item.sch_id && 
-                   (other.sch_status === 'N' || other.v_type === 'cancel') &&
-                   other !== item &&
-                   !processedItems.has(other)
+          (other) =>
+            other.sch_id === item.sch_id &&
+            (other.sch_status === 'N' || other.v_type === 'cancel') &&
+            other !== item &&
+            !processedItems.has(other)
         );
-        
+
         // sch_id로 찾지 못한 경우, 같은 기간과 유형을 가진 취소 항목 찾기
         if (!cancelledItem) {
           cancelledItem = allData.find(
-            other => other.sdate === item.sdate &&
-                     other.edate === item.edate &&
-                     (other.sch_status === 'N' || other.v_type === 'cancel') &&
-                     other !== item &&
-                     !processedItems.has(other)
+            (other) =>
+              other.sdate === item.sdate &&
+              other.edate === item.edate &&
+              (other.sch_status === 'N' || other.v_type === 'cancel') &&
+              other !== item &&
+              !processedItems.has(other)
           );
         }
-        
+
         if (cancelledItem) {
           // 원본 항목과 취소 항목을 함께 표시
           result.push({
             item: item,
-            cancelledItem: cancelledItem
+            cancelledItem: cancelledItem,
           });
           processedItems.add(item);
           processedItems.add(cancelledItem);
@@ -347,28 +351,28 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
           // 취소 항목이 없는 경우 원본만 표시
           result.push({
             item: item,
-            cancelledItem: undefined
+            cancelledItem: undefined,
           });
           processedItems.add(item);
         }
       }
     });
-    
+
     // 최근 생성된 데이터가 위로 오도록 정렬 (승인일 최신순, 같으면 sch_id 큰 순)
     result.sort((a, b) => {
       const dateA = dayjs(a.item.wdate);
       const dateB = dayjs(b.item.wdate);
       const dateDiff = dateB.diff(dateA);
-      
+
       // 승인일이 다르면 승인일 기준으로 정렬
       if (dateDiff !== 0) {
         return dateDiff;
       }
-      
+
       // 승인일이 같거나 없으면 sch_id가 큰 것(최근 생성된 것)이 위로
       return (b.item.sch_id || 0) - (a.item.sch_id || 0);
     });
-    
+
     return result;
   }, [allData]);
 
@@ -379,17 +383,17 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
     // 선택된 유형들을 모두 풀어서 매칭 목록 생성
     const matchSet = typeFilter.reduce<Set<string>>((set, type) => {
       if (type === 'special') {
-        SPECIAL_VACATION_TYPES.forEach(t => set.add(t));
+        SPECIAL_VACATION_TYPES.forEach((t) => set.add(t));
       } else if (type === 'official') {
-        OFFICIAL_VACATION_TYPES.forEach(t => set.add(t));
+        OFFICIAL_VACATION_TYPES.forEach((t) => set.add(t));
       } else {
         set.add(type);
       }
       return set;
     }, new Set<string>());
 
-    return groupedData.filter(group => 
-      matchSet.has(group.item.v_type) || (group.cancelledItem && matchSet.has(group.cancelledItem.v_type))
+    return groupedData.filter(
+      (group) => matchSet.has(group.item.v_type) || (group.cancelledItem && matchSet.has(group.cancelledItem.v_type))
     );
   }, [groupedData, typeFilter]);
 
@@ -413,7 +417,7 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
   const totalPages = Math.ceil(total / pageSize);
 
   // sch_status를 상태 텍스트로 변환하는 함수
-  const getScheduleStatusText = (schStatus?: string): "등록 완료" | "취소 요청됨" | "취소 완료" => {
+  const getScheduleStatusText = (schStatus?: string): '등록 완료' | '취소 요청됨' | '취소 완료' => {
     if (!schStatus) return '등록 완료';
     if (schStatus === 'Y') return '등록 완료';
     if (schStatus === 'H') return '취소 요청됨';
@@ -421,29 +425,29 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
     return '등록 완료';
   };
 
-
   // 휴가 유형 텍스트 변환
   const getVacationTypeText = (vacationType?: string | null, vacationTime?: string | null) => {
     if (!vacationType) return '-';
-    
-    const baseType = {
-      'day': '연차',
-      'half': '반차',
-      'quarter': '반반차',
-      'official': '공가',
-      'current': '기본연차',
-      'carryover': '이월연차',
-      'comp': '특별대휴',
-      'special': '특별대휴',
-      'long': '근속휴가',
-      'cancel': '취소완료'
-    }[vacationType] || vacationType;
-    
+
+    const baseType =
+      {
+        day: '연차',
+        half: '반차',
+        quarter: '반반차',
+        official: '공가',
+        current: '기본연차',
+        carryover: '이월연차',
+        comp: '특별대휴',
+        special: '특별대휴',
+        long: '근속휴가',
+        cancel: '취소완료',
+      }[vacationType] || vacationType;
+
     if ((vacationType === 'half' || vacationType === 'quarter') && vacationTime) {
       const timeText = vacationTime === 'morning' ? '오전' : '오후';
       return `${baseType}(${timeText})`;
     }
-    
+
     return baseType;
   };
 
@@ -457,7 +461,7 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
 
   return (
     <>
-      <div className="w-full mb-3 flex items-center gap-2">
+      <div className="mb-3 flex w-full items-center gap-2">
         <MultiSelect
           simpleSelect={true}
           options={VACATION_TYPE_OPTIONS}
@@ -467,7 +471,7 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
 
             // 옵션 선택 시 '전체'는 단일 선택만 허용
             if (next.includes('all') && next.length > 1) {
-              next = next.filter(v => v !== 'all');
+              next = next.filter((v) => v !== 'all');
             }
 
             setTypeFilter(next);
@@ -478,106 +482,100 @@ export default function VacationHistory({ userId, year, refreshTrigger }: Vacati
           searchable={false}
           hideSelectAll={false}
           autoSize={true}
-          className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:w-[80px]! max-md:max-w-[80px]!"
+          className="multi-select w-auto! max-w-[200px]! min-w-[120px]! max-md:w-[80px]! max-md:max-w-[80px]!"
         />
       </div>
       <div ref={tableRef} className="w-full">
-      <Table key={`table-${page}`} variant="primary" align="center" className="table-fixed w-full">
-        <TableHeader>
-          <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[20%] text-center p-2 max-md:px-0.5 max-md:text-sm!">기간</TableHead>
-            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm!">유형</TableHead>
-            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm!">휴가일수</TableHead>
-            {!isMobile && <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm!">승인일</TableHead>}
-            <TableHead className="w-[35%] text-center p-2 max-md:px-0.5 max-md:text-sm!">설명</TableHead>
-          </TableRow>
-        </TableHeader>
+        <Table key={`table-${page}`} variant="primary" align="center" className="w-full table-fixed">
+          <TableHeader>
+            <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+              <TableHead className="w-[20%] p-2 text-center max-md:px-0.5 max-md:text-sm!">기간</TableHead>
+              <TableHead className="w-[10%] p-2 text-center max-md:px-0.5 max-md:text-sm!">유형</TableHead>
+              <TableHead className="w-[10%] p-2 text-center max-md:px-0.5 max-md:text-sm!">휴가일수</TableHead>
+              {!isMobile && <TableHead className="w-[15%] p-2 text-center max-md:px-0.5 max-md:text-sm!">승인일</TableHead>}
+              <TableHead className="w-[35%] p-2 text-center max-md:px-0.5 max-md:text-sm!">설명</TableHead>
+            </TableRow>
+          </TableHeader>
 
-        <TableBody key={`tbody-${page}`}>
-        {loading ? (
-          <TableRow className="[&_td]:text-[13px]">
-            <TableCell className="h-100 text-gray-500 w-full p-2 max-md:px-0.5" colSpan={isMobile ? 4 : 5}>
-              데이터 불러오는 중
-            </TableCell>
-          </TableRow>
-        ) : !loading && paginatedData.length === 0 ? (
-          <TableRow className="[&_td]:text-[13px]">
-            <TableCell className="h-100 text-gray-500 w-full p-2 max-md:px-0.5" colSpan={isMobile ? 4 : 5}>
-              데이터가 없습니다.
-            </TableCell>
-          </TableRow>
-        ) : (
-          paginatedData.map((group, index) => {
-            const hasCancelled = !!group.cancelledItem;
-            
-            return (
-              <TableRow 
-                key={`${group.item.sch_id}-${index}`}
-                className={`[&_td]:text-[13px] ${
-                  hasCancelled 
-                    // ? ' [&_td]:text-gray-400' 
-                    ? 'opacity-40' 
-                    : ''
-                }`}
-              >
-                <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">{formatPeriod(group.item.sdate, group.item.edate)}</TableCell>
-                <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">
-                  <div className="flex flex-col gap-0.5">
-                    <span>{getVacationTypeText(group.item.v_type)}</span>
-                    {hasCancelled && (
-                      <span className="text-red-500">
-                        {getVacationTypeText(group.cancelledItem!.v_type)}
-                      </span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">
-                  <div className="flex flex-col gap-0.5">
-                    <span>{group.item.v_count || '-'}</span>
-                    {hasCancelled && (
-                      <span className="text-gray-800">{group.cancelledItem!.v_count || '-'}</span>
-                    )}
-                  </div>
-                </TableCell>
-                {!isMobile && (
-                  <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">
-                    <div className="flex flex-col gap-0.5">
-                      <span>{group.item.wdate ? dayjs(group.item.wdate).format('YYYY-MM-DD') : '-'}</span>
-                      {hasCancelled && (
-                        <span className="text-gray-800">{group.cancelledItem!.wdate ? dayjs(group.cancelledItem!.wdate).format('YYYY-MM-DD') : '-'}</span>
-                      )}
-                    </div>
-                  </TableCell>
-                )}
-                <TableCell className="text-left p-2 max-md:px-0.5 max-md:text-sm!">
-                  <div className="flex flex-col gap-0.5">
-                    <span>{group.item.remark || '-'}</span>
-                    {hasCancelled && (
-                      <span className="text-gray-800">{group.cancelledItem!.remark || '-'}</span>
-                    )}
-                  </div>
+          <TableBody key={`tbody-${page}`}>
+            {loading ? (
+              <TableRow className="[&_td]:text-[13px]">
+                <TableCell className="h-100 w-full p-2 text-gray-500 max-md:px-0.5" colSpan={isMobile ? 4 : 5}>
+                  데이터 불러오는 중
                 </TableCell>
               </TableRow>
-            );
-          })
-        )}
-        </TableBody>
-      </Table>
+            ) : !loading && paginatedData.length === 0 ? (
+              <TableRow className="[&_td]:text-[13px]">
+                <TableCell className="h-100 w-full p-2 text-gray-500 max-md:px-0.5" colSpan={isMobile ? 4 : 5}>
+                  데이터가 없습니다.
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedData.map((group, index) => {
+                const hasCancelled = !!group.cancelledItem;
+
+                return (
+                  <TableRow
+                    key={`${group.item.sch_id}-${index}`}
+                    className={`[&_td]:text-[13px] ${
+                      hasCancelled
+                        ? // ? ' [&_td]:text-gray-400'
+                          'opacity-40'
+                        : ''
+                    }`}>
+                    <TableCell className="p-2 text-center max-md:px-0.5 max-md:text-sm!">
+                      {formatPeriod(group.item.sdate, group.item.edate)}
+                    </TableCell>
+                    <TableCell className="p-2 text-center max-md:px-0.5 max-md:text-sm!">
+                      <div className="flex flex-col gap-0.5">
+                        <span>{getVacationTypeText(group.item.v_type)}</span>
+                        {hasCancelled && <span className="text-red-500">{getVacationTypeText(group.cancelledItem!.v_type)}</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="p-2 text-center max-md:px-0.5 max-md:text-sm!">
+                      <div className="flex flex-col gap-0.5">
+                        <span>{group.item.v_count || '-'}</span>
+                        {hasCancelled && <span className="text-gray-800">{group.cancelledItem!.v_count || '-'}</span>}
+                      </div>
+                    </TableCell>
+                    {!isMobile && (
+                      <TableCell className="p-2 text-center max-md:px-0.5 max-md:text-sm!">
+                        <div className="flex flex-col gap-0.5">
+                          <span>{group.item.wdate ? dayjs(group.item.wdate).format('YYYY-MM-DD') : '-'}</span>
+                          {hasCancelled && (
+                            <span className="text-gray-800">
+                              {group.cancelledItem!.wdate ? dayjs(group.cancelledItem!.wdate).format('YYYY-MM-DD') : '-'}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
+                    <TableCell className="p-2 text-left max-md:px-0.5 max-md:text-sm!">
+                      <div className="flex flex-col gap-0.5">
+                        <span>{group.item.remark || '-'}</span>
+                        {hasCancelled && <span className="text-gray-800">{group.cancelledItem!.remark || '-'}</span>}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
       </div>
       {total > 0 && (
         <div className="mt-5">
-          <AppPagination 
+          <AppPagination
             key={`pagination-${page}`}
-            totalPages={totalPages} 
-            initialPage={page} 
-            visibleCount={10} 
+            totalPages={totalPages}
+            initialPage={page}
+            visibleCount={10}
             onPageChange={(p) => {
               setPage(p);
-            }} 
+            }}
           />
         </div>
       )}
-
     </>
   );
 }

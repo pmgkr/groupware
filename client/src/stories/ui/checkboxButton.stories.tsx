@@ -26,7 +26,8 @@ const meta: Meta<typeof CheckboxButton> = {
       control: 'select',
       options: ['default', 'outline', 'dynamic', 'dynamicBlue'],
       defaultValue: 'outline',
-      description: 'default: 파란색 배경, outline: 회색 테두리, dynamic: 체크 상태에 따라 자동 변경 (연한 파란색), dynamicBlue: 체크 상태에 따라 자동 변경 (진한 파란색)',
+      description:
+        'default: 파란색 배경, outline: 회색 테두리, dynamic: 체크 상태에 따라 자동 변경 (연한 파란색), dynamicBlue: 체크 상태에 따라 자동 변경 (진한 파란색)',
     },
   },
 };
@@ -73,8 +74,10 @@ export const Examples: Story = {
         <CheckboxButton checked disabled id="chbb06" label="체크됨 + 비활성화" />
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-3">체크박스 버튼 그룹 예시 <span className="text-sm text-gray-500">※ 라디오 버튼과의 차이: 체크박스는 다중 선택이 가능함</span></h3>
-        <div className="flex align-center gap-2 space-y-2">
+        <h3 className="mb-3 text-lg font-semibold">
+          체크박스 버튼 그룹 예시 <span className="text-sm text-gray-500">※ 라디오 버튼과의 차이: 체크박스는 다중 선택이 가능함</span>
+        </h3>
+        <div className="align-center flex gap-2 space-y-2">
           <CheckboxButton id="comp1" label="옵션1" />
           <CheckboxButton id="comp2" label="옵션2" />
           <CheckboxButton id="comp5" label="옵션3" />
@@ -88,15 +91,15 @@ export const Comparison: Story = {
   render: () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-3">기본 체크박스</h3>
+        <h3 className="mb-3 text-lg font-semibold">기본 체크박스</h3>
         <div className="space-y-2">
           <Checkbox id="comp1" label="기본 체크박스" />
           <Checkbox checked id="comp2" label="기본 체크박스 (체크됨)" />
         </div>
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-3">체크박스 버튼</h3>
-        <div className="flex align-center gap-2 space-y-2">
+        <h3 className="mb-3 text-lg font-semibold">체크박스 버튼</h3>
+        <div className="align-center flex gap-2 space-y-2">
           <CheckboxButton id="comp3" label="체크박스 버튼" />
           <CheckboxButton checked id="comp4" label="체크박스 버튼 (체크됨)" />
         </div>
@@ -128,28 +131,28 @@ export const Variants: Story = {
   render: () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-3">Default Variant</h3>
+        <h3 className="mb-3 text-lg font-semibold">Default Variant</h3>
         <div className="flex items-center space-x-4">
           <CheckboxButton id="default1" variant="default" label="Default Unchecked" />
           <CheckboxButton id="default2" variant="default" checked label="Default Checked" />
         </div>
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-3">Outline Variant</h3>
+        <h3 className="mb-3 text-lg font-semibold">Outline Variant</h3>
         <div className="flex items-center space-x-4">
           <CheckboxButton id="outline1" variant="outline" label="Outline Unchecked" />
           <CheckboxButton id="outline2" variant="outline" checked label="Outline Checked" />
         </div>
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-3">Dynamic Variant (체크 상태에 따라 자동 변경, 연한 파란색)</h3>
+        <h3 className="mb-3 text-lg font-semibold">Dynamic Variant (체크 상태에 따라 자동 변경, 연한 파란색)</h3>
         <div className="flex items-center space-x-4">
           <CheckboxButton id="dynamic1" variant="dynamic" label="Dynamic Unchecked" />
           <CheckboxButton id="dynamic2" variant="dynamic" checked label="Dynamic Checked" />
         </div>
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-3">DynamicBlue Variant (체크 상태에 따라 자동 변경, 진한 파란색)</h3>
+        <h3 className="mb-3 text-lg font-semibold">DynamicBlue Variant (체크 상태에 따라 자동 변경, 진한 파란색)</h3>
         <div className="flex items-center space-x-4">
           <CheckboxButton id="dynamicBlue1" variant="dynamicBlue" label="DynamicBlue Unchecked" />
           <CheckboxButton id="dynamicBlue2" variant="dynamicBlue" checked label="DynamicBlue Checked" />

@@ -22,9 +22,9 @@ function SubjectAlert({ subject, className, date, onSubject }: SubjectAlertProps
 }
 
 function List() {
-  let [modalVisible, setModalVisible] = useState(false);
-  let [subjects, setSubject] = useState(['남자 코트 추천 222', '강남 우동맛집', '파이썬독학', 'asdbsdf', '글이 여러개입니다']);
-  let [likes, setLikes] = useState([0, 0, 0, 0, 0]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [subjects, setSubject] = useState(['남자 코트 추천 222', '강남 우동맛집', '파이썬독학', 'asdbsdf', '글이 여러개입니다']);
+  const [likes, setLikes] = useState([0, 0, 0, 0, 0]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const changeSubject = () => {

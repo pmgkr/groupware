@@ -5,7 +5,7 @@ export interface ManagerOvertimeListParams {
   team_id?: number;
   page?: number;
   size?: number;
-  flag?: string;  // ot_status (H: 승인대기, T: 승인완료, Y: 리워드지급(최종승인), N: 취소완료)
+  flag?: string; // ot_status (H: 승인대기, T: 승인완료, Y: 리워드지급(최종승인), N: 취소완료)
 }
 
 // 관리자 추가근무 최종승인(리워드지급) 파라미터
@@ -29,7 +29,7 @@ export interface OvertimeItem {
   ot_reward: string;
   ot_client: string;
   ot_description: string;
-  ot_status: string;  // "H" (승인대기), "T" (승인완료), "N" (취소완료)
+  ot_status: string; // "H" (승인대기), "T" (승인완료), "N" (취소완료)
   ot_created_at: string;
   ot_modified_at: string;
 }
@@ -66,7 +66,7 @@ export const managerOvertimeApi = {
   // 관리자 - 팀원 추가근무 목록 조회
   getManagerOvertimeList: async (params?: ManagerOvertimeListParams): Promise<OvertimeListResponse> => {
     const queryParams = new URLSearchParams();
-    
+
     if (params?.team_id) queryParams.append('team_id', params.team_id.toString());
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.size) queryParams.append('size', params.size.toString());
@@ -100,4 +100,3 @@ export const managerOvertimeApi = {
     return response;
   },
 };
-

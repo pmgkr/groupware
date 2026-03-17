@@ -29,7 +29,7 @@ interface EventData {
   author: string;
   userId: string; // 작성자 ID
   teamId?: number; // 작성자 팀 ID
-  status?: "등록 완료" | "취소 요청됨" | "취소 완료";
+  status?: '등록 완료' | '취소 요청됨' | '취소 완료';
   cancelRequestDate?: string;
   createdAt?: string; // sch_created_at
 }
@@ -49,7 +49,7 @@ export default function EventViewDialog({
   onRequestCancel,
   onApproveCancel,
   selectedEvent,
-  isPage
+  isPage,
 }: EventViewDialogProps) {
   const { user_id, user_level, team_id, user_name } = useUser();
   const { addDialog } = useAppDialog();
@@ -62,24 +62,28 @@ export default function EventViewDialog({
   const isManager = user_level === 'manager' || user_level === 'admin';
 
   // 관리 권한이 있는지 확인 (어드민은 모든 팀, 매니저는 본인 팀)
-  const hasAuthority = user_level === 'admin' || (user_level === 'manager' && team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId);
+  const hasAuthority =
+    user_level === 'admin' ||
+    (user_level === 'manager' && team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId);
   // 취소 요청 승인 버튼 노출 조건: 같은 팀의 매니저만 가능
-  const isSameTeamManager = user_level === 'admin' || (user_level === 'manager' && team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId);
+  const isSameTeamManager =
+    user_level === 'admin' ||
+    (user_level === 'manager' && team_id !== undefined && selectedEvent?.teamId !== undefined && team_id === selectedEvent.teamId);
 
   // 상태 표시: 본인이 보면 "취소 요청됨", 매니저가 보면 "취소 요청됨"
   const status = (() => {
-    const baseStatus = selectedEvent?.status || "등록 완료";
+    const baseStatus = selectedEvent?.status || '등록 완료';
 
     // "취소 완료" 상태는 그대로 반환 (버튼 표시 안 함)
-    if (baseStatus === "취소 완료") {
-      return "취소 완료";
+    if (baseStatus === '취소 완료') {
+      return '취소 완료';
     }
 
     // "취소 요청됨" 상태인 경우
-    if (baseStatus === "취소 요청됨") {
+    if (baseStatus === '취소 요청됨') {
       // 권한이 있으면서 본인 일정이 아닌 경우 "취소 요청됨"로 표시
       if (hasAuthority && !isMyEvent) {
-        return "취소 요청됨";
+        return '취소 요청됨';
       }
     }
 
@@ -93,9 +97,7 @@ export default function EventViewDialog({
 
     addDialog({
       title: `<span class="text-primary-blue-500 font-semibold">${isUser ? '취소 신청 확인' : '취소 확인'}</span>`,
-      message: isUser
-        ? '이 일정을 정말 취소 신청하시겠습니까?'
-        : '이 일정을 정말 취소하시겠습니까?',
+      message: isUser ? '이 일정을 정말 취소 신청하시겠습니까?' : '이 일정을 정말 취소하시겠습니까?',
       confirmText: isUser ? '취소 신청하기' : '취소하기',
       cancelText: '닫기',
       onConfirm: async () => {
@@ -110,7 +112,7 @@ export default function EventViewDialog({
               const rangeText = getDateRangeTextSimple(selectedEvent?.startDate, selectedEvent?.endDate, selectedEvent?.allDay);
               if (team_id != null) {
                 try {
-                  const manager = await findManager(team_id);              // 이벤트/휴가 공통 라벨 (calendar config 매퍼 사용)
+                  const manager = await findManager(team_id); // 이벤트/휴가 공통 라벨 (calendar config 매퍼 사용)
                   if (manager.id) {
                     // 팀장 알림 (사용자 취소 요청 시)
                     await notificationApi.registerNotification({
@@ -148,9 +150,7 @@ export default function EventViewDialog({
           // 성공 알림 먼저 표시
           addAlert({
             title: isUser ? '취소 신청 완료' : '취소 완료',
-            message: isUser
-              ? '일정 취소 신청이 성공적으로 완료되었습니다.'
-              : '일정이 취소되었습니다.',
+            message: isUser ? '일정 취소 신청이 성공적으로 완료되었습니다.' : '일정이 취소되었습니다.',
             icon: <OctagonAlert />,
             duration: 3000,
           });
@@ -159,7 +159,6 @@ export default function EventViewDialog({
           setTimeout(() => {
             onClose();
           }, 300);
-
         } catch (error) {
           // 실패 알림 표시
           const errorMessage = error instanceof Error ? error.message : '취소에 실패했습니다. 다시 시도해주세요.';
@@ -213,7 +212,6 @@ export default function EventViewDialog({
           setTimeout(() => {
             onClose();
           }, 300);
-
         } catch (error) {
           // 실패 알림 표시
           const errorMessage = error instanceof Error ? error.message : '승인 처리에 실패했습니다. 다시 시도해주세요.';
@@ -228,7 +226,6 @@ export default function EventViewDialog({
     });
   };
 
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -236,16 +233,21 @@ export default function EventViewDialog({
           <DialogTitle>일정 상세 정보</DialogTitle>
           <DialogDescription>
             {selectedEvent
-              ? getDateRangeTextFull(selectedEvent.startDate, selectedEvent.endDate, selectedEvent.startTime, selectedEvent.endTime, selectedEvent.allDay)
+              ? getDateRangeTextFull(
+                  selectedEvent.startDate,
+                  selectedEvent.endDate,
+                  selectedEvent.startTime,
+                  selectedEvent.endTime,
+                  selectedEvent.allDay
+                )
               : ''}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
-
           {/* 작성자 */}
           <div className="space-y-2">
             <Label>작성자</Label>
-            <div className="h-11 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:h-10 max-md:rounded-sm flex items-center">
+            <div className="flex h-11 items-center rounded-md border border-gray-300 bg-gray-100 px-3 py-1 max-md:h-10 max-md:rounded-sm">
               <span className="text-base max-md:text-[13px]">{selectedEvent?.author}</span>
             </div>
           </div>
@@ -253,19 +255,23 @@ export default function EventViewDialog({
           {/* 일정 유형 */}
           <div className="space-y-2">
             <Label>{selectedEvent?.category === 'vacation' ? '휴가' : '이벤트'} 유형</Label>
-            <div className="h-11 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:h-10 max-md:rounded-sm flex items-center">
-              <span className="text-base max-md:text-[13px]">
-                {selectedEvent?.title}
-              </span>
+            <div className="flex h-11 items-center rounded-md border border-gray-300 bg-gray-100 px-3 py-1 max-md:h-10 max-md:rounded-sm">
+              <span className="text-base max-md:text-[13px]">{selectedEvent?.title}</span>
             </div>
           </div>
 
           {/* 기간 */}
           <div className="space-y-2">
             <Label>기간</Label>
-            <div className="h-11 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:h-10 max-md:rounded-sm flex items-center">
+            <div className="flex h-11 items-center rounded-md border border-gray-300 bg-gray-100 px-3 py-1 max-md:h-10 max-md:rounded-sm">
               <span className="text-base max-md:text-[13px]">
-                {getDateRangeTextFull(selectedEvent?.startDate, selectedEvent?.endDate, selectedEvent?.startTime, selectedEvent?.endTime, selectedEvent?.allDay)}
+                {getDateRangeTextFull(
+                  selectedEvent?.startDate,
+                  selectedEvent?.endDate,
+                  selectedEvent?.startTime,
+                  selectedEvent?.endTime,
+                  selectedEvent?.allDay
+                )}
               </span>
             </div>
           </div>
@@ -274,7 +280,7 @@ export default function EventViewDialog({
           {selectedEvent?.description && (
             <div className="space-y-2">
               <Label>설명</Label>
-              <div className="min-h-[80px] px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:rounded-sm flex items-start pt-3">
+              <div className="flex min-h-[80px] items-start rounded-md border border-gray-300 bg-gray-100 px-3 py-1 pt-3 max-md:rounded-sm">
                 <span className="text-base max-md:text-[13px]">{selectedEvent.description}</span>
               </div>
             </div>
@@ -284,18 +290,16 @@ export default function EventViewDialog({
           {(isMyEvent || hasAuthority) && status && (
             <div className="space-y-2">
               <Label>진행 상태</Label>
-              <div className="min-h-[44px] px-3 py-1 rounded-lg border border-gray-300 bg-gray-100 max-md:rounded-sm flex items-center">
+              <div className="flex min-h-[44px] items-center rounded-lg border border-gray-300 bg-gray-100 px-3 py-1 max-md:rounded-sm">
                 <div>
-                  <span className="text-base max-md:text-[13px] font-semibold text-gray-800">
-                    {status}
-                  </span>
-                  {status === "등록 완료" && selectedEvent?.createdAt && (
-                    <p className="text-sm max-md:text-[11px] text-gray-800 mt-1">
+                  <span className="text-base font-semibold text-gray-800 max-md:text-[13px]">{status}</span>
+                  {status === '등록 완료' && selectedEvent?.createdAt && (
+                    <p className="mt-1 text-sm text-gray-800 max-md:text-[11px]">
                       등록일: {dayjs(selectedEvent.createdAt).format('YYYY년 MM월 DD일')}
                     </p>
                   )}
-                  {status === "취소 요청됨" && selectedEvent?.cancelRequestDate && (
-                    <p className="text-sm max-md:text-[11px] text-gray-800 mt-1">
+                  {status === '취소 요청됨' && selectedEvent?.cancelRequestDate && (
+                    <p className="mt-1 text-sm text-gray-800 max-md:text-[11px]">
                       요청날짜: {dayjs(selectedEvent.cancelRequestDate).format('YYYY년 MM월 DD일')}
                     </p>
                   )}
@@ -305,13 +309,15 @@ export default function EventViewDialog({
           )}
         </div>
         <DialogFooter className="max-md:flex-row max-md:flex-nowrap max-md:gap-2">
-          {status !== "취소 완료" && (
+          {status !== '취소 완료' && (
             <>
-              {isSameTeamManager && status === "취소 요청됨" && onApproveCancel && (
-                <Button variant="destructive" onClick={handleApproveCancel} className="max-md:flex-1">취소 요청 승인</Button>
+              {isSameTeamManager && status === '취소 요청됨' && onApproveCancel && (
+                <Button variant="destructive" onClick={handleApproveCancel} className="max-md:flex-1">
+                  취소 요청 승인
+                </Button>
               )}
               {/* 액션 버튼들 - 본인의 일정일 때만 표시 */}
-              {isMyEvent && status === "등록 완료" && (
+              {isMyEvent && status === '등록 완료' && (
                 <>
                   {user_level === 'user' && onRequestCancel && (
                     <Button variant="destructive" onClick={handleCancelRequest} className="max-md:flex-1">
@@ -327,10 +333,11 @@ export default function EventViewDialog({
               )}
             </>
           )}
-          <Button variant="outline" onClick={onClose} className="max-md:flex-1">닫기</Button>
+          <Button variant="outline" onClick={onClose} className="max-md:flex-1">
+            닫기
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-

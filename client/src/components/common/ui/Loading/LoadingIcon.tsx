@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils';
 
 function LoadingIcon({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
@@ -19,15 +19,11 @@ function LoadingIcon({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
       <div
         role="status"
         aria-label="Loading"
-        className={cn(
-          "relative flex gap-[8%] items-center justify-center w-[79px] h-[79px] rounded-full bg-primary-blue-500",
-          className
-        )}
-        {...props}
-      >
+        className={cn('bg-primary-blue-500 relative flex h-[79px] w-[79px] items-center justify-center gap-[8%] rounded-full', className)}
+        {...props}>
         {/* 첫 번째 원 (왼쪽) */}
         <div
-          className="w-[13%] h-[13%] rounded-full bg-white flex-shrink-0"
+          className="h-[13%] w-[13%] flex-shrink-0 rounded-full bg-white"
           style={{
             animation: 'bounce 2s ease-in-out infinite',
             animationDelay: '0s',
@@ -35,7 +31,7 @@ function LoadingIcon({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
         />
         {/* 두 번째 원 (중앙) */}
         <div
-          className="w-[13%] h-[13%] rounded-full bg-white flex-shrink-0"
+          className="h-[13%] w-[13%] flex-shrink-0 rounded-full bg-white"
           style={{
             animation: 'bounce 2s ease-in-out infinite',
             animationDelay: '0.2s',
@@ -43,7 +39,7 @@ function LoadingIcon({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
         />
         {/* 세 번째 원 (오른쪽) */}
         <div
-          className="w-[13%] h-[13%] rounded-full bg-white flex-shrink-0"
+          className="h-[13%] w-[13%] flex-shrink-0 rounded-full bg-white"
           style={{
             animation: 'bounce 2s ease-in-out infinite',
             animationDelay: '0.4s',
@@ -51,7 +47,7 @@ function LoadingIcon({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
         />
       </div>
     </>
-  )
+  );
 }
 
-export { LoadingIcon }
+export { LoadingIcon };

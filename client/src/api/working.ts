@@ -29,7 +29,7 @@ export interface WlogWeek {
       kind: string;
       type: string;
       team_id?: number;
-    }
+    },
   ];
   vacation: [
     {
@@ -42,7 +42,7 @@ export interface WlogWeek {
       kind?: string;
       type?: string;
       team_id?: number;
-    }
+    },
   ];
   event?: [
     {
@@ -55,7 +55,7 @@ export interface WlogWeek {
       kind: string;
       type: string;
       team_id: number;
-    }
+    },
   ];
   team_id?: number | string;
 }
@@ -86,16 +86,16 @@ export interface WlogWeekParams {
 
 // 추가근무 신청 파라미터
 export interface OvertimeRequestParams {
-  ot_type: string;          // 추가근무 타입 ("weekday" - 평일, "saturday" - 토요일, "sunday" - 일요일, "holiday" - 공휴일)
-  ot_date: string;          // 근무 날짜 (YYYY-MM-DD)
-  ot_stime?: string;        // 예상 출근 시간 (HH:mm:ss) - 주말/공휴일인 경우
-  ot_etime?: string;        // 예상 퇴근 시간 (HH:mm:ss) - 모든 경우
-  ot_hours?: string;        // 추가근무 시간 - 주말/공휴일인 경우
-  ot_food?: string;         // 식대 사용 여부 (Y/N)
-  ot_trans?: string;        // 교통비 사용 여부 (Y/N)
-  ot_reward?: string;       // 보상 지급 방식 (special - 특별대휴, annual - 보상휴가, pay - 수당지급) - 주말/공휴일인 경우
-  ot_client: string;        // 클라이언트명
-  ot_description: string;   // 작업 내용
+  ot_type: string; // 추가근무 타입 ("weekday" - 평일, "saturday" - 토요일, "sunday" - 일요일, "holiday" - 공휴일)
+  ot_date: string; // 근무 날짜 (YYYY-MM-DD)
+  ot_stime?: string; // 예상 출근 시간 (HH:mm:ss) - 주말/공휴일인 경우
+  ot_etime?: string; // 예상 퇴근 시간 (HH:mm:ss) - 모든 경우
+  ot_hours?: string; // 추가근무 시간 - 주말/공휴일인 경우
+  ot_food?: string; // 식대 사용 여부 (Y/N)
+  ot_trans?: string; // 교통비 사용 여부 (Y/N)
+  ot_reward?: string; // 보상 지급 방식 (special - 특별대휴, annual - 보상휴가, pay - 수당지급) - 주말/공휴일인 경우
+  ot_client: string; // 클라이언트명
+  ot_description: string; // 작업 내용
 }
 
 // 추가근무 목록 조회 파라미터
@@ -122,7 +122,7 @@ export interface OvertimeItem {
   ot_reward: string;
   ot_client: string;
   ot_description: string;
-  ot_status: string;  // "H" (승인대기), "T" (승인완료), "N" (취소완료)
+  ot_status: string; // "H" (승인대기), "T" (승인완료), "N" (취소완료)
   ot_created_at: string;
   ot_modified_at: string;
 }
@@ -141,7 +141,7 @@ export const workingApi = {
   // 근태 로그 조회
   getWorkLogs: async (params: WorkLogQueryParams): Promise<WorkLogResponse> => {
     const queryParams = new URLSearchParams();
-    
+
     if (params.search_id) queryParams.append('search_id', params.search_id);
     queryParams.append('sdate', params.sdate);
     queryParams.append('edate', params.edate);
@@ -172,7 +172,7 @@ export const workingApi = {
   // 추가근무 목록 조회
   getOvertimeList: async (params?: OvertimeListParams): Promise<OvertimeListResponse> => {
     const queryParams = new URLSearchParams();
-    
+
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.size) queryParams.append('size', params.size.toString());
     if (params?.q) queryParams.append('q', params.q);
@@ -194,4 +194,3 @@ export const workingApi = {
     return response;
   },
 };
-

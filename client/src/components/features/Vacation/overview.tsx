@@ -13,9 +13,7 @@ interface OverviewProps {
   year: string;
 }
 
-export default function Overview({ 
-  year
-}: OverviewProps) {
+export default function Overview({ year }: OverviewProps) {
   const { user } = useAuth();
   const isMobile = useIsMobileViewport();
   const [selectedYearSummary, setSelectedYearSummary] = useState<MyVacationInfo | null>(null);
@@ -25,12 +23,12 @@ export default function Overview({
   const hireInfo = useMemo(() => {
     if (!user?.hire_date) return { date: '-', days: 0 };
     const hire = new Date(user.hire_date);
-    const dateStr = `${hire.getFullYear()}-${String(hire.getMonth() + 1).padStart(2, "0")}-${String(hire.getDate()).padStart(2, "0")}`;
-    
+    const dateStr = `${hire.getFullYear()}-${String(hire.getMonth() + 1).padStart(2, '0')}-${String(hire.getDate()).padStart(2, '0')}`;
+
     const today = new Date();
     const diffTime = Math.abs(today.getTime() - hire.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     return { date: dateStr, days: diffDays };
   }, [user?.hire_date]);
 
@@ -41,9 +39,9 @@ export default function Overview({
       try {
         const vyear = parseInt(year);
         const response = await getMyVacation(vyear);
-        
+
         // summary 배열에서 선택된 연도 정보 찾기
-        const yearSummary = response.summary.find(info => info.va_year === vyear);
+        const yearSummary = response.summary.find((info) => info.va_year === vyear);
         setSelectedYearSummary(yearSummary || null);
       } catch (error) {
         console.error('휴가 요약 정보를 불러오는데 실패했습니다:', error);
@@ -57,32 +55,32 @@ export default function Overview({
   }, [year]);
 
   return (
-    <div className="w-full flex flex-col mb-8">
+    <div className="mb-8 flex w-full flex-col">
       <Table variant="primary" align="center" className="table-fixed">
         <TableHeader>
           <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            <TableHead className="w-[12%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:hidden">이름</TableHead>
-            <TableHead className="w-[18%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:hidden">입사일</TableHead>
-            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
+            <TableHead className="w-[12%] p-2 text-center max-md:hidden max-md:px-0.5 max-md:text-sm!">이름</TableHead>
+            <TableHead className="w-[18%] p-2 text-center max-md:hidden max-md:px-0.5 max-md:text-sm!">입사일</TableHead>
+            <TableHead className="w-[10%] p-2 text-center max-md:w-[20%] max-md:px-0.5 max-md:text-sm!">
               <div className="flex items-center justify-center gap-1 max-md:gap-0!">
                 <span className="text-[13px] max-md:text-sm!">기본연차</span>
                 {!isMobile && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <InfoIcon className="w-3 h-3 text-gray-400" />
+                      <InfoIcon className="h-3 w-3 text-gray-400" />
                     </TooltipTrigger>
                     <TooltipContent>당해 지급 연차 + 주말&공휴일 보상휴가</TooltipContent>
                   </Tooltip>
                 )}
               </div>
             </TableHead>
-            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
+            <TableHead className="w-[10%] p-2 text-center max-md:w-[20%] max-md:px-0.5 max-md:text-sm!">
               <div className="flex items-center justify-center gap-1 max-md:gap-0!">
                 <span className="text-[13px] max-md:text-sm!">이월연차</span>
                 {!isMobile && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <InfoIcon className="w-3 h-3 text-gray-400" />
+                      <InfoIcon className="h-3 w-3 text-gray-400" />
                     </TooltipTrigger>
                     <TooltipContent>당해 4월 소멸됨</TooltipContent>
                   </Tooltip>
@@ -90,13 +88,13 @@ export default function Overview({
               </div>
             </TableHead>
 
-            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
+            <TableHead className="w-[10%] p-2 text-center max-md:w-[20%] max-md:px-0.5 max-md:text-sm!">
               <div className="flex items-center justify-center gap-1 max-md:gap-0!">
                 <span className="text-[13px] max-md:text-sm!">특별대휴</span>
                 {!isMobile && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <InfoIcon className="w-3 h-3 text-gray-400" />
+                      <InfoIcon className="h-3 w-3 text-gray-400" />
                     </TooltipTrigger>
                     <TooltipContent>토요일 근무 보상휴가</TooltipContent>
                   </Tooltip>
@@ -104,58 +102,87 @@ export default function Overview({
               </div>
             </TableHead>
 
-            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">
+            <TableHead className="w-[10%] p-2 text-center max-md:w-[20%] max-md:px-0.5 max-md:text-sm!">
               <div className="flex items-center justify-center gap-1">
                 <span className="text-[13px] max-md:text-sm!">공가</span>
               </div>
             </TableHead>
-            <TableHead className="w-[12%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">총 사용휴가<span className="max-md:hidden">일수</span></TableHead>
+            <TableHead className="w-[12%] p-2 text-center max-md:w-[20%] max-md:px-0.5 max-md:text-sm!">
+              총 사용휴가<span className="max-md:hidden">일수</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody>
           <TableRow className="[&_td]:text-[13px]">
-            <TableCell className="text-center p-2 max-md:px-0.5 max-md:hidden">
-              <div className="flex items-center gap-2 justify-center">
-                <Avatar className="w-8 h-8">
-                  {user?.profile_image && (
-                    <AvatarImage
-                      src={getProfileImageUrl(user.profile_image)}
-                      alt={user?.user_name}
-                    />
-                  )}
+            <TableCell className="p-2 text-center max-md:hidden max-md:px-0.5">
+              <div className="flex items-center justify-center gap-2">
+                <Avatar className="h-8 w-8">
+                  {user?.profile_image && <AvatarImage src={getProfileImageUrl(user.profile_image)} alt={user?.user_name} />}
                   <AvatarFallback>{getAvatarFallback(user?.user_id || '')}</AvatarFallback>
                 </Avatar>
                 {user?.user_name}
               </div>
             </TableCell>
-            <TableCell className="text-center p-2 max-md:px-0.5 max-md:hidden">
+            <TableCell className="p-2 text-center max-md:hidden max-md:px-0.5">
               <div className="flex items-center justify-center gap-1">
                 <span className="text-sm">{hireInfo.date}</span>
                 <span className="text-xs text-gray-500">({hireInfo.days}일)</span>
               </div>
             </TableCell>
-            <TableCell className="text-center p-2 max-md:px-0.5">
-              <Badge variant={Number(selectedYearSummary?.va_current) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_current) === 0 ? "grayish" : "secondary"} size="table">
+            <TableCell className="p-2 text-center max-md:px-0.5">
+              <Badge
+                variant={
+                  Number(selectedYearSummary?.va_current) < 0
+                    ? 'lightpink2'
+                    : Number(selectedYearSummary?.va_current) === 0
+                      ? 'grayish'
+                      : 'secondary'
+                }
+                size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_current || '0'}일`}
               </Badge>
             </TableCell>
-            <TableCell className="text-center p-2 max-md:px-0.5">
-              <Badge variant={Number(selectedYearSummary?.va_carryover) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_carryover) === 0 ? "grayish" : "secondary"} size="table">
+            <TableCell className="p-2 text-center max-md:px-0.5">
+              <Badge
+                variant={
+                  Number(selectedYearSummary?.va_carryover) < 0
+                    ? 'lightpink2'
+                    : Number(selectedYearSummary?.va_carryover) === 0
+                      ? 'grayish'
+                      : 'secondary'
+                }
+                size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_carryover || '0'}일`}
               </Badge>
             </TableCell>
-            <TableCell className="text-center p-2 max-md:px-0.5">
-              <Badge variant={Number(selectedYearSummary?.va_comp) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_comp) === 0 ? "grayish" : "secondary"} size="table">
+            <TableCell className="p-2 text-center max-md:px-0.5">
+              <Badge
+                variant={
+                  Number(selectedYearSummary?.va_comp) < 0
+                    ? 'lightpink2'
+                    : Number(selectedYearSummary?.va_comp) === 0
+                      ? 'grayish'
+                      : 'secondary'
+                }
+                size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_comp || '0'}일`}
               </Badge>
             </TableCell>
-            <TableCell className="text-center p-2 max-md:px-0.5">
-              <Badge variant={Number(selectedYearSummary?.va_long) < 0 ? "lightpink2" : Number(selectedYearSummary?.va_long) === 0 ? "grayish" : "secondary"} size="table">
+            <TableCell className="p-2 text-center max-md:px-0.5">
+              <Badge
+                variant={
+                  Number(selectedYearSummary?.va_long) < 0
+                    ? 'lightpink2'
+                    : Number(selectedYearSummary?.va_long) === 0
+                      ? 'grayish'
+                      : 'secondary'
+                }
+                size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_long || '0'}일`}
               </Badge>
             </TableCell>
-            <TableCell className="text-center p-2 max-md:px-0.5">
+            <TableCell className="p-2 text-center max-md:px-0.5">
               <Badge variant="outline" size="table">
                 {loading ? '-' : `${selectedYearSummary?.va_used || '0'}일`}
               </Badge>
@@ -166,4 +193,3 @@ export default function Overview({
     </div>
   );
 }
-

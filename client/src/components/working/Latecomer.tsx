@@ -190,100 +190,90 @@ export default function Latecomer({ currentDate, selectedTeamIds, page = 'admin'
   return (
     <div className="mb-5">
       {loadingLatecomers ? (
-        <div className="text-center py-8 text-gray-500">
-          지각현황 데이터를 불러오는 중...
-        </div>
+        <div className="py-8 text-center text-gray-500">지각현황 데이터를 불러오는 중...</div>
       ) : latecomersByDate.size === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          지각자가 없습니다.
-        </div>
+        <div className="py-8 text-center text-gray-500">지각자가 없습니다.</div>
       ) : (
         <div className="space-y-8">
-          {Array.from(latecomersByDate.keys()).sort().map((date) => {
-            const latecomers = latecomersByDate.get(date) || [];
-            if (latecomers.length === 0) return null;
+          {Array.from(latecomersByDate.keys())
+            .sort()
+            .map((date) => {
+              const latecomers = latecomersByDate.get(date) || [];
+              if (latecomers.length === 0) return null;
 
-            return (
-              <div key={date} className="space-y-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-base font-semibold text-gray-900">
-                    {formatDate(date)}
-                  </h3>
-                  <Badge variant="outline" className="text-xs">
-                    {latecomers.length}명
-                  </Badge>
-                </div>
-                <Table variant="primary" align="center" className="table-fixed">
-                  <TableHeader>
-                    <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-                      <TableHead className="w-[8%] text-center p-0">부서</TableHead>
-                      <TableHead className="w-[10%] max-md:px-1">이름</TableHead>
-                      <TableHead className="w-[15%] max-md:px-1">근무유형</TableHead>
-                      <TableHead className="w-[13%] max-md:px-1">출근시간</TableHead>
-                      <TableHead className="w-[13%] max-md:px-1">퇴근시간</TableHead>
-                      <TableHead className="w-[13%] max-md:hidden max-md:p-0">총 근무시간</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {latecomers.map((latecomer) => (
-                      <TableRow key={`${latecomer.userId}-${date}`} className="[&_td]:text-[13px]">
-                        <TableCell className="text-center p-0">{latecomer.department}</TableCell>
-                        <TableCell className="max-md:px-1">{latecomer.userName}</TableCell>
-                        <TableCell className="max-md:px-1">
-                          {(() => {
-                            const hasMultipleWorkTypes = latecomer.workTypes && latecomer.workTypes.length > 1;
-                            const latestWorkType = hasMultipleWorkTypes ? latecomer.workTypes![0].type : null;
-                            const otherWorkTypes = hasMultipleWorkTypes ? latecomer.workTypes!.slice(1) : [];
-                            const displayWorkType = hasMultipleWorkTypes ? latestWorkType! : latecomer.workType;
-
-                            return (
-                              <div className="flex items-center gap-1 justify-center">
-                                <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getWorkTypeColor(displayWorkType)}`}>
-                                  {displayWorkType}
-                                </span>
-                                {hasMultipleWorkTypes && (
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Badge variant="grayish" className="px-1 py-0 text-xs cursor-pointer">
-                                          +{otherWorkTypes.length}
-                                        </Badge>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <div className="flex flex-col gap-1">
-                                          {latecomer.workTypes!.map((wt, idx) => (
-                                            <div key={idx} className="text-sm">
-                                              {wt.type}
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </TableCell>
-                        <TableCell className="text-red-600 max-md:px-1">
-                          {latecomer.checkInTime}
-                        </TableCell>
-                        <TableCell className="max-md:px-1">
-                          {latecomer.checkOutTime || '-'}
-                        </TableCell>
-                        <TableCell className="max-md:hidden">
-                          {latecomer.totalTime || '-'}
-                        </TableCell>
+              return (
+                <div key={date} className="space-y-2">
+                  <div className="mb-2 flex items-center gap-2">
+                    <h3 className="text-base font-semibold text-gray-900">{formatDate(date)}</h3>
+                    <Badge variant="outline" className="text-xs">
+                      {latecomers.length}명
+                    </Badge>
+                  </div>
+                  <Table variant="primary" align="center" className="table-fixed">
+                    <TableHeader>
+                      <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+                        <TableHead className="w-[8%] p-0 text-center">부서</TableHead>
+                        <TableHead className="w-[10%] max-md:px-1">이름</TableHead>
+                        <TableHead className="w-[15%] max-md:px-1">근무유형</TableHead>
+                        <TableHead className="w-[13%] max-md:px-1">출근시간</TableHead>
+                        <TableHead className="w-[13%] max-md:px-1">퇴근시간</TableHead>
+                        <TableHead className="w-[13%] max-md:hidden max-md:p-0">총 근무시간</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            );
-          })}
+                    </TableHeader>
+                    <TableBody>
+                      {latecomers.map((latecomer) => (
+                        <TableRow key={`${latecomer.userId}-${date}`} className="[&_td]:text-[13px]">
+                          <TableCell className="p-0 text-center">{latecomer.department}</TableCell>
+                          <TableCell className="max-md:px-1">{latecomer.userName}</TableCell>
+                          <TableCell className="max-md:px-1">
+                            {(() => {
+                              const hasMultipleWorkTypes = latecomer.workTypes && latecomer.workTypes.length > 1;
+                              const latestWorkType = hasMultipleWorkTypes ? latecomer.workTypes![0].type : null;
+                              const otherWorkTypes = hasMultipleWorkTypes ? latecomer.workTypes!.slice(1) : [];
+                              const displayWorkType = hasMultipleWorkTypes ? latestWorkType! : latecomer.workType;
+
+                              return (
+                                <div className="flex items-center justify-center gap-1">
+                                  <span
+                                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${getWorkTypeColor(displayWorkType)}`}>
+                                    {displayWorkType}
+                                  </span>
+                                  {hasMultipleWorkTypes && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Badge variant="grayish" className="cursor-pointer px-1 py-0 text-xs">
+                                            +{otherWorkTypes.length}
+                                          </Badge>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <div className="flex flex-col gap-1">
+                                            {latecomer.workTypes!.map((wt, idx) => (
+                                              <div key={idx} className="text-sm">
+                                                {wt.type}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+                          <TableCell className="text-red-600 max-md:px-1">{latecomer.checkInTime}</TableCell>
+                          <TableCell className="max-md:px-1">{latecomer.checkOutTime || '-'}</TableCell>
+                          <TableCell className="max-md:hidden">{latecomer.totalTime || '-'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              );
+            })}
         </div>
       )}
     </div>
   );
 }
-

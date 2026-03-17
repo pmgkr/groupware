@@ -33,9 +33,7 @@ export const WithLabel: Story = {
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-semibold">날짜 범위 선택</h3>
-        <p className="text-sm text-muted-foreground">
-          시작일과 종료일을 선택할 수 있는 폼 컴포넌트입니다.
-        </p>
+        <p className="text-muted-foreground text-sm">시작일과 종료일을 선택할 수 있는 폼 컴포넌트입니다.</p>
       </div>
       <DatePickerWithRangeForm {...args} />
     </div>
@@ -48,9 +46,7 @@ export const EventPlanning: Story = {
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-semibold">이벤트 기간 설정</h3>
-        <p className="text-sm text-muted-foreground">
-          이벤트의 시작일과 종료일을 선택해주세요.
-        </p>
+        <p className="text-muted-foreground text-sm">이벤트의 시작일과 종료일을 선택해주세요.</p>
       </div>
       <DatePickerWithRangeForm {...args} />
     </div>
@@ -63,9 +59,7 @@ export const FormValidation: Story = {
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-semibold">폼 검증 예시</h3>
-        <p className="text-sm text-muted-foreground">
-          날짜 범위를 선택하지 않고 제출하면 에러 메시지가 표시됩니다.
-        </p>
+        <p className="text-muted-foreground text-sm">날짜 범위를 선택하지 않고 제출하면 에러 메시지가 표시됩니다.</p>
       </div>
       <DatePickerWithRangeForm {...args} />
     </div>

@@ -23,7 +23,13 @@ export const getDateRangeTextSimple = (startDateStr?: string, endDateStr?: strin
 };
 
 // YYYY년 MM월 DD일 ddd요일 (~HH:mm) 포맷
-export const getDateRangeTextFull = (startDateStr?: string, endDateStr?: string, startTime?: string, endTime?: string, allDay?: boolean) => {
+export const getDateRangeTextFull = (
+  startDateStr?: string,
+  endDateStr?: string,
+  startTime?: string,
+  endTime?: string,
+  allDay?: boolean
+) => {
   if (!startDateStr || !endDateStr) return '';
 
   const startDate = dayjs(startDateStr);
@@ -45,4 +51,3 @@ export const getDateRangeTextFull = (startDateStr?: string, endDateStr?: string,
   }
   return `${startDate.format('YYYY년 MM월 DD일 ddd요일')} ${formatTime(startTime)} - ${endDate.format('YYYY년 MM월 DD일 ddd요일')} ${formatTime(endTime)}`;
 };
-

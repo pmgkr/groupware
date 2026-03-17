@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 interface SkipLinksProps {
-	className?: string;
+  className?: string;
 }
 
 export function SkipLinks({ className }: SkipLinksProps) {
-	return (
-		<div className={cn("sr-only focus-within:not-sr-only", className)}>
-			<a
-				href="#main-content"
-				className="absolute left-4 top-4 z-50 -translate-y-full transform bg-background px-4 py-2 text-foreground shadow-lg transition-transform duration-200 focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md border">
-				Skip to main content
-			</a>
-			<a
-				href="#navigation"
-				className="absolute left-4 top-16 z-50 -translate-y-full transform bg-background px-4 py-2 text-foreground shadow-lg transition-transform duration-200 focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md border">
-				Skip to navigation
-			</a>
-			<a
-				href="#examples"
-				className="absolute left-4 top-28 z-50 -translate-y-full transform bg-background px-4 py-2 text-foreground shadow-lg transition-transform duration-200 focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md border">
-				Skip to examples
-			</a>
-		</div>
-	);
+  return (
+    <div className={cn('sr-only focus-within:not-sr-only', className)}>
+      <a
+        href="#main-content"
+        className="bg-background text-foreground focus:ring-ring absolute top-4 left-4 z-50 -translate-y-full transform rounded-md border px-4 py-2 shadow-lg transition-transform duration-200 focus:translate-y-0 focus:ring-2 focus:ring-offset-2 focus:outline-none">
+        Skip to main content
+      </a>
+      <a
+        href="#navigation"
+        className="bg-background text-foreground focus:ring-ring absolute top-16 left-4 z-50 -translate-y-full transform rounded-md border px-4 py-2 shadow-lg transition-transform duration-200 focus:translate-y-0 focus:ring-2 focus:ring-offset-2 focus:outline-none">
+        Skip to navigation
+      </a>
+      <a
+        href="#examples"
+        className="bg-background text-foreground focus:ring-ring absolute top-28 left-4 z-50 -translate-y-full transform rounded-md border px-4 py-2 shadow-lg transition-transform duration-200 focus:translate-y-0 focus:ring-2 focus:ring-offset-2 focus:outline-none">
+        Skip to examples
+      </a>
+    </div>
+  );
 }

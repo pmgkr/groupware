@@ -63,6 +63,10 @@ export default function HeaderMobile() {
       { label: '기안서 관리', to: '/admin/proposal' },
       { label: '구성원 관리', to: '/admin/member' },
     ],
+    cctask: [
+      { label: '요청 목록', to: '/cctask' },
+      { label: '작업 등록', to: '/cctask/register' },
+    ],
   };
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
@@ -216,7 +220,11 @@ export default function HeaderMobile() {
   const getMenuLinkClassName = (isActive: boolean, isExpanded?: boolean) =>
     cn(
       'flex h-12 items-center justify-center rounded-lg px-3 text-lg',
-      isActive ? 'text-primary bg-primary-blue-100/50 text-primary-blue-500 font-semibold' : isExpanded ? 'text-primary-blue-500 font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
+      isActive
+        ? 'text-primary bg-primary-blue-100/50 text-primary-blue-500 font-semibold'
+        : isExpanded
+          ? 'text-primary-blue-500 font-semibold'
+          : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
     );
 
   const getSubMenuLinkClassName = (isActive: boolean) =>
@@ -248,20 +256,22 @@ export default function HeaderMobile() {
           </li>
         </ul>
       </header>
-      
+
       {/* 모바일 토글 사이드 메뉴 */}
-      <Sheet open={isSidebarOpen} onOpenChange={(open) => {
-        setIsSidebarOpen(open);
-        if (!open) {
-          setExpandedMenu(null);
-        }
-      }}>
-        <SheetContent side="right" className="bg-white w-full! max-w-full! p-0 flex flex-col">
-          <SheetHeader className="p-5 border-b border-gray-300">
+      <Sheet
+        open={isSidebarOpen}
+        onOpenChange={(open) => {
+          setIsSidebarOpen(open);
+          if (!open) {
+            setExpandedMenu(null);
+          }
+        }}>
+        <SheetContent side="right" className="flex w-full! max-w-full! flex-col bg-white p-0">
+          <SheetHeader className="border-b border-gray-300 p-5">
             <SheetTitle className="sr-only">메뉴</SheetTitle>
             <div className="flex items-center gap-2.5">
               <Link to="/mypage" onClick={() => setIsSidebarOpen(false)}>
-                <div className="relative aspect-square w-10 overflow-hidden rounded-[50%] flex-shrink-0">
+                <div className="relative aspect-square w-10 flex-shrink-0 overflow-hidden rounded-[50%]">
                   {profileImageUrl ? (
                     <img src={profileImageUrl} alt="프로필 이미지" className="h-full w-full object-cover" />
                   ) : (
@@ -273,201 +283,238 @@ export default function HeaderMobile() {
               </Link>
               <div className="align-left text-left">
                 <Link to="/mypage" onClick={() => setIsSidebarOpen(false)}>
-                  <strong className="text-base font-medium text-gray-950">{user_name} <span className="text-sm text-gray-500">{job_role}</span></strong>
+                  <strong className="text-base font-medium text-gray-950">
+                    {user_name} <span className="text-sm text-gray-500">{job_role}</span>
+                  </strong>
                 </Link>
-                <div className="text-sm"><Weather /></div>
+                <div className="text-sm">
+                  <Weather />
+                </div>
               </div>
             </div>
           </SheetHeader>
           {/* <div className="text-center">
             <p className="text-sm">{welcomeMessage}</p>
           </div> */}
-          <ul className="px-5 w-full flex flex-col justify-start gap-y-2.5 flex-1 overflow-y-auto fixed top-[50%] translate-y-[-50%] left-[50%] translate-x-[-50%] max-h-[70vh]">
+          <ul className="fixed top-[50%] left-[50%] flex max-h-[70vh] w-full flex-1 translate-x-[-50%] translate-y-[-50%] flex-col justify-start gap-y-2.5 overflow-y-auto px-5">
             <li>
-                <NavLink
-                to="/dashboard"
-                onClick={() => setIsSidebarOpen(false)}
-                className={({ isActive }) => getMenuLinkClassName(isActive)}>
+              <NavLink to="/dashboard" onClick={() => setIsSidebarOpen(false)} className={({ isActive }) => getMenuLinkClassName(isActive)}>
                 <span>대시보드</span>
-                </NavLink>
+              </NavLink>
             </li>
             <li>
-                <div>
+              <div>
                 <NavLink
-                    to="/project"
-                    onClick={handleMenuClick('project')}
-                    className={({ isActive }) => getMenuLinkClassName(isActive, expandedMenu === 'project')}>
-                    <span>프로젝트</span>
+                  to="/project"
+                  onClick={handleMenuClick('project')}
+                  className={({ isActive }) => getMenuLinkClassName(isActive, expandedMenu === 'project')}>
+                  <span>프로젝트</span>
                 </NavLink>
-                <div className={cn('grid transition-[grid-template-rows] duration-300 ease-out', expandedMenu === 'project' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
-                    <div className="overflow-hidden min-h-0">
+                <div
+                  className={cn(
+                    'grid transition-[grid-template-rows] duration-300 ease-out',
+                    expandedMenu === 'project' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                  )}>
+                  <div className="min-h-0 overflow-hidden">
                     <ul className="mt-1 mb-2 flex flex-col gap-y-1">
-                    {subMenus.project.map((item) => (
+                      {subMenus.project.map((item) => (
                         <li key={item.to}>
-                        <NavLink
+                          <NavLink
                             to={item.to}
                             onClick={() => {
-                            setIsSidebarOpen(false);
-                            setExpandedMenu(null);
+                              setIsSidebarOpen(false);
+                              setExpandedMenu(null);
                             }}
                             className={({ isActive }) => getSubMenuLinkClassName(isActive)}>
                             {item.label}
-                        </NavLink>
+                          </NavLink>
                         </li>
-                    ))}
+                      ))}
                     </ul>
-                    </div>
+                  </div>
                 </div>
-                </div>
+              </div>
             </li>
             <li>
-                <div>
+              <div>
                 <NavLink
-                    to="/expense"
-                    onClick={handleMenuClick('expense')}
-                    className={({ isActive }) => getMenuLinkClassName(isActive, expandedMenu === 'expense')}>
-                    <span>일반비용</span>
+                  to="/expense"
+                  onClick={handleMenuClick('expense')}
+                  className={({ isActive }) => getMenuLinkClassName(isActive, expandedMenu === 'expense')}>
+                  <span>일반비용</span>
                 </NavLink>
-                <div className={cn('grid transition-[grid-template-rows] duration-300 ease-out', expandedMenu === 'expense' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
-                    <div className="overflow-hidden min-h-0">
+                <div
+                  className={cn(
+                    'grid transition-[grid-template-rows] duration-300 ease-out',
+                    expandedMenu === 'expense' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                  )}>
+                  <div className="min-h-0 overflow-hidden">
                     <ul className="mt-1 mb-2 flex flex-col gap-y-1">
-                    {subMenus.expense.map((item) => (
+                      {subMenus.expense.map((item) => (
                         <li key={item.to}>
-                        <NavLink
+                          <NavLink
                             to={item.to}
                             onClick={() => {
-                            setIsSidebarOpen(false);
-                            setExpandedMenu(null);
+                              setIsSidebarOpen(false);
+                              setExpandedMenu(null);
                             }}
                             className={({ isActive }) => getSubMenuLinkClassName(isActive)}>
                             {item.label}
-                        </NavLink>
+                          </NavLink>
                         </li>
-                    ))}
+                      ))}
                     </ul>
-                    </div>
+                  </div>
                 </div>
-                </div>
+              </div>
             </li>
             <li>
-                <div>
+              <div>
                 <NavLink
-                    to="/calendar"
-                    onClick={handleMenuClick('calendar')}
-                    className={({ isActive }) => getMenuLinkClassName(isActive, expandedMenu === 'calendar')}>
-                    <span>캘린더</span>
+                  to="/calendar"
+                  onClick={handleMenuClick('calendar')}
+                  className={({ isActive }) => getMenuLinkClassName(isActive, expandedMenu === 'calendar')}>
+                  <span>캘린더</span>
                 </NavLink>
-                <div className={cn('grid transition-[grid-template-rows] duration-300 ease-out', expandedMenu === 'calendar' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
-                    <div className="overflow-hidden min-h-0">
+                <div
+                  className={cn(
+                    'grid transition-[grid-template-rows] duration-300 ease-out',
+                    expandedMenu === 'calendar' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                  )}>
+                  <div className="min-h-0 overflow-hidden">
                     <ul className="mt-1 mb-2 flex flex-col gap-y-1">
-                    {subMenus.calendar.map((item) => (
+                      {subMenus.calendar.map((item) => (
                         <li key={item.to}>
-                        <NavLink
+                          <NavLink
                             to={item.to}
                             onClick={() => {
-                            setIsSidebarOpen(false);
-                            setExpandedMenu(null);
+                              setIsSidebarOpen(false);
+                              setExpandedMenu(null);
                             }}
                             className={({ isActive }) => getSubMenuLinkClassName(isActive)}>
                             {item.label}
-                        </NavLink>
+                          </NavLink>
                         </li>
-                    ))}
+                      ))}
                     </ul>
-                    </div>
+                  </div>
                 </div>
-                </div>
+              </div>
             </li>
             <li>
-                <NavLink
-                to="/working"
-                onClick={() => setIsSidebarOpen(false)}
-                className={({ isActive }) => getMenuLinkClassName(isActive)}>
+              <NavLink to="/working" onClick={() => setIsSidebarOpen(false)} className={({ isActive }) => getMenuLinkClassName(isActive)}>
                 <span>출퇴근관리</span>
-                </NavLink>
+              </NavLink>
             </li>
             <li>
-                <div>
+              <div>
                 <NavLink
-                    to="/notice"
-                    onClick={handleMenuClick('office')}
-                    className={({ isActive }) => getMenuLinkClassName(isActive || isOfficeActive, expandedMenu === 'office')}>
-                    <span>오피스</span>
+                  to="/notice"
+                  onClick={handleMenuClick('office')}
+                  className={({ isActive }) => getMenuLinkClassName(isActive || isOfficeActive, expandedMenu === 'office')}>
+                  <span>오피스</span>
                 </NavLink>
-                <div className={cn('grid transition-[grid-template-rows] duration-300 ease-out', expandedMenu === 'office' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
-                    <div className="overflow-hidden min-h-0">
+                <div
+                  className={cn(
+                    'grid transition-[grid-template-rows] duration-300 ease-out',
+                    expandedMenu === 'office' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                  )}>
+                  <div className="min-h-0 overflow-hidden">
                     <ul className="mt-1 mb-2 flex flex-col gap-y-1">
-                    {subMenus.office.map((item) => (
+                      {subMenus.office.map((item) => (
                         <li key={item.to}>
-                        <NavLink
+                          <NavLink
                             to={item.to}
                             onClick={() => {
-                            setIsSidebarOpen(false);
-                            setExpandedMenu(null);
+                              setIsSidebarOpen(false);
+                              setExpandedMenu(null);
                             }}
                             className={({ isActive }) => getSubMenuLinkClassName(isActive)}>
                             {item.label}
-                        </NavLink>
+                          </NavLink>
                         </li>
-                    ))}
+                      ))}
                     </ul>
-                    </div>
+                  </div>
                 </div>
+              </div>
+            </li>
+            <li>
+              <div>
+                <NavLink
+                  to="/cctask"
+                  onClick={handleMenuClick('cctask')}
+                  className={({ isActive }) => getMenuLinkClassName(isActive, expandedMenu === 'cctask')}>
+                  <span>작업요청</span>
+                </NavLink>
+                <div
+                  className={cn(
+                    'grid transition-[grid-template-rows] duration-300 ease-out',
+                    expandedMenu === 'cctask' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                  )}>
+                  <div className="min-h-0 overflow-hidden">
+                    <ul className="mt-1 mb-2 flex flex-col gap-y-1">
+                      {subMenus.cctask.map((item) => (
+                        <li key={item.to}>
+                          <NavLink
+                            to={item.to}
+                            onClick={() => {
+                              setIsSidebarOpen(false);
+                              setExpandedMenu(null);
+                            }}
+                            className={({ isActive }) => getSubMenuLinkClassName(isActive)}>
+                            {item.label}
+                          </NavLink>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
+              </div>
             </li>
             {(user?.user_level === 'manager' || user?.user_level === 'admin') && (
-                <li>
+              <li>
                 <NavLink
-                    to="/manager/working"
-                    onClick={() => setIsSidebarOpen(false)}
-                    className={({ isActive }) => getMenuLinkClassName(isActive || isManagerSection)}>
-                    <span>관리자</span>
+                  to="/manager/working"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className={({ isActive }) => getMenuLinkClassName(isActive || isManagerSection)}>
+                  <span>관리자</span>
                 </NavLink>
-                </li>
+              </li>
             )}
             {user?.user_level === 'admin' && (
-                <li>
+              <li>
                 <NavLink
-                    to="/admin/finance"
-                    onClick={() => setIsSidebarOpen(false)}
-                    className={({ isActive }) => getMenuLinkClassName(isActive || isAdminSection)}>
-                    <span>최고관리자</span>
+                  to="/admin/finance"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className={({ isActive }) => getMenuLinkClassName(isActive || isAdminSection)}>
+                  <span>최고관리자</span>
                 </NavLink>
-                </li>
+              </li>
             )}
-        </ul>
-        <div className="mt-auto p-5 flex items-center justify-center gap-1">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-gray-500" 
-            aria-label="마이페이지" 
-            >
-            <Link to="/mypage" onClick={() => setIsSidebarOpen(false)}>
-              <span className="text-sm font-medium">마이페이지</span>
-            </Link>
-          </Button>
-          <span className="h-3 w-px bg-gray-300" aria-hidden />
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-gray-500" 
-            aria-label="로그아웃" 
-            onClick={logoutClick}>
-            <span className="text-sm font-medium">로그아웃</span>
-          </Button>
-        </div>
+          </ul>
+          <div className="mt-auto flex items-center justify-center gap-1 p-5">
+            <Button variant="ghost" size="sm" className="text-gray-500" aria-label="마이페이지">
+              <Link to="/mypage" onClick={() => setIsSidebarOpen(false)}>
+                <span className="text-sm font-medium">마이페이지</span>
+              </Link>
+            </Button>
+            <span className="h-3 w-px bg-gray-300" aria-hidden />
+            <Button variant="ghost" size="sm" className="text-gray-500" aria-label="로그아웃" onClick={logoutClick}>
+              <span className="text-sm font-medium">로그아웃</span>
+            </Button>
+          </div>
         </SheetContent>
       </Sheet>
 
       {/* 모바일 하단바 */}
-      <nav className="fixed bottom-0 left-0 z-9 flex h-[60px] w-full items-center justify-around border-t-1 border-t-gray-300 bg-white px-2 safe-area-inset-bottom">
+      <nav className="safe-area-inset-bottom fixed bottom-0 left-0 z-9 flex h-[60px] w-full items-center justify-around border-t-1 border-t-gray-300 bg-white px-2">
         <NavLink
           to="/dashboard"
           end
           className={({ isActive }) =>
             cn(
-              'flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors',
+              'flex h-full flex-1 flex-col items-center justify-center gap-1 transition-colors',
               isActive ? 'text-primary-blue-500' : 'text-gray-600'
             )
           }>
@@ -478,7 +525,7 @@ export default function HeaderMobile() {
           to="/project"
           className={({ isActive }) =>
             cn(
-              'flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors',
+              'flex h-full flex-1 flex-col items-center justify-center gap-1 transition-colors',
               isActive || location.pathname.startsWith('/project') ? 'text-primary-blue-500' : 'text-gray-600'
             )
           }>
@@ -489,7 +536,7 @@ export default function HeaderMobile() {
           to="/expense"
           className={({ isActive }) =>
             cn(
-              'flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors',
+              'flex h-full flex-1 flex-col items-center justify-center gap-1 transition-colors',
               isActive || location.pathname.startsWith('/expense') ? 'text-primary-blue-500' : 'text-gray-600'
             )
           }>
@@ -500,7 +547,7 @@ export default function HeaderMobile() {
           to="/calendar"
           className={({ isActive }) =>
             cn(
-              'flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors',
+              'flex h-full flex-1 flex-col items-center justify-center gap-1 transition-colors',
               isActive || location.pathname.startsWith('/calendar') ? 'text-primary-blue-500' : 'text-gray-600'
             )
           }>
@@ -510,8 +557,8 @@ export default function HeaderMobile() {
         <button
           onClick={() => setIsSidebarOpen(true)}
           className={cn(
-            'flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors',
-            'text-gray-600 active:text-primary-blue-500'
+            'flex h-full flex-1 flex-col items-center justify-center gap-1 transition-colors',
+            'active:text-primary-blue-500 text-gray-600'
           )}
           aria-label="메뉴 열기">
           <Menu className="size-5.5" />

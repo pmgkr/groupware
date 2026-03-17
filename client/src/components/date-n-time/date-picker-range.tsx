@@ -55,7 +55,10 @@ export function DatePickerWithRange({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="z-[1000] w-auto p-0 max-md:max-h-[90vh] max-md:overflow-y-auto" align="start" onPointerDown={(e) => e.stopPropagation()}>
+        <PopoverContent
+          className="z-[1000] w-auto p-0 max-md:max-h-[90vh] max-md:overflow-y-auto"
+          align="start"
+          onPointerDown={(e) => e.stopPropagation()}>
           <div className="flex flex-col">
             <DayPicker
               initialFocus

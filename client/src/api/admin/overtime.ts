@@ -1,6 +1,5 @@
 import { http } from '@/lib/http';
 
-
 export interface overtimeItem {
   id: number;
   user_id: string;
@@ -22,11 +21,11 @@ export interface overtimeItem {
 }
 
 export interface overtimeList {
-    items: overtimeItem[];
-    total: number;
-    page: number;
-    size: number;
-    pages: number;
+  items: overtimeItem[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
 }
 
 // 초과근무 승인
@@ -83,8 +82,6 @@ export interface overtimeRejectResponse {
   user_name: string;
   ot_status: string;
 }
-
-
 
 export const adminOvertimeApi = {
   getOvertimeList: async (team_id: number | null | undefined, page: number, size: number, flag: string): Promise<overtimeList> => {

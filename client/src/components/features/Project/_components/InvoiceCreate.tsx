@@ -174,7 +174,7 @@ export default function InvoiceCreateForm({ onClose, onSuccess }: Props) {
       cancelText: '취소',
       onConfirm: async () => {
         /* 1) payload 생성 (첨부파일 제외) */
-        let payload = buildInvoicePayload(values, data.project_id, data.client_id, []);
+        const payload = buildInvoicePayload(values, data.project_id, data.client_id, []);
 
         /* 2) 첨부파일 업로드 (1개만 허용) */
         let uploadedFiles: {

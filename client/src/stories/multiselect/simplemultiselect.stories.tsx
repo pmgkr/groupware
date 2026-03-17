@@ -49,14 +49,7 @@ const sampleOptions = [
 const SimpleMultiSelectWithState = ({ options = sampleOptions, ...props }: any) => {
   const [selected, setSelected] = useState<string[]>([]);
 
-  return (
-    <SimpleMultiSelect
-      {...props}
-      options={options}
-      selected={selected}
-      onChange={setSelected}
-    />
-  );
+  return <SimpleMultiSelect {...props} options={options} selected={selected} onChange={setSelected} />;
 };
 
 export const Default: Story = {
@@ -70,14 +63,7 @@ export const Default: Story = {
 export const WithPreselected: Story = {
   render: (args) => {
     const [selected, setSelected] = useState<string[]>(['react', 'typescript', 'nextjs']);
-    return (
-      <SimpleMultiSelect
-        {...args}
-        options={sampleOptions}
-        selected={selected}
-        onChange={setSelected}
-      />
-    );
+    return <SimpleMultiSelect {...args} options={sampleOptions} selected={selected} onChange={setSelected} />;
   },
   args: {
     placeholder: '선택하세요...',
@@ -88,14 +74,7 @@ export const WithPreselected: Story = {
 export const Disabled: Story = {
   render: (args) => {
     const [selected, setSelected] = useState<string[]>(['react', 'vue']);
-    return (
-      <SimpleMultiSelect
-        {...args}
-        options={sampleOptions}
-        selected={selected}
-        onChange={setSelected}
-      />
-    );
+    return <SimpleMultiSelect {...args} options={sampleOptions} selected={selected} onChange={setSelected} />;
   },
   args: {
     placeholder: '비활성화된 상태입니다...',
@@ -118,14 +97,7 @@ export const ManyOptions: Story = {
       value: `option-${i + 1}`,
     }));
     const [selected, setSelected] = useState<string[]>([]);
-    return (
-      <SimpleMultiSelect
-        {...args}
-        options={manyOptions}
-        selected={selected}
-        onChange={setSelected}
-      />
-    );
+    return <SimpleMultiSelect {...args} options={manyOptions} selected={selected} onChange={setSelected} />;
   },
   args: {
     placeholder: '옵션이 아주 많을 때...',
@@ -141,14 +113,7 @@ export const FewOptions: Story = {
       { label: '오렌지', value: 'orange' },
     ];
     const [selected, setSelected] = useState<string[]>([]);
-    return (
-      <SimpleMultiSelect
-        {...args}
-        options={fewOptions}
-        selected={selected}
-        onChange={setSelected}
-      />
-    );
+    return <SimpleMultiSelect {...args} options={fewOptions} selected={selected} onChange={setSelected} />;
   },
   args: {
     placeholder: '과일을 선택하세요...',
@@ -179,8 +144,8 @@ export const MultipleInstances: Story = {
     <div className="flex flex-col gap-4">
       <div>
         <h3 className="mb-2 text-sm font-semibold">프레임워크</h3>
-        <SimpleMultiSelectWithState 
-          placeholder="프레임워크를 선택하세요..." 
+        <SimpleMultiSelectWithState
+          placeholder="프레임워크를 선택하세요..."
           options={[
             { label: 'React', value: 'react' },
             { label: 'Vue', value: 'vue' },
@@ -191,8 +156,8 @@ export const MultipleInstances: Story = {
       </div>
       <div>
         <h3 className="mb-2 text-sm font-semibold">언어</h3>
-        <SimpleMultiSelectWithState 
-          placeholder="언어를 선택하세요..." 
+        <SimpleMultiSelectWithState
+          placeholder="언어를 선택하세요..."
           options={[
             { label: 'TypeScript', value: 'typescript' },
             { label: 'JavaScript', value: 'javascript' },
@@ -203,8 +168,8 @@ export const MultipleInstances: Story = {
       </div>
       <div>
         <h3 className="mb-2 text-sm font-semibold">도구</h3>
-        <SimpleMultiSelectWithState 
-          placeholder="도구를 선택하세요..." 
+        <SimpleMultiSelectWithState
+          placeholder="도구를 선택하세요..."
           options={[
             { label: 'VSCode', value: 'vscode' },
             { label: 'WebStorm', value: 'webstorm' },
@@ -225,18 +190,10 @@ export const LongLabels: Story = {
       { label: '짧은 옵션', value: 'option4' },
     ];
     const [selected, setSelected] = useState<string[]>([]);
-    return (
-      <SimpleMultiSelect
-        {...args}
-        options={longLabelOptions}
-        selected={selected}
-        onChange={setSelected}
-      />
-    );
+    return <SimpleMultiSelect {...args} options={longLabelOptions} selected={selected} onChange={setSelected} />;
   },
   args: {
     placeholder: '긴 라벨 테스트...',
     disabled: false,
   },
 };
-

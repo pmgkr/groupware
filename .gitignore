@@ -1,1 +1,6 @@
 client/.env
+.DS_Store
+node_modules/.DS_Store
+server/.DS_Store
+client/.env
+client/*.md

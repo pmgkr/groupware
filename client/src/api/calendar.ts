@@ -45,14 +45,12 @@ export interface UserVacation {
   va_remaining: string;
 }
 
-
 // Schedule API 함수들
 export const scheduleApi = {
-
   // 유저-모든 스케줄 조회
   getSchedules: async (params?: ScheduleQueryParams): Promise<Schedule[]> => {
     const queryParams = new URLSearchParams();
-    
+
     if (params?.year) queryParams.append('year', params.year.toString());
     if (params?.month) queryParams.append('month', params.month.toString());
     if (params?.team_id) queryParams.append('team_id', params.team_id.toString());
@@ -63,7 +61,7 @@ export const scheduleApi = {
     // 실제 API 엔드포인트 사용
     const yearMonth = `${params?.year || new Date().getFullYear()}-${String(params?.month || new Date().getMonth() + 1).padStart(2, '0')}`;
     const endpoint = `/user/schedule/${yearMonth}`;
-    
+
     const response = await http<Schedule[]>(endpoint);
     return response;
   },
@@ -75,10 +73,12 @@ export const scheduleApi = {
   },
 
   // 유저-스케줄 생성 (id, seq, user_id, created_at, modified_at은 서버에서 자동 생성)
-  createSchedule: async (schedule: Omit<Schedule, 'id' | 'seq' | 'user_id' | 'sch_created_at' | 'sch_modified_at' | 'google_calendar_idx'>): Promise<{ ok: boolean; id: number }> => {
+  createSchedule: async (
+    schedule: Omit<Schedule, 'id' | 'seq' | 'user_id' | 'sch_created_at' | 'sch_modified_at' | 'google_calendar_idx'>
+  ): Promise<{ ok: boolean; id: number }> => {
     const response = await http<{ ok: boolean; id: number }>('/user/schedule/register', {
       method: 'POST',
-      body: JSON.stringify(schedule)
+      body: JSON.stringify(schedule),
     });
     return response;
   },
@@ -87,7 +87,7 @@ export const scheduleApi = {
   updateSchedule: async (id: number, schedule: Partial<Schedule>): Promise<Schedule> => {
     const response = await http<Schedule>(`/user/schedule/patch/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(schedule)
+      body: JSON.stringify(schedule),
     });
     return response;
   },
@@ -96,29 +96,26 @@ export const scheduleApi = {
   updateScheduleStatus: async (id: number, status: 'Y' | 'H' | 'N'): Promise<{ ok: boolean; message?: string }> => {
     const response = await http<{ ok: boolean; message?: string }>(`/user/schedule/status/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify({ sch_status: status })
+      body: JSON.stringify({ sch_status: status }),
     });
     return response;
   },
 
-  
   // 유저-스케줄 삭제
   deleteSchedule: async (id: number): Promise<void> => {
     await http(`/user/schedule/remove/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     });
   },
-
-
 
   // 월별 스케줄 조회 (캘린더용)
   getMonthlySchedules: async (year: number, month: number, teamId?: number): Promise<Schedule[]> => {
     const params: ScheduleQueryParams = {
       year,
       month,
-      sch_status: 'Y' // 활성 상태만 조회
+      sch_status: 'Y', // 활성 상태만 조회
     };
-    
+
     if (teamId) {
       params.team_id = teamId;
     }
@@ -130,6 +127,5 @@ export const scheduleApi = {
   getUserVacations: async (userId: string, year: number): Promise<UserVacation> => {
     const response = await http<UserVacation>(`/user/vacations/${userId}/${year}`);
     return response;
-  }
+  },
 };
-

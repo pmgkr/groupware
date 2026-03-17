@@ -21,12 +21,7 @@ interface CalendarViewMobileProps {
   onSelectEvent?: (event: CalendarEvent) => void;
 }
 
-export default function CalendarViewMobile({
-  events,
-  currentDate,
-  onDateChange,
-  onSelectEvent,
-}: CalendarViewMobileProps) {
+export default function CalendarViewMobile({ events, currentDate, onDateChange, onSelectEvent }: CalendarViewMobileProps) {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [holidayCache, setHolidayCache] = useState<Map<string, boolean>>(new Map());
 
@@ -68,14 +63,14 @@ export default function CalendarViewMobile({
     const selectedDateStr = format(currentDate, 'yyyy-MM-dd');
     const selectedDate = new Date(selectedDateStr);
     selectedDate.setHours(0, 0, 0, 0);
-    
-    return events.filter(event => {
+
+    return events.filter((event) => {
       const eventStart = new Date(event.start);
       eventStart.setHours(0, 0, 0, 0);
-      
+
       const eventEnd = new Date(event.end);
       eventEnd.setHours(23, 59, 59, 999);
-      
+
       // 선택된 날짜가 이벤트의 시작일과 종료일 사이에 있는지 확인
       return selectedDate >= eventStart && selectedDate <= eventEnd;
     });
@@ -118,13 +113,13 @@ export default function CalendarViewMobile({
   return (
     <>
       <div className="shrink-0">
-        <DayPicker 
-          mode="single" 
-          variant="dashboard" 
+        <DayPicker
+          mode="single"
+          variant="dashboard"
           month={currentDate}
-          selected={currentDate} 
-          onSelect={handleDateSelect} 
-          className="max-md:p-0 gap-0 [&_.rdp-weekday]:text-gray-500"
+          selected={currentDate}
+          onSelect={handleDateSelect}
+          className="gap-0 max-md:p-0 [&_.rdp-weekday]:text-gray-500"
           modifiers={modifiers}
           modifiersClassNames={modifiersClassNames}
           components={{
@@ -133,7 +128,7 @@ export default function CalendarViewMobile({
           }}
         />
       </div>
-      <ul className="flex shrink-0 items-center justify-end gap-x-1.5 px-4 py-2 flex-wrap max-md:px-0! max-md:gap-0! max-md:py-3">
+      <ul className="flex shrink-0 flex-wrap items-center justify-end gap-x-1.5 px-4 py-2 max-md:gap-0! max-md:px-0! max-md:py-3">
         {calendarBadges.map((label) => (
           <li key={label}>
             <Badge variant="dot" className={getBadgeColor(label)}>
@@ -142,8 +137,8 @@ export default function CalendarViewMobile({
           </li>
         ))}
       </ul>
-      <div className="flex-1 min-h-0 overflow-y-auto rounded-xl p-4 max-2xl:p-2 max-md:px-0!">
-        <ul className="grid grid-cols-3 gap-2 gap-y-4 max-2xl:grid-cols-2 max-2xl:gap-x-1 max-2xl:gap-y-2 max-md:grid-cols-4! px-3">
+      <div className="min-h-0 flex-1 overflow-y-auto rounded-xl p-4 max-2xl:p-2 max-md:px-0!">
+        <ul className="grid grid-cols-3 gap-2 gap-y-4 px-3 max-2xl:grid-cols-2 max-2xl:gap-x-1 max-2xl:gap-y-2 max-md:grid-cols-4!">
           {calendarData.length === 0 ? (
             <li className="col-span-full text-center">
               <span className="text-base text-gray-500">등록된 일정이 없습니다.</span>
@@ -160,7 +155,7 @@ export default function CalendarViewMobile({
                   <AvatarImage src={getProfileImageUrl(undefined)} alt={event.author} />
                   <AvatarFallback>{getAvatarFallback(event.resource?.userId || '')}</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col text-base max-md:text-">
+                <div className="max-md:text- flex flex-col text-base">
                   <strong className="leading-[1.2] max-md:text-sm">{event.author}</strong>
                   {event.title === '생일' ? (
                     <Badge
@@ -182,4 +177,3 @@ export default function CalendarViewMobile({
     </>
   );
 }
-

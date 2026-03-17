@@ -39,7 +39,7 @@ type ExpenseRowProps = {
   files: PreviewFile[];
   activeFile: string | null;
   setActiveFile: (id: string | null) => void;
-  onSelectProposal?: (selectedProposalId: Number) => void;
+  onSelectProposal?: (selectedProposalId: number) => void;
   onTotalChange: () => void;
 };
 

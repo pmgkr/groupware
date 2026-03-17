@@ -59,6 +59,10 @@ export default function Header() {
       { label: '기안서 관리', to: '/admin/proposal' },
       { label: '구성원 관리', to: '/admin/member' },
     ],
+    cctask: [
+      { label: '요청 목록', to: '/cctask' },
+      { label: '작업 등록', to: '/cctask/register' },
+    ],
   };
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [submenuTop, setSubmenuTop] = useState<number | null>(null);
@@ -377,6 +381,20 @@ export default function Header() {
               )}>
               <Office />
               <span>오피스</span>
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/cctask"
+              onMouseEnter={handleMenuEnter('cctask')}
+              className={({ isActive }) =>
+                cn(
+                  'flex h-10 items-center gap-2.5 rounded-sm px-3 text-base',
+                  isActive ? 'text-primary bg-white font-semibold' : 'hover:bg-primary-blue-50 hover:text-primary-blue-500 text-gray-900'
+                )
+              }>
+              <Project className="size-6 text-gray-900" />
+              <span>작업요청</span>
             </NavLink>
           </li>
           {(user?.user_level === 'manager' || user?.user_level === 'admin') && (

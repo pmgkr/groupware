@@ -42,9 +42,7 @@ export const WithDescription: Story = {
   render: (args) => (
     <div className="space-y-2">
       <label className="text-sm font-medium">날짜 및 시간 선택</label>
-      <p className="text-sm text-muted-foreground">
-        AM/PM 형식으로 시간을 선택할 수 있습니다.
-      </p>
+      <p className="text-muted-foreground text-sm">AM/PM 형식으로 시간을 선택할 수 있습니다.</p>
       <DateTimePicker {...args} />
     </div>
   ),

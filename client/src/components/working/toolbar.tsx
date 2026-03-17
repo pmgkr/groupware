@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Button } from "@components/ui/button";
-import { MultiSelect } from "@components/multiselect/multi-select";
+import { Button } from '@components/ui/button';
+import { MultiSelect } from '@components/multiselect/multi-select';
 import type { WorkingListItem } from './list';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTeams } from '@/api/admin/teams';
@@ -37,8 +37,8 @@ interface ToolbarProps {
   downloadType?: 'working' | 'late'; // 다운로드 타입 (기본값: 'working')
 }
 
-export default function Toolbar({ 
-  currentDate, 
+export default function Toolbar({
+  currentDate,
   onDateChange,
   onTeamSelect = () => {},
   showTeamSelect = true,
@@ -49,7 +49,7 @@ export default function Toolbar({
   downloadType = 'working',
 }: ToolbarProps) {
   const { user } = useAuth();
-  
+
   // 팀 관련 state
   const [teams, setTeams] = useState<MyTeamItem[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
@@ -59,17 +59,17 @@ export default function Toolbar({
   // 팀 목록 로드
   const loadTeams = async () => {
     if (teamsLoadedRef.current) return;
-    
+
     try {
       if (!user?.user_id) {
         return;
       }
-      
+
       // page prop에 따라 분기
       if (page === 'admin') {
         // admin 페이지: 모든 팀 표시
         const allTeamDetails = await getTeams({});
-        const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
+        const teamItems: MyTeamItem[] = allTeamDetails.map((team) => ({
           seq: 0,
           manager_id: user.user_id,
           manager_name: user.user_name || '',
@@ -78,14 +78,14 @@ export default function Toolbar({
           parent_id: team.parent_id || undefined,
           level: team.level,
         }));
-        
+
         setTeams(teamItems);
         return;
       }
-      
+
       // manager 페이지: 권한 상관없이 자기가 팀장인 팀 목록만 조회
       const allTeamDetails = await getManagerTeams({});
-      const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
+      const teamItems: MyTeamItem[] = allTeamDetails.map((team) => ({
         seq: 0,
         manager_id: team.manager_id || '',
         manager_name: team.manager_name || '',
@@ -94,9 +94,8 @@ export default function Toolbar({
         parent_id: team.parent_id || undefined,
         level: team.level,
       }));
-      
+
       setTeams(teamItems);
-      
     } catch (error) {
       setTeams([]);
     }
@@ -106,9 +105,9 @@ export default function Toolbar({
   const handleSelectChange = (id: string, value: string[]) => {
     if (id === 'teams') {
       setSelectedTeams(value);
-      
+
       if (value.length > 0) {
-        const teamIds = value.map(v => parseInt(v));
+        const teamIds = value.map((v) => parseInt(v));
         onTeamSelect(teamIds);
       } else {
         onTeamSelect([]);
@@ -116,30 +115,27 @@ export default function Toolbar({
     }
   };
 
-  const selectedTeamIds = useMemo(
-    () => selectedTeams.map((id) => Number(id)).filter((n) => !Number.isNaN(n)),
-    [selectedTeams]
-  );
+  const selectedTeamIds = useMemo(() => selectedTeams.map((id) => Number(id)).filter((n) => !Number.isNaN(n)), [selectedTeams]);
 
   // 셀렉트 옵션 설정
   const selectConfigs: SelectConfig[] = useMemo(() => {
     // 팀 선택 (다중 선택 가능, 알파벳순 정렬)
-    const sortedTeams = [...teams].sort((a, b) => 
-      a.team_name.localeCompare(b.team_name, 'ko')
-    );
+    const sortedTeams = [...teams].sort((a, b) => a.team_name.localeCompare(b.team_name, 'ko'));
 
-    return [{
-      id: 'teams',
-      placeholder: '팀 선택',
-      options: sortedTeams.map(team => ({
-        value: String(team.team_id),
-        label: team.team_name
-      })),
-      value: selectedTeams,
-      searchable: true,
-      hideSelectAll: false,
-      autoSize: true,
-    }];
+    return [
+      {
+        id: 'teams',
+        placeholder: '팀 선택',
+        options: sortedTeams.map((team) => ({
+          value: String(team.team_id),
+          label: team.team_name,
+        })),
+        value: selectedTeams,
+        searchable: true,
+        hideSelectAll: false,
+        autoSize: true,
+      },
+    ];
   }, [teams, selectedTeams]);
 
   // Manager/Admin 페이지에서만 팀 목록 로드
@@ -155,27 +151,29 @@ export default function Toolbar({
   const prevInitialTeamIdsRef = useRef<number[]>(initialSelectedTeamIds);
   const isInitialMountRef = useRef(true);
   const selectedTeamsRef = useRef<string[]>(selectedTeams);
-  
+
   // selectedTeams가 변경될 때마다 ref 업데이트
   useEffect(() => {
     selectedTeamsRef.current = selectedTeams;
   }, [selectedTeams]);
-  
+
   useEffect(() => {
     // 배열이 실제로 변경되었는지 확인
-    const hasChanged = 
+    const hasChanged =
       prevInitialTeamIdsRef.current.length !== initialSelectedTeamIds.length ||
       prevInitialTeamIdsRef.current.some((id, idx) => id !== initialSelectedTeamIds[idx]);
-    
+
     if (isInitialMountRef.current || hasChanged) {
       isInitialMountRef.current = false;
       prevInitialTeamIdsRef.current = [...initialSelectedTeamIds];
-      
+
       if (initialSelectedTeamIds.length > 0) {
-        const newSelectedTeams = initialSelectedTeamIds.map(id => String(id));
+        const newSelectedTeams = initialSelectedTeamIds.map((id) => String(id));
         // 실제로 다른 경우에만 업데이트
-        if (newSelectedTeams.length !== selectedTeamsRef.current.length ||
-            newSelectedTeams.some((id, idx) => id !== selectedTeamsRef.current[idx])) {
+        if (
+          newSelectedTeams.length !== selectedTeamsRef.current.length ||
+          newSelectedTeams.some((id, idx) => id !== selectedTeamsRef.current[idx])
+        ) {
           setSelectedTeams(newSelectedTeams);
         }
       } else if (selectedTeamsRef.current.length > 0) {
@@ -209,24 +207,23 @@ export default function Toolbar({
     // 일요일(0)인 경우 -6일, 나머지는 -(dayOfWeek-1)일
     const daysToMonday = dayOfWeek === 0 ? -6 : -(dayOfWeek - 1);
     monday.setDate(date.getDate() + daysToMonday);
-    
+
     // 해당 주의 일요일 구하기 (월요일 + 6일)
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    
+
     const formatDate = (d: Date) => {
       const year = d.getFullYear();
       const month = d.getMonth() + 1;
       const day = d.getDate();
       return `${year}년 ${month}월 ${day}일`;
     };
-    
+
     return `${formatDate(monday)} - ${formatDate(sunday)}`;
   };
 
   return (
-    <div className="w-full flex items-center justify-between mb-5 relative max-md:items-start max-md:gap-2 max-md:flex-wrap">
-      
+    <div className="relative mb-5 flex w-full items-center justify-between max-md:flex-wrap max-md:items-start max-md:gap-2">
       {/* 왼쪽: 팀 필터 (Manager/Admin 페이지에서만 표시) */}
       {showTeamSelect && (page === 'manager' || page === 'admin') && (
         <div className="flex items-center justify-between max-md:order-[2]">
@@ -245,7 +242,7 @@ export default function Toolbar({
                   searchable={config.searchable}
                   hideSelectAll={config.hideSelectAll}
                   autoSize={config.autoSize}
-                  className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+                  className="multi-select w-auto! max-w-[200px]! min-w-[120px]!"
                 />
               ))}
             </div>
@@ -254,59 +251,33 @@ export default function Toolbar({
       )}
 
       {/* 중앙: 현재 날짜 표시 */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-5 max-md:w-full max-md:flex-wrap max-md:relative max-md:gap-0 max-md:justify-center">
-        <Button
-          onClick={() => handleNavigate('PREV')}
-          variant="ghost"
-          size="icon"
-          className="p-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-5 max-md:relative max-md:w-full max-md:flex-wrap max-md:justify-center max-md:gap-0">
+        <Button onClick={() => handleNavigate('PREV')} variant="ghost" size="icon" className="p-2">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </Button>
 
-        <div className="text-xl font-semibold text-gray-950 px-2 max-md:text-lg">
-          {formatWeekDisplay(currentDate)}
-        </div>
+        <div className="px-2 text-xl font-semibold text-gray-950 max-md:text-lg">{formatWeekDisplay(currentDate)}</div>
 
-        <Button
-          onClick={() => handleNavigate('NEXT')}
-          variant="ghost"
-          size="icon"
-          className="p-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <Button onClick={() => handleNavigate('NEXT')} variant="ghost" size="icon" className="p-2">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </Button>
       </div>
 
       {/* 오른쪽: 뷰 변경 버튼들 */}
-      <div className="flex items-center gap-1 float-right ml-auto max-md:order-[3]">
-        <Button
-          onClick={() => handleNavigate('TODAY')}
-          variant="outline"
-          size="sm"
-        >
+      <div className="float-right ml-auto flex items-center gap-1 max-md:order-[3]">
+        <Button onClick={() => handleNavigate('TODAY')} variant="outline" size="sm">
           오늘
         </Button>
         {downloadType === 'late' ? (
-          <LateTimeDownload
-            currentDate={currentDate}
-            page={page}
-            selectedTeamIds={selectedTeamIds}
-          />
+          <LateTimeDownload currentDate={currentDate} page={page} selectedTeamIds={selectedTeamIds} />
         ) : (
-          <WorkTimeDownload
-            currentDate={currentDate}
-            page={page}
-            workingList={workingList}
-            selectedTeamIds={selectedTeamIds}
-          />
+          <WorkTimeDownload currentDate={currentDate} page={page} workingList={workingList} selectedTeamIds={selectedTeamIds} />
         )}
       </div>
     </div>
   );
 }
-

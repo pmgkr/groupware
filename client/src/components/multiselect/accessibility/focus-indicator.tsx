@@ -1,36 +1,36 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import { useEffect, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 interface FocusIndicatorProps {
-	className?: string;
+  className?: string;
 }
 
 export function FocusIndicator({ className }: FocusIndicatorProps) {
-	const [isKeyboardUser, setIsKeyboardUser] = useState(false);
+  const [isKeyboardUser, setIsKeyboardUser] = useState(false);
 
-	useEffect(() => {
-		let isUsingKeyboard = false;
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === "Tab") {
-				isUsingKeyboard = true;
-				setIsKeyboardUser(true);
-				document.body.classList.add("using-keyboard");
-			}
-		};
-		const handleMouseDown = () => {
-			if (isUsingKeyboard) {
-				isUsingKeyboard = false;
-				setIsKeyboardUser(false);
-				document.body.classList.remove("using-keyboard");
-			}
-		};
-		document.addEventListener("keydown", handleKeyDown);
-		document.addEventListener("mousedown", handleMouseDown);
+  useEffect(() => {
+    let isUsingKeyboard = false;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        isUsingKeyboard = true;
+        setIsKeyboardUser(true);
+        document.body.classList.add('using-keyboard');
+      }
+    };
+    const handleMouseDown = () => {
+      if (isUsingKeyboard) {
+        isUsingKeyboard = false;
+        setIsKeyboardUser(false);
+        document.body.classList.remove('using-keyboard');
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleMouseDown);
 
-		const style = document.createElement("style");
-		style.textContent = `
+    const style = document.createElement('style');
+    style.textContent = `
       .using-keyboard *:focus {
         outline: 2px solid hsl(var(--ring)) !important;
         outline-offset: 2px !important;
@@ -80,22 +80,19 @@ export function FocusIndicator({ className }: FocusIndicatorProps) {
         clip-path: unset !important;
       }
     `;
-		document.head.appendChild(style);
+    document.head.appendChild(style);
 
-		return () => {
-			document.removeEventListener("keydown", handleKeyDown);
-			document.removeEventListener("mousedown", handleMouseDown);
-			document.body.classList.remove("using-keyboard");
-			document.head.removeChild(style);
-		};
-	}, []);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.body.classList.remove('using-keyboard');
+      document.head.removeChild(style);
+    };
+  }, []);
 
-	return (
-		<div
-			className={cn("sr-only", className)}
-			aria-live="polite"
-			aria-atomic="true">
-			{isKeyboardUser && "Keyboard navigation is active"}
-		</div>
-	);
+  return (
+    <div className={cn('sr-only', className)} aria-live="polite" aria-atomic="true">
+      {isKeyboardUser && 'Keyboard navigation is active'}
+    </div>
+  );
 }

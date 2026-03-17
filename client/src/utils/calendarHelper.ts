@@ -1,4 +1,4 @@
-import { parse } from "date-fns/parse";
+import { parse } from 'date-fns/parse';
 import type { Schedule } from '@/api/calendar';
 import type { UserDTO } from '@/api/auth';
 
@@ -9,7 +9,7 @@ export const validateUser = (user: UserDTO | null | undefined): { valid: boolean
   if (!user?.user_id || user?.team_id === null || user?.team_id === undefined) {
     return {
       valid: false,
-      error: '사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.'
+      error: '사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.',
     };
   }
   return { valid: true };
@@ -20,11 +20,11 @@ export const validateUser = (user: UserDTO | null | undefined): { valid: boolean
  */
 export const formatErrorMessage = (err: any): string => {
   let errorMessage = '일정 등록 중 오류가 발생했습니다';
-  
+
   if (err.message) {
     errorMessage += `\n에러: ${err.message}`;
   }
-  
+
   if (err.data) {
     if (err.data.message) {
       errorMessage += `\n상세: ${err.data.message}`;
@@ -37,7 +37,7 @@ export const formatErrorMessage = (err: any): string => {
       errorMessage += `\n필드 에러: ${JSON.stringify(err.data.errors)}`;
     }
   }
-  
+
   return errorMessage;
 };
 
@@ -76,9 +76,9 @@ export interface CalendarEvent {
  * DB 데이터를 CalendarEvent로 변환하는 함수
  */
 export const convertScheduleToEvent = (schedule: Schedule, currentUser?: any): CalendarEvent => {
-  const startDate = parse(`${schedule.sch_sdate} ${schedule.sch_stime}`, "yyyy-MM-dd HH:mm:ss", new Date());
-  const endDate = parse(`${schedule.sch_edate} ${schedule.sch_etime}`, "yyyy-MM-dd HH:mm:ss", new Date());
-  
+  const startDate = parse(`${schedule.sch_sdate} ${schedule.sch_stime}`, 'yyyy-MM-dd HH:mm:ss', new Date());
+  const endDate = parse(`${schedule.sch_edate} ${schedule.sch_etime}`, 'yyyy-MM-dd HH:mm:ss', new Date());
+
   // user_name 결정: API에서 제공하면 사용, 없으면 현재 로그인 사용자 정보 활용
   const getUserName = (): string => {
     if (schedule.user_name) return schedule.user_name;
@@ -87,15 +87,20 @@ export const convertScheduleToEvent = (schedule: Schedule, currentUser?: any): C
     }
     return schedule.user_id || '';
   };
-  
+
   // 팀명 매핑
   const getTeamName = (teamId: number): string => {
     switch (teamId) {
-      case 1: return 'dev';
-      case 2: return 'design';
-      case 3: return 'marketing';
-      case 4: return 'sales';
-      default: return 'unknown';
+      case 1:
+        return 'dev';
+      case 2:
+        return 'design';
+      case 3:
+        return 'marketing';
+      case 4:
+        return 'sales';
+      default:
+        return 'unknown';
     }
   };
 
@@ -105,26 +110,33 @@ export const convertScheduleToEvent = (schedule: Schedule, currentUser?: any): C
     if (schedule.sch_title) {
       return schedule.sch_title;
     }
-    
+
     // 없으면 타입으로 생성
     if (schedule.sch_type === 'vacation') {
       switch (schedule.sch_vacation_type) {
-        case 'day': return '연차';
-        case 'half': 
+        case 'day':
+          return '연차';
+        case 'half':
           // sch_vacation_time 필드로 오전/오후 구분
           return schedule.sch_vacation_time === 'morning' ? '오전 반차' : '오후 반차';
-        case 'quarter': 
+        case 'quarter':
           // sch_vacation_time 필드로 오전/오후 구분
           return schedule.sch_vacation_time === 'morning' ? '오전 반반차' : '오후 반반차';
-        case 'official': return '공가';
-        default: return '휴가';
+        case 'official':
+          return '공가';
+        default:
+          return '휴가';
       }
     } else if (schedule.sch_type === 'event') {
       switch (schedule.sch_event_type) {
-        case 'remote': return '재택';
-        case 'field': return '외부 일정';
-        case 'etc': return '기타';
-        default: return '일정';
+        case 'remote':
+          return '재택';
+        case 'field':
+          return '외부 일정';
+        case 'etc':
+          return '기타';
+        default:
+          return '일정';
       }
     }
     return '일정';
@@ -155,9 +167,13 @@ export const convertScheduleToEvent = (schedule: Schedule, currentUser?: any): C
       schIsHoliday: 'N',
       schDescription: schedule.sch_description || '',
       schStatus: schedule.sch_status,
-      schModifiedAt: schedule.sch_modified_at ? new Date(schedule.sch_modified_at) : (schedule.sch_created_at ? new Date(schedule.sch_created_at) : new Date()),
-      schCreatedAt: schedule.sch_created_at ? new Date(schedule.sch_created_at) : new Date()
-    }
+      schModifiedAt: schedule.sch_modified_at
+        ? new Date(schedule.sch_modified_at)
+        : schedule.sch_created_at
+          ? new Date(schedule.sch_created_at)
+          : new Date(),
+      schCreatedAt: schedule.sch_created_at ? new Date(schedule.sch_created_at) : new Date(),
+    },
   };
 };
 
@@ -169,7 +185,16 @@ export const convertScheduleToEvent = (schedule: Schedule, currentUser?: any): C
  * eventType에 따른 MySQL enum 값 매핑
  */
 export const getSchType = (eventType: string): 'vacation' | 'event' => {
-  if (['vacationDay', 'vacationHalfMorning', 'vacationHalfAfternoon', 'vacationQuarterMorning', 'vacationQuarterAfternoon', 'vacationOfficial'].includes(eventType)) {
+  if (
+    [
+      'vacationDay',
+      'vacationHalfMorning',
+      'vacationHalfAfternoon',
+      'vacationQuarterMorning',
+      'vacationQuarterAfternoon',
+      'vacationOfficial',
+    ].includes(eventType)
+  ) {
     return 'vacation';
   }
   return 'event';
@@ -232,38 +257,43 @@ export const getSchEventType = (eventType: string): 'remote' | 'field' | 'etc' |
  */
 export const getSchTitle = (eventType: string): string => {
   switch (eventType) {
-    case 'vacationDay': return '연차';
-    case 'vacationHalfMorning': return '오전 반차';
-    case 'vacationHalfAfternoon': return '오후 반차';
-    case 'vacationQuarterMorning': return '오전 반반차';
-    case 'vacationQuarterAfternoon': return '오후 반반차';
-    case 'vacationOfficial': return '공가';
-    case 'eventRemote': return '재택';
-    case 'eventField': return '외부 일정';
-    case 'eventEtc': return '기타 일정';
-    default: return '일정';
+    case 'vacationDay':
+      return '연차';
+    case 'vacationHalfMorning':
+      return '오전 반차';
+    case 'vacationHalfAfternoon':
+      return '오후 반차';
+    case 'vacationQuarterMorning':
+      return '오전 반반차';
+    case 'vacationQuarterAfternoon':
+      return '오후 반반차';
+    case 'vacationOfficial':
+      return '공가';
+    case 'eventRemote':
+      return '재택';
+    case 'eventField':
+      return '외부 일정';
+    case 'eventEtc':
+      return '기타 일정';
+    default:
+      return '일정';
   }
 };
 
 /**
  * 휴가 사용일수 계산
  */
-export const calculateVacationUsed = (
-  eventType: string, 
-  startDate: string, 
-  endDate: string, 
-  vacationDaysUsed?: number
-): number => {
+export const calculateVacationUsed = (eventType: string, startDate: string, endDate: string, vacationDaysUsed?: number): number => {
   const schType = getSchType(eventType);
   const schVacationType = getSchVacationType(eventType);
-  
+
   if (schType !== 'vacation' || !schVacationType) return 0;
-  
+
   // EventDialog에서 이미 계산된 값이 있으면 사용 (공휴일 제외된 값)
   if (vacationDaysUsed !== undefined && vacationDaysUsed > 0) {
     return vacationDaysUsed;
   }
-  
+
   switch (schVacationType) {
     case 'day': {
       // 연차: 날짜 차이 계산 (종료일 - 시작일 + 1)
@@ -305,50 +335,49 @@ export const calculateTimes = (
   if (schVacationType === 'day' || schVacationType === 'official') {
     return {
       stime: '09:30:00',
-      etime: '18:30:00'
+      etime: '18:30:00',
     };
   }
-  
+
   // 반차 또는 반반차인 경우: 선택한 시간 기준으로 계산
   if (schVacationType === 'half' || schVacationType === 'quarter') {
     if (!eventData.startTime) {
       return {
         stime: '00:00:00',
-        etime: '00:00:00'
+        etime: '00:00:00',
       };
     }
-    
+
     const selectedTime = eventData.startTime; // "HH:mm" 형식
     const [hour, minute] = selectedTime.split(':').map(Number);
-    
+
     // 종료 시간 계산 (반차: +4시간, 반반차: +2시간)
     const addHours = schVacationType === 'half' ? 4 : 2;
     let endHour = hour + addHours;
-    let endMinute = minute;
-    
+    const endMinute = minute;
+
     // 24시간 넘어가는 경우 처리
     if (endHour >= 24) {
       endHour = endHour - 24;
     }
-    
+
     return {
       stime: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`,
-      etime: `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00`
+      etime: `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00`,
     };
   }
-  
+
   // 일반 이벤트인 경우
   return {
     stime: eventData.allDay ? '00:00:00' : `${eventData.startTime}:00`,
-    etime: eventData.allDay ? '23:59:59' : `${eventData.endTime}:00`
+    etime: eventData.allDay ? '23:59:59' : `${eventData.endTime}:00`,
   };
 };
-
 
 // 대시보드 내 캘린더 컬러 매핑
 export const getBadgeColor = (schLabel: string): string => {
   const label = schLabel.toLowerCase();
-  
+
   if (label.includes('반반차')) {
     return 'before:bg-[color:var(--color-primary-purple-500)]';
   }

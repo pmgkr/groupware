@@ -30,7 +30,7 @@ export function calcAll(items: any[]) {
   items.forEach((row) => {
     if (['item', 'agency_fee', 'discount'].includes(row.ei_type)) {
       let a = row.amount === '-' || row.amount === '' || row.amount == null ? 0 : Number(row.amount);
-      let e = row.exp_cost === '-' || row.exp_cost === '' || row.exp_cost == null ? 0 : Number(row.exp_cost);
+      const e = row.exp_cost === '-' || row.exp_cost === '' || row.exp_cost == null ? 0 : Number(row.exp_cost);
 
       if (row.ei_type === 'discount') {
         a = -Math.abs(row.amount); // ⬅ discount는 무조건 음수 적용

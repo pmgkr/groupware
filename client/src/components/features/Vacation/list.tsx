@@ -36,7 +36,7 @@ dayjs.locale('ko');
 // 시간 문자열에서 HH:mm 추출 (ISO timestamp 또는 HH:mm:ss -> HH:mm)
 const formatTime = (timeStr: string) => {
   if (!timeStr) return '-';
-  
+
   if (timeStr.includes('T')) {
     const timePart = timeStr.split('T')[1];
     const parts = timePart.split(':');
@@ -45,12 +45,12 @@ const formatTime = (timeStr: string) => {
     }
     return timePart;
   }
-  
+
   const parts = timeStr.split(':');
   if (parts.length >= 2) {
     return `${parts[0]}:${parts[1]}`;
   }
-  
+
   return timeStr;
 };
 
@@ -62,17 +62,17 @@ export interface VacationListProps {
   isPage?: 'manager' | 'admin';
 }
 
-export default function VacationList({ 
+export default function VacationList({
   teamIds = [],
   activeTab = 'vacation',
   filters = {},
   onCheckedItemsChange = () => {},
-  isPage = 'manager'
+  isPage = 'manager',
 }: VacationListProps) {
   const { user } = useAuth();
   const { addAlert } = useAppAlert();
   const isMobile = useIsMobileViewport();
-  
+
   // 데이터 state
   const [allData, setAllData] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(false);
@@ -104,22 +104,22 @@ export default function VacationList({
       setSearchParams(newParams, { replace: true });
     }
   }, [page, searchParams, setSearchParams]);
-  
+
   // 팀 목록 state
   const [teams, setTeams] = useState<{ team_id: number; team_name: string }[]>([]);
-  
+
   // 체크박스 state
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
   const [checkAll, setCheckAll] = useState(false);
-  
+
   // 일정 다이얼로그 state
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Schedule | null>(null);
-  
+
   // 일괄 승인 확인 모달 state
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [approveCount, setApproveCount] = useState(0);
-  
+
   // 관리자 여부
   const isManager = user?.user_level === 'manager' || user?.user_level === 'admin';
 
@@ -127,12 +127,9 @@ export default function VacationList({
   useEffect(() => {
     const loadTeams = async () => {
       try {
-        const teamList = isPage === 'admin'
-          ? await getTeams({})
-          : await getManagerTeams({});
+        const teamList = isPage === 'admin' ? await getTeams({}) : await getManagerTeams({});
         setTeams(teamList.map((t: any) => ({ team_id: t.team_id, team_name: t.team_name })));
-      } catch (error) {
-      }
+      } catch (error) {}
     };
     loadTeams();
   }, [isPage]);
@@ -154,19 +151,19 @@ export default function VacationList({
     // 현재 요청 ID 생성 (탭 + 타임스탬프)
     const requestId = `${activeTab}-${Date.now()}`;
     currentRequestRef.current = requestId;
-    
+
     setLoading(true);
-    
+
     try {
       const year = filters.year ? parseInt(filters.year) : new Date().getFullYear();
       const currentTab = activeTab; // 클로저 문제 방지를 위해 로컬 변수에 저장
-      
+
       // 요청이 취소되었는지 확인
       if (currentRequestRef.current !== requestId) {
         // 요청이 취소된 경우 아무것도 하지 않음 (새 요청이 이미 시작되었을 수 있음)
         return;
       }
-      
+
       // 팀 미선택 시:
       // - admin: team_id=0으로 전체 조회
       // - manager: 자신이 관리하는 팀 목록만
@@ -176,25 +173,25 @@ export default function VacationList({
       } else if (isPage === 'admin') {
         teamIdsToQuery = [0];
       }
-      
+
       // 데이터 조회 시작 전에 기존 데이터 초기화 (팀이 있고 요청이 취소되지 않은 경우에만)
       // 이 시점에서 요청이 취소되지 않았는지 다시 확인
       if (currentRequestRef.current === requestId) {
         setAllData([]);
       }
-      
+
       // 팀 단위로 스케줄 조회 (멤버 리스트 호출 제거)
       const allSchedules: Schedule[] = [];
-      
+
       // 1월부터 12월까지 병렬로 조회 (성능 개선)
       const monthPromises = Array.from({ length: 12 }, (_, i) => i + 1).map(async (month) => {
         try {
           // 각 팀별로 스케줄 조회 (currentTab에 따라 sch_type 필터링)
-          const schedulePromises = teamIdsToQuery.map(teamId => {
+          const schedulePromises = teamIdsToQuery.map((teamId) => {
             const params: any = {
               year,
               month,
-              sch_type: currentTab === 'vacation' ? 'vacation' : 'event'
+              sch_type: currentTab === 'vacation' ? 'vacation' : 'event',
             };
             if (teamId !== null && teamId !== undefined) {
               params.team_id = teamId;
@@ -204,10 +201,10 @@ export default function VacationList({
 
           const scheduleResponses = await Promise.all(schedulePromises);
           const monthSchedules: Schedule[] = [];
-          
+
           scheduleResponses.forEach((apiResponse: any) => {
             if (!apiResponse) return;
-            
+
             // API 응답에서 실제 스케줄 배열 추출
             let schedules: any[] = [];
             if (Array.isArray(apiResponse)) {
@@ -217,53 +214,48 @@ export default function VacationList({
             } else if (apiResponse?.items?.items && Array.isArray(apiResponse.items.items)) {
               schedules = apiResponse.items.items;
             }
-            
+
             if (Array.isArray(schedules) && schedules.length > 0) {
               // null이 아니고 날짜가 있으며, currentTab에 맞는 sch_type만 필터링
-              const validSchedules = schedules.filter((schedule: any) => 
-                schedule !== null && 
-                schedule.sch_sdate &&
-                schedule.sch_type === (currentTab === 'vacation' ? 'vacation' : 'event')
+              const validSchedules = schedules.filter(
+                (schedule: any) =>
+                  schedule !== null && schedule.sch_sdate && schedule.sch_type === (currentTab === 'vacation' ? 'vacation' : 'event')
               );
               monthSchedules.push(...validSchedules);
             }
           });
-          
+
           return monthSchedules;
         } catch (error) {
           // 해당 월 데이터가 없으면 빈 배열 반환
           return [];
         }
       });
-      
+
       // 모든 월의 데이터를 병렬로 가져옴
       const monthResults = await Promise.all(monthPromises);
-      monthResults.forEach(monthSchedules => {
+      monthResults.forEach((monthSchedules) => {
         allSchedules.push(...monthSchedules);
       });
-      
+
       // 요청이 취소되었는지 최종 확인 (데이터 저장 직전에만 확인)
       if (currentRequestRef.current !== requestId) {
         // 요청이 취소된 경우 아무것도 하지 않음 (새 요청이 이미 시작되었을 수 있음)
         return;
       }
-      
+
       // 현재 활성 탭과 일치하는지 최종 확인
       if (activeTab !== currentTab) {
         // 탭이 변경된 경우 아무것도 하지 않음 (새 요청이 이미 시작되었을 수 있음)
         return;
       }
-      
+
       // 최종 확인: 현재 활성 탭과 일치하는 데이터만 필터링
-      const filteredByType = allSchedules.filter(schedule => 
-        schedule.sch_type === (activeTab === 'vacation' ? 'vacation' : 'event')
-      );
-      
+      const filteredByType = allSchedules.filter((schedule) => schedule.sch_type === (activeTab === 'vacation' ? 'vacation' : 'event'));
+
       // 중복 제거: 같은 id를 가진 항목은 하나만 유지
-      const uniqueSchedules = filteredByType.filter((schedule, index, self) =>
-        index === self.findIndex(s => s.id === schedule.id)
-      );
-      
+      const uniqueSchedules = filteredByType.filter((schedule, index, self) => index === self.findIndex((s) => s.id === schedule.id));
+
       // 전체 데이터 저장 (모든 필터링은 filteredData useMemo에서 처리)
       // 요청이 취소되지 않았는지 다시 한 번 확인
       if (currentRequestRef.current === requestId) {
@@ -289,22 +281,22 @@ export default function VacationList({
   // 필터링된 데이터
   const filteredData = useMemo(() => {
     let result = [...allData];
-    
+
     // 팀 필터 (가장 먼저 적용)
     if (resolvedTeamIds.length > 0) {
-      result = result.filter(item => resolvedTeamIds.includes(item.team_id));
+      result = result.filter((item) => resolvedTeamIds.includes(item.team_id));
     }
-    
+
     // 탭 필터 (휴가 vs 이벤트)
     if (activeTab === 'vacation') {
-      result = result.filter(item => item.sch_type === 'vacation');
+      result = result.filter((item) => item.sch_type === 'vacation');
     } else if (activeTab === 'event') {
-      result = result.filter(item => item.sch_type === 'event');
+      result = result.filter((item) => item.sch_type === 'event');
     }
-    
+
     // 연도 필터
     if (filters.year) {
-      result = result.filter(item => {
+      result = result.filter((item) => {
         // sch_sdate에서 연도 추출 (YYYY-MM-DD 형식)
         if (item.sch_sdate) {
           const year = dayjs(item.sch_sdate).format('YYYY');
@@ -317,40 +309,40 @@ export default function VacationList({
         return false;
       });
     }
-    
+
     // 상태 필터 (H=취소요청됨, Y=승인완료, N=취소완료)
     if (filters.status && filters.status.length > 0) {
-      result = result.filter(item => filters.status!.includes(item.sch_status));
+      result = result.filter((item) => filters.status!.includes(item.sch_status));
     }
-    
+
     // 휴가 유형 필터
     if (filters.vacationType && filters.vacationType.length > 0 && activeTab === 'vacation') {
-      result = result.filter(item => {
+      result = result.filter((item) => {
         if (!item.sch_vacation_type) return false;
         return filters.vacationType!.includes(item.sch_vacation_type);
       });
     }
-    
+
     // 이벤트 유형 필터
     if (filters.eventType && filters.eventType.length > 0 && activeTab === 'event') {
-      result = result.filter(item => {
+      result = result.filter((item) => {
         if (!item.sch_event_type) return false;
         return filters.eventType!.includes(item.sch_event_type);
       });
     }
-    
+
     // 정렬: 1) 승인대기 최우선, 2) 시작일 최근순
     result.sort((a, b) => {
       // 1. 승인대기(H)를 최우선으로
       if (a.sch_status === 'H' && b.sch_status !== 'H') return -1;
       if (a.sch_status !== 'H' && b.sch_status === 'H') return 1;
-      
+
       // 2. 시작일(sch_sdate) 최근순 (내림차순)
       const dateA = a.sch_created_at ? new Date(a.sch_created_at).getTime() : 0;
       const dateB = b.sch_created_at ? new Date(b.sch_created_at).getTime() : 0;
       return dateB - dateA;
     });
-    
+
     return result;
   }, [allData, resolvedTeamIds, activeTab, filters]);
 
@@ -395,23 +387,24 @@ export default function VacationList({
   }, [filters]);
 
   // 선택 가능한 상태 확인 헬퍼 함수 (isPage prop 기반)
-  const isSelectableStatus = useCallback((status: string) => {
-    if (isPage === 'admin') {
-      // admin 페이지: 보상대기만 선택 가능 (휴가관리에는 보상대기 상태가 없으므로 일단 H만)
-      // TODO: 보상대기 상태가 추가되면 수정 필요
-      return status === 'H';
-    } else {
-      // manager 페이지: 승인대기(H)만 선택 가능
-      return status === 'H';
-    }
-  }, [isPage]);
+  const isSelectableStatus = useCallback(
+    (status: string) => {
+      if (isPage === 'admin') {
+        // admin 페이지: 보상대기만 선택 가능 (휴가관리에는 보상대기 상태가 없으므로 일단 H만)
+        // TODO: 보상대기 상태가 추가되면 수정 필요
+        return status === 'H';
+      } else {
+        // manager 페이지: 승인대기(H)만 선택 가능
+        return status === 'H';
+      }
+    },
+    [isPage]
+  );
 
   // 전체 선택 (isPage prop 기반)
   const handleCheckAll = (checked: boolean) => {
     setCheckAll(checked);
-    const newCheckedItems = checked 
-      ? paginatedData.filter(item => isSelectableStatus(item.sch_status)).map((item) => item.id) 
-      : [];
+    const newCheckedItems = checked ? paginatedData.filter((item) => isSelectableStatus(item.sch_status)).map((item) => item.id) : [];
     setCheckedItems(newCheckedItems);
     onCheckedItemsChange(newCheckedItems);
   };
@@ -440,7 +433,7 @@ export default function VacationList({
   // 취소 요청 핸들러 (사용자가 취소 신청)
   const handleRequestCancel = async () => {
     if (!selectedEvent?.id) return;
-    
+
     try {
       await scheduleApi.updateScheduleStatus(selectedEvent.id, 'H');
       fetchScheduleData();
@@ -453,21 +446,21 @@ export default function VacationList({
   // 취소 승인 핸들러 (매니저가 취소 승인)
   const handleApproveCancel = async () => {
     if (!selectedEvent?.id) return;
-    
+
     try {
       await managerVacationCancelApi.approveScheduleCancel(selectedEvent.id);
       fetchScheduleData();
       handleCloseEventDialog();
       addAlert({
-        title: "취소 승인 완료",
-        message: "일정 취소가 승인되었습니다.",
+        title: '취소 승인 완료',
+        message: '일정 취소가 승인되었습니다.',
         duration: 3000,
         icon: <CheckCircle />,
       });
     } catch (error) {
       addAlert({
-        title: "승인 실패",
-        message: "취소 승인 중 오류가 발생했습니다.",
+        title: '승인 실패',
+        message: '취소 승인 중 오류가 발생했습니다.',
         duration: 3000,
         icon: <OctagonAlert />,
       });
@@ -487,12 +480,10 @@ export default function VacationList({
     const count = approveCount;
     try {
       // 모든 체크된 항목에 대해 취소 요청 승인 (관리자 API 사용)
-      await Promise.all(
-        checkedItems.map(id => managerVacationCancelApi.approveScheduleCancel(id))
-      );
-      
+      await Promise.all(checkedItems.map((id) => managerVacationCancelApi.approveScheduleCancel(id)));
+
       setIsConfirmDialogOpen(false);
-      
+
       // 알림 전송: 선택된 각 스케줄의 사용자에게 개별 알림
       const scheduleMap = new Map<number, Schedule>();
       allData.forEach((s) => scheduleMap.set(s.id, s));
@@ -503,9 +494,7 @@ export default function VacationList({
           if (!schedule?.user_id) return;
 
           const eventLabel =
-            schedule.sch_title ||
-            defaultEventTitleMapper(schedule.sch_vacation_type || schedule.sch_event_type || '') ||
-            '일정';
+            schedule.sch_title || defaultEventTitleMapper(schedule.sch_vacation_type || schedule.sch_event_type || '') || '일정';
           const rangeText = getDateRangeTextSimple(schedule.sch_sdate, schedule.sch_edate, schedule.sch_isAllday === 'Y');
 
           await notificationApi.registerNotification({
@@ -519,7 +508,7 @@ export default function VacationList({
           });
         })
       );
-      
+
       // 성공 알림 먼저 표시
       addAlert({
         title: '승인 완료',
@@ -528,14 +517,13 @@ export default function VacationList({
         duration: 3000,
       });
 
-      
       addAlert({
-        title: "취소 승인 완료",
+        title: '취소 승인 완료',
         message: `${count}개의 일정 취소가 승인되었습니다.`,
         duration: 3000,
         icon: <CheckCircle />,
       });
-      
+
       // 체크박스 초기화 및 데이터 새로고침
       setCheckedItems([]);
       setCheckAll(false);
@@ -543,8 +531,8 @@ export default function VacationList({
       await fetchScheduleData();
     } catch (error) {
       addAlert({
-        title: "승인 실패",
-        message: "일괄 승인 중 오류가 발생했습니다.",
+        title: '승인 실패',
+        message: '일괄 승인 중 오류가 발생했습니다.',
         duration: 3000,
         icon: <OctagonAlert />,
       });
@@ -563,46 +551,53 @@ export default function VacationList({
   // 상태 텍스트 변환
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'H': return '취소요청됨';
-      case 'Y': return '승인완료';
-      case 'N': return '취소완료';
-      default: return status;
+      case 'H':
+        return '취소요청됨';
+      case 'Y':
+        return '승인완료';
+      case 'N':
+        return '취소완료';
+      default:
+        return status;
     }
   };
 
   // 휴가 유형 텍스트 변환
   const getVacationTypeText = (vacationType?: string | null, vacationTime?: string | null) => {
     if (!vacationType) return '-';
-    
-    const baseType = {
-      'day': '연차',
-      'half': '반차',
-      'quarter': '반반차',
-      'official': '공가'
-    }[vacationType] || vacationType;
-    
+
+    const baseType =
+      {
+        day: '연차',
+        half: '반차',
+        quarter: '반반차',
+        official: '공가',
+      }[vacationType] || vacationType;
+
     if ((vacationType === 'half' || vacationType === 'quarter') && vacationTime) {
       const timeText = vacationTime === 'morning' ? '오전' : '오후';
       return `${timeText} ${baseType}`;
     }
-    
+
     return baseType;
   };
 
   // 이벤트 유형 텍스트 변환
   const getEventTypeText = (eventType?: string | null) => {
     if (!eventType) return '-';
-    
-    return {
-      'remote': '재택근무',
-      'field': '외부근무',
-      'etc': '기타'
-    }[eventType] || eventType;
+
+    return (
+      {
+        remote: '재택근무',
+        field: '외부근무',
+        etc: '기타',
+      }[eventType] || eventType
+    );
   };
 
   // 부서명 조회 (동기 함수)
   const getTeamName = (teamId: number) => {
-    const team = teams.find(t => t.team_id === teamId);
+    const team = teams.find((t) => t.team_id === teamId);
     return team?.team_name || '-';
   };
 
@@ -610,7 +605,7 @@ export default function VacationList({
   const getDateRangeText = (item: Schedule) => {
     const startDate = dayjs(item.sch_sdate);
     const endDate = dayjs(item.sch_edate);
-    
+
     if (item.sch_isAllday === 'Y') {
       if (startDate.isSame(endDate, 'day')) {
         return startDate.format('YYYY-MM-DD (ddd)');
@@ -620,7 +615,7 @@ export default function VacationList({
     } else {
       const startTime = formatTime(item.sch_stime);
       const endTime = formatTime(item.sch_etime);
-      
+
       if (startDate.isSame(endDate, 'day')) {
         return `${startDate.format('YYYY-MM-DD (ddd)')}`;
         // return `${startDate.format('YYYY-MM-DD(ddd)')} ${startTime} - ${endTime}`;
@@ -633,110 +628,117 @@ export default function VacationList({
   return (
     <>
       <div ref={tableRef} className="w-full">
-      <Table key={`table-${page}-${activeTab}`} variant="primary" align="center" className="table-fixed w-full">
-        <TableHeader>
-          <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-            {!isMobile && <TableHead className="w-[7%] text-center p-2 max-md:px-0.5 max-md:text-sm!">부서</TableHead>}
-            <TableHead className="w-[7%] text-center p-2 max-md:px-0.5 max-md:text-sm!">이름</TableHead>
-            <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm!">
-              {activeTab === 'vacation' ? '휴가 유형' : '이벤트 유형'}
-            </TableHead>
-            <TableHead className="w-[20%] text-center p-2 max-md:px-0.5 max-md:text-sm!">기간</TableHead>
-            {activeTab === 'vacation' && !isMobile && (
-              <TableHead className="w-[20%] text-center p-2 max-md:px-0.5 max-md:text-sm!">사용휴가일수</TableHead>
-            )}
-            {!isMobile && <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm!">등록일</TableHead>}
-            <TableHead className="w-[8%] text-center p-2 max-md:px-0.5 max-md:text-sm!">상태</TableHead>
-            <TableHead className="w-[5%] text-center p-2 max-md:px-0.5 max-md:text-sm!">
-              <Checkbox 
-                id="chk_all" 
-                className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkAll && 'bg-primary-blue-150')} 
-                checked={checkAll} 
-                onCheckedChange={handleCheckAll} 
-              />
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody key={`tbody-${page}-${activeTab}`}>
-        {loading ? (
-          <TableRow className="[&_td]:text-[13px]">
-            <TableCell className="h-100 text-gray-500 w-full p-2 max-md:px-0.5 max-md:text-sm!" colSpan={isMobile ? 5 : (activeTab === 'vacation' ? 8 : 7)}>
-              데이터 불러오는 중
-            </TableCell>
-          </TableRow>
-        ) : !loading && paginatedData.length === 0 ? (
-          <TableRow className="[&_td]:text-[13px]">
-            <TableCell className="h-100 text-gray-500 w-full p-2 max-md:px-0.5 max-md:text-sm!" colSpan={isMobile ? 5 : (activeTab === 'vacation' ? 8 : 7)}>
-              데이터가 없습니다.
-            </TableCell>
-          </TableRow>
-        ) : (
-          paginatedData.map((item, index) => (
-            <TableRow 
-              key={`${item.id}-${item.sch_sdate}-${item.user_id}-${index}`}
-              className="[&_td]:text-[13px] cursor-pointer hover:bg-gray-50"
-              onClick={() => handleEventClick(item)}
-            >
-              {!isMobile && <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">{getTeamName(item.team_id)}</TableCell>}
-              <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">{item.user_name || '-'}</TableCell>
-              <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">
-                {activeTab === 'vacation' 
-                  ? getVacationTypeText(item.sch_vacation_type, item.sch_vacation_time)
-                  : getEventTypeText(item.sch_event_type)
-                }
-              </TableCell>
-              <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">{getDateRangeText(item)}</TableCell>
-              {activeTab === 'vacation' && !isMobile && item.sch_vacation_used && (
-                <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">{item.sch_vacation_used}</TableCell>
+        <Table key={`table-${page}-${activeTab}`} variant="primary" align="center" className="w-full table-fixed">
+          <TableHeader>
+            <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
+              {!isMobile && <TableHead className="w-[7%] p-2 text-center max-md:px-0.5 max-md:text-sm!">부서</TableHead>}
+              <TableHead className="w-[7%] p-2 text-center max-md:px-0.5 max-md:text-sm!">이름</TableHead>
+              <TableHead className="w-[10%] p-2 text-center max-md:px-0.5 max-md:text-sm!">
+                {activeTab === 'vacation' ? '휴가 유형' : '이벤트 유형'}
+              </TableHead>
+              <TableHead className="w-[20%] p-2 text-center max-md:px-0.5 max-md:text-sm!">기간</TableHead>
+              {activeTab === 'vacation' && !isMobile && (
+                <TableHead className="w-[20%] p-2 text-center max-md:px-0.5 max-md:text-sm!">사용휴가일수</TableHead>
               )}
-              {!isMobile && (
-                <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">
-                  {item.sch_created_at ? dayjs(item.sch_created_at).format('YYYY-MM-DD') : '-'}
-                </TableCell>
-              )}
-              <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!">
-                {item.sch_status === 'H' && (
-                  <Badge variant="default" size="table" title="취소요청됨">
-                    {getStatusText(item.sch_status)}
-                  </Badge>
-                )}
-                {item.sch_status === 'Y' && (
-                  <Badge variant="outline" size="table" title="승인완료">
-                    {getStatusText(item.sch_status)}
-                  </Badge>
-                )}
-                {item.sch_status === 'N' && (
-                  <Badge variant="grayish" size="table" title="취소완료">
-                    {getStatusText(item.sch_status)}
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell className="text-center p-2 max-md:px-0.5 max-md:text-sm!" onClick={(e) => e.stopPropagation()}>
-                <Checkbox 
-                  id={`chk_${item.id}`} 
-                  className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkedItems.includes(item.id) && 'bg-primary-blue-150')} 
-                  checked={checkedItems.includes(item.id)} 
-                  disabled={!isSelectableStatus(item.sch_status)}
-                  onCheckedChange={(checked) => handleCheckItem(item.id, checked as boolean)} 
+              {!isMobile && <TableHead className="w-[10%] p-2 text-center max-md:px-0.5 max-md:text-sm!">등록일</TableHead>}
+              <TableHead className="w-[8%] p-2 text-center max-md:px-0.5 max-md:text-sm!">상태</TableHead>
+              <TableHead className="w-[5%] p-2 text-center max-md:px-0.5 max-md:text-sm!">
+                <Checkbox
+                  id="chk_all"
+                  className={cn('mx-auto flex size-4 items-center justify-center bg-white leading-none', checkAll && 'bg-primary-blue-150')}
+                  checked={checkAll}
+                  onCheckedChange={handleCheckAll}
                 />
-              </TableCell>
+              </TableHead>
             </TableRow>
-          ))
-        )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+
+          <TableBody key={`tbody-${page}-${activeTab}`}>
+            {loading ? (
+              <TableRow className="[&_td]:text-[13px]">
+                <TableCell
+                  className="h-100 w-full p-2 text-gray-500 max-md:px-0.5 max-md:text-sm!"
+                  colSpan={isMobile ? 5 : activeTab === 'vacation' ? 8 : 7}>
+                  데이터 불러오는 중
+                </TableCell>
+              </TableRow>
+            ) : !loading && paginatedData.length === 0 ? (
+              <TableRow className="[&_td]:text-[13px]">
+                <TableCell
+                  className="h-100 w-full p-2 text-gray-500 max-md:px-0.5 max-md:text-sm!"
+                  colSpan={isMobile ? 5 : activeTab === 'vacation' ? 8 : 7}>
+                  데이터가 없습니다.
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedData.map((item, index) => (
+                <TableRow
+                  key={`${item.id}-${item.sch_sdate}-${item.user_id}-${index}`}
+                  className="cursor-pointer hover:bg-gray-50 [&_td]:text-[13px]"
+                  onClick={() => handleEventClick(item)}>
+                  {!isMobile && (
+                    <TableCell className="p-2 text-center max-md:px-0.5 max-md:text-sm!">{getTeamName(item.team_id)}</TableCell>
+                  )}
+                  <TableCell className="p-2 text-center max-md:px-0.5 max-md:text-sm!">{item.user_name || '-'}</TableCell>
+                  <TableCell className="p-2 text-center max-md:px-0.5 max-md:text-sm!">
+                    {activeTab === 'vacation'
+                      ? getVacationTypeText(item.sch_vacation_type, item.sch_vacation_time)
+                      : getEventTypeText(item.sch_event_type)}
+                  </TableCell>
+                  <TableCell className="p-2 text-center max-md:px-0.5 max-md:text-sm!">{getDateRangeText(item)}</TableCell>
+                  {activeTab === 'vacation' && !isMobile && item.sch_vacation_used && (
+                    <TableCell className="p-2 text-center max-md:px-0.5 max-md:text-sm!">{item.sch_vacation_used}</TableCell>
+                  )}
+                  {!isMobile && (
+                    <TableCell className="p-2 text-center max-md:px-0.5 max-md:text-sm!">
+                      {item.sch_created_at ? dayjs(item.sch_created_at).format('YYYY-MM-DD') : '-'}
+                    </TableCell>
+                  )}
+                  <TableCell className="p-2 text-center max-md:px-0.5 max-md:text-sm!">
+                    {item.sch_status === 'H' && (
+                      <Badge variant="default" size="table" title="취소요청됨">
+                        {getStatusText(item.sch_status)}
+                      </Badge>
+                    )}
+                    {item.sch_status === 'Y' && (
+                      <Badge variant="outline" size="table" title="승인완료">
+                        {getStatusText(item.sch_status)}
+                      </Badge>
+                    )}
+                    {item.sch_status === 'N' && (
+                      <Badge variant="grayish" size="table" title="취소완료">
+                        {getStatusText(item.sch_status)}
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="p-2 text-center max-md:px-0.5 max-md:text-sm!" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      id={`chk_${item.id}`}
+                      className={cn(
+                        'mx-auto flex size-4 items-center justify-center bg-white leading-none',
+                        checkedItems.includes(item.id) && 'bg-primary-blue-150'
+                      )}
+                      checked={checkedItems.includes(item.id)}
+                      disabled={!isSelectableStatus(item.sch_status)}
+                      onCheckedChange={(checked) => handleCheckItem(item.id, checked as boolean)}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
       {total > 0 && (
         <div className="mt-5">
-          <AppPagination 
+          <AppPagination
             key={`pagination-${page}-${activeTab}`}
-            totalPages={totalPages} 
-            initialPage={page} 
-            visibleCount={10} 
+            totalPages={totalPages}
+            initialPage={page}
+            visibleCount={10}
             onPageChange={(p) => {
               setPage(p);
-            }} 
+            }}
           />
         </div>
       )}
@@ -759,14 +761,15 @@ export default function VacationList({
             endTime: selectedEvent.sch_etime,
             allDay: selectedEvent.sch_isAllday === 'Y',
             category: selectedEvent.sch_type,
-            eventType: selectedEvent.sch_type === 'vacation' 
-              ? getVacationTypeText(selectedEvent.sch_vacation_type, selectedEvent.sch_vacation_time)
-              : getEventTypeText(selectedEvent.sch_event_type),
+            eventType:
+              selectedEvent.sch_type === 'vacation'
+                ? getVacationTypeText(selectedEvent.sch_vacation_type, selectedEvent.sch_vacation_time)
+                : getEventTypeText(selectedEvent.sch_event_type),
             author: selectedEvent.user_name || '-',
             userId: selectedEvent.user_id || '',
             teamId: selectedEvent.team_id,
             status: selectedEvent.sch_status === 'Y' ? '등록 완료' : selectedEvent.sch_status === 'H' ? '취소 요청됨' : '취소 완료',
-            createdAt: selectedEvent.sch_created_at
+            createdAt: selectedEvent.sch_created_at,
           }}
         />
       )}
@@ -776,14 +779,10 @@ export default function VacationList({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>취소 승인 확인</AlertDialogTitle>
-            <AlertDialogDescription>
-              {approveCount}개의 일정 취소 요청을 승인하시겠습니까?
-            </AlertDialogDescription>
+            <AlertDialogDescription>{approveCount}개의 일정 취소 요청을 승인하시겠습니까?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={handleConfirmApprove}>
-              승인하기
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmApprove}>승인하기</AlertDialogAction>
             <AlertDialogCancel>닫기</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>

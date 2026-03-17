@@ -36,12 +36,7 @@ export const WithInput: Story = {
   render: () => (
     <div className="space-y-2">
       <Label htmlFor="email">이메일</Label>
-      <Textbox
-        id="email"
-        type="email"
-        placeholder="이메일을 입력하세요"
-        className="w-full"
-      />
+      <Textbox id="email" type="email" placeholder="이메일을 입력하세요" className="w-full" />
     </div>
   ),
 };
@@ -52,13 +47,7 @@ export const Required: Story = {
       <Label htmlFor="required-field">
         필수 입력 필드 <span className="text-red-500">*</span>
       </Label>
-      <Textbox
-        id="required-field"
-        type="text"
-        placeholder="필수 입력"
-        required
-        className="w-full"
-      />
+      <Textbox id="required-field" type="text" placeholder="필수 입력" required className="w-full" />
     </div>
   ),
 };
@@ -69,25 +58,15 @@ export const Disabled: Story = {
       <Label htmlFor="disabled-field" className="opacity-50">
         비활성화된 필드
       </Label>
-      <Textbox
-        id="disabled-field"
-        type="text"
-        placeholder="비활성화됨"
-        disabled
-        className="w-full"
-      />
+      <Textbox id="disabled-field" type="text" placeholder="비활성화됨" disabled className="w-full" />
     </div>
   ),
 };
 
 export const WithCheckbox: Story = {
   render: () => (
-    <div className="flex items-center space-x-2 cursor-pointer">
-      <Checkbox
-        id="terms"
-        type="checkbox"
-        className="w-4 h-4"
-      />
+    <div className="flex cursor-pointer items-center space-x-2">
+      <Checkbox id="terms" type="checkbox" className="h-4 w-4" />
       <Label htmlFor="terms">이용약관에 동의합니다</Label>
     </div>
   ),

@@ -1,1 +1,1 @@
-export { DayPicker, DayPickerDayButton, dayPickerVariants } from './daypicker'
+export { DayPicker, DayPickerDayButton, dayPickerVariants } from './daypicker';

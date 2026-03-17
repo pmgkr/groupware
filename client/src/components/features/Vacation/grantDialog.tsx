@@ -12,7 +12,6 @@ import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { notificationApi } from '@/api/notification';
 import { useAuth } from '@/contexts/AuthContext';
 
-
 interface GrantDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -66,7 +65,7 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
       toast({
         title: '오류',
         description: '사용자 정보가 없습니다.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
       return;
     }
@@ -75,7 +74,7 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
       toast({
         title: '오류',
         description: '휴가 연도를 선택해주세요.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
       return;
     }
@@ -84,7 +83,7 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
       toast({
         title: '오류',
         description: '휴가 유형을 선택해주세요.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
       return;
     }
@@ -94,34 +93,28 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
       toast({
         title: '오류',
         description: '휴가 부여일수를 올바르게 입력해주세요.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
       return;
     }
 
     setLoading(true);
     try {
-      await adminVacationApi.grantVacation(
-        userId,
-        parseInt(vaYear),
-        vaType,
-        count,
-        remark || ''
-      );
-      
+      await adminVacationApi.grantVacation(userId, parseInt(vaYear), vaType, count, remark || '');
+
       // 성공 정보 저장
       const typeNames: Record<string, string> = {
         current: '기본연차',
         carryover: '이월연차',
         special: '특별대휴',
-        official: '공가'
+        official: '공가',
       };
-      
+
       const typeName = typeNames[vaType] || vaType;
-      
+
       // 부여 다이얼로그 닫기
       onClose();
-      
+
       // 알림 전송
       await notificationApi.registerNotification({
         user_id: userId!,
@@ -137,17 +130,17 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
       addAlert({
         title: '휴가 부여 완료',
         message: `${userName}님에게 ${parseInt(vaYear)}년도 ${typeName} ${count}일이 부여되었습니다.`,
-        icon: <CheckCircle2Icon className="w-5 h-5 text-green-500" />,
+        icon: <CheckCircle2Icon className="h-5 w-5 text-green-500" />,
         duration: 2500,
       });
-      
+
       // 데이터 새로고침
       onSuccess?.();
     } catch (error: any) {
       toast({
         title: '오류',
         description: error?.message || '휴가 부여에 실패했습니다.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -158,104 +151,92 @@ export default function GrantDialog({ isOpen, onClose, userId, userName, onSucce
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>휴가 관리</DialogTitle>
-          <DialogDescription>
-            {userName ? `${userName}님의 휴가를 관리합니다.` : '휴가를 관리합니다.'}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
+          <DialogHeader>
+            <DialogTitle>휴가 관리</DialogTitle>
+            <DialogDescription>{userName ? `${userName}님의 휴가를 관리합니다.` : '휴가를 관리합니다.'}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
             <div className="space-y-3">
-                <Label htmlFor="grant-year">휴가 연도</Label>
-                <div className="flex gap-2">
-                    <Select
-                        value={vaYear}
-                        onValueChange={setVaYear}
-                    >
-                        <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="휴가 연도를 선택해주세요">
-                            </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent className="z-[200]">
-                            <SelectItem value="2024">2024</SelectItem>
-                            <SelectItem value="2025">2025</SelectItem>
-                            <SelectItem value="2026">2026</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>  
+              <Label htmlFor="grant-year">휴가 연도</Label>
+              <div className="flex gap-2">
+                <Select value={vaYear} onValueChange={setVaYear}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="휴가 연도를 선택해주세요"></SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="z-[200]">
+                    <SelectItem value="2024">2024</SelectItem>
+                    <SelectItem value="2025">2025</SelectItem>
+                    <SelectItem value="2026">2026</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-3">
-                <Label htmlFor="grant-type">휴가 유형</Label>
-                <div className="flex gap-2">
-                    <Select
-                        value={vaType}
-                        onValueChange={setVaType}
-                    >
-                        <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="휴가 유형을 선택해주세요">
-                            </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent className="z-[200]">
-                            <SelectItem value="current">기본연차</SelectItem>
-                            <SelectItem value="carryover">이월연차</SelectItem>
-                            <SelectItem value="special">특별대휴</SelectItem>
-                            <SelectItem value="official">공가</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+              <Label htmlFor="grant-type">휴가 유형</Label>
+              <div className="flex gap-2">
+                <Select value={vaType} onValueChange={setVaType}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="휴가 유형을 선택해주세요"></SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="z-[200]">
+                    <SelectItem value="current">기본연차</SelectItem>
+                    <SelectItem value="carryover">이월연차</SelectItem>
+                    <SelectItem value="special">특별대휴</SelectItem>
+                    <SelectItem value="official">공가</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-3">
-                <Label htmlFor="grant-count">휴가 부여일수</Label>
-                <div className="flex gap-2">
-                    <Input 
-                      type="number" 
-                      placeholder="휴가 부여일수를 입력해주세요" 
-                      value={vCount}
-                      onChange={(e) => setVCount(e.target.value)}
-                      step="0.25"
-                    />
-                    <div className="flex flex-col gap-1 h-11">
-                      <Button 
-                        variant="outlinePrimary" 
-                        size="sm" 
-                        className="flex-1 h-auto rounded-sm"
-                        onClick={() => handleCountChange(1)}
-                        type="button"
-                      >
-                          <PlusIcon className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="outlinePrimary" 
-                        size="sm" 
-                        className="flex-1 h-auto rounded-sm"
-                        onClick={() => handleCountChange(-1)}
-                        type="button"
-                      >
-                          <MinusIcon className="w-4 h-4" />
-                      </Button>
-                    </div>
+              <Label htmlFor="grant-count">휴가 부여일수</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="휴가 부여일수를 입력해주세요"
+                  value={vCount}
+                  onChange={(e) => setVCount(e.target.value)}
+                  step="0.25"
+                />
+                <div className="flex h-11 flex-col gap-1">
+                  <Button
+                    variant="outlinePrimary"
+                    size="sm"
+                    className="h-auto flex-1 rounded-sm"
+                    onClick={() => handleCountChange(1)}
+                    type="button">
+                    <PlusIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outlinePrimary"
+                    size="sm"
+                    className="h-auto flex-1 rounded-sm"
+                    onClick={() => handleCountChange(-1)}
+                    type="button">
+                    <MinusIcon className="h-4 w-4" />
+                  </Button>
                 </div>
+              </div>
             </div>
             <div className="space-y-3">
               <Label htmlFor="grant-remark">설명</Label>
-              <Textarea 
-                placeholder="부여되는 휴가에 대한 설명을 기입해주세요" 
-                className="resize-none" 
+              <Textarea
+                placeholder="부여되는 휴가에 대한 설명을 기입해주세요"
+                className="resize-none"
                 value={remark}
                 onChange={(e) => setRemark(e.target.value)}
               />
             </div>
-        </div>
-        <DialogFooter className="max-md:justify-end max-md:flex-row max-md:flex-nowrap max-md:gap-2">
-          <Button onClick={handleSubmit} disabled={loading} className="max-md:flex-1">
-            {loading ? '처리 중' : '부여하기'}
-          </Button>
-          <Button variant="outline" onClick={onClose} disabled={loading} className="max-md:flex-1">
-            닫기
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </div>
+          <DialogFooter className="max-md:flex-row max-md:flex-nowrap max-md:justify-end max-md:gap-2">
+            <Button onClick={handleSubmit} disabled={loading} className="max-md:flex-1">
+              {loading ? '처리 중' : '부여하기'}
+            </Button>
+            <Button variant="outline" onClick={onClose} disabled={loading} className="max-md:flex-1">
+              닫기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

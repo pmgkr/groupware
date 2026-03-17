@@ -1,5 +1,5 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 interface Option {
   label: string;
@@ -19,7 +19,7 @@ export const SimpleMultiSelect: React.FC<SimpleMultiSelectProps> = ({
   options,
   selected,
   onChange,
-  placeholder = "Select options...",
+  placeholder = 'Select options...',
   disabled = false,
   className,
 }) => {
@@ -27,7 +27,7 @@ export const SimpleMultiSelect: React.FC<SimpleMultiSelectProps> = ({
 
   const handleSelect = (value: string) => {
     if (selected.includes(value)) {
-      onChange(selected.filter(v => v !== value));
+      onChange(selected.filter((v) => v !== value));
     } else {
       onChange([...selected, value]);
     }
@@ -38,24 +38,20 @@ export const SimpleMultiSelect: React.FC<SimpleMultiSelectProps> = ({
   };
 
   return (
-    <div className={cn("relative w-full", className)}>
+    <div className={cn('relative w-full', className)}>
       {/* Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled}
         className={cn(
-          "flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
-          "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-          "disabled:cursor-not-allowed disabled:opacity-50",
-          isOpen && "ring-2 ring-ring ring-offset-2"
-        )}
-      >
-        <span className={cn("truncate", selected.length === 0 && "text-muted-foreground")}>
-          {selected.length === 0 
-            ? placeholder 
-            : `${selected.length} item${selected.length > 1 ? 's' : ''} selected`
-          }
+          'border-input bg-background ring-offset-background flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm',
+          'placeholder:text-muted-foreground focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-none',
+          'disabled:cursor-not-allowed disabled:opacity-50',
+          isOpen && 'ring-ring ring-2 ring-offset-2'
+        )}>
+        <span className={cn('truncate', selected.length === 0 && 'text-muted-foreground')}>
+          {selected.length === 0 ? placeholder : `${selected.length} item${selected.length > 1 ? 's' : ''} selected`}
         </span>
         <div className="flex items-center gap-1">
           {selected.length > 0 && (
@@ -65,8 +61,7 @@ export const SimpleMultiSelect: React.FC<SimpleMultiSelectProps> = ({
                 e.stopPropagation();
                 handleClear();
               }}
-              className="h-4 w-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-            >
+              className="ring-offset-background focus:ring-ring h-4 w-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none">
               ×
             </button>
           )}
@@ -76,18 +71,17 @@ export const SimpleMultiSelect: React.FC<SimpleMultiSelectProps> = ({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground border rounded-md shadow-md">
+        <div className="bg-popover text-popover-foreground absolute z-50 mt-1 w-full rounded-md border shadow-md">
           <div className="p-1">
             {options.map((option) => (
               <div
                 key={option.value}
                 onClick={() => handleSelect(option.value)}
                 className={cn(
-                  "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none",
-                  "hover:bg-accent hover:text-accent-foreground",
-                  selected.includes(option.value) && "bg-accent text-accent-foreground"
-                )}
-              >
+                  'relative flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm outline-none select-none',
+                  'hover:bg-accent hover:text-accent-foreground',
+                  selected.includes(option.value) && 'bg-accent text-accent-foreground'
+                )}>
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -107,18 +101,11 @@ export const SimpleMultiSelect: React.FC<SimpleMultiSelectProps> = ({
       {selected.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
           {selected.map((value) => {
-            const option = options.find(opt => opt.value === value);
+            const option = options.find((opt) => opt.value === value);
             return (
-              <div
-                key={value}
-                className="inline-flex items-center gap-1 rounded-md border bg-secondary px-2 py-1 text-xs"
-              >
+              <div key={value} className="bg-secondary inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs">
                 <span>{option?.label}</span>
-                <button
-                  type="button"
-                  onClick={() => handleSelect(value)}
-                  className="h-3 w-3 rounded-sm opacity-70 hover:opacity-100"
-                >
+                <button type="button" onClick={() => handleSelect(value)} className="h-3 w-3 rounded-sm opacity-70 hover:opacity-100">
                   ×
                 </button>
               </div>

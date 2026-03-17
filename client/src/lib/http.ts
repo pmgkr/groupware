@@ -40,7 +40,7 @@ export async function refreshAccessToken() {
 // T는 제네릭(Generic) 타입 파라미터. 서버에서 내려온 데이터의 타입을 지정하기 위한 용도
 export async function http<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   const toUrl = (p: string) => `${API}/${p.replace(/^\/+/, '')}`;
-  let token = getToken();
+  const token = getToken();
 
   // 요청 헤더 빌드
   const buildHeaders = (withToken?: string) => {

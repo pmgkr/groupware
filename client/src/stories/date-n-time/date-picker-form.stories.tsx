@@ -33,9 +33,7 @@ export const WithLabel: Story = {
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-semibold">생년월일 입력</h3>
-        <p className="text-sm text-muted-foreground">
-          폼 검증이 포함된 날짜 선택 컴포넌트입니다.
-        </p>
+        <p className="text-muted-foreground text-sm">폼 검증이 포함된 날짜 선택 컴포넌트입니다.</p>
       </div>
       <DatePickerForm {...args} />
     </div>
@@ -48,9 +46,7 @@ export const FormValidation: Story = {
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-semibold">폼 검증 예시</h3>
-        <p className="text-sm text-muted-foreground">
-          날짜를 선택하지 않고 제출하면 에러 메시지가 표시됩니다.
-        </p>
+        <p className="text-muted-foreground text-sm">날짜를 선택하지 않고 제출하면 에러 메시지가 표시됩니다.</p>
       </div>
       <DatePickerForm {...args} />
     </div>

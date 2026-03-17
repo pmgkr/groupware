@@ -267,12 +267,12 @@ export default function ProjectLayout() {
     setData((prev) =>
       prev
         ? {
-          ...prev,
-          info: {
-            ...prev.info,
-            project_status: status,
-          },
-        }
+            ...prev,
+            info: {
+              ...prev.info,
+              project_status: status,
+            },
+          }
         : prev
     );
 
@@ -333,24 +333,23 @@ export default function ProjectLayout() {
           )}
 
           {user_id === 'sangmin.kang@pmgasia.com' ||
-            user_id === 'kangho.kim@pmgasia.com' ||
-            user_id === 'yeaji.kim@pmgasia.com' ||
-            user_id === 'jihyo.kim@pmgasia.com' ? (
+          user_id === 'kangho.kim@pmgasia.com' ||
+          user_id === 'yeaji.kim@pmgasia.com' ||
+          user_id === 'jihyo.kim@pmgasia.com' ? (
             <Button
               type="button"
               variant="svgIcon"
               onClick={toggleLock}
-              className={cn('has-[>svg]:p-1', isLocked ? 'text-green-600' : 'text-gray-500')}
-            >
+              className={cn('has-[>svg]:p-1', isLocked ? 'text-green-600' : 'text-gray-500')}>
               {isLocked ? <Lock className="size-5" /> : <LockOpen className="size-5" />}
             </Button>
           ) : isLocked ? (
             <div className="p-1">
-              <Lock className="text-green-600 size-5" />
+              <Lock className="size-5 text-green-600" />
             </div>
           ) : (
             <div className="p-1">
-              <LockOpen className="text-gray-500 size-5" />
+              <LockOpen className="size-5 text-gray-500" />
             </div>
           )}
         </div>

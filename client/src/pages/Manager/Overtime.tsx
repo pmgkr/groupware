@@ -38,7 +38,7 @@ export default function ManagerOvertime() {
 
   return (
     <div>
-      <OvertimeToolbar 
+      <OvertimeToolbar
         activeTab={activeTab}
         onTabChange={handleTabChange}
         onTeamSelect={handleTeamSelect}
@@ -47,7 +47,7 @@ export default function ManagerOvertime() {
         onApproveAll={handleApproveAll}
         page="manager"
       />
-      
+
       <OvertimeList
         teamIds={selectedTeamIds}
         activeTab={activeTab}
@@ -58,4 +58,3 @@ export default function ManagerOvertime() {
     </div>
   );
 }
-

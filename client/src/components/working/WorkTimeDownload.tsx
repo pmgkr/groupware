@@ -1,13 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@components/ui/dialog';
 import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import type { WorkingListItem } from './list';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,12 +23,7 @@ interface WorkTimeDownloadProps {
   selectedTeamIds: number[];
 }
 
-export default function WorkTimeDownload({
-  currentDate,
-  page,
-  workingList = [],
-  selectedTeamIds,
-}: WorkTimeDownloadProps) {
+export default function WorkTimeDownload({ currentDate, page, workingList = [], selectedTeamIds }: WorkTimeDownloadProps) {
   const { user } = useAuth();
   const [isExcelDialogOpen, setExcelDialogOpen] = useState(false);
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
@@ -89,7 +77,9 @@ export default function WorkTimeDownload({
     const { year, week } = getWeekNumber(weekStart);
 
     if (page === 'admin') {
-      const adminResp = await (await import('@/api/manager/working')).managerWorkingApi.getAdminWorkLogsWeek({
+      const adminResp = await (
+        await import('@/api/manager/working')
+      ).managerWorkingApi.getAdminWorkLogsWeek({
         team_id: teamId ?? null,
         weekno: week,
         yearno: year,
@@ -102,7 +92,9 @@ export default function WorkTimeDownload({
     }
 
     if (page === 'manager') {
-      const resp = await (await import('@/api/manager/working')).managerWorkingApi.getManagerWorkLogsWeek({
+      const resp = await (
+        await import('@/api/manager/working')
+      ).managerWorkingApi.getManagerWorkLogsWeek({
         team_id: teamId ?? user?.team_id ?? 0,
         weekno: week,
         yearno: year,
@@ -192,41 +184,23 @@ export default function WorkTimeDownload({
               return dDate.getMonth() === monthIndex && dDate.getFullYear() === year;
             })
             .forEach((d) => {
-              const accum =
-                userMap.get(userInfo.user_id) || {
-                  id: userInfo.user_id,
-                  name: userInfo.user_name || userInfo.user_id,
-                  teamId: userInfo.team_id ?? teamId,
-                  department:
-                    userInfo.team_id != null
-                      ? teamNameMap.get(Number(userInfo.team_id)) || String(userInfo.team_id)
-                      : undefined,
-                  cells: {} as Record<string, string>,
-                };
+              const accum = userMap.get(userInfo.user_id) || {
+                id: userInfo.user_id,
+                name: userInfo.user_name || userInfo.user_id,
+                teamId: userInfo.team_id ?? teamId,
+                department: userInfo.team_id != null ? teamNameMap.get(Number(userInfo.team_id)) || String(userInfo.team_id) : undefined,
+                cells: {} as Record<string, string>,
+              };
 
-              const dept =
-                accum.teamId != null
-                  ? teamNameMap.get(Number(accum.teamId)) || String(accum.teamId)
-                  : accum.department || '-';
+              const dept = accum.teamId != null ? teamNameMap.get(Number(accum.teamId)) || String(accum.teamId) : accum.department || '-';
 
               const timeRange =
-                d.startTime && d.startTime !== '-'
-                  ? `${d.startTime}${d.endTime && d.endTime !== '-' ? `-${d.endTime}` : ' - 진행중'}`
-                  : '';
-              const totalStr =
-                d.totalHours != null && d.totalMinutes != null
-                  ? `${d.totalHours}h ${d.totalMinutes}m`
-                  : '';
+                d.startTime && d.startTime !== '-' ? `${d.startTime}${d.endTime && d.endTime !== '-' ? `-${d.endTime}` : ' - 진행중'}` : '';
+              const totalStr = d.totalHours != null && d.totalMinutes != null ? `${d.totalHours}h ${d.totalMinutes}m` : '';
               const holidayLabel = d.holidayName ? `[${d.holidayName}]` : '';
 
-              const workTypeLine = d.holidayName
-                ? holidayLabel
-                : d.workType && d.workType !== '-'
-                  ? d.workType
-                  : '-';
-              const timeLine = timeRange
-                ? `${timeRange}${totalStr ? `(${totalStr})` : ''}`
-                : totalStr;
+              const workTypeLine = d.holidayName ? holidayLabel : d.workType && d.workType !== '-' ? d.workType : '-';
+              const timeLine = timeRange ? `${timeRange}${totalStr ? `(${totalStr})` : ''}` : totalStr;
 
               const cellParts = [workTypeLine, timeLine, d.holidayName ? holidayLabel : '']
                 .map((v) => v || '')
@@ -281,11 +255,7 @@ export default function WorkTimeDownload({
     });
 
     sortedUsers.forEach((u) => {
-      const row = [
-        u.department || '-',
-        u.name || '-',
-        ...dayKeys.map((k) => u.cells[k] || '-'),
-      ];
+      const row = [u.department || '-', u.name || '-', ...dayKeys.map((k) => u.cells[k] || '-')];
       rows.push(row);
     });
 
@@ -389,8 +359,7 @@ export default function WorkTimeDownload({
       onOpenChange={(open) => {
         setExcelDialogOpen(open);
         if (!open) setSelectedMonths([]);
-      }}
-    >
+      }}>
       <DialogTrigger asChild>
         <Button variant="default" size="sm">
           Excel 다운로드
@@ -399,9 +368,7 @@ export default function WorkTimeDownload({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>근태 정보 Excel 다운로드</DialogTitle>
-          <DialogDescription>
-            선택한 월(1일~말일)의 근태 데이터가 각 시트별로 저장됩니다.
-          </DialogDescription>
+          <DialogDescription>선택한 월(1일~말일)의 근태 데이터가 각 시트별로 저장됩니다.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-4 gap-2">
           {monthOptions.map((month) => {
@@ -414,7 +381,7 @@ export default function WorkTimeDownload({
                   variant="dynamic"
                   size="md"
                   iconHide
-                  className="justify-center flex-1 w-full"
+                  className="w-full flex-1 justify-center"
                   onClick={(e) => {
                     e.preventDefault();
                     toggleMonthSelection(month);
@@ -424,7 +391,7 @@ export default function WorkTimeDownload({
             );
           })}
         </div>
-        <div className="flex justify-end items-center pt-4">
+        <div className="flex items-center justify-end pt-4">
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setExcelDialogOpen(false)}>
               취소
@@ -438,4 +405,3 @@ export default function WorkTimeDownload({
     </Dialog>
   );
 }
-

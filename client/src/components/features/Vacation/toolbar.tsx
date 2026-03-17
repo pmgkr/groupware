@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router';
-import { Button } from "@components/ui/button";
-import { MultiSelect } from "@components/multiselect/multi-select";
+import { Button } from '@components/ui/button';
+import { MultiSelect } from '@components/multiselect/multi-select';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams, type MyTeamItem } from '@/api/manager/teams';
@@ -9,13 +9,7 @@ import { getMemberList } from '@/api/common/team';
 import { Select, SelectItem, SelectGroup, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getGrowingYears } from '@/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from '@/components/ui/drawer';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
 import { ListFilter, RefreshCw } from 'lucide-react';
 
 // 셀렉트 옵션 타입 정의
@@ -46,7 +40,7 @@ interface VacationToolbarProps {
   initialUserIds?: string[];
 }
 
-export default function VacationToolbar({ 
+export default function VacationToolbar({
   activeTab = 'vacation',
   onTabChange = () => {},
   onTeamSelect = () => {},
@@ -58,28 +52,28 @@ export default function VacationToolbar({
   page = 'manager',
   maxCount = 0,
   initialTeamIds,
-  initialUserIds
+  initialUserIds,
 }: VacationToolbarProps) {
   const { user } = useAuth();
   const location = useLocation();
   const isManagerContext = location.pathname.startsWith('/manager');
   const isMobile = useIsMobileViewport();
-  
+
   // 최고관리자-휴가관리-상세페이지
   const isAdminDetailPage = location.pathname.includes('/vacation/user/');
-  
+
   // 팀 관련 state
   const [teams, setTeams] = useState<MyTeamItem[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
-  
+
   // 팀원 관련 state (Admin일 때만 사용)
   const [teamMembers, setTeamMembers] = useState<Array<{ user_id: string; user_name: string }>>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  
+
   // 초기값 설정 여부를 추적하는 ref
   const initialTeamSetRef = useRef(false);
   const initialUserSetRef = useRef(false);
-  
+
   const yearOptions = getGrowingYears().reverse();
 
   // 일정 필터 state
@@ -87,7 +81,7 @@ export default function VacationToolbar({
     year: new Date().getFullYear().toString(),
     status: page === 'manager' ? ['H'] : [], // manager 페이지에서는 취소요청됨(H) 기본 선택
     vacationType: [],
-    eventType: []
+    eventType: [],
   });
 
   // 팀 목록 로드
@@ -96,11 +90,11 @@ export default function VacationToolbar({
       if (!user?.user_id) {
         return;
       }
-      
+
       // 매니저 컨텍스트(경로 기준)면 자신의 팀만, 아니면 page 기준
       if (isManagerContext || page === 'manager') {
         const allTeamDetails = await getManagerTeams({});
-        const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
+        const teamItems: MyTeamItem[] = allTeamDetails.map((team) => ({
           seq: 0,
           manager_id: team.manager_id || '',
           manager_name: team.manager_name || '',
@@ -115,7 +109,7 @@ export default function VacationToolbar({
 
       // 관리자 컨텍스트: 모든 팀
       const allTeamDetails = await getTeams({});
-      const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
+      const teamItems: MyTeamItem[] = allTeamDetails.map((team) => ({
         seq: 0,
         manager_id: user.user_id,
         manager_name: user.user_name || '',
@@ -124,9 +118,8 @@ export default function VacationToolbar({
         parent_id: team.parent_id || undefined,
         level: team.level,
       }));
-      
+
       setTeams(teamItems);
-      
     } catch (error) {
       console.error('팀 목록 로드 실패:', error);
       setTeams([]);
@@ -147,18 +140,16 @@ export default function VacationToolbar({
         const members = await getMemberList(teamId);
         return members.map((m: any) => ({
           user_id: m.user_id,
-          user_name: m.user_name
+          user_name: m.user_name,
         }));
       });
-      
+
       const memberResults = await Promise.all(memberPromises);
       const allMembers = memberResults.flat();
-      
+
       // 중복 제거
-      const uniqueMembers = allMembers.filter((member, index, self) =>
-        index === self.findIndex(m => m.user_id === member.user_id)
-      );
-      
+      const uniqueMembers = allMembers.filter((member, index, self) => index === self.findIndex((m) => m.user_id === member.user_id));
+
       setTeamMembers(uniqueMembers);
     } catch (error) {
       console.error('팀원 목록 로드 실패:', error);
@@ -171,11 +162,11 @@ export default function VacationToolbar({
     if (id === 'teams') {
       const teamValues = Array.isArray(value) ? value : [value];
       setSelectedTeams(teamValues);
-      
+
       if (teamValues.length > 0) {
-        const teamIds = teamValues.map(v => parseInt(v));
+        const teamIds = teamValues.map((v) => parseInt(v));
         onTeamSelect(teamIds);
-        
+
         // Admin일 때 선택된 팀의 팀원 목록 로드
         if (page === 'admin') {
           loadTeamMembers(teamIds);
@@ -190,19 +181,19 @@ export default function VacationToolbar({
       }
     } else if (id === 'users') {
       let userValues = Array.isArray(value) ? value : [value];
-      
+
       // 상세 페이지에서는 최대 1개만 선택 가능
       if (isAdminDetailPage && userValues.length > 1) {
         // 가장 최근에 선택한 항목만 유지
         userValues = [userValues[userValues.length - 1]];
       }
-      
+
       setSelectedUsers(userValues);
       onUserSelect(userValues);
     } else {
       // 일정 필터 핸들러
       const newFilters = { ...filters };
-      
+
       if (id === 'year') {
         newFilters.year = Array.isArray(value) ? value[0] : value;
       } else if (id === 'status') {
@@ -212,7 +203,7 @@ export default function VacationToolbar({
       } else if (id === 'eventType') {
         newFilters.eventType = Array.isArray(value) ? value : [value];
       }
-      
+
       setFilters(newFilters);
       onFilterChange(newFilters);
     }
@@ -223,7 +214,7 @@ export default function VacationToolbar({
     if (page === 'manager') {
       const initialFilters = {
         ...filters,
-        status: ['H']
+        status: ['H'],
       };
       setFilters(initialFilters);
       onFilterChange(initialFilters);
@@ -237,34 +228,37 @@ export default function VacationToolbar({
   }, [user, page]);
 
   // 팀 자동선택 제거: 초기 상태는 선택 없음 유지
-  
+
   // 상세 페이지에서 초기 팀 선택값 설정 (한 번만 실행)
   useEffect(() => {
     if (isAdminDetailPage && teams.length > 0 && initialTeamIds && initialTeamIds.length > 0 && !initialTeamSetRef.current) {
-      const teamIds = initialTeamIds.map(id => String(id));
+      const teamIds = initialTeamIds.map((id) => String(id));
       // 이미 같은 값이면 설정하지 않음
-      const currentTeamIds = selectedTeams.map(id => parseInt(id)).sort().join(',');
+      const currentTeamIds = selectedTeams
+        .map((id) => parseInt(id))
+        .sort()
+        .join(',');
       const newTeamIds = initialTeamIds.sort().join(',');
-      
+
       if (currentTeamIds !== newTeamIds) {
         setSelectedTeams(teamIds);
         onTeamSelect(initialTeamIds);
         initialTeamSetRef.current = true;
-        
+
         // 팀원 목록 로드
         loadTeamMembers(initialTeamIds);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdminDetailPage, teams, initialTeamIds]);
-  
+
   // 상세 페이지에서 초기 유저 선택값 설정 (한 번만 실행)
   useEffect(() => {
     if (isAdminDetailPage && teamMembers.length > 0 && initialUserIds && initialUserIds.length > 0 && !initialUserSetRef.current) {
       // 이미 같은 값이면 설정하지 않음
       const currentUserIds = [...selectedUsers].sort().join(',');
       const newUserIds = [...initialUserIds].sort().join(',');
-      
+
       if (currentUserIds !== newUserIds) {
         setSelectedUsers(initialUserIds);
         onUserSelect(initialUserIds);
@@ -280,9 +274,9 @@ export default function VacationToolbar({
     if (isAdminDetailPage && initialTeamSetRef.current) {
       return;
     }
-    
+
     if (page === 'admin' && selectedTeams.length > 0) {
-      const teamIds = selectedTeams.map(id => parseInt(id));
+      const teamIds = selectedTeams.map((id) => parseInt(id));
       loadTeamMembers(teamIds);
     } else if (page === 'admin' && selectedTeams.length === 0) {
       setTeamMembers([]);
@@ -294,23 +288,19 @@ export default function VacationToolbar({
 
   // 팀 옵션 (알파벳순 정렬)
   const teamOptions = useMemo(() => {
-    const sortedTeams = [...teams].sort((a, b) => 
-      a.team_name.localeCompare(b.team_name, 'ko')
-    );
-    return sortedTeams.map(team => ({
+    const sortedTeams = [...teams].sort((a, b) => a.team_name.localeCompare(b.team_name, 'ko'));
+    return sortedTeams.map((team) => ({
       value: String(team.team_id),
-      label: team.team_name
+      label: team.team_name,
     }));
   }, [teams]);
 
   // 팀원 옵션 (알파벳순 정렬)
   const userOptions = useMemo(() => {
-    const sortedMembers = [...teamMembers].sort((a, b) => 
-      a.user_name.localeCompare(b.user_name, 'ko')
-    );
-    return sortedMembers.map(member => ({
+    const sortedMembers = [...teamMembers].sort((a, b) => a.user_name.localeCompare(b.user_name, 'ko'));
+    return sortedMembers.map((member) => ({
       value: member.user_id,
-      label: member.user_name
+      label: member.user_name,
     }));
   }, [teamMembers]);
 
@@ -320,7 +310,7 @@ export default function VacationToolbar({
       year: new Date().getFullYear().toString(),
       status: page === 'manager' ? ['H'] : [],
       vacationType: [],
-      eventType: []
+      eventType: [],
     };
     setFilters(defaultFilters);
     setSelectedTeams([]);
@@ -331,11 +321,10 @@ export default function VacationToolbar({
   };
 
   return (
-    <div className="w-full flex items-center justify-between mb-5">
-
-      <div className="flex max-md:flex-wrap! max-md:w-full max-md:gap-2 max-md:justify-between">
+    <div className="mb-5 flex w-full items-center justify-between">
+      <div className="flex max-md:w-full max-md:flex-wrap! max-md:justify-between max-md:gap-2">
         {/* 탭 버튼 */}
-        { page === 'manager' && (
+        {page === 'manager' && (
           <div className="flex items-center gap-2 after:mx-5 after:inline-flex after:h-7 after:w-[1px] after:bg-gray-300 after:align-middle max-md:w-full! max-md:after:hidden">
             <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5 max-md:w-full!">
               <Button
@@ -364,7 +353,7 @@ export default function VacationToolbar({
           <div className="flex w-full items-center justify-between">
             <Drawer direction="bottom">
               <DrawerTrigger asChild>
-                <Button size="sm" variant="ghost" className="has-[>svg]:px-0 text-gray-500">
+                <Button size="sm" variant="ghost" className="text-gray-500 has-[>svg]:px-0">
                   <ListFilter className="size-4" /> 필터
                 </Button>
               </DrawerTrigger>
@@ -372,13 +361,18 @@ export default function VacationToolbar({
                 <DrawerHeader>
                   <div className="flex justify-between">
                     <DrawerTitle className="text-left">상세 필터</DrawerTitle>
-                    <Button type="button" variant="ghost" size="xs" className="hover:text-primary-blue-500 text-gray-600" onClick={handleReset}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
+                      className="hover:text-primary-blue-500 text-gray-600"
+                      onClick={handleReset}>
                       <RefreshCw className="size-4" /> 초기화
                     </Button>
                   </div>
                 </DrawerHeader>
                 <div className="flex flex-col gap-y-2 px-4 pb-8">
-                  <div className="flex gap-x-2 w-full">
+                  <div className="flex w-full gap-x-2">
                     <div className="w-1/2">
                       <FilterTitle label="연도 선택" />
                       <Select value={filters.year} onValueChange={(v) => handleSelectChange('year', v)}>
@@ -388,7 +382,9 @@ export default function VacationToolbar({
                         <SelectContent>
                           <SelectGroup>
                             {yearOptions.map((y) => (
-                              <SelectItem key={y} value={y}>{y}년</SelectItem>
+                              <SelectItem key={y} value={y}>
+                                {y}년
+                              </SelectItem>
                             ))}
                           </SelectGroup>
                         </SelectContent>
@@ -406,7 +402,7 @@ export default function VacationToolbar({
                         searchable={true}
                         hideSelectAll={false}
                         autoSize={true}
-                        className="w-full max-w-full min-w-auto! multi-select"
+                        className="multi-select w-full max-w-full min-w-auto!"
                         modalPopover={true}
                       />
                     </div>
@@ -424,7 +420,7 @@ export default function VacationToolbar({
                         searchable={true}
                         hideSelectAll={isAdminDetailPage}
                         autoSize={true}
-                        className="w-full max-w-full min-w-auto! multi-select"
+                        className="multi-select w-full max-w-full min-w-auto!"
                         modalPopover={true}
                         disabled={selectedTeams.length === 0}
                       />
@@ -447,7 +443,7 @@ export default function VacationToolbar({
                         searchable={false}
                         hideSelectAll={false}
                         autoSize={true}
-                        className="w-full max-w-full min-w-auto! multi-select"
+                        className="multi-select w-full max-w-full min-w-auto!"
                         modalPopover={true}
                       />
                     </div>
@@ -470,7 +466,7 @@ export default function VacationToolbar({
                         searchable={false}
                         hideSelectAll={false}
                         autoSize={true}
-                        className="w-full max-w-full min-w-auto! multi-select"
+                        className="multi-select w-full max-w-full min-w-auto!"
                         modalPopover={true}
                       />
                     </div>
@@ -492,7 +488,7 @@ export default function VacationToolbar({
                         searchable={false}
                         hideSelectAll={false}
                         autoSize={true}
-                        className="w-full max-w-full min-w-auto! multi-select"
+                        className="multi-select w-full max-w-full min-w-auto!"
                         modalPopover={true}
                       />
                     </div>
@@ -501,143 +497,149 @@ export default function VacationToolbar({
               </DrawerContent>
             </Drawer>
             {page === 'manager' && (
-              <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>승인하기</Button>
+              <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>
+                승인하기
+              </Button>
             )}
             {page === 'admin' && isAdminDetailPage && (
-              <Button onClick={onListClick} variant="outline" size="sm">목록</Button>
+              <Button onClick={onListClick} variant="outline" size="sm">
+                목록
+              </Button>
             )}
           </div>
         ) : (
-        <>
-        {/* 필터 셀렉트들 (데스크톱) */}
-        <div className="flex items-center gap-2 ">
-          
-          {/* 연도 단일 선택 */}
-          <Select value={filters.year} onValueChange={(v) => handleSelectChange('year', v)}>
-              <SelectTrigger size="sm" className="px-2">
-                <SelectValue placeholder="연도 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {yearOptions.map((y) => (
-                    <SelectItem size="sm" key={y} value={y}>
-                      {y}년
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          
-          {/* 팀 선택 */}
-          <MultiSelect
-            simpleSelect={true}
-            options={teamOptions}
-            onValueChange={(value) => handleSelectChange('teams', value)}
-            defaultValue={selectedTeams}
-            placeholder="팀 선택"
-            size="sm"
-            maxCount={0}
-            searchable={true}
-            hideSelectAll={false}
-            autoSize={true}
-            className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[80px]! max-md:w-[80px]! max-md:max-w-[80px]!"
-          />
+          <>
+            {/* 필터 셀렉트들 (데스크톱) */}
+            <div className="flex items-center gap-2">
+              {/* 연도 단일 선택 */}
+              <Select value={filters.year} onValueChange={(v) => handleSelectChange('year', v)}>
+                <SelectTrigger size="sm" className="px-2">
+                  <SelectValue placeholder="연도 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {yearOptions.map((y) => (
+                      <SelectItem size="sm" key={y} value={y}>
+                        {y}년
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
 
-          {/* 팀원 선택 (Admin일 때만) */}
-          {page === 'admin' && (
-            <MultiSelect
-              simpleSelect={true}
-              options={userOptions}
-              onValueChange={(value) => handleSelectChange('users', value)}
-              defaultValue={selectedUsers}
-              placeholder="팀원 선택"
-              size="sm"
-              maxCount={0}
-              searchable={true}
-              hideSelectAll={isAdminDetailPage}
-              autoSize={true}
-              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[85px]! max-md:w-[85px]! max-md:max-w-[85px]!"
-              disabled={selectedTeams.length === 0}
-            />
-          )}
+              {/* 팀 선택 */}
+              <MultiSelect
+                simpleSelect={true}
+                options={teamOptions}
+                onValueChange={(value) => handleSelectChange('teams', value)}
+                defaultValue={selectedTeams}
+                placeholder="팀 선택"
+                size="sm"
+                maxCount={0}
+                searchable={true}
+                hideSelectAll={false}
+                autoSize={true}
+                className="multi-select w-auto! max-w-[200px]! min-w-[120px]! max-md:w-[80px]! max-md:max-w-[80px]! max-md:min-w-[80px]!"
+              />
 
-          {/* 상태 선택 (Manager일 때만) */}
-          {page === 'manager' && (
-            <MultiSelect
-              simpleSelect={true}
-              options={[
-                { value: 'H', label: '취소요청됨' },
-                { value: 'Y', label: '승인완료' },
-                { value: 'N', label: '취소완료' },
-              ]}
-              onValueChange={(value) => handleSelectChange('status', value)}
-              defaultValue={filters.status}
-              placeholder="상태"
-              size="sm"
-              maxCount={0}
-              searchable={false}
-              hideSelectAll={false}
-              autoSize={true}
-              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[80px]! max-md:w-[80px]! max-md:max-w-[80px]!"
-            />
-          )}
+              {/* 팀원 선택 (Admin일 때만) */}
+              {page === 'admin' && (
+                <MultiSelect
+                  simpleSelect={true}
+                  options={userOptions}
+                  onValueChange={(value) => handleSelectChange('users', value)}
+                  defaultValue={selectedUsers}
+                  placeholder="팀원 선택"
+                  size="sm"
+                  maxCount={0}
+                  searchable={true}
+                  hideSelectAll={isAdminDetailPage}
+                  autoSize={true}
+                  className="multi-select w-auto! max-w-[200px]! min-w-[120px]! max-md:w-[85px]! max-md:max-w-[85px]! max-md:min-w-[85px]!"
+                  disabled={selectedTeams.length === 0}
+                />
+              )}
 
-          {/* 휴가 유형 선택 (Manager일 때만) */}
-          {page === 'manager' && activeTab === 'vacation' && (
-            <MultiSelect
-              simpleSelect={true}
-              options={[
-                { value: 'day', label: '연차' },
-                { value: 'half', label: '반차' },
-                { value: 'quarter', label: '반반차' },
-                { value: 'official', label: '공가' },
-              ]}
-              onValueChange={(value) => handleSelectChange('vacationType', value)}
-              defaultValue={filters.vacationType}
-              placeholder="휴가 유형"
-              size="sm"
-              maxCount={0}
-              searchable={false}
-              hideSelectAll={false}
-              autoSize={true}
-              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[80px]! max-md:w-[80px]! max-md:max-w-[80px]!"
-            />
-          )}
+              {/* 상태 선택 (Manager일 때만) */}
+              {page === 'manager' && (
+                <MultiSelect
+                  simpleSelect={true}
+                  options={[
+                    { value: 'H', label: '취소요청됨' },
+                    { value: 'Y', label: '승인완료' },
+                    { value: 'N', label: '취소완료' },
+                  ]}
+                  onValueChange={(value) => handleSelectChange('status', value)}
+                  defaultValue={filters.status}
+                  placeholder="상태"
+                  size="sm"
+                  maxCount={0}
+                  searchable={false}
+                  hideSelectAll={false}
+                  autoSize={true}
+                  className="multi-select w-auto! max-w-[200px]! min-w-[120px]! max-md:w-[80px]! max-md:max-w-[80px]! max-md:min-w-[80px]!"
+                />
+              )}
 
-          {activeTab === 'event' && (
-            <>
-            {/* 이벤트 유형 선택 */}
-            <MultiSelect
-              simpleSelect={true}
-              options={[
-                { value: 'remote', label: '재택근무' },
-                { value: 'field', label: '외부근무' },
-                { value: 'etc', label: '기타' },
-              ]}
-              onValueChange={(value) => handleSelectChange('eventType', value)}
-              defaultValue={filters.eventType}
-              placeholder="이벤트 유형"
-              size="sm"
-              maxCount={0}
-              searchable={false}
-              hideSelectAll={false}
-              autoSize={true}
-              className="min-w-[120px]! w-auto! max-w-[200px]! multi-select max-md:min-w-[80px]! max-md:w-[80px]! max-md:max-w-[80px]!"
-            />
+              {/* 휴가 유형 선택 (Manager일 때만) */}
+              {page === 'manager' && activeTab === 'vacation' && (
+                <MultiSelect
+                  simpleSelect={true}
+                  options={[
+                    { value: 'day', label: '연차' },
+                    { value: 'half', label: '반차' },
+                    { value: 'quarter', label: '반반차' },
+                    { value: 'official', label: '공가' },
+                  ]}
+                  onValueChange={(value) => handleSelectChange('vacationType', value)}
+                  defaultValue={filters.vacationType}
+                  placeholder="휴가 유형"
+                  size="sm"
+                  maxCount={0}
+                  searchable={false}
+                  hideSelectAll={false}
+                  autoSize={true}
+                  className="multi-select w-auto! max-w-[200px]! min-w-[120px]! max-md:w-[80px]! max-md:max-w-[80px]! max-md:min-w-[80px]!"
+                />
+              )}
+
+              {activeTab === 'event' && (
+                <>
+                  {/* 이벤트 유형 선택 */}
+                  <MultiSelect
+                    simpleSelect={true}
+                    options={[
+                      { value: 'remote', label: '재택근무' },
+                      { value: 'field', label: '외부근무' },
+                      { value: 'etc', label: '기타' },
+                    ]}
+                    onValueChange={(value) => handleSelectChange('eventType', value)}
+                    defaultValue={filters.eventType}
+                    placeholder="이벤트 유형"
+                    size="sm"
+                    maxCount={0}
+                    searchable={false}
+                    hideSelectAll={false}
+                    autoSize={true}
+                    className="multi-select w-auto! max-w-[200px]! min-w-[120px]! max-md:w-[80px]! max-md:max-w-[80px]! max-md:min-w-[80px]!"
+                  />
+                </>
+              )}
+            </div>
           </>
-          )}
-
-        </div>
-        </>
         )}
       </div>
 
       {/* 승인버튼들(데스크톱) */}
       {page === 'manager' && location.pathname !== '/manager/vacation' && (
-        <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>승인하기</Button>
+        <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>
+          승인하기
+        </Button>
       )}
       {page === 'admin' && isAdminDetailPage && (
-        <Button onClick={onListClick} variant="outline" size="sm">목록</Button>
+        <Button onClick={onListClick} variant="outline" size="sm">
+          목록
+        </Button>
       )}
     </div>
   );
@@ -646,4 +648,3 @@ export default function VacationToolbar({
 function FilterTitle({ label }: { label: string }) {
   return <p className="mb-1 text-base font-medium text-gray-600">{label}</p>;
 }
-

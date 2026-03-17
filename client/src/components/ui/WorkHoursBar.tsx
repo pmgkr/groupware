@@ -39,7 +39,9 @@ export default function WorkHoursBar({ hours, max = 52, safe = 40, warn = 48, cl
         </div>
 
         <div className="absolute top-full right-0 left-0">
-          <div className={`absolute top-0 h-5 text-[11px] text-gray-500 ${hide40h ? 'max-[1800px]:hidden' : ''}`} style={{ left: `${(safe / max) * 100}%` }}>
+          <div
+            className={`absolute top-0 h-5 text-[11px] text-gray-500 ${hide40h ? 'max-[1800px]:hidden' : ''}`}
+            style={{ left: `${(safe / max) * 100}%` }}>
             <div className="mt-1.5">40h</div>
           </div>
           <div className={`absolute top-0 right-0 h-5 text-[11px] text-gray-500 ${hide52h ? 'hidden' : ''}`}>

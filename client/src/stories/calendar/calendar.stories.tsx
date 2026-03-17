@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { parse } from "date-fns/parse";
+import { parse } from 'date-fns/parse';
 import CalendarComponent from '../../components/calendar/calendar';
 
 const meta: Meta<typeof CalendarComponent> = {
@@ -44,172 +44,172 @@ type Story = StoryObj<typeof CalendarComponent>;
 // 샘플 이벤트 데이터
 const sampleEvents = [
   {
-    title: "연차",
-    start: parse("2025-08-20 10:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-05 11:00", "yyyy-MM-dd HH:mm", new Date()),
+    title: '연차',
+    start: parse('2025-08-20 10:00', 'yyyy-MM-dd HH:mm', new Date()),
+    end: parse('2025-09-05 11:00', 'yyyy-MM-dd HH:mm', new Date()),
     allDay: true,
-    author: "이연상",
-    description: "연차입니다.",
+    author: '이연상',
+    description: '연차입니다.',
     resource: {
       seq: 1,
-      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      userId: 'ec1f6076-9fcc-48c6-b0e9-e39dbc29557x',
       teamId: 1,
-      teamName: "dev",
-      schTitle: "연차",
-      schType: "vacation",
-      schVacationType: "day" as string | null,
+      teamName: 'dev',
+      schTitle: '연차',
+      schType: 'vacation',
+      schVacationType: 'day' as string | null,
       schEventType: null,
-      schSdate: "2025-08-20",
-      schStime: "10:00:00",
-      schEdate: "2025-09-05", 
-      schEtime: "11:00:00",
-      schIsAllday: "Y",
-      schIsHoliday: "N",
-      schDescription: "연차입니다.",
-      schStatus: "Y",
+      schSdate: '2025-08-20',
+      schStime: '10:00:00',
+      schEdate: '2025-09-05',
+      schEtime: '11:00:00',
+      schIsAllday: 'Y',
+      schIsHoliday: 'N',
+      schDescription: '연차입니다.',
+      schStatus: 'Y',
       schModifiedAt: new Date(),
-      schCreatedAt: new Date()
-    }
+      schCreatedAt: new Date(),
+    },
   },
   {
-    title: "오전 반차",
-    start: parse("2025-09-02 09:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-02 13:00", "yyyy-MM-dd HH:mm", new Date()),
+    title: '오전 반차',
+    start: parse('2025-09-02 09:00', 'yyyy-MM-dd HH:mm', new Date()),
+    end: parse('2025-09-02 13:00', 'yyyy-MM-dd HH:mm', new Date()),
     allDay: false,
-    author: "이동훈",
-    description: "오전 반차입니다.",
+    author: '이동훈',
+    description: '오전 반차입니다.',
     resource: {
       seq: 2,
-      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557y",
+      userId: 'ec1f6076-9fcc-48c6-b0e9-e39dbc29557y',
       teamId: 2,
-      teamName: "design",
-      schTitle: "오전 반차",
-      schType: "vacation",
-      schVacationType: "half" as string | null,
+      teamName: 'design',
+      schTitle: '오전 반차',
+      schType: 'vacation',
+      schVacationType: 'half' as string | null,
       schEventType: null,
-      schSdate: "2025-09-02",
-      schStime: "09:00:00",
-      schEdate: "2025-09-02",
-      schEtime: "13:00:00",
-      schIsAllday: "N",
-      schIsHoliday: "N",
-      schDescription: "오전 반차입니다.",
-      schStatus: "Y",
+      schSdate: '2025-09-02',
+      schStime: '09:00:00',
+      schEdate: '2025-09-02',
+      schEtime: '13:00:00',
+      schIsAllday: 'N',
+      schIsHoliday: 'N',
+      schDescription: '오전 반차입니다.',
+      schStatus: 'Y',
       schModifiedAt: new Date(),
-      schCreatedAt: new Date()
-    }
+      schCreatedAt: new Date(),
+    },
   },
   {
-    title: "오전 반반차",
-    start: parse("2025-09-03 09:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-03 10:00", "yyyy-MM-dd HH:mm", new Date()),
+    title: '오전 반반차',
+    start: parse('2025-09-03 09:00', 'yyyy-MM-dd HH:mm', new Date()),
+    end: parse('2025-09-03 10:00', 'yyyy-MM-dd HH:mm', new Date()),
     allDay: false,
-    author: "이동훈",
-    description: "오전 반반차입니다.",
+    author: '이동훈',
+    description: '오전 반반차입니다.',
     resource: {
       seq: 3,
-      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557z",
+      userId: 'ec1f6076-9fcc-48c6-b0e9-e39dbc29557z',
       teamId: 3,
-      teamName: "design",
-      schTitle: "오전 반반차",
-      schType: "vacation",
-      schVacationType: "quarter" as string | null,
+      teamName: 'design',
+      schTitle: '오전 반반차',
+      schType: 'vacation',
+      schVacationType: 'quarter' as string | null,
       schEventType: null,
-      schSdate: "2025-09-03",
-      schStime: "09:00:00",
-      schEdate: "2025-09-03",
-      schEtime: "10:00:00",
-      schIsAllday: "N",
-      schIsHoliday: "N",
-      schDescription: "오전 반반차입니다.",
-      schStatus: "Y",
+      schSdate: '2025-09-03',
+      schStime: '09:00:00',
+      schEdate: '2025-09-03',
+      schEtime: '10:00:00',
+      schIsAllday: 'N',
+      schIsHoliday: 'N',
+      schDescription: '오전 반반차입니다.',
+      schStatus: 'Y',
       schModifiedAt: new Date(),
-      schCreatedAt: new Date()
-    }
+      schCreatedAt: new Date(),
+    },
   },
   {
-    title: "오후 반차",
-    start: parse("2025-09-04 13:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-04 18:00", "yyyy-MM-dd HH:mm", new Date()),
+    title: '오후 반차',
+    start: parse('2025-09-04 13:00', 'yyyy-MM-dd HH:mm', new Date()),
+    end: parse('2025-09-04 18:00', 'yyyy-MM-dd HH:mm', new Date()),
     allDay: false,
-    author: "이동훈",
-    description: "오후 반차입니다.",
+    author: '이동훈',
+    description: '오후 반차입니다.',
     resource: {
       seq: 4,
-      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557a",
+      userId: 'ec1f6076-9fcc-48c6-b0e9-e39dbc29557a',
       teamId: 1,
-      teamName: "design",
-      schTitle: "오후 반차",
-      schType: "vacation",
-      schVacationType: "half" as string | null,
+      teamName: 'design',
+      schTitle: '오후 반차',
+      schType: 'vacation',
+      schVacationType: 'half' as string | null,
       schEventType: null,
-      schSdate: "2025-09-04",
-      schStime: "13:00:00",
-      schEdate: "2025-09-04",
-      schEtime: "18:00:00",
-      schIsAllday: "N",
-      schIsHoliday: "N",
-      schDescription: "오후 반차입니다.",
-      schStatus: "Y",
+      schSdate: '2025-09-04',
+      schStime: '13:00:00',
+      schEdate: '2025-09-04',
+      schEtime: '18:00:00',
+      schIsAllday: 'N',
+      schIsHoliday: 'N',
+      schDescription: '오후 반차입니다.',
+      schStatus: 'Y',
       schModifiedAt: new Date(),
-      schCreatedAt: new Date()
-    }
+      schCreatedAt: new Date(),
+    },
   },
   {
-    title: "외부 일정",
-    start: parse("2025-08-30 09:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-01 10:00", "yyyy-MM-dd HH:mm", new Date()), 
+    title: '외부 일정',
+    start: parse('2025-08-30 09:00', 'yyyy-MM-dd HH:mm', new Date()),
+    end: parse('2025-09-01 10:00', 'yyyy-MM-dd HH:mm', new Date()),
     allDay: true,
-    author: "이연상",
-    description: "외부 일정입니다.",
+    author: '이연상',
+    description: '외부 일정입니다.',
     resource: {
       seq: 5,
-      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      userId: 'ec1f6076-9fcc-48c6-b0e9-e39dbc29557x',
       teamId: 1,
-      teamName: "dev",
-      schTitle: "외부 일정",
-      schType: "event",
+      teamName: 'dev',
+      schTitle: '외부 일정',
+      schType: 'event',
       schVacationType: null,
-      schEventType: "field" as string | null,
-      schSdate: "2025-08-30",
-      schStime: "09:00:00",
-      schEdate: "2025-09-01",
-      schEtime: "10:00:00",
-      schIsAllday: "Y",
-      schIsHoliday: "N",
-      schDescription: "외부 일정입니다.",
-      schStatus: "Y",
+      schEventType: 'field' as string | null,
+      schSdate: '2025-08-30',
+      schStime: '09:00:00',
+      schEdate: '2025-09-01',
+      schEtime: '10:00:00',
+      schIsAllday: 'Y',
+      schIsHoliday: 'N',
+      schDescription: '외부 일정입니다.',
+      schStatus: 'Y',
       schModifiedAt: new Date(),
-      schCreatedAt: new Date()
-    }
+      schCreatedAt: new Date(),
+    },
   },
   {
-    title: "외부 일정",
-    start: parse("2025-09-20 09:00", "yyyy-MM-dd HH:mm", new Date()),
-    end: parse("2025-09-21 10:00", "yyyy-MM-dd HH:mm", new Date()),
+    title: '외부 일정',
+    start: parse('2025-09-20 09:00', 'yyyy-MM-dd HH:mm', new Date()),
+    end: parse('2025-09-21 10:00', 'yyyy-MM-dd HH:mm', new Date()),
     allDay: true,
-    author: "이연상",
-    description: "외부 일정입니다.",
+    author: '이연상',
+    description: '외부 일정입니다.',
     resource: {
       seq: 6,
-      userId: "ec1f6076-9fcc-48c6-b0e9-e39dbc29557x",
+      userId: 'ec1f6076-9fcc-48c6-b0e9-e39dbc29557x',
       teamId: 1,
-      teamName: "dev",
-      schTitle: "외부 일정",
-      schType: "event",
+      teamName: 'dev',
+      schTitle: '외부 일정',
+      schType: 'event',
       schVacationType: null,
-      schEventType: "field" as string | null,
-      schSdate: "2025-09-20",
-      schStime: "09:00:00",
-      schEdate: "2025-09-21",
-      schEtime: "10:00:00",
-      schIsAllday: "Y",
-      schIsHoliday: "N",
-      schDescription: "외부 일정입니다.",
-      schStatus: "Y",
+      schEventType: 'field' as string | null,
+      schSdate: '2025-09-20',
+      schStime: '09:00:00',
+      schEdate: '2025-09-21',
+      schEtime: '10:00:00',
+      schIsAllday: 'Y',
+      schIsHoliday: 'N',
+      schDescription: '외부 일정입니다.',
+      schStatus: 'Y',
       schModifiedAt: new Date(),
-      schCreatedAt: new Date()
-    }
+      schCreatedAt: new Date(),
+    },
   },
 ];
 
@@ -228,7 +228,7 @@ const defaultSelectConfigs = [
     autoSize: true,
     searchable: true,
     hideSelectAll: false,
-    maxCount: 0
+    maxCount: 0,
   },
   {
     id: 'type',
@@ -245,7 +245,7 @@ const defaultSelectConfigs = [
     searchable: true,
     hideSelectAll: false,
     maxCount: 0,
-  }
+  },
 ];
 
 // 기본 이벤트 제목 매핑 함수
@@ -273,11 +273,11 @@ const defaultEventTitleMapper = (eventType: string) => {
 // 기본 이벤트 필터링 함수
 const defaultEventFilter = (events: any[], selectConfigs: any[]) => {
   let filteredEvents = [...events];
-  
+
   // 팀 필터링
-  const teamConfig = selectConfigs.find(config => config.id === 'team');
+  const teamConfig = selectConfigs.find((config) => config.id === 'team');
   if (teamConfig && teamConfig.value && teamConfig.value.length > 0) {
-    filteredEvents = filteredEvents.filter(event => {
+    filteredEvents = filteredEvents.filter((event) => {
       return teamConfig.value?.some((selectedTeam: string) => {
         if (!event.resource.teamName) return false;
         switch (selectedTeam) {
@@ -295,14 +295,14 @@ const defaultEventFilter = (events: any[], selectConfigs: any[]) => {
       });
     });
   }
-  
+
   // 타입 필터링
-  const typeConfig = selectConfigs.find(config => config.id === 'type');
+  const typeConfig = selectConfigs.find((config) => config.id === 'type');
   if (typeConfig && typeConfig.value && typeConfig.value.length > 0) {
-    filteredEvents = filteredEvents.filter(event => {
+    filteredEvents = filteredEvents.filter((event) => {
       const eventType = event.resource.schType;
       const vacationType = event.resource.schVacationType;
-      
+
       return typeConfig.value?.some((selectedType: string) => {
         switch (selectedType) {
           case 'type_vacation':
@@ -321,7 +321,7 @@ const defaultEventFilter = (events: any[], selectConfigs: any[]) => {
       });
     });
   }
-  
+
   return filteredEvents;
 };
 
@@ -412,7 +412,7 @@ export const WithTeamFilter: Story = {
         autoSize: true,
         searchable: true,
         hideSelectAll: false,
-        maxCount: 0
+        maxCount: 0,
       },
       {
         id: 'type',
@@ -429,7 +429,7 @@ export const WithTeamFilter: Story = {
         searchable: true,
         hideSelectAll: false,
         maxCount: 0,
-      }
+      },
     ],
     eventTitleMapper: defaultEventTitleMapper,
     eventFilter: defaultEventFilter,
@@ -462,7 +462,7 @@ export const WithTypeFilter: Story = {
         autoSize: true,
         searchable: true,
         hideSelectAll: false,
-        maxCount: 0
+        maxCount: 0,
       },
       {
         id: 'type',
@@ -479,7 +479,7 @@ export const WithTypeFilter: Story = {
         searchable: true,
         hideSelectAll: false,
         maxCount: 0,
-      }
+      },
     ],
     eventTitleMapper: defaultEventTitleMapper,
     eventFilter: defaultEventFilter,
@@ -493,4 +493,4 @@ export const WithTypeFilter: Story = {
       },
     },
   },
-}; 
+};

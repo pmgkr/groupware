@@ -49,10 +49,12 @@ export interface LateComerResponse {
   total?: number;
   startYMD?: string;
   endYMD?: string;
-  result?: {
-    tdate: string;
-    items: LateComerResponseItems[];
-  }[] | LateComerResponseItems[];
+  result?:
+    | {
+        tdate: string;
+        items: LateComerResponseItems[];
+      }[]
+    | LateComerResponseItems[];
   items?: LateComerResponseItems[];
 }
 export interface LateComerResponseItems {
@@ -65,7 +67,6 @@ export interface LateComerResponseItems {
   wmin: number;
   wtype: string;
   wkind: string;
-
 }
 
 export const adminWlogApi = {
@@ -78,11 +79,11 @@ export const adminWlogApi = {
     queryParams.append('weekno', weekno.toString());
     queryParams.append('yearno', yearno.toString());
     const response = await http<WlogWeekListResponse>(`/admin/wlog/week?${queryParams.toString()}`, {
-      method: 'GET'
+      method: 'GET',
     });
     return response;
   },
-  
+
   // 근태 로그 수정/등록
   updateWlog: async (user_id: string, tdate: string, stime: string, etime: string): Promise<WlogUpdateResponse> => {
     // 시간 형식 변환: "HH:mm" -> "HH:mm:ss"
@@ -100,7 +101,7 @@ export const adminWlogApi = {
         user_id,
         tdate,
         stime: formatTime(stime),
-        etime: formatTime(etime)
+        etime: formatTime(etime),
       }),
     });
     return response;
@@ -116,7 +117,7 @@ export const adminWlogApi = {
     queryParams.append('weekno', weekno.toString());
     queryParams.append('yearno', yearno.toString());
     const response = await http<LateComerResponse>(`/admin/wlog/latecomer?${queryParams.toString()}`, {
-      method: 'GET'
+      method: 'GET',
     });
     return response;
   },

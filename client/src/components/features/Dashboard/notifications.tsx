@@ -164,7 +164,6 @@ export function Notification() {
 
   // 알림 클릭 시
   const handleNotificationClick = async (noti: Notification) => {
-
     // 읽음 처리
     if (noti.noti_is_read === 'N') {
       try {
@@ -186,7 +185,6 @@ export function Notification() {
     if (isMobile) {
       setIsOpen(false);
     }
-
   };
 
   const handleNotificationRemove = async () => {

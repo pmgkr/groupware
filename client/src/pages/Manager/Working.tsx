@@ -9,7 +9,7 @@ export default function ManagerWorking() {
   const [searchParams, setSearchParams] = useSearchParams();
   const isInitialMount = useRef(true);
   const isUpdatingFromUrl = useRef(false);
-  
+
   // URL에서 파라미터 읽기
   const urlYear = searchParams.get('year');
   const urlWeek = searchParams.get('week');
@@ -32,7 +32,10 @@ export default function ManagerWorking() {
   // 초기 팀 ID 설정: URL 파라미터가 있으면 사용
   const getInitialTeamIds = () => {
     if (urlTeamIds) {
-      const ids = urlTeamIds.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+      const ids = urlTeamIds
+        .split(',')
+        .map((id) => parseInt(id, 10))
+        .filter((id) => !isNaN(id));
       return ids;
     }
     return [];
@@ -44,12 +47,12 @@ export default function ManagerWorking() {
   const prevUrlYearRef = useRef(urlYear);
   const prevUrlWeekRef = useRef(urlWeek);
   const currentDateRef = useRef(currentDate);
-  
+
   // currentDate가 변경될 때마다 ref 업데이트
   useEffect(() => {
     currentDateRef.current = currentDate;
   }, [currentDate]);
-  
+
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -91,12 +94,12 @@ export default function ManagerWorking() {
 
   const prevUrlTeamIdsRef = useRef(urlTeamIds);
   const selectedTeamIdsRef = useRef(selectedTeamIds);
-  
+
   // selectedTeamIds가 변경될 때마다 ref 업데이트
   useEffect(() => {
     selectedTeamIdsRef.current = selectedTeamIds;
   }, [selectedTeamIds]);
-  
+
   useEffect(() => {
     if (isInitialMount.current) {
       prevUrlTeamIdsRef.current = urlTeamIds;
@@ -113,10 +116,12 @@ export default function ManagerWorking() {
       prevUrlTeamIdsRef.current = urlTeamIds;
 
       if (urlTeamIds) {
-        const ids = urlTeamIds.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+        const ids = urlTeamIds
+          .split(',')
+          .map((id) => parseInt(id, 10))
+          .filter((id) => !isNaN(id));
         // 배열이 실제로 다른 경우에만 업데이트
-        if (ids.length !== selectedTeamIdsRef.current.length || 
-            ids.some((id, idx) => id !== selectedTeamIdsRef.current[idx])) {
+        if (ids.length !== selectedTeamIdsRef.current.length || ids.some((id, idx) => id !== selectedTeamIdsRef.current[idx])) {
           isUpdatingFromUrl.current = true;
           setSelectedTeamIds(ids);
           setTimeout(() => {
@@ -135,14 +140,14 @@ export default function ManagerWorking() {
 
   // 현재 주의 시작일 계산
   const weekStartDate = useMemo(() => getWeekStartDate(currentDate), [currentDate]);
-  
+
   // 근태 데이터 로드
   const { workingList, loading, refresh } = useWorkingData({ weekStartDate, selectedTeamIds, page: 'manager' });
 
   // 날짜 변경 핸들러: URL 업데이트
   const handleDateChange = (newDate: Date) => {
     if (isUpdatingFromUrl.current) return;
-    
+
     setCurrentDate(newDate);
     const { year, week } = getWeekNumber(getWeekStartDate(newDate));
     const newSearchParams = new URLSearchParams(searchParams);
@@ -154,7 +159,7 @@ export default function ManagerWorking() {
   // 팀 선택 핸들러: URL 업데이트
   const handleTeamSelect = (teamIds: number[]) => {
     if (isUpdatingFromUrl.current) return;
-    
+
     setSelectedTeamIds(teamIds);
     const newSearchParams = new URLSearchParams(searchParams);
     if (teamIds.length > 0) {
@@ -167,23 +172,17 @@ export default function ManagerWorking() {
 
   return (
     <div className="mb-5 max-md:mb-[-20px]">
-      <Toolbar 
-        currentDate={currentDate} 
-        onDateChange={handleDateChange} 
+      <Toolbar
+        currentDate={currentDate}
+        onDateChange={handleDateChange}
         onTeamSelect={handleTeamSelect}
         page="manager"
         workingList={workingList}
         weekStartDate={weekStartDate}
         initialSelectedTeamIds={selectedTeamIds}
       />
-      
-      <WorkingList
-        data={workingList}
-        loading={loading}
-        weekStartDate={weekStartDate}
-        page="manager"
-        onRefresh={refresh}
-      />
+
+      <WorkingList data={workingList} loading={loading} weekStartDate={weekStartDate} page="manager" onRefresh={refresh} />
     </div>
   );
 }

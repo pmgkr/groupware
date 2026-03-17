@@ -22,9 +22,9 @@ export const VACATION_TYPE_OPTIONS = [
  */
 export function calcType(logs: VacationLog[], types: string[]) {
   let grant = 0; // 부여된 일수
-  let used = 0;  // 사용된 일수 (음수 누적)
+  let used = 0; // 사용된 일수 (음수 누적)
 
-  logs.forEach(log => {
+  logs.forEach((log) => {
     if (!types.includes(log.v_type)) return;
 
     const v = log.v_count;
@@ -52,21 +52,21 @@ export function calcCurrentYear(logs: VacationLog[]) {
   let grant = 0;
   let used = 0;
 
-  logs.forEach(log => {
+  logs.forEach((log) => {
     const v = log.v_count;
 
     // 부여
-    if (log.v_type === "current" && v > 0) {
+    if (log.v_type === 'current' && v > 0) {
       grant += v;
     }
 
     // 사용
-    if (log.v_type === "current" && v < 0) {
+    if (log.v_type === 'current' && v < 0) {
       used += v; // 음수
     }
 
     // 사용 취소 (복구)
-    if (log.v_type === "cancel" && v > 0) {
+    if (log.v_type === 'cancel' && v > 0) {
       used += v; // 음수 사용값 복구
     }
   });
@@ -83,15 +83,13 @@ export function calcCurrentYear(logs: VacationLog[]) {
  */
 export function calcAllVacation(logs: VacationLog[]) {
   const current = calcCurrentYear(logs);
-  const carry = calcType(logs, ["carryover"]);
+  const carry = calcType(logs, ['carryover']);
   const special = calcType(logs, SPECIAL_VACATION_TYPES);
-  const official = calcType(logs, ["official"]);
+  const official = calcType(logs, ['official']);
 
-  const totalPlus =
-    current.plusDays + carry.plusDays + special.plusDays;
+  const totalPlus = current.plusDays + carry.plusDays + special.plusDays;
 
-  const totalMinus =
-    current.minusDays + carry.minusDays + special.minusDays;
+  const totalMinus = current.minusDays + carry.minusDays + special.minusDays;
 
   return {
     current,

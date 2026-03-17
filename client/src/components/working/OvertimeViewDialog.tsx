@@ -51,21 +51,21 @@ const isSundayOrHoliday = (dayOfWeek: string, workType: string, isHoliday?: bool
   return dayOfWeek === '일' || workType === '공휴일';
 };
 
-export default function OvertimeViewDialog({ 
-  isOpen, 
-  onClose, 
-  onCancel, 
-  onReapply, 
+export default function OvertimeViewDialog({
+  isOpen,
+  onClose,
+  onCancel,
+  onReapply,
   onApprove,
   onReject,
   onCompensation,
-  selectedDay, 
+  selectedDay,
   selectedIndex,
   isManager = false,
   isOwnRequest = false,
   activeTab = 'weekday',
   isPage = 'manager',
-  user
+  user,
 }: OvertimeViewDialogProps) {
   console.log({
     onCompensation,
@@ -80,31 +80,25 @@ export default function OvertimeViewDialog({
   // Hook 호출
   const { addDialog } = useAppDialog();
   const { addAlert } = useAppAlert();
-  
+
   // 반려 사유 state
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
-  
+
   // selectedDay에서 상태 가져오기
-  const status = selectedDay?.overtimeStatus || "신청하기";
+  const status = selectedDay?.overtimeStatus || '신청하기';
   const isWeekendOrHolidayDay = selectedDay
-    ? isWeekendOrHoliday(
-        selectedDay.dayOfWeek,
-        selectedDay.workType,
-        selectedDay.isHoliday,
-        selectedDay.holidayName
-      )
+    ? isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName)
     : false;
-  
+
   // HR팀 또는 Finance팀 관리자/관리자 권한 확인 함수
   const isHrOrFinanceTeam = () => {
-    return (user?.user_level === 'manager' || user?.user_level === 'admin') && 
-           (user?.team_id === 1 || user?.team_id === 5);
+    return (user?.user_level === 'manager' || user?.user_level === 'admin') && (user?.team_id === 1 || user?.team_id === 5);
   };
-  
+
   // 보상 지급 가능 여부 확인 (HR/Finance팀이고 휴일 근무 탭이며 보상대기 상태일 때)
   const canShowCompensation = isHrOrFinanceTeam() && isWeekendOrHolidayDay && status === '보상대기';
-  
+
   // 신청 취소하기 확인 다이얼로그
   const handleCancelClick = () => {
     addDialog({
@@ -115,18 +109,17 @@ export default function OvertimeViewDialog({
       onConfirm: async () => {
         try {
           await onCancel();
-          
+
           addAlert({
             title: '삭제 완료',
             message: `${getOvertimeLabel()} 신청이 성공적으로 취소되었습니다.`,
             icon: <OctagonAlert />,
             duration: 3000,
           });
-          
+
           setTimeout(() => {
             onClose();
           }, 300);
-          
         } catch (error) {
           console.error('취소 실패:', error);
           // 실패 알림 표시
@@ -145,7 +138,7 @@ export default function OvertimeViewDialog({
   // 승인 확인 다이얼로그
   const handleApproveClick = () => {
     const isCompensation = isPage === 'admin' && isWeekendOrHolidayDay && (user?.team_id === 1 || user?.team_id === 5);
-    
+
     addDialog({
       title: `<span class="text-primary-blue font-semibold">${isCompensation ? '보상 지급 확인' : '승인 확인'}</span>`,
       message: isCompensation ? '이 보상지급 요청을 승인하시겠습니까?' : `이 ${getOvertimeLabel()} 신청을 승인하시겠습니까?`,
@@ -221,7 +214,7 @@ export default function OvertimeViewDialog({
   // 보상 지급 확인 다이얼로그
   const handleCompensationClick = () => {
     const isCompensation = isPage === 'admin' && isWeekendOrHolidayDay && (user?.team_id === 1 || user?.team_id === 5);
-    
+
     addDialog({
       title: `<span class="text-primary-blue font-semibold">${isCompensation ? '보상 지급 확인' : '승인 확인'}</span>`,
       message: isCompensation ? '이 보상지급 요청을 승인하시겠습니까?' : `이 ${getOvertimeLabel()} 신청을 승인하시겠습니까?`,
@@ -254,30 +247,25 @@ export default function OvertimeViewDialog({
       },
     });
   };
-  
+
   // 신청 데이터
   const overtimeData = selectedDay?.overtimeData || {
-    expectedStartTime: "",
-    expectedStartTimeMinute: "",
-    expectedEndTime: "",
-    expectedEndMinute: "",
-    mealAllowance: "",
-    transportationAllowance: "",
-    overtimeHours: "",
-    overtimeMinutes: "",
-    overtimeType: "",
-    clientName: "",
-    workDescription: ""
+    expectedStartTime: '',
+    expectedStartTimeMinute: '',
+    expectedEndTime: '',
+    expectedEndMinute: '',
+    mealAllowance: '',
+    transportationAllowance: '',
+    overtimeHours: '',
+    overtimeMinutes: '',
+    overtimeType: '',
+    clientName: '',
+    workDescription: '',
   };
 
   const getOvertimeLabel = () => {
     if (selectedDay) {
-      return isWeekendOrHoliday(
-        selectedDay.dayOfWeek,
-        selectedDay.workType,
-        selectedDay.isHoliday,
-        selectedDay.holidayName
-      )
+      return isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName)
         ? '휴일근무'
         : '연장근무';
     }
@@ -299,153 +287,158 @@ export default function OvertimeViewDialog({
         </DialogHeader>
         <div className="space-y-4 py-4">
           {/* 평일 (월-금) 신청 내역 */}
-          {selectedDay && !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="expected-end-time">예상 퇴근 시간</Label>
-                <div className="h-11 flex-1 flex items-center gap-1 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:h-10 max-md:rounded-sm">
-                  <span className="text-base max-md:text-[13px]">
-                    {overtimeData.expectedEndTime}시
-                  </span>
-                  <span className="text-base max-md:text-[13px]">
-                    {overtimeData.expectedEndMinute}분
-                  </span>
+          {selectedDay &&
+            !isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="expected-end-time">예상 퇴근 시간</Label>
+                  <div className="flex h-11 flex-1 items-center gap-1 rounded-md border border-gray-300 bg-gray-100 px-3 py-1 max-md:h-10 max-md:rounded-sm">
+                    <span className="text-base max-md:text-[13px]">{overtimeData.expectedEndTime}시</span>
+                    <span className="text-base max-md:text-[13px]">{overtimeData.expectedEndMinute}분</span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-3 mb-8">
-                <Label>식대 사용여부</Label>
-                <div className="flex gap-2">
-                  <div className={`px-4 py-2 rounded-md border ${
-                    overtimeData.mealAllowance === 'yes' 
-                      ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
-                      : 'bg-gray-100 border-gray-300 text-gray-600'
-                  }`}>
-                    <span className="text-base font-medium">사용함</span>
-                  </div>
-                  <div className={`px-4 py-2 rounded-md border ${
-                    overtimeData.mealAllowance === 'no' 
-                      ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
-                      : 'bg-gray-100 border-gray-300 text-gray-600'
-                  }`}>
-                    <span className="text-base font-medium">사용안함</span>
+                <div className="mb-8 space-y-3">
+                  <Label>식대 사용여부</Label>
+                  <div className="flex gap-2">
+                    <div
+                      className={`rounded-md border px-4 py-2 ${
+                        overtimeData.mealAllowance === 'yes'
+                          ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue'
+                          : 'border-gray-300 bg-gray-100 text-gray-600'
+                      }`}>
+                      <span className="text-base font-medium">사용함</span>
+                    </div>
+                    <div
+                      className={`rounded-md border px-4 py-2 ${
+                        overtimeData.mealAllowance === 'no'
+                          ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue'
+                          : 'border-gray-300 bg-gray-100 text-gray-600'
+                      }`}>
+                      <span className="text-base font-medium">사용안함</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-3 mb-8">
-                <Label>교통비 사용여부</Label>
-                <div className="flex gap-2">
-                  <div className={`px-4 py-2 rounded-md border ${
-                    overtimeData.transportationAllowance === 'yes' 
-                      ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
-                      : 'bg-gray-100 border-gray-300 text-gray-600'
-                  }`}>
-                    <span className="text-base font-medium">사용함</span>
-                  </div>
-                  <div className={`px-4 py-2 rounded-md border ${
-                    overtimeData.transportationAllowance === 'no' 
-                      ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
-                      : 'bg-gray-100 border-gray-300 text-gray-600'
-                  }`}>
-                    <span className="text-base font-medium">사용안함</span>
+                <div className="mb-8 space-y-3">
+                  <Label>교통비 사용여부</Label>
+                  <div className="flex gap-2">
+                    <div
+                      className={`rounded-md border px-4 py-2 ${
+                        overtimeData.transportationAllowance === 'yes'
+                          ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue'
+                          : 'border-gray-300 bg-gray-100 text-gray-600'
+                      }`}>
+                      <span className="text-base font-medium">사용함</span>
+                    </div>
+                    <div
+                      className={`rounded-md border px-4 py-2 ${
+                        overtimeData.transportationAllowance === 'no'
+                          ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue'
+                          : 'border-gray-300 bg-gray-100 text-gray-600'
+                      }`}>
+                      <span className="text-base font-medium">사용안함</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            )}
 
           {/* 주말 (토, 일) 또는 공휴일 신청 내역 */}
-          {selectedDay && isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="expected-start-time">근무 시간</Label>
-                <div className="h-11 flex-1 flex items-center gap-1 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:h-10 max-md:rounded-sm">
-                  <span className="text-base max-md:text-[13px]">
-                    {overtimeData.expectedStartTime}시 {overtimeData.expectedStartTimeMinute}분
-                  </span>
-                  -
-                  <span className="text-base max-md:text-[13px]">
-                    {overtimeData.expectedEndTime}시 {overtimeData.expectedEndMinute}분
-                  </span>
-                  <span className="text-base max-md:text-[13px] text-gray-600">
-                    (인정 근무시간: <span className="text-primary-blue-500">{overtimeData.overtimeHours}시간 {overtimeData.overtimeMinutes}분</span>)
-                  </span>
+          {selectedDay &&
+            isWeekendOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="expected-start-time">근무 시간</Label>
+                  <div className="flex h-11 flex-1 items-center gap-1 rounded-md border border-gray-300 bg-gray-100 px-3 py-1 max-md:h-10 max-md:rounded-sm">
+                    <span className="text-base max-md:text-[13px]">
+                      {overtimeData.expectedStartTime}시 {overtimeData.expectedStartTimeMinute}분
+                    </span>
+                    -
+                    <span className="text-base max-md:text-[13px]">
+                      {overtimeData.expectedEndTime}시 {overtimeData.expectedEndMinute}분
+                    </span>
+                    <span className="text-base text-gray-600 max-md:text-[13px]">
+                      (인정 근무시간:{' '}
+                      <span className="text-primary-blue-500">
+                        {overtimeData.overtimeHours}시간 {overtimeData.overtimeMinutes}분
+                      </span>
+                      )
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-3 mb-8">
-                <Label>보상 지급방식</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {/* 토요일인 경우: 특별대휴만 표시 */}
-                  {isSaturday(selectedDay.dayOfWeek) && (
-                    <div className={`px-4 py-2 rounded-md border ${
-                      overtimeData.overtimeType === 'special_vacation' 
-                        ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
-                        : 'bg-gray-100 border-gray-300 text-gray-600'
-                    }`}>
-                      <span className="text-base font-medium">특별대휴</span>
-                    </div>
-                  )}
-                  
-                  {/* 일요일 또는 공휴일인 경우: 보상휴가, 수당지급 표시 */}
-                  {isSundayOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
-                    <>
-                      <div className={`px-4 py-2 rounded-md border ${
-                        overtimeData.overtimeType === 'compensation_vacation' 
-                          ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
-                          : 'bg-gray-100 border-gray-300 text-gray-600'
-                      }`}>
-                        <span className="text-base font-medium">보상휴가</span>
+                <div className="mb-8 space-y-3">
+                  <Label>보상 지급방식</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* 토요일인 경우: 특별대휴만 표시 */}
+                    {isSaturday(selectedDay.dayOfWeek) && (
+                      <div
+                        className={`rounded-md border px-4 py-2 ${
+                          overtimeData.overtimeType === 'special_vacation'
+                            ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue'
+                            : 'border-gray-300 bg-gray-100 text-gray-600'
+                        }`}>
+                        <span className="text-base font-medium">특별대휴</span>
                       </div>
-                      <div className={`px-4 py-2 rounded-md border ${
-                        overtimeData.overtimeType === 'event' 
-                          ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue' 
-                          : 'bg-gray-100 border-gray-300 text-gray-600'
-                      }`}>
-                        <span className="text-base font-medium">수당지급</span>
-                      </div>
-                    </>
-                  )}
+                    )}
+
+                    {/* 일요일 또는 공휴일인 경우: 보상휴가, 수당지급 표시 */}
+                    {isSundayOrHoliday(selectedDay.dayOfWeek, selectedDay.workType, selectedDay.isHoliday, selectedDay.holidayName) && (
+                      <>
+                        <div
+                          className={`rounded-md border px-4 py-2 ${
+                            overtimeData.overtimeType === 'compensation_vacation'
+                              ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue'
+                              : 'border-gray-300 bg-gray-100 text-gray-600'
+                          }`}>
+                          <span className="text-base font-medium">보상휴가</span>
+                        </div>
+                        <div
+                          className={`rounded-md border px-4 py-2 ${
+                            overtimeData.overtimeType === 'event'
+                              ? 'bg-primary-blue-100 border-primary-blue-300 text-primary-blue'
+                              : 'border-gray-300 bg-gray-100 text-gray-600'
+                          }`}>
+                          <span className="text-base font-medium">수당지급</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            )}
 
           {/* 공통 필드 */}
           <div className="space-y-2">
             <Label htmlFor="client-name">클라이언트명</Label>
-            <div className="h-11 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:h-10 max-md:rounded-sm flex items-center break-all">
+            <div className="flex h-11 items-center rounded-md border border-gray-300 bg-gray-100 px-3 py-1 break-all max-md:h-10 max-md:rounded-sm">
               <span className="text-base max-md:text-[13px]">{overtimeData.clientName}</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="work-description">업무 내용</Label>
-            <div className="min-h-[80px] px-3 py-1 border border-gray-300 rounded-md bg-gray-100 max-md:rounded-sm flex items-start pt-3 break-all whitespace-pre-wrap">
+            <div className="flex min-h-[80px] items-start rounded-md border border-gray-300 bg-gray-100 px-3 py-1 pt-3 break-all whitespace-pre-wrap max-md:rounded-sm">
               <span className="text-base max-md:text-[13px]">{overtimeData.workDescription}</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>신청 상태</Label>
-            <div className="min-h-[44px] px-3 py-1 rounded-lg border border-gray-300 bg-gray-100 max-md:rounded-sm flex items-center">
-                <div>
-                  <span className="text-base max-md:text-[13px] font-semibold text-gray-800">
-                    {status}
-                  </span>
-                  {/* 승인완료 시 승인일 표시는 백엔드 데이터 연동 시 추가 예정 */}
-                  {status === "취소완료" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
-                    <>
-                    <p className="text-sm max-md:text-[11px] text-gray-800 mt-1">
-                        반려일: {dayjs(selectedDay.rejectionDate).format('YYYY년 MM월 DD일')}
+            <div className="flex min-h-[44px] items-center rounded-lg border border-gray-300 bg-gray-100 px-3 py-1 max-md:rounded-sm">
+              <div>
+                <span className="text-base font-semibold text-gray-800 max-md:text-[13px]">{status}</span>
+                {/* 승인완료 시 승인일 표시는 백엔드 데이터 연동 시 추가 예정 */}
+                {status === '취소완료' && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
+                  <>
+                    <p className="mt-1 text-sm text-gray-800 max-md:text-[11px]">
+                      반려일: {dayjs(selectedDay.rejectionDate).format('YYYY년 MM월 DD일')}
                     </p>
-                    <p className="text-sm max-md:text-[11px] text-gray-800">
-                        반려사유: {selectedDay.rejectionReason}
-                    </p>
-                    </>
-                  )}
-                </div>
+                    <p className="text-sm text-gray-800 max-md:text-[11px]">반려사유: {selectedDay.rejectionReason}</p>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -462,102 +455,130 @@ export default function OvertimeViewDialog({
           )} */}
         </div>
 
-          {/* 반려 사유 입력 */}
-          {showRejectInput && (
-            <div className="space-y-2">
-              <Label htmlFor="reject-reason">반려 사유</Label>
-              <Textarea
-                id="reject-reason"
-                placeholder="반려 사유를 입력해주세요"
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                className="min-h-[100px]"
-              />
-            </div>
+        {/* 반려 사유 입력 */}
+        {showRejectInput && (
+          <div className="space-y-2">
+            <Label htmlFor="reject-reason">반려 사유</Label>
+            <Textarea
+              id="reject-reason"
+              placeholder="반려 사유를 입력해주세요"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+        )}
+
+        <DialogFooter className="gap-2 max-md:flex-row max-md:flex-nowrap">
+          {/* 관리자 모드 - 승인대기 상태일 때 승인/반려 버튼 */}
+          {isManager && status === '승인대기' && (
+            <>
+              {!showRejectInput ? (
+                <>
+                  {onApprove && (
+                    <Button
+                      variant="default"
+                      onClick={handleApproveClick}
+                      className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0 max-md:flex-1">
+                      {isPage === 'admin' && isWeekendOrHolidayDay && (user?.team_id === 1 || user?.team_id === 5)
+                        ? '보상 지급하기'
+                        : '승인하기'}
+                    </Button>
+                  )}
+                  {onReject && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => setShowRejectInput(true)}
+                      className="bg-destructive hover:bg-destructive mr-0 max-md:flex-1">
+                      반려하기
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Button variant="default" onClick={handleRejectSubmit} className="max-md:flex-1">
+                    반려 확정
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowRejectInput(false);
+                      setRejectReason('');
+                    }}
+                    className="max-md:flex-1">
+                    취소
+                  </Button>
+                </>
+              )}
+            </>
           )}
 
-          <DialogFooter className="gap-2 max-md:flex-row max-md:flex-nowrap">
-            {/* 관리자 모드 - 승인대기 상태일 때 승인/반려 버튼 */}
-            {isManager && status === "승인대기" && (
-              <>
-                {!showRejectInput ? (
-                  <>
-                    {onApprove && (
-                      <Button variant="default" onClick={handleApproveClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0 max-md:flex-1">
-                        {isPage === 'admin' && isWeekendOrHolidayDay && (user?.team_id === 1 || user?.team_id === 5) ? '보상 지급하기' : '승인하기'}
-                      </Button>
-                    )}
-                    {onReject && (
-                      <Button variant="destructive" onClick={() => setShowRejectInput(true)} className="bg-destructive hover:bg-destructive mr-0 max-md:flex-1">
-                        반려하기
-                      </Button>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <Button variant="default" onClick={handleRejectSubmit} className="max-md:flex-1">
-                      반려 확정
+          {/* 보상대기 상태일 때 보상 지급하기 + 반려하기 버튼 (admin이고 휴일 근무일 때만) */}
+          {isManager && status === '보상대기' && isWeekendOrHolidayDay && (onCompensation || onReject) && (
+            <>
+              {!showRejectInput ? (
+                <>
+                  {onCompensation && (
+                    <Button
+                      variant="default"
+                      onClick={handleCompensationClick}
+                      className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0 max-md:flex-1">
+                      {isPage === 'admin' && isWeekendOrHolidayDay && (user?.team_id === 1 || user?.team_id === 5)
+                        ? '보상 지급하기'
+                        : '승인하기'}
                     </Button>
-                    <Button variant="outline" onClick={() => {
+                  )}
+                  {onReject && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => setShowRejectInput(true)}
+                      className="bg-destructive hover:bg-destructive mr-0 max-md:flex-1">
+                      반려하기
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Button variant="default" onClick={handleRejectSubmit} className="max-md:flex-1">
+                    반려 확정
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
                       setShowRejectInput(false);
                       setRejectReason('');
-                    }} className="max-md:flex-1">
-                      취소
-                    </Button>
-                  </>
-                )}
-              </>
-            )}
+                    }}
+                    className="max-md:flex-1">
+                    취소
+                  </Button>
+                </>
+              )}
+            </>
+          )}
 
-            {/* 보상대기 상태일 때 보상 지급하기 + 반려하기 버튼 (admin이고 휴일 근무일 때만) */}
-            {isManager && status === "보상대기" && isWeekendOrHolidayDay && (onCompensation || onReject) && (
-              <>
-                {!showRejectInput ? (
-                  <>
-                    {onCompensation && (
-                      <Button variant="default" onClick={handleCompensationClick} className="bg-primary-blue-500 active:bg-primary-blue hover:bg-primary-blue mr-0 max-md:flex-1">
-                        {isPage === 'admin' && isWeekendOrHolidayDay && (user?.team_id === 1 || user?.team_id === 5) ? '보상 지급하기' : '승인하기'}
-                      </Button>
-                    )}
-                    {onReject && (
-                      <Button variant="destructive" onClick={() => setShowRejectInput(true)} className="bg-destructive hover:bg-destructive mr-0 max-md:flex-1">
-                        반려하기
-                      </Button>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <Button variant="default" onClick={handleRejectSubmit} className="max-md:flex-1">
-                      반려 확정
-                    </Button>
-                    <Button variant="outline" onClick={() => {
-                      setShowRejectInput(false);
-                      setRejectReason('');
-                    }} className="max-md:flex-1">
-                      취소
-                    </Button>
-                  </>
-                )}
-              </>
-            )}
+          {/* 본인 신청이거나 일반 사용자 모드 */}
+          {(isOwnRequest || !isManager) && (
+            <>
+              {status === '취소완료' && onReapply && (
+                <Button variant="default" onClick={onReapply} className="mr-0 max-md:flex-1">
+                  재신청하기
+                </Button>
+              )}
+              {status === '승인대기' && (
+                <Button variant="destructive" onClick={handleCancelClick} className="mr-0 max-md:flex-1">
+                  신청 취소하기
+                </Button>
+              )}
+            </>
+          )}
 
-            {/* 본인 신청이거나 일반 사용자 모드 */}
-            {(isOwnRequest || !isManager) && (
-              <>
-                {status === "취소완료" && onReapply && (
-                  <Button variant="default" onClick={onReapply} className="mr-0 max-md:flex-1">재신청하기</Button>
-                )}
-                {status === "승인대기" && (
-                  <Button variant="destructive" onClick={handleCancelClick} className="mr-0 max-md:flex-1">신청 취소하기</Button>
-                )}
-              </>
-            )}
-
-            {/* 닫기 버튼 (항상 표시) */}
-            {!showRejectInput && (
-              <Button variant="outline" onClick={onClose} className="max-md:flex-1">닫기</Button>
-            )}
-          </DialogFooter>
+          {/* 닫기 버튼 (항상 표시) */}
+          {!showRejectInput && (
+            <Button variant="outline" onClick={onClose} className="max-md:flex-1">
+              닫기
+            </Button>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

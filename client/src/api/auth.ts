@@ -46,7 +46,7 @@ export async function onboardingApi(payload: OnboardingPayload, token: string) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
   });
@@ -61,11 +61,11 @@ export async function logoutApi() {
 }
 
 export async function initFormApi(token_user_id: string, onboardingToken: string) {
-  return http<{ user_name?: string; email?: string;[key: string]: any }>('/initform', {
+  return http<{ user_name?: string; email?: string; [key: string]: any }>('/initform', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${onboardingToken}`,
+      Authorization: `Bearer ${onboardingToken}`,
     },
     body: JSON.stringify({ token_user_id }),
   });
@@ -100,7 +100,7 @@ export async function uploadFileApi(file: File, subdir: string) {
   // User request says: "전송값을 subdir:profile_image 그리고 파일 객체를 전송하고"
   // It doesn't specify the key name.
   // However, the response `field: "files"` strongly suggests the key used in FormData should be `files`.
-  // I will stick to 'file' for now as I used it before, but if it fails I'll swap. 
+  // I will stick to 'file' for now as I used it before, but if it fails I'll swap.
   // Wait, I should probably check if I can assume 'files'.
   // Let's assume 'files' and see. No, let's keep 'file' as it's singular upload?
   // Actually, usually `upload.array('files')` produces `field: 'files'`.

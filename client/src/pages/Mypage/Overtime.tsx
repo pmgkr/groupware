@@ -12,16 +12,8 @@ export default function ManagerOvertime() {
 
   return (
     <div>
-      
-      <Overview 
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onYearChange={handleYearChange}
-      />
-      <MyOvertimeHistoryComponent
-        activeTab={activeTab}
-        selectedYear={selectedYear}
-      />
+      <Overview activeTab={activeTab} onTabChange={setActiveTab} onYearChange={handleYearChange} />
+      <MyOvertimeHistoryComponent activeTab={activeTab} selectedYear={selectedYear} />
     </div>
   );
 }

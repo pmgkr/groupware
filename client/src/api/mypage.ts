@@ -22,8 +22,6 @@ export type UserDTO = {
   emergency_phone?: string | null;
 };
 
-
-
 // 프로필 조회
 export async function getMyProfile(): Promise<UserDTO> {
   const dto = await http<{ base: any; detail: any }>('/mypage/profile', { method: 'POST', body: JSON.stringify({}) });
@@ -115,8 +113,6 @@ export interface RegisterAccountDTO {
   account_name: string; // 예금주
 }
 
-
-
 export async function registerAccount(data: RegisterAccountDTO): Promise<void> {
   await http('/mypage/account/register', {
     method: 'POST',
@@ -140,8 +136,6 @@ export async function deleteAccount(seq: number) {
     method: 'DELETE',
   });
 }
-
-
 
 /* 휴가 내역 */
 export type MyVacationSummary = {
@@ -172,18 +166,19 @@ export async function MyVacationHistory(vyear: number, user_id?: string): Promis
   if (user_id) {
     params.append('user_id', user_id);
   }
-  const res = await http<{ summary: MyVacationSummary[]; lists: MyVacationItem[] }>(`/mypage/vacation?${params.toString()}`, { method: 'GET' });
+  const res = await http<{ summary: MyVacationSummary[]; lists: MyVacationItem[] }>(`/mypage/vacation?${params.toString()}`, {
+    method: 'GET',
+  });
   return res.lists || [];
 }
 
-
 /* 추가근무 내역 */
-export type MyOvertimeSummary ={
+export type MyOvertimeSummary = {
   total: number;
   page: number;
   size: number;
   pages: number;
-}
+};
 export type MyOvertimeItem = {
   id: number;
   user_id: string;
@@ -202,14 +197,22 @@ export type MyOvertimeItem = {
   ot_status: string;
   ot_created_at: string;
   ot_modified_at: string;
-}
-export async function MyOvertimeHistory(page: number, size: number, vyear: number = new Date().getFullYear(), user_id: string = ''): Promise<{ total: number; page: number; size: number; pages: number; items: MyOvertimeItem[] }> {
+};
+export async function MyOvertimeHistory(
+  page: number,
+  size: number,
+  vyear: number = new Date().getFullYear(),
+  user_id: string = ''
+): Promise<{ total: number; page: number; size: number; pages: number; items: MyOvertimeItem[] }> {
   const queryParams = new URLSearchParams();
   queryParams.append('page', page.toString());
   queryParams.append('size', size.toString());
   queryParams.append('vyear', vyear.toString()); // 항상 vyear 전달
   if (user_id) queryParams.append('user_id', user_id);
-  
-  const res = await http<{ total: number; page: number; size: number; pages: number; items: MyOvertimeItem[] }>(`/mypage/overtime?${queryParams.toString()}`, { method: 'GET' });
+
+  const res = await http<{ total: number; page: number; size: number; pages: number; items: MyOvertimeItem[] }>(
+    `/mypage/overtime?${queryParams.toString()}`,
+    { method: 'GET' }
+  );
   return res;
 }

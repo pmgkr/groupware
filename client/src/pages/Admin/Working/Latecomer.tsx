@@ -19,20 +19,9 @@ export default function Latecomer() {
 
   return (
     <div className="mb-5">
-      <Toolbar 
-        currentDate={currentDate} 
-        onDateChange={setCurrentDate} 
-        onTeamSelect={handleTeamSelect}
-        page="admin"
-        downloadType="late"
-      />
-      
-      <LatecomerComponent
-        currentDate={currentDate}
-        selectedTeamIds={selectedTeamIds}
-        page="admin"
-      />
+      <Toolbar currentDate={currentDate} onDateChange={setCurrentDate} onTeamSelect={handleTeamSelect} page="admin" downloadType="late" />
+
+      <LatecomerComponent currentDate={currentDate} selectedTeamIds={selectedTeamIds} page="admin" />
     </div>
   );
 }
-

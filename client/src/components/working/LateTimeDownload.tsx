@@ -1,13 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@components/ui/dialog';
 import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import dayjs from 'dayjs';
 import { getWeekNumber, getWeekStartDate } from '@/utils/dateHelper';
@@ -22,11 +15,7 @@ interface LateTimeDownloadProps {
   selectedTeamIds: number[];
 }
 
-export default function LateTimeDownload({
-  currentDate,
-  page,
-  selectedTeamIds,
-}: LateTimeDownloadProps) {
+export default function LateTimeDownload({ currentDate, page, selectedTeamIds }: LateTimeDownloadProps) {
   const { user } = useAuth();
   const [isExcelDialogOpen, setExcelDialogOpen] = useState(false);
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
@@ -376,8 +365,7 @@ export default function LateTimeDownload({
       onOpenChange={(open) => {
         setExcelDialogOpen(open);
         if (!open) setSelectedMonths([]);
-      }}
-    >
+      }}>
       <DialogTrigger asChild>
         <Button variant="default" size="sm">
           Excel 다운로드
@@ -386,9 +374,7 @@ export default function LateTimeDownload({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>지각 현황 Excel 다운로드</DialogTitle>
-          <DialogDescription>
-            선택한 월(1일~말일)의 지각 데이터가 각 시트별로 저장됩니다.
-          </DialogDescription>
+          <DialogDescription>선택한 월(1일~말일)의 지각 데이터가 각 시트별로 저장됩니다.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-4 gap-2">
           {monthOptions.map((month) => {
@@ -401,7 +387,7 @@ export default function LateTimeDownload({
                   variant="dynamic"
                   size="md"
                   iconHide
-                  className="justify-center flex-1 w-full"
+                  className="w-full flex-1 justify-center"
                   onClick={(e) => {
                     e.preventDefault();
                     toggleMonthSelection(month);
@@ -411,7 +397,7 @@ export default function LateTimeDownload({
             );
           })}
         </div>
-        <div className="flex justify-end items-center pt-4">
+        <div className="flex items-center justify-end pt-4">
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setExcelDialogOpen(false)}>
               취소
@@ -425,4 +411,3 @@ export default function LateTimeDownload({
     </Dialog>
   );
 }
-

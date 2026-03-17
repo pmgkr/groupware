@@ -28,8 +28,7 @@ export default function VacationLayout() {
           } else {
             // 하위 탭: /manager/vacation/${tab.path}
             isActive =
-              currentPath.startsWith(`${basePath}/${tab.path}`) ||
-              (tab.path === 'history' && currentPath.startsWith(`${basePath}/user`));
+              currentPath.startsWith(`${basePath}/${tab.path}`) || (tab.path === 'history' && currentPath.startsWith(`${basePath}/user`));
           }
 
           return (
@@ -51,4 +50,3 @@ export default function VacationLayout() {
     </>
   );
 }
-

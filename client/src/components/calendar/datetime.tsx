@@ -16,17 +16,15 @@ interface DateTimePickerProps {
 export default function DateTimePicker({
   value,
   onChange,
-  placeholder = "날짜와 시간을 선택하세요",
-  className = "",
-  dateFormat = "YYYY-MM-DD",
-  timeFormat = "HH:mm",
-  inputProps = {}
+  placeholder = '날짜와 시간을 선택하세요',
+  className = '',
+  dateFormat = 'YYYY-MM-DD',
+  timeFormat = 'HH:mm',
+  inputProps = {},
 }: DateTimePickerProps) {
   const handleChange = (selectedDate: string | Moment) => {
     // Moment 객체를 Date로 변환
-    const dateValue = selectedDate instanceof Date ? selectedDate : 
-                     typeof selectedDate === 'string' ? selectedDate : 
-                     selectedDate.toDate();
+    const dateValue = selectedDate instanceof Date ? selectedDate : typeof selectedDate === 'string' ? selectedDate : selectedDate.toDate();
     onChange(dateValue);
   };
 
@@ -39,8 +37,8 @@ export default function DateTimePicker({
         timeFormat={timeFormat}
         inputProps={{
           placeholder,
-          className: "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500",
-          ...inputProps
+          className: 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+          ...inputProps,
         }}
       />
     </div>

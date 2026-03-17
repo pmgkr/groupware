@@ -10,7 +10,7 @@ export default function Calendar({ filterMyEvents = false }: CalendarProps) {
   const { events, handleSaveEvent, handleDateChange, refreshEvents } = useCalendar({ filterMyEvents });
 
   return (
-    <CustomCalendar 
+    <CustomCalendar
       initialEvents={events}
       selectConfigs={customSelectConfigs}
       eventTitleMapper={customEventTitleMapper}
@@ -22,4 +22,4 @@ export default function Calendar({ filterMyEvents = false }: CalendarProps) {
       onRefreshEvents={refreshEvents}
     />
   );
-} 
+}

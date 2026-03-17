@@ -37,11 +37,7 @@ export async function getMembersByTeams(teamIds: number[]) {
   return unique;
 }
 
-export async function getManagerMemberList(params?: {
-  team_id?: number;
-  q?: string;
-  role?: string;
-}): Promise<Member[]> {
+export async function getManagerMemberList(params?: { team_id?: number; q?: string; role?: string }): Promise<Member[]> {
   const searchParams = new URLSearchParams();
 
   if (params?.team_id) {

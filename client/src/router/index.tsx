@@ -15,6 +15,13 @@ const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Onboarding = lazy(() => import('@/pages/Onboarding'));
 const ErrorPage = lazy(() => import('@/pages/ErrorPage'));
 
+// 로딩 컴포넌트
+const LoadingSpinner = () => (
+  <div className="flex min-h-screen items-center justify-center">
+    <div className="h-32 w-32 animate-spin rounded-full border-b-2 border-blue-500"></div>
+  </div>
+);
+
 // 로그인 상태면 대시보드로 리다이렉트, 아니면 로그인 페이지 표시
 const PublicIndex = () => {
   const { user, loading } = useAuth();
@@ -31,6 +38,34 @@ import { officeRoutes } from './office';
 import { mypageRoutes } from './mypage';
 import { managerRoutes } from './manager';
 import { adminRoutes } from './admin';
+import CctaskList from '@/pages/Cctask/CctaskList';
+import CctaskRegister from '@/pages/Cctask/CctaskRegister';
+import CctaskView from '@/pages/Cctask/CctaskView';
+
+const cctaskRoutes: RouteObject = {
+  path: 'cctask',
+  handle: {
+    title: '작업 요청',
+    nav: [
+      { to: '/cctask', label: '요청 목록', end: true },
+      { to: '/cctask/register', label: '작업 등록' },
+    ],
+  },
+  children: [
+    {
+      index: true,
+      element: <CctaskList />,
+    },
+    {
+      path: 'register',
+      element: <CctaskRegister />,
+    },
+    {
+      path: 'view/:seq',
+      element: <CctaskView />,
+    },
+  ],
+};
 
 // 권한별 리다이렉팅
 const ManagerAuth = () => {
@@ -66,23 +101,16 @@ const AuthAdminRoutes: RouteObject = withAuth(adminRoutes, <AdminAuth />);
 
 // 인증 후 Layout 하위의 자식 라우트들
 const AuthChildren: RouteObject[] = [
-  // 필요 순서대로
   projectRoutes,
   expenseRoutes,
   calendarRoutes,
   workingRoutes,
   officeRoutes,
   mypageRoutes,
+  cctaskRoutes,
   AuthManagerRoutes,
   AuthAdminRoutes,
 ];
-
-// 로딩 컴포넌트
-const LoadingSpinner = () => (
-  <div className="flex min-h-screen items-center justify-center">
-    <div className="h-32 w-32 animate-spin rounded-full border-b-2 border-blue-500"></div>
-  </div>
-);
 
 export const router = createBrowserRouter([
   // 공개 구간

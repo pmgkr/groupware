@@ -53,9 +53,7 @@ function Textbox({
     description?: string;
     errorMessage?: string;
   }) {
-  const [date, setDate] = React.useState<Date | undefined>(
-    value ? new Date(value as string) : undefined
-  );
+  const [date, setDate] = React.useState<Date | undefined>(value ? new Date(value as string) : undefined);
   const [isOpen, setIsOpen] = React.useState(false);
 
   // value prop이 변경될 때 내부 상태 동기화
@@ -84,7 +82,7 @@ function Textbox({
 
     // 외부 클릭 감지
     const containerRef = React.useRef<HTMLDivElement>(null);
-    
+
     React.useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -104,33 +102,22 @@ function Textbox({
           variant="outline"
           className={cn(
             textboxVariants({ variant, size }),
-            "w-full justify-start text-left font-normal",
-            !date && "text-muted-foreground",
+            'w-full justify-start text-left font-normal',
+            !date && 'text-muted-foreground',
             className
           )}
           disabled={variant === 'disabled' ? true : props.disabled}
-          onClick={() => setIsOpen(!isOpen)}
-        >
+          onClick={() => setIsOpen(!isOpen)}>
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "PPP", { locale: ko }) : (props.placeholder || "날짜를 선택하세요")}
+          {date ? format(date, 'PPP', { locale: ko }) : props.placeholder || '날짜를 선택하세요'}
         </Button>
         {isOpen && (
           <div className="absolute z-50 mt-1 w-auto rounded-md border border-[var(--color-gray-300)] bg-white p-0 shadow-lg">
-            <DayPicker
-              captionLayout='dropdown'
-              mode="single"
-              selected={date}
-              onSelect={handleDateSelect}
-              initialFocus={false}
-            />
+            <DayPicker captionLayout="dropdown" mode="single" selected={date} onSelect={handleDateSelect} initialFocus={false} />
           </div>
         )}
-        {description && !errorMessage && (
-          <p className="mt-1 text-sm text-[var(--color-gray-500)]">{description}</p>
-        )}
-        {errorMessage && (
-          <p className="mt-1 text-sm text-[var(--negative-base)]">{errorMessage}</p>
-        )}
+        {description && !errorMessage && <p className="mt-1 text-sm text-[var(--color-gray-500)]">{description}</p>}
+        {errorMessage && <p className="mt-1 text-sm text-[var(--negative-base)]">{errorMessage}</p>}
       </div>
     );
   }
@@ -140,21 +127,17 @@ function Textbox({
 
   return (
     <div>
-      <Comp 
-        data-slot="input" 
+      <Comp
+        data-slot="input"
         type={type}
-        className={cn(textboxVariants({ variant, size, className }))} 
+        className={cn(textboxVariants({ variant, size, className }))}
         disabled={variant === 'disabled' ? true : props.disabled}
         value={value}
         onChange={onChange}
-        {...props} 
+        {...props}
       />
-      {description && !errorMessage && (
-        <p className="mt-1 text-sm text-[var(--color-gray-500)]">{description}</p>
-      )}
-      {errorMessage && (
-        <p className="mt-1 text-sm text-[var(--negative-base)]">{errorMessage}</p>
-      )}
+      {description && !errorMessage && <p className="mt-1 text-sm text-[var(--color-gray-500)]">{description}</p>}
+      {errorMessage && <p className="mt-1 text-sm text-[var(--negative-base)]">{errorMessage}</p>}
     </div>
   );
 }

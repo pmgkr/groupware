@@ -61,62 +61,66 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
   const [calculatedVacationDays, setCalculatedVacationDays] = useState<number>(0);
   const [vacationInfo, setVacationInfo] = useState<MyVacationInfo | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof EventData, string>>>({});
-  
+
   // 실제 근무일 수 계산 함수 (주말 및 공휴일 제외)
   const calculateWorkingDays = async (startDate: Date, endDate: Date): Promise<number> => {
     let count = 0;
     const currentDate = new Date(startDate);
     const end = new Date(endDate);
-    
+
     // 해당 연도의 공휴일 목록 가져오기
     const year = currentDate.getFullYear();
     const holidays = await getCachedHolidays(year);
-    
+
     // 다음 해도 범위에 포함되는 경우 처리
     const endYear = end.getFullYear();
     let nextYearHolidays: typeof holidays = [];
     if (endYear > year) {
       nextYearHolidays = await getCachedHolidays(endYear);
     }
-    
+
     const allHolidays = [...holidays, ...nextYearHolidays];
-    
+
     // 공휴일을 Set으로 변환 (빠른 검색을 위해)
-    const holidaySet = new Set(allHolidays.map(h => h.date));
-    
+    const holidaySet = new Set(allHolidays.map((h) => h.date));
+
     while (currentDate <= end) {
       const dayOfWeek = currentDate.getDay();
-      const dateString = 
-        currentDate.getFullYear().toString() + 
-        String(currentDate.getMonth() + 1).padStart(2, '0') + 
+      const dateString =
+        currentDate.getFullYear().toString() +
+        String(currentDate.getMonth() + 1).padStart(2, '0') +
         String(currentDate.getDate()).padStart(2, '0');
-      
+
       // 주말(0:일요일, 6:토요일)과 공휴일이 아닌 경우만 카운트
       if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidaySet.has(dateString)) {
         count++;
       }
-      
+
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     return count;
   };
-  
+
   const [formData, setFormData] = useState<EventData>({
     title: '',
     description: '',
-    startDate: selectedDate ? (() => {
-      const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    })() : '',
-    endDate: selectedDate ? (() => {
-      const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    })() : '',
+    startDate: selectedDate
+      ? (() => {
+          const year = selectedDate.getFullYear();
+          const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+          const day = String(selectedDate.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        })()
+      : '',
+    endDate: selectedDate
+      ? (() => {
+          const year = selectedDate.getFullYear();
+          const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+          const day = String(selectedDate.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        })()
+      : '',
     startTime: '09:30',
     endTime: '18:30',
     allDay: true,
@@ -134,14 +138,14 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
         try {
           const currentYear = new Date().getFullYear();
           const response = await getMyVacation(currentYear);
-          
+
           // summary 배열에서 현재 연도 정보 찾기
-          const currentYearInfo = response.summary.find(info => info.va_year === currentYear);
-          
+          const currentYearInfo = response.summary.find((info) => info.va_year === currentYear);
+
           if (currentYearInfo) {
             setVacationInfo(currentYearInfo);
             // 남은 휴가 일수 계산: 당해연차 + 이월연차 + 특별대휴
-            const totalRemaining = 
+            const totalRemaining =
               parseFloat(currentYearInfo.va_current || '0') +
               parseFloat(currentYearInfo.va_carryover || '0') +
               parseFloat(currentYearInfo.va_comp || '0');
@@ -172,25 +176,25 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
   }, [isOpen]);
 
   const handleInputChange = (field: keyof EventData, value: string | boolean) => {
-    setFormData(prev => {
+    setFormData((prev) => {
       const newData = {
         ...prev,
-        [field]: value
+        [field]: value,
       };
-      
+
       // 카테고리가 변경되면 기타일정 타입도 초기화
       if (field === 'category') {
         newData.eventType = '';
       }
-      
+
       // 기타일정 타입이 변경되면 설정
       if (field === 'eventType' && typeof value === 'string') {
         newData.endDate = newData.startDate;
-        
+
         // 반차/반반차인 경우 allDay를 false로 설정 및 고정 시간 설정
         if (['vacationHalfMorning', 'vacationHalfAfternoon', 'vacationQuarterMorning', 'vacationQuarterAfternoon'].includes(value)) {
           newData.allDay = false;
-          
+
           if (value === 'vacationHalfMorning') {
             newData.startTime = '10:00';
             newData.endTime = '15:00';
@@ -221,29 +225,28 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
           newData.endTime = '18:30';
         }
       }
-      
+
       return newData;
     });
-    
+
     // 입력 시 해당 필드의 에러 메시지 제거
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [field]: undefined
+        [field]: undefined,
       }));
     }
   };
 
   // 단일 날짜 선택 핸들러
   const handleDateSelect = (date: Date | undefined) => {
-    
     if (date) {
       // 로컬 시간 기준으로 YYYY-MM-DD 문자열 생성
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
-      
+
       // 시간 제한 확인 (고정 시간이 설정되어 있는지 확인)
       const restriction = getTimeRestriction();
       let selectedHour = date.getHours();
@@ -252,7 +255,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       if (restriction && restriction.startHour === restriction.endHour && restriction.startMinute === restriction.endMinute) {
         selectedHour = restriction.startHour;
         selectedMinute = restriction.startMinute;
-        
+
         // 넘겨받은 date 객체도 고정 시간으로 업데이트
         date.setHours(selectedHour);
         date.setMinutes(selectedMinute);
@@ -262,8 +265,8 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       const hour = String(selectedHour).padStart(2, '0');
       const minute = String(selectedMinute).padStart(2, '0');
       const timeStr = `${hour}:${minute}`;
-      
-      setFormData(prev => {
+
+      setFormData((prev) => {
         const newData = {
           ...prev,
           selectedDate: date,
@@ -271,15 +274,15 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
           endDate: dateStr,
           startTime: timeStr, // 시간 정보 저장
         };
-        
+
         return newData;
       });
-      
+
       // 날짜 선택 시 에러 제거
       if (errors.selectedDate) {
-        setErrors(prev => ({
+        setErrors((prev) => ({
           ...prev,
-          selectedDate: undefined
+          selectedDate: undefined,
         }));
       }
     } else {
@@ -296,37 +299,38 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
       };
-      
+
       const startDateStr = formatDate(range.from);
       const endDateStr = formatDate(range.to);
-      
+
       // 연차인 경우 실제 근무일 수 계산
       let vacationDays = 0;
       if (formData.category === 'vacation' && formData.eventType === 'vacationDay') {
         vacationDays = await calculateWorkingDays(range.from, range.to);
         setCalculatedVacationDays(vacationDays);
       }
-      
-      setFormData(prev => ({
+
+      setFormData((prev) => ({
         ...prev,
         selectedDateRange: range,
         startDate: startDateStr,
         endDate: endDateStr,
         vacationDaysUsed: vacationDays > 0 ? vacationDays : undefined,
       }));
-      
+
       // 날짜 범위 선택 시 에러 제거
       if (errors.selectedDateRange) {
-        setErrors(prev => ({
+        setErrors((prev) => ({
           ...prev,
-          selectedDateRange: undefined
+          selectedDateRange: undefined,
         }));
       }
     }
   };
 
   // 시간 선택이 필요한 기타일정 타입인지 확인 (반차/반반차일때 시간 필요)
-  const isTimeRequired = formData.eventType && 
+  const isTimeRequired =
+    formData.eventType &&
     ['vacationHalfMorning', 'vacationHalfAfternoon', 'vacationQuarterMorning', 'vacationQuarterAfternoon'].includes(formData.eventType);
 
   // 반차/반반차 시간 제한 설정
@@ -348,36 +352,35 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
   // 유효성 검사 함수
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof EventData, string>> = {};
-    
+
     // 일정 유형 검증
     if (!formData.category) {
-      newErrors.category = "등록하실 일정 유형을 선택해주세요.";
+      newErrors.category = '등록하실 일정 유형을 선택해주세요.';
     }
-    
+
     // 세부 유형 검증
     if (!formData.eventType) {
-      newErrors.eventType = "세부 유형을 선택해주세요.";
+      newErrors.eventType = '세부 유형을 선택해주세요.';
     }
-    
+
     // 날짜/기간 검증
     if (isTimeRequired) {
       // 반차/반반차인 경우 단일 날짜 선택 필요
       if (!formData.selectedDate) {
-        newErrors.selectedDate = "시작일 및 시간을 선택해주세요.";
+        newErrors.selectedDate = '시작일 및 시간을 선택해주세요.';
       }
     } else {
       // 연차/공가/기타일정인 경우 날짜 범위 선택 필요
       if (!formData.selectedDateRange || !formData.selectedDateRange.from || !formData.selectedDateRange.to) {
-        newErrors.selectedDateRange = "기간을 선택해주세요.";
+        newErrors.selectedDateRange = '기간을 선택해주세요.';
       }
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // remainingVacationDays는 이제 state로 관리됨
-
 
   const handleSave = () => {
     if (!validateForm()) {
@@ -419,23 +422,27 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     };
 
     onSave(eventDataToSave);
-    
+
     // 폼 데이터 리셋
     setFormData({
       title: '',
       description: '',
-      startDate: selectedDate ? (() => {
-        const year = selectedDate.getFullYear();
-        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-        const day = String(selectedDate.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      })() : '',
-      endDate: selectedDate ? (() => {
-        const year = selectedDate.getFullYear();
-        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-        const day = String(selectedDate.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      })() : '',
+      startDate: selectedDate
+        ? (() => {
+            const year = selectedDate.getFullYear();
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          })()
+        : '',
+      endDate: selectedDate
+        ? (() => {
+            const year = selectedDate.getFullYear();
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          })()
+        : '',
       startTime: '09:30',
       endTime: '18:30',
       allDay: true,
@@ -447,7 +454,7 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     });
     setCalculatedVacationDays(0);
     setErrors({}); // 에러 상태도 초기화
-    
+
     onClose();
   };
 
@@ -455,18 +462,22 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
     setFormData({
       title: '',
       description: '',
-      startDate: selectedDate ? (() => {
-        const year = selectedDate.getFullYear();
-        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-        const day = String(selectedDate.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      })() : '',
-      endDate: selectedDate ? (() => {
-        const year = selectedDate.getFullYear();
-        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-        const day = String(selectedDate.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      })() : '',
+      startDate: selectedDate
+        ? (() => {
+            const year = selectedDate.getFullYear();
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          })()
+        : '',
+      endDate: selectedDate
+        ? (() => {
+            const year = selectedDate.getFullYear();
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          })()
+        : '',
       startTime: '09:00',
       endTime: '18:00',
       allDay: true,
@@ -486,134 +497,121 @@ export default function EventDialog({ isOpen, onClose, onSave, selectedDate }: E
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>신규 일정 등록</DialogTitle>
-          <DialogDescription>
-            등록하실 일정 정보를 입력하는 곳입니다.
-          </DialogDescription>
+          <DialogDescription>등록하실 일정 정보를 입력하는 곳입니다.</DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-4 py-4">
 
+        <div className="space-y-4 py-4">
           {/* 일정 카테고리 */}
-          <div className="space-y-3 mb-8">
+          <div className="mb-8 space-y-3">
             <Label>등록하실 일정 유형을 선택해주세요.</Label>
             <RadioGroup
               value={formData.category}
               onValueChange={(value) => handleInputChange('category', value)}
-              className="grid grid-cols-2 gap-4 max-md:gap-2"
-            >
-              <RadioButton
-                value="vacation"
-                label="휴가"
-                variant="dynamic"
-                size='md'
-                className='mb-0'
-              />
-              <RadioButton
-                value="event"
-                label="기타일정"
-                variant="dynamic"
-                size='md'
-                className='mb-0'
-              />
+              className="grid grid-cols-2 gap-4 max-md:gap-2">
+              <RadioButton value="vacation" label="휴가" variant="dynamic" size="md" className="mb-0" />
+              <RadioButton value="event" label="기타일정" variant="dynamic" size="md" className="mb-0" />
             </RadioGroup>
-            {errors.category && (
-              <p className="text-sm text-red-500">{errors.category}</p>
-            )}
+            {errors.category && <p className="text-sm text-red-500">{errors.category}</p>}
           </div>
 
           {/* 세부 일정 타입 - 카테고리가 선택된 경우에만 표시 */}
           {formData.category && (
-            <div className="space-y-3 mb-8">
+            <div className="mb-8 space-y-3">
               <Label>
                 세부 유형을 선택해주세요.
                 {formData.category === 'vacation' && (
-                <>
-                <p className="text-sm text-gray-600">현재 휴가가 <span className="font-semibold text-[var(--color-primary-blue-500)]">{remainingVacationDays}</span>일 남았습니다</p>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button type="button" className="inline-flex items-center">
-                      <TooltipIcon />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="flex flex-col gap-1">
-                      <p>당해연차: <span className="font-semibold text-[var(--color-primary-blue-500)]">{vacationInfo ? parseFloat(vacationInfo.va_current || '0') : 0}</span>일</p>
-                      <p>이월연차: <span className="font-semibold text-[var(--color-primary-blue-500)]">{vacationInfo ? parseFloat(vacationInfo.va_carryover || '0') : 0}</span>일</p>
-                      <p>특별대휴: <span className="font-semibold text-[var(--color-primary-blue-500)]">{vacationInfo ? parseFloat(vacationInfo.va_comp || '0') : 0}</span>일</p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-                </>
-              )}
+                  <>
+                    <p className="text-sm text-gray-600">
+                      현재 휴가가 <span className="font-semibold text-[var(--color-primary-blue-500)]">{remainingVacationDays}</span>일
+                      남았습니다
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="inline-flex items-center">
+                          <TooltipIcon />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className="flex flex-col gap-1">
+                          <p>
+                            당해연차:{' '}
+                            <span className="font-semibold text-[var(--color-primary-blue-500)]">
+                              {vacationInfo ? parseFloat(vacationInfo.va_current || '0') : 0}
+                            </span>
+                            일
+                          </p>
+                          <p>
+                            이월연차:{' '}
+                            <span className="font-semibold text-[var(--color-primary-blue-500)]">
+                              {vacationInfo ? parseFloat(vacationInfo.va_carryover || '0') : 0}
+                            </span>
+                            일
+                          </p>
+                          <p>
+                            특별대휴:{' '}
+                            <span className="font-semibold text-[var(--color-primary-blue-500)]">
+                              {vacationInfo ? parseFloat(vacationInfo.va_comp || '0') : 0}
+                            </span>
+                            일
+                          </p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </>
+                )}
               </Label>
               <RadioGroup
                 value={formData.eventType}
                 onValueChange={(value) => handleInputChange('eventType', value)}
-                className="grid grid-cols-3 gap-3 max-md:gap-2"
-              >
+                className="grid grid-cols-3 gap-3 max-md:gap-2">
                 {(formData.category === 'vacation' ? vacationTypes : eventTypes).map((type) => (
-                  <RadioButton
-                    key={type.value}
-                    value={type.value}
-                    label={type.label}
-                    variant="dynamic"
-                    size="md"
-                    className='mb-0'
-                  />
+                  <RadioButton key={type.value} value={type.value} label={type.label} variant="dynamic" size="md" className="mb-0" />
                 ))}
               </RadioGroup>
-              {errors.eventType && (
-                <p className="text-sm text-red-500">{errors.eventType}</p>
-              )}
+              {errors.eventType && <p className="text-sm text-red-500">{errors.eventType}</p>}
             </div>
           )}
 
           {/* 나머지 필드들 - 세부 유형이 선택된 경우에만 표시 */}
           {formData.eventType && (
             <>
-
               {/* 시작일 */}
-              <div className="space-y-2 mb-8">
-                <Label htmlFor="startDate">
-                  {isTimeRequired ? '시작일 및 시간을 선택해주세요.' : '기간을 선택해주세요.'}
-                </Label>
+              <div className="mb-8 space-y-2">
+                <Label htmlFor="startDate">{isTimeRequired ? '시작일 및 시간을 선택해주세요.' : '기간을 선택해주세요.'}</Label>
                 {isTimeRequired ? (
                   <>
-                    <DateTimePicker24h 
+                    <DateTimePicker24h
                       selected={formData.selectedDate}
                       onSelect={handleDateSelect}
                       placeholder="휴가 사용일과 시간을 선택해주세요"
                       timeRestriction={getTimeRestriction()}
                     />
-                    <div className="text-sm text-gray-600 flex items-center gap-1">
+                    <div className="flex items-center gap-1 text-sm text-gray-600">
                       <Clock className="size-3" /> 휴가 적용시간: {formData.startTime} - {formData.endTime}
                     </div>
-                    {errors.selectedDate && (
-                      <p className="text-sm text-red-500">{errors.selectedDate}</p>
-                    )}
+                    {errors.selectedDate && <p className="text-sm text-red-500">{errors.selectedDate}</p>}
                   </>
                 ) : (
                   <>
-                    <DatePickerWithRange 
+                    <DatePickerWithRange
                       selected={formData.selectedDateRange}
                       onSelect={handleDateRangeSelect}
                       placeholder="기간을 선택해주세요"
                     />
                     {formData.category === 'vacation' && formData.category === 'vacation' && calculatedVacationDays > 0 && (
-                      <div className="text-sm text-gray-600 flex items-center gap-1">
-                        <CalendarMinus className="size-3" /> 실제 사용 휴가: <span className="font-semibold text-[var(--color-primary-blue-500)]">{calculatedVacationDays}일</span> (주말 및 공휴일 제외)
+                      <div className="flex items-center gap-1 text-sm text-gray-600">
+                        <CalendarMinus className="size-3" /> 실제 사용 휴가:{' '}
+                        <span className="font-semibold text-[var(--color-primary-blue-500)]">{calculatedVacationDays}일</span> (주말 및
+                        공휴일 제외)
                       </div>
                     )}
-                    {errors.selectedDateRange && (
-                      <p className="text-sm text-red-500">{errors.selectedDateRange}</p>
-                    )}
+                    {errors.selectedDateRange && <p className="text-sm text-red-500">{errors.selectedDateRange}</p>}
                   </>
                 )}
               </div>
 
-
               {/* 설명 */}
-              <div className="space-y-2 mb-8">
+              <div className="mb-8 space-y-2">
                 <Label htmlFor="description">기타 설명을 기입해주세요.</Label>
                 <Textarea
                   id="description"

@@ -20,31 +20,31 @@ export async function getLocationByIP(): Promise<LocationInfo | null> {
   try {
     // ipapi.co 사용 (HTTPS 지원, 무료)
     const response = await fetch('https://ipapi.co/json/');
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     // ipapi.co 응답 형식
     if (data.latitude && data.longitude) {
       // 한국인 경우 위도/경도로 더 정확한 위치 추정
       let city = data.city;
       let region = data.region;
-      
+
       // 한국이고 위도/경도가 있는 경우, 좌표 기반으로 더 정확한 위치 추정
       if (data.country_code === 'KR' && data.latitude && data.longitude) {
         // 서울 강남구 대략 범위: 위도 37.48~37.56, 경도 126.98~127.08
         const lat = data.latitude;
         const lon = data.longitude;
-        
+
         if (lat >= 37.48 && lat <= 37.56 && lon >= 126.98 && lon <= 127.08) {
           city = 'Gangnam-gu';
           region = 'Seoul';
         }
         // 서울 노원구 대략 범위: 위도 37.63~37.68, 경도 127.05~127.10
-        else if (lat >= 37.63 && lat <= 37.68 && lon >= 127.05 && lon <= 127.10) {
+        else if (lat >= 37.63 && lat <= 37.68 && lon >= 127.05 && lon <= 127.1) {
           city = 'Nowon-gu';
           region = 'Seoul';
         }
@@ -54,7 +54,7 @@ export async function getLocationByIP(): Promise<LocationInfo | null> {
           region = 'Seoul';
         }
       }
-      
+
       return {
         latitude: data.latitude,
         longitude: data.longitude,
@@ -63,7 +63,7 @@ export async function getLocationByIP(): Promise<LocationInfo | null> {
         country: data.country_name,
       };
     }
-    
+
     return null;
   } catch (error) {
     console.error('IP 기반 위치 정보 가져오기 실패:', error);
@@ -97,12 +97,12 @@ export function convertLatLonToGrid(lat: number, lon: number): { nx: number; ny:
   let sn = Math.tan(Math.PI * 0.25 + slat2 * 0.5) / Math.tan(Math.PI * 0.25 + slat1 * 0.5);
   sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(sn);
   let sf = Math.tan(Math.PI * 0.25 + slat1 * 0.5);
-  sf = Math.pow(sf, sn) * Math.cos(slat1) / sn;
+  sf = (Math.pow(sf, sn) * Math.cos(slat1)) / sn;
   let ro = Math.tan(Math.PI * 0.25 + olat * 0.5);
-  ro = re * sf / Math.pow(ro, sn);
+  ro = (re * sf) / Math.pow(ro, sn);
 
-  let ra = Math.tan(Math.PI * 0.25 + (lat) * DEGRAD * 0.5);
-  ra = re * sf / Math.pow(ra, sn);
+  let ra = Math.tan(Math.PI * 0.25 + lat * DEGRAD * 0.5);
+  ra = (re * sf) / Math.pow(ra, sn);
   let theta = lon * DEGRAD - olon;
   if (theta > Math.PI) theta -= 2.0 * Math.PI;
   if (theta < -Math.PI) theta += 2.0 * Math.PI;
@@ -149,13 +149,13 @@ function translateKoreanLocation(city: string | undefined, region: string | unde
 
   // 시/도 매핑
   const provinces: Record<string, string> = {
-    'Seoul': '서울',
-    'Busan': '부산',
-    'Daegu': '대구',
-    'Incheon': '인천',
-    'Gwangju': '광주',
-    'Daejeon': '대전',
-    'Ulsan': '울산',
+    Seoul: '서울',
+    Busan: '부산',
+    Daegu: '대구',
+    Incheon: '인천',
+    Gwangju: '광주',
+    Daejeon: '대전',
+    Ulsan: '울산',
     'Gyeonggi-do': '경기도',
     'Gangwon-do': '강원도',
     'Chungcheongbuk-do': '충청북도',
@@ -201,16 +201,20 @@ export function getLocationName(location: LocationInfo | null): string {
   if (!location) {
     return '서울 강남구'; // 기본값
   }
-  
+
   // 한국인 경우 한글 변환
-  if (location.country === 'South Korea' || location.country === 'Korea' || location.country === 'KR' || location.country === 'South Korea') {
+  if (
+    location.country === 'South Korea' ||
+    location.country === 'Korea' ||
+    location.country === 'KR' ||
+    location.country === 'South Korea'
+  ) {
     return translateKoreanLocation(location.city, location.region);
   }
-  
+
   // 한국이 아닌 경우 원본 반환
   if (location.city && location.region) {
     return `${location.region} ${location.city}`;
   }
   return location.city || location.region || '서울 강남구';
 }
-

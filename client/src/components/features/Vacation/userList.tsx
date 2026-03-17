@@ -78,7 +78,7 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
   };
 
   const handleRowClick = (userId: string, e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest("button")) return;
+    if ((e.target as HTMLElement).closest('button')) return;
     // manager 페이지에서도 동일 컴포넌트를 사용하므로 경로를 현재 path 기반으로 분기
     const basePath = location.pathname.startsWith('/manager') ? '/manager' : '/admin';
     navigate(`${basePath}/vacation/user/${userId}`);
@@ -86,23 +86,23 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
 
   // 팀 목록 로드 여부 추적 ref
   const teamsLoadedRef = useRef(false);
-  
+
   /* 팀 목록 로드 */
   useEffect(() => {
     if (teamsLoadedRef.current) return;
-    
+
     const loadTeams = async () => {
       try {
-        const teamList = isManagerPage
-          ? await getManagerTeams({})
-          : await getTeams({});
-        setTeams(teamList.map((t) => ({
-          team_id: t.team_id,
-          team_name: t.team_name
-        })));
+        const teamList = isManagerPage ? await getManagerTeams({}) : await getTeams({});
+        setTeams(
+          teamList.map((t) => ({
+            team_id: t.team_id,
+            team_name: t.team_name,
+          }))
+        );
         teamsLoadedRef.current = true;
       } catch (e) {
-        console.error("팀 목록 로드 실패:", e);
+        console.error('팀 목록 로드 실패:', e);
       }
     };
     loadTeams();
@@ -112,40 +112,38 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
       휴가 목록 로딩
   ========================================================== */
   const loadingRef = useRef(false);
-  
+
   // teamIds와 userIds를 문자열로 변환하여 안정적인 의존성 생성 (원본 배열 변경 방지)
   const teamIdsKey = useMemo(() => [...teamIds].sort((a, b) => a - b).join(','), [teamIds]);
   const userIdsKey = useMemo(() => [...userIds].sort().join(','), [userIds]);
-  
+
   const loadVacationList = useCallback(async () => {
     // 이미 로딩 중이면 중복 호출 방지
     if (loadingRef.current) return;
-    
+
     loadingRef.current = true;
     setLoading(true);
 
     try {
       const currentYear = year || new Date().getFullYear();
-      
+
       // 팀 목록 가져오기 (teams는 클로저로 최신 값 참조)
       let teamsData = teams;
       if (teamsData.length === 0 && !teamsLoadedRef.current) {
         try {
-          const teamList = isManagerPage
-            ? await getManagerTeams({})
-            : await getTeams({});
+          const teamList = isManagerPage ? await getManagerTeams({}) : await getTeams({});
           teamsData = teamList.map((t) => ({
             team_id: t.team_id,
-            team_name: t.team_name
+            team_name: t.team_name,
           }));
           // teams가 비어있을 때만 업데이트 (이미 로드된 경우 재호출 방지)
-          setTeams(prevTeams => {
+          setTeams((prevTeams) => {
             if (prevTeams.length > 0) return prevTeams;
             teamsLoadedRef.current = true;
             return teamsData;
           });
         } catch (e) {
-          console.error("팀 목록 로드 실패:", e);
+          console.error('팀 목록 로드 실패:', e);
         }
       }
 
@@ -162,10 +160,12 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
           const totalPages = Math.ceil(first.total / first.size);
           const requests = [];
           for (let p = 2; p <= totalPages; p++) {
-            requests.push(managerVacationApi.getVacationList(currentYear, managerTeamIds.length ? managerTeamIds : undefined, p, first.size));
+            requests.push(
+              managerVacationApi.getVacationList(currentYear, managerTeamIds.length ? managerTeamIds : undefined, p, first.size)
+            );
           }
           const responses = await Promise.all(requests);
-          responses.forEach(res => {
+          responses.forEach((res) => {
             filteredItems = [...filteredItems, ...(res.list || [])];
           });
         }
@@ -178,52 +178,48 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
         if (response.total > 100) {
           const totalPages = Math.ceil(response.total / 100);
           const additionalRequests = [];
-          
+
           for (let page = 2; page <= totalPages; page++) {
-            additionalRequests.push(
-              adminVacationApi.getVacationList(currentYear, undefined, page, 100)
-            );
+            additionalRequests.push(adminVacationApi.getVacationList(currentYear, undefined, page, 100));
           }
-          
+
           const additionalResponses = await Promise.all(additionalRequests);
-          additionalResponses.forEach(res => {
+          additionalResponses.forEach((res) => {
             filteredItems = [...filteredItems, ...res.rows];
           });
         }
       }
 
       if (teamIds.length > 0) {
-          filteredItems = filteredItems.filter(i => teamIds.includes(i.team_id));
+        filteredItems = filteredItems.filter((i) => teamIds.includes(i.team_id));
       }
       if (userIds.length > 0) {
-        filteredItems = filteredItems.filter(i => userIds.includes(i.user_id));
+        filteredItems = filteredItems.filter((i) => userIds.includes(i.user_id));
       }
 
       const converted = filteredItems.map((item) => {
-        const team = teamsData.find(t => t.team_id === item.team_id);
+        const team = teamsData.find((t) => t.team_id === item.team_id);
 
         // 입사일 포맷팅
-        let formattedHireDate = "";
+        let formattedHireDate = '';
         if (item.hire_date) {
           const hire = new Date(item.hire_date);
-          formattedHireDate = `${hire.getFullYear()}-${String(hire.getMonth() + 1).padStart(2, "0")}-${String(hire.getDate()).padStart(2, "0")}`;
+          formattedHireDate = `${hire.getFullYear()}-${String(hire.getMonth() + 1).padStart(2, '0')}-${String(hire.getDate()).padStart(2, '0')}`;
         }
 
-        const profileImageName = item.profile_image && typeof item.profile_image === 'string' 
-          ? item.profile_image.trim() 
-          : null;
-        
+        const profileImageName = item.profile_image && typeof item.profile_image === 'string' ? item.profile_image.trim() : null;
+
         return {
           id: item.user_id,
           profile_image: profileImageName,
-          department: team?.team_name || "",
+          department: team?.team_name || '',
           name: item.user_name,
           hireDate: formattedHireDate,
           va_current: item.va_current,
           va_carryover: item.va_carryover,
           va_comp: item.va_comp,
           va_long: item.va_long,
-          daycount: (item as any).daycount || 0
+          daycount: (item as any).daycount || 0,
         };
       });
 
@@ -238,7 +234,7 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
 
       setDisplayData(converted);
     } catch (e) {
-      console.error("휴가 목록 로드 실패:", e);
+      console.error('휴가 목록 로드 실패:', e);
       setDisplayData([]);
     } finally {
       setLoading(false);
@@ -305,9 +301,9 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
     <Table variant="primary" align="center" className="table-fixed">
       <TableHeader>
         <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-          <TableHead className="w-[8%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:hidden">부서</TableHead>
-          <TableHead className="w-[12%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">이름</TableHead>
-          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:hidden">
+          <TableHead className="w-[8%] p-2 text-center max-md:hidden max-md:px-0.5 max-md:text-sm!">부서</TableHead>
+          <TableHead className="w-[12%] p-2 text-center max-md:w-[20%] max-md:px-0.5 max-md:text-sm!">이름</TableHead>
+          <TableHead className="w-[15%] p-2 text-center max-md:hidden max-md:px-0.5 max-md:text-sm!">
             <div className="flex items-center justify-center gap-1">
               <span className="text-[13px]">입사일</span>
               <Button
@@ -316,147 +312,147 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
                 size="icon"
                 className="p-0"
                 aria-label="입사일 정렬"
-                onClick={() => toggleSort('hireDate')}
-              >
+                onClick={() => toggleSort('hireDate')}>
                 <SortIcon order={sortState?.key === 'hireDate' ? sortState.order : undefined} />
               </Button>
             </div>
           </TableHead>
-          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[30%]">
+          <TableHead className="w-[15%] p-2 text-center max-md:w-[30%] max-md:px-0.5 max-md:text-sm!">
             <div className="flex items-center justify-center gap-1 max-md:gap-0!">
-              <span className="text-[13px] max-md:text-sm!"><span className="max-md:hidden">잔여</span>기본연차</span>
-              {!isMobile && <Tooltip>
-                <TooltipTrigger
-                  asChild
-                >
-                  <InfoIcon className="w-3 h-3 text-gray-400" />
-                </TooltipTrigger>
-                <TooltipContent>당해 지급 연차 + 주말&공휴일 보상휴가</TooltipContent>
-              </Tooltip>
-              }
+              <span className="text-[13px] max-md:text-sm!">
+                <span className="max-md:hidden">잔여</span>기본연차
+              </span>
               {!isMobile && (
-              <Button
-                type="button"
-                variant="svgIcon"
-                size="icon"
-                className="p-0"
-                aria-label="기본연차 정렬"
-                onClick={() => toggleSort('va_current')}
-              >
-                <SortIcon order={sortState?.key === 'va_current' ? sortState.order : undefined} />
-              </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="h-3 w-3 text-gray-400" />
+                  </TooltipTrigger>
+                  <TooltipContent>당해 지급 연차 + 주말&공휴일 보상휴가</TooltipContent>
+                </Tooltip>
+              )}
+              {!isMobile && (
+                <Button
+                  type="button"
+                  variant="svgIcon"
+                  size="icon"
+                  className="p-0"
+                  aria-label="기본연차 정렬"
+                  onClick={() => toggleSort('va_current')}>
+                  <SortIcon order={sortState?.key === 'va_current' ? sortState.order : undefined} />
+                </Button>
               )}
             </div>
           </TableHead>
-          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[30%]">
+          <TableHead className="w-[15%] p-2 text-center max-md:w-[30%] max-md:px-0.5 max-md:text-sm!">
             <div className="flex items-center justify-center gap-1">
-              <span className="text-[13px] max-md:text-sm!"><span className="max-md:hidden">잔여</span>이월연차</span>
-              {!isMobile && <Tooltip>
-                <TooltipTrigger
-                  asChild
-                >
-                  <InfoIcon className="w-3 h-3 text-gray-400" />
-                </TooltipTrigger>
-                <TooltipContent>당해 4월 소멸됨</TooltipContent>
-              </Tooltip>
-              }
+              <span className="text-[13px] max-md:text-sm!">
+                <span className="max-md:hidden">잔여</span>이월연차
+              </span>
               {!isMobile && (
-              <Button
-                type="button"
-                variant="svgIcon"
-                size="icon"
-                className="p-0"
-                aria-label="이월연차 정렬"
-                onClick={() => toggleSort('va_carryover')}
-              >
-                <SortIcon order={sortState?.key === 'va_carryover' ? sortState.order : undefined} />
-              </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="h-3 w-3 text-gray-400" />
+                  </TooltipTrigger>
+                  <TooltipContent>당해 4월 소멸됨</TooltipContent>
+                </Tooltip>
+              )}
+              {!isMobile && (
+                <Button
+                  type="button"
+                  variant="svgIcon"
+                  size="icon"
+                  className="p-0"
+                  aria-label="이월연차 정렬"
+                  onClick={() => toggleSort('va_carryover')}>
+                  <SortIcon order={sortState?.key === 'va_carryover' ? sortState.order : undefined} />
+                </Button>
               )}
             </div>
           </TableHead>
 
-          <TableHead className="w-[15%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[30%]">
+          <TableHead className="w-[15%] p-2 text-center max-md:w-[30%] max-md:px-0.5 max-md:text-sm!">
             <div className="flex items-center justify-center gap-1">
-              <span className="text-[13px] max-md:text-sm!"><span className="max-md:hidden">잔여</span>특별대휴</span>
-              {!isMobile && <Tooltip>
-                <TooltipTrigger
-                  asChild
-                >
-                  <InfoIcon className="w-3 h-3 text-gray-400" />
-                </TooltipTrigger>
-                <TooltipContent>토요일 근무 보상휴가</TooltipContent>
-              </Tooltip>
-              }
+              <span className="text-[13px] max-md:text-sm!">
+                <span className="max-md:hidden">잔여</span>특별대휴
+              </span>
               {!isMobile && (
-              <Button
-                type="button"
-                variant="svgIcon"
-                size="icon"
-                className="p-0"
-                aria-label="특별대휴 정렬"
-                onClick={() => toggleSort('va_comp')}
-              >
-                <SortIcon order={sortState?.key === 'va_comp' ? sortState.order : undefined} />
-              </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="h-3 w-3 text-gray-400" />
+                  </TooltipTrigger>
+                  <TooltipContent>토요일 근무 보상휴가</TooltipContent>
+                </Tooltip>
+              )}
+              {!isMobile && (
+                <Button
+                  type="button"
+                  variant="svgIcon"
+                  size="icon"
+                  className="p-0"
+                  aria-label="특별대휴 정렬"
+                  onClick={() => toggleSort('va_comp')}>
+                  <SortIcon order={sortState?.key === 'va_comp' ? sortState.order : undefined} />
+                </Button>
               )}
             </div>
           </TableHead>
 
-          <TableHead className="w-[10%] text-center p-2 max-md:px-0.5 max-md:text-sm! hidden">
+          <TableHead className="hidden w-[10%] p-2 text-center max-md:px-0.5 max-md:text-sm!">
             <div className="flex items-center justify-center gap-1">
-              <span className="text-[13px]"><span className="max-md:hidden">잔여</span>공가</span>
+              <span className="text-[13px]">
+                <span className="max-md:hidden">잔여</span>공가
+              </span>
               {!isMobile && (
-              <Button
-                type="button"
-                variant="svgIcon"
-                size="icon"
-                className="p-0"
-                aria-label="공가 정렬"
-                onClick={() => toggleSort('va_long')}
-              >
-                <SortIcon order={sortState?.key === 'va_long' ? sortState.order : undefined} />
-              </Button>
+                <Button
+                  type="button"
+                  variant="svgIcon"
+                  size="icon"
+                  className="p-0"
+                  aria-label="공가 정렬"
+                  onClick={() => toggleSort('va_long')}>
+                  <SortIcon order={sortState?.key === 'va_long' ? sortState.order : undefined} />
+                </Button>
               )}
             </div>
           </TableHead>
-          {!isManagerPage && <TableHead className="w-[20%] text-center p-2 max-md:px-0.5 max-md:text-sm! max-md:w-[20%]">휴가관리</TableHead>}
+          {!isManagerPage && (
+            <TableHead className="w-[20%] p-2 text-center max-md:w-[20%] max-md:px-0.5 max-md:text-sm!">휴가관리</TableHead>
+          )}
         </TableRow>
       </TableHeader>
 
       <TableBody>
         {loading ? (
           <TableRow className="[&_td]:text-[13px]">
-            <TableCell colSpan={columnCount} className="text-center p-2 max-md:px-0.5">로딩 중…</TableCell>
+            <TableCell colSpan={columnCount} className="p-2 text-center max-md:px-0.5">
+              로딩 중…
+            </TableCell>
           </TableRow>
         ) : sortedDisplayData.length === 0 ? (
           <TableRow className="[&_td]:text-[13px]">
-            <TableCell colSpan={columnCount} className="text-center p-2 max-md:px-0.5">데이터 없음</TableCell>
+            <TableCell colSpan={columnCount} className="p-2 text-center max-md:px-0.5">
+              데이터 없음
+            </TableCell>
           </TableRow>
         ) : (
-          sortedDisplayData.map(item => (
+          sortedDisplayData.map((item) => (
             <TableRow
               key={item.id}
               className="cursor-pointer hover:bg-gray-200 [&_td]:text-[13px]"
-              onClick={(e) => handleRowClick(item.id, e)}
-            >
-              <TableCell className="text-center p-2 max-md:px-0.5 max-md:hidden">{item.department}</TableCell>
+              onClick={(e) => handleRowClick(item.id, e)}>
+              <TableCell className="p-2 text-center max-md:hidden max-md:px-0.5">{item.department}</TableCell>
 
-              <TableCell className="text-center p-2 max-md:px-0.5">
-                <div className="flex items-center gap-2 justify-center">
-                  <Avatar className="w-8 h-8 max-md:hidden">
-                    {item.profile_image && (
-                      <AvatarImage
-                        src={getProfileImageUrl(item.profile_image)}
-                        alt={item.name}
-                      />
-                    )}
+              <TableCell className="p-2 text-center max-md:px-0.5">
+                <div className="flex items-center justify-center gap-2">
+                  <Avatar className="h-8 w-8 max-md:hidden">
+                    {item.profile_image && <AvatarImage src={getProfileImageUrl(item.profile_image)} alt={item.name} />}
                     <AvatarFallback>{getAvatarFallback(item.id)}</AvatarFallback>
                   </Avatar>
                   {item.name}
                 </div>
               </TableCell>
 
-              <TableCell className="text-center p-2 max-md:px-0.5 max-md:hidden">
+              <TableCell className="p-2 text-center max-md:hidden max-md:px-0.5">
                 <div className="flex items-center justify-center gap-1">
                   <span className="text-sm">{item.hireDate}</span>
                   <span className="text-xs text-gray-500">({item.daycount}일)</span>
@@ -464,33 +460,45 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
               </TableCell>
 
               {/* 기본연차 */}
-              <TableCell className="text-center p-2 max-md:px-0.5">
-                <Badge variant={Number(item.va_current) < 0 ? "lightpink2" : Number(item.va_current) === 0 ? "grayish" : "secondary"} size="table">
+              <TableCell className="p-2 text-center max-md:px-0.5">
+                <Badge
+                  variant={Number(item.va_current) < 0 ? 'lightpink2' : Number(item.va_current) === 0 ? 'grayish' : 'secondary'}
+                  size="table">
                   {item.va_current}일
                 </Badge>
               </TableCell>
 
               {/* 이월 */}
-              <TableCell className="text-center p-2 max-md:px-0.5">
-                <Badge variant={Number(item.va_carryover) < 0 ? "lightpink2" : Number(item.va_carryover) === 0 ? "grayish" : "secondary"} size="table">{item.va_carryover}일</Badge>
+              <TableCell className="p-2 text-center max-md:px-0.5">
+                <Badge
+                  variant={Number(item.va_carryover) < 0 ? 'lightpink2' : Number(item.va_carryover) === 0 ? 'grayish' : 'secondary'}
+                  size="table">
+                  {item.va_carryover}일
+                </Badge>
               </TableCell>
 
               {/* 특별 */}
-              <TableCell className="text-center p-2 max-md:px-0.5">
-                <Badge variant={Number(item.va_comp) < 0 ? "lightpink2" : Number(item.va_comp) === 0 ? "grayish" : "secondary"} size="table">{item.va_comp}일</Badge>
+              <TableCell className="p-2 text-center max-md:px-0.5">
+                <Badge
+                  variant={Number(item.va_comp) < 0 ? 'lightpink2' : Number(item.va_comp) === 0 ? 'grayish' : 'secondary'}
+                  size="table">
+                  {item.va_comp}일
+                </Badge>
               </TableCell>
 
               {/* 공가 (근속휴가) */}
-              <TableCell className="text-center p-2 max-md:px-0.5 hidden">
-                <Badge variant={Number(item.va_long) < 0 ? "lightpink2" : Number(item.va_long) === 0 ? "grayish" : "secondary"} size="table">{item.va_long}일</Badge>
+              <TableCell className="hidden p-2 text-center max-md:px-0.5">
+                <Badge
+                  variant={Number(item.va_long) < 0 ? 'lightpink2' : Number(item.va_long) === 0 ? 'grayish' : 'secondary'}
+                  size="table">
+                  {item.va_long}일
+                </Badge>
               </TableCell>
 
               {!isManagerPage && (
-                <TableCell className="text-center p-2 max-md:px-0.5">
-                  <Button size="sm" variant="outline"
-                    onClick={() => handleOpenGrantDialog(item.id, item.name)}
-                  >
-                    <SettingsIcon className="w-4 h-4" />
+                <TableCell className="p-2 text-center max-md:px-0.5">
+                  <Button size="sm" variant="outline" onClick={() => handleOpenGrantDialog(item.id, item.name)}>
+                    <SettingsIcon className="h-4 w-4" />
                   </Button>
                 </TableCell>
               )}
@@ -512,7 +520,6 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
           }}
         />
       )}
-
     </Table>
   );
 }

@@ -8,19 +8,18 @@ import VacationHistory from '@components/features/Vacation/history';
 export default function VacationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
+
   // 새로고침 트리거 state 추가 (다른 useState들 옆에)
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
-  
 
   // 선택된 팀 ID 목록
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
   // 선택된 유저 ID 목록 - 클릭한 유저로 설정 (초기값으로 id 설정)
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>(id ? [id] : []);
-  
+
   // 활성 탭 (휴가 vs 이벤트)
   const [activeTab, setActiveTab] = useState<'vacation' | 'event'>('vacation');
-  
+
   // 필터 상태
   const [filters, setFilters] = useState<VacationFilters>({});
 
@@ -45,18 +44,18 @@ export default function VacationDetail() {
   // 유저 선택 핸들러
   const handleUserSelect = (userIds: string[]) => {
     setSelectedUserIds(userIds);
-    
+
     // 상세 페이지에서 유저 선택 시 URL 업데이트 (1개만 선택 가능)
     if (userIds.length === 1) {
       navigate(`/admin/vacation/user/${userIds[0]}`, { replace: true });
     }
   };
-  
+
   // 필터 변경 핸들러
   const handleFilterChange = (newFilters: VacationFilters) => {
     setFilters(newFilters);
   };
-  
+
   // 일괄 승인 핸들러
   const handleApproveAll = () => {
     // window 객체에 VacationList에서 등록한 함수 호출
@@ -67,7 +66,7 @@ export default function VacationDetail() {
 
   // UserList의 onGrantSuccess 핸들러 추가 (handleListClick 함수 다음에)
   const handleGrantSuccess = () => {
-    setHistoryRefreshTrigger(prev => prev + 1);
+    setHistoryRefreshTrigger((prev) => prev + 1);
   };
 
   // 목록으로 돌아가기 핸들러
@@ -79,7 +78,7 @@ export default function VacationDetail() {
 
   return (
     <>
-      <Toolbar 
+      <Toolbar
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onTeamSelect={handleTeamSelect}
@@ -91,18 +90,9 @@ export default function VacationDetail() {
         page="admin"
         initialUserIds={id ? [id] : undefined}
       />
-      <UserList 
-        year={year}
-        teamIds={selectedTeamIds}
-        userIds={selectedUserIds}
-        onGrantSuccess={handleGrantSuccess}
-      />
+      <UserList year={year} teamIds={selectedTeamIds} userIds={selectedUserIds} onGrantSuccess={handleGrantSuccess} />
       <div className="mt-6">
-        <VacationHistory
-        userId={id}
-        year={year}
-        refreshTrigger={historyRefreshTrigger}
-      />
+        <VacationHistory userId={id} year={year} refreshTrigger={historyRefreshTrigger} />
       </div>
     </>
   );

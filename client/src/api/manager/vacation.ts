@@ -47,7 +47,9 @@ export interface ManagerVacationInfoResponse {
 // - google_calendar_idx 값이 있을 경우 캘린더 삭제
 // - sch_vacation_used 값이 있을 경우, users_vacations 복원
 export const managerVacationCancelApi = {
-  approveScheduleCancel: async (id: number): Promise<{
+  approveScheduleCancel: async (
+    id: number
+  ): Promise<{
     result: {
       updatedId: number;
       old: Schedule;
@@ -61,7 +63,7 @@ export const managerVacationCancelApi = {
         refunded: boolean;
       };
     }>(`/manager/schedule/cancel/${id}`, {
-      method: 'POST'
+      method: 'POST',
     });
     return response;
   },
@@ -70,7 +72,12 @@ export const managerVacationCancelApi = {
 // 매니저 전용 휴가 현황/상세 조회
 export const managerVacationApi = {
   // 팀원 휴가 현황 목록
-  getVacationList: async (year?: number, teamIds?: number[], page: number = 1, size: number = 100): Promise<ManagerVacationListResponse> => {
+  getVacationList: async (
+    year?: number,
+    teamIds?: number[],
+    page: number = 1,
+    size: number = 100
+  ): Promise<ManagerVacationListResponse> => {
     const params = new URLSearchParams();
     if (year) params.append('year', String(year));
     if (teamIds && teamIds.length > 0) params.append('team_id', teamIds.join(','));
@@ -95,4 +102,3 @@ export const managerVacationApi = {
     });
   },
 };
-

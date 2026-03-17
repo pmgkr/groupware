@@ -1,25 +1,21 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { CalendarIcon } from "@radix-ui/react-icons"
-import { format } from "date-fns";
-import { ko } from "date-fns/locale";
+import * as React from 'react';
+import { CalendarIcon } from '@radix-ui/react-icons';
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { DayPicker } from "@/components/daypicker";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { DayPicker } from '@/components/daypicker';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export function DateTimePicker24h({
-  placeholder = "날짜와 시간을 선택해주세요",
+  placeholder = '날짜와 시간을 선택해주세요',
   timeRestriction,
   selected,
-  onSelect
+  onSelect,
 }: {
   placeholder?: string;
   timeRestriction?: {
@@ -56,21 +52,25 @@ export function DateTimePicker24h({
     if (selectedDate) {
       // 기존 시간을 유지하면서 날짜만 업데이트
       const currentTime = date ? { hours: date.getHours(), minutes: date.getMinutes() } : { hours: 0, minutes: 0 };
-      const localDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), currentTime.hours, currentTime.minutes, 0);
+      const localDate = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+        currentTime.hours,
+        currentTime.minutes,
+        0
+      );
       setDate(localDate);
       onSelect?.(localDate);
     }
   };
 
-  const handleTimeChange = (
-    type: "hour" | "minute",
-    value: string
-  ) => {
+  const handleTimeChange = (type: 'hour' | 'minute', value: string) => {
     if (date) {
       const newDate = new Date(date);
-      if (type === "hour") {
+      if (type === 'hour') {
         newDate.setHours(parseInt(value));
-      } else if (type === "minute") {
+      } else if (type === 'minute') {
         newDate.setMinutes(parseInt(value));
       }
       setDate(newDate);
@@ -83,7 +83,7 @@ export function DateTimePicker24h({
     if (timeRestriction && date) {
       const currentHour = date.getHours();
       const minutes = [];
-      
+
       if (currentHour === timeRestriction.startHour && currentHour === timeRestriction.endHour) {
         // 시작 시간과 종료 시간이 같은 시간대인 경우
         for (let min = timeRestriction.startMinute; min <= timeRestriction.endMinute; min += 5) {
@@ -115,77 +115,58 @@ export function DateTimePicker24h({
   return (
     <Popover modal={true} open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            "w-full justify-start text-left font-normal",
-            !date && "text-muted-foreground"
-          )}
-        >
+        <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !date && 'text-muted-foreground')}>
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? (
-            format(date, "yyyy년 M월 d일 EEEE HH:mm", { locale: ko })
-          ) : (
-            <span>{placeholder}</span>
-          )}
+          {date ? format(date, 'yyyy년 M월 d일 EEEE HH:mm', { locale: ko }) : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="w-auto p-0 z-[1000] max-md:max-w-[100vw] max-md:overflow-x-auto" 
-        onPointerDown={(e) => e.stopPropagation()}
-      >
+      <PopoverContent
+        className="z-[1000] w-auto p-0 max-md:max-w-[100vw] max-md:overflow-x-auto"
+        onPointerDown={(e) => e.stopPropagation()}>
         <div className="flex flex-col">
           <div className="flex">
-            <DayPicker
-              mode="single"
-              selected={date}
-              onSelect={handleDateSelect}
-              initialFocus
-            />
-            <div className="flex flex-row sm:h-[300px] divide-x max-md:h-auto">
-            <ScrollArea className="flex-1 sm:w-auto max-md:h-[100%]">
-              <div className="flex flex-row sm:flex-col p-2 max-md:gap-1">
-                {hours.map((hour) => (
-                  <Button
-                    key={hour}
-                    size="icon"
-                    variant={date && date.getHours() === hour ? "default" : "ghost"}
-                    className="sm:w-full shrink-0 aspect-square max-md:text-sm"
-                    onClick={() => handleTimeChange("hour", hour.toString())}
-                  >
-                    {hour}
-                  </Button>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" className="sm:hidden" />
-            </ScrollArea>
-            <ScrollArea className="flex-1 sm:w-auto max-md:h-[100%]">
-              <div className="flex flex-row sm:flex-col p-2 max-md:gap-1">
-                {availableMinutes.map((minute) => (
-                  <Button
-                    key={minute}
-                    size="icon"
-                    variant={date && date.getMinutes() === minute ? "default" : "ghost"}
-                    className="sm:w-full shrink-0 aspect-square max-md:text-sm"
-                    onClick={() => handleTimeChange("minute", minute.toString())}
-                  >
-                    {minute.toString().padStart(2, '0')}
-                  </Button>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" className="sm:hidden" />
-            </ScrollArea>
+            <DayPicker mode="single" selected={date} onSelect={handleDateSelect} initialFocus />
+            <div className="flex flex-row divide-x max-md:h-auto sm:h-[300px]">
+              <ScrollArea className="flex-1 max-md:h-[100%] sm:w-auto">
+                <div className="flex flex-row p-2 max-md:gap-1 sm:flex-col">
+                  {hours.map((hour) => (
+                    <Button
+                      key={hour}
+                      size="icon"
+                      variant={date && date.getHours() === hour ? 'default' : 'ghost'}
+                      className="aspect-square shrink-0 max-md:text-sm sm:w-full"
+                      onClick={() => handleTimeChange('hour', hour.toString())}>
+                      {hour}
+                    </Button>
+                  ))}
+                </div>
+                <ScrollBar orientation="horizontal" className="sm:hidden" />
+              </ScrollArea>
+              <ScrollArea className="flex-1 max-md:h-[100%] sm:w-auto">
+                <div className="flex flex-row p-2 max-md:gap-1 sm:flex-col">
+                  {availableMinutes.map((minute) => (
+                    <Button
+                      key={minute}
+                      size="icon"
+                      variant={date && date.getMinutes() === minute ? 'default' : 'ghost'}
+                      className="aspect-square shrink-0 max-md:text-sm sm:w-full"
+                      onClick={() => handleTimeChange('minute', minute.toString())}>
+                      {minute.toString().padStart(2, '0')}
+                    </Button>
+                  ))}
+                </div>
+                <ScrollBar orientation="horizontal" className="sm:hidden" />
+              </ScrollArea>
             </div>
           </div>
           {date && (
-            <div className="p-3 border-t">
-              <Button 
-                className="w-full" 
+            <div className="border-t p-3">
+              <Button
+                className="w-full"
                 onClick={() => {
                   onSelect?.(date); // 선택완료 시 최종 값 전달
                   setIsOpen(false);
-                }}
-              >
+                }}>
                 선택완료
               </Button>
             </div>

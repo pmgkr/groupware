@@ -54,10 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     sessionStorage.setItem(LOGOUT_FLAG, 'true');
   };
 
-  const value = useMemo<AuthValue>(
-    () => ({ user, loading, logout, setUserState: setUser }),
-    [user, loading]
-  );
+  const value = useMemo<AuthValue>(() => ({ user, loading, logout, setUserState: setUser }), [user, loading]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Button } from "@components/ui/button";
-import { MultiSelect } from "@components/multiselect/multi-select";
+import { Button } from '@components/ui/button';
+import { MultiSelect } from '@components/multiselect/multi-select';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams, type MyTeamItem } from '@/api/manager/teams';
@@ -44,7 +44,7 @@ interface OvertimeToolbarProps {
   maxCount?: number;
 }
 
-export default function OvertimeToolbar({ 
+export default function OvertimeToolbar({
   activeTab = 'weekday',
   onTabChange = () => {},
   onTeamSelect = () => {},
@@ -52,18 +52,18 @@ export default function OvertimeToolbar({
   checkedItems = [],
   onApproveAll = () => {},
   page = 'manager',
-  maxCount = 0
+  maxCount = 0,
 }: OvertimeToolbarProps) {
   const { user } = useAuth();
   const isMobile = useIsMobileViewport();
-  
+
   // 팀 관련 state
   const [teams, setTeams] = useState<MyTeamItem[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
-  
+
   // 팀 목록 로드 중복 방지 ref
   const teamsLoadedRef = useRef(false);
-  
+
   const yearOptions = getGrowingYears().reverse();
 
   // 연장근무 필터 state
@@ -72,23 +72,23 @@ export default function OvertimeToolbar({
     status: page === 'admin' && activeTab === 'weekend' ? ['approved'] : [], // admin이고 휴일일 때 기본값: 보상대기
     mealAllowance: [],
     transportAllowance: [],
-    compensation: []
+    compensation: [],
   });
 
   // 팀 목록 로드
   const loadTeams = async () => {
     if (teamsLoadedRef.current) return;
-    
+
     try {
       if (!user?.user_id) {
         return;
       }
-      
+
       // page prop에 따라 분기
       if (page === 'admin') {
         // admin 페이지: 모든 팀 표시
         const allTeamDetails = await getTeams({});
-        const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
+        const teamItems: MyTeamItem[] = allTeamDetails.map((team) => ({
           seq: 0,
           manager_id: user.user_id,
           manager_name: user.user_name || '',
@@ -97,15 +97,15 @@ export default function OvertimeToolbar({
           parent_id: team.parent_id || undefined,
           level: team.level,
         }));
-        
+
         setTeams(teamItems);
         teamsLoadedRef.current = true;
         return;
       }
-      
+
       // manager 페이지: 권한 상관없이 자기가 팀장인 팀 목록만 조회
       const allTeamDetails = await getManagerTeams({});
-      const teamItems: MyTeamItem[] = allTeamDetails.map(team => ({
+      const teamItems: MyTeamItem[] = allTeamDetails.map((team) => ({
         seq: 0,
         manager_id: team.manager_id || '',
         manager_name: team.manager_name || '',
@@ -114,10 +114,9 @@ export default function OvertimeToolbar({
         parent_id: team.parent_id || undefined,
         level: team.level,
       }));
-      
+
       setTeams(teamItems);
       teamsLoadedRef.current = true;
-      
     } catch (error) {
       console.error('팀 목록 로드 실패:', error);
       setTeams([]);
@@ -129,9 +128,9 @@ export default function OvertimeToolbar({
     if (id === 'teams') {
       const teamValues = Array.isArray(value) ? value : [value];
       setSelectedTeams(teamValues);
-      
+
       if (teamValues.length > 0) {
-        const teamIds = teamValues.map(v => parseInt(v));
+        const teamIds = teamValues.map((v) => parseInt(v));
         onTeamSelect(teamIds);
       } else {
         onTeamSelect([]);
@@ -139,7 +138,7 @@ export default function OvertimeToolbar({
     } else {
       // 연장근무 필터 핸들러
       const newFilters = { ...filters };
-      
+
       if (id === 'year') {
         newFilters.year = Array.isArray(value) ? value[0] : value;
       } else if (id === 'status') {
@@ -151,7 +150,7 @@ export default function OvertimeToolbar({
       } else if (id === 'compensation') {
         newFilters.compensation = Array.isArray(value) ? value : [value];
       }
-      
+
       setFilters(newFilters);
       onFilterChange(newFilters);
     }
@@ -169,7 +168,7 @@ export default function OvertimeToolbar({
     if (page === 'admin' && activeTab === 'weekend') {
       const newFilters = {
         ...filters,
-        status: ['approved']
+        status: ['approved'],
       };
       setFilters(newFilters);
       onFilterChange(newFilters);
@@ -179,12 +178,10 @@ export default function OvertimeToolbar({
 
   // 팀 옵션 (알파벳순 정렬)
   const teamOptions = useMemo(() => {
-    const sortedTeams = [...teams].sort((a, b) => 
-      a.team_name.localeCompare(b.team_name, 'ko')
-    );
-    return sortedTeams.map(team => ({
+    const sortedTeams = [...teams].sort((a, b) => a.team_name.localeCompare(b.team_name, 'ko'));
+    return sortedTeams.map((team) => ({
       value: String(team.team_id),
-      label: team.team_name
+      label: team.team_name,
     }));
   }, [teams]);
 
@@ -214,7 +211,7 @@ export default function OvertimeToolbar({
       // 평일: admin일 때는 필터 없음(전체), manager일 때는 승인대기만 기본 선택
       const newFilters = {
         ...filters,
-        status: page === 'admin' ? [] : ['pending']
+        status: page === 'admin' ? [] : ['pending'],
       };
       setFilters(newFilters);
       onFilterChange(newFilters);
@@ -222,7 +219,7 @@ export default function OvertimeToolbar({
       // 휴일: admin일 때는 보상대기, manager일 때는 승인대기
       const newFilters = {
         ...filters,
-        status: page === 'admin' ? ['approved'] : ['pending']
+        status: page === 'admin' ? ['approved'] : ['pending'],
       };
       setFilters(newFilters);
       onFilterChange(newFilters);
@@ -233,10 +230,10 @@ export default function OvertimeToolbar({
   const handleReset = () => {
     const defaultFilters: OvertimeFilters = {
       year: new Date().getFullYear().toString(),
-      status: page === 'admin' && activeTab === 'weekend' ? ['approved'] : (page === 'admin' ? [] : ['pending']),
+      status: page === 'admin' && activeTab === 'weekend' ? ['approved'] : page === 'admin' ? [] : ['pending'],
       mealAllowance: [],
       transportAllowance: [],
-      compensation: []
+      compensation: [],
     };
     setFilters(defaultFilters);
     setSelectedTeams([]);
@@ -245,37 +242,36 @@ export default function OvertimeToolbar({
   };
 
   return (
-    <div className="w-full flex items-center justify-between mb-5">
-      
-        <div className="flex max-md:flex-wrap! max-md:w-full max-md:gap-2">
-          {/* 탭 버튼 */}
-          <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5 max-md:w-full!">
-            <Button
-              onClick={() => onTabChange('weekday')}
-              className={`h-8 w-22 rounded-sm p-0 text-sm max-md:flex-1 ${
-                activeTab === 'weekday'
-                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-              }`}>
-              평일 연장근무
-            </Button>
-            <Button
-              onClick={() => onTabChange('weekend')}
-              className={`h-8 w-18 rounded-sm p-0 text-sm max-md:flex-1 ${
-                activeTab === 'weekend'
-                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-              }`}>
-              휴일 근무
-            </Button>
-          </div>
-          {isMobile ? (
-            <>
+    <div className="mb-5 flex w-full items-center justify-between">
+      <div className="flex max-md:w-full max-md:flex-wrap! max-md:gap-2">
+        {/* 탭 버튼 */}
+        <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5 max-md:w-full!">
+          <Button
+            onClick={() => onTabChange('weekday')}
+            className={`h-8 w-22 rounded-sm p-0 text-sm max-md:flex-1 ${
+              activeTab === 'weekday'
+                ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+            }`}>
+            평일 연장근무
+          </Button>
+          <Button
+            onClick={() => onTabChange('weekend')}
+            className={`h-8 w-18 rounded-sm p-0 text-sm max-md:flex-1 ${
+              activeTab === 'weekend'
+                ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+            }`}>
+            휴일 근무
+          </Button>
+        </div>
+        {isMobile ? (
+          <>
             {/* 필터 버튼 및 승인 버튼 */}
             <div className="flex w-full items-center justify-between">
               <Drawer direction="bottom">
                 <DrawerTrigger asChild>
-                  <Button size="sm" variant="ghost" className="has-[>svg]:px-0 text-gray-500">
+                  <Button size="sm" variant="ghost" className="text-gray-500 has-[>svg]:px-0">
                     <ListFilter className="size-4" /> 필터
                   </Button>
                 </DrawerTrigger>
@@ -283,14 +279,18 @@ export default function OvertimeToolbar({
                   <DrawerHeader>
                     <div className="flex justify-between">
                       <DrawerTitle className="text-left">상세 필터</DrawerTitle>
-                      <Button type="button" variant="ghost" size="xs" className="hover:text-primary-blue-500 text-gray-600" onClick={handleReset}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="xs"
+                        className="hover:text-primary-blue-500 text-gray-600"
+                        onClick={handleReset}>
                         <RefreshCw className="size-4" /> 초기화
                       </Button>
                     </div>
                   </DrawerHeader>
                   <div className="flex flex-col gap-y-2 px-4 pb-8">
-
-                    <div className="flex gap-x-2 w-full">
+                    <div className="flex w-full gap-x-2">
                       {/* 연도 단일 선택 */}
                       <div className="w-1/2">
                         <FilterTitle label="연도 선택" />
@@ -324,7 +324,7 @@ export default function OvertimeToolbar({
                           searchable={true}
                           hideSelectAll={false}
                           autoSize={true}
-                          className="w-full max-w-full min-w-auto! multi-select"
+                          className="multi-select w-full max-w-full min-w-auto!"
                           modalPopover={true}
                         />
                       </div>
@@ -344,13 +344,13 @@ export default function OvertimeToolbar({
                         searchable={false}
                         hideSelectAll={false}
                         autoSize={true}
-                        className="w-full max-w-full min-w-auto! multi-select"
+                        className="multi-select w-full max-w-full min-w-auto!"
                         modalPopover={true}
                       />
                     </div>
 
                     {activeTab === 'weekday' && (
-                      <div className="flex gap-x-2 w-full">
+                      <div className="flex w-full gap-x-2">
                         {/* 식대 선택 */}
                         <div className="w-1/2">
                           <FilterTitle label="식대 선택" />
@@ -368,7 +368,7 @@ export default function OvertimeToolbar({
                             searchable={false}
                             hideSelectAll={false}
                             autoSize={true}
-                            className="w-full max-w-full min-w-auto! multi-select"
+                            className="multi-select w-full max-w-full min-w-auto!"
                             modalPopover={true}
                           />
                         </div>
@@ -390,7 +390,7 @@ export default function OvertimeToolbar({
                             searchable={false}
                             hideSelectAll={false}
                             autoSize={true}
-                            className="w-full max-w-full min-w-auto! multi-select"
+                            className="multi-select w-full max-w-full min-w-auto!"
                             modalPopover={true}
                           />
                         </div>
@@ -415,7 +415,7 @@ export default function OvertimeToolbar({
                           searchable={false}
                           hideSelectAll={false}
                           autoSize={true}
-                          className="w-full max-w-full min-w-auto! multi-select"
+                          className="multi-select w-full max-w-full min-w-auto!"
                           modalPopover={true}
                         />
                       </div>
@@ -429,28 +429,28 @@ export default function OvertimeToolbar({
                 </Button>
               )}
             </div>
-            </>
-            ) : (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                {/* 필터 셀렉트들 */}
-                <div className="flex items-center gap-2 before:mx-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
+          </>
+        ) : (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              {/* 필터 셀렉트들 */}
+              <div className="flex items-center gap-2 before:mx-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
                 {/* 연도 단일 선택 */}
                 <Select value={filters.year} onValueChange={(v) => handleSelectChange('year', v)}>
-                    <SelectTrigger size="sm" className="px-2">
-                      <SelectValue placeholder="연도 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {yearOptions.map((y) => (
-                          <SelectItem size="sm" key={y} value={y}>
-                            {y}년
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                
+                  <SelectTrigger size="sm" className="px-2">
+                    <SelectValue placeholder="연도 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {yearOptions.map((y) => (
+                        <SelectItem size="sm" key={y} value={y}>
+                          {y}년
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+
                 {/* 팀 선택 */}
                 <MultiSelect
                   simpleSelect={true}
@@ -463,7 +463,7 @@ export default function OvertimeToolbar({
                   searchable={true}
                   hideSelectAll={false}
                   autoSize={true}
-                  className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+                  className="multi-select w-auto! max-w-[200px]! min-w-[120px]!"
                 />
 
                 {/* 상태 선택 */}
@@ -478,83 +478,82 @@ export default function OvertimeToolbar({
                   searchable={false}
                   hideSelectAll={false}
                   autoSize={true}
-                  className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
+                  className="multi-select w-auto! max-w-[200px]! min-w-[120px]!"
                 />
 
                 {activeTab === 'weekday' && (
                   <>
-                  {/* 식대 선택 */}
-                  <MultiSelect
-                    simpleSelect={true}
-                    options={[
-                      { value: 'used', label: '사용' },
-                      { value: 'notUsed', label: '미사용' },
-                    ]}
-                    onValueChange={(value) => handleSelectChange('mealAllowance', value)}
-                    defaultValue={filters.mealAllowance}
-                    placeholder="식대"
-                    size="sm"
-                    maxCount={0}
-                    searchable={false}
-                    hideSelectAll={false}
-                    autoSize={true}
-                    className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
-                  />
+                    {/* 식대 선택 */}
+                    <MultiSelect
+                      simpleSelect={true}
+                      options={[
+                        { value: 'used', label: '사용' },
+                        { value: 'notUsed', label: '미사용' },
+                      ]}
+                      onValueChange={(value) => handleSelectChange('mealAllowance', value)}
+                      defaultValue={filters.mealAllowance}
+                      placeholder="식대"
+                      size="sm"
+                      maxCount={0}
+                      searchable={false}
+                      hideSelectAll={false}
+                      autoSize={true}
+                      className="multi-select w-auto! max-w-[200px]! min-w-[120px]!"
+                    />
 
-                  {/* 교통비 선택 */}
-                  <MultiSelect
-                    simpleSelect={true}
-                    options={[
-                      { value: 'used', label: '사용' },
-                      { value: 'notUsed', label: '미사용' },
-                    ]}
-                    onValueChange={(value) => handleSelectChange('transportAllowance', value)}
-                    defaultValue={filters.transportAllowance}
-                    placeholder="교통비"
-                    size="sm"
-                    maxCount={0}
-                    searchable={false}
-                    hideSelectAll={false}
-                    autoSize={true}
-                    className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
-                  />
+                    {/* 교통비 선택 */}
+                    <MultiSelect
+                      simpleSelect={true}
+                      options={[
+                        { value: 'used', label: '사용' },
+                        { value: 'notUsed', label: '미사용' },
+                      ]}
+                      onValueChange={(value) => handleSelectChange('transportAllowance', value)}
+                      defaultValue={filters.transportAllowance}
+                      placeholder="교통비"
+                      size="sm"
+                      maxCount={0}
+                      searchable={false}
+                      hideSelectAll={false}
+                      autoSize={true}
+                      className="multi-select w-auto! max-w-[200px]! min-w-[120px]!"
+                    />
                   </>
                 )}
 
                 {activeTab === 'weekend' && (
                   <>
-                  {/* 보상 선택 */}
-                  <MultiSelect
-                    simpleSelect={true}
-                    options={[
-                      { value: 'special', label: '특별대휴' },
-                      { value: 'compensatory', label: '보상휴가' },
-                      { value: 'allowance', label: '수당지급' },
-                    ]}
-                    onValueChange={(value) => handleSelectChange('compensation', value)}
-                    defaultValue={filters.compensation}
-                    placeholder="보상"
-                    size="sm"
-                    maxCount={0}
-                    searchable={false}
-                    hideSelectAll={false}
-                    autoSize={true}
-                    className="min-w-[120px]! w-auto! max-w-[200px]! multi-select"
-                  />
-                </>
+                    {/* 보상 선택 */}
+                    <MultiSelect
+                      simpleSelect={true}
+                      options={[
+                        { value: 'special', label: '특별대휴' },
+                        { value: 'compensatory', label: '보상휴가' },
+                        { value: 'allowance', label: '수당지급' },
+                      ]}
+                      onValueChange={(value) => handleSelectChange('compensation', value)}
+                      defaultValue={filters.compensation}
+                      placeholder="보상"
+                      size="sm"
+                      maxCount={0}
+                      searchable={false}
+                      hideSelectAll={false}
+                      autoSize={true}
+                      className="multi-select w-auto! max-w-[200px]! min-w-[120px]!"
+                    />
+                  </>
                 )}
-
-                </div>
               </div>
             </div>
-          )}
-        </div>
-                                
-        {!isMobile && !(page === 'admin' && activeTab === 'weekday') && (
-          <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>
-            {page === 'admin' && activeTab === 'weekend' ? '보상 지급하기' : '승인하기'}
-          </Button>
+          </div>
         )}
+      </div>
+
+      {!isMobile && !(page === 'admin' && activeTab === 'weekday') && (
+        <Button onClick={onApproveAll} size="sm" disabled={checkedItems.length === 0}>
+          {page === 'admin' && activeTab === 'weekend' ? '보상 지급하기' : '승인하기'}
+        </Button>
+      )}
     </div>
   );
 }

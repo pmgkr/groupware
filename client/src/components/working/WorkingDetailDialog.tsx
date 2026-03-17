@@ -17,28 +17,22 @@ interface WorkingDetailDialogProps {
   weekStartDate: Date;
 }
 
-export default function WorkingDetailDialog({ 
-  isOpen, 
-  onClose, 
-  userId, 
-  userName,
-  weekStartDate 
-}: WorkingDetailDialogProps) {
+export default function WorkingDetailDialog({ isOpen, onClose, userId, userName, weekStartDate }: WorkingDetailDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<WorkData[]>([]);
 
   // API에서 해당 직원의 근태 로그 데이터 가져오기
   const loadWorkLogs = async () => {
     if (!userId) return;
-    
+
     setIsLoading(true);
     try {
       const startDate = weekStartDate;
       const endDate = getWeekEndDate(weekStartDate);
-      
+
       const sdate = dayjs(startDate).format('YYYY-MM-DD');
       const edate = dayjs(endDate).format('YYYY-MM-DD');
-      
+
       // 근태 로그와 추가근무 목록 병렬로 가져오기
       const [workLogResponse, overtimeResponse] = await Promise.all([
         workingApi.getWorkLogs({
@@ -49,15 +43,15 @@ export default function WorkingDetailDialog({
         workingApi.getOvertimeList({
           page: 1,
           size: 100,
-        })
+        }),
       ]);
-      
+
       // API 데이터를 WorkData 형식으로 변환
       // event 데이터를 vacations 배열에 합쳐서 전달
       const apiData = await convertApiDataToWorkData(
-        workLogResponse.wlog || [], 
-        [...(workLogResponse.vacation || []), ...(workLogResponse.event || [])], 
-        overtimeResponse.items?.filter(ot => ot.user_id === userId) || [],
+        workLogResponse.wlog || [],
+        [...(workLogResponse.vacation || []), ...(workLogResponse.event || [])],
+        overtimeResponse.items?.filter((ot) => ot.user_id === userId) || [],
         weekStartDate,
         userId
       );
@@ -82,29 +76,23 @@ export default function WorkingDetailDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[90vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[90vw]">
         <DialogHeader>
           <DialogTitle>{userName}님의 출퇴근관리</DialogTitle>
           <DialogDescription>
             {dayjs(weekStartDate).format('YYYY년 MM월 DD일')} - {dayjs(getWeekEndDate(weekStartDate)).format('MM월 DD일')} 주간 근태 현황
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
+            <div className="flex h-64 items-center justify-center">
               <p className="text-gray-500">데이터를 불러오는 중</p>
             </div>
           ) : (
             <>
-              <Overview
-               weeklyStats={weeklyStats}
-               />
-              <Table 
-                data={data}
-                onDataRefresh={loadWorkLogs}
-                readOnly={true}
-              />
+              <Overview weeklyStats={weeklyStats} />
+              <Table data={data} onDataRefresh={loadWorkLogs} readOnly={true} />
             </>
           )}
         </div>
@@ -112,4 +100,3 @@ export default function WorkingDetailDialog({
     </Dialog>
   );
 }
-

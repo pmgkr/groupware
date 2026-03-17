@@ -49,7 +49,7 @@ MemoizedDayPicker.displayName = 'MemoizedDayPicker';
 
 export default function Dashboard() {
   const isMobile = useIsMobileViewport();
-  
+
   // Daypicker 선택된 날짜 관리 (Default : Today)
   const [selected, setSelected] = useState<Date | undefined>(new Date());
 
@@ -114,14 +114,14 @@ export default function Dashboard() {
     <>
       {!isMobile && <Header />}
       {isMobile && <HeaderMobile />}
-      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex min-h-200 max-h-screen flex-col gap-y-2 px-16 py-8 max-2xl:ml-50 max-2xl:px-6 max-md:m-0! max-md:mt-[50px]! max-md:max-h-none! max-md:p-4.5! max-md:pb-[80px]!">
+      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex max-h-screen min-h-200 flex-col gap-y-2 px-16 py-8 max-2xl:ml-50 max-2xl:px-6 max-md:m-0! max-md:mt-[50px]! max-md:max-h-none! max-md:p-4.5! max-md:pb-[80px]!">
         {!isMobile && (
           <div className="flex items-center justify-between text-base text-gray-800">
             <p>{welcomeMessage}</p>
             <Weather />
           </div>
         )}
-        <div className="grid min-h-200 h-full grid-cols-3 grid-rows-4 gap-6 max-2xl:gap-4 max-md:grid-cols-1 max-md:grid-rows-1 max-md:h-auto">
+        <div className="grid h-full min-h-200 grid-cols-3 grid-rows-4 gap-6 max-2xl:gap-4 max-md:h-auto max-md:grid-cols-1 max-md:grid-rows-1">
           <div className="row-span-2 flex min-h-0 flex-col justify-start rounded-md border border-gray-300 bg-white p-6 max-md:h-auto max-md:p-4.5!">
             <SectionHeader
               title="근무 시간"
@@ -135,7 +135,12 @@ export default function Dashboard() {
             <div className="mb-6 flex flex-col items-center justify-center gap-y-3 rounded-md bg-gray-100 p-5">
               <div className="flex flex-wrap justify-center gap-2">
                 {displayWorkTypes.map((type, idx) => (
-                  <div key={idx} className={cn('rounded-sm px-4 py-1.5 text-[0.8em] font-bold max-md:text-sm max-md:px-3 max-md:py-1', getWorkTypeColor(type))}>
+                  <div
+                    key={idx}
+                    className={cn(
+                      'rounded-sm px-4 py-1.5 text-[0.8em] font-bold max-md:px-3 max-md:py-1 max-md:text-sm',
+                      getWorkTypeColor(type)
+                    )}>
                     {type}
                   </div>
                 ))}
@@ -152,7 +157,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <div className="flex-1 flex flex-col">
+            <div className="flex flex-1 flex-col">
               <div className="mt-1 flex flex-col gap-0">
                 <div className="flex items-center gap-1">
                   <span className="text-lg font-black text-gray-800">주간누적</span>
@@ -245,44 +250,44 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-          
+
           {/* 빠른 메뉴 */}
           {isMobile && (
             <div className="grid grid-cols-3 gap-2">
-            <Link
-              to="/notice"
-              className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
-              <div className="flex items-center justify-center rounded-full bg-primary-blue-100 p-1.5">
-                <NoticeIcon className="size-4.5 text-primary-blue-500" />
-              </div>
-              <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
-                공지사항
-                <ChevronRight className="size-3 text-gray-500" />
-              </span>
-            </Link>
-            <Link
-              to="/meetingroom"
-              className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
-              <div className="flex items-center justify-center rounded-full bg-primary-blue-100 p-1.5">
-                <MeetingroomIcon className="size-4.5 text-primary-blue-500" />
-              </div>
-              <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
-                미팅룸
-                <ChevronRight className="size-3 text-gray-500" />
-              </span>
-            </Link>
-            <Link
-              to="/mypage/expense"
-              className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
-              <div className="flex items-center justify-center rounded-full bg-primary-blue-100 p-1.5">
-                <ExpenseIcon className="size-4.5 text-primary-blue-500" />
-              </div>
-              <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
-                비용관리
-                <ChevronRight className="size-3 text-gray-500" />
-              </span>
-            </Link>
-          </div>
+              <Link
+                to="/notice"
+                className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
+                <div className="bg-primary-blue-100 flex items-center justify-center rounded-full p-1.5">
+                  <NoticeIcon className="text-primary-blue-500 size-4.5" />
+                </div>
+                <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
+                  공지사항
+                  <ChevronRight className="size-3 text-gray-500" />
+                </span>
+              </Link>
+              <Link
+                to="/meetingroom"
+                className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
+                <div className="bg-primary-blue-100 flex items-center justify-center rounded-full p-1.5">
+                  <MeetingroomIcon className="text-primary-blue-500 size-4.5" />
+                </div>
+                <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
+                  미팅룸
+                  <ChevronRight className="size-3 text-gray-500" />
+                </span>
+              </Link>
+              <Link
+                to="/mypage/expense"
+                className="flex flex-col items-start justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-3">
+                <div className="bg-primary-blue-100 flex items-center justify-center rounded-full p-1.5">
+                  <ExpenseIcon className="text-primary-blue-500 size-4.5" />
+                </div>
+                <span className="flex items-center gap-1 text-[13px] font-medium text-gray-800">
+                  비용관리
+                  <ChevronRight className="size-3 text-gray-500" />
+                </span>
+              </Link>
+            </div>
           )}
 
           <div className="row-span-4 flex h-full min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5 max-md:h-auto max-md:p-4.5!">
@@ -297,7 +302,7 @@ export default function Dashboard() {
             <div className="shrink-0">
               <MemoizedDayPicker selected={selected} onSelect={handleDateSelect} />
             </div>
-            <ul className="flex shrink-0 items-center justify-end gap-x-1.5 px-4 py-2 flex-wrap max-md:px-0! max-md:gap-0! max-md:py-3">
+            <ul className="flex shrink-0 flex-wrap items-center justify-end gap-x-1.5 px-4 py-2 max-md:gap-0! max-md:px-0! max-md:py-3">
               {calendarBadges.map((label) => (
                 <li key={label}>
                   <Badge variant="dot" className={getBadgeColor(label)}>
@@ -306,7 +311,7 @@ export default function Dashboard() {
                 </li>
               ))}
             </ul>
-            <div className="flex-1 min-h-0 overflow-y-auto rounded-xl p-4 max-2xl:p-2 max-md:px-0!">
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-xl p-4 max-2xl:p-2 max-md:px-0!">
               <ul className="grid grid-cols-3 gap-2 gap-y-4 max-2xl:grid-cols-2 max-2xl:gap-x-1 max-2xl:gap-y-2 max-md:grid-cols-3! max-md:gap-x-0!">
                 {calendarData.length === 0 ? (
                   <li className="col-span-full text-center">
@@ -324,7 +329,7 @@ export default function Dashboard() {
                         <AvatarImage src={getProfileImageUrl(calendar.profile_image ?? undefined)} alt={calendar.user_name} />
                         <AvatarFallback>{getAvatarFallback(calendar.user_id || '')}</AvatarFallback>
                       </Avatar>
-                      <div className="flex flex-col text-base max-md:text-">
+                      <div className="max-md:text- flex flex-col text-base">
                         <strong className="leading-[1.2] max-md:text-sm">{calendar.user_name}</strong>
                         {calendar.sch_label === '생일' ? (
                           <Badge
@@ -377,40 +382,40 @@ export default function Dashboard() {
           )}
           {!isMobile && (
             <div className="row-span-2 flex min-h-0 flex-col rounded-md border border-gray-300 bg-white px-6 py-5">
-            <SectionHeader
-              title="비용 관리"
-              buttonText="전체보기"
-              buttonVariant="outline"
-              buttonSize="sm"
-              buttonHref="/mypage/expense"
-              className="shrink-0"
-            />
-            <div className="overflow-y-auto">
-              <ul className="flex flex-col gap-y-2 text-base tracking-tight text-gray-700">
-                {expenseData.length === 0 ? (
-                  <span className="text-base text-gray-500">등록된 비용이 없습니다.</span>
-                ) : (
-                  expenseData.map((expense: Expense) => {
-                    const expensePath =
-                      expense.expenseType === 'nexpense'
-                        ? `/expense/${expense.exp_id}`
-                        : `/project/${(expense as any).project_id || expense.proejct_id}/expense/${expense.seq}`;
+              <SectionHeader
+                title="비용 관리"
+                buttonText="전체보기"
+                buttonVariant="outline"
+                buttonSize="sm"
+                buttonHref="/mypage/expense"
+                className="shrink-0"
+              />
+              <div className="overflow-y-auto">
+                <ul className="flex flex-col gap-y-2 text-base tracking-tight text-gray-700">
+                  {expenseData.length === 0 ? (
+                    <span className="text-base text-gray-500">등록된 비용이 없습니다.</span>
+                  ) : (
+                    expenseData.map((expense: Expense) => {
+                      const expensePath =
+                        expense.expenseType === 'nexpense'
+                          ? `/expense/${expense.exp_id}`
+                          : `/project/${(expense as any).project_id || expense.proejct_id}/expense/${expense.seq}`;
 
-                    return (
-                      <li key={expense.seq} className="group flex items-center justify-between gap-x-1.5">
-                        <Link to={expensePath} className="flex min-w-0 flex-1 items-center gap-x-2 hover:underline">
-                          <p className="overflow-hidden text-ellipsis whitespace-nowrap">
-                            [{expense.expenseType === 'nexpense' ? '일반비용' : '프로젝트'}] {expense.el_title}
-                          </p>
-                        </Link>
-                        <Badge className={getExpenseBadgeColor(expense.status)}>{getExpenseStepStatusName(expense.status)}</Badge>
-                      </li>
-                    );
-                  })
-                )}
-              </ul>
+                      return (
+                        <li key={expense.seq} className="group flex items-center justify-between gap-x-1.5">
+                          <Link to={expensePath} className="flex min-w-0 flex-1 items-center gap-x-2 hover:underline">
+                            <p className="overflow-hidden text-ellipsis whitespace-nowrap">
+                              [{expense.expenseType === 'nexpense' ? '일반비용' : '프로젝트'}] {expense.el_title}
+                            </p>
+                          </Link>
+                          <Badge className={getExpenseBadgeColor(expense.status)}>{getExpenseStepStatusName(expense.status)}</Badge>
+                        </li>
+                      );
+                    })
+                  )}
+                </ul>
+              </div>
             </div>
-          </div>
           )}
         </div>
       </section>

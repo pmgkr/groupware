@@ -1,13 +1,6 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import React, { useState } from 'react'
-import {
-  Calculator,
-  Calendar,
-  CreditCard,
-  Settings,
-  Smile,
-  User,
-} from 'lucide-react'
+import type { Meta, StoryObj } from '@storybook/react';
+import React, { useState } from 'react';
+import { Calculator, Calendar, CreditCard, Settings, Smile, User } from 'lucide-react';
 
 import {
   Command,
@@ -19,7 +12,7 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from '@components/ui/command'
+} from '@components/ui/command';
 
 const meta: Meta<typeof Command> = {
   title: 'Components/UI/Command',
@@ -28,21 +21,18 @@ const meta: Meta<typeof Command> = {
     layout: 'centered',
   },
   tags: ['autodocs'],
-}
+};
 
-export default meta
-type Story = StoryObj<typeof meta>
+export default meta;
+type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => {
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(false);
 
     return (
       <>
-        <button
-          onClick={() => setOpen(true)}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-        >
+        <button onClick={() => setOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2">
           Command 열기
         </button>
         <CommandDialog open={open} onOpenChange={setOpen}>
@@ -84,9 +74,9 @@ export const Default: Story = {
           </CommandList>
         </CommandDialog>
       </>
-    )
+    );
   },
-}
+};
 
 export const Inline: Story = {
   render: () => (
@@ -120,7 +110,7 @@ export const Inline: Story = {
       </Command>
     </div>
   ),
-}
+};
 
 export const WithShortcuts: Story = {
   render: () => (
@@ -155,7 +145,7 @@ export const WithShortcuts: Story = {
       </Command>
     </div>
   ),
-}
+};
 
 export const Empty: Story = {
   render: () => (
@@ -168,4 +158,4 @@ export const Empty: Story = {
       </Command>
     </div>
   ),
-}
+};
