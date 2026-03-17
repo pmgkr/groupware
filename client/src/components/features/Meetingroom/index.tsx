@@ -343,7 +343,7 @@ export default function MeetingRoomsAllPage() {
             />
 
             {/* 우측-헤더행: 미팅룸 카드 */}
-            <div className="grid grid-cols-5">
+            <div className={`grid grid-cols-${rooms.length}`}>
               {rooms.map((room, idx) => (
                 <RoomHeader key={room.id} room={room} showRightBorder={idx !== rooms.length - 1} />
               ))}
@@ -359,7 +359,7 @@ export default function MeetingRoomsAllPage() {
             </div>
 
             {/* 우측-바디행: RoomLane(슬롯 영역만) */}
-            <div className="grid grid-cols-5">
+            <div className={`grid grid-cols-${rooms.length}`}>
               {rooms.map((room) => {
                 const all = roomResMap[room.id] ?? [];
 
