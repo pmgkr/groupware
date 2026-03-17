@@ -38,34 +38,34 @@ import { officeRoutes } from './office';
 import { mypageRoutes } from './mypage';
 import { managerRoutes } from './manager';
 import { adminRoutes } from './admin';
-import CctaskList from '@/pages/Cctask/CctaskList';
-import CctaskRegister from '@/pages/Cctask/CctaskRegister';
-import CctaskView from '@/pages/Cctask/CctaskView';
+// import CctaskList from '@/pages/Cctask/CctaskList';
+// import CctaskRegister from '@/pages/Cctask/CctaskRegister';
+// import CctaskView from '@/pages/Cctask/CctaskView';
 
-const cctaskRoutes: RouteObject = {
-  path: 'cctask',
-  handle: {
-    title: '작업 요청',
-    nav: [
-      { to: '/cctask', label: '요청 목록', end: true },
-      { to: '/cctask/register', label: '작업 등록' },
-    ],
-  },
-  children: [
-    {
-      index: true,
-      element: <CctaskList />,
-    },
-    {
-      path: 'register',
-      element: <CctaskRegister />,
-    },
-    {
-      path: 'view/:seq',
-      element: <CctaskView />,
-    },
-  ],
-};
+// const cctaskRoutes: RouteObject = {
+//   path: 'cctask',
+//   handle: {
+//     title: '작업 요청',
+//     nav: [
+//       { to: '/cctask', label: '요청 목록', end: true },
+//       { to: '/cctask/register', label: '작업 등록' },
+//     ],
+//   },
+//   children: [
+//     {
+//       index: true,
+//       element: <CctaskList />,
+//     },
+//     {
+//       path: 'register',
+//       element: <CctaskRegister />,
+//     },
+//     {
+//       path: 'view/:seq',
+//       element: <CctaskView />,
+//     },
+//   ],
+// };
 
 // 권한별 리다이렉팅
 const ManagerAuth = () => {
@@ -107,7 +107,7 @@ const AuthChildren: RouteObject[] = [
   workingRoutes,
   officeRoutes,
   mypageRoutes,
-  cctaskRoutes,
+  // cctaskRoutes,
   AuthManagerRoutes,
   AuthAdminRoutes,
 ];
