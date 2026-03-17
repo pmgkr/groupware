@@ -383,7 +383,7 @@ export default function Header() {
               <span>오피스</span>
             </NavLink>
           </li>
-          <li>
+          {/* <li>
             <NavLink
               to="/cctask"
               onMouseEnter={handleMenuEnter('cctask')}
@@ -396,7 +396,7 @@ export default function Header() {
               <Project className="size-6 text-gray-900" />
               <span>작업요청</span>
             </NavLink>
-          </li>
+          </li> */}
           {(user?.user_level === 'manager' || user?.user_level === 'admin') && (
             <li>
               <NavLink
