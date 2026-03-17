@@ -79,7 +79,7 @@ export default function Onboarding() {
         </div>
         <div className="flex flex-1 flex-col gap-y-4 py-10 md:gap-y-6 md:overflow-y-auto md:px-10 md:py-7 md:pr-7">
           <h2 className="text-primary-blue text-3xl font-bold max-md:hidden">프로필 작성하기</h2>
-          <ProfileForm email={'testtt@pmgasia.com'} onboardingToken={onboardingToken} />
+          <ProfileForm email={email} onboardingToken={onboardingToken} />
         </div>
       </div>
     </div>
