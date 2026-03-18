@@ -24,7 +24,7 @@ export function ProjectTable({ projects, favorites, onToggleFavorite, search }: 
           <TableHead className="w-[8%]">오너</TableHead>
           <TableHead className="w-[6%] max-2xl:w-[8%]">팀</TableHead>
           <TableHead className="w-[8%] xl:w-[6%]">상태</TableHead>
-          <TableHead className="w-[10%] max-xl:hidden">시작일</TableHead>
+          <TableHead className="w-[10%] max-xl:hidden">생성일</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
