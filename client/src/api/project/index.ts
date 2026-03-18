@@ -21,6 +21,7 @@ export type ProjectListItem = {
   team_name: string;
   project_status: string;
   manager_name: string;
+  wdate: string;
 };
 
 // 프로젝트 리스트 조회용 파라미터 타입

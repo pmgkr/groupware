@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Link } from 'react-router';
-import { format } from 'date-fns';
+import { formatDate } from '@/utils';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -76,7 +76,7 @@ export const ProjectTableRow = memo(({ item, isFavorite = false, onToggleFavorit
       <TableCell>{item.owner_nm}</TableCell>
       <TableCell>{item.team_name}</TableCell>
       <TableCell>{status}</TableCell>
-      <TableCell className="max-xl:hidden">{format(new Date(item.project_sdate), 'yyyy-MM-dd')}</TableCell>
+      <TableCell className="max-xl:hidden">{formatDate(item.wdate)}</TableCell>
     </TableRow>
   );
 });
