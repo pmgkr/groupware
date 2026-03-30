@@ -78,8 +78,8 @@ export default function ProjectList() {
 
   const statusOptions: MultiSelectOption[] = [
     { label: '진행중', value: 'in-progress' },
-    { label: '종료됨', value: 'completed' },
-    { label: '정산완료', value: 'done' },
+    { label: '종료됨', value: 'closed' },
+    { label: '정산완료', value: 'completed' },
     { label: '취소됨', value: 'cancelled' },
   ];
 
