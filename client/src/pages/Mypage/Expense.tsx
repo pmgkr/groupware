@@ -1,9 +1,9 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { useUser } from '@/hooks/useUser';
 import { getExpenseType } from '@/api';
 import { getExpenseMine } from '@/api/mypage/expense';
-import type { ExpenseListResponse, ExpenseListParams, PExpenseItem, NExpenseItem } from '@/api/mypage/expense';
+import type { ExpenseListResponse, ExpenseListParams } from '@/api/mypage/expense';
 import { getGrowingYears } from '@/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 
@@ -15,14 +15,6 @@ import { ExpenseMineTable } from '@components/features/Expense/_responsive/Expen
 import { ExpenseMineCard } from '@components/features/Expense/_responsive/ExpenseMineCard';
 import { ExpenseMineFilter } from '@components/features/Expense/_components/ExpenseMineFilter';
 import { ExpenseMineMo } from '@components/features/Expense/_components/ExpenseMineMo';
-
-function isPExpense(item: any): item is PExpenseItem {
-  return 'alloc_status' in item && 'is_estimate' in item;
-}
-
-function isNExpense(item: any): item is NExpenseItem {
-  return !('alloc_status' in item);
-}
 
 export default function Expense() {
   const isMobile = useIsMobileViewport();
@@ -180,20 +172,6 @@ export default function Expense() {
     })();
   }, [activeTab]);
 
-  // params에 따라 상단 필터 복구
-  useEffect(() => {
-    const flag = searchParams.get('flag');
-    setActiveTab(flag === 'N' ? 'nexpense' : 'pexpense');
-
-    setSelectedYear(searchParams.get('year') || currentYear);
-    setSelectedType(searchParams.get('type')?.split(',') ?? []);
-    setSelectedStatus(searchParams.get('status')?.split(',') ?? []);
-    setSelectedProof(searchParams.get('method')?.split(',') ?? []);
-    setSelectedProofStatus(searchParams.get('attach')?.split(',') ?? []);
-
-    setPage(Number(searchParams.get('page') || 1));
-  }, []); // 최초 1회
-
   useEffect(() => {
     if (!user_id) return;
 
@@ -213,8 +191,6 @@ export default function Expense() {
         if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
 
         const res = await getExpenseMine(params);
-
-        console.log('✅ 비용 리스트 응답:', res);
 
         setExpenseData(res);
         setTotal(res.total);
@@ -253,7 +229,6 @@ export default function Expense() {
       });
 
       setSearchParams(params);
-      console.log('파라미터', params);
     },
     [searchParams, setSearchParams]
   );
@@ -272,11 +247,6 @@ export default function Expense() {
       return true;
     });
   }, [rawList, selectedType, selectedStatus, selectedProof, selectedProofStatus]);
-
-  const filteredPList = useMemo(() => (activeTab === 'pexpense' ? filteredList.filter(isPExpense) : []), [filteredList, activeTab]);
-  const filteredNList = useMemo(() => (activeTab === 'nexpense' ? filteredList.filter(isNExpense) : []), [filteredList, activeTab]);
-
-  const totalFiltered = filteredList.length;
 
   const filterProps = {
     activeTab,
@@ -335,7 +305,7 @@ export default function Expense() {
       <div className="mt-5">
         {expenseData && filteredList.length !== 0 && (
           <AppPagination
-            totalPages={Math.ceil(totalFiltered / pageSize)}
+            totalPages={Math.ceil(total / pageSize)}
             initialPage={page}
             visibleCount={5}
             onPageChange={setPage} //부모 state 업데이트

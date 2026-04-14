@@ -111,6 +111,7 @@ export function ExpenseMineFilter({
             placeholder="비용 용도"
             ref={typeRef}
             options={typeOptions}
+            defaultValue={selectedType}
             onValueChange={onTypeChange}
             maxCount={0}
             hideSelectAll={true}
@@ -127,6 +128,7 @@ export function ExpenseMineFilter({
             placeholder="증빙 수단"
             ref={proofRef}
             options={proofMethod}
+            defaultValue={selectedProof}
             onValueChange={onProofChange}
             maxCount={0}
             hideSelectAll={true}
@@ -143,6 +145,7 @@ export function ExpenseMineFilter({
             placeholder="증빙 상태"
             ref={proofStatusRef}
             options={proofStatusOptions}
+            defaultValue={selectedProofStatus}
             onValueChange={onProofStatusChange}
             maxCount={0}
             hideSelectAll={true}
@@ -159,6 +162,7 @@ export function ExpenseMineFilter({
             placeholder="비용 상태"
             ref={statusRef}
             options={statusOptions}
+            defaultValue={selectedStatus}
             onValueChange={onStatusChange}
             maxCount={0}
             hideSelectAll={true}
