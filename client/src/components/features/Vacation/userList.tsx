@@ -58,7 +58,7 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
   const [sortState, setSortState] = useState<{ key: string; order: 'asc' | 'desc' } | null>(null);
 
   const isManagerPage = location.pathname.startsWith('/manager');
-  const columnCount = isManagerPage ? 7 : 8;
+  const columnCount = isManagerPage ? 6 : 8;
 
   const [isGrantDialogOpen, setIsGrantDialogOpen] = useState(false);
   const [selectedUserName, setSelectedUserName] = useState('');
@@ -430,8 +430,8 @@ export default function UserList({ year, teamIds = [], userIds = [], onGrantSucc
           </TableRow>
         ) : sortedDisplayData.length === 0 ? (
           <TableRow className="[&_td]:text-[13px]">
-            <TableCell colSpan={columnCount} className="p-2 text-center max-md:px-0.5">
-              데이터 없음
+            <TableCell colSpan={columnCount} className="h-100 w-full p-2 text-gray-500 max-md:px-0.5">
+              데이터가 없습니다.
             </TableCell>
           </TableRow>
         ) : (

@@ -455,7 +455,7 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
               <TableRow>
                 <TableCell
                   className="h-100 p-2 text-center text-gray-500"
-                  colSpan={activeTab === 'weekday' ? (isMobile ? 3 : 9) : isMobile ? 4 : 8}>
+                  colSpan={activeTab === 'weekday' ? (isMobile ? 3 : 8) : isMobile ? 4 : 7}>
                   데이터가 없습니다.
                 </TableCell>
               </TableRow>
