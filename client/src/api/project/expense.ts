@@ -318,7 +318,7 @@ export async function pInfoDelete(seq: number) {
   return http<{ ok: boolean }>(`/user/pexpense/ainfo/delete`, { method: 'DELETE', body: JSON.stringify({ seq }) });
 }
 
-export interface expenseRestoreResponse {
+export interface pexpenseRestoreResponse {
   ok: boolean;
   updated: {
     ok: boolean;
@@ -328,6 +328,6 @@ export interface expenseRestoreResponse {
 }
 
 // 반려된 비용 복구
-export async function expenseRestore(seq: number) {
-  return http<expenseRestoreResponse>(`/user/pexpense/restore/${seq}`, { method: 'POST' });
+export async function pexpenseRestore(seq: number) {
+  return http<pexpenseRestoreResponse>(`/user/pexpense/restore/${seq}`, { method: 'POST' });
 }

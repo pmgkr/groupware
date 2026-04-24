@@ -1,4 +1,4 @@
-import { FilePlus, FileUp, FileDiff, FileCheck, Banknote, BanknoteArrowDown, FileX, Paperclip } from 'lucide-react';
+import { FilePlus, FileUp, FileDiff, FileCheck, Banknote, BanknoteArrowDown, FileX, Paperclip, ArchiveRestore } from 'lucide-react';
 
 /**
  * 상태별 아이콘 매핑
@@ -12,6 +12,7 @@ export const statusIconMap = {
   Completed: <BanknoteArrowDown className="text-primary-blue size-4.5" />,
   Rejected: <FileX className="text-primary-blue size-4.5" />,
   Attachment: <Paperclip className="text-primary-blue size-4.5" />,
+  Restored: <ArchiveRestore className="text-primary-blue size-4.5" />,
 };
 
 /**
@@ -91,6 +92,13 @@ export const getLogMessage = (log: any) => {
         default:
           return null;
       }
+
+    case 'Restored':
+      return (
+        <>
+          반려된 비용이 <span className="text-primary-blue">복구</span>되었습니다.
+        </>
+      );
 
     default:
       return null;

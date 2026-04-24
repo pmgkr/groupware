@@ -15,7 +15,7 @@ import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
-import { getProjectExpenseView, expenseRestore, type addInfoDTO } from '@/api/project';
+import { getProjectExpenseView, pexpenseRestore, type addInfoDTO } from '@/api/project';
 import { useProjectExpenseMatching } from './hooks/useProjectExpenseMatching';
 
 import EstimateSelectDialog from './_components/EstimateSelectDialog';
@@ -194,7 +194,7 @@ export default function ProjectExpenseView() {
         cancelText: '취소',
         onConfirm: async () => {
           try {
-            const res = await expenseRestore(header.seq);
+            const res = await pexpenseRestore(header.seq);
 
             if (res.updated.ok) {
               addAlert({
