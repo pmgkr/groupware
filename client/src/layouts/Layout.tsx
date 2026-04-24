@@ -18,7 +18,9 @@ export default function Layout() {
   const sectionWithNav = [...matches].reverse().find((m) => (m?.handle as { nav?: any })?.nav);
 
   const title: string | undefined = (active?.handle as any)?.title ?? (sectionWithNav?.handle as any)?.title;
-  const childNav: { to: string; label: string; end?: boolean }[] | undefined = (sectionWithNav?.handle as any)?.nav;
+  const childNav: { to: string; label: string; end?: boolean; active?: (pathname: string) => boolean }[] | undefined = (
+    sectionWithNav?.handle as any
+  )?.nav;
 
   const hideChildNav = (active?.handle as any)?.hideNav === true;
   const hideTitle = (active?.handle as any)?.hideTitle === true;
@@ -28,9 +30,8 @@ export default function Layout() {
   const pathname = location.pathname;
 
   const activeIndex = childNav?.findIndex((item) => {
-    if (item.end) {
-      return pathname === item.to;
-    }
+    if (item.active) return item.active(pathname);
+    if (item.end) return pathname === item.to;
     return pathname === item.to || pathname.startsWith(item.to + '/');
   });
 
@@ -49,9 +50,8 @@ export default function Layout() {
 
   return (
     <>
-      {!isMobile && <Header />}
-      {isMobile && <HeaderMobile />}
-      <div className="mt-18 ml-60 min-h-200 bg-white px-5 py-8 max-2xl:ml-50 max-md:m-0! max-md:min-h-[100vh]! max-md:max-w-[100vw]! max-md:overflow-x-scroll! max-md:p-4.5! max-md:pt-[70px]! max-md:pb-[80px]! 2xl:px-25">
+      {isMobile ? <HeaderMobile /> : <Header />}
+      <div className="min-h-screen max-w-[100vw] overflow-x-scroll bg-white p-4.5 pt-17.5 pb-20 md:mt-18 md:ml-50 md:min-h-200 md:max-w-none md:overflow-x-visible md:px-6 md:py-8 2xl:ml-60 2xl:px-16">
         {/* 페이지 타이틀 : router의 handle.title 값 노출 */}
         {!hideTitle && title && (
           <div className="mb-5 flex items-center has-[+nav]:mb-2">
@@ -72,12 +72,13 @@ export default function Layout() {
                       <NavLink
                         to={item.to}
                         end={item.end}
-                        className={({ isActive }) =>
-                          cn(
+                        className={({ isActive: defaultActive }) => {
+                          const isActive = item.active ? item.active(pathname) : defaultActive;
+                          return cn(
                             'rounded-xs px-3 py-1 text-base transition-colors max-md:text-sm',
                             isActive ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-800'
-                          )
-                        }>
+                          );
+                        }}>
                         {item.label}
                       </NavLink>
                     </li>

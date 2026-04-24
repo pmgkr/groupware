@@ -144,8 +144,8 @@
 
   --spacing: 0.25rem;
 
-  --breakpoint-2xl: calc(90rem + 1px);
-  /* 1440px */
+  --breakpoint-2xl: calc(92rem + 1px);
+  /* 1472px */
   --breakpoint-xl: calc(80rem + 1px);
   /* 1280px */
   --breakpoint-lg: calc(64rem + 1px);

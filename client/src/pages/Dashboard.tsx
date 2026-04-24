@@ -114,7 +114,7 @@ export default function Dashboard() {
     <>
       {!isMobile && <Header />}
       {isMobile && <HeaderMobile />}
-      <section className="bg-primary-blue-100/50 mt-18 ml-60 flex max-h-screen min-h-200 flex-col gap-y-2 px-16 py-8 max-2xl:ml-50 max-2xl:px-6 max-md:m-0! max-md:mt-[50px]! max-md:max-h-none! max-md:p-4.5! max-md:pb-[80px]!">
+      <section className="bg-primary-blue-100/50 mt-12.5 flex flex-col gap-y-2 p-4.5 pb-20 md:mt-18 md:ml-50 md:min-h-200 md:px-6 md:py-8 2xl:ml-60 2xl:px-16">
         {!isMobile && (
           <div className="flex items-center justify-between text-base text-gray-800">
             <p>{welcomeMessage}</p>

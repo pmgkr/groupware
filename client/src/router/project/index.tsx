@@ -20,7 +20,13 @@ export const projectRoutes: RouteObject = {
   handle: {
     title: '프로젝트',
     nav: [
-      { to: '/project', label: '프로젝트 관리', end: true },
+      {
+        to: '/project',
+        label: '프로젝트 관리',
+        end: true,
+        active: (pathname: string) =>
+          pathname === '/project' || (pathname.startsWith('/project/') && !pathname.startsWith('/project/proposal')),
+      },
       { to: '/project/proposal', label: '프로젝트 기안' },
     ],
   },

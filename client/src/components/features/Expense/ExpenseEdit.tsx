@@ -1232,8 +1232,8 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                       </span>
                       <dl className="text-base leading-[1.3] text-gray-800">
                         <dt>{getLogMessage(log)}</dt>
-                        {log.exp_status === 'Rejected' ? (
-                          <dd className="text-destructive text-[.88em]">반려 사유: {header.rej_reason}</dd>
+                        {log.exp_status === 'Rejected' && log.remark !== null ? (
+                          <dd className="text-destructive text-[.88em]">반려 사유: {log.remark}</dd>
                         ) : (
                           <dd className="text-[.88em] text-gray-500">
                             {formatKST(

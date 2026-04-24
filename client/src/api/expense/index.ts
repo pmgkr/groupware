@@ -309,3 +309,17 @@ export async function delExpenseAttachment(seq: number): Promise<void> {
 export async function ainfoCreate(payload: ainfoCreatePayload) {
   return http<ainfoCreateResponse>(`/user/nexpense/ainfo/create`, { method: 'POST', body: JSON.stringify(payload) });
 }
+
+export interface expenseRestoreResponse {
+  ok: boolean;
+  updated: {
+    result: boolean;
+    message: string;
+    seq: string;
+  };
+}
+
+// 반려된 비용 복구
+export async function expenseRestore(seq: number) {
+  return http<expenseRestoreResponse>(`/user/nexpense/restore/${seq}`, { method: 'POST' });
+}

@@ -12,7 +12,13 @@ export const expenseRoutes: RouteObject = {
   handle: {
     title: '일반 비용',
     nav: [
-      { to: '/expense', label: '비용 내역', end: true },
+      {
+        to: '/expense',
+        label: '비용 내역',
+        end: true,
+        active: (pathname: string) =>
+          pathname === '/expense' || (pathname.startsWith('/expense/') && !pathname.startsWith('/expense/proposal')),
+      },
       { to: '/expense/proposal', label: '지출 기안' },
     ],
   },

@@ -317,3 +317,17 @@ export async function pInfoUpdate(payload: pInfoUpdatePayload) {
 export async function pInfoDelete(seq: number) {
   return http<{ ok: boolean }>(`/user/pexpense/ainfo/delete`, { method: 'DELETE', body: JSON.stringify({ seq }) });
 }
+
+export interface pexpenseRestoreResponse {
+  ok: boolean;
+  updated: {
+    ok: boolean;
+    message: string;
+    seq: string;
+  };
+}
+
+// 반려된 비용 복구
+export async function pexpenseRestore(seq: number) {
+  return http<pexpenseRestoreResponse>(`/user/pexpense/restore/${seq}`, { method: 'POST' });
+}

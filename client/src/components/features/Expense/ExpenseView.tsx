@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/hooks/useUser';
 import { formatAmount, formatDate, normalizeAttachmentUrl } from '@/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 
-import { getExpenseView } from '@/api/expense';
+import { getExpenseView, expenseRestore } from '@/api/expense';
 import { type addInfoDTO } from '@/api/project';
 import type { ExpenseViewDTO } from '@/api/expense';
 import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
@@ -12,6 +13,7 @@ import ReportMatched from '@components/features/Project/_components/ReportMatche
 import { AddInfoDialog } from '@components/features/Project/_components/addInfoDialog';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
+import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
@@ -22,14 +24,17 @@ import { File, Link as LinkIcon, OctagonAlert, Files, SquareArrowOutUpRight } fr
 
 export default function ExpenseView() {
   const { expId } = useParams();
+  const { user_id } = useUser();
   const navigate = useNavigate();
   const { search } = useLocation();
   const isMobile = useIsMobileViewport();
 
   const { addAlert } = useAppAlert();
+  const { addDialog } = useAppDialog();
 
   const [data, setData] = useState<ExpenseViewDTO | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // 기안서 조회 State
   const [selectedProposal, setSelectedProposal] = useState<ReportDTO | null>(null);
@@ -43,6 +48,7 @@ export default function ExpenseView() {
     (async () => {
       try {
         const res = await getExpenseView(expId);
+
         setData(res);
       } catch (err) {
         console.error('❌ 비용 상세 조회 실패:', err);
@@ -50,7 +56,7 @@ export default function ExpenseView() {
         setLoading(false);
       }
     })();
-  }, [expId]);
+  }, [expId, refreshKey]);
 
   if (loading) return <div className="flex h-[50vh] items-center justify-center text-gray-500">데이터를 불러오는 중입니다...</div>;
 
@@ -164,6 +170,61 @@ export default function ExpenseView() {
     setDetailOpen(true);
   };
 
+  // 비용 복구 클릭 시 (반려된 비용일 때)
+  const handleRestore = () => {
+    if (header.status === 'Rejected') {
+      addDialog({
+        title: '반려된 비용을 복구합니다.',
+        message: `비용 상태를 임시저장 상태로 변경합니다.<br />반려 사유를 다시 한 번 확인한 후 청구해 주세요.`,
+        confirmText: '복구',
+        cancelText: '취소',
+        onConfirm: async () => {
+          try {
+            const res = await expenseRestore(header.seq);
+
+            console.log('복구 결과', res);
+
+            if (res.updated.result) {
+              addAlert({
+                title: '비용이 복구되었습니다.',
+                message: `비용 상태가 임시저장 상태로 변경되었습니다.`,
+                icon: <OctagonAlert />,
+                duration: 2000,
+              });
+
+              setRefreshKey((k) => k + 1);
+            } else {
+              if (res.updated.message === 'not yours') {
+                addAlert({
+                  title: '비용 복구 실패',
+                  message: `타인의 비용은 복구할 수 없습니다.`,
+                  icon: <OctagonAlert />,
+                  duration: 2000,
+                });
+              } else {
+                addAlert({
+                  title: '비용 복구 실패',
+                  message: `복구 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+                  icon: <OctagonAlert />,
+                  duration: 2000,
+                });
+              }
+            }
+          } catch (err) {
+            console.error('❌ 복구 실패:', err);
+
+            addAlert({
+              title: '비용 복구 실패',
+              message: `복구 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+              icon: <OctagonAlert />,
+              duration: 2000,
+            });
+          }
+        },
+      });
+    }
+  };
+
   return (
     <>
       {isMobile ? (
@@ -273,9 +334,21 @@ export default function ExpenseView() {
                   );
                 })}
               </div>
-              <Button variant="outline" size="full" asChild>
-                <Link to={`${hasFlag ? '/mypage/expense' : '/expense'}${search}`}>목록</Link>
-              </Button>
+              <div className="flex justify-between gap-2">
+                <Button
+                  variant="outline"
+                  size={header.status === 'Rejected' && header.user_id === user_id ? 'default' : 'full'}
+                  className={header.status === 'Rejected' && header.user_id === user_id ? 'flex-1' : ''}
+                  asChild>
+                  <Link to={`${hasFlag ? '/mypage/expense' : '/expense'}${search}`}>목록</Link>
+                </Button>
+
+                {header.status === 'Rejected' && header.user_id === user_id && (
+                  <Button className="flex-1" onClick={handleRestore}>
+                    비용 복구
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </>
@@ -502,6 +575,11 @@ export default function ExpenseView() {
                   목록
                 </Button>
               </div>
+              {header.status === 'Rejected' && header.user_id === user_id && (
+                <Button size="sm" onClick={handleRestore}>
+                  비용 복구
+                </Button>
+              )}
             </div>
           </div>
           <div className="w-[24%]">
