@@ -18,7 +18,9 @@ export default function Layout() {
   const sectionWithNav = [...matches].reverse().find((m) => (m?.handle as { nav?: any })?.nav);
 
   const title: string | undefined = (active?.handle as any)?.title ?? (sectionWithNav?.handle as any)?.title;
-  const childNav: { to: string; label: string; end?: boolean }[] | undefined = (sectionWithNav?.handle as any)?.nav;
+  const childNav: { to: string; label: string; end?: boolean; active?: (pathname: string) => boolean }[] | undefined = (
+    sectionWithNav?.handle as any
+  )?.nav;
 
   const hideChildNav = (active?.handle as any)?.hideNav === true;
   const hideTitle = (active?.handle as any)?.hideTitle === true;
@@ -28,9 +30,8 @@ export default function Layout() {
   const pathname = location.pathname;
 
   const activeIndex = childNav?.findIndex((item) => {
-    if (item.end) {
-      return pathname === item.to;
-    }
+    if (item.active) return item.active(pathname);
+    if (item.end) return pathname === item.to;
     return pathname === item.to || pathname.startsWith(item.to + '/');
   });
 
@@ -72,12 +73,13 @@ export default function Layout() {
                       <NavLink
                         to={item.to}
                         end={item.end}
-                        className={({ isActive }) =>
-                          cn(
+                        className={({ isActive: defaultActive }) => {
+                          const isActive = item.active ? item.active(pathname) : defaultActive;
+                          return cn(
                             'rounded-xs px-3 py-1 text-base transition-colors max-md:text-sm',
                             isActive ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-800'
-                          )
-                        }>
+                          );
+                        }}>
                         {item.label}
                       </NavLink>
                     </li>

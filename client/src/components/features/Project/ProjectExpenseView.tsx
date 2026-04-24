@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, useParams, Link } from 'react-router';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/hooks/useUser';
 import { formatAmount, formatDate, normalizeAttachmentUrl } from '@/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 
@@ -14,7 +15,7 @@ import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
 import { getReportInfo, type ReportDTO } from '@/api/expense/proposal';
-import { getProjectExpenseView, type addInfoDTO } from '@/api/project';
+import { getProjectExpenseView, expenseRestore, type addInfoDTO } from '@/api/project';
 import { useProjectExpenseMatching } from './hooks/useProjectExpenseMatching';
 
 import EstimateSelectDialog from './_components/EstimateSelectDialog';
@@ -29,6 +30,7 @@ import { RotateCcw, OctagonAlert, Files, File, SquareArrowOutUpRight, Copy } fro
 
 export default function ProjectExpenseView() {
   const { expId, projectId } = useParams();
+  const { user_id } = useUser();
 
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -182,6 +184,59 @@ export default function ProjectExpenseView() {
     setDetailOpen(true);
   };
 
+  // 비용 복구 클릭 시 (반려된 비용일 때)
+  const handleRestore = () => {
+    if (header.status === 'Rejected') {
+      addDialog({
+        title: '반려된 비용을 복구합니다.',
+        message: `비용 상태를 임시저장 상태로 변경합니다.<br />반려 사유를 다시 한 번 확인한 후 청구해 주세요.`,
+        confirmText: '복구',
+        cancelText: '취소',
+        onConfirm: async () => {
+          try {
+            const res = await expenseRestore(header.seq);
+
+            if (res.updated.ok) {
+              addAlert({
+                title: '비용이 복구되었습니다.',
+                message: `비용 상태가 임시저장 상태로 변경되었습니다.`,
+                icon: <OctagonAlert />,
+                duration: 2000,
+              });
+
+              refresh();
+            } else {
+              if (res.updated.message === 'not yours') {
+                addAlert({
+                  title: '비용 복구 실패',
+                  message: `타인의 비용은 복구할 수 없습니다.`,
+                  icon: <OctagonAlert />,
+                  duration: 2000,
+                });
+              } else {
+                addAlert({
+                  title: '비용 복구 실패',
+                  message: `복구 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+                  icon: <OctagonAlert />,
+                  duration: 2000,
+                });
+              }
+            }
+          } catch (err) {
+            console.error('❌ 복구 실패:', err);
+
+            addAlert({
+              title: '비용 복구 실패',
+              message: `복구 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+              icon: <OctagonAlert />,
+              duration: 2000,
+            });
+          }
+        },
+      });
+    }
+  };
+
   return (
     <>
       {isMobile ? (
@@ -301,9 +356,22 @@ export default function ProjectExpenseView() {
                   );
                 })}
               </div>
-              <Button variant="outline" size="full" asChild>
-                <Link to={`${hasFlag ? '/mypage/expense' : `/project/${projectId}/expense`}${search}`}>목록</Link>
-              </Button>
+
+              <div className="flex justify-between gap-2">
+                <Button
+                  variant="outline"
+                  size={header.status === 'Rejected' && header.user_id === user_id ? 'default' : 'full'}
+                  className={header.status === 'Rejected' && header.user_id === user_id ? 'flex-1' : ''}
+                  asChild>
+                  <Link to={`${hasFlag ? '/mypage/expense' : `/project/${projectId}/expense`}${search}`}>목록</Link>
+                </Button>
+
+                {header.status === 'Rejected' && header.user_id === user_id && (
+                  <Button className="flex-1" onClick={handleRestore}>
+                    비용 복구
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </>
@@ -514,10 +582,16 @@ export default function ProjectExpenseView() {
               </Table>
             </div>
 
-            <div className="mt-4 flex">
+            <div className="mt-4 flex justify-between">
               <Button variant="outline" size="sm" asChild>
                 <Link to={`${hasFlag ? '/mypage/expense' : `/project/${projectId}/expense`}${search}`}>목록</Link>
               </Button>
+
+              {header.status === 'Rejected' && header.user_id === user_id && (
+                <Button size="sm" onClick={handleRestore}>
+                  비용 복구
+                </Button>
+              )}
             </div>
           </div>
 

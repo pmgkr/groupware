@@ -253,7 +253,6 @@ export default function Expense() {
         try {
           const payload = { seqs: checkedItems };
 
-          console.log('임시저장 비용 청구', payload);
           const res = await claimProjectTempExpense(payload);
 
           if (res.ok) {

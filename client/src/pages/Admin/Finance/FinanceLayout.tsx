@@ -25,8 +25,8 @@ export default function FinanceLayout() {
           let isActive = false;
 
           if (tab.path === '') {
-            // 기본 탭: /admin/finance 정확히 일치
-            isActive = currentPath === basePath;
+            // 기본 탭: /admin/finance 이거나 /admin/finance/pexpense/ 인 경우
+            isActive = currentPath === basePath || currentPath.startsWith(`${basePath}/pexpense`);
           } else {
             // 하위 탭: /admin/finance/${tab.path} 로 시작
             isActive = currentPath.startsWith(`${basePath}/${tab.path}`);
