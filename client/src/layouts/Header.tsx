@@ -234,7 +234,7 @@ export default function Header() {
           </li>
         </ul>
       </header>
-      <div className="bg-primary-blue-100 fixed top-18 left-0 z-10 h-full w-60 max-2xl:w-50 max-md:hidden">
+      <div className="bg-primary-blue-100 fixed top-18 left-0 z-10 h-full w-50 2xl:w-60">
         <div className="my-8.5 px-8">
           <Link to="/mypage">
             <div className="relative mx-auto mb-2.5 aspect-square w-25 overflow-hidden rounded-[50%]">
