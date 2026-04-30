@@ -311,8 +311,8 @@ export default function Dashboard() {
                 </li>
               ))}
             </ul>
-            <div className="min-h-0 flex-1 overflow-y-auto rounded-xl p-4 max-2xl:p-2 max-md:px-0!">
-              <ul className="grid grid-cols-3 gap-2 gap-y-4 max-2xl:grid-cols-2 max-2xl:gap-x-1 max-2xl:gap-y-2 max-md:grid-cols-3! max-md:gap-x-0!">
+            <div className="min-h-0 flex-1 rounded-xl p-4 max-2xl:p-2 max-md:px-0!">
+              <ul className="grid grid-cols-3 gap-x-0 gap-y-2 content-start md:aspect-[6/4] md:grid-cols-2 md:gap-x-1 md:overflow-y-auto 2xl:grid-cols-3 2xl:gap-2 2xl:gap-y-4">
                 {calendarData.length === 0 ? (
                   <li className="col-span-full text-center">
                     <span className="text-base text-gray-500">등록된 일정이 없습니다.</span>

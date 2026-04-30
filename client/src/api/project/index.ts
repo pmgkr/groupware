@@ -233,6 +233,13 @@ export async function ProjectStatusChange(projectId: string | undefined, status:
   return http<{ ok: boolean }>(`/user/project/status?project_id=${projectId}&project_status=${status}`, { method: 'GET' });
 }
 
+// 프로젝트 재개 (Closed, Cancelled 상태에서 Open으로 변경)
+export async function projectReopen(projectId: string | undefined) {
+  if (!projectId) throw new Error('projectId가 필요합니다.');
+
+  return http<{ ok: boolean }>(`/user/project/reopen/${projectId}`, { method: 'GET' });
+}
+
 // 프로젝트 정보 업데이트
 export async function projectUpdate(projectId: string | undefined, payload: projectCreatePayload) {
   if (!projectId) throw new Error('projectId가 필요합니다.');

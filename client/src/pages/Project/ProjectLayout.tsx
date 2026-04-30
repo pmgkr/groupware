@@ -3,13 +3,15 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation, useParams } from 'react-router';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
+import { isAdminUser } from '@/constants/admins';
+import { HttpError } from '@/lib/http';
 import { notificationApi } from '@/api/notification';
 import { projectLock, projectUnLock } from '@/api/admin/project';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
-import { getProjectMember, getBookmarkList, addBookmark, removeBookmark, type ProjectMemberDTO } from '@/api';
+import { getProjectMember, getBookmarkList, addBookmark, removeBookmark, projectReopen, type ProjectMemberDTO } from '@/api';
 import { getProjectView, type projectOverview, ProjectStatusChange, getProjectLogs, type ProjectLogs } from '@/api/project';
 
 import { Button } from '@components/ui/button';
@@ -262,7 +264,21 @@ export default function ProjectLayout() {
   const applyStatusChange = async (status: 'in-progress' | 'Closed' | 'Cancelled') => {
     if (!projectId) return;
 
-    await ProjectStatusChange(projectId, status);
+    try {
+      await ProjectStatusChange(projectId, status);
+    } catch (e) {
+      if (e instanceof HttpError && e.status === 409) {
+        addAlert({
+          title: '프로젝트 상태 변경 불가',
+          message: '미정산 비용 · 인보이스가 존재하는 <br/>프로젝트는 상태를 변경할 수 없습니다.',
+          icon: <OctagonAlert />,
+          duration: 2500,
+        });
+      } else {
+        console.error('프로젝트 상태 변경 실패:', e);
+      }
+      return;
+    }
 
     setData((prev) =>
       prev
@@ -307,6 +323,48 @@ export default function ProjectLayout() {
       confirmText: meta.confirmText,
       cancelText: '취소',
       onConfirm: () => applyStatusChange(selectedStatus),
+    });
+  };
+
+  // 프로젝트 재개 핸들러
+  const handleReopen = () => {
+    addDialog({
+      title: '종료된 프로젝트를 재개하시겠습니까?',
+      message: `프로젝트를 재개하면 상태가 진행중으로 변경됩니다.`,
+      confirmText: '재개',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          const res = await projectReopen(projectId);
+
+          if (res.ok) {
+            await fetchProject();
+
+            addAlert({
+              title: '프로젝트 재개',
+              message: `프로젝트 상태가 진행중 상태로 변경되었습니다.`,
+              icon: <OctagonAlert />,
+              duration: 2000,
+            });
+          } else {
+            addAlert({
+              title: '프로젝트 재개 실패',
+              message: `프로젝트 상태 변경 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+              icon: <OctagonAlert />,
+              duration: 2000,
+            });
+          }
+        } catch (err) {
+          console.error('❌ 복구 실패:', err);
+
+          addAlert({
+            title: '비용 복구 실패',
+            message: `복구 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        }
+      },
     });
   };
 
@@ -365,6 +423,12 @@ export default function ProjectLayout() {
               onClick={() => {
                 setProjectDialog(true);
               }}>
+              <Settings className="size-5" />
+            </Button>
+          )}
+
+          {['Closed', 'Cancelled'].includes(info.project_status) && isAdminUser(user_id) && (
+            <Button variant="svgIcon" className="text-gray-500 max-md:hidden" onClick={handleReopen}>
               <Settings className="size-5" />
             </Button>
           )}
