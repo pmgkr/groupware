@@ -273,7 +273,7 @@ function ExpenseRowComponent({
                     placeholder="세금"
                     value={tax ? formatAmount(tax) : ''}
                     onChange={(e) => {
-                      const raw = e.target.value.replace(/[^0-9]/g, '');
+                      const raw = e.target.value.replace(/[^0-9-]/g, '');
                       setTax(raw);
                     }}
                     onBlur={() => {

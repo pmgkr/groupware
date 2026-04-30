@@ -186,7 +186,7 @@ export default function EstimateSelectDialog({
             </div>
           )}
 
-          {!loading && (
+          {!loading && estimateList.length !== 0 && (
             <TableColumn className="[&_div]:text-[13px]">
               <TableColumnHeader className="w-[18%]">
                 <TableColumnHeaderCell>견적서 제목</TableColumnHeaderCell>
@@ -258,6 +258,13 @@ export default function EstimateSelectDialog({
                 </>
               )}
             </TableColumn>
+          )}
+
+          {!loading && estimateList.length === 0 && (
+            <div className="flex h-[40vh] flex-col items-center justify-center gap-4 text-base text-gray-500">
+              <OctagonAlert className="size-10" />
+              등록된 견적서가 없습니다.
+            </div>
           )}
 
           {!loading && estData && (

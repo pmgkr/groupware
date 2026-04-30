@@ -1120,7 +1120,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                                       placeholder="세금"
                                       value={field.value ? formatAmount(field.value) : ''}
                                       onChange={(e) => {
-                                        const raw = e.target.value.replace(/[^0-9]/g, '');
+                                        const raw = e.target.value.replace(/[^0-9-]/g, '');
                                         field.onChange(raw);
 
                                         // ✅ 금액 필드와 합산하여 total 자동 계산

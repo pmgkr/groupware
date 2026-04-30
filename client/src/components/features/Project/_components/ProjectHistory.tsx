@@ -36,6 +36,7 @@ export const ProjectHistory = ({ logs }: Props) => {
     'updated',
     'cancelled',
     'closed',
+    'reopen',
     'status_changed',
     'owner_changed',
     'member_added',
@@ -68,6 +69,9 @@ export const ProjectHistory = ({ logs }: Props) => {
 
       case 'closed':
         return <FileCheck className="text-primary-blue size-4" />;
+
+      case 'reopen':
+        return <Repeat className="text-primary-blue size-4 rotate-x-180" />;
 
       case 'status_changed':
         return <Repeat className="text-primary-blue size-4" />;

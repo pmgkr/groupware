@@ -38,7 +38,7 @@ export default function EstimateMatching({
 
   // 입력 핸들러
   const handleChange = (idx: number, rawValue: string) => {
-    const numeric = Number(rawValue.replace(/[^0-9]/g, ''));
+    const numeric = Number(rawValue.replace(/[^0-9-]/g, ''));
     setMatchValues((prev) => {
       const next = [...prev];
       next[idx] = numeric;
@@ -99,10 +99,10 @@ export default function EstimateMatching({
     }
 
     // 2. 0원 입력 검사
-    if (matchValues.some((v) => v <= 0)) {
+    if (matchValues.some((v) => v === 0)) {
       return addAlert({
         title: '매칭 실패',
-        message: '모든 항목에 1원 이상 입력해야 합니다.',
+        message: '모든 항목에 금액을 입력해야 합니다.',
         icon: <OctagonAlert />,
         duration: 2000,
       });
