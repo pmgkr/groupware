@@ -312,7 +312,7 @@ export default function Dashboard() {
               ))}
             </ul>
             <div className="min-h-0 flex-1 rounded-xl p-4 max-2xl:p-2 max-md:px-0!">
-              <ul className="grid grid-cols-3 gap-x-0 gap-y-2 content-start md:aspect-[6/4] md:grid-cols-2 md:gap-x-1 md:overflow-y-auto 2xl:grid-cols-3 2xl:gap-2 2xl:gap-y-4">
+              <ul className="grid grid-cols-3 content-start gap-x-0 gap-y-2 md:aspect-[6/4] md:grid-cols-2 md:gap-x-1 md:overflow-y-auto 2xl:grid-cols-3 2xl:gap-2 2xl:gap-y-4">
                 {calendarData.length === 0 ? (
                   <li className="col-span-full text-center">
                     <span className="text-base text-gray-500">등록된 일정이 없습니다.</span>
@@ -360,7 +360,7 @@ export default function Dashboard() {
                 buttonHref="/meetingroom"
                 className="shrink-0"
               />
-              <div className="overflow-y-auto">
+              <div className="aspect-[6/4] overflow-y-auto">
                 <ul className="flex flex-col gap-y-2 text-base tracking-tight text-gray-700">
                   {meetingroom.length === 0 ? (
                     <span className="text-base text-gray-500">등록된 예약이 없습니다.</span>
@@ -392,7 +392,7 @@ export default function Dashboard() {
                 buttonHref="/mypage/expense"
                 className="shrink-0"
               />
-              <div className="overflow-y-auto">
+              <div className="aspect-[6/4] overflow-y-auto">
                 <ul className="flex flex-col gap-y-2 text-base tracking-tight text-gray-700">
                   {expenseData.length === 0 ? (
                     <span className="text-base text-gray-500">등록된 비용이 없습니다.</span>
