@@ -16,33 +16,33 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
-          cache-dependency-path: client/package-lock.json # client 기준
+          cache-dependency-path: client/package-lock.json
 
       - name: Install dependencies
-        working-directory: client # client 폴더에서 실행
+        working-directory: client
         run: npm ci
 
       - name: Install Vercel CLI
         run: npm install -g vercel
 
       - name: Pull Vercel environment variables
-        working-directory: client # client 폴더에서 실행
+        working-directory: client
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Build project
-        working-directory: client # client 폴더에서 실행
+        working-directory: client
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Deploy to Vercel
-        working-directory: client # client 폴더에서 실행
+        working-directory: client
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
