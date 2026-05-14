@@ -93,8 +93,6 @@ export function ProjectUpdate({ open, projectId, projectMembers, onOpenChange, o
 
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : null);
 
-  console.log(projectMembers);
-
   /* ---------- form ---------- */
 
   const form = useForm<ProjectUpdateFormValues>({
@@ -133,8 +131,6 @@ export function ProjectUpdate({ open, projectId, projectMembers, onOpenChange, o
     (async () => {
       const res = await getProjectInfo(projectId);
       setProjectInfo(res);
-
-      console.log('플젝 정보', res);
 
       form.reset({
         year: res.project_year,
