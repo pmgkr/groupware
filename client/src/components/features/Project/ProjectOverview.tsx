@@ -7,7 +7,7 @@ import { formatAmount } from '@/utils';
 import { useUser } from '@/hooks/useUser';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 
-import { getInvoiceList, type InvoiceListItem } from '@/api';
+import { getInvoiceList, pexpenseTotal, type InvoiceListItem } from '@/api';
 import { buildExpenseColorMap, buildPieChartData, groupExpenseForChart, buildInvoicePieChartData } from './utils/chartMap';
 import type { PieItem, PieChartItem } from './utils/chartMap';
 
@@ -39,6 +39,7 @@ export default function Overview() {
   const [expenseColorMap, setExpenseColorMap] = useState<Record<string, string>>({}); // 비용유형 컬러맵
   const [expenseData, setExpenseData] = useState<PieItem[]>([]); // 비용 용도별 데이터 State
   const [expenseChartData, setExpenseChartData] = useState<PieChartItem[]>([]); // 비용 용도 차트 데이터 State
+  const [expenseTotal, setExpenseTotal] = useState<{ total_amount: number; total_tax: number; total_total: number } | null>(null);
 
   const [invoiceList, setInvoiceList] = useState<InvoiceListItem[]>([]); // 인보이스 리스트 데이터 State
   const [invoiceChartData, setInvoiceChartData] = useState<PieChartItem[]>([]); // 인보이스 차트 데이터 State
@@ -47,27 +48,47 @@ export default function Overview() {
   const [memberDialogOpen, setMemberDialogOpen] = useState(false); // 프로젝트 멤버 변경 Dialog State
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false); // 프로젝트 업데이트 Dialog State
 
-  // 페이지 렌더 시 비용 유형 컬러맵 생성 & 인보이스 데이터 조회
+  // 비용 유형별 컬러매핑
   useEffect(() => {
-    async function loadColors() {
-      const map = await buildExpenseColorMap();
-      setExpenseColorMap(map);
+    let cancelled = false;
+    buildExpenseColorMap().then((map) => {
+      if (!cancelled) setExpenseColorMap(map);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 인보이스 + 비용합계: project_id/refetch 변경 시 병렬 실행
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchAll() {
+      const [invoiceRes, totalRes] = await Promise.allSettled([
+        getInvoiceList(data.project_id, { size: 50, invoice_status: 'Confirmed' }),
+        pexpenseTotal(data.project_id),
+      ]);
+
+      if (cancelled) return;
+
+      if (invoiceRes.status === 'fulfilled') {
+        setInvoiceList(invoiceRes.value.list);
+      } else {
+        console.error('인보이스 불러오기 실패:', invoiceRes.reason);
+      }
+
+      if (totalRes.status === 'fulfilled') {
+        setExpenseTotal(totalRes.value);
+      } else {
+        console.error('비용 합계 불러오기 실패:', totalRes.reason);
+      }
     }
-    loadColors();
 
-    // 인보이스 client_nm 기준으로 파이차트 데이터 생성
-    async function getInvoideList() {
-      const params: Record<string, any> = {
-        size: 50,
-        invoice_status: 'Confirmed',
-      };
-
-      const res = await getInvoiceList(data.project_id, params);
-      setInvoiceList(res.list);
-    }
-
-    getInvoideList();
-  }, [refetch, data.project_id]);
+    fetchAll();
+    return () => {
+      cancelled = true;
+    };
+  }, [data.project_id, refetch]);
 
   // 비용 용도별 데이터 받아와서 파이차트 데이터로 정제
   useEffect(() => {
@@ -206,8 +227,6 @@ export default function Overview() {
   };
 
   const status = statusMap[data.project_status as keyof typeof statusMap];
-
-  console.log('상태', status);
 
   return (
     <>
@@ -373,6 +392,28 @@ export default function Overview() {
                         </li>
                       ))}
                     </ul>
+
+                    {expenseTotal?.total_total !== 0 && (
+                      <ul className="mt-3 space-y-2 border-t border-t-gray-400 py-3 text-sm">
+                        <li className="flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-sm bg-gray-300" />
+                          <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-gray-700">비용 금액</span>
+                          <span className="shrink-0 text-right font-medium">{formatAmount(expenseTotal?.total_amount)}원</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-sm bg-gray-300" />
+                          <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-gray-700">비용 세금</span>
+                          <span className="shrink-0 text-right font-medium">{formatAmount(expenseTotal?.total_tax)}원</span>
+                        </li>
+                        <li className="flex items-center gap-2 rounded-sm">
+                          <span className="bg-primary-blue-500/70 h-2.5 w-2.5 rounded-sm" />
+                          <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">총 비용 합계</span>
+                          <span className="text-primary-blue-500 shrink-0 text-right font-bold">
+                            {formatAmount(expenseTotal?.total_total)}원
+                          </span>
+                        </li>
+                      </ul>
+                    )}
                   </div>
                 </CardContent>
               </Card>

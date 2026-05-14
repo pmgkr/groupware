@@ -3,7 +3,7 @@ import { useOutletContext, useNavigate, useParams, useSearchParams } from 'react
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import * as XLSX from 'xlsx';
 import { useUser } from '@/hooks/useUser';
-import { findManager, getGrowingYears } from '@/utils';
+import { findManager, formatAmount, getGrowingYears } from '@/utils';
 import { notificationApi } from '@/api/notification';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
@@ -11,10 +11,11 @@ import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { Button } from '@components/ui/button';
 import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import { AppPagination } from '@/components/ui/AppPagination';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
 import { Excel } from '@/assets/images/icons';
-import { OctagonAlert } from 'lucide-react';
+import { OctagonAlert, ReceiptText, Percent } from 'lucide-react';
 
 import { useViewport } from '@/hooks/useViewport';
 import { ExpenseFilterPC } from './_responsive/ExpenseFilterPC';
@@ -31,6 +32,7 @@ import {
   deleteProjectTempExpense,
   claimProjectTempExpense,
   pInfoDelete,
+  pexpenseTotal,
 } from '@/api';
 
 export default function Expense() {
@@ -83,6 +85,7 @@ export default function Expense() {
   const [typeOptions, setTypeOptions] = useState<MultiSelectOption[]>([]);
   const [expenseList, setExpenseList] = useState<pExpenseListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expenseTotal, setExpenseTotal] = useState<{ total_amount: number; total_tax: number; total_total: number } | null>(null);
 
   // Excel 데이터 업로드용 Input
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -428,6 +431,19 @@ export default function Expense() {
     { label: '미제출', value: 'N' },
   ];
 
+  // 비용 합계 가져오기
+  useEffect(() => {
+    if (!projectId) return;
+    (async () => {
+      try {
+        const res = await pexpenseTotal(projectId);
+        setExpenseTotal(res);
+      } catch (err) {
+        console.error('❌ 비용 합계 불러오기 실패:', err);
+      }
+    })();
+  }, [projectId]);
+
   // 비용 유형 가져오기
   useEffect(() => {
     (async () => {
@@ -582,27 +598,85 @@ export default function Expense() {
 
       {/* -------- 리스트 -------- */}
       {isMobile ? (
-        <ExpenseCardList
-          items={expenseList}
-          activeTab={activeTab}
-          checkedItems={checkedItems}
-          checkAll={checkAll}
-          onCheckAll={handleCheckAll}
-          onCheck={handleCheckItem}
-          onAInfo={handleAddInfo}
-          loading={loading}
-        />
+        <>
+          <div className="mb-4 grid grid-cols-2 gap-2">
+            <div className="bg-primary-blue-100 col-span-2 rounded-sm px-4 pt-3.5 pb-3">
+              <div className="flex items-center justify-between">
+                <small className="text-primary flex items-center gap-1 text-[11px]">
+                  <ReceiptText className="size-3.5" />총 비용 합계
+                </small>
+                <span className="text-primary/70 text-[10px]">합계 대상 : 승인대기, 승인완료, 지급완료</span>
+              </div>
+              <strong className="mt-1 block text-right text-lg font-medium">{formatAmount(expenseTotal?.total_total)}원</strong>
+            </div>
+
+            <div className="bg-muted/40 gap-.5 flex flex-col rounded-sm px-2.5 py-3 text-right">
+              <small className="flex items-center gap-1 text-xs text-gray-600">
+                <ReceiptText className="size-3" />
+                금액 합계
+              </small>
+              <strong className="text-foreground text-[13px] font-medium">{formatAmount(expenseTotal?.total_amount)}원</strong>
+            </div>
+
+            <div className="bg-muted/40 gap-.5 flex flex-col rounded-sm px-2.5 py-3 text-right">
+              <small className="flex items-center gap-1 text-xs text-gray-600">
+                <Percent className="size-3" />
+                세금 합계
+              </small>
+              <strong className="text-foreground text-[13px] font-medium">{formatAmount(expenseTotal?.total_tax)}원</strong>
+            </div>
+          </div>
+          <ExpenseCardList
+            items={expenseList}
+            activeTab={activeTab}
+            checkedItems={checkedItems}
+            checkAll={checkAll}
+            onCheckAll={handleCheckAll}
+            onCheck={handleCheckItem}
+            onAInfo={handleAddInfo}
+            loading={loading}
+          />
+        </>
       ) : (
-        <ExpenseTable
-          items={expenseList}
-          activeTab={activeTab}
-          checkedItems={checkedItems}
-          checkAll={checkAll}
-          onCheckAll={handleCheckAll}
-          onCheck={handleCheckItem}
-          onAInfo={handleAddInfo}
-          loading={loading}
-        />
+        <>
+          <ExpenseTable
+            items={expenseList}
+            activeTab={activeTab}
+            checkedItems={checkedItems}
+            checkAll={checkAll}
+            onCheckAll={handleCheckAll}
+            onCheck={handleCheckItem}
+            onAInfo={handleAddInfo}
+            loading={loading}
+          />
+          <div className="mt-4 mb-2 ml-auto grid grid-cols-3 gap-2.5">
+            <div className="bg-muted/40 flex flex-col gap-1 rounded-lg px-4 py-3.5 text-right">
+              <small className="flex items-center gap-1.5 text-[11px] text-gray-600">
+                <ReceiptText className="size-4" />
+                금액 합계
+              </small>
+              <strong className="text-foreground text-xl font-medium">{formatAmount(expenseTotal?.total_amount)}원</strong>
+            </div>
+
+            <div className="bg-muted/40 flex flex-col gap-1 rounded-lg px-4 py-3.5 text-right">
+              <small className="flex items-center gap-1.5 text-[11px] text-gray-600">
+                <Percent className="size-4" />
+                세금 합계
+              </small>
+              <strong className="text-foreground text-xl font-medium">{formatAmount(expenseTotal?.total_tax)}원</strong>
+            </div>
+
+            <div className="bg-primary-blue-100 flex flex-col gap-1 rounded-lg px-4 py-3.5 text-right">
+              <small className="text-primary flex items-center gap-1.5 text-[11px]">
+                <ReceiptText className="size-4" />총 비용 합계
+                <span className="text-primary/70 ml-auto text-[11px]">
+                  <span className="max-xl:hidden">합계 대상 :</span> 승인대기, 승인완료, 지급완료
+                </span>
+              </small>
+              <strong className="text-xl font-medium">{formatAmount(expenseTotal?.total_total)}원</strong>
+            </div>
+          </div>
+        </>
       )}
 
       {activeTab === 'saved' && (

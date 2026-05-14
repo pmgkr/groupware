@@ -318,7 +318,7 @@ export async function pInfoDelete(seq: number) {
   return http<{ ok: boolean }>(`/user/pexpense/ainfo/delete`, { method: 'DELETE', body: JSON.stringify({ seq }) });
 }
 
-export interface pexpenseRestoreResponse {
+export interface pexpenseRestoreRes {
   ok: boolean;
   updated: {
     ok: boolean;
@@ -329,5 +329,18 @@ export interface pexpenseRestoreResponse {
 
 // 반려된 비용 복구
 export async function pexpenseRestore(seq: number) {
-  return http<pexpenseRestoreResponse>(`/user/pexpense/restore/${seq}`, { method: 'POST' });
+  return http<pexpenseRestoreRes>(`/user/pexpense/restore/${seq}`, { method: 'POST' });
+}
+
+export interface pexpenseTotalRes {
+  project_id: string;
+  total_amount: number;
+  total_tax: number;
+  total_total: number;
+}
+
+// 프로젝트 비용 청구 합계
+export async function pexpenseTotal(project_id: string) {
+  if (!project_id) throw new Error('project_id가 필요합니다.');
+  return http<pexpenseTotalRes>(`/user/pexpense/totalamount/${project_id}`, { method: 'POST' });
 }
