@@ -4,10 +4,15 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
 
     steps:
       - name: Checkout
@@ -46,8 +51,34 @@ jobs:
           cp -r client/dist/. .vercel/output/static/
           echo '{"version":3,"routes":[{"src":"/(.*?)(\\.(?:js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map))$","dest":"/$1$2"},{"src":"/(.*)","dest":"/index.html"}]}' > .vercel/output/config.json
 
-      - name: Deploy to Vercel
+      # Production 배포 (main push일 때만)
+      - name: Deploy to Vercel (Production)
+        if: github.event_name == 'push'
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # Preview 배포 (PR일 때만)
+      - name: Deploy to Vercel (Preview)
+        if: github.event_name == 'pull_request'
+        id: preview
+        run: |
+          url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$url" >> $GITHUB_OUTPUT
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # PR에 Preview URL 코멘트 (PR일 때만)
+      - name: Comment Preview URL on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ Preview 배포 완료!\n🔗 **Preview URL**: ${{ steps.preview.outputs.url }}`
+            })
