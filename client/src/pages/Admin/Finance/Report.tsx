@@ -527,7 +527,25 @@ export default function Report() {
                     <TableCell className="text-right">{formatAmount(reportData.grandtotal.sum_inv_amount)}</TableCell>
                     <TableCell className="text-right">{formatAmount(reportData.grandtotal.sum_exp_amount)}</TableCell>
                     <TableCell className="text-right">{formatAmount(reportData.grandtotal.sum_netprofit)}</TableCell>
-                    <TableCell>{reportData.grandtotal.avg_gpm !== 0 ? `${reportData.grandtotal.avg_gpm}%` : '-'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {/* {reportData.grandtotal.avg_gpm !== 0 ? `${reportData.grandtotal.avg_gpm}%` : '-'} */}
+                        {reportData.grandtotal.avg_gpm !== 0 ? `${(reportData.grandtotal.sum_netprofit / reportData.grandtotal.sum_inv_amount * 100).toFixed(2)}%` : '-'}
+                        <Tooltip>
+                          <TooltipTrigger type="button" className="cursor-help">
+                            <TooltipIcon />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              (Net / 계산서 금액) &times; 100
+                            </p>
+                            <p className="mt-1 text-red-400">
+                              ({formatAmount(Math.round(reportData.grandtotal.sum_netprofit / 1000000))} / {formatAmount(Math.round(reportData.grandtotal.sum_inv_amount / 1000000))}) &times; 100<br /><span className="text-xs text-gray-400"> (단위: 백만)</span>
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TableCell>
                     <TableCell></TableCell>
                   </TableRow>
                 </>
