@@ -306,6 +306,7 @@
   --animate-ping: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
   --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   --animate-bounce: bounce 1s infinite;
+  --animate-blink: blink 1s ease-in-out infinite;
 
   @keyframes spin {
     to {
@@ -337,6 +338,18 @@
     50% {
       transform: none;
       animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+
+  @keyframes blink {
+    0%,
+    100% {
+      fill: #dc2626;
+      stroke: #dc2626;
+    }
+    50% {
+      fill: var(--color-gray-600);
+      stroke: var(--color-gray-600);
     }
   }
 }
@@ -389,4 +402,11 @@
 .modal {
   color: var(--primary);
   background: var(--color-gray-50);
+}
+
+.triangle-alert {
+  path:nth-child(2),
+  path:nth-child(3) {
+    stroke: #fff;
+  }
 }

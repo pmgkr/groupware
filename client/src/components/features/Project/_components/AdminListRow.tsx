@@ -12,7 +12,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { DayPicker } from '@components/daypicker';
 
-import { CalendarIcon, Download, UserRoundPen } from 'lucide-react';
+import { CalendarIcon, Download, UserRoundPen, TriangleAlert } from 'lucide-react';
 
 type ExpenseRowProps = {
   item: ExpenseListItems;
@@ -142,6 +142,7 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate, onAInfo, ha
       <TableCell>
         <div className="relative inline-flex justify-center">
           <Badge variant="grayish" className="border-gray-300 bg-white">
+            {(item.allocated_amount ?? 0) < 0 && <TriangleAlert className="animate-blink triangle-alert" />}
             {item.is_estimate === 'Y' ? '견적서' : '견적서 외'}
           </Badge>
           {matchMissing}
