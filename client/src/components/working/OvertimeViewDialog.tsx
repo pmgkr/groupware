@@ -485,14 +485,12 @@ export default function OvertimeViewDialog({
                         : '승인하기'}
                     </Button>
                   )}
-                  {onReject && (
-                    <Button
-                      variant="destructive"
-                      onClick={() => setShowRejectInput(true)}
-                      className="bg-destructive hover:bg-destructive mr-0 max-md:flex-1">
-                      반려하기
-                    </Button>
-                  )}
+                  <Button
+                    variant="destructive"
+                    onClick={() => setShowRejectInput(true)}
+                    className="bg-destructive hover:bg-destructive mr-0 max-md:flex-1">
+                    반려하기
+                  </Button>
                 </>
               ) : (
                 <>
