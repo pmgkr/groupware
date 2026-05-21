@@ -204,8 +204,13 @@ export default function WorkingList({ data = [], loading = false, weekStartDate,
 
     // 추가근무 상세 정보 조회
     try {
-      const detail = await managerOvertimeApi.getManagerOvertimeDetail(parseInt(overtimeId));
-      setOvertimeDetailData(detail);
+      if (isManager) {
+        const detail = await managerOvertimeApi.getManagerOvertimeDetail(parseInt(overtimeId));
+        setOvertimeDetailData(detail);
+      } else {
+        const detail = await workingApi.getOvertimeDetail(parseInt(overtimeId));
+        setOvertimeDetailData({ info: detail });
+      }
     } catch (error) {
       // 에러 무시
     }
@@ -799,6 +804,8 @@ export default function WorkingList({ data = [], loading = false, weekStartDate,
                         | '보상완료'
                         | '취소완료'
                         | '보상대기'),
+                  rejectionReason: overtimeDetailData?.info?.ot_reject || selectedDayInfo?.rejectionReason || undefined,
+                  rejectionDate: (overtimeDetailData?.info?.ot_reject ? overtimeDetailData?.info?.ot_modified_at : undefined) || selectedDayInfo?.rejectionDate || undefined,
                   overtimeData: convertOvertimeData(),
                 }}
               />
@@ -1072,6 +1079,8 @@ export default function WorkingList({ data = [], loading = false, weekStartDate,
                       | '보상완료'
                       | '취소완료'
                       | '보상대기'),
+                rejectionReason: overtimeDetailData?.info?.ot_reject || selectedDayInfo?.rejectionReason || undefined,
+                rejectionDate: (overtimeDetailData?.info?.ot_reject ? overtimeDetailData?.info?.ot_modified_at : undefined) || selectedDayInfo?.rejectionDate || undefined,
                 overtimeData: convertOvertimeData(),
               }}
             />
