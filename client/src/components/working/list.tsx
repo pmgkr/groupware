@@ -32,7 +32,9 @@ export interface DayWorkInfo {
   hasOvertime?: boolean;
   overtimeId?: string;
   overtimeStatus?: string;
-  holidayName?: string | null; // 공휴일 이름
+  holidayName?: string | null;
+  rejectionReason?: string;
+  rejectionDate?: string;
 }
 
 export interface WorkingListItem {

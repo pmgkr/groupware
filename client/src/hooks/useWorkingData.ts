@@ -238,6 +238,8 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
                   overtimeId,
                   overtimeStatus,
                   holidayName: dayData.holidayName,
+                  rejectionReason: dayData.rejectionReason,
+                  rejectionDate: dayData.rejectionDate,
                 };
               }
 
@@ -251,6 +253,8 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
                   overtimeId,
                   overtimeStatus,
                   holidayName: dayData.holidayName,
+                  rejectionReason: dayData.rejectionReason,
+                  rejectionDate: dayData.rejectionDate,
                 };
               }
 
@@ -264,6 +268,8 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
                   overtimeId,
                   overtimeStatus,
                   holidayName: dayData.holidayName,
+                  rejectionReason: dayData.rejectionReason,
+                  rejectionDate: dayData.rejectionDate,
                 };
               }
 
@@ -282,6 +288,8 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
                 overtimeId,
                 overtimeStatus,
                 holidayName: dayData.holidayName,
+                rejectionReason: dayData.rejectionReason,
+                rejectionDate: dayData.rejectionDate,
               };
             };
 
