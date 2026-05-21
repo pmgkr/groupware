@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router';
 import dayjs from 'dayjs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
@@ -77,6 +78,7 @@ export default function OvertimeViewDialog({
     activeTab,
   });
   const { user: currentUser } = useAuth();
+  const { pathname } = useLocation();
   // Hook 호출
   const { addDialog } = useAppDialog();
   const { addAlert } = useAppAlert();
@@ -430,12 +432,16 @@ export default function OvertimeViewDialog({
               <div>
                 <span className="text-base font-semibold text-gray-800 max-md:text-[13px]">{status}</span>
                 {/* 승인완료 시 승인일 표시는 백엔드 데이터 연동 시 추가 예정 */}
-                {status === '취소완료' && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
+                {status === '취소완료' && (
                   <>
-                    <p className="mt-1 text-sm text-gray-800 max-md:text-[11px]">
-                      반려일: {dayjs(selectedDay.rejectionDate).format('YYYY년 MM월 DD일')}
-                    </p>
-                    <p className="text-sm text-gray-800 max-md:text-[11px]">반려사유: {selectedDay.rejectionReason}</p>
+                    {selectedDay?.rejectionDate && (
+                      <p className="mt-1 text-sm text-gray-800 max-md:text-[11px]">
+                        반려일: {dayjs(selectedDay.rejectionDate).format('YYYY년 MM월 DD일')}
+                      </p>
+                    )}
+                    {selectedDay?.rejectionReason && (
+                      <p className="text-sm text-gray-800 max-md:text-[11px]">반려사유: {selectedDay.rejectionReason}</p>
+                    )}
                   </>
                 )}
               </div>
@@ -443,11 +449,11 @@ export default function OvertimeViewDialog({
           </div>
 
           {/* 반려 정보 표시 */}
-          {/* {status === "취소완료" && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
+          {/* {status === '취소완료' && selectedDay?.rejectionDate && selectedDay?.rejectionReason && (
             <>
               <div className="space-y-2">
                 <Label>반려사유</Label>
-                <div className="px-4 py-2 border border-gray-300 rounded-md bg-gray-100 min-h-[80px]">
+                <div className="min-h-[80px] rounded-md border border-gray-300 bg-gray-100 px-4 py-2">
                   <span className="text-base">{selectedDay.rejectionReason}</span>
                 </div>
               </div>
@@ -562,7 +568,7 @@ export default function OvertimeViewDialog({
                   재신청하기
                 </Button>
               )}
-              {status === '승인대기' && (
+              {pathname === '/working' && status === '승인대기' && (
                 <Button variant="destructive" onClick={handleCancelClick} className="mr-0 max-md:flex-1">
                   신청 취소하기
                 </Button>

@@ -32,6 +32,7 @@ export interface OvertimeItem {
   ot_status: string; // "H" (승인대기), "T" (승인완료), "N" (취소완료)
   ot_created_at: string;
   ot_modified_at: string;
+  ot_reject?: string;
 }
 
 // 추가근무 목록 응답

@@ -18,6 +18,7 @@ export interface overtimeItem {
   ot_status: string;
   ot_created_at: string;
   ot_modified_at: string;
+  ot_reject?: string;
 }
 
 export interface overtimeList {
@@ -109,10 +110,10 @@ export const adminOvertimeApi = {
     return response;
   },
 
-  rejectOvertime: async (ot_seq: number): Promise<overtimeRejectResponse> => {
+  rejectOvertime: async (ot_seq: number, reason: string): Promise<overtimeRejectResponse> => {
     const response = await http<overtimeRejectResponse>(`/admin/overtime/reject`, {
       method: 'POST',
-      body: JSON.stringify({ ot_seq }),
+      body: JSON.stringify({ ot_seq, reason }),
     });
     return response;
   },

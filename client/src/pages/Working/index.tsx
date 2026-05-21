@@ -114,6 +114,8 @@ export default function WorkHoursTable() {
         }),
       ]);
 
+      console.log('테스트', overtimeResponse);
+
       // API 데이터를 WorkData 형식으로 변환
       const apiData = await convertApiDataToWorkData(
         wlogWeekResponse.wlog || [],

@@ -346,6 +346,8 @@ export const convertApiDataToWorkData = async (
     const endTime = formatTime(wlog?.etime || null, true, wlog?.stime || null);
     const overtimeStatus = overtime ? getOvertimeStatus(overtime.ot_status) : '신청하기';
     const overtimeData = overtime ? extractOvertimeData(overtime) : undefined;
+    const rejectionReason = overtime?.ot_reject || undefined;
+    const rejectionDate = overtime?.ot_reject ? overtime.ot_modified_at : undefined;
 
     // 근무시간 계산
     if (wlog && wlog.stime && wlog.etime) {
@@ -364,6 +366,8 @@ export const convertApiDataToWorkData = async (
         overtimeId: overtime?.id,
         isHoliday,
         holidayName,
+        rejectionReason,
+        rejectionDate,
       });
     } else if (wlog && wlog.stime && !wlog.etime) {
       // 출근만 하고 퇴근 안한 경우
@@ -385,6 +389,8 @@ export const convertApiDataToWorkData = async (
         overtimeId: overtime?.id,
         isHoliday,
         holidayName,
+        rejectionReason,
+        rejectionDate,
       });
     } else if (wlog && !wlog.stime) {
       // 출근 시간이 "미입력"인 경우 (퇴근 시간만 있거나, 둘 다 없는 경우 중 wlog는 존재하는 상황)
@@ -406,6 +412,8 @@ export const convertApiDataToWorkData = async (
         overtimeId: overtime?.id,
         isHoliday,
         holidayName,
+        rejectionReason,
+        rejectionDate,
       });
     } else {
       // wlog 데이터가 없는 경우
@@ -427,6 +435,8 @@ export const convertApiDataToWorkData = async (
         overtimeId: overtime?.id,
         isHoliday,
         holidayName,
+        rejectionReason,
+        rejectionDate,
       });
     }
   }

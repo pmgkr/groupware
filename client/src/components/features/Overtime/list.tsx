@@ -10,7 +10,7 @@ import { managerOvertimeApi } from '@/api/manager/overtime';
 import { adminOvertimeApi, type overtimeItem } from '@/api/admin/overtime';
 import { getTeams } from '@/api/admin/teams';
 import { getTeams as getManagerTeams } from '@/api/manager/teams';
-import { getTeams as getCommonTeams } from '@/api/teams';
+import { getTeams as getTeamList } from '@/api/teams';
 import type { OvertimeItem } from '@/api/working';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -456,7 +456,7 @@ export default function OvertimeList({
     const isReject = kind === 'reject';
     const notiTitle = `${overtimeLabel} (${dateText}${timeRange})`;
     const notiMessage = isReject
-      ? `${overtimeLabel}가 반려되었습니다.`
+      ? `${user?.user_name}님이 ${overtimeLabel}를 반려했습니다.`
       : isComp
         ? `${overtimeLabel} 보상 지급이 승인되었습니다.`
         : `${overtimeLabel}가 승인되었습니다.`;
@@ -513,7 +513,7 @@ export default function OvertimeList({
     try {
       if (isPage === 'admin') {
         // Admin API는 reason 파라미터가 없음
-        await adminOvertimeApi.rejectOvertime(selectedOvertime.id);
+        await adminOvertimeApi.rejectOvertime(selectedOvertime.id, reason);
       } else {
         await managerOvertimeApi.rejectOvertime(selectedOvertime.id, reason);
       }
@@ -1014,7 +1014,8 @@ export default function OvertimeList({
               }}
               onApprove={isManager && !isOwnRequest && isPage !== 'admin' ? handleApproveOvertime : undefined}
               onReject={
-                isManager && isPage === 'admin' && activeTab === 'weekend' && selectedOvertime.ot_status === 'T'
+                (isManager && isPage === 'admin' && selectedOvertime.ot_status === 'T') ||
+                (isManager && isPage === 'manager' && selectedOvertime.ot_status === 'H')
                   ? handleRejectOvertime
                   : undefined
               }
@@ -1042,6 +1043,8 @@ export default function OvertimeList({
                 overtimeStatus: overtimeDetailData?.info
                   ? mapStatus(overtimeDetailData.info.ot_status)
                   : (getStatusText(selectedOvertime.ot_status) as '신청하기' | '승인대기' | '승인완료' | '취소완료' | '보상대기'),
+                rejectionReason: selectedOvertime.ot_reject || undefined,
+                rejectionDate: selectedOvertime.ot_reject ? selectedOvertime.ot_modified_at : undefined,
                 overtimeData: convertOvertimeData(),
               }}
             />
