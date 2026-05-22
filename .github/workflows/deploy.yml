@@ -53,6 +53,7 @@ jobs:
         run: npm run build
         env:
           CI: false
+          NODE_ENV: production
           VITE_HOLIDAY_API_KEY: ${{ secrets.VITE_HOLIDAY_API_KEY }}
           VITE_KMA_SERVICE_KEY: ${{ secrets.VITE_KMA_SERVICE_KEY }}
           VITE_ENV: ${{ secrets.VITE_ENV }}
