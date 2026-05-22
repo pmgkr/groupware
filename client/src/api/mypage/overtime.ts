@@ -23,6 +23,7 @@ export type MyOvertimeItem = {
   ot_client: string;
   ot_description: string;
   ot_status: string;
+  ot_reject?: string;
   ot_created_at: string;
   ot_modified_at: string;
 };

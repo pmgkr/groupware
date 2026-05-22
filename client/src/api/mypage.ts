@@ -197,6 +197,7 @@ export type MyOvertimeItem = {
   ot_status: string;
   ot_created_at: string;
   ot_modified_at: string;
+  ot_reject?: string;
 };
 export async function MyOvertimeHistory(
   page: number,

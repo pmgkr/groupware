@@ -53,6 +53,11 @@ jobs:
         run: npm run build
         env:
           CI: false
+          VITE_HOLIDAY_API_KEY: ${{ secrets.VITE_HOLIDAY_API_KEY }}
+          VITE_KMA_SERVICE_KEY: ${{ secrets.VITE_KMA_SERVICE_KEY }}
+          VITE_ENV: ${{ secrets.VITE_ENV }}
+          VITE_API_ORIGIN: ${{ secrets.VITE_API_ORIGIN }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
       - name: Prepare Vercel output
         run: |

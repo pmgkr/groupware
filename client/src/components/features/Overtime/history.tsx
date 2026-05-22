@@ -253,6 +253,8 @@ export default function MyOvertimeHistory({ activeTab = 'weekday', selectedYear 
         totalMinutes: 0,
         overtimeStatus: mapStatus(item.ot_status),
         overtimeId: item.id,
+        rejectionReason: item.ot_reject || undefined,
+        rejectionDate: item.ot_reject ? item.ot_modified_at : undefined,
         overtimeData: {
           expectedStartTime: startTime.hour,
           expectedStartTimeMinute: startTime.minute,

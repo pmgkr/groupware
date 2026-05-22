@@ -22,6 +22,7 @@ import { Button } from '@components/ui/button';
 import { AppPagination } from '@/components/ui/AppPagination';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipIcon } from '@/components/ui/tooltip';
 import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
 import { Edit } from '@/assets/images/icons';
 import { X, RefreshCw, OctagonAlert, Lock, LockOpen, LockKeyhole } from 'lucide-react';
@@ -499,7 +500,24 @@ export default function Report() {
                     <TableCell className="text-right">{formatAmount(reportData.subtotal.sum_inv_amount)}</TableCell>
                     <TableCell className="text-right">{formatAmount(reportData.subtotal.sum_exp_amount)}</TableCell>
                     <TableCell className="text-right">{formatAmount(reportData.subtotal.sum_netprofit)}</TableCell>
-                    <TableCell>{reportData.subtotal.avg_gpm !== 0 ? `${reportData.subtotal.avg_gpm}%` : '-'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {reportData.subtotal.avg_gpm !== 0 ? `${(reportData.subtotal.sum_netprofit / reportData.subtotal.sum_inv_amount * 100).toFixed(2)}%` : '-'}
+                        <Tooltip>
+                          <TooltipTrigger type="button" className="cursor-help">
+                            <TooltipIcon />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              (Net / 계산서 금액) &times; 100
+                            </p>
+                            <p className="mt-1 text-red-400">
+                              ({formatAmount(Math.round(reportData.subtotal.sum_netprofit / 1000000))} / {formatAmount(Math.round(reportData.subtotal.sum_inv_amount / 1000000))}) &times; 100<span className="text-xs text-gray-400"> (단위: 백만)</span>
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TableCell>
                     <TableCell></TableCell>
                   </TableRow>
                   <TableRow className="[&_td]:bg-primary-blue-100 [&_td]:px-2 [&_td]:text-[13px] [&_td]:font-semibold">
@@ -509,7 +527,25 @@ export default function Report() {
                     <TableCell className="text-right">{formatAmount(reportData.grandtotal.sum_inv_amount)}</TableCell>
                     <TableCell className="text-right">{formatAmount(reportData.grandtotal.sum_exp_amount)}</TableCell>
                     <TableCell className="text-right">{formatAmount(reportData.grandtotal.sum_netprofit)}</TableCell>
-                    <TableCell>{reportData.grandtotal.avg_gpm !== 0 ? `${reportData.grandtotal.avg_gpm}%` : '-'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {/* {reportData.grandtotal.avg_gpm !== 0 ? `${reportData.grandtotal.avg_gpm}%` : '-'} */}
+                        {reportData.grandtotal.avg_gpm !== 0 ? `${(reportData.grandtotal.sum_netprofit / reportData.grandtotal.sum_inv_amount * 100).toFixed(2)}%` : '-'}
+                        <Tooltip>
+                          <TooltipTrigger type="button" className="cursor-help">
+                            <TooltipIcon />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              (Net / 계산서 금액) &times; 100
+                            </p>
+                            <p className="mt-1 text-red-400">
+                              ({formatAmount(Math.round(reportData.grandtotal.sum_netprofit / 1000000))} / {formatAmount(Math.round(reportData.grandtotal.sum_inv_amount / 1000000))}) &times; 100<br /><span className="text-xs text-gray-400"> (단위: 백만)</span>
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TableCell>
                     <TableCell></TableCell>
                   </TableRow>
                 </>
