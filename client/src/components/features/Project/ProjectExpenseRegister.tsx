@@ -744,8 +744,8 @@ export default function ProjectExpenseRegister() {
 
             const successMsg =
               projectType === 'est'
-                ? `<p class="text-2xl text-primary leading-[1.3]">비용 등록 성공</p><p>총 <span class="text-primary-blue-500 font-semibold">${item_count}개</span> 비용 항목이 등록되었습니다.<br />견적서 매칭으로 이동합니다.</p>`
-                : `<p class="text-2xl text-primary leading-[1.3]">비용 등록 성공</p><p>총 <span class="text-primary-blue-500 font-semibold">${item_count}개</span> 비용 항목이 등록되었습니다.</p>`;
+                ? `<p class="text-2xl text-primary leading-[1.3] font-bold mb-2">비용 등록 성공</p><p>총 <span class="text-primary-blue-500 font-semibold">${item_count}개</span> 비용 항목이 등록되었습니다.<br />견적서 매칭으로 이동합니다.</p>`
+                : `<p class="text-2xl text-primary leading-[1.3] font-bold mb-2">비용 등록 성공</p><p>총 <span class="text-primary-blue-500 font-semibold">${item_count}개</span> 비용 항목이 등록되었습니다.</p>`;
 
             await new Promise((r) => setTimeout(r, 400));
             await showResult('success', successMsg);
