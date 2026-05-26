@@ -238,7 +238,7 @@ export const UploadArea = forwardRef<UploadAreaHandle, UploadAreaProps>(
         {files.length === 0 ? (
           <div {...getRootProps()} className="flex h-full w-full cursor-pointer flex-col items-center justify-center gap-4">
             <Upload className="size-15" />
-            <p className="text-lg font-bold">매출전표 PDF 파일 혹은 이미지를 이곳에 드래그 해 주세요.</p>
+            <p className="text-lg font-bold break-keep">매출전표 PDF 파일 혹은 이미지를 이곳에 드래그 해 주세요.</p>
           </div>
         ) : (
           <div className="flex flex-wrap gap-4 p-4">

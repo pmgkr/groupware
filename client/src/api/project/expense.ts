@@ -340,6 +340,7 @@ export interface pexpenseTotalRes {
 }
 
 // 프로젝트 비용 청구 합계
+// 테스트
 export async function pexpenseTotal(project_id: string) {
   if (!project_id) throw new Error('project_id가 필요합니다.');
   return http<pexpenseTotalRes>(`/user/pexpense/totalamount/${project_id}`, { method: 'POST' });

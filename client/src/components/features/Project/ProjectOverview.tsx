@@ -215,7 +215,6 @@ export default function Overview() {
     : [];
 
   const isProjectMember = useMemo(() => members.some((m) => m.user_id === user_id), [members, user_id]);
-
   /** -----------------------------------------
    *  상태 Badge
    ----------------------------------------- */
