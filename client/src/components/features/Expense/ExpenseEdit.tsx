@@ -1,11 +1,11 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToggleState } from '@/hooks/useToggleState';
-import { type PreviewFile } from './_components/UploadArea';
+import { UploadArea, type UploadAreaHandle, type PreviewFile } from './_components/UploadArea';
 import { AttachmentFieldEdit } from './_components/AttachmentFieldEdit';
 import { useUser } from '@/hooks/useUser';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -42,7 +42,6 @@ import { Calendar, TooltipNoti, Close } from '@/assets/images/icons';
 import { FileText, OctagonAlert, UserRound } from 'lucide-react';
 
 import { format, parseISO } from 'date-fns';
-import { statusIconMap, getLogMessage } from './utils/statusUtils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getMyAccounts, type BankAccount } from '@/api/mypage';
 
@@ -153,12 +152,18 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
   const [newAttachments, setNewAttachments] = useState<Record<number, PreviewFile[]>>({}); // 새 증빙자료 State
   const [rowAttachments, setRowAttachments] = useState<Record<number, UploadedPreviewFile[]>>({}); // 기존 증빙자료 State
 
+  const uploadRef = useRef<UploadAreaHandle>(null);
+  const [files, setFiles] = useState<PreviewFile[]>([]);
+  const [hasFiles, setHasFiles] = useState(false);
+  const [linkedRows, setLinkedRows] = useState<Record<string, number | null>>({});
+  const [activeFile, setActiveFile] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertDescription, setAlertDescription] = useState('');
   const [successState, setSuccessState] = useState(false);
-  const { showLoading, hideLoading } = useLoading(); // 비용 등록 시 로딩 오버레이 화면
+  const { showLoading, hideLoading, updateProgress, markProgressError, showResult } = useLoading(); // 비용 수정 시 로딩 오버레이 화면
 
   const formatDate = (d?: string | Date | null) => {
     if (!d) return '';
@@ -371,6 +376,88 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
     }
   };
 
+  const handleAddUploadClick = () => {
+    uploadRef.current?.openFileDialog();
+  };
+
+  // UploadArea에 파일이 업로드 파악 후 setHasFiels State 변경
+  const handleFilesChange = (newFiles: PreviewFile[]) => {
+    setFiles(newFiles);
+    setHasFiles(newFiles.length > 0);
+    setLinkedRows((prev) => {
+      const updated = { ...prev };
+      newFiles.forEach((f) => {
+        if (!(f.name in updated)) updated[f.name] = null;
+      });
+      return updated;
+    });
+  };
+
+  // UploadArea → AttachmentFieldEdit 드롭 또는 파일 제거 시
+  const handleDropFiles = useCallback(
+    (droppedFiles: PreviewFile[], fieldName: string, rowIdx: number | null) => {
+      if (rowIdx === null) {
+        // 파일 제거: fieldName "expense_attachment{index}" → rowIndex = index + 1
+        const fileName = droppedFiles[0]?.name;
+        if (!fileName) return;
+
+        const match = fieldName.match(/(\d+)$/);
+        const rowIndex = match ? parseInt(match[1], 10) + 1 : null;
+        if (!rowIndex) return;
+
+        const serverFile = rowAttachments[rowIndex]?.find((att) => att.fname === fileName);
+        if (serverFile) {
+          handleDeleteServerFile(serverFile.seq, rowIndex);
+        } else {
+          setNewAttachments((prev) => ({
+            ...prev,
+            [rowIndex]: (prev[rowIndex] || []).filter((f) => f.name !== fileName),
+          }));
+        }
+
+        setLinkedRows((prev) => {
+          const updated = { ...prev };
+          if (updated[fileName] !== undefined) updated[fileName] = null;
+          return updated;
+        });
+      } else {
+        // UploadArea에서 필드로 드롭 → 행에 연결
+        setNewAttachments((prev) => ({
+          ...prev,
+          [rowIdx]: [...(prev[rowIdx] || []), ...droppedFiles],
+        }));
+        setLinkedRows((prev) => {
+          const updated = { ...prev };
+          droppedFiles.forEach((file) => {
+            updated[file.name] = rowIdx;
+          });
+          return updated;
+        });
+      }
+    },
+    [rowAttachments, handleDeleteServerFile]
+  );
+
+  // AttachmentFieldEdit에 직접 업로드 시
+  const handleUploadFiles = useCallback((newFiles: PreviewFile[], rowIdx: number | null) => {
+    if (rowIdx === null) return;
+    setNewAttachments((prev) => ({
+      ...prev,
+      [rowIdx]: [...(prev[rowIdx] || []), ...newFiles],
+    }));
+    setFiles((prev) => {
+      const unique = newFiles.filter((nf) => !prev.some((pf) => pf.name === nf.name));
+      return [...prev, ...unique];
+    });
+    setLinkedRows((prev) => {
+      const updated = { ...prev };
+      newFiles.forEach((f) => {
+        updated[f.name] = rowIdx;
+      });
+      return updated;
+    });
+  }, []);
+
   const [activeRowIndex, setActiveRowIndex] = useState<number | null>(null);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [proposalList, setProposalList] = useState<ProposalItem[]>([]);
@@ -416,9 +503,10 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
       cancelText: '취소',
       onConfirm: async () => {
         showLoading({
-          title: '작성한 <em>비용을 등록</em>하고 있습니다',
+          title: '작성한 <em>비용을 수정</em>하고 있습니다',
           message: '새로고침을 누르거나, 페이지 이탈 시 비용이 저장되지 않습니다.',
         });
+        updateProgress(0);
 
         try {
           // 1️⃣ 새 업로드할 파일 목록 정리
@@ -427,10 +515,11 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
           );
 
           let uploadedFiles: any[] = [];
+          let skipAttachments = false;
 
           if (allNewFiles.length > 0) {
             const uploadable = await Promise.all(
-              allNewFiles.map(async (f, idx) => {
+              allNewFiles.map(async (f) => {
                 const res = await fetch(f.preview);
                 const blob = await res.blob();
 
@@ -447,7 +536,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                 let maxIndex = -1;
 
                 existingFiles.forEach((att) => {
-                  const match = att.fname.match(/_(\d+)\.[^.]+$/); // 예: _3.jpg
+                  const match = att.fname.match(/_(\d+)\.[^.]+$/);
                   if (match) {
                     const num = parseInt(match[1], 10);
                     if (!isNaN(num) && num > maxIndex) maxIndex = num;
@@ -468,13 +557,73 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
               })
             );
 
-            // 3️⃣ 서버 업로드
-            uploadedFiles = await uploadFilesToServer(uploadable, 'nexpense');
-            uploadedFiles = uploadedFiles.map((file, i) => ({
-              ...file,
-              rowIdx: allNewFiles[i]?.rowIdx ?? 0,
-            }));
-            console.log(' 업로드 완료:', uploadedFiles);
+            // 청크(3개씩) 분할 업로드 + 실패 시 최대 2회 자동 재시도
+            const CHUNK_SIZE = 3;
+            const MAX_RETRIES = 2;
+            const chunks: File[][] = [];
+            for (let i = 0; i < uploadable.length; i += CHUNK_SIZE) {
+              chunks.push(uploadable.slice(i, i + CHUNK_SIZE));
+            }
+            const totalSteps = chunks.length + 1; // +1 은 expenseUpdate 호출
+            const uploadedRaw: any[] = [];
+
+            let uploadError: unknown = null;
+            try {
+              for (let ci = 0; ci < chunks.length; ci++) {
+                let lastErr: unknown;
+                for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                  try {
+                    const result = await uploadFilesToServer(chunks[ci], 'nexpense');
+                    uploadedRaw.push(...result);
+                    lastErr = undefined;
+                    break;
+                  } catch (err) {
+                    lastErr = err;
+                  }
+                }
+                if (lastErr) throw lastErr;
+                updateProgress(((ci + 1) / totalSteps) * 100);
+              }
+            } catch (err) {
+              uploadError = err;
+            }
+
+            if (uploadError) {
+              console.error('❌ 업로드 실패:', uploadError);
+              await markProgressError();
+              await showResult(
+                'error',
+                '<p class="text-2xl text-primary leading-[1.3] font-bold mb-2">증빙자료 업로드 실패</p><p>서버 오류로 증빙자료 파일 업로드에 실패했습니다.\n증빙자료 없이 수정을 계속하시겠습니까, 아니면 취소하시겠습니까?</p>',
+                {
+                  actions: [
+                    {
+                      label: '증빙자료 없이 수정',
+                      onClick: () => {
+                        skipAttachments = true;
+                      },
+                      keepLoading: true,
+                      variant: 'primary',
+                    },
+                    {
+                      label: '비용 수정 취소',
+                      onClick: () => {
+                        navigate(`/expense/${expId}`);
+                      },
+                    },
+                  ],
+                }
+              );
+              if (!skipAttachments) return;
+              uploadedFiles = [];
+              updateProgress(0);
+            }
+
+            if (!skipAttachments) {
+              uploadedFiles = uploadedRaw.map((file, i) => ({
+                ...file,
+                rowIdx: allNewFiles[i]?.rowIdx ?? 0,
+              }));
+            }
           }
 
           // 4️⃣ 업로드된 파일을 항목별로 매핑
@@ -558,6 +707,7 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
           console.log('📦 최종 수정 payload:', payload);
 
           const res = await expenseUpdate(header.seq, payload);
+          updateProgress(100);
 
           console.log('반환 타입', res);
 
@@ -663,14 +813,11 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
               }
             }
 
-            addAlert({
-              title: '비용 수정 완료',
-              message: `${res.updated.itemCount} 건의 일반 비용이 수정되었습니다.`,
-              icon: <OctagonAlert />,
-              duration: 1500,
-            });
-
-            hideLoading();
+            await new Promise((r) => setTimeout(r, 400));
+            await showResult(
+              'success',
+              `<p class="text-2xl text-primary leading-[1.3] font-bold mb-2">비용 수정 완료</p><p><span class="text-primary-blue-500 font-semibold">${res.updated.itemCount}건</span>의 일반 비용이 수정되었습니다.</p>`
+            );
 
             navigate(`/expense/${expId}`);
           } else {
@@ -723,8 +870,8 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
               </ul>
             </div>
           </div>
-          <div className="flex min-h-140 flex-wrap justify-between pt-6 pb-12">
-            <div className="w-[74%] tracking-tight">
+          <div className="grid grid-rows-1 gap-6 pt-6 pb-12 md:min-h-160 md:grid-cols-6">
+            <div className="tracking-tight md:col-span-4">
               <SectionHeader title="기본 정보" className="mb-4" />
               {/* 기본정보 입력 폼 */}
               <div className="mb-6">
@@ -1165,42 +1312,20 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
                         </div>
                         <div className="w-[32%] pl-2">
                           <AttachmentFieldEdit
+                            name={`expense_attachment${index}`}
                             rowIndex={index + 1}
-                            serverFiles={[
+                            files={[
                               ...(rowAttachments[index + 1]?.map((att) => ({
-                                seq: att.seq,
                                 name: att.fname,
                                 type: 'image',
                                 preview: att.ea_url,
                               })) ?? []),
                               ...(newAttachments[index + 1] ?? []),
                             ]}
-                            onUploadNew={(newFiles, rowIdx) => {
-                              console.log('📤 업로드된 새 파일:', newFiles, '→ row', rowIdx);
-
-                              setNewAttachments((prev) => ({
-                                ...prev,
-                                [rowIdx]: [...(prev[rowIdx] || []), ...newFiles],
-                              }));
-                            }}
-                            onDeleteServerFile={(file, rowIdx) => {
-                              if ('seq' in file && typeof file.seq === 'number') {
-                                console.log(`🗑 삭제 요청: file #${file.seq} (row ${rowIdx})`);
-                                handleDeleteServerFile(file.seq, rowIdx);
-                                setRowAttachments((prev) => {
-                                  const updated = { ...prev };
-                                  updated[rowIdx] = (updated[rowIdx] || []).filter((f) => f.seq !== file.seq);
-                                  return updated;
-                                });
-                              } else {
-                                // 새로 올린 파일을 삭제했을 때 newAttachments에서도 제거
-                                setNewAttachments((prev) => {
-                                  const updated = { ...prev };
-                                  updated[rowIdx] = (updated[rowIdx] || []).filter((f) => f.name !== file.name);
-                                  return updated;
-                                });
-                              }
-                            }}
+                            onDropFiles={handleDropFiles}
+                            onUploadFiles={handleUploadFiles}
+                            activeFile={activeFile}
+                            setActiveFile={setActiveFile}
                           />
                         </div>
                       </div>
@@ -1219,36 +1344,34 @@ export default function ExpenseEdit({ expId }: ExpenseEditProps) {
               </div>
             </div>
 
-            <div className="w-[24%] px-4">
-              <h2 className="mb-2 text-lg font-bold text-gray-800">로그</h2>
-              <div className="flex flex-col gap-8">
-                {logs.map((log: any) => (
-                  <div
-                    key={`${log.idx}-${log.exp_status}`}
-                    className="relative before:absolute before:bottom-[100%] before:left-[15.5px] before:mb-1 before:h-6 before:w-[1px] before:bg-gray-400/80 first:before:hidden">
-                    <div className="flex items-center gap-4">
-                      <span className="flex size-8 items-center justify-center rounded-full bg-white ring-1 ring-gray-300">
-                        {statusIconMap[log.exp_status as keyof typeof statusIconMap]}
-                      </span>
-                      <dl className="text-base leading-[1.3] text-gray-800">
-                        <dt>{getLogMessage(log)}</dt>
-                        {log.exp_status === 'Rejected' && log.remark !== null ? (
-                          <dd className="text-destructive text-[.88em]">반려 사유: {log.remark}</dd>
-                        ) : (
-                          <dd className="text-[.88em] text-gray-500">
-                            {formatKST(
-                              log.exp_status === 'Approved'
-                                ? (header.ddate ?? log.log_date)
-                                : log.exp_status === 'Completed'
-                                  ? (header.edate ?? log.log_date)
-                                  : log.log_date
-                            ) || '-'}
-                          </dd>
-                        )}
-                      </dl>
-                    </div>
+            <div className="relative col-span-2">
+              <div className="sticky top-20 left-0 flex h-[calc(100vh-var(--spacing)*22)] flex-col justify-center gap-3 rounded-xl bg-gray-300 p-5">
+                <div className="flex flex-none items-center justify-end">
+                  {hasFiles && (
+                    <Button type="button" size="sm" onClick={handleAddUploadClick}>
+                      추가 업로드
+                    </Button>
+                  )}
+                </div>
+                <UploadArea
+                  ref={uploadRef}
+                  files={files}
+                  setFiles={setFiles}
+                  onFilesChange={handleFilesChange}
+                  linkedRows={linkedRows}
+                  activeFile={activeFile}
+                  setActiveFile={setActiveFile}
+                />
+                <div className="flex flex-none justify-between">
+                  <div className="flex gap-1.5">
+                    <Button type="button" variant="outline" size="sm" onClick={() => uploadRef.current?.deleteSelectedFiles()}>
+                      선택 삭제
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => uploadRef.current?.deleteAllFiles()}>
+                      전체 삭제
+                    </Button>
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           </div>

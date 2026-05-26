@@ -78,6 +78,15 @@ const expenseSchema = z.object({
           ent_reason: z.string().optional(),
         })
         .superRefine((data, ctx) => {
+          const hasContent = !!(data.title || data.price || data.total);
+          if (hasContent && !data.type) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: '비용 유형을 선택해주세요.',
+              path: ['type'],
+            });
+          }
+
           if (data.type === '외주용역비') {
             const requiredFields = ['tax_type', 'work_day', 'work_term', 'h_name', 'h_ssn', 'h_tel', 'h_addr'] as const;
 
@@ -141,7 +150,7 @@ export default function ProjectExpenseRegister() {
   const [activeFile, setActiveFile] = useState<string | null>(null); // UploadArea & Attachment 연결상태 공유용
 
   const [selectedProposal, setSelectedProposal] = useState<any>(null); //기안서  번호 확인용
-  const { showLoading, hideLoading } = useLoading(); // 비용 등록 시 로딩 오버레이 화면
+  const { showLoading, hideLoading, updateProgress, markProgressError, showResult } = useLoading(); // 비용 등록 시 로딩 오버레이 화면
 
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : ''); // YYYY-MM-DD Date 포맷 변경
 
@@ -442,13 +451,15 @@ export default function ProjectExpenseRegister() {
             title: '작성한 <em>비용을 등록</em>하고 있습니다',
             message: '새로고침을 누르거나, 페이지 이탈 시 비용이 저장되지 않습니다.',
           });
+          updateProgress(0);
 
           // [1] 연결된 파일 업로드
           const linkedFiles = files.filter((f) => linkedRows[f.name] !== null);
           let uploadedFiles: any[] = [];
+          let skipAttachments = false;
 
           if (linkedFiles.length > 0) {
-            // 🔹 행별 그룹화
+            // 행별 그룹화
             const filesByRow = linkedFiles.reduce<Record<number, PreviewFile[]>>((acc, f) => {
               const rowIdx = linkedRows[f.name];
               if (rowIdx !== null) {
@@ -458,7 +469,7 @@ export default function ProjectExpenseRegister() {
               return acc;
             }, {});
 
-            // 🔹 업로드 대상 파일 변환
+            // 업로드 대상 파일 변환
             const allNewFiles = linkedFiles.map((f) => ({
               ...f,
               rowIdx: linkedRows[f.name]!,
@@ -493,8 +504,6 @@ export default function ProjectExpenseRegister() {
                 // ✅ 같은 rowIdx 내 새 파일 순서
                 const newFilesInRow = allNewFiles.filter((nf) => nf.rowIdx === f.rowIdx);
                 const localIndex = newFilesInRow.indexOf(f);
-
-                // ✅ 최종 인덱스
                 const nextIndex = maxIndex + 1 + localIndex;
 
                 // ✅ 최종 파일명 포맷
@@ -504,14 +513,73 @@ export default function ProjectExpenseRegister() {
               })
             );
 
-            // 서버 업로드
-            uploadedFiles = await uploadFilesToServer(uploadable, 'pexpense');
-            uploadedFiles = uploadedFiles.map((file, i) => ({
-              ...file,
-              rowIdx: allNewFiles[i]?.rowIdx ?? 0,
-            }));
+            // 청크(3개씩) 분할 업로드 + 실패 시 최대 2회 자동 재시도
+            const CHUNK_SIZE = 3;
+            const MAX_RETRIES = 2;
+            const chunks: File[][] = [];
+            for (let i = 0; i < uploadable.length; i += CHUNK_SIZE) {
+              chunks.push(uploadable.slice(i, i + CHUNK_SIZE));
+            }
+            const totalSteps = chunks.length + 1;
+            const uploadedRaw: any[] = [];
 
-            console.log('✅ 업로드 완료:', uploadedFiles);
+            let uploadError: unknown = null;
+            try {
+              for (let ci = 0; ci < chunks.length; ci++) {
+                let lastErr: unknown;
+                for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                  try {
+                    const result = await uploadFilesToServer(chunks[ci], 'pexpense');
+                    uploadedRaw.push(...result);
+                    lastErr = undefined;
+                    break;
+                  } catch (err) {
+                    lastErr = err;
+                  }
+                }
+                if (lastErr) throw lastErr;
+                updateProgress(((ci + 1) / totalSteps) * 100);
+              }
+            } catch (err) {
+              uploadError = err;
+            }
+
+            if (uploadError) {
+              console.error('❌ 업로드 실패:', uploadError);
+              await markProgressError();
+              await showResult(
+                'error',
+                '<p class="text-2xl text-primary leading-[1.3]">증빙자료 업로드 실패</p><p>서버 오류로 증빙자료 파일 업로드에 실패했습니다.\n증빙자료 없이 작성한 비용을 임시저장 하시겠습니까, 아니면 취소하시겠습니까?</p>',
+                {
+                  actions: [
+                    {
+                      label: '증빙자료 없이 임시저장',
+                      onClick: () => {
+                        skipAttachments = true;
+                      },
+                      keepLoading: true,
+                      variant: 'primary',
+                    },
+                    {
+                      label: '비용 등록 취소',
+                      onClick: () => {
+                        navigate(`/project/${projectId}/expense`);
+                      },
+                    },
+                  ],
+                }
+              );
+              if (!skipAttachments) return;
+              uploadedFiles = [];
+              updateProgress(0);
+            }
+
+            if (!skipAttachments) {
+              uploadedFiles = uploadedRaw.map((file, i) => ({
+                ...file,
+                rowIdx: allNewFiles[i]?.rowIdx ?? 0,
+              }));
+            }
           }
 
           // [3] 파일을 항목별로 매핑
@@ -529,11 +597,9 @@ export default function ProjectExpenseRegister() {
             ...item,
             attachments: fileMap[idx + 1] || [], // rowIndex는 1부터 시작해서 +1
           }));
+
           const elTypeList = enrichedItems.map((item: any) => String(item.type ?? ''));
-
-          console.log('enrichedItems:', enrichedItems);
-
-          const isEstimate: 'Y' | 'N' = projectType === 'est' ? 'Y' : 'N';
+          const isEstimate: 'Y' | 'N' = projectType === 'est' ? 'Y' : 'N'; // 견적서 or 견적서 외
 
           // [5] 단일 객체로 데이터 전송
           const payload = {
@@ -543,7 +609,7 @@ export default function ProjectExpenseRegister() {
               el_type: elTypeList || null,
               el_method: values.el_method,
               el_title: values.el_title || null,
-              el_attach: files.length > 0 ? 'Y' : 'N',
+              el_attach: !skipAttachments && files.length > 0 ? 'Y' : 'N',
               el_deposit: values.el_deposit || '',
               bank_account: values.bank_account.replace(/-/g, ''),
               bank_name: values.bank_name,
@@ -569,12 +635,8 @@ export default function ProjectExpenseRegister() {
             })),
           };
 
-          console.log('📦 최종 payload:', payload);
-
-          // 모든 리스트 병렬 API 호출 (성공/실패 결과 각각 수집)
           const result = await projectExpenseRegister(payload);
-
-          console.log('✅ 등록 성공:', result);
+          updateProgress(100);
 
           if (result.ok) {
             const item_count = result.count_items;
@@ -628,7 +690,6 @@ export default function ProjectExpenseRegister() {
 
               if (filteredPromises.length > 0) {
                 await Promise.all(filteredPromises);
-                console.log('✅ pInfoCreate 완료');
               }
             } catch (ainfoError) {
               console.error('❌ pInfoCreate 실패:', ainfoError);
@@ -675,48 +736,25 @@ export default function ProjectExpenseRegister() {
                   return await Promise.all(itemMatchPromises);
                 });
 
-                const results = await Promise.all(matchPromises);
-                const flatResults = results.flat();
-
-                flatResults.forEach(({ rp_seq, exp_seq, success }) => {
-                  if (success) {
-                    console.log(`✅ 기안서 ${rp_seq} - 아이템 ${exp_seq} 매칭 완료`);
-                  } else {
-                    console.error(`❌ 기안서 ${rp_seq} - 아이템 ${exp_seq} 매칭 실패`);
-                  }
-                });
+                await Promise.all(matchPromises);
               } catch (error) {
                 console.error('❌ 매칭 요청 오류:', error);
               }
             }
 
-            // 견적서 체크 비용을 작성했다면 매칭 페이지로 이동
+            const successMsg =
+              projectType === 'est'
+                ? `<p class="text-2xl text-primary leading-[1.3]">비용 등록 성공</p><p>총 <span class="text-primary-blue-500 font-semibold">${item_count}개</span> 비용 항목이 등록되었습니다.<br />견적서 매칭으로 이동합니다.</p>`
+                : `<p class="text-2xl text-primary leading-[1.3]">비용 등록 성공</p><p>총 <span class="text-primary-blue-500 font-semibold">${item_count}개</span> 비용 항목이 등록되었습니다.</p>`;
+
+            await new Promise((r) => setTimeout(r, 400));
+            await showResult('success', successMsg);
+
             if (projectType === 'est') {
-              addAlert({
-                title: '비용 등록이 완료되었습니다.',
-                message: `<p>총 <span class="text-primary-blue-500">${item_count}개</span> 비용 항목이 등록 되었습니다.<br />견적서 매칭으로 이동합니다.</p>`,
-                icon: <OctagonAlert />,
-                duration: 2000,
-              });
-
-              hideLoading();
-
               navigate(`/project/${projectId}/expense/${result.list_seq}`, {
-                state: {
-                  exp_id: result.list_seq,
-                },
+                state: { exp_id: result.list_seq },
               });
             } else {
-              addAlert({
-                title: '비용 등록이 완료되었습니다.',
-                message: `<p>총 <span class="text-primary-blue-500">${item_count}개</span> 비용 항목이 등록 되었습니다.</p>`,
-                icon: <OctagonAlert />,
-                duration: 2000,
-              });
-
-              hideLoading();
-
-              // 일반 프로젝트 입력
               navigate(`/project/${projectId}/expense`);
             }
           } else {
@@ -1054,7 +1092,7 @@ export default function ProjectExpenseRegister() {
                 <>
                   <div className="relative col-span-2">
                     <div className="sticky top-20 left-0 flex h-[calc(100vh-var(--spacing)*22)] flex-col justify-center gap-3 rounded-xl bg-gray-300 p-5">
-                      <div className="flex flex-none items-center justify-end">
+                      <div className="flex flex-none items-center justify-end gap-2">
                         <Link
                           to="https://pmgwiki.co.kr/view/pmg/66"
                           target="_blank"

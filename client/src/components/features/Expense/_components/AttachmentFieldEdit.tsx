@@ -1,75 +1,117 @@
-// src/components/features/expense/AttachmentFieldEdit.tsx
-import { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@components/ui/button';
-import { Close, Upload } from '@/assets/images/icons';
+import { Close } from '@/assets/images/icons';
 import type { PreviewFile } from './UploadArea';
 
 type Props = {
+  name: string;
   rowIndex: number;
-  serverFiles?: PreviewFile[]; // 서버에서 불러온 기존 증빙자료
-  onUploadNew?: (files: PreviewFile[], rowIndex: number) => void;
-  onDeleteServerFile?: (file: PreviewFile, rowIndex: number) => void;
+  files?: PreviewFile[];
+  onDropFiles?: (files: PreviewFile[], fieldName: string, rowIndex: number | null) => void;
+  onUploadFiles?: (files: PreviewFile[], rowIndex: number | null) => void;
+  activeFile?: string | null;
+  setActiveFile?: (name: string | null) => void;
 };
 
-export function AttachmentFieldEdit({ rowIndex, serverFiles = [], onUploadNew, onDeleteServerFile }: Props) {
-  const [attachments, setAttachments] = useState<PreviewFile[]>([]);
+export const AttachmentFieldEdit = React.memo(function AttachmentFieldEdit({
+  name,
+  rowIndex,
+  files = [],
+  onDropFiles,
+  onUploadFiles,
+  activeFile,
+  setActiveFile,
+}: Props) {
+  const [attachments, setAttachments] = useState<PreviewFile[]>(files);
   const [isDragOver, setIsDragOver] = useState(false);
+  const fieldRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // 서버 파일 초기화
   useEffect(() => {
-    setAttachments(serverFiles);
-  }, [serverFiles]);
+    setAttachments(files);
+  }, [files]);
 
-  /** 새 파일 업로드 */
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (fieldRef.current && !fieldRef.current.contains(e.target as Node)) {
+        setActiveFile?.(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [setActiveFile]);
 
-    const previewFiles: PreviewFile[] = files.map((f) => ({
-      name: f.name,
-      type: f.type,
-      preview: URL.createObjectURL(f),
-    }));
+  const addAttachments = useCallback((newFiles: PreviewFile[]) => {
+    setAttachments((prev) => {
+      const unique = newFiles.filter((nf) => !prev.some((pf) => pf.name === nf.name));
+      return [...prev, ...unique];
+    });
+  }, []);
 
-    setAttachments((prev) => [...prev, ...previewFiles]);
-    onUploadNew?.(previewFiles, rowIndex);
-  };
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDragOver(false);
 
-  /** 파일 삭제 */
-  const handleDelete = (file: PreviewFile) => {
-    setAttachments((prev) => prev.filter((f) => f.name !== file.name));
-    onDeleteServerFile?.(file, rowIndex);
-  };
+      const data = e.dataTransfer.getData('application/json');
 
-  /** 드래그 앤 드롭 업로드 */
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(false);
+      // CASE 1: UploadArea → JSON 기반 드롭
+      if (data) {
+        const droppedFiles = JSON.parse(data) as PreviewFile[];
+        addAttachments(droppedFiles);
+        requestIdleCallback(() => onDropFiles?.(droppedFiles, name, rowIndex));
+        return;
+      }
 
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    if (!droppedFiles.length) return;
+      // CASE 2: 로컬 파일 직접 드롭
+      const droppedFileList = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'));
+      if (droppedFileList.length === 0) return;
 
-    const previewFiles: PreviewFile[] = droppedFiles.map((f) => ({
-      name: f.name,
-      type: f.type,
-      preview: URL.createObjectURL(f),
-    }));
+      const newFiles: PreviewFile[] = droppedFileList.map((file) => ({
+        name: file.name,
+        type: file.type,
+        preview: URL.createObjectURL(file),
+      }));
 
-    setAttachments((prev) => [...prev, ...previewFiles]);
-    onUploadNew?.(previewFiles, rowIndex);
-  };
+      addAttachments(newFiles);
+      requestIdleCallback(() => onUploadFiles?.(newFiles, rowIndex));
+    },
+    [addAttachments, name, rowIndex, onDropFiles, onUploadFiles]
+  );
 
-  const handleAdditionalUpload = () => {
+  const handleFileUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const uploaded = Array.from(e.target.files || []).map((file) => ({
+        name: file.name,
+        type: file.type,
+        preview: URL.createObjectURL(file),
+      })) as PreviewFile[];
+
+      addAttachments(uploaded);
+      requestIdleCallback(() => onUploadFiles?.(uploaded, rowIndex));
+    },
+    [addAttachments, onUploadFiles, rowIndex]
+  );
+
+  const handleAdditionalUpload = useCallback(() => {
     fileInputRef.current?.click();
-  };
+  }, []);
+
+  const handleRemove = useCallback(
+    (fileName: string) => {
+      setAttachments((prev) => prev.filter((f) => f.name !== fileName));
+      requestIdleCallback(() => onDropFiles?.([{ name: fileName, type: '', preview: '' }], name, null));
+    },
+    [name, onDropFiles]
+  );
 
   return (
     <div className="flex h-full flex-col">
-      <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
+      <input type="file" accept="image/*" multiple ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+
       <div className="mb-2 flex h-6 items-center justify-between">
-        <p className="font-bold text-gray-950">증빙자료 #{rowIndex}</p>
+        <p className="text-[13px] font-bold text-gray-950 md:text-base">증빙자료 #{rowIndex}</p>
         {attachments.length ? (
           <button
             type="button"
@@ -78,50 +120,63 @@ export function AttachmentFieldEdit({ rowIndex, serverFiles = [], onUploadNew, o
             추가 업로드
           </button>
         ) : (
-          <span className="text-destructive text-sm">미제출</span>
+          <span className="text-destructive text-xs">미제출</span>
         )}
       </div>
 
-      {attachments.length > 0 ? (
-        // ✅ 첨부된 이미지 목록
-        <div className="flex h-full w-full gap-2 overflow-x-auto p-2">
-          {attachments.map((file) => (
-            <div
-              key={file.name}
-              className={cn('relative aspect-[1/1.4] w-[calc(33.33%-var(--spacing)*1)] cursor-pointer rounded-xs ring ring-gray-300')}>
-              <div className="relative h-full w-full overflow-hidden rounded-xs">
-                <a href={file.preview} target="_blank" rel="noopener noreferrer">
-                  <img src={file.preview} alt={file.name} className="absolute top-0 left-0 h-full w-full object-cover" />
-                </a>
-              </div>
-              <Button
-                variant="svgIcon"
-                size="icon"
-                title="삭제"
-                className="absolute top-0 right-0 size-4 rounded-none bg-gray-600/80 text-white hover:bg-gray-700"
-                onClick={() => handleDelete(file)}>
-                <Close className="size-3" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        // ✅ 첨부파일이 없을 때 → 업로드 영역
-        <div
-          onClick={handleAdditionalUpload}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setIsDragOver(true);
-          }}
-          onDragLeave={() => setIsDragOver(false)}
-          onDrop={handleDrop}
-          className={cn(
-            'flex h-full min-h-[140px] w-full cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-400 p-2 transition-colors',
-            isDragOver && 'bg-primary-blue-100/30'
-          )}>
-          <p className="text-sm text-gray-500">증빙자료 업로드 영역</p>
-        </div>
-      )}
+      <div ref={fieldRef} className="md:min-h-[140px]">
+        {attachments.length > 0 ? (
+          <div
+            className="flex h-full w-full gap-2 overflow-x-auto p-2"
+            onDragOver={(e) => e.preventDefault()}
+            onDragEnter={() => setIsDragOver(true)}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={handleDrop}>
+            {attachments.map((file) => {
+              const isActive = activeFile === file.name;
+              return (
+                <div
+                  key={file.name}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveFile?.(file.name);
+                  }}
+                  className={cn(
+                    'relative aspect-[1/1.4] w-[calc(33.33%-var(--spacing)*1)] cursor-pointer rounded-xs ring ring-gray-300 transition-transform duration-150',
+                    isActive && 'ring-primary-blue-300 scale-[1.02]'
+                  )}>
+                  <div className="relative h-full w-full overflow-hidden rounded-xs">
+                    <img src={file.preview} alt={file.name} loading="lazy" className="absolute top-0 left-0 h-full w-full object-cover" />
+                  </div>
+                  <Button
+                    variant="svgIcon"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemove(file.name);
+                    }}
+                    className="absolute top-0 right-0 size-4 rounded-none bg-gray-600/80 text-white hover:bg-gray-700">
+                    <Close className="size-3" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDragEnter={() => setIsDragOver(true)}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={handleDrop}
+            onClick={handleAdditionalUpload}
+            className={cn(
+              'flex h-full w-full cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-400 p-2',
+              isDragOver && 'bg-primary-blue-100/30'
+            )}>
+            <p className="text-sm text-gray-500">증빙자료 업로드 영역</p>
+          </div>
+        )}
+      </div>
     </div>
   );
-}
+});

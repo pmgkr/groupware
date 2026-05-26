@@ -29,7 +29,7 @@ import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@components/ui/select';
 
-import { Add, Calendar } from '@/assets/images/icons';
+import { Calendar, TooltipNoti, Close } from '@/assets/images/icons';
 import { UserRound, FileText, OctagonAlert, Info } from 'lucide-react';
 
 import { format } from 'date-fns';
@@ -77,6 +77,15 @@ const expenseSchema = z.object({
           ent_reason: z.string().optional(),
         })
         .superRefine((data, ctx) => {
+          const hasContent = !!(data.title || data.price || data.total);
+          if (hasContent && !data.type) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: '비용 유형을 선택해주세요.',
+              path: ['type'],
+            });
+          }
+
           if (data.type === '외주용역비') {
             const requiredFields = ['tax_type', 'work_day', 'work_term', 'h_name', 'h_ssn', 'h_tel', 'h_addr'] as const;
 
@@ -137,7 +146,7 @@ export default function ExpenseRegister() {
   const [linkedRows, setLinkedRows] = useState<Record<string, number | null>>({}); // 업로드된 이미지와 연결된 행 번호 저장용
   const [activeFile, setActiveFile] = useState<string | null>(null); // UploadArea & Attachment 연결상태 공유용
   const [selectedProposal, setSelectedProposal] = useState<any>(null); //기안서  번호 확인용
-  const { showLoading, hideLoading } = useLoading(); // 비용 등록 시 로딩 오버레이 화면
+  const { showLoading, hideLoading, updateProgress, markProgressError, showResult } = useLoading(); // 비용 등록 시 로딩 오버레이 화면
 
   const formatDate = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : ''); // YYYY-MM-DD Date 포맷 변경
 
@@ -444,10 +453,12 @@ export default function ExpenseRegister() {
             title: '작성한 <em>비용을 등록</em>하고 있습니다',
             message: '새로고침을 누르거나, 페이지 이탈 시 비용이 저장되지 않습니다.',
           });
+          updateProgress(0);
 
           // [1] 연결된 파일 업로드
           const linkedFiles = files.filter((f) => linkedRows[f.name] !== null);
           let uploadedFiles: any[] = [];
+          let skipAttachments = false;
 
           if (linkedFiles.length > 0) {
             // 🔹 행별 그룹화
@@ -506,14 +517,74 @@ export default function ExpenseRegister() {
               })
             );
 
-            // 서버 업로드
-            uploadedFiles = await uploadFilesToServer(uploadable, 'nexpense');
-            uploadedFiles = uploadedFiles.map((file, i) => ({
-              ...file,
-              rowIdx: allNewFiles[i]?.rowIdx ?? 0,
-            }));
+            // 청크(3개씩) 분할 업로드 + 실패 시 최대 2회 자동 재시도
+            const CHUNK_SIZE = 3;
+            const MAX_RETRIES = 2;
+            const chunks: File[][] = [];
+            for (let i = 0; i < uploadable.length; i += CHUNK_SIZE) {
+              chunks.push(uploadable.slice(i, i + CHUNK_SIZE));
+            }
+            const totalSteps = chunks.length + 1; // +1 은 expenseRegister 호출
+            const uploadedRaw: any[] = [];
 
-            console.log('✅ 업로드 완료:', uploadedFiles);
+            let uploadError: unknown = null;
+            try {
+              for (let ci = 0; ci < chunks.length; ci++) {
+                let lastErr: unknown;
+                for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                  try {
+                    const result = await uploadFilesToServer(chunks[ci], 'nexpense');
+                    uploadedRaw.push(...result);
+                    lastErr = undefined;
+                    break;
+                  } catch (err) {
+                    lastErr = err;
+                  }
+                }
+                if (lastErr) throw lastErr;
+                updateProgress(((ci + 1) / totalSteps) * 100);
+              }
+            } catch (err) {
+              uploadError = err;
+            }
+
+            if (uploadError) {
+              console.error('❌ 업로드 실패:', uploadError);
+              await markProgressError();
+              await showResult(
+                'error',
+                '<p class="text-2xl text-primary leading-[1.3] font-bold mb-2">증빙자료 업로드 실패</p><p>서버 오류로 증빙자료 파일 업로드에 실패했습니다.\n증빙자료 없이 작성한 비용을 임시저장 하시겠습니까, 아니면 취소하시겠습니까?</p>',
+
+                {
+                  actions: [
+                    {
+                      label: '증빙자료 없이 임시저장',
+                      onClick: () => {
+                        skipAttachments = true;
+                      },
+                      keepLoading: true,
+                      variant: 'primary',
+                    },
+                    {
+                      label: '비용 등록 취소',
+                      onClick: () => {
+                        navigate('/expense');
+                      },
+                    },
+                  ],
+                }
+              );
+              if (!skipAttachments) return;
+              uploadedFiles = [];
+              updateProgress(0);
+            }
+
+            if (!skipAttachments) {
+              uploadedFiles = uploadedRaw.map((file, i) => ({
+                ...file,
+                rowIdx: allNewFiles[i]?.rowIdx ?? 0,
+              }));
+            }
           }
 
           // [3] 파일을 항목별로 매핑
@@ -538,7 +609,7 @@ export default function ExpenseRegister() {
               user_id: user_id!,
               el_method: values.el_method,
               el_title: values.el_title || null,
-              el_attach: files.length > 0 ? 'Y' : 'N',
+              el_attach: !skipAttachments && files.length > 0 ? 'Y' : 'N',
               el_deposit: values.el_deposit || '',
               bank_account: values.bank_account.replace(/-/g, ''),
               bank_name: values.bank_name,
@@ -563,12 +634,8 @@ export default function ExpenseRegister() {
             })),
           };
 
-          console.log('📦 최종 payload:', payload);
-
-          // 모든 리스트 병렬 API 호출 (성공/실패 결과 각각 수집)
           const result = await expenseRegister(payload);
-
-          console.log('작성 결과', result);
+          updateProgress(100);
 
           if (result.ok && result.docs?.inserted) {
             const itemSeqs = result.docs?.results?.[0]?.item_seqs;
@@ -642,7 +709,6 @@ export default function ExpenseRegister() {
 
               if (filteredPromises.length > 0) {
                 await Promise.all(filteredPromises);
-                console.log('✅ pInfoCreate 완료');
               }
             } catch (ainfoError) {
               console.error('❌ pInfoCreate 실패:', ainfoError);
@@ -674,44 +740,32 @@ export default function ExpenseRegister() {
                     }
                   });
 
-                  //console.log(`기안서 ${rp_seq}에 매칭될 아이템 seq들:`, matchingItemSeqs);
-
-                  // 각 아이템 seq에 대해 개별 API 호출
                   const itemMatchPromises = matchingItemSeqs.map(async (exp_seq) => {
-                    //console.log(`  → 아이템 ${exp_seq} 매칭 중...`);
-
                     const matchResult = (await matchNonProjectWithProposal(rp_seq, exp_seq)) as { ok: boolean };
-
                     return { rp_seq, exp_seq, success: matchResult.ok };
                   });
 
                   return await Promise.all(itemMatchPromises);
                 });
 
-                const results = await Promise.all(matchPromises);
+                await Promise.all(matchPromises);
               } catch (error) {
                 console.error('❌ 매칭 요청 오류:', error);
               }
-            } else {
-              console.log('ℹ️ 매칭할 기안서 없음');
             }
 
-            addAlert({
-              title: '비용 등록이 완료되었습니다.',
-              message: `<p>총 <span class="text-primary-blue-500">${item_count}개</span> 비용 항목이 <span class="text-primary-blue-500">${list_count}개</span>의 리스트로 등록 되었습니다.</p>`,
-              icon: <OctagonAlert />,
-              duration: 2000,
-            });
-
-            hideLoading();
+            await new Promise((r) => setTimeout(r, 400));
+            await showResult(
+              'success',
+              `<p class="text-2xl text-primary leading-[1.3] font-bold mb-2">비용 등록 성공</p><p>총 <span class="text-primary-blue-500 font-semibold">${item_count}개</span> 비용 항목이 <span class="text-primary-blue-500 font-semibold">${list_count}개</span>의 리스트로 등록되었습니다.</p>`
+            );
 
             navigate('/expense');
           } else {
             hideLoading();
-
             addAlert({
               title: '비용 등록 실패',
-              message: `비용 등록 중 오류가 발생했습니다. \n 다시 시도해주세요.`,
+              message: '비용 등록 중 오류가 발생했습니다. 다시 시도해주세요.',
               icon: <OctagonAlert />,
               duration: 2000,
             });
@@ -720,16 +774,12 @@ export default function ExpenseRegister() {
       });
     } catch (err) {
       console.error('❌ 등록 실패:', err);
-
-      hideLoading();
-
       addAlert({
         title: '비용 등록 실패',
-        message: `비용 등록 중 오류가 발생했습니다. \n 다시 시도해주세요.`,
+        message: '비용 등록 중 오류가 발생했습니다. 다시 시도해주세요.',
         icon: <OctagonAlert />,
         duration: 2000,
       });
-      return;
     }
   };
 
@@ -1043,11 +1093,14 @@ export default function ExpenseRegister() {
               {!isMobile && (
                 <div className="relative col-span-2">
                   <div className="sticky top-20 left-0 flex h-[calc(100vh-var(--spacing)*22)] flex-col justify-center gap-3 rounded-xl bg-gray-300 p-5">
-                    <div className="flex flex-none items-center justify-end">
-                      {/* <Link to="" className="text-primary-blue-500 flex gap-0.5 text-sm font-medium">
-                      <TooltipNoti className="size-5" />
-                      비용 관리 증빙자료 업로드 가이드
-                    </Link> */}
+                    <div className="flex flex-none items-center justify-end gap-2">
+                      <Link
+                        to="https://pmgwiki.co.kr/view/pmg/63"
+                        target="_blank"
+                        className="text-primary-blue-500 flex gap-0.5 text-sm font-medium">
+                        <TooltipNoti className="size-5" />
+                        비용 관리 증빙자료 업로드 가이드
+                      </Link>
                       {hasFiles && (
                         <Button type="button" size="sm" onClick={handleAddUploadClick}>
                           추가 업로드

@@ -151,7 +151,7 @@ function ExpenseRowComponent({
 
       <div className="flex flex-col justify-between gap-2 md:flex-row md:gap-0">
         {/* 왼쪽 입력필드 그룹 */}
-        <div className="grid w-full grid-cols-2 gap-4 tracking-tight md:w-[66%] md:grid-cols-3">
+        <div className="grid w-full grid-cols-2 items-start gap-4 tracking-tight md:w-[66%] md:grid-cols-3">
           {/* 비용 유형 */}
           <FormField
             control={control}
