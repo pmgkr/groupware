@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useLocation } from 'react-router';
 import { Ellipsis, Mail, Phone } from 'lucide-react';
 import { Button } from './button';
 import { Badge } from './badge';
@@ -8,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { updateMemberStatus } from '@/api/manager/member';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
-import { Pin, Manager } from '@/assets/images/icons';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { CheckCircle, OctagonAlert } from 'lucide-react';
@@ -30,7 +30,17 @@ const STATUS_OPTIONS = [
   { value: 'suspended', label: '휴직중' },
 ];
 
+const USER_LEVEL_LABEL: Record<string, string> = {
+  user: '일반사용자',
+  cellmanager: '관리자(셀장)',
+  manager: '관리자(팀장)',
+  admin: '최고관리자',
+};
+
 export default function MemberList({ member, onRefresh }: { member: any; onRefresh: () => void }) {
+  const { pathname } = useLocation();
+  const isAdmin = pathname.startsWith('/admin');
+
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState(member.user_status);
   const initialStatus = member.user_status;
@@ -218,6 +228,38 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
                 <span>{member.emergency_phone}</span>
               </li>
               <li>
+                <span>권한</span>
+                <span className="block w-full">
+                  {isAdmin ? (
+                    <Select value={userLevel} onValueChange={(v: any) => setUserLevel(v)}>
+                      <SelectTrigger
+                        className={cn(
+                          'h-full! w-full border-0 bg-transparent p-0 text-[13px]! shadow-none [&]:hover:bg-transparent',
+                          userLevel !== initialUserLevel && 'text-primary-blue'
+                        )}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user" size="sm">
+                          일반사용자
+                        </SelectItem>
+                        <SelectItem value="cellmanager" size="sm">
+                          관리자(셀장)
+                        </SelectItem>
+                        <SelectItem value="manager" size="sm">
+                          관리자(팀장)
+                        </SelectItem>
+                        <SelectItem value="admin" size="sm">
+                          최고관리자
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span>{USER_LEVEL_LABEL[userLevel] ?? userLevel}</span>
+                  )}
+                </span>
+              </li>
+              <li>
                 <span>상태</span>
                 <span className="block w-full">
                   <Select value={status} onValueChange={setStatus}>
@@ -234,31 +276,6 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
                           {opt.label}
                         </SelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </span>
-              </li>
-              <li>
-                <span>권한</span>
-                <span className="block w-full">
-                  <Select value={userLevel} onValueChange={(v: any) => setUserLevel(v)}>
-                    <SelectTrigger
-                      className={cn(
-                        'h-full! w-full border-0 bg-transparent p-0 text-[13px]! shadow-none [&]:hover:bg-transparent',
-                        userLevel !== initialUserLevel && 'text-primary-blue'
-                      )}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user" size="sm">
-                        일반사용자
-                      </SelectItem>
-                      <SelectItem value="manager" size="sm">
-                        관리자(팀장)
-                      </SelectItem>
-                      <SelectItem value="admin" size="sm">
-                        최고관리자
-                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </span>
