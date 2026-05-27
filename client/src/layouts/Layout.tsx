@@ -13,7 +13,6 @@ export default function Layout() {
   const isMobile = useIsMobileViewport();
   const { user } = useAuth();
 
-  console.log('유저데이터', user);
   const isCellManager = user?.user_level === 'manager' && user?.cmng_fg === 'Y';
 
   // 가장 깊은 매치(현재 페이지)

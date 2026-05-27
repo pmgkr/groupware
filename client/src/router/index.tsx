@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, Outlet } from 'react-router';
+import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router';
 import type { RouteObject } from 'react-router';
 import { lazy, Suspense, type ReactElement } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -70,10 +70,15 @@ import { adminRoutes } from './admin';
 // 권한별 리다이렉팅
 const ManagerAuth = () => {
   const { user, loading } = useAuth();
+  const { pathname } = useLocation();
   if (loading) return null;
   const level = user?.user_level;
-  if (level === 'manager' || level === 'admin') return <Outlet />;
-  return <Navigate to="/" replace />;
+  const isCellManager = level === 'manager' && user?.cmng_fg === 'Y';
+
+  if (level === 'admin' || (level === 'manager' && !isCellManager)) return <Outlet />;
+  // 셀장은 /manager/working만 접근 허용
+  if (isCellManager && pathname.startsWith('/manager/working')) return <Outlet />;
+  return <Navigate to="/dashboard" replace />;
 };
 
 const AdminAuth = () => {

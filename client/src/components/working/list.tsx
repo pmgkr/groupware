@@ -807,7 +807,10 @@ export default function WorkingList({ data = [], loading = false, weekStartDate,
                         | '취소완료'
                         | '보상대기'),
                   rejectionReason: overtimeDetailData?.info?.ot_reject || selectedDayInfo?.rejectionReason || undefined,
-                  rejectionDate: (overtimeDetailData?.info?.ot_reject ? overtimeDetailData?.info?.ot_modified_at : undefined) || selectedDayInfo?.rejectionDate || undefined,
+                  rejectionDate:
+                    (overtimeDetailData?.info?.ot_reject ? overtimeDetailData?.info?.ot_modified_at : undefined) ||
+                    selectedDayInfo?.rejectionDate ||
+                    undefined,
                   overtimeData: convertOvertimeData(),
                 }}
               />
@@ -1082,7 +1085,10 @@ export default function WorkingList({ data = [], loading = false, weekStartDate,
                       | '취소완료'
                       | '보상대기'),
                 rejectionReason: overtimeDetailData?.info?.ot_reject || selectedDayInfo?.rejectionReason || undefined,
-                rejectionDate: (overtimeDetailData?.info?.ot_reject ? overtimeDetailData?.info?.ot_modified_at : undefined) || selectedDayInfo?.rejectionDate || undefined,
+                rejectionDate:
+                  (overtimeDetailData?.info?.ot_reject ? overtimeDetailData?.info?.ot_modified_at : undefined) ||
+                  selectedDayInfo?.rejectionDate ||
+                  undefined,
                 overtimeData: convertOvertimeData(),
               }}
             />

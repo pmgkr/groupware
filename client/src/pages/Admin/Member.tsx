@@ -39,15 +39,25 @@ export default function Member() {
     }).then(setMembers);
   }, [selectedTeamId, keyword, selectedRole]);
 
-  // 탭 + 팀 조합 필터
+  // 탭 + 역할 조합 필터
   const filteredMembers = useMemo(() => {
+    let list = members;
+
+    // cellmanager: user_level='manager' AND cmng_fg='Y'
+    // manager(팀장): user_level='manager' AND cmng_fg!='Y'
+    if (selectedRole === 'cellmanager') {
+      list = list.filter((m) => m.cmng_fg === 'Y');
+    } else if (selectedRole === 'manager') {
+      list = list.filter((m) => m.cmng_fg !== 'Y');
+    }
+
     if (activeTab === 'Enable') {
-      return members.filter((m) => m.user_status === 'active');
+      return list.filter((m) => m.user_status === 'active');
     }
 
     // Disable 탭
-    return members.filter((m) => m.user_status === 'inactive' || m.user_status === 'suspended');
-  }, [members, activeTab]);
+    return list.filter((m) => m.user_status === 'inactive' || m.user_status === 'suspended');
+  }, [members, activeTab, selectedRole]);
 
   // 파라미터 초기화
   const resetAllFilters = () => {
@@ -107,6 +117,9 @@ export default function Member() {
                   </SelectItem>
                   <SelectItem value="user" className="text-gray" size="sm">
                     일반사용자
+                  </SelectItem>
+                  <SelectItem value="cellmanager" className="text-gray" size="sm">
+                    관리자(셀장)
                   </SelectItem>
                   <SelectItem value="manager" className="text-gray" size="sm">
                     관리자(팀장)

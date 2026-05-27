@@ -13,6 +13,7 @@ export interface Member {
   address?: string;
   profile_image?: string;
   user_status: 'active' | 'inactive' | 'suspended';
+  cmng_fg?: 'Y' | 'N' | null;
 }
 
 export interface MyTeam {
@@ -49,7 +50,8 @@ export async function getManagerMemberList(params?: { team_id?: number; q?: stri
   }
 
   if (params?.role && params.role !== 'all') {
-    searchParams.append('role', params.role);
+    // cellmanager는 DB상 user_level='manager' + cmng_fg='Y'이므로 서버엔 manager로 요청
+    searchParams.append('role', params.role === 'cellmanager' ? 'manager' : params.role);
   }
 
   const url = `/user/common/memberlist${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
@@ -60,7 +62,7 @@ export async function getManagerMemberList(params?: { team_id?: number; q?: stri
 export async function updateMemberStatus(params: {
   user_id: string;
   status?: 'active' | 'inactive' | 'suspended';
-  user_level?: 'admin' | 'manager' | 'user';
+  user_level?: 'admin' | 'manager' | 'cellmanager' | 'user';
 }) {
   console.log('[updateMemberStatus] payload:', params);
   return await http('/manager/member/status', {

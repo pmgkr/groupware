@@ -76,7 +76,7 @@ export default function Member() {
   return (
     <div>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'Enable' | 'Disable')} className="gap-0">
-        <div className="flex w-full items-center justify-between border-b border-gray-300 pb-5">
+        <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-3 max-md:w-full max-md:flex-col max-md:items-start">
             <TabsList className="max-md:w-full max-md:gap-1 max-md:[&>button]:h-10 max-md:[&>button]:text-[13px]">
               <TabsTrigger value="Enable">사용중</TabsTrigger>

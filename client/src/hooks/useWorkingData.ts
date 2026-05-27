@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { managerWorkingApi } from '@/api/manager/working';
+import { getTeamList } from '@/api/common/team';
 import { getTeams as getManagerTeams } from '@/api/manager/teams';
 import { getTeams as getAdminTeams } from '@/api/admin/teams';
 import { useAuth } from '@/contexts/AuthContext';
@@ -81,8 +82,11 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
           // 팀명 매핑 (team_id -> team_name)
           const teamNameMap = new Map<number, string>();
           try {
-            // 팀 이름 변환을 위해 모든 팀 정보 가져오기 (admin과 동일)
-            const teamList = await getAdminTeams({});
+            // admin은 전체 팀 목록, manager는 담당 팀 목록으로 매핑
+            const teamList = await getTeamList();
+
+            console.log(teamList);
+
             teamList.forEach((t: any) => {
               if (t.team_id != null && t.team_name) {
                 teamNameMap.set(Number(t.team_id), t.team_name);
@@ -297,6 +301,8 @@ export function useWorkingData({ weekStartDate, selectedTeamIds, page }: UseWork
               id: userInfo.user_id,
               department: (() => {
                 const tid = userInfo.team_id;
+
+                console.log(tid);
                 if (tid == null) return '-';
                 return teamNameMap.get(Number(tid)) || String(tid);
               })(),
