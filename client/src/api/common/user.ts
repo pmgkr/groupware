@@ -13,6 +13,7 @@ export type User = {
   birth_date: string;
   hire_date: string;
   ms_key: string;
+  cmng_fg?: 'Y' | 'N' | null;
 };
 
 export const getUserProfile = async (user_id: string): Promise<User> => {

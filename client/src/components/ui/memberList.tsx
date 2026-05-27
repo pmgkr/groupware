@@ -62,12 +62,6 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
   }, [member.user_id]);
   const badge = STATUS_BADGE_MAP[member.user_status as keyof typeof STATUS_BADGE_MAP];
 
-  /*   const roleIcon = useMemo(() => {
-    if (member.user_level === 'admin') return <Pin className="h-6 w-6" />;
-    if (member.user_level === 'manager') return <Manager className="h-6 w-6" />;
-    return null;
-  }, [member.user_level]); */
-
   const roleIcon = useMemo(() => {
     if (member.user_level === 'admin')
       return (
@@ -76,11 +70,20 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
         </Badge>
       );
     if (member.user_level === 'manager')
-      return (
-        <Badge size="default" variant="outline" className="border-primary-purple-500 text-primary-purple-500 px-1 py-0">
-          Manager
-        </Badge>
-      );
+      if (member.cmng_fg === 'Y') {
+        return (
+          <Badge size="default" variant="outline" className="border-primary-pink-500 text-primary-pink-500 px-1 py-0">
+            Cell Lead
+          </Badge>
+        );
+      } else {
+        return (
+          <Badge size="default" variant="outline" className="border-primary-purple-500 text-primary-purple-500 px-1 py-0">
+            Manager
+          </Badge>
+        );
+      }
+
     return null;
   }, [member.user_level]);
 
@@ -185,7 +188,9 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
       {/* ===== 상세 다이얼로그 ===== */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md rounded-lg max-lg:w-[400px] max-lg:max-w-[calc(100%-var(--spacing)*8)]">
-          <DialogHeader></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>구성원 정보</DialogTitle>
+          </DialogHeader>
 
           <div className="space-y-6">
             {/* 프로필 */}
