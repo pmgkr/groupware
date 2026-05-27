@@ -6,10 +6,15 @@ import { cn } from '@/lib/utils'; // 선택: clsx+twMerge 헬퍼
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router';
 import { useIsMobileViewport } from '@/hooks/useViewport';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Layout() {
   const matches = useMatches();
   const isMobile = useIsMobileViewport();
+  const { user } = useAuth();
+
+  console.log('유저데이터', user);
+  const isCellManager = user?.user_level === 'manager' && user?.cmng_fg === 'Y';
 
   // 가장 깊은 매치(현재 페이지)
   const active = matches[matches.length - 1];
@@ -18,9 +23,10 @@ export default function Layout() {
   const sectionWithNav = [...matches].reverse().find((m) => (m?.handle as { nav?: any })?.nav);
 
   const title: string | undefined = (active?.handle as any)?.title ?? (sectionWithNav?.handle as any)?.title;
-  const childNav: { to: string; label: string; end?: boolean; active?: (pathname: string) => boolean }[] | undefined = (
+  const rawChildNav: { to: string; label: string; end?: boolean; active?: (pathname: string) => boolean }[] | undefined = (
     sectionWithNav?.handle as any
   )?.nav;
+  const childNav = isCellManager && title === '관리자' ? rawChildNav?.filter((item) => item.to === '/manager/working') : rawChildNav;
 
   const hideChildNav = (active?.handle as any)?.hideNav === true;
   const hideTitle = (active?.handle as any)?.hideTitle === true;

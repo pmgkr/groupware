@@ -70,7 +70,7 @@ export default function Member() {
   return (
     <div>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'Enable' | 'Disable')}>
-        <div className="flex w-full items-center justify-between border-b border-gray-300 pb-5 max-md:relative max-md:flex-col max-md:items-start max-md:pb-4">
+        <div className="flex w-full items-center justify-between max-md:relative max-md:flex-col max-md:items-start">
           <div className="flex items-center gap-3 max-md:w-full max-md:flex-col max-md:items-start">
             {/* 상태 탭 */}
             <TabsList className="max-md:w-full max-md:gap-1 max-md:[&>button]:h-10 max-md:[&>button]:text-[13px]">
@@ -83,7 +83,7 @@ export default function Member() {
               <Select
                 value={selectedTeamId?.toString() ?? 'all'}
                 onValueChange={(v) => setSelectedTeamId(v === 'all' ? undefined : Number(v))}>
-                <SelectTrigger className="w-[200px] max-md:w-[32%] max-md:max-w-[250px]" size="sm">
+                <SelectTrigger className="w-[120px] max-md:w-[32%] max-md:max-w-[250px]" size="sm">
                   <SelectValue placeholder="팀 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -98,7 +98,7 @@ export default function Member() {
                 </SelectContent>
               </Select>
               <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger className="w-[200px] max-md:w-[32%]" size="sm">
+                <SelectTrigger className="w-[120px] max-md:w-[32%]" size="sm">
                   <SelectValue placeholder="권한 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -118,8 +118,9 @@ export default function Member() {
               </Select>
             </div>
           </div>
-          <div className="relative w-[175px] max-md:absolute max-md:right-0 max-md:bottom-4 max-md:w-[32%]">
+          <div className="relative w-[175px] max-md:absolute max-md:right-0 max-md:bottom-0 max-md:w-[32%]">
             <Input
+              size="sm"
               className="h-[32px]! px-4 [&]:bg-white"
               placeholder="검색어 입력"
               value={searchQuery}

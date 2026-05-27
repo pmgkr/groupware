@@ -125,6 +125,9 @@ export default function Header() {
   const { user_id, user_name, job_role, profile_image } = useUser();
   const { user, logout, setUserState } = useAuth();
 
+  const isCellManager = user?.user_level === 'manager' && user?.cmng_fg === 'Y';
+  const managerSubMenu = isCellManager ? [{ label: '근태 관리', to: '/manager/working' }] : subMenus.manager;
+
   /* 알림 도트 */
   const [hasUnreadNoti, setHasUnreadNoti] = useState(false);
 
@@ -262,7 +265,7 @@ export default function Header() {
           <GnbItem to="/working" label="출퇴근관리" icon={<Pto />} />
           <GnbItem to="/notice" label="오피스" icon={<Office />} subMenu={subMenus.office} isActive={isOfficeActive} />
           {(user?.user_level === 'manager' || user?.user_level === 'admin') && (
-            <GnbItem to="/manager/working" label="관리자" icon={<Manager />} subMenu={subMenus.manager} isActive={isManagerSection} />
+            <GnbItem to="/manager/working" label="관리자" icon={<Manager />} subMenu={managerSubMenu} isActive={isManagerSection} />
           )}
           {user?.user_level === 'admin' && (
             <GnbItem to="/admin/finance" label="최고관리자" icon={<Admin />} subMenu={subMenus.admin} isActive={isAdminSection} />
