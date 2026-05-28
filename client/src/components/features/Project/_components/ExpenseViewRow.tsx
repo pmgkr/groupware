@@ -1,23 +1,23 @@
-// components/ExpenseViewRow.tsx
-import { type addInfoDTO } from '@/api/project';
+import type { addInfoDTO } from '@/api/project';
 import { formatAmount, normalizeAttachmentUrl } from '@/utils';
-import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
+import { File } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import type { pExpenseItemDTO } from '@/api';
 
+const formatDate = (d?: string | Date | null) => {
+  if (!d) return '';
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return format(date, 'yyyy-MM-dd');
+};
+
 interface ExpenseViewRowProps {
   item: pExpenseItemDTO;
-  onProposal?: () => void;
   onAddInfo: (addInfos?: addInfoDTO[]) => void;
+  actionCell: React.ReactNode;
 }
 
-export default function ExpenseViewRow({ item, onProposal, onAddInfo }: ExpenseViewRowProps) {
-  const formatDate = (d?: string | Date | null) => {
-    if (!d) return '';
-    const date = typeof d === 'string' ? new Date(d) : d;
-    return new Intl.DateTimeFormat('ko-KR').format(date);
-  };
-
+export default function ExpenseViewRow({ item, onAddInfo, actionCell }: ExpenseViewRowProps) {
   return (
     <TableRow className="[&_td]:text-[13px]">
       <TableCell>
@@ -30,32 +30,18 @@ export default function ExpenseViewRow({ item, onProposal, onAddInfo }: ExpenseV
         )}
       </TableCell>
       <TableCell>{item.ei_title}</TableCell>
-
-      {/* 매입일자 */}
       <TableCell className="px-4">{formatDate(item.ei_pdate)}</TableCell>
-
-      {/* 금액 */}
       <TableCell className="text-right">{formatAmount(item.ei_amount)}원</TableCell>
-
-      {/* 세금 */}
       <TableCell className="text-right">{item.ei_tax === 0 ? 0 : `${formatAmount(item.ei_tax)}원`}</TableCell>
-
-      {/* 합계 */}
       <TableCell className="text-right">{formatAmount(item.ei_total)}원</TableCell>
-
-      {/* 증빙자료 */}
       {item.attachments && item.attachments.length > 0 ? (
         <TableCell>
           <ul>
             {item.attachments.map((att, idx) => (
               <li key={idx} className="overflow-hidden text-sm text-gray-800">
-                <a
-                  href={normalizeAttachmentUrl(att.ea_url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1">
-                  {/* 파일명 */}
-                  <span className="overflow-hidden text-left text-ellipsis whitespace-nowrap hover:underline">{att.ea_fname}</span>
+                <a href={normalizeAttachmentUrl(att.ea_url)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1">
+                  <File className="size-3.5 shrink-0" />
+                  <span className="truncate text-left hover:underline">{att.ea_fname}</span>
                 </a>
               </li>
             ))}
@@ -65,13 +51,7 @@ export default function ExpenseViewRow({ item, onProposal, onAddInfo }: ExpenseV
         <TableCell>-</TableCell>
       )}
       <TableCell className="px-1 text-center [&_button]:rounded-xl [&_button]:border [&_button]:text-xs [&_button]:transition-none">
-        {item.pro_id ? (
-          <Button size="xs" variant="outline" onClick={onProposal}>
-            기안서보기
-          </Button>
-        ) : (
-          <span>-</span>
-        )}
+        {actionCell}
       </TableCell>
     </TableRow>
   );

@@ -1,45 +1,41 @@
-// /types/finance.ts
-import type { DateRange } from 'react-day-picker';
+import type { projectOverview } from '@/api/project';
 import type { MultiSelectOption, MultiSelectRef } from '@/components/multiselect/multi-select';
 
-export interface AdminFilterProps {
+export type PExpenseFilterProps = {
+  role: 'manager' | 'user';
+  // tab
+  activeTab: 'all' | 'claimed' | 'saved';
+  onTabChange: (tab: 'all' | 'claimed' | 'saved') => void;
+  // year
   yearOptions: string[];
-
   selectedYear: string;
+  onYearChange: (v: string) => void;
+  // filters
   selectedType: string[];
   selectedStatus: string[];
   selectedProof: string[];
   selectedProofStatus: string[];
-  selectedDdate: string;
-
   typeOptions: MultiSelectOption[];
   statusOptions: MultiSelectOption[];
   proofMethod: MultiSelectOption[];
   proofStatusOptions: MultiSelectOption[];
-
   typeRef: React.RefObject<MultiSelectRef | null>;
   statusRef: React.RefObject<MultiSelectRef | null>;
   proofRef: React.RefObject<MultiSelectRef | null>;
   proofStatusRef: React.RefObject<MultiSelectRef | null>;
-
-  checkedItems: number[];
-  searchInput: string;
-  datePickerKey: number;
-  selectedDateRange?: DateRange;
-
-  onYearChange: (v: string) => void;
   onTypeChange: (v: string[]) => void;
   onStatusChange: (v: string[]) => void;
   onProofChange: (v: string[]) => void;
   onProofStatusChange: (v: string[]) => void;
-  onDdateChange: (v: string) => void;
-  onSearchInputChange: (v: string) => void;
-  onSearchSubmit: (v?: string) => void;
-  onClearSearch: () => void;
-  onDateRangeChange: (range?: DateRange) => void;
-
-  onConfirm: () => void;
-  onReject: () => void;
+  // actions
   onRefresh: () => void;
-  onSAPRegi: () => void;
-}
+  // manager-only
+  checkedItems?: number[];
+  onConfirm?: () => void;
+  // user-only
+  searchInput?: string;
+  onSearchInputChange?: (v: string) => void;
+  onSearchSubmit?: (v: string) => void;
+  data?: projectOverview['info'];
+  onCreate?: () => void;
+};

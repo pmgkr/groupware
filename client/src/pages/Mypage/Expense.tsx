@@ -13,8 +13,8 @@ import { type MultiSelectOption, type MultiSelectRef } from '@components/multise
 
 import { ExpenseMineTable } from '@components/features/Expense/_responsive/ExpenseMineTable';
 import { ExpenseMineCard } from '@components/features/Expense/_responsive/ExpenseMineCard';
-import { ExpenseMineFilter } from '@components/features/Expense/_components/ExpenseMineFilter';
-import { ExpenseMineMo } from '@components/features/Expense/_components/ExpenseMineMo';
+import { ExpenseFilter } from '@components/features/Expense/_components/ExpenseFilter';
+import { ExpenseFilterMo } from '@components/features/Expense/_components/ExpenseFilterMo';
 
 export default function Expense() {
   const isMobile = useIsMobileViewport();
@@ -252,7 +252,7 @@ export default function Expense() {
 
   const filterProps = {
     activeTab,
-    onTabChange: handleTabChange,
+    onTabChange: (tab: string) => handleTabChange(tab as 'pexpense' | 'nexpense'),
 
     yearOptions,
     selectedYear,
@@ -277,14 +277,14 @@ export default function Expense() {
     onProofChange: (v: string[]) => handleFilterChange('method', v),
     onProofStatusChange: (v: string[]) => handleFilterChange('attach', v),
 
-    onReset: resetAllFilters,
+    onRefresh: resetAllFilters,
   };
 
   const search = `?${searchParams.toString()}`;
 
   return (
     <>
-      {isMobile ? <ExpenseMineMo {...filterProps} /> : <ExpenseMineFilter {...filterProps} />}
+      {isMobile ? <ExpenseFilterMo role="mine" {...filterProps} /> : <ExpenseFilter role="mine" {...filterProps} />}
 
       {isMobile ? (
         <ExpenseMineCard

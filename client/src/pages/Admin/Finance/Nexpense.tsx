@@ -27,10 +27,10 @@ import {
   sendExpenseToCBox,
   type ExpenseListItems,
 } from '@/api/admin/nexpense';
-import { AdminListFilter } from '@components/features/Expense/_components/AdminListFilter';
-import { AdminListFilterMo } from '@components/features/Expense/_components/AdminListFilterMo';
-import AdminExpenseCard from '@components/features/Expense/_responsive/AdminExpenseCard';
-import AdminExpenseTable from '@components/features/Expense/_responsive/AdminExpenseTable';
+import { ExpenseFilter } from '@components/features/Expense/_components/ExpenseFilter';
+import { ExpenseFilterMo } from '@components/features/Expense/_components/ExpenseFilterMo';
+import { ExpenseListCard } from '@components/features/Expense/_responsive/ExpenseListCard';
+import { ExpenseListTable } from '@components/features/Expense/_responsive/ExpenseListTable';
 import { AddInfoDialog } from '@/components/features/Project/_components/addInfoDialog';
 import { CBoxDialog } from '@/components/features/Expense/_components/AdminCBox';
 
@@ -614,21 +614,17 @@ export default function Nexpense() {
 
   return (
     <>
-      {isMobile ? <AdminListFilterMo {...filterProps} /> : <AdminListFilter {...filterProps} />}
+      {isMobile ? <ExpenseFilterMo role="admin" {...filterProps} /> : <ExpenseFilter role="admin" {...filterProps} />}
 
       {isMobile ? (
-        <AdminExpenseCard
+        <ExpenseListCard
+          role="admin"
           loading={loading}
-          expenseList={expenseList}
+          items={expenseList}
           checkAll={checkAll}
           checkedItems={checkedItems}
-          handleCheckAll={handleCheckAll}
-          handleCheckItem={handleCheckItem}
-          handleSetDdate={handleSetDdate}
-          handlePDFDownload={handlePDFDownload}
-          handleMultiPDFDownload={handleMultiPDFDownload}
-          handleExcelDownload={handleExcelDownload}
-          onOpenCBox={handleOpenCBox}
+          onCheckAll={handleCheckAll}
+          onCheck={handleCheckItem}
           total={total}
           page={page}
           pageSize={pageSize}
@@ -636,17 +632,18 @@ export default function Nexpense() {
           onAInfo={handleAddInfo}
         />
       ) : (
-        <AdminExpenseTable
+        <ExpenseListTable
+          role="admin"
           loading={loading}
-          expenseList={expenseList}
+          items={expenseList}
           checkAll={checkAll}
           checkedItems={checkedItems}
-          handleCheckAll={handleCheckAll}
-          handleCheckItem={handleCheckItem}
-          handleSetDdate={handleSetDdate}
+          onCheckAll={handleCheckAll}
+          onCheck={handleCheckItem}
+          onDdate={handleSetDdate}
           handlePDFDownload={handlePDFDownload}
-          handleMultiPDFDownload={handleMultiPDFDownload}
-          handleExcelDownload={handleExcelDownload}
+          onMultiPDFDownload={handleMultiPDFDownload}
+          onExcelDownload={handleExcelDownload}
           onOpenCBox={handleOpenCBox}
           total={total}
           page={page}

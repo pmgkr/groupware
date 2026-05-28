@@ -1,7 +1,7 @@
-import { APP_CONFIG } from '@/config';
-import { useAuth } from '@/contexts/AuthContext';
-import type { DateRange } from 'react-day-picker';
+import { type AdminFilterProps } from '../types/AdminFilterProps';
 import { DatePickerWithRange } from '@/components/date-n-time/date-picker-range';
+import { useAuth } from '@/contexts/AuthContext';
+import { APP_CONFIG } from '@/config';
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,109 +9,49 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@/components/multiselect/multi-select';
 import { RefreshCw, X } from 'lucide-react';
 
-interface ExpenseListFilterProps {
-  selectedYear: string;
-  yearOptions: string[];
-  selectedType: string[];
-  selectedStatus: string[];
-  selectedProof: string[];
-  selectedProofStatus: string[];
-  selectedDdate: string;
-
-  typeRef: React.RefObject<MultiSelectRef | null>;
-  statusRef: React.RefObject<MultiSelectRef | null>;
-  proofRef: React.RefObject<MultiSelectRef | null>;
-  proofStatusRef: React.RefObject<MultiSelectRef | null>;
-
-  typeOptions: MultiSelectOption[];
-  checkedItems: number[];
-
-  onYearChange: (val: string) => void;
-  onTypeChange: (val: string[]) => void;
-  onStatusChange: (val: string[]) => void;
-  onProofChange: (val: string[]) => void;
-  onProofStatusChange: (val: string[]) => void;
-  onDdateChange: (val: string) => void;
-
-  onRefresh: () => void;
-  onConfirm: () => void;
-  onReject: () => void;
-  onSAPRegi: () => void;
-
-  searchInput: string;
-  onSearchInputChange: (val: string) => void;
-  onSearchSubmit: () => void;
-  onClearSearch: () => void;
-
-  datePickerKey: number;
-  selectedDateRange?: DateRange;
-  onDateRangeChange: (range: DateRange | undefined) => void;
-}
-
-export function AdminListFilter({
-  selectedYear,
-  yearOptions,
-  selectedType,
-  selectedStatus,
-  selectedProof,
-  selectedProofStatus,
-  selectedDdate,
-  typeRef,
-  statusRef,
-  proofRef,
-  proofStatusRef,
-
-  typeOptions,
-  checkedItems,
-
-  onYearChange,
-  onTypeChange,
-  onStatusChange,
-  onProofChange,
-  onProofStatusChange,
-  onDdateChange,
-
-  onRefresh,
-  onConfirm,
-  onReject,
-  onSAPRegi,
-
-  searchInput,
-  onSearchInputChange,
-  onSearchSubmit,
-  onClearSearch,
-
-  datePickerKey,
-  selectedDateRange,
-  onDateRangeChange,
-}: ExpenseListFilterProps) {
+export function AdminFilterPC(props: AdminFilterProps) {
   const { user } = useAuth();
   const isSapManager = APP_CONFIG.SAP_MANAGERS.includes(user?.user_id ?? '');
 
-  // 필터 옵션 정의
-  const statusOptions: MultiSelectOption[] = [
-    { label: '임시저장', value: 'Saved' },
-    { label: '승인대기', value: 'Claimed' },
-    { label: '승인완료', value: 'Confirmed' },
-    { label: 'SAP등록', value: 'SAP' },
-    // { label: '지급대기', value: 'Approved' },
-    { label: '지급완료', value: 'Completed' },
-    { label: '반려됨', value: 'Rejected' },
-  ];
+  const {
+    yearOptions,
 
-  const proofMethod: MultiSelectOption[] = [
-    { label: 'PMG', value: 'PMG' },
-    { label: 'MCS', value: 'MCS' },
-    { label: '개인카드', value: '개인카드' },
-    { label: '세금계산서', value: '세금계산서' },
-    { label: '현금영수증', value: '현금영수증' },
-    { label: '기타', value: '기타' },
-  ];
+    selectedYear,
+    selectedType,
+    selectedStatus,
+    selectedProof,
+    selectedProofStatus,
+    selectedDdate,
 
-  const proofStatusOptions: MultiSelectOption[] = [
-    { label: '제출', value: 'Y' },
-    { label: '미제출', value: 'N' },
-  ];
+    typeOptions,
+    statusOptions,
+    proofMethod,
+    proofStatusOptions,
+
+    typeRef,
+    statusRef,
+    proofRef,
+    proofStatusRef,
+    checkedItems,
+    searchInput,
+    datePickerKey,
+    selectedDateRange,
+
+    onYearChange,
+    onTypeChange,
+    onStatusChange,
+    onProofChange,
+    onProofStatusChange,
+    onDdateChange,
+    onSearchInputChange,
+    onSearchSubmit,
+    onClearSearch,
+    onDateRangeChange,
+
+    onRefresh,
+    onConfirm,
+    onSAPRegi,
+  } = props;
 
   return (
     <div className="mb-4 flex items-center justify-between">
@@ -257,9 +197,6 @@ export function AdminListFilter({
           )}
         </div>
 
-        {/* <Button size="sm" variant="destructive" onClick={onReject} disabled={checkedItems.length === 0}>
-          반려하기
-        </Button> */}
         <Button size="sm" onClick={onConfirm} disabled={checkedItems.length === 0}>
           지급하기
         </Button>

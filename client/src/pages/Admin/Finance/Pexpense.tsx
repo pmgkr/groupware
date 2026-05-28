@@ -25,10 +25,10 @@ import {
   sendExpenseToCBox,
   type ExpenseListItems,
 } from '@/api/admin/pexpense';
-import { AdminListFilter } from '@components/features/Project/_components/AdminListFilter';
-import { AdminListFilterMo } from '@components/features/Project/_components/AdminListFilterMo';
-import AdminExpenseCard from '@components/features/Project/_responsive/AdminExpenseCard';
-import AdminExpenseTable from '@components/features/Project/_responsive/AdminExpenseTable';
+import { AdminFilterPC } from '@components/features/Project/_responsive/AdminFilterPC';
+import { AdminFilterMo } from '@components/features/Project/_responsive/AdminFilterMo';
+import { PExpenseListCard } from '@components/features/Project/_responsive/PExpenseListCard';
+import { PExpenseListTable } from '@components/features/Project/_responsive/PExpenseListTable';
 import { CBoxDialog } from '@/components/features/Expense/_components/AdminCBox';
 import { AddInfoDialog } from '@/components/features/Project/_components/addInfoDialog';
 import { triggerDownload } from '@components/features/Project/utils/download';
@@ -618,21 +618,17 @@ export default function Pexpense() {
 
   return (
     <>
-      {isMobile ? <AdminListFilterMo {...filterProps} /> : <AdminListFilter {...filterProps} />}
+      {isMobile ? <AdminFilterMo {...filterProps} /> : <AdminFilterPC {...filterProps} />}
 
       {isMobile ? (
-        <AdminExpenseCard
+        <PExpenseListCard
+          role="admin"
           loading={loading}
-          expenseList={expenseList}
+          items={expenseList}
           checkAll={checkAll}
           checkedItems={checkedItems}
-          handleCheckAll={handleCheckAll}
-          handleCheckItem={handleCheckItem}
-          handleSetDdate={handleSetDdate}
-          handlePDFDownload={handlePDFDownload}
-          handleMultiPDFDownload={handleMultiPDFDownload}
-          handleExcelDownload={handleExcelDownload}
-          onOpenCBox={handleOpenCBox}
+          onCheckAll={handleCheckAll}
+          onCheck={handleCheckItem}
           total={total}
           page={page}
           pageSize={pageSize}
@@ -640,17 +636,18 @@ export default function Pexpense() {
           onAInfo={handleAddInfo}
         />
       ) : (
-        <AdminExpenseTable
+        <PExpenseListTable
+          role="admin"
           loading={loading}
-          expenseList={expenseList}
+          items={expenseList}
           checkAll={checkAll}
           checkedItems={checkedItems}
-          handleCheckAll={handleCheckAll}
-          handleCheckItem={handleCheckItem}
-          handleSetDdate={handleSetDdate}
+          onCheckAll={handleCheckAll}
+          onCheck={handleCheckItem}
+          onDdate={handleSetDdate}
           handlePDFDownload={handlePDFDownload}
-          handleMultiPDFDownload={handleMultiPDFDownload}
-          handleExcelDownload={handleExcelDownload}
+          onMultiPDFDownload={handleMultiPDFDownload}
+          onExcelDownload={handleExcelDownload}
           onOpenCBox={handleOpenCBox}
           total={total}
           page={page}

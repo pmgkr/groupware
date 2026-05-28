@@ -15,7 +15,6 @@ import { useProjectExpenseMatching } from './hooks/useProjectExpenseMatching';
 import EstimateMatching from './_components/EstimateMatching';
 import EstimateMatched from './_components/EstimateMatched';
 import ExpenseViewRow from './_components/ExpenseViewRow';
-import ExpenseViewEstRow from './_components/ExpenseViewEstRow';
 import ReportMatched from './_components/ReportMatched';
 import { AddInfoDialog } from './_components/addInfoDialog';
 
@@ -568,35 +567,52 @@ export default function PexpenseView() {
 
                 <TableBody>
                   {data.header.is_estimate === 'Y'
-                    ? items.map((item, idx) => {
+                    ? items.map((item) => {
                         const alreadyMatched = (item.matchedList?.length ?? 0) > 0;
                         const isMatched = (matchedMap[item.seq]?.length ?? 0) > 0;
                         const isMatching = expenseInfo?.seq === item.seq && matchedItems.length > 0;
                         const isWaiting = Boolean(expenseInfo && expenseInfo.seq !== item.seq && matchedItems.length > 0);
 
                         return (
-                          <ExpenseViewEstRow
+                          <ExpenseViewRow
                             key={item.seq}
                             item={item}
-                            idx={idx}
-                            onMatched={() => loadMatchedItems(item)}
-                            onMatching={() => {
-                              if (matchedMap[item.seq]?.length) {
-                                // 첫 번째 매칭된 항목의 est_id 사용
-                                const firstItem = matchedMap[item.seq][0];
-                                if (firstItem?.est_id) {
-                                  setSelectedEstId(firstItem.est_id);
-                                }
-                              }
-
-                              openDialog();
-                            }}
-                            onSetMatching={() => openEstimateDialog(item.seq, item.ei_amount)}
-                            alreadyMatched={alreadyMatched}
-                            isMatched={isMatched}
-                            isMatching={isMatching}
-                            isWaiting={isWaiting}
                             onAddInfo={handleAddInfo}
+                            actionCell={
+                              alreadyMatched ? (
+                                <Button size="xs" variant="outline" onClick={() => loadMatchedItems(item)}>
+                                  매칭완료
+                                </Button>
+                              ) : isMatching ? (
+                                <Button
+                                  size="xs"
+                                  className="border-primary-blue/10"
+                                  onClick={() => {
+                                    if (matchedMap[item.seq]?.length) {
+                                      const firstItem = matchedMap[item.seq][0];
+                                      if (firstItem?.est_id) setSelectedEstId(firstItem.est_id);
+                                    }
+                                    openDialog();
+                                  }}>
+                                  매칭중
+                                </Button>
+                              ) : isMatched ? (
+                                <Button size="xs" variant="outline" onClick={() => loadMatchedItems(item)}>
+                                  매칭완료
+                                </Button>
+                              ) : isWaiting ? (
+                                <Button size="xs" variant="secondary" disabled>
+                                  매칭대기
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="xs"
+                                  className="bg-primary-blue-100 text-primary-blue border-primary-blue-300/10 hover:bg-primary-blue-150 hover:text-primary-blue active:bg-primary-blue-100"
+                                  onClick={() => openEstimateDialog(item.seq, item.ei_amount)}>
+                                  매칭하기
+                                </Button>
+                              )
+                            }
                           />
                         );
                       })
@@ -604,8 +620,16 @@ export default function PexpenseView() {
                         <ExpenseViewRow
                           key={item.seq}
                           item={item}
-                          onProposal={() => setReportInfo(item.pro_id)}
                           onAddInfo={handleAddInfo}
+                          actionCell={
+                            item.pro_id ? (
+                              <Button size="xs" variant="outline" onClick={() => setReportInfo(item.pro_id)}>
+                                기안서보기
+                              </Button>
+                            ) : (
+                              <span>-</span>
+                            )
+                          }
                         />
                       ))}
 
