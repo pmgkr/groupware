@@ -250,7 +250,8 @@ export default function Pexpense() {
     { label: '임시저장', value: 'Saved' },
     { label: '승인대기', value: 'Claimed' },
     { label: '승인완료', value: 'Confirmed' },
-    { label: '지급대기', value: 'Approved' },
+    { label: 'SAP등록', value: 'SAP' },
+    // { label: '지급대기', value: 'Approved' },
     { label: '지급완료', value: 'Completed' },
     { label: '반려됨', value: 'Rejected' },
   ];

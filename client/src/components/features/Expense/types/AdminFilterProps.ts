@@ -41,4 +41,5 @@ export interface AdminFilterProps {
   onConfirm: () => void;
   onReject: () => void;
   onRefresh: () => void;
+  onSAPRegi: () => void;
 }

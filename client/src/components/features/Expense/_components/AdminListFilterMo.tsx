@@ -1,4 +1,6 @@
 import { useState, useRef } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { APP_CONFIG } from '@/config';
 import { type AdminFilterProps } from '../types/AdminFilterProps';
 import { DatePickerWithRange } from '@/components/date-n-time/date-picker-range';
 
@@ -49,7 +51,11 @@ export function AdminListFilterMo(props: AdminFilterProps) {
     onRefresh,
     onConfirm,
     onReject,
+    onSAPRegi,
   } = props;
+
+  const { user } = useAuth();
+  const isSapManager = APP_CONFIG.SAP_MANAGERS.includes(user?.user_id ?? '');
 
   const [open, setOpen] = useState(false);
   const currentYear = String(new Date().getFullYear()); // 올해 구하기
@@ -307,9 +313,20 @@ export function AdminListFilterMo(props: AdminFilterProps) {
           </Drawer>
         </div>
 
-        <Button size="sm" onClick={onConfirm} disabled={checkedItems.length === 0}>
-          지급하기
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={onConfirm} disabled={checkedItems.length === 0}>
+            지급하기
+          </Button>
+          {isSapManager && (
+            <Button
+              size="sm"
+              onClick={onSAPRegi}
+              disabled={checkedItems.length === 0}
+              className="bg-primary-pink-500 hover:bg-primary-pink">
+              SAP등록
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

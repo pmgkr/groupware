@@ -1,5 +1,7 @@
 import { type AdminFilterProps } from '../types/AdminFilterProps';
 import { DatePickerWithRange } from '@/components/date-n-time/date-picker-range';
+import { useAuth } from '@/contexts/AuthContext';
+import { APP_CONFIG } from '@/config';
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,6 +10,9 @@ import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@/comp
 import { RefreshCw, X } from 'lucide-react';
 
 export function AdminListFilter(props: AdminFilterProps) {
+  const { user } = useAuth();
+  const isSapManager = APP_CONFIG.SAP_MANAGERS.includes(user?.user_id ?? '');
+
   const {
     yearOptions,
 
@@ -45,7 +50,7 @@ export function AdminListFilter(props: AdminFilterProps) {
 
     onRefresh,
     onConfirm,
-    onReject,
+    onSAPRegi,
   } = props;
 
   return (
@@ -192,12 +197,14 @@ export function AdminListFilter(props: AdminFilterProps) {
           )}
         </div>
 
-        {/* <Button size="sm" variant="destructive" onClick={onReject} disabled={checkedItems.length === 0}>
-          반려하기
-        </Button> */}
         <Button size="sm" onClick={onConfirm} disabled={checkedItems.length === 0}>
           지급하기
         </Button>
+        {isSapManager && (
+          <Button size="sm" onClick={onSAPRegi} disabled={checkedItems.length === 0} className="bg-primary-pink-500 hover:bg-primary-pink">
+            SAP등록
+          </Button>
+        )}
       </div>
     </div>
   );

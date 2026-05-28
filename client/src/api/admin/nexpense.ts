@@ -188,3 +188,13 @@ export async function sendExpenseToCBox(payload: { expIds: string[] }): Promise<
 
   return res;
 }
+
+// 일반 비용 SAP 상태로 업데이트
+export async function updateSAP(payload: { seqs: number[] }) {
+  const res = http<{ updated_count: number; ok: boolean }>(`/admin/nexpense/sap/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+  return res;
+}

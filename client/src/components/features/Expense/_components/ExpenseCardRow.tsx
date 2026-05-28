@@ -14,6 +14,7 @@ const statusMap = {
   Saved: <Badge variant="grayish">임시저장</Badge>,
   Claimed: <Badge variant="secondary">승인대기</Badge>,
   Confirmed: <Badge>승인완료</Badge>,
+  SAP: <Badge className="bg-primary-pink-500">SAP등록</Badge>,
   Approved: <Badge className="bg-primary-blue/80">지급대기</Badge>,
   Completed: <Badge className="bg-primary-blue">지급완료</Badge>,
   Rejected: <Badge className="bg-destructive">반려됨</Badge>,

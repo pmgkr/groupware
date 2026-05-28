@@ -1,3 +1,5 @@
+import { APP_CONFIG } from '@/config';
+import { useAuth } from '@/contexts/AuthContext';
 import type { DateRange } from 'react-day-picker';
 import { DatePickerWithRange } from '@/components/date-n-time/date-picker-range';
 
@@ -34,6 +36,7 @@ interface ExpenseListFilterProps {
   onRefresh: () => void;
   onConfirm: () => void;
   onReject: () => void;
+  onSAPRegi: () => void;
 
   searchInput: string;
   onSearchInputChange: (val: string) => void;
@@ -71,6 +74,7 @@ export function AdminListFilter({
   onRefresh,
   onConfirm,
   onReject,
+  onSAPRegi,
 
   searchInput,
   onSearchInputChange,
@@ -81,11 +85,15 @@ export function AdminListFilter({
   selectedDateRange,
   onDateRangeChange,
 }: ExpenseListFilterProps) {
+  const { user } = useAuth();
+  const isSapManager = APP_CONFIG.SAP_MANAGERS.includes(user?.user_id ?? '');
+
   // 필터 옵션 정의
   const statusOptions: MultiSelectOption[] = [
     { label: '임시저장', value: 'Saved' },
     { label: '승인대기', value: 'Claimed' },
     { label: '승인완료', value: 'Confirmed' },
+    { label: 'SAP등록', value: 'SAP' },
     // { label: '지급대기', value: 'Approved' },
     { label: '지급완료', value: 'Completed' },
     { label: '반려됨', value: 'Rejected' },
@@ -255,6 +263,11 @@ export function AdminListFilter({
         <Button size="sm" onClick={onConfirm} disabled={checkedItems.length === 0}>
           지급하기
         </Button>
+        {isSapManager && (
+          <Button size="sm" onClick={onSAPRegi} disabled={checkedItems.length === 0} className="bg-primary-pink-500 hover:bg-primary-pink">
+            SAP등록
+          </Button>
+        )}
       </div>
     </div>
   );

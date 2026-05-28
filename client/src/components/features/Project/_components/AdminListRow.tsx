@@ -50,6 +50,11 @@ export const AdminListRow = memo(({ item, checked, onCheck, onDdate, onAInfo, ha
       </Badge>
     ),
     Confirmed: <Badge size="table">승인완료</Badge>,
+    SAP: (
+      <Badge className="bg-primary-pink-500" size="table">
+        SAP등록
+      </Badge>
+    ),
     Approved: (
       <Badge className="bg-primary-blue/80" size="table">
         지급대기

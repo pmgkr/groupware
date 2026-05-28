@@ -113,6 +113,11 @@ export default function ProjectExpenseView() {
       </Badge>
     ),
     Confirmed: <Badge size={isMobile ? 'md' : 'table'}>승인완료</Badge>,
+    SAP: (
+      <Badge className="bg-primary-pink-500" size={isMobile ? 'md' : 'table'}>
+        SAP등록
+      </Badge>
+    ),
     Approved: (
       <Badge className="bg-primary-blue/80" size={isMobile ? 'md' : 'table'}>
         지급대기
