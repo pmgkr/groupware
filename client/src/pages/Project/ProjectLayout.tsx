@@ -198,17 +198,41 @@ export default function ProjectLayout() {
   if (loading) return <div className="flex h-[50vh] items-center justify-center text-gray-500">로딩 중...</div>;
   if (!data) return <div className="h-[50vh] text-center">프로젝트 데이터를 찾을 수 없습니다.</div>;
 
+  const { info, summary, expense_data, expense_type } = data;
+
+  // 프로젝트 SAP 상태값
+  const sapStatusColor =
+    info.sap_status === 'ready'
+      ? 'bg-green-500'
+      : info.sap_status === 'pp'
+        ? 'bg-primary-blue-500'
+        : info.sap_status === 'end'
+          ? 'bg-gray-500'
+          : 'bg-destructive'; // fallback
+
+  const sapStatus = (
+    <span className="absolute -top-1 -right-1 flex size-3">
+      <span className={`${sapStatusColor} relative inline-flex size-3 rounded-full border border-white`}></span>
+    </span>
+  );
+
   // 비용 상태별 Badge 맵핑
   const statusMap = {
     'in-progress': (
-      <Badge variant="secondary" size="md">
-        진행중
-      </Badge>
+      <div className="relative">
+        <Badge variant="secondary" size="md">
+          진행중
+        </Badge>
+        {sapStatus}
+      </div>
     ),
     Closed: (
-      <Badge className="bg-primary-blue" size="md">
-        종료됨
-      </Badge>
+      <div className="relative">
+        <Badge className="bg-primary-blue" size="md">
+          종료됨
+        </Badge>
+        {sapStatus}
+      </div>
     ),
     Completed: (
       <Badge variant="grayish" size="md">
@@ -222,7 +246,7 @@ export default function ProjectLayout() {
     ),
   };
 
-  const { info, summary, expense_data, expense_type } = data;
+  console.log('프로젝트 데이터', data);
 
   const status = statusMap[info.project_status as keyof typeof statusMap];
   const fallbackListPath = listSearch ? `/project${listSearch}` : '/project';
