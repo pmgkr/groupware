@@ -120,6 +120,10 @@ export const ProjectHistory = ({ logs }: Props) => {
 
   const REMARK_REPLACEMENTS: Record<string, string> = {
     'project_title changed:': '[프로젝트 이름 변경]',
+    '(ready)': '미등록으',
+    '(registered)': '등록으',
+    '(completed)': '완료',
+    '하였습니다.': '했습니다.',
     // 'budget changed:': '[예산 변경]',  // 추후 추가
   };
 

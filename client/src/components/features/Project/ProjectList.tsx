@@ -284,8 +284,6 @@ export default function ProjectList() {
 
       const res = await getProjectList(params);
 
-      console.log('✅ 프로젝트 리스트 불러오기 성공:', res);
-
       setProjects(res.items);
       setTotal(res.total);
     } catch (err) {

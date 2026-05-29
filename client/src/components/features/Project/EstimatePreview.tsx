@@ -143,7 +143,7 @@ export default function EstimatePreview() {
       } else {
         addDialog({
           title: '작성한 견적서를 등록합니다.',
-          message: `등록 전 데이터를 다시 한 번 확인해 주세요.`,
+          message: `등록 전 데이터를 다시 한 번 확인해 주세요.<br /><span class="text-primary">프로젝트가 SAP에 등록된 후, 견적서 등록 시 SAP 담당자에게 견적서 재등록 사실을 꼭 알려주세요.</span>`,
           content: buildDialogContent(reason),
           confirmText: '확인',
           cancelText: '취소',

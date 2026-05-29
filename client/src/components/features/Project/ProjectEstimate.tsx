@@ -204,7 +204,7 @@ export default function ProjectEstimate() {
             <DialogDescription className="leading-[1.3]">
               신규 견적서 혹은 추가 견적서 (서브 견적서)를 등록할 수 있습니다.
               <br />
-              <span className="text-primary">신규 견적서를 재등록하는 경우 최종견적과 매칭된 비용이 리셋</span>됩니다.
+              <span className="text-primary">신규 견적서를 재등록하는 경우 최종견적과 매칭된 비용이 리셋</span>됩니다. <br />
             </DialogDescription>
           </DialogHeader>
           <div className="relative py-4">
@@ -227,19 +227,6 @@ export default function ProjectEstimate() {
                 추가 견적서 등록
               </Button>
             </div>
-            {/* {registerType && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" onClick={openFileDialog}>
-                    <Excel className="size-4.5" /> Excel 업로드
-                  </Button>
-                  <Button variant="outline" onClick={() => navigate('register', { state: { registerType } })}>
-                    수기 입력
-                  </Button>
-                </div>
-                
-              </>
-            )} */}
           </div>
         </DialogContent>
       </Dialog>
