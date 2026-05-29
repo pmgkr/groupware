@@ -15,7 +15,7 @@ import { getProjectMember, getBookmarkList, addBookmark, removeBookmark, project
 import { getProjectView, type projectOverview, ProjectStatusChange, getProjectLogs, type ProjectLogs } from '@/api/project';
 
 import { Button } from '@components/ui/button';
-import { Badge } from '@components/ui/badge';
+import { getStatusBadge } from '@/components/features/Project/utils/projectUtil';
 import { RadioGroup, RadioButton } from '@components/ui/radioButton';
 import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Settings, Star, ArrowLeft, OctagonAlert, Lock, LockOpen } from 'lucide-react';
@@ -200,55 +200,7 @@ export default function ProjectLayout() {
 
   const { info, summary, expense_data, expense_type } = data;
 
-  // 프로젝트 SAP 상태값
-  const sapStatusColor =
-    info.sap_status === 'ready'
-      ? 'bg-green-500'
-      : info.sap_status === 'pp'
-        ? 'bg-primary-blue-500'
-        : info.sap_status === 'end'
-          ? 'bg-gray-500'
-          : 'bg-destructive'; // fallback
-
-  const sapStatus = (
-    <span className="absolute -top-1 -right-1 flex size-3">
-      <span className={`${sapStatusColor} relative inline-flex size-3 rounded-full border border-white`}></span>
-    </span>
-  );
-
-  // 비용 상태별 Badge 맵핑
-  const statusMap = {
-    'in-progress': (
-      <div className="relative">
-        <Badge variant="secondary" size="md">
-          진행중
-        </Badge>
-        {sapStatus}
-      </div>
-    ),
-    Closed: (
-      <div className="relative">
-        <Badge className="bg-primary-blue" size="md">
-          종료됨
-        </Badge>
-        {sapStatus}
-      </div>
-    ),
-    Completed: (
-      <Badge variant="grayish" size="md">
-        정산완료
-      </Badge>
-    ),
-    Cancelled: (
-      <Badge className="bg-destructive" size="md">
-        취소됨
-      </Badge>
-    ),
-  };
-
-  console.log('프로젝트 데이터', data);
-
-  const status = statusMap[info.project_status as keyof typeof statusMap];
+  const status = getStatusBadge(info.project_status, info.sap_status, 'md', 'md');
   const fallbackListPath = listSearch ? `/project${listSearch}` : '/project';
 
   const statusOptions = [

@@ -20,7 +20,6 @@ export default function ProjectList() {
   const isMobile = viewport === 'mobile';
 
   const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
-
   const [registerDialog, setRegisterDialog] = useState(false);
 
   // 프로젝트 리스트 API 조회용 State
@@ -46,6 +45,7 @@ export default function ProjectList() {
   const [selectedClient, setSelectedClient] = useState<string[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
+  const [selectedSAP, setSelectedSAP] = useState<string[]>(() => searchParams.get('sap_status')?.split(',') ?? []);
   const [searchInput, setSearchInput] = useState(''); // 사용자가 입력중인 Input 저장값
   const [searchQuery, setSearchQuery] = useState(''); // 실제 검색 Input 저장값
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -55,6 +55,7 @@ export default function ProjectList() {
   const clientRef = useRef<MultiSelectRef>(null);
   const teamRef = useRef<MultiSelectRef>(null);
   const statusRef = useRef<MultiSelectRef>(null);
+  const sapRef = useRef<MultiSelectRef>(null);
 
   /** ✅ 프로젝트 생성 후 새로고침 */
   const handleCreateSuccess = () => {
@@ -81,6 +82,12 @@ export default function ProjectList() {
     { label: '종료됨', value: 'closed' },
     { label: '정산완료', value: 'completed' },
     { label: '취소됨', value: 'cancelled' },
+  ];
+
+  const sapStatusOptions = [
+    { label: 'SAP 미등록', value: 'ready' },
+    { label: 'SAP 등록', value: 'registered' },
+    { label: 'SAP 완료', value: 'completed' },
   ];
 
   // MultiSelect Select 옵션 복구
@@ -118,11 +125,13 @@ export default function ProjectList() {
     const clients = getArrayParam('client_id');
     const teams = getArrayParam('team_id');
     const statuses = getArrayParam('status');
+    const saps = getArrayParam('sap_status');
 
     setSelectedCategory(categories);
     setSelectedClient(clients);
     setSelectedTeam(teams);
     setSelectedStatus(statuses);
+    setSelectedSAP(saps);
 
     // 6. 페이지
     setPage(Number(getParam('page') || 1));
@@ -151,6 +160,9 @@ export default function ProjectList() {
       case 'status':
         setSelectedStatus(value);
         break;
+      case 'sap_status':
+        setSelectedSAP(value);
+        break;
     }
   };
 
@@ -163,6 +175,7 @@ export default function ProjectList() {
     setSelectedStatus([]);
     setSearchQuery('');
     setSearchInput('');
+    setSelectedSAP([]);
     setShowFavoritesOnly(false);
 
     // MultiSelect 내부 상태 초기화
@@ -170,6 +183,7 @@ export default function ProjectList() {
     clientRef.current?.clear();
     teamRef.current?.clear();
     statusRef.current?.clear();
+    sapRef.current?.clear();
   };
 
   const handleTabChange = (tab: 'mine' | 'others') => {
@@ -257,6 +271,7 @@ export default function ProjectList() {
         project_brand: selectedBrand,
         project_category: selectedCategory.join(','),
         project_status: selectedStatus.join(','),
+        sap_status: selectedSAP.join(','),
         s: searchQuery,
       };
 
@@ -268,6 +283,8 @@ export default function ProjectList() {
       }
 
       const res = await getProjectList(params);
+
+      console.log('✅ 프로젝트 리스트 불러오기 성공:', res);
 
       setProjects(res.items);
       setTotal(res.total);
@@ -284,6 +301,7 @@ export default function ProjectList() {
     selectedClient,
     selectedTeam,
     selectedStatus,
+    selectedSAP,
     searchQuery,
     activeTab,
     showFavoritesOnly,
@@ -300,6 +318,7 @@ export default function ProjectList() {
       client_id: selectedClient,
       team_id: selectedTeam,
       status: selectedStatus,
+      sap_status: selectedSAP,
       s: searchQuery || undefined,
       tagged: showFavoritesOnly ? 'Y' : undefined,
     });
@@ -312,6 +331,7 @@ export default function ProjectList() {
     selectedClient,
     selectedTeam,
     selectedStatus,
+    selectedSAP,
     searchQuery,
     showFavoritesOnly,
   ]);
@@ -341,16 +361,19 @@ export default function ProjectList() {
           selectedClient={selectedClient}
           selectedTeam={selectedTeam}
           selectedStatus={selectedStatus}
+          selectedSAP={selectedSAP}
           searchInput={searchInput}
           showFavoritesOnly={showFavoritesOnly}
           categoryRef={categoryRef}
           clientRef={clientRef}
           teamRef={teamRef}
           statusRef={statusRef}
+          sapRef={sapRef}
           categoryOptions={categoryOptions}
           clientOptions={clientOptions}
           teamOptions={teamOptions}
           statusOptions={statusOptions}
+          sapOptions={sapStatusOptions}
           onTabChange={handleTabChange}
           onFilterChange={handleFilterChange}
           onSearchInputChange={setSearchInput}
@@ -369,16 +392,19 @@ export default function ProjectList() {
           selectedClient={selectedClient}
           selectedTeam={selectedTeam}
           selectedStatus={selectedStatus}
+          selectedSAP={selectedSAP}
           searchInput={searchInput}
           showFavoritesOnly={showFavoritesOnly}
           categoryRef={categoryRef}
           clientRef={clientRef}
           teamRef={teamRef}
           statusRef={statusRef}
+          sapRef={sapRef}
           categoryOptions={categoryOptions}
           clientOptions={clientOptions}
           teamOptions={teamOptions}
           statusOptions={statusOptions}
+          sapOptions={sapStatusOptions}
           onTabChange={handleTabChange}
           onFilterChange={handleFilterChange}
           onSearchInputChange={setSearchInput}

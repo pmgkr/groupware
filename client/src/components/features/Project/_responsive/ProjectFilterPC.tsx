@@ -26,11 +26,15 @@ export function ProjectFilterPC(props: ProjectFilterProps) {
     clientRef,
     teamRef,
     statusRef,
+    sapRef,
 
     categoryOptions,
     clientOptions,
     teamOptions,
     statusOptions,
+    sapOptions,
+
+    selectedSAP,
 
     onTabChange,
     onFilterChange,
@@ -151,6 +155,20 @@ export function ProjectFilterPC(props: ProjectFilterProps) {
             defaultValue={selectedStatus}
             options={statusOptions}
             onValueChange={(v) => onFilterChange('status', v)}
+            simpleSelect={true}
+            hideSelectAll={true}
+          />
+
+          <MultiSelect
+            size="sm"
+            ref={sapRef}
+            className="max-w-[80px] min-w-auto! max-xl:hidden"
+            maxCount={0}
+            autoSize={true}
+            placeholder="프로젝트 SAP 상태"
+            defaultValue={selectedSAP}
+            options={sapOptions}
+            onValueChange={(v) => onFilterChange('sap_status', v)}
             simpleSelect={true}
             hideSelectAll={true}
           />

@@ -13,7 +13,7 @@ import type { PieItem, PieChartItem } from './utils/chartMap';
 
 import { HalfDonut } from '@components/charts/HalfDonut';
 import { GapPieChart } from '@components/charts/GapPieChart';
-import { Badge } from '@components/ui/badge';
+import { getStatusBadge } from './utils/projectUtil';
 import { Button } from '@components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
@@ -215,17 +215,7 @@ export default function Overview() {
     : [];
 
   const isProjectMember = useMemo(() => members.some((m) => m.user_id === user_id), [members, user_id]);
-  /** -----------------------------------------
-   *  상태 Badge
-   ----------------------------------------- */
-  const statusMap = {
-    'in-progress': <Badge variant="secondary">진행중</Badge>,
-    Closed: <Badge className="bg-primary-blue">종료됨</Badge>,
-    Completed: <Badge variant="grayish">정산완료</Badge>,
-    Cancelled: <Badge className="bg-destructive">취소됨</Badge>,
-  };
-
-  const status = statusMap[data.project_status as keyof typeof statusMap];
+  const status = getStatusBadge(data.project_status, undefined, undefined, 'default');
 
   return (
     <>

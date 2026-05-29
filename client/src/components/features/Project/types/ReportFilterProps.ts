@@ -16,19 +16,23 @@ export interface ReportFilterProps {
   selectedClient: string[];
   selectedTeam: string[];
   selectedStatus: string[];
+  selectedSAP: string[];
   isLocked: 'Y' | 'N' | '';
 
   clientOptions: MultiSelectOption[];
   teamOptions: MultiSelectOption[];
   statusOptions: MultiSelectOption[];
+  sapOptions: MultiSelectOption[];
 
   clientRef: RefObject<MultiSelectRef | null>;
   teamRef: RefObject<MultiSelectRef | null>;
   statusRef: RefObject<MultiSelectRef | null>;
+  sapRef: RefObject<MultiSelectRef | null>;
 
   onClientChange: (v: string[]) => void;
   onTeamChange: (v: string[]) => void;
   onStatusChange: (v: string[]) => void;
+  onSAPChange: (v: string[]) => void;
 
   /* search */
   searchInput: string;

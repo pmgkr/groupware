@@ -36,6 +36,7 @@ export type ProjectListParams = {
   project_brand?: string; // PMG or MCS
   project_category?: string;
   project_status?: string;
+  sap_status?: string;
   s?: string; // 제목 검색 키워드
   tagged?: 'Y' | 'N' | string;
 };

@@ -7,6 +7,7 @@ export type ProjectListParams = {
   team_id?: number;
   client_id?: number;
   project_status?: string;
+  sap_status?: string;
   q?: string;
   order?: string; // project_id:desc, exp_amount:asc
   is_locked?: 'Y' | 'N';
@@ -37,6 +38,7 @@ export type ProjectListItem = {
   sdate: string;
   edate: string;
   is_locked: 'Y' | 'N';
+  sap_status?: string;
 };
 
 export type ProjectTotal = {
@@ -105,4 +107,16 @@ export async function projectUnLock(projectId: string | undefined) {
   if (!projectId) throw new Error('projectId가 필요합니다.');
 
   return http<{ result: string }>(`/admin/project/unlock/${projectId}`, { method: 'GET' });
+}
+
+// 프로젝트 리포트 > SAP 상태 업데이트
+export async function updateSapStatus(payload: { project_id: string; status: string }) {
+  if (!payload.project_id) throw new Error('projectId가 필요합니다.');
+
+  const res = http<{ result: string }>(`/admin/report/sapstatus`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+  return res;
 }

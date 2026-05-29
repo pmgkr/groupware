@@ -16,11 +16,15 @@ export type ProjectFilterProps = {
   clientRef: React.RefObject<MultiSelectRef | null>;
   teamRef: React.RefObject<MultiSelectRef | null>;
   statusRef: React.RefObject<MultiSelectRef | null>;
+  sapRef: React.RefObject<MultiSelectRef | null>;
 
   categoryOptions: MultiSelectOption[];
   clientOptions: MultiSelectOption[];
   teamOptions: MultiSelectOption[];
   statusOptions: MultiSelectOption[];
+  sapOptions: MultiSelectOption[];
+
+  selectedSAP: string[];
 
   onTabChange: (tab: 'mine' | 'others') => void;
   onFilterChange: (key: string, value: any) => void;

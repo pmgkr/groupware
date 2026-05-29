@@ -1,13 +1,12 @@
 import { useRef, useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
-import { useUser } from '@/hooks/useUser';
-import { cn } from '@/lib/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 import { formatDate, formatAmount, getGrowingYears, SortIcon } from '@/utils';
 import { downloadReportExcel } from '@/components/features/Project/utils/reportDown';
+import { SapStatusDot } from '@/components/features/Project/utils/projectUtil';
 
 import { getClientList, getTeamList } from '@/api';
-import { getProjectList, getAdminReportExcel, updateExpcost } from '@/api/admin/project';
+import { getProjectList, getAdminReportExcel, updateExpcost, updateSapStatus } from '@/api/admin/project';
 import type { ProjectListResponse, ProjectListItem } from '@/api/admin/project';
 
 import { ReportFilterPC } from '@/components/features/Project/_responsive/ReportFilterPC';
@@ -20,21 +19,55 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@components/ui/button';
 import { AppPagination } from '@/components/ui/AppPagination';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { RadioGroup, RadioButton } from '@components/ui/radioButton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipIcon } from '@/components/ui/tooltip';
 import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
+import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+
 import { Edit } from '@/assets/images/icons';
-import { X, RefreshCw, OctagonAlert, Lock, LockOpen, LockKeyhole } from 'lucide-react';
+import { X, OctagonAlert, LockKeyhole } from 'lucide-react';
 
 type SortState = {
   key: string;
   order: 'asc' | 'desc';
 } | null;
 
+type ProjectSapStatus = 'ready' | 'registered' | 'completed';
+const sapStatusOptions = [
+  { id: 'ready', label: 'SAP 미등록', value: 'ready' },
+  { id: 'registered', label: 'SAP 등록', value: 'registered' },
+  { id: 'completed', label: 'SAP 완료', value: 'completed' },
+];
+
+const STATUS_META = {
+  ready: {
+    dialogTitle: 'SAP 미등록',
+    dialogMessage: '프로젝트를 SAP 미등록 상태로 변경 하시겠습니까?',
+    confirmText: '변경',
+    alertTitle: '프로젝트 SAP 상태 변경',
+    alertMessage: '프로젝트가 SAP 미등록 상태로 변경 되었습니다.',
+    notiMessage: (actor: string) => `${actor}님이 프로젝트를 SAP 미등록 상태로 변경했습니다.`,
+  },
+  registered: {
+    dialogTitle: 'SAP 등록',
+    dialogMessage: '프로젝트를 SAP 등록 상태로 변경 하시겠습니까?',
+    confirmText: '변경',
+    alertTitle: '프로젝트 SAP 상태 변경',
+    alertMessage: '프로젝트가 SAP 등록 상태로 변경 되었습니다.',
+    notiMessage: (actor: string) => `${actor}님이 프로젝트를 SAP 등록 상태로 변경했습니다.`,
+  },
+  completed: {
+    dialogTitle: 'SAP 완료',
+    dialogMessage: '프로젝트를 SAP 완료 상태로 변경 하시겠습니까?',
+    confirmText: '변경',
+    alertTitle: '프로젝트 SAP 상태 변경',
+    alertMessage: '프로젝트가 SAP 완료 상태로 변경 되었습니다.',
+    notiMessage: (actor: string) => `${actor}님이 프로젝트를 SAP 완료 상태로 변경했습니다.`,
+  },
+} as const;
+
 export default function Report() {
-  const { user_id } = useUser();
-  const { search } = useLocation();
   const isMobile = useIsMobileViewport();
   const [searchParams, setSearchParams] = useSearchParams(); // 파라미터 값 저장
 
@@ -51,6 +84,7 @@ export default function Report() {
   const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('project_status')?.split(',') ?? ['in-progress']);
   const [selectedClient, setSelectedClient] = useState<string[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string[]>([]);
+  const [selectedSAP, setSelectedSAP] = useState<string[]>(() => searchParams.get('sap_status')?.split(',') ?? []);
   const [searchInput, setSearchInput] = useState(''); // 사용자가 입력중인 Input 저장값
   const [searchQuery, setSearchQuery] = useState(''); // 실제 검색 Input 저장값
   const [editingId, setEditingId] = useState<string | null>(null); // 예상 지출 금액 수정 ID
@@ -58,6 +92,10 @@ export default function Report() {
   const [editingDisplay, setEditingDisplay] = useState<string>(''); // 수정된 예상 지출 금액 보여주는 값
   const [sort, setSort] = useState<SortState>(null);
   const [isLocked, setIsLocked] = useState<'Y' | 'N' | ''>(''); // 프로젝트 잠금 상태
+
+  const [selectedProject, setSelectedProject] = useState<ProjectListItem | null>(null); // 프로젝트 상태 변경용 선택한 프로젝트 ID
+  const [projectDialog, setProjectDialog] = useState(false); // 프로젝트 상태 변경 Dialog State
+  const [selectedSapStatus, setSelectedSapStatus] = useState<ProjectSapStatus | null>(null);
 
   const [page, setPage] = useState<number>(() => Number(searchParams.get('page') || 1));
   const [total, setTotal] = useState(0);
@@ -68,6 +106,8 @@ export default function Report() {
   const teamRef = useRef<MultiSelectRef>(null);
   const [teamOptions, setTeamOptions] = useState<MultiSelectOption[]>([]);
   const statusRef = useRef<MultiSelectRef>(null);
+  const sapRef = useRef<MultiSelectRef>(null);
+  const sapOptions: MultiSelectOption[] = sapStatusOptions.map((o) => ({ label: o.label, value: o.value }));
   const statusOptions: MultiSelectOption[] = [
     { label: '진행중', value: 'in-progress' },
     { label: '종료됨', value: 'Closed' },
@@ -137,6 +177,10 @@ export default function Report() {
         params.team_id = selectedTeam.join(',');
       }
 
+      if (selectedSAP.length > 0) {
+        params.sap_status = selectedSAP.join(',');
+      }
+
       if (searchQuery) params.q = searchQuery;
 
       if (sort) {
@@ -165,7 +209,7 @@ export default function Report() {
 
   useEffect(() => {
     loadList();
-  }, [selectedYear, selectedStatus, selectedClient, selectedTeam, selectedStatus, searchQuery, sort, isLocked, page, pageSize]);
+  }, [selectedYear, selectedStatus, selectedClient, selectedTeam, selectedSAP, searchQuery, sort, isLocked, page, pageSize]);
 
   // 필터 변경 시 page 초기화
   const handleFilterChange = (setter: any, value: any) => {
@@ -215,6 +259,7 @@ export default function Report() {
     setSelectedClient([]);
     setSelectedTeam([]);
     setSelectedStatus([]);
+    setSelectedSAP([]);
     setSearchInput('');
     setSearchQuery('');
     setIsLocked('');
@@ -224,6 +269,7 @@ export default function Report() {
     clientRef.current?.clear();
     teamRef.current?.clear();
     statusRef.current?.clear();
+    sapRef.current?.clear();
   };
 
   const handleExcelDownload = async () => {
@@ -245,6 +291,10 @@ export default function Report() {
       params.team_id = selectedTeam.join(',');
     }
 
+    if (selectedSAP.length > 0) {
+      params.sap_status = selectedSAP.join(',');
+    }
+
     if (searchQuery) params.q = searchQuery;
     if (sort) {
       params.order = `${sort.key}:${sort.order}`;
@@ -257,8 +307,6 @@ export default function Report() {
 
     setSearchParams(params);
     const res = await getAdminReportExcel(params);
-
-    console.log('엑셀 저장용 리스트', res);
 
     downloadReportExcel(res, params);
   };
@@ -275,6 +323,43 @@ export default function Report() {
     });
 
     loadList();
+  };
+
+  // 프로젝트 상태 변경 다이얼로그 핸들러
+  const handleSapStatusChange = async (status: 'ready' | 'registered' | 'completed') => {
+    if (!selectedProject) return;
+
+    try {
+      const payload = {
+        project_id: selectedProject.project_id,
+        status,
+      };
+      const res = await updateSapStatus(payload);
+      console.log('프로젝트 상태 변경 성공:', res);
+
+      if (res.result === 'success') {
+        const meta = STATUS_META[status];
+
+        addAlert({
+          title: meta.alertTitle,
+          message: meta.alertMessage,
+          icon: <OctagonAlert />,
+          duration: 1500,
+        });
+
+        setProjectDialog(false);
+        loadList();
+      }
+    } catch (err) {
+      console.error('❌ 프로젝트 상태 변경 실패:', err);
+      addAlert({
+        title: '프로젝트 상태 변경 실패',
+        message: '프로젝트 상태 변경 중 오류가 발생했습니다. 다시 시도해주세요.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+      return;
+    }
   };
 
   const filterProps = {
@@ -294,19 +379,23 @@ export default function Report() {
     selectedClient,
     selectedTeam,
     selectedStatus,
+    selectedSAP,
     isLocked,
 
     clientOptions,
     teamOptions,
     statusOptions,
+    sapOptions,
 
     clientRef,
     teamRef,
     statusRef,
+    sapRef,
 
     onClientChange: (v: string[]) => handleFilterChange(setSelectedClient, v),
     onTeamChange: (v: string[]) => handleFilterChange(setSelectedTeam, v),
     onStatusChange: (v: string[]) => handleFilterChange(setSelectedStatus, v),
+    onSAPChange: (v: string[]) => handleFilterChange(setSelectedSAP, v),
 
     /* search */
     searchInput,
@@ -487,10 +576,24 @@ export default function Report() {
                     <TableCell className="text-right">{formatAmount(item.exp_amount)}</TableCell>
                     <TableCell className="text-right">{formatAmount(item.netprofit)}</TableCell>
                     <TableCell>{item.GPM !== 0 ? `${item.GPM}%` : '-'}</TableCell>
-                    <TableCell>{statusMap[item.project_status as keyof typeof statusMap]}</TableCell>
+                    <TableCell>
+                      <div
+                        className="relative inline-flex cursor-pointer"
+                        title="프로젝트 SAP 등록 상태 변경"
+                        onClick={() => {
+                          setSelectedProject(item);
+                          setSelectedSapStatus(item.sap_status as ProjectSapStatus);
+                          setProjectDialog(true);
+                        }}>
+                        {statusMap[item.project_status as keyof typeof statusMap]}
+                        <SapStatusDot sap_status={item.sap_status} />
+                      </div>
+                    </TableCell>
                   </TableRow>
                 );
               })}
+
+              {/* Sub Total & Grand Total Row */}
               {reportData !== null && (
                 <>
                   <TableRow className="[&_td]:bg-gray-100 [&_td]:px-2 [&_td]:text-[13px] [&_td]:font-semibold">
@@ -502,17 +605,19 @@ export default function Report() {
                     <TableCell className="text-right">{formatAmount(reportData.subtotal.sum_netprofit)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        {reportData.subtotal.avg_gpm !== 0 ? `${(reportData.subtotal.sum_netprofit / reportData.subtotal.sum_inv_amount * 100).toFixed(2)}%` : '-'}
+                        {reportData.subtotal.avg_gpm !== 0
+                          ? `${((reportData.subtotal.sum_netprofit / reportData.subtotal.sum_inv_amount) * 100).toFixed(2)}%`
+                          : '-'}
                         <Tooltip>
                           <TooltipTrigger type="button" className="cursor-help">
                             <TooltipIcon />
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>
-                              (Net / 계산서 금액) &times; 100
-                            </p>
+                            <p>(Net / 계산서 금액) &times; 100</p>
                             <p className="mt-1 text-red-400">
-                              ({formatAmount(Math.round(reportData.subtotal.sum_netprofit / 1000000))} / {formatAmount(Math.round(reportData.subtotal.sum_inv_amount / 1000000))}) &times; 100<span className="text-xs text-gray-400"> (단위: 백만)</span>
+                              ({formatAmount(Math.round(reportData.subtotal.sum_netprofit / 1000000))} /{' '}
+                              {formatAmount(Math.round(reportData.subtotal.sum_inv_amount / 1000000))}) &times; 100
+                              <span className="text-xs text-gray-400"> (단위: 백만)</span>
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -529,18 +634,20 @@ export default function Report() {
                     <TableCell className="text-right">{formatAmount(reportData.grandtotal.sum_netprofit)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        {/* {reportData.grandtotal.avg_gpm !== 0 ? `${reportData.grandtotal.avg_gpm}%` : '-'} */}
-                        {reportData.grandtotal.avg_gpm !== 0 ? `${(reportData.grandtotal.sum_netprofit / reportData.grandtotal.sum_inv_amount * 100).toFixed(2)}%` : '-'}
+                        {reportData.grandtotal.avg_gpm !== 0
+                          ? `${((reportData.grandtotal.sum_netprofit / reportData.grandtotal.sum_inv_amount) * 100).toFixed(2)}%`
+                          : '-'}
                         <Tooltip>
                           <TooltipTrigger type="button" className="cursor-help">
                             <TooltipIcon />
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>
-                              (Net / 계산서 금액) &times; 100
-                            </p>
+                            <p>(Net / 계산서 금액) &times; 100</p>
                             <p className="mt-1 text-red-400">
-                              ({formatAmount(Math.round(reportData.grandtotal.sum_netprofit / 1000000))} / {formatAmount(Math.round(reportData.grandtotal.sum_inv_amount / 1000000))}) &times; 100<br /><span className="text-xs text-gray-400"> (단위: 백만)</span>
+                              ({formatAmount(Math.round(reportData.grandtotal.sum_netprofit / 1000000))} /{' '}
+                              {formatAmount(Math.round(reportData.grandtotal.sum_inv_amount / 1000000))}) &times; 100
+                              <br />
+                              <span className="text-xs text-gray-400"> (단위: 백만)</span>
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -566,6 +673,40 @@ export default function Report() {
           <AppPagination totalPages={Math.ceil(total / pageSize)} initialPage={page} visibleCount={5} onPageChange={setPage} />
         )}
       </div>
+
+      <Dialog open={projectDialog} onOpenChange={setProjectDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>프로젝트 SAP 상태 변경</DialogTitle>
+            <DialogDescription className="leading-[1.3] break-keep">프로젝트 SAP 상태를 변경할 수 있습니다.</DialogDescription>
+          </DialogHeader>
+          <RadioGroup value={selectedSapStatus ?? undefined} onValueChange={(value) => setSelectedSapStatus(value as ProjectSapStatus)}>
+            <div className="grid grid-cols-2 items-start gap-2">
+              {sapStatusOptions
+                .filter((option) => option.value !== selectedProject?.sap_status)
+                .map((option) => (
+                  <RadioButton
+                    key={option.id}
+                    id={option.id}
+                    variant="dynamic"
+                    label={option.label}
+                    value={option.value}
+                    size="md"
+                    iconHide={true}
+                  />
+                ))}
+            </div>
+          </RadioGroup>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">취소</Button>
+            </DialogClose>
+            <Button type="button" onClick={() => handleSapStatusChange(selectedSapStatus as ProjectSapStatus)}>
+              변경사항 저장
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
