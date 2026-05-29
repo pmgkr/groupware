@@ -25,10 +25,10 @@ import {
   claimTempExpense,
   pInfoDelete,
 } from '@/api';
-import { ExpenseFilterPC } from './_responsive/ExpenseFilterPC';
-import { ExpenseFilterMo } from './_responsive/ExpenseFilterMo';
-import { ExpenseTable } from './_responsive/ExpenseTable';
-import { ExpenseCardList } from './_responsive/ExpenseCardList';
+import { ExpenseFilter } from './_components/ExpenseFilter';
+import { ExpenseFilterMo } from './_components/ExpenseFilterMo';
+import { ExpenseListTable } from './_responsive/ExpenseListTable';
+import { ExpenseListCard } from './_responsive/ExpenseListCard';
 import { AddInfoDialog } from '@/components/features/Project/_components/addInfoDialog';
 
 export default function ExpenseList() {
@@ -373,6 +373,7 @@ export default function ExpenseList() {
     { label: '임시저장', value: 'Saved' },
     { label: '승인대기', value: 'Claimed' },
     { label: '승인완료', value: 'Confirmed' },
+    { label: 'SAP등록', value: 'SAP' },
     // { label: '지급대기', value: 'Approved' },
     { label: '지급완료', value: 'Completed' },
     { label: '반려됨', value: 'Rejected' },
@@ -518,19 +519,24 @@ export default function ExpenseList() {
     proofRef,
     proofStatusRef,
 
-    onTabChange: handleTabChange,
-    onFilterChange: handleFilterChange,
-    onReset: resetAllFilters,
+    onTabChange: (tab: string) => handleTabChange(tab as 'all' | 'saved'),
+    onYearChange: (v: string) => handleFilterChange('year', v),
+    onTypeChange: (v: string[]) => handleFilterChange('type', v),
+    onStatusChange: (v: string[]) => handleFilterChange('status', v),
+    onProofChange: (v: string[]) => handleFilterChange('method', v),
+    onProofStatusChange: (v: string[]) => handleFilterChange('attach', v),
+    onRefresh: resetAllFilters,
     onCreate: () => setRegisterDialog(true),
   };
 
   return (
     <>
       {/* -------- 상단 필터 -------- */}
-      {isMobile ? <ExpenseFilterMo {...filterProps} /> : <ExpenseFilterPC {...filterProps} />}
+      {isMobile ? <ExpenseFilterMo role="user" {...filterProps} /> : <ExpenseFilter role="user" {...filterProps} />}
 
       {isMobile ? (
-        <ExpenseCardList
+        <ExpenseListCard
+          role="user"
           items={expenseList}
           activeTab={activeTab}
           checkedItems={checkedItems}
@@ -541,7 +547,8 @@ export default function ExpenseList() {
           loading={loading}
         />
       ) : (
-        <ExpenseTable
+        <ExpenseListTable
+          role="user"
           items={expenseList}
           activeTab={activeTab}
           checkedItems={checkedItems}

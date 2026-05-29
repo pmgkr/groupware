@@ -8,10 +8,10 @@ import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
-import { ManagerFilterPC } from '@/components/features/Expense/_responsive/ManagerFilterPC';
-import { ManagerFilterMo } from '@/components/features/Expense/_responsive/ManagerFilterMo';
-import { ManagerCardList } from '@/components/features/Expense/_responsive/ManagerCardList';
-import ManagerExpenseList from '@/components/features/Expense/_responsive/ManagerTable';
+import { ExpenseFilter } from '@/components/features/Expense/_components/ExpenseFilter';
+import { ExpenseFilterMo } from '@/components/features/Expense/_components/ExpenseFilterMo';
+import { ExpenseListCard } from '@/components/features/Expense/_responsive/ExpenseListCard';
+import { ExpenseListTable } from '@/components/features/Expense/_responsive/ExpenseListTable';
 import { AddInfoDialog } from '@/components/features/Project/_components/addInfoDialog';
 
 import { type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
@@ -248,6 +248,7 @@ export default function Nexpense() {
     { label: '임시저장', value: 'Saved' },
     { label: '승인대기', value: 'Claimed' },
     { label: '승인완료', value: 'Confirmed' },
+    { label: 'SAP등록', value: 'SAP' },
     { label: '지급대기', value: 'Approved' },
     { label: '지급완료', value: 'Completed' },
     { label: '반려됨', value: 'Rejected' },
@@ -275,7 +276,7 @@ export default function Nexpense() {
 
   const filterProps = {
     activeTab,
-    onTabChange: handleTabChange,
+    onTabChange: (tab: string) => handleTabChange(tab as 'all' | 'claimed'),
 
     selectedYear,
     yearOptions,
@@ -325,16 +326,17 @@ export default function Nexpense() {
     <>
       {isMobile ? (
         <>
-          <ManagerFilterMo {...filterProps} />
+          <ExpenseFilterMo role="manager" {...filterProps} />
 
-          <ManagerCardList
+          <ExpenseListCard
+            role="manager"
             activeTab={activeTab}
             loading={loading}
-            expenseList={expenseList}
+            items={expenseList}
             checkAll={checkAll}
             checkedItems={checkedItems}
-            handleCheckAll={handleCheckAll}
-            handleCheckItem={handleCheckItem}
+            onCheckAll={handleCheckAll}
+            onCheck={handleCheckItem}
             total={total}
             page={page}
             pageSize={pageSize}
@@ -344,15 +346,16 @@ export default function Nexpense() {
         </>
       ) : (
         <>
-          <ManagerFilterPC {...filterProps} />
-          <ManagerExpenseList
+          <ExpenseFilter role="manager" {...filterProps} />
+          <ExpenseListTable
+            role="manager"
             activeTab={activeTab}
             loading={loading}
-            expenseList={expenseList}
+            items={expenseList}
             checkAll={checkAll}
             checkedItems={checkedItems}
-            handleCheckAll={handleCheckAll}
-            handleCheckItem={handleCheckItem}
+            onCheckAll={handleCheckAll}
+            onCheck={handleCheckItem}
             total={total}
             page={page}
             pageSize={pageSize}

@@ -22,6 +22,7 @@ export type ProjectListItem = {
   project_status: string;
   manager_name: string;
   wdate: string;
+  sap_status: string;
 };
 
 // 프로젝트 리스트 조회용 파라미터 타입
@@ -35,6 +36,7 @@ export type ProjectListParams = {
   project_brand?: string; // PMG or MCS
   project_category?: string;
   project_status?: string;
+  sap_status?: string;
   s?: string; // 제목 검색 키워드
   tagged?: 'Y' | 'N' | string;
 };
@@ -83,6 +85,7 @@ export interface ProjectViewDTO {
   est_budget?: string;
   exp_cost?: string;
   is_locked: 'Y' | 'N';
+  sap_status: string;
 }
 
 // 프로젝트 멤버 타입

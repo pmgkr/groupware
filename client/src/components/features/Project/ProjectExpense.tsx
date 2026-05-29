@@ -18,10 +18,10 @@ import { Excel } from '@/assets/images/icons';
 import { OctagonAlert, ReceiptText, Percent } from 'lucide-react';
 
 import { useViewport } from '@/hooks/useViewport';
-import { ExpenseFilterPC } from './_responsive/ExpenseFilterPC';
-import { ExpenseFilterMo } from './_responsive/ExpenseFilterMo';
-import { ExpenseTable } from './_responsive/ExpenseTable';
-import { ExpenseCardList } from './_responsive/ExpenseCardList';
+import { PExpenseFilterPC } from './_responsive/PExpenseFilterPC';
+import { PExpenseFilterMo } from './_responsive/PExpenseFilterMo';
+import { PExpenseListTable } from './_responsive/PExpenseListTable';
+import { PExpenseListCard } from './_responsive/PExpenseListCard';
 import { AddInfoDialog } from './_components/addInfoDialog';
 
 import {
@@ -117,39 +117,6 @@ export default function Expense() {
   const [page, setPage] = useState(1);
   const pageSize = 15; // 한 페이지에 보여줄 개수
 
-  // 필터 변경 시 page 초기화
-  const handleFilterChange = (key: string, value: any) => {
-    setPage(1);
-
-    switch (key) {
-      case 'tab':
-        activeTab;
-        break;
-      case 'year':
-        setSelectedYear(value as string);
-        break;
-
-      case 'type':
-        setSelectedType(value as string[]);
-        break;
-
-      case 'status':
-        setSelectedStatus(value as string[]);
-        break;
-
-      case 'method':
-        setSelectedProof(value as string[]);
-        break;
-
-      case 'attach':
-        setSelectedProofStatus(value as string[]);
-        break;
-
-      default:
-        break;
-    }
-  };
-
   const resetAllFilters = () => {
     setSelectedYear(currentYear);
     setSelectedType([]);
@@ -168,8 +135,8 @@ export default function Expense() {
   };
 
   // 탭 변경 시 필터 초기화
-  const handleTabChange = (tab: 'saved' | 'all') => {
-    setActiveTab(tab);
+  const handleTabChange = (tab: 'saved' | 'all' | 'claimed') => {
+    setActiveTab(tab as 'all' | 'saved');
     setPage(1);
 
     setSelectedYear(currentYear);
@@ -412,6 +379,7 @@ export default function Expense() {
     { label: '임시저장', value: 'Saved' },
     { label: '승인대기', value: 'Claimed' },
     { label: '승인완료', value: 'Confirmed' },
+    { label: 'SAP등록', value: 'SAP' },
     // { label: '지급대기', value: 'Waiting' },
     { label: '지급완료', value: 'Completed' },
     { label: '반려됨', value: 'Rejected' },
@@ -563,6 +531,7 @@ export default function Expense() {
   );
 
   const filterProps = {
+    role: 'user' as const,
     data,
     activeTab,
     yearOptions,
@@ -584,17 +553,21 @@ export default function Expense() {
     proofStatusRef,
 
     onTabChange: handleTabChange,
-    onFilterChange: handleFilterChange,
+    onYearChange: (v: string) => { setSelectedYear(v); setPage(1); },
+    onTypeChange: (v: string[]) => { setSelectedType(v); setPage(1); },
+    onStatusChange: (v: string[]) => { setSelectedStatus(v); setPage(1); },
+    onProofChange: (v: string[]) => { setSelectedProof(v); setPage(1); },
+    onProofStatusChange: (v: string[]) => { setSelectedProofStatus(v); setPage(1); },
     onSearchInputChange: setSearchInput,
     onSearchSubmit: handleSearchSubmit,
-    onReset: resetAllFilters,
+    onRefresh: resetAllFilters,
     onCreate: () => setRegisterDialog(true),
   };
 
   return (
     <>
       {/* -------- 상단 필터 -------- */}
-      {isMobile ? <ExpenseFilterMo {...filterProps} /> : <ExpenseFilterPC {...filterProps} />}
+      {isMobile ? <PExpenseFilterMo {...filterProps} /> : <PExpenseFilterPC {...filterProps} />}
 
       {/* -------- 리스트 -------- */}
       {isMobile ? (
@@ -626,7 +599,8 @@ export default function Expense() {
               <strong className="text-foreground text-[13px] font-medium">{formatAmount(expenseTotal?.total_tax)}원</strong>
             </div>
           </div>
-          <ExpenseCardList
+          <PExpenseListCard
+            role="user"
             items={expenseList}
             activeTab={activeTab}
             checkedItems={checkedItems}
@@ -639,7 +613,8 @@ export default function Expense() {
         </>
       ) : (
         <>
-          <ExpenseTable
+          <PExpenseListTable
+            role="user"
             items={expenseList}
             activeTab={activeTab}
             checkedItems={checkedItems}

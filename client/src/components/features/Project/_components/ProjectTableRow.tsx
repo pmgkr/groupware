@@ -8,7 +8,7 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { Star } from 'lucide-react';
 import { type ProjectListItem } from '@/api';
-import { statusMap, parseCategories } from '../utils/projectUtil';
+import { getStatusBadge, parseCategories } from '../utils/projectUtil';
 
 type Props = {
   item: ProjectListItem;
@@ -19,7 +19,7 @@ type Props = {
 
 export const ProjectTableRow = memo(({ item, isFavorite = false, onToggleFavorite, search }: Props) => {
   const categories = parseCategories(item.project_cate);
-  const status = statusMap[item.project_status as keyof typeof statusMap];
+  const status = getStatusBadge(item.project_status, item.sap_status, 'sm');
 
   return (
     <TableRow className="[&_td]:px-2 [&_td]:text-[13px] [&_td]:leading-[1.3] max-2xl:[&_td]:text-sm">

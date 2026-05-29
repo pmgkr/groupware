@@ -7,7 +7,7 @@ import {
   FilePlus,
   FilePen,
   BanknoteArrowDown,
-  XCircle,
+  Bell,
   BanknoteArrowUp,
   Repeat,
   UserCheck,
@@ -52,6 +52,9 @@ export const ProjectHistory = ({ logs }: Props) => {
     'inv_created',
     'inv_completed',
     'inv_rejected',
+
+    // SAP
+    'SAP status',
   ];
   const filteredLogs = logs.filter((log) => ALLOWED_LOG_TYPES.includes(log.pl_type));
 
@@ -106,22 +109,37 @@ export const ProjectHistory = ({ logs }: Props) => {
       case 'inv_rejected':
         return <BanknoteX className="text-primary-blue size-4" />;
 
+      // SAP
+      case 'SAP status':
+        return <Bell className="text-primary-blue size-4" />;
+
       default:
         return <Info className="text-primary-blue size-4" />;
     }
   };
 
+  const REMARK_REPLACEMENTS: Record<string, string> = {
+    'project_title changed:': '[프로젝트 이름 변경]',
+    '(ready)': '미등록으',
+    '(registered)': '등록으',
+    '(completed)': '완료',
+    '하였습니다.': '했습니다.',
+    // 'budget changed:': '[예산 변경]',  // 추후 추가
+  };
+
   const renderRemark = (remark: string) => {
+    const processed = Object.entries(REMARK_REPLACEMENTS).reduce((acc, [from, to]) => acc.replace(from, to), remark);
+
     const keyword = '니다.';
-    const idx = remark.indexOf(keyword);
+    const idx = processed.indexOf(keyword);
 
     // '니다.'가 없으면 그대로 출력
     if (idx === -1) {
-      return <>{remark}</>;
+      return <>{processed}</>;
     }
 
-    const before = remark.slice(0, idx + keyword.length);
-    const after = remark.slice(idx + keyword.length).trim();
+    const before = processed.slice(0, idx + keyword.length);
+    const after = processed.slice(idx + keyword.length).trim();
 
     return (
       <>

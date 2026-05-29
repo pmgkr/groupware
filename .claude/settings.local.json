@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(Get-ChildItem -Recurse \"C:\\\\Users\\\\CC10\\\\Documents\\\\GitHub\\\\groupware\\\\client\\\\src\\\\components\\\\features\\\\Expense\" -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(ManagerListFilter\" && ls \"c:\\\\Users\\\\CC10\\\\Documents\\\\GitHub\\\\groupware\\\\client\\\\src\\\\components\\\\features\\\\Project\\\\_responsive\\\\\")",
+      "Bash(Remove-Item \"client/src/components/features/Expense/_responsive/AdminExpenseTable.tsx\", \"client/src/components/features/Expense/_responsive/AdminExpenseCard.tsx\", \"client/src/components/features/Expense/_responsive/ManagerTable.tsx\", \"client/src/components/features/Expense/_responsive/ManagerCardList.tsx\", \"client/src/components/features/Expense/_responsive/ExpenseTable.tsx\", \"client/src/components/features/Expense/_responsive/ExpenseCardList.tsx\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\CC10\\\\Documents\\\\GitHub\\\\groupware\\\\client\\\\src\\\\components\\\\features\\\\Project\" -Recurse -File)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

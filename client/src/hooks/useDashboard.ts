@@ -45,6 +45,7 @@ const getExpenseStepStatusName = (status: string): string => {
     Saved: '임시저장',
     Claimed: '승인대기',
     Confirmed: '승인완료',
+    SAP: 'SAP등록',
     Approved: '지급대기',
     Completed: '지급완료',
     Rejected: '반려됨',
@@ -60,6 +61,7 @@ const getExpenseBadgeColor = (status: string): string => {
     Claimed: 'bg-primary-blue-100 text-primary-blue [a&]:hover:bg-secondary/90 border-primary-blue-300/10',
     // default variant의 className
     Confirmed: 'bg-primary-blue-500 text-primary-foreground [a&]:hover:bg-primary/90',
+    SAP: 'bg-primary-pink-500',
     Approved: 'bg-primary-blue/80',
     Completed: 'bg-primary-blue',
     Rejected: 'bg-destructive',

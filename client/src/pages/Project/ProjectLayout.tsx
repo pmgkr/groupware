@@ -15,7 +15,7 @@ import { getProjectMember, getBookmarkList, addBookmark, removeBookmark, project
 import { getProjectView, type projectOverview, ProjectStatusChange, getProjectLogs, type ProjectLogs } from '@/api/project';
 
 import { Button } from '@components/ui/button';
-import { Badge } from '@components/ui/badge';
+import { getStatusBadge } from '@/components/features/Project/utils/projectUtil';
 import { RadioGroup, RadioButton } from '@components/ui/radioButton';
 import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Settings, Star, ArrowLeft, OctagonAlert, Lock, LockOpen } from 'lucide-react';
@@ -198,33 +198,9 @@ export default function ProjectLayout() {
   if (loading) return <div className="flex h-[50vh] items-center justify-center text-gray-500">로딩 중...</div>;
   if (!data) return <div className="h-[50vh] text-center">프로젝트 데이터를 찾을 수 없습니다.</div>;
 
-  // 비용 상태별 Badge 맵핑
-  const statusMap = {
-    'in-progress': (
-      <Badge variant="secondary" size="md">
-        진행중
-      </Badge>
-    ),
-    Closed: (
-      <Badge className="bg-primary-blue" size="md">
-        종료됨
-      </Badge>
-    ),
-    Completed: (
-      <Badge variant="grayish" size="md">
-        정산완료
-      </Badge>
-    ),
-    Cancelled: (
-      <Badge className="bg-destructive" size="md">
-        취소됨
-      </Badge>
-    ),
-  };
-
   const { info, summary, expense_data, expense_type } = data;
 
-  const status = statusMap[info.project_status as keyof typeof statusMap];
+  const status = getStatusBadge(info.project_status, info.sap_status, 'md', 'md');
   const fallbackListPath = listSearch ? `/project${listSearch}` : '/project';
 
   const statusOptions = [

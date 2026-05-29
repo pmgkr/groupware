@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
 
 import { type ProjectListItem } from '@/api';
-import { statusMap } from '../utils/projectUtil';
+import { getStatusBadge } from '../utils/projectUtil';
 
 type Props = {
   item: ProjectListItem;
@@ -14,7 +14,7 @@ type Props = {
 };
 
 export const ProjectCardRow = memo(({ item, isFavorite = false, onToggleFavorite, search }: Props) => {
-  const status = statusMap[item.project_status as keyof typeof statusMap];
+  const status = getStatusBadge(item.project_status, item.sap_status, 'sm');
 
   return (
     <div className="rounded-md border border-gray-300 bg-white p-4 py-3">

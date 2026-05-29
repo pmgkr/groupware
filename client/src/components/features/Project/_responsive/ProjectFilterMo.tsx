@@ -37,11 +37,15 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
     clientRef,
     teamRef,
     statusRef,
+    sapRef,
 
     categoryOptions,
     clientOptions,
     teamOptions,
     statusOptions,
+    sapOptions,
+
+    selectedSAP,
 
     onTabChange,
     onFilterChange,
@@ -61,6 +65,7 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
   const [draftClient, setDraftClient] = useState<string[]>(selectedClient);
   const [draftTeam, setDraftTeam] = useState<string[]>(selectedTeam);
   const [draftStatus, setDraftStatus] = useState<string[]>(selectedStatus);
+  const [draftSAP, setDraftSAP] = useState<string[]>(selectedSAP);
   const [draftSearch, setDraftSearch] = useState(searchInput);
   const activeMultiSelectRef = useRef<MultiSelectRef | null>(null); // Drawer 컴포넌트 내 MultiSelect 제어용
 
@@ -80,6 +85,7 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
     setDraftClient(selectedClient);
     setDraftTeam(selectedTeam);
     setDraftStatus(selectedStatus);
+    setDraftSAP(selectedSAP);
     setDraftSearch(searchInput);
   };
 
@@ -106,6 +112,7 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
     setDraftClient([]);
     setDraftTeam([]);
     setDraftStatus([]);
+    setDraftSAP([]);
     setDraftSearch('');
 
     // 3. MultiSelect UI 초기화
@@ -113,6 +120,7 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
     clientRef.current?.clear();
     teamRef.current?.clear();
     statusRef.current?.clear();
+    sapRef.current?.clear();
   };
 
   const applyFilters = () => {
@@ -125,6 +133,7 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
     onFilterChange('client_id', draftClient);
     onFilterChange('team_id', draftTeam);
     onFilterChange('status', draftStatus);
+    onFilterChange('sap_status', draftSAP);
 
     onSearchInputChange(draftSearch);
     onSearchSubmit();
@@ -294,6 +303,25 @@ export function ProjectFilterMobile(props: ProjectFilterProps) {
                         onOpen={() => multiOpen(statusRef.current)}
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <FilterTitle label="프로젝트 SAP 상태" />
+                    <MultiSelect
+                      ref={sapRef}
+                      className="w-full max-w-full min-w-auto!"
+                      maxCount={0}
+                      placeholder="프로젝트 SAP 상태 선택"
+                      options={sapOptions}
+                      defaultValue={draftSAP}
+                      onValueChange={setDraftSAP}
+                      simpleSelect={true}
+                      closeOnSelect={true}
+                      hideSelectAll={true}
+                      modalPopover={true}
+                      searchable={false}
+                      onOpen={() => multiOpen(sapRef.current)}
+                    />
                   </div>
 
                   <div>

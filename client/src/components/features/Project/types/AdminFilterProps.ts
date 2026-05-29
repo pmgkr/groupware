@@ -39,6 +39,6 @@ export interface AdminFilterProps {
   onDateRangeChange: (range?: DateRange) => void;
 
   onConfirm: () => void;
-  onReject: () => void;
   onRefresh: () => void;
+  onSAPRegi: () => void;
 }

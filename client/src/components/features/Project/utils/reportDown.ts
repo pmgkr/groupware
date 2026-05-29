@@ -70,6 +70,7 @@ const columns = [
   'GPM(%)',
   'Status',
   'isLocked', // 프로젝트 잠금 여부
+  'SAP Status',
 ];
 
 /* =======================
@@ -125,6 +126,7 @@ function buildRows(items: ProjectListItem[]) {
     'GPM(%)': item.GPM ? `${item.GPM}%` : '-',
     Status: item.project_status,
     isLocked: item.is_locked,
+    'SAP Status': item.sap_status || '-',
   }));
 }
 
@@ -161,6 +163,7 @@ function buildSummaryRow(label: string, data: ProjectListResponse['subtotal']) {
     },
     Status: '',
     isLocked: '',
+    'SAP Status': '',
   };
 }
 
@@ -207,7 +210,7 @@ export function downloadReportExcel(res: ProjectListResponse, params: { year?: s
     },
     {
       s: { r: subTotalRowIndex, c: 10 },
-      e: { r: subTotalRowIndex, c: 12 },
+      e: { r: subTotalRowIndex, c: 13 },
     },
 
     // Grand Total 병합 (A~E)
@@ -217,7 +220,7 @@ export function downloadReportExcel(res: ProjectListResponse, params: { year?: s
     },
     {
       s: { r: grandTotalRowIndex, c: 10 },
-      e: { r: grandTotalRowIndex, c: 12 },
+      e: { r: grandTotalRowIndex, c: 13 },
     },
   ];
 
@@ -259,6 +262,7 @@ export function downloadReportExcel(res: ProjectListResponse, params: { year?: s
     { wch: 10 }, // GPM (%)
     { wch: 12 }, // Status
     { wch: 10 }, // isLocked
+    { wch: 14 }, // SAP Status
   ];
 
   const wb = XLSX.utils.book_new();

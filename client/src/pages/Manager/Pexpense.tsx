@@ -8,10 +8,10 @@ import { notificationApi } from '@/api/notification';
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 
-import { ManagerFilterPC } from '@/components/features/Project/_responsive/ManagerFilterPC';
-import { ManagerFilterMo } from '@/components/features/Project/_responsive/ManagerFilterMo';
-import { ManagerCardList } from '@/components/features/Project/_responsive/ManagerCardList';
-import ManagerExpenseList from '@/components/features/Project/_responsive/ManagerTable';
+import { PExpenseFilterPC } from '@/components/features/Project/_responsive/PExpenseFilterPC';
+import { PExpenseFilterMo } from '@/components/features/Project/_responsive/PExpenseFilterMo';
+import { PExpenseListCard } from '@/components/features/Project/_responsive/PExpenseListCard';
+import { PExpenseListTable } from '@/components/features/Project/_responsive/PExpenseListTable';
 import { AddInfoDialog } from '@/components/features/Project/_components/addInfoDialog';
 
 import { type MultiSelectOption, type MultiSelectRef } from '@components/multiselect/multi-select';
@@ -150,8 +150,8 @@ export default function Pexpense() {
   };
 
   // 탭 변경 시 필터 초기화
-  const handleTabChange = (tab: 'all' | 'claimed') => {
-    setActiveTab(tab);
+  const handleTabChange = (tab: 'all' | 'claimed' | 'saved') => {
+    setActiveTab(tab as 'all' | 'claimed');
     setPage(1);
     resetAllFilters();
   };
@@ -250,7 +250,8 @@ export default function Pexpense() {
     { label: '임시저장', value: 'Saved' },
     { label: '승인대기', value: 'Claimed' },
     { label: '승인완료', value: 'Confirmed' },
-    { label: '지급대기', value: 'Approved' },
+    { label: 'SAP등록', value: 'SAP' },
+    // { label: '지급대기', value: 'Approved' },
     { label: '지급완료', value: 'Completed' },
     { label: '반려됨', value: 'Rejected' },
   ];
@@ -276,6 +277,7 @@ export default function Pexpense() {
   };
 
   const filterProps = {
+    role: 'manager' as const,
     activeTab,
     onTabChange: handleTabChange,
 
@@ -327,15 +329,16 @@ export default function Pexpense() {
     <>
       {isMobile ? (
         <>
-          <ManagerFilterMo {...filterProps} />
-          <ManagerCardList
+          <PExpenseFilterMo {...filterProps} />
+          <PExpenseListCard
+            role="manager"
             activeTab={activeTab}
             loading={loading}
-            expenseList={expenseList}
+            items={expenseList}
             checkAll={checkAll}
             checkedItems={checkedItems}
-            handleCheckAll={handleCheckAll}
-            handleCheckItem={handleCheckItem}
+            onCheckAll={handleCheckAll}
+            onCheck={handleCheckItem}
             total={total}
             page={page}
             pageSize={pageSize}
@@ -345,15 +348,16 @@ export default function Pexpense() {
         </>
       ) : (
         <>
-          <ManagerFilterPC {...filterProps} />
-          <ManagerExpenseList
+          <PExpenseFilterPC {...filterProps} />
+          <PExpenseListTable
+            role="manager"
             activeTab={activeTab}
             loading={loading}
-            expenseList={expenseList}
+            items={expenseList}
             checkAll={checkAll}
             checkedItems={checkedItems}
-            handleCheckAll={handleCheckAll}
-            handleCheckItem={handleCheckItem}
+            onCheckAll={handleCheckAll}
+            onCheck={handleCheckItem}
             total={total}
             page={page}
             pageSize={pageSize}

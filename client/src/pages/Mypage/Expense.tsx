@@ -13,8 +13,8 @@ import { type MultiSelectOption, type MultiSelectRef } from '@components/multise
 
 import { ExpenseMineTable } from '@components/features/Expense/_responsive/ExpenseMineTable';
 import { ExpenseMineCard } from '@components/features/Expense/_responsive/ExpenseMineCard';
-import { ExpenseMineFilter } from '@components/features/Expense/_components/ExpenseMineFilter';
-import { ExpenseMineMo } from '@components/features/Expense/_components/ExpenseMineMo';
+import { ExpenseFilter } from '@components/features/Expense/_components/ExpenseFilter';
+import { ExpenseFilterMo } from '@components/features/Expense/_components/ExpenseFilterMo';
 
 export default function Expense() {
   const isMobile = useIsMobileViewport();
@@ -54,7 +54,8 @@ export default function Expense() {
     { label: '임시저장', value: 'Saved' },
     { label: '승인대기', value: 'Claimed' },
     { label: '승인완료', value: 'Confirmed' },
-    { label: '지급대기', value: 'Approved' },
+    { label: 'SAP등록', value: 'SAP' },
+    // { label: '지급대기', value: 'Approved' },
     { label: '지급완료', value: 'Completed' },
     { label: '반려됨', value: 'Rejected' },
   ];
@@ -142,6 +143,7 @@ export default function Expense() {
     Saved: <Badge variant="grayish">임시저장</Badge>,
     Claimed: <Badge variant="secondary">승인대기</Badge>,
     Confirmed: <Badge>승인완료</Badge>,
+    SAP: <Badge className="bg-primary-pink-500">SAP등록</Badge>,
     Approved: <Badge className="bg-primary-blue/80">지급대기</Badge>,
     Completed: <Badge className="bg-primary-blue">지급완료</Badge>,
     Rejected: <Badge className="bg-destructive">반려됨</Badge>,
@@ -250,7 +252,7 @@ export default function Expense() {
 
   const filterProps = {
     activeTab,
-    onTabChange: handleTabChange,
+    onTabChange: (tab: string) => handleTabChange(tab as 'pexpense' | 'nexpense'),
 
     yearOptions,
     selectedYear,
@@ -275,14 +277,14 @@ export default function Expense() {
     onProofChange: (v: string[]) => handleFilterChange('method', v),
     onProofStatusChange: (v: string[]) => handleFilterChange('attach', v),
 
-    onReset: resetAllFilters,
+    onRefresh: resetAllFilters,
   };
 
   const search = `?${searchParams.toString()}`;
 
   return (
     <>
-      {isMobile ? <ExpenseMineMo {...filterProps} /> : <ExpenseMineFilter {...filterProps} />}
+      {isMobile ? <ExpenseFilterMo role="mine" {...filterProps} /> : <ExpenseFilter role="mine" {...filterProps} />}
 
       {isMobile ? (
         <ExpenseMineCard

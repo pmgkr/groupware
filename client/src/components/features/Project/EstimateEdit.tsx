@@ -338,7 +338,7 @@ export default function EstimateEdit() {
 
     addDialog({
       title: '견적서 수정',
-      message: `수정한 견적서를 등록합니다.`,
+      message: `수정한 견적서를 등록합니다.<br /><span class="text-primary">프로젝트가 SAP에 등록된 후, 견적서 수정 시 SAP 담당자에게 견적서 수정 사실을 꼭 알려주세요.</span>`,
       content: buildDialogContent(v, reason),
       confirmText: '등록',
       cancelText: '취소',

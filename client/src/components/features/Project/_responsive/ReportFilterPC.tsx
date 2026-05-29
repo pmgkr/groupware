@@ -19,19 +19,23 @@ export function ReportFilterPC({
   selectedClient,
   selectedTeam,
   selectedStatus,
+  selectedSAP,
   isLocked,
 
   clientOptions,
   teamOptions,
   statusOptions,
+  sapOptions,
 
   clientRef,
   teamRef,
   statusRef,
+  sapRef,
 
   onClientChange,
   onTeamChange,
   onStatusChange,
+  onSAPChange,
 
   searchInput,
   onSearchInputChange,
@@ -114,6 +118,21 @@ export function ReportFilterPC({
           defaultValue={selectedStatus}
           onValueChange={onStatusChange}
           simpleSelect={true}
+        />
+
+        {/* SAP status */}
+        <MultiSelect
+          size="sm"
+          ref={sapRef}
+          className="max-w-[80px] min-w-auto!"
+          maxCount={0}
+          autoSize={true}
+          placeholder="프로젝트 SAP 상태"
+          options={sapOptions}
+          defaultValue={selectedSAP}
+          onValueChange={onSAPChange}
+          simpleSelect={true}
+          hideSelectAll={true}
         />
 
         {/* lock */}

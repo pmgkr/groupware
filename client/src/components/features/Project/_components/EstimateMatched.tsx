@@ -24,7 +24,7 @@ export default function EstimateMatchedView({ items, project_id }: { items: Esti
         <TableHeader>
           <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className="text-left">항목명</TableHead>
-            <TableHead className="w-[28%]">가용 금액</TableHead>
+            <TableHead className="w-[28%]">잔여 가용 금액</TableHead>
             <TableHead className="w-[28%]">매칭된 금액</TableHead>
           </TableRow>
         </TableHeader>

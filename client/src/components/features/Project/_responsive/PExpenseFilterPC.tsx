@@ -1,73 +1,79 @@
-import type { ManagerFilterProps } from '../types/ManagerFilterProps';
+import type { PExpenseFilterProps } from '../types/PExpenseFilterProps';
 
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@/components/multiselect/multi-select';
-import { RefreshCw } from 'lucide-react';
+import { MultiSelect } from '@/components/multiselect/multi-select';
+import { RefreshCw, X } from 'lucide-react';
 
-export function ManagerListFilter(props: ManagerFilterProps) {
+export function PExpenseFilterPC(props: PExpenseFilterProps) {
   const {
+    role,
     activeTab,
     onTabChange,
-
-    selectedYear,
     yearOptions,
+    selectedYear,
     onYearChange,
-
     selectedType,
     selectedStatus,
     selectedProof,
     selectedProofStatus,
-
     typeOptions,
     statusOptions,
     proofMethod,
     proofStatusOptions,
-
     typeRef,
     statusRef,
     proofRef,
     proofStatusRef,
-
     onTypeChange,
     onStatusChange,
     onProofChange,
     onProofStatusChange,
-
-    checkedItems,
     onRefresh,
+    checkedItems,
     onConfirm,
+    searchInput,
+    onSearchInputChange,
+    onSearchSubmit,
+    data,
+    onCreate,
   } = props;
+
+  const tabs =
+    role === 'manager'
+      ? [
+          { value: 'claimed', label: '승인 대기' },
+          { value: 'all', label: '전체' },
+        ]
+      : [
+          { value: 'all', label: '전체' },
+          { value: 'saved', label: '임시 저장' },
+        ];
+
+  const showStatusFilter = role === 'user' || activeTab === 'all';
 
   return (
     <div className="mb-4 flex items-center justify-between">
       <div className="flex items-center">
-        {/* Tabs */}
+        {/* 탭 */}
         <div className="flex items-center rounded-sm bg-gray-300 p-1 px-1.5">
-          <Button
-            onClick={() => onTabChange('claimed')}
-            className={`h-8 w-18 rounded-sm p-0 text-sm ${
-              activeTab === 'claimed'
-                ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-            }`}>
-            승인 대기
-          </Button>
-
-          <Button
-            onClick={() => onTabChange('all')}
-            className={`h-8 w-18 rounded-sm p-0 text-sm ${
-              activeTab === 'all'
-                ? 'bg-primary hover:bg-primary active:bg-primary text-white'
-                : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
-            }`}>
-            전체
-          </Button>
+          {tabs.map(({ value, label }) => (
+            <Button
+              key={value}
+              onClick={() => onTabChange(value as any)}
+              className={`h-8 w-18 rounded-sm p-0 text-sm ${
+                activeTab === value
+                  ? 'bg-primary hover:bg-primary active:bg-primary text-white'
+                  : 'text-muted-foreground bg-transparent hover:bg-transparent active:bg-transparent'
+              }`}>
+              {label}
+            </Button>
+          ))}
         </div>
 
-        {/* Filter Group */}
+        {/* 필터 그룹 */}
         <div className="flex items-center gap-x-2 before:mr-3 before:ml-5 before:inline-flex before:h-7 before:w-[1px] before:bg-gray-300 before:align-middle">
-          {/* 연도 */}
           <Select value={selectedYear} onValueChange={onYearChange}>
             <SelectTrigger size="sm" className="px-2">
               <SelectValue placeholder="연도 선택" />
@@ -81,7 +87,6 @@ export function ManagerListFilter(props: ManagerFilterProps) {
             </SelectContent>
           </Select>
 
-          {/* 용도 */}
           <MultiSelect
             size="sm"
             className="max-w-[88px] min-w-auto!"
@@ -98,7 +103,6 @@ export function ManagerListFilter(props: ManagerFilterProps) {
             simpleSelect={true}
           />
 
-          {/* 증빙수단 */}
           <MultiSelect
             size="sm"
             className="max-w-[88px] min-w-auto!"
@@ -115,7 +119,6 @@ export function ManagerListFilter(props: ManagerFilterProps) {
             simpleSelect={true}
           />
 
-          {/* 증빙상태 */}
           <MultiSelect
             size="sm"
             className="max-w-[88px] min-w-auto!"
@@ -132,8 +135,7 @@ export function ManagerListFilter(props: ManagerFilterProps) {
             simpleSelect={true}
           />
 
-          {/* 상태 */}
-          {activeTab === 'all' && (
+          {showStatusFilter && (
             <MultiSelect
               size="sm"
               className="max-w-[88px] min-w-auto!"
@@ -151,7 +153,6 @@ export function ManagerListFilter(props: ManagerFilterProps) {
             />
           )}
 
-          {/* 새로고침 */}
           <Button
             type="button"
             variant="svgIcon"
@@ -163,10 +164,39 @@ export function ManagerListFilter(props: ManagerFilterProps) {
         </div>
       </div>
 
-      {/* 승인하기 버튼 */}
-      <Button size="sm" onClick={onConfirm} disabled={checkedItems.length === 0}>
-        승인하기
-      </Button>
+      {/* 우측 */}
+      {role === 'manager' ? (
+        <Button size="sm" onClick={onConfirm} disabled={(checkedItems?.length ?? 0) === 0}>
+          승인하기
+        </Button>
+      ) : (
+        <div className="flex gap-x-2">
+          <div className="relative">
+            <Input
+              className="max-w-42"
+              size="sm"
+              placeholder="비용 제목 또는 작성자 검색"
+              value={searchInput}
+              onChange={(e) => onSearchInputChange?.(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit?.(searchInput ?? '')}
+            />
+            {searchInput && (
+              <Button
+                type="button"
+                variant="svgIcon"
+                className="absolute top-1/2 right-0 h-full w-6 -translate-y-[50%] px-0 text-gray-500"
+                onClick={onRefresh}>
+                <X className="size-3.5" />
+              </Button>
+            )}
+          </div>
+          {data?.project_status === 'in-progress' && data?.is_locked === 'N' && (
+            <Button size="sm" onClick={onCreate}>
+              비용 작성하기
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

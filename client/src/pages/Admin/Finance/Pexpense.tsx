@@ -18,16 +18,17 @@ import {
   getAdminExpenseList,
   confirmExpense,
   setDdate,
+  updateSAP,
   getPDFDownload,
   getMultiPDFDownload,
   getAdminExpenseExcel,
   sendExpenseToCBox,
   type ExpenseListItems,
 } from '@/api/admin/pexpense';
-import { AdminListFilter } from '@components/features/Project/_components/AdminListFilter';
-import { AdminListFilterMo } from '@components/features/Project/_components/AdminListFilterMo';
-import AdminExpenseCard from '@components/features/Project/_responsive/AdminExpenseCard';
-import AdminExpenseTable from '@components/features/Project/_responsive/AdminExpenseTable';
+import { AdminFilterPC } from '@components/features/Project/_responsive/AdminFilterPC';
+import { AdminFilterMo } from '@components/features/Project/_responsive/AdminFilterMo';
+import { PExpenseListCard } from '@components/features/Project/_responsive/PExpenseListCard';
+import { PExpenseListTable } from '@components/features/Project/_responsive/PExpenseListTable';
 import { CBoxDialog } from '@/components/features/Expense/_components/AdminCBox';
 import { AddInfoDialog } from '@/components/features/Project/_components/addInfoDialog';
 import { triggerDownload } from '@components/features/Project/utils/download';
@@ -51,7 +52,7 @@ export default function Pexpense() {
   const yearOptions = getGrowingYears(); // yearOptions
   const [selectedYear, setSelectedYear] = useState(() => searchParams.get('year') || currentYear);
   const [selectedType, setSelectedType] = useState<string[]>(() => searchParams.get('type')?.split(',') ?? []);
-  const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('status')?.split(',') ?? ['Confirmed']);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>(() => searchParams.get('status')?.split(',') ?? ['Confirmed', 'SAP']);
   const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
   const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>(() => searchParams.get('attach')?.split(',') ?? []);
   const [selectedDdate, setSelectedDdate] = useState(() => searchParams.get('ddate') || '');
@@ -134,8 +135,6 @@ export default function Pexpense() {
 
       setSearchParams(params);
       const res = await getAdminExpenseList(params);
-
-      console.log('📦 리스트 조회', res);
 
       setExpenseList(res.items);
       setTotal(res.total);
@@ -287,9 +286,7 @@ export default function Pexpense() {
     });
   };
 
-  // 비용 반려 이벤트 핸들러
-  const handleReject = () => {};
-
+  // 지급예정일 세팅 핸들러
   const handleSetDdate = async (seq: number, ddate: Date) => {
     if (seq === null || ddate === undefined) {
       addAlert({
@@ -324,6 +321,82 @@ export default function Pexpense() {
         duration: 2000,
       });
     }
+  };
+
+  // SAP 등록 핸들러
+  const handleSAPRegi = () => {
+    if (checkedItems.length === 0) {
+      addAlert({
+        title: '선택된 비용 항목이 없습니다.',
+        message: 'SAP 등록된 비용 항목을 선택해주세요.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+      return;
+    }
+
+    const selectedRows = expenseList.filter((item) => checkedItems.includes(item.seq));
+    const nonConfirmed = selectedRows.filter((item) => item.status !== 'Confirmed'); // 승인완료가 아닌 항목은 제외
+
+    if (nonConfirmed.length > 0) {
+      const invalidIds = nonConfirmed.map((i) => i.exp_id).join(', ');
+
+      addAlert({
+        title: '등록 불가한 비용 항목이 포함되어 있습니다.',
+        message: `승인완료 상태의 비용항목만 가능합니다.<br />(등록 불가 ID : ${invalidIds})`,
+        icon: <OctagonAlert />,
+        duration: 3000,
+      });
+      return;
+    }
+
+    addDialog({
+      title: '선택한 비용 항목을 SAP 등록 처리합니다.',
+      message: `<span class="text-primary-blue-500 font-semibold">${checkedItems.length}</span>건의 비용을 SAP 등록 처리 하시겠습니까?`,
+      confirmText: '승인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          const payload = { seqs: checkedItems };
+          const res = await updateSAP(payload);
+
+          for (const row of selectedRows) {
+            await notificationApi.registerNotification({
+              user_id: row.user_id,
+              user_name: row.user_nm,
+              noti_target: user_id!,
+              noti_title: `${row.exp_id} · ${row.el_title}`,
+              noti_message: `청구한 비용이 SAP 등록되었습니다.`,
+              noti_type: 'expense',
+              noti_url: `/project/${row.project_id}/expense/${row.seq}`,
+            });
+          }
+
+          if (res.ok) {
+            addAlert({
+              title: '비용 등록이 완료되었습니다.',
+              message: `<p><span class="text-primary-blue-500 font-semibold">${res.updated_count}</span>건의 비용이 SAP 등록 처리되었습니다.</p>`,
+              icon: <OctagonAlert />,
+              duration: 2000,
+            });
+          }
+
+          setExpenseList((prev) => prev.filter((item) => !checkedItems.includes(item.seq)));
+          setCheckedItems([]);
+        } catch (err) {
+          console.error('❌ 등록 실패:', err);
+
+          addAlert({
+            title: '비용 SAP 등록 처리 실패',
+            message: `비용 SAP 등록 처리 중 오류가 발생했습니다. \n잠시 후 다시 시도해주세요.`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+        } finally {
+          setCheckAll(false);
+        }
+      },
+    });
   };
 
   const handlePDFDownload = async (seq: number, expId: string, userName: string) => {
@@ -484,7 +557,7 @@ export default function Pexpense() {
     { label: '임시저장', value: 'Saved' },
     { label: '승인대기', value: 'Claimed' },
     { label: '승인완료', value: 'Confirmed' },
-    // { label: '지급대기', value: 'Waiting' },
+    { label: 'SAP등록', value: 'SAP' },
     { label: '지급완료', value: 'Completed' },
     { label: '반려됨', value: 'Rejected' },
   ];
@@ -540,26 +613,22 @@ export default function Pexpense() {
 
     onRefresh: () => resetAllFilters(),
     onConfirm: () => handleConfirm(),
-    onReject: () => handleReject(),
+    onSAPRegi: () => handleSAPRegi(),
   };
 
   return (
     <>
-      {isMobile ? <AdminListFilterMo {...filterProps} /> : <AdminListFilter {...filterProps} />}
+      {isMobile ? <AdminFilterMo {...filterProps} /> : <AdminFilterPC {...filterProps} />}
 
       {isMobile ? (
-        <AdminExpenseCard
+        <PExpenseListCard
+          role="admin"
           loading={loading}
-          expenseList={expenseList}
+          items={expenseList}
           checkAll={checkAll}
           checkedItems={checkedItems}
-          handleCheckAll={handleCheckAll}
-          handleCheckItem={handleCheckItem}
-          handleSetDdate={handleSetDdate}
-          handlePDFDownload={handlePDFDownload}
-          handleMultiPDFDownload={handleMultiPDFDownload}
-          handleExcelDownload={handleExcelDownload}
-          onOpenCBox={handleOpenCBox}
+          onCheckAll={handleCheckAll}
+          onCheck={handleCheckItem}
           total={total}
           page={page}
           pageSize={pageSize}
@@ -567,17 +636,18 @@ export default function Pexpense() {
           onAInfo={handleAddInfo}
         />
       ) : (
-        <AdminExpenseTable
+        <PExpenseListTable
+          role="admin"
           loading={loading}
-          expenseList={expenseList}
+          items={expenseList}
           checkAll={checkAll}
           checkedItems={checkedItems}
-          handleCheckAll={handleCheckAll}
-          handleCheckItem={handleCheckItem}
-          handleSetDdate={handleSetDdate}
+          onCheckAll={handleCheckAll}
+          onCheck={handleCheckItem}
+          onDdate={handleSetDdate}
           handlePDFDownload={handlePDFDownload}
-          handleMultiPDFDownload={handleMultiPDFDownload}
-          handleExcelDownload={handleExcelDownload}
+          onMultiPDFDownload={handleMultiPDFDownload}
+          onExcelDownload={handleExcelDownload}
           onOpenCBox={handleOpenCBox}
           total={total}
           page={page}
