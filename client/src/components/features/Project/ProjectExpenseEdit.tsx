@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { useIsMobileViewport } from '@/hooks/useViewport';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { cn } from '@/lib/utils';
@@ -32,11 +33,11 @@ import { RadioButton, RadioGroup } from '@components/ui/radioButton';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@components/ui/select';
 import { Calendar, TooltipNoti, Close } from '@/assets/images/icons';
-import { FileText, UserRound, OctagonAlert } from 'lucide-react';
+import { FileText, UserRound, OctagonAlert, X } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import ExpenseProposalCard from './_responsive/ExpenseProposalCard';
 
 import { format, parseISO } from 'date-fns';
-import { statusIconMap, getLogMessage } from '../Expense/utils/statusUtils';
 
 import { getProposalList, matchProjectWithProposal, type ProposalItem } from '@/api/expense/proposal';
 
@@ -71,6 +72,7 @@ const editSchema = z.object({
         tax: z.string().optional(),
         total: z.string().optional(),
         pro_id: z.number().nullable().optional(),
+        item_remark: z.string().optional(),
 
         // 외주용역비 전용
         add_info_seq: z.number().nullable().optional(),
@@ -135,6 +137,7 @@ export default function ProjectExpenseEdit() {
   const { expId, projectId } = useParams();
   const navigate = useNavigate();
   const { user_id } = useUser();
+  const isMobile = useIsMobileViewport();
 
   // Alert & Dialog hooks
   const { addAlert } = useAppAlert();
@@ -290,6 +293,7 @@ export default function ProjectExpenseEdit() {
             tax: i.ei_tax.toString(),
             total: i.ei_total.toString(),
             pro_id: i.pro_id ? Number(i.pro_id) : null,
+            item_remark: i.remark || '',
             rp_title: i.rp_title || null,
 
             // 외주용역비
@@ -464,7 +468,7 @@ export default function ProjectExpenseEdit() {
   const [proposalList, setProposalList] = useState<ProposalItem[]>([]);
   const [selectedProposalId, setSelectedProposalId] = useState<number | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
-  const [selectedProposalByRow, setSelectedProposalByRow] = useState<Record<number, number>>({});
+  const [selectedProposalByRow, setSelectedProposalByRow] = useState<Record<number, number | null>>({});
 
   const handleOpenMatchingDialog = async () => {
     setDialogOpen(true);
@@ -650,6 +654,7 @@ export default function ProjectExpenseEdit() {
           ei_tax: Number(item.tax || 0),
           ei_total: Number(item.total || 0),
           pro_id: selectedProId ?? item.pro_id,
+          remark: item.item_remark || '',
           attachments: [...existingAtt, ...newAtt],
         };
       });
@@ -683,6 +688,7 @@ export default function ProjectExpenseEdit() {
           ei_tax: item.ei_tax,
           ei_total: item.ei_total,
           pro_id: item.pro_id,
+          remark: item.remark,
           attachments: item.attachments.map((att: any) => ({
             filename: att.fname,
             savename: att.sname,
@@ -791,9 +797,14 @@ export default function ProjectExpenseEdit() {
             }
           } catch (e) {
             console.error('❌ 기안서 매칭 실패:', e);
-            setAlertTitle('부분 실패');
-            setAlertDescription('비용은 수정되었으나 기안서 매칭에 실패했습니다.');
-            setAlertOpen(true);
+
+            hideLoading();
+            addAlert({
+              title: '비용 등록 실패',
+              message: `비용 기안서 매칭 중 오류가 발생했습니다. \n 다시 시도해주세요.`,
+              icon: <OctagonAlert />,
+              duration: 2000,
+            });
             return;
           }
         } else if (selectedProId && !isProposalChanged) {
@@ -834,7 +845,7 @@ export default function ProjectExpenseEdit() {
     const isEstimate = header.is_estimate === 'Y';
 
     addDialog({
-      title: '프로젝트 비용 수정',
+      title: '프로젝트 비용을 수정합니다.',
       message: isEstimate
         ? `비용을 수정 하시겠습니까?<br />비용 금액이 수정되면 매칭한 견적서 항목이 리셋됩니다.`
         : `비용을 수정 하시겠습니까?`,
@@ -877,7 +888,7 @@ export default function ProjectExpenseEdit() {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid grid-rows-1 gap-6 pt-6 pb-12 md:min-h-160 md:grid-cols-6">
             <div className="tracking-tight md:col-span-4">
-              <SectionHeader title="기본 정보" className="mb-4" />
+              <SectionHeader title="기본 정보" className="mb-2 md:mb-4" />
               {/* 기본정보 입력 폼 */}
               <div className="mb-6">
                 <FormField
@@ -889,7 +900,10 @@ export default function ProjectExpenseEdit() {
                         증빙 수단<span className="text-primary-blue-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <RadioGroup onValueChange={field.onChange} value={field.value} className="flex gap-x-1.5 [&_button]:mb-0">
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          className="grid grid-cols-4 gap-2 md:flex md:gap-x-1.5 [&_button]:mb-0">
                           <RadioButton value="PMG" label="PMG" variant="dynamic" iconHide />
                           <RadioButton value="MCS" label="MCS" variant="dynamic" iconHide />
                           <RadioButton value="개인" label="개인카드" variant="dynamic" iconHide />
@@ -904,7 +918,7 @@ export default function ProjectExpenseEdit() {
                 />
               </div>
 
-              <div className="grid-row-3 mb-12 grid grid-cols-4 gap-y-6 tracking-tight">
+              <div className="grid-row-3 mb-12 grid grid-cols-4 gap-2 gap-y-4 tracking-tight md:gap-0 md:gap-y-6">
                 <div className="col-span-4 text-base leading-[1.5] text-gray-700">
                   <FormField
                     control={form.control}
@@ -923,7 +937,7 @@ export default function ProjectExpenseEdit() {
                   />
                 </div>
 
-                <div className="pr-5 text-base leading-[1.5] text-gray-700">
+                <div className="col-span-2 text-base leading-[1.5] text-gray-700 md:col-span-1 md:pr-5">
                   <FormField
                     control={control}
                     name="bank_account"
@@ -972,7 +986,7 @@ export default function ProjectExpenseEdit() {
                   />
                 </div>
 
-                <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
+                <div className="md:long-v-divider col-span-2 text-base leading-[1.5] text-gray-700 md:col-span-1 md:px-5">
                   <FormField
                     control={control}
                     name="bank_code"
@@ -1013,7 +1027,7 @@ export default function ProjectExpenseEdit() {
                   />
                 </div>
 
-                <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
+                <div className="md:long-v-divider col-span-2 text-base leading-[1.5] text-gray-700 md:col-span-1 md:px-5">
                   <FormField
                     control={control}
                     name="account_name"
@@ -1040,7 +1054,7 @@ export default function ProjectExpenseEdit() {
                   onRefresh={fetchMyAccounts}
                 />
 
-                <div className="long-v-divider px-5 text-base leading-[1.5] text-gray-700">
+                <div className="md:long-v-divider col-span-2 text-base leading-[1.5] text-gray-700 md:col-span-1 md:px-5">
                   <FormField
                     control={control}
                     name="el_deposit"
@@ -1110,35 +1124,18 @@ export default function ProjectExpenseEdit() {
               <SectionHeader title="비용 항목" className="mb-0" />
               <div>
                 {fields.map((field, index) => {
-                  const currentProId = selectedProposalByRow[index] ?? data?.items?.[index]?.pro_id;
+                  const currentProId = index in selectedProposalByRow ? selectedProposalByRow[index] : field.pro_id;
                   const currentProTitle = currentProId
                     ? proposalList.find((p) => p.rp_seq === currentProId)?.rp_title || data?.items?.[index]?.rp_title
                     : null;
+                  const currentProCost = currentProId ? (proposalList.find((p) => p.rp_seq === currentProId)?.rp_cost ?? null) : null;
                   const type = watchedItems?.[index]?.type;
 
                   return (
-                    <article
-                      key={`${field.id}`}
-                      className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0 last-of-type:pb-4">
-                      {header.is_estimate === 'N' && (
-                        <div className="absolute top-2 left-0 flex w-full items-center justify-end gap-2">
-                          <Button
-                            type="button"
-                            variant="outlinePrimary"
-                            size="xs"
-                            className="..."
-                            onClick={() => {
-                              setActiveRowIndex(index);
-                              handleOpenMatchingDialog();
-                            }}>
-                            <FileText className="size-3.5" />
-                            {currentProTitle || '기안서 매칭'}
-                          </Button>
-                        </div>
-                      )}
-                      <div className="flex justify-between">
+                    <article key={`${field.id}`} className="relative border-b border-gray-300 px-2 py-4 last-of-type:border-b-0">
+                      <div className="flex flex-col justify-between gap-2 md:flex-row md:flex-wrap md:gap-0">
                         <input type="hidden" name={`expense_items.${index}.number`} value="" />
-                        <div className="grid w-[66%] grid-cols-3 gap-4 tracking-tight">
+                        <div className="grid w-full grid-cols-2 items-start gap-4 tracking-tight md:w-[66%] md:grid-cols-3">
                           <div className="text-base leading-[1.5] text-gray-700">
                             <FormField
                               control={control}
@@ -1316,7 +1313,7 @@ export default function ProjectExpenseEdit() {
                             />
                           </div>
                         </div>
-                        <div className="w-[32%] pl-2">
+                        <div className="w-full max-md:order-3 md:w-[32%] md:pl-2">
                           <AttachmentFieldEdit
                             name={`expense_attachment${index}`}
                             rowIndex={index + 1}
@@ -1330,6 +1327,81 @@ export default function ProjectExpenseEdit() {
                             setActiveFile={setActiveFile}
                           />
                         </div>
+
+                        {/* 비고 */}
+                        <div className={cn(header.is_estimate === 'N' ? 'w-full md:w-[66%]' : 'w-full', 'max-md:order-2 md:mt-4')}>
+                          <FormField
+                            control={control}
+                            name={`expense_items.${index}.item_remark`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="h-5 font-bold text-gray-950">비고</FormLabel>
+                                <FormControl>
+                                  <Textarea
+                                    placeholder="비용 항목별 추가 기입 정보가 있다면 입력해 주세요."
+                                    className="h-12 min-h-12 overflow-hidden"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        {/* 기안서 매칭 */}
+                        {header.is_estimate === 'N' && (
+                          <div className="w-full max-md:order-4 md:mt-4 md:w-[32%] md:pl-2">
+                            <FormItem>
+                              <FormLabel className="flex h-5 justify-between font-bold text-gray-950">
+                                기안서 매칭
+                                {currentProCost && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveFile(String(index));
+                                      handleOpenMatchingDialog();
+                                    }}
+                                    className="text-primary-blue-500 hover:text-primary-blue-700 cursor-pointer justify-between text-sm font-normal">
+                                    다시 선택
+                                  </button>
+                                )}
+                              </FormLabel>
+                              <FormControl>
+                                {currentProTitle ? (
+                                  <div className="flex h-12 w-full items-center justify-between gap-2 rounded-md border border-gray-400 p-2 text-sm text-gray-700">
+                                    <span className="flex-1 truncate text-left">{currentProTitle}</span>
+                                    {currentProCost ? (
+                                      <span className="shrink-0">{formatAmount(currentProCost)}원</span>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        className="text-gray-400 hover:text-gray-600"
+                                        onClick={() => {
+                                          setSelectedProposalByRow((prev) => ({ ...prev, [index]: null }));
+                                          form.setValue(`expense_items.${index}.pro_id`, null, { shouldDirty: true });
+                                          setSelectedProposalId(null);
+                                          setSelectedProposal(null);
+                                        }}>
+                                        <X className="size-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="text-muted-foreground flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-gray-400 p-2 text-sm"
+                                    onClick={() => {
+                                      setActiveRowIndex(index);
+                                      handleOpenMatchingDialog();
+                                    }}>
+                                    기안서 선택
+                                  </button>
+                                )}
+                              </FormControl>
+                            </FormItem>
+                          </div>
+                        )}
                       </div>
 
                       {type === '외주용역비' && <OutsourceFields control={control} index={index} setValue={form.setValue} />}
@@ -1337,8 +1409,8 @@ export default function ProjectExpenseEdit() {
                     </article>
                   );
                 })}
-                <div className="bg-primary-blue-100 flex justify-between px-4 py-4 text-base font-medium">
-                  <div className="flex w-[66%] justify-between">
+                <div className="bg-primary-blue-100 mt-2 flex justify-between px-4 py-4 text-base font-medium">
+                  <div className="flex w-full justify-between md:w-[66%]">
                     <span>총 비용</span>
                     <span>{formattedTotal ? formattedTotal : 0} 원</span>
                   </div>
@@ -1346,44 +1418,46 @@ export default function ProjectExpenseEdit() {
               </div>
             </div>
 
-            <div className="relative col-span-2">
-              <div className="sticky top-20 left-0 flex h-[calc(100vh-var(--spacing)*22)] flex-col justify-center gap-3 rounded-xl bg-gray-300 p-5">
-                <div className="flex flex-none items-center justify-end">
-                  {hasFiles && (
-                    <Button type="button" size="sm" onClick={handleAddUploadClick}>
-                      추가 업로드
-                    </Button>
-                  )}
-                </div>
-                <UploadArea
-                  ref={uploadRef}
-                  files={files}
-                  setFiles={setFiles}
-                  onFilesChange={handleFilesChange}
-                  linkedRows={linkedRows}
-                  activeFile={activeFile}
-                  setActiveFile={setActiveFile}
-                />
-                <div className="flex flex-none justify-between">
-                  <div className="flex gap-1.5">
-                    <Button type="button" variant="outline" size="sm" onClick={() => uploadRef.current?.deleteSelectedFiles()}>
-                      선택 삭제
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => uploadRef.current?.deleteAllFiles()}>
-                      전체 삭제
-                    </Button>
+            {!isMobile && (
+              <div className="relative col-span-2">
+                <div className="sticky top-20 left-0 flex h-[calc(100vh-var(--spacing)*22)] flex-col justify-center gap-3 rounded-xl bg-gray-300 p-5">
+                  <div className="flex flex-none items-center justify-end">
+                    {hasFiles && (
+                      <Button type="button" size="sm" onClick={handleAddUploadClick}>
+                        추가 업로드
+                      </Button>
+                    )}
+                  </div>
+                  <UploadArea
+                    ref={uploadRef}
+                    files={files}
+                    setFiles={setFiles}
+                    onFilesChange={handleFilesChange}
+                    linkedRows={linkedRows}
+                    activeFile={activeFile}
+                    setActiveFile={setActiveFile}
+                  />
+                  <div className="flex flex-none justify-between">
+                    <div className="flex gap-1.5">
+                      <Button type="button" variant="outline" size="sm" onClick={() => uploadRef.current?.deleteSelectedFiles()}>
+                        선택 삭제
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={() => uploadRef.current?.deleteAllFiles()}>
+                        전체 삭제
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* ---------------------- 하단 버튼 ---------------------- */}
-          <div className="my-10 flex justify-center gap-2">
-            <Button type="submit" className="min-w-[120px]">
+          <div className="mt-6 flex justify-center gap-2 md:my-10">
+            <Button type="submit" className="min-w-[120px] max-md:flex-1">
               수정
             </Button>
-            <Button type="button" variant="outline" className="min-w-[120px]" asChild>
+            <Button type="button" variant="outline" className="min-w-[120px] max-md:flex-1" asChild>
               <Link to={`/project/${projectId}/expense/${expId}`}>취소</Link>
             </Button>
           </div>
@@ -1392,63 +1466,72 @@ export default function ProjectExpenseEdit() {
 
       {/* 기안서 매칭 다이얼로그 */}
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-5xl rounded-lg max-md:w-[400px] max-md:max-w-[92%]">
           <DialogHeader>
             <DialogTitle>기안서 매칭</DialogTitle>
           </DialogHeader>
-
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">구분</TableHead>
-                <TableHead>제목</TableHead>
-                <TableHead className="w-[120px]">금액</TableHead>
-                <TableHead className="w-[240px]">작성일</TableHead>
-                <TableHead className="w-[40px]" />
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {hasProposalList ? (
+          {isMobile ? (
+            <ExpenseProposalCard
+              proposalList={proposalList}
+              selectedProposalId={selectedProposalId}
+              onSelect={(p) => {
+                setSelectedProposalId(p ? p.rp_seq : null);
+                setSelectedProposal(p);
+              }}
+            />
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center text-sm text-gray-500">
-                    등록된 기안서가 없습니다.
-                  </TableCell>
+                  <TableHead className="w-[100px]">구분</TableHead>
+                  <TableHead>제목</TableHead>
+                  <TableHead className="w-[120px]">금액</TableHead>
+                  <TableHead className="w-[240px]">작성일</TableHead>
+                  <TableHead className="w-[40px]" />
                 </TableRow>
-              ) : (
-                proposalList.map((p) => {
-                  const isSelected = selectedProposalId === p.rp_seq;
-                  const isDisabled = selectedProposalId !== null && !isSelected;
+              </TableHeader>
 
-                  return (
-                    <TableRow key={p.rp_seq} className="hover:bg-gray-100">
-                      <TableCell>{p.rp_category}</TableCell>
-                      <TableCell className="text-left">{p.rp_title}</TableCell>
-                      <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
-                      <TableCell>{formatKST(p.rp_date)}</TableCell>
-                      <TableCell className="px-2.5">
-                        <Checkbox
-                          size="sm"
-                          checked={isSelected}
-                          disabled={isDisabled}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedProposalId(p.rp_seq);
-                              setSelectedProposal(p);
-                            } else {
-                              setSelectedProposalId(null);
-                              setSelectedProposal(null);
-                            }
-                          }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
+              <TableBody>
+                {hasProposalList ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-10 text-center text-sm text-gray-500">
+                      등록된 기안서가 없습니다.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  proposalList.map((p) => {
+                    const isSelected = selectedProposalId === p.rp_seq;
+                    const isDisabled = selectedProposalId !== null && !isSelected;
 
+                    return (
+                      <TableRow key={p.rp_seq} className="hover:bg-gray-100 [&_td]:text-[13px]">
+                        <TableCell>{p.rp_category}</TableCell>
+                        <TableCell className="text-left">{p.rp_title}</TableCell>
+                        <TableCell className="text-right">{formatAmount(p.rp_cost)}원</TableCell>
+                        <TableCell>{formatKST(p.rp_date)}</TableCell>
+                        <TableCell className="px-2.5">
+                          <Checkbox
+                            size="sm"
+                            checked={isSelected}
+                            disabled={isDisabled}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedProposalId(p.rp_seq);
+                                setSelectedProposal(p);
+                              } else {
+                                setSelectedProposalId(null);
+                                setSelectedProposal(null);
+                              }
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          )}
           <div className="mt-6 flex justify-end gap-2">
             <Button
               size="sm"

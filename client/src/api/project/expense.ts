@@ -88,6 +88,7 @@ export interface pExpenseItemBase {
   ei_tax: number;
   ei_total: number;
   pro_id?: number | null;
+  remark?: string | null;
   is_estimate?: string;
   attachments?: pExpenseAttachment[];
   expense_add_info?: addInfoDTO[];

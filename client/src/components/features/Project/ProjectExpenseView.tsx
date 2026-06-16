@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation, useParams, Link } from 'react-router';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
-import { formatAmount, formatDate, normalizeAttachmentUrl } from '@/utils';
+import { formatAmount, formatDate } from '@/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 
 import { Badge } from '@components/ui/badge';
@@ -22,10 +22,11 @@ import EstimateSelectDialog from './_components/EstimateSelectDialog';
 import EstimateMatching from './_components/EstimateMatching';
 import EstimateMatched from './_components/EstimateMatched';
 import ExpenseViewRow from './_components/ExpenseViewRow';
+import ExpenseMobileViewRow from './_components/ExpenseMobileViewRow';
 import ReportMatched from './_components/ReportMatched';
 import { AddInfoDialog } from './_components/addInfoDialog';
 
-import { RotateCcw, OctagonAlert, Files, File, SquareArrowOutUpRight, Copy } from 'lucide-react';
+import { RotateCcw, OctagonAlert, Files, File } from 'lucide-react';
 
 export default function ProjectExpenseView() {
   const { expId, projectId } = useParams();
@@ -93,6 +94,8 @@ export default function ProjectExpenseView() {
     );
 
   const { header, items } = data;
+
+  console.log('비용 정보', data);
 
   /** -----------------------------------------
    *  상태 Badge
@@ -283,80 +286,22 @@ export default function ProjectExpenseView() {
               <h3 className="text-lg leading-[1.2] font-bold">비용 항목</h3>
               <div className="py-2">
                 {items.map((item) => {
+                  const alreadyMatched = (item.matchedList?.length ?? 0) > 0;
+                  const isMatched = (matchedMap[item.seq]?.length ?? 0) > 0;
+                  const isMatching = expenseInfo?.seq === item.seq && matchedItems.length > 0;
+                  const isWaiting = Boolean(expenseInfo && expenseInfo.seq !== item.seq && matchedItems.length > 0);
+
                   return (
-                    <div key={item.seq} className="mb-3 border-b-1 border-dashed pb-3 last:border-b-0">
-                      <dl className="flex justify-between gap-2 py-1">
-                        <dt className="w-[20%] shrink-0 text-[13px] text-gray-700">비용 용도</dt>
-                        <dd className="text-right text-[13px] font-medium break-keep whitespace-pre">
-                          {(item.ei_type === '외주용역비' || item.ei_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
-                            <span className="text-primary underline" onClick={() => handleAddInfo(item.expense_add_info)}>
-                              {item.ei_type}
-                            </span>
-                          ) : (
-                            item.ei_type
-                          )}
-                        </dd>
-                      </dl>
-                      <ExpRow title="가맹점명" value={item.ei_title} />
-                      <ExpRow title="매입일자" value={formatDate(item.ei_pdate, true)} />
-                      <dl className="flex justify-between py-1">
-                        <dt className="text-[13px] text-gray-700">금액</dt>
-                        <dd className="text-right text-[13px] font-medium">
-                          {formatAmount(item.ei_amount) + '원'}
-                          <span className="block text-[.8em] font-normal text-gray-500">{`세금 ${formatAmount(item.ei_tax)}원`}</span>
-                        </dd>
-                      </dl>
-                      <dl className="flex justify-between py-1">
-                        <dt className="text-[13px] text-gray-700">합계</dt>
-                        <dd className="text-right text-base font-semibold">{formatAmount(item.ei_total) + '원'}</dd>
-                      </dl>
-                      <dl className="flex justify-between py-1">
-                        <dt className="text-[13px] text-gray-700">증빙자료</dt>
-                        <dd className="text-right text-[13px] font-medium">
-                          {item.attachments && item.attachments.length > 0 ? (
-                            item.attachments.map((att, idx) => (
-                              <li key={idx} className="overflow-hidden text-sm text-gray-800">
-                                <a
-                                  href={normalizeAttachmentUrl(att.ea_url)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center justify-center gap-1">
-                                  {/* 파일명 */}
-                                  <span className="overflow-hidden text-left text-ellipsis whitespace-nowrap hover:underline">
-                                    {att.ea_fname}
-                                  </span>
-                                </a>
-                              </li>
-                            ))
-                          ) : (
-                            <span>-</span>
-                          )}
-                        </dd>
-                      </dl>
-                      {header.is_estimate === 'Y' ? (
-                        item.matchedList !== undefined && (
-                          <dl className="flex justify-between py-1">
-                            <dt className="text-[13px] text-gray-700">견적서</dt>
-                            <dd className="text-right text-sm font-medium text-gray-700">
-                              {item.matchedList.length > 0 ? <span>매칭완료</span> : <span className="text-primary">매칭필요</span>}
-                            </dd>
-                          </dl>
-                        )
-                      ) : (
-                        <dl className="flex justify-between py-1">
-                          <dt className="text-[13px] text-gray-700">기안서</dt>
-                          <dd className="text-right text-sm font-medium text-gray-700">
-                            {item.pro_id ? (
-                              <Link to={`/project/proposal/view/${item.pro_id}`} className="text-primary flex items-center gap-0.5">
-                                기안서보기 <SquareArrowOutUpRight className="size-3" />
-                              </Link>
-                            ) : (
-                              <span>-</span>
-                            )}
-                          </dd>
-                        </dl>
-                      )}
-                    </div>
+                    <ExpenseMobileViewRow
+                      key={item.seq}
+                      item={item}
+                      isEstimate={header.is_estimate === 'Y'}
+                      onAddInfo={handleAddInfo}
+                      alreadyMatched={alreadyMatched}
+                      isMatched={isMatched}
+                      isMatching={isMatching}
+                      isWaiting={isWaiting}
+                    />
                   );
                 })}
               </div>
@@ -364,15 +309,21 @@ export default function ProjectExpenseView() {
               <div className="flex justify-between gap-2">
                 <Button
                   variant="outline"
-                  size={header.status === 'Rejected' && header.user_id === user_id ? 'default' : 'full'}
-                  className={header.status === 'Rejected' && header.user_id === user_id ? 'flex-1' : ''}
+                  size={(header.status === 'Rejected' || header.status === 'Saved') && header.user_id === user_id ? 'default' : 'full'}
+                  className={(header.status === 'Rejected' || header.status === 'Saved') && header.user_id === user_id ? 'flex-1' : ''}
                   asChild>
                   <Link to={`${hasFlag ? '/mypage/expense' : `/project/${projectId}/expense`}${search}`}>목록</Link>
                 </Button>
 
-                {header.status === 'Rejected' && header.user_id === user_id && (
+                {header.user_id === user_id && header.status === 'Rejected' && (
                   <Button className="flex-1" onClick={handleRestore}>
                     비용 복구
+                  </Button>
+                )}
+
+                {header.user_id === user_id && header.status === 'Saved' && (
+                  <Button className="flex-1" asChild>
+                    <Link to={`/project/${projectId}/expense/edit/${header.seq}`}>비용 수정</Link>
                   </Button>
                 )}
               </div>
@@ -516,99 +467,93 @@ export default function ProjectExpenseView() {
             {/* ---------------------- 비용 항목 테이블 ---------------------- */}
             <div className="mt-6">
               <h3 className="mb-2 text-lg font-bold text-gray-800">비용 항목</h3>
-              <Table variant="primary" align="center" className="table-fixed">
-                <TableHeader>
-                  <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-                    <TableHead className="w-[10%]">비용 용도</TableHead>
-                    <TableHead className="w-[20%]">가맹점명</TableHead>
-                    <TableHead className="w-[10%] px-4">매입일자</TableHead>
-                    <TableHead className="w-[14%]">금액 (A)</TableHead>
-                    <TableHead className="w-[10%]">세금</TableHead>
-                    <TableHead className="w-[14%]">합계</TableHead>
-                    <TableHead className="w-[20%]">증빙자료</TableHead>
-                    <TableHead className="w-[8%]">{data.header.is_estimate === 'Y' ? '견적서' : '기안서'}</TableHead>
-                  </TableRow>
-                </TableHeader>
 
-                <TableBody>
-                  {data.header.is_estimate === 'Y'
-                    ? items.map((item) => {
-                        const alreadyMatched = (item.matchedList?.length ?? 0) > 0;
-                        const isMatched = (matchedMap[item.seq]?.length ?? 0) > 0;
-                        const isMatching = expenseInfo?.seq === item.seq && matchedItems.length > 0;
-                        const isWaiting = Boolean(expenseInfo && expenseInfo.seq !== item.seq && matchedItems.length > 0);
+              <div className="space-y-4">
+                {data.header.is_estimate === 'Y'
+                  ? items.map((item) => {
+                      const alreadyMatched = (item.matchedList?.length ?? 0) > 0;
+                      const isMatched = (matchedMap[item.seq]?.length ?? 0) > 0;
+                      const isMatching = expenseInfo?.seq === item.seq && matchedItems.length > 0;
+                      const isWaiting = Boolean(expenseInfo && expenseInfo.seq !== item.seq && matchedItems.length > 0);
 
-                        return (
-                          <ExpenseViewRow
-                            key={item.seq}
-                            item={item}
-                            onAddInfo={handleAddInfo}
-                            actionCell={
-                              alreadyMatched ? (
-                                <Button size="xs" variant="outline" onClick={() => loadMatchedItems(item)}>
-                                  매칭완료
-                                </Button>
-                              ) : isMatching ? (
-                                <Button
-                                  size="xs"
-                                  className="border-primary-blue/10"
-                                  onClick={() => {
-                                    if (matchedMap[item.seq]?.length) {
-                                      const firstItem = matchedMap[item.seq][0];
-                                      if (firstItem?.est_id) setSelectedEstId(firstItem.est_id);
-                                    }
-                                    openDialog();
-                                  }}>
-                                  매칭중
-                                </Button>
-                              ) : isMatched ? (
-                                <Button size="xs" variant="outline" onClick={() => loadMatchedItems(item)}>
-                                  매칭완료
-                                </Button>
-                              ) : isWaiting ? (
-                                <Button size="xs" variant="secondary" disabled>
-                                  매칭대기
-                                </Button>
-                              ) : (
-                                <Button
-                                  size="xs"
-                                  className="bg-primary-blue-100 text-primary-blue border-primary-blue-300/10 hover:bg-primary-blue-150 hover:text-primary-blue active:bg-primary-blue-100"
-                                  onClick={() => openEstimateDialog(item.seq, item.ei_amount)}>
-                                  매칭하기
-                                </Button>
-                              )
-                            }
-                          />
-                        );
-                      })
-                    : items.map((item) => (
+                      return (
                         <ExpenseViewRow
                           key={item.seq}
                           item={item}
                           onAddInfo={handleAddInfo}
+                          isEstimate={data.header.is_estimate === 'Y'}
                           actionCell={
-                            item.pro_id ? (
-                              <Button size="xs" variant="outline" onClick={() => setReportInfo(item.pro_id)}>
-                                기안서보기
+                            alreadyMatched ? (
+                              <Button size="xs" variant="outline" onClick={() => loadMatchedItems(item)}>
+                                매칭완료
+                              </Button>
+                            ) : isMatching ? (
+                              <Button
+                                size="xs"
+                                className="border-primary-blue/10"
+                                onClick={() => {
+                                  if (matchedMap[item.seq]?.length) {
+                                    const firstItem = matchedMap[item.seq][0];
+                                    if (firstItem?.est_id) setSelectedEstId(firstItem.est_id);
+                                  }
+                                  openDialog();
+                                }}>
+                                매칭중
+                              </Button>
+                            ) : isMatched ? (
+                              <Button size="xs" variant="outline" onClick={() => loadMatchedItems(item)}>
+                                매칭완료
+                              </Button>
+                            ) : isWaiting ? (
+                              <Button size="xs" variant="secondary" disabled>
+                                매칭대기
                               </Button>
                             ) : (
-                              <span>-</span>
+                              <Button
+                                size="xs"
+                                className="bg-primary-blue-100 text-primary-blue border-primary-blue-300/10 hover:bg-primary-blue-150 hover:text-primary-blue active:bg-primary-blue-100"
+                                onClick={() => openEstimateDialog(item.seq, item.ei_amount)}>
+                                매칭하기
+                              </Button>
                             )
                           }
                         />
-                      ))}
+                      );
+                    })
+                  : items.map((item) => (
+                      <ExpenseViewRow
+                        key={item.seq}
+                        item={item}
+                        onAddInfo={handleAddInfo}
+                        isEstimate={data.header.is_estimate === 'Y'}
+                        actionCell={
+                          item.pro_id ? (
+                            <Button size="xs" variant="outline" onClick={() => setReportInfo(item.pro_id)}>
+                              기안서보기
+                            </Button>
+                          ) : (
+                            <span>-</span>
+                          )
+                        }
+                      />
+                    ))}
+              </div>
 
-                  <TableRow className="bg-primary-blue-50 [&_td]:py-3">
-                    <TableCell className="font-semibold" colSpan={3}>
-                      총 비용
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">{formatAmount(totals.amount)}원</TableCell>
-                    <TableCell className="text-right font-semibold">{formatAmount(totals.tax)}원</TableCell>
-                    <TableCell className="text-right font-semibold">{formatAmount(totals.total)}원</TableCell>
-                    <TableCell colSpan={2} />
-                  </TableRow>
-                </TableBody>
-              </Table>
+              <div className="bg-primary-blue-100/80 mt-4 flex items-center border-t-1 border-gray-300 px-4 py-2 text-base">
+                <div className="flex-1 font-medium text-gray-700">총 비용</div>
+                <div className="w-[14%] shrink-0 px-2 font-medium text-gray-900">
+                  <div className="text-sm text-gray-700">금액</div>
+                  <strong className="text-[15px] font-bold">{formatAmount(totals.amount)}원</strong>
+                </div>
+                <div className="w-[14%] shrink-0 px-2 font-medium text-gray-900">
+                  <div className="text-sm text-gray-700">세금</div>
+                  <strong className="text-[15px] font-bold">{formatAmount(totals.tax)}원</strong>
+                </div>
+                <div className="mr-[10%] w-[14%] shrink-0 px-2 font-medium text-gray-900">
+                  <div className="text-sm text-gray-700">합계</div>
+                  <strong className="text-primary-blue text-[15px] font-bold">{formatAmount(totals.total)}원</strong>
+                </div>
+              </div>
             </div>
 
             <div className="mt-4 flex justify-between">

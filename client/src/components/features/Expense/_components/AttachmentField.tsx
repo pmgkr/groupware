@@ -113,7 +113,7 @@ export const AttachmentField = React.memo(function AttachmentField({
     <div className="flex h-full flex-col">
       <input type="file" accept="image/*" multiple ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
 
-      <div className="mb-2 flex h-6 items-center justify-between">
+      <div className="mb-2 flex items-center justify-between md:h-6">
         <p className="text-[13px] font-bold text-gray-950 md:text-base">증빙자료 #{rowIndex}</p>
         {attachments.length ? (
           <button
@@ -127,7 +127,7 @@ export const AttachmentField = React.memo(function AttachmentField({
         )}
       </div>
 
-      <div ref={fieldRef} className="md:min-h-[140px]">
+      <div ref={fieldRef} className="md:min-h-31.5">
         {attachments.length > 0 ? (
           <div
             className="flex h-full w-full gap-2 overflow-x-auto p-2"

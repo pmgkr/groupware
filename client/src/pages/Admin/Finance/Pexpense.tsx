@@ -461,8 +461,6 @@ export default function Pexpense() {
 
       const res = await getAdminExpenseExcel(params);
 
-      console.log(res);
-
       downloadExpenseExcel(res.items, params);
     } catch (e) {
       console.error(e);

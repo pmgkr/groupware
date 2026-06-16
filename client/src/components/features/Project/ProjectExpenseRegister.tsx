@@ -63,6 +63,7 @@ const expenseSchema = z.object({
           tax: z.string().optional(),
           total: z.string().optional(),
           pro_id: z.number().nullable().optional(),
+          item_remark: z.string().optional(),
 
           // 외주용역비 전용
           tax_type: z.string().optional(),
@@ -84,6 +85,15 @@ const expenseSchema = z.object({
               code: z.ZodIssueCode.custom,
               message: '비용 유형을 선택해주세요.',
               path: ['type'],
+            });
+          }
+
+          const hasAmount = !!(data.price || data.tax || data.total);
+          if (hasAmount && !data.title) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: '내용을 입력해주세요.',
+              path: ['title'],
             });
           }
 
@@ -178,6 +188,7 @@ export default function ProjectExpenseRegister() {
         tax: '',
         total: '',
         pro_id: null,
+        item_remark: '',
 
         tax_type: '',
         work_day: '',
@@ -296,6 +307,7 @@ export default function ProjectExpenseRegister() {
       tax: '',
       total: '',
       pro_id: null,
+      item_remark: '',
 
       tax_type: '',
       work_day: '',
@@ -627,6 +639,7 @@ export default function ProjectExpenseRegister() {
               ei_tax: Number(i.tax || 0),
               ei_total: Number(i.total),
               pro_id: i.pro_id ?? null,
+              remark: i.item_remark || '',
               attachments: (i.attachments || []).map((att: any) => ({
                 filename: att.fname,
                 savename: att.sname,
@@ -738,7 +751,15 @@ export default function ProjectExpenseRegister() {
 
                 await Promise.all(matchPromises);
               } catch (error) {
+                hideLoading();
                 console.error('❌ 매칭 요청 오류:', error);
+
+                addAlert({
+                  title: '비용 등록 실패',
+                  message: `비용 기안서 매칭 중 오류가 발생했습니다. \n 다시 시도해주세요.`,
+                  icon: <OctagonAlert />,
+                  duration: 2000,
+                });
               }
             }
 
@@ -1041,7 +1062,7 @@ export default function ProjectExpenseRegister() {
                             <FormLabel className="gap-.5 font-bold text-gray-950">비고</FormLabel>
                           </div>
                           <FormControl>
-                            <Textarea placeholder="추가 기입할 정보가 있으면 입력해 주세요." className="h-16 min-h-16" {...field} />
+                            <Textarea placeholder="추가 기입할 정보가 있다면 입력해 주세요." className="h-16 min-h-16" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

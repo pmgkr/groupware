@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
-import { formatDate, formatAmount, normalizeAttachmentUrl } from '@/utils';
+import { formatDate, formatAmount } from '@/utils';
 import { cn } from '@/lib/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 
@@ -19,11 +19,12 @@ import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
 import { Badge } from '@components/ui/badge';
 import { Button } from '@components/ui/button';
 import { Textarea } from '@components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 import { Download } from '@/assets/images/icons';
-import { File, Link as LinkIcon, OctagonAlert, Files, SquareArrowOutUpRight } from 'lucide-react';
+import { OctagonAlert, Files } from 'lucide-react';
+import ExpenseViewRow from './_components/ExpenseViewRow';
+import ExpenseMobileViewRow from './_components/ExpenseMobileViewRow';
 
 export default function NexpenseView() {
   const { expId } = useParams();
@@ -314,74 +315,9 @@ export default function NexpenseView() {
             <div className="p-5">
               <h3 className="text-lg leading-[1.2] font-bold">비용 항목</h3>
               <div className="py-2">
-                {items.map((item) => {
-                  console.log('항목', item);
-                  return (
-                    <div key={item.seq} className="mb-3 border-b-1 border-dashed pb-3 last:border-b-0">
-                      <dl className="flex justify-between gap-2 py-1">
-                        <dt className="w-[20%] shrink-0 text-[13px] text-gray-700">비용 용도</dt>
-                        <dd className="text-right text-[13px] font-medium break-keep whitespace-pre">
-                          {(header.el_type === '외주용역비' || header.el_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
-                            <span className="text-primary underline" onClick={() => handleAddInfo(item.expense_add_info)}>
-                              {header.el_type}
-                            </span>
-                          ) : (
-                            header.el_type
-                          )}
-                        </dd>
-                      </dl>
-                      <ExpRow title="가맹점명" value={item.ei_title} />
-                      <ExpRow title="매입일자" value={formatDate(item.ei_pdate, true)} />
-                      <dl className="flex justify-between py-1">
-                        <dt className="text-[13px] text-gray-700">금액</dt>
-                        <dd className="text-right text-[13px] font-medium">
-                          {formatAmount(item.ei_amount) + '원'}
-                          <span className="block text-[.8em] font-normal text-gray-500">{`세금 ${formatAmount(item.ei_tax)}원`}</span>
-                        </dd>
-                      </dl>
-                      <dl className="flex justify-between py-1">
-                        <dt className="text-[13px] text-gray-700">합계</dt>
-                        <dd className="text-right text-base font-semibold">{formatAmount(item.ei_total) + '원'}</dd>
-                      </dl>
-                      <dl className="flex justify-between py-1">
-                        <dt className="text-[13px] text-gray-700">증빙자료</dt>
-                        <dd className="text-right text-[13px] font-medium">
-                          {item.attachments && item.attachments.length > 0 ? (
-                            item.attachments.map((att, idx) => (
-                              <li key={idx} className="overflow-hidden text-sm text-gray-800">
-                                <a
-                                  href={normalizeAttachmentUrl(att.ea_url)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center justify-center gap-1">
-                                  {/* 파일명 */}
-                                  <span className="overflow-hidden text-left text-ellipsis whitespace-nowrap hover:underline">
-                                    {att.ea_fname}
-                                  </span>
-                                </a>
-                              </li>
-                            ))
-                          ) : (
-                            <span>-</span>
-                          )}
-                        </dd>
-                      </dl>
-
-                      <dl className="flex justify-between py-1">
-                        <dt className="text-[13px] text-gray-700">기안서</dt>
-                        <dd className="text-right text-sm font-medium text-gray-700">
-                          {item.pro_id ? (
-                            <Link to={`/expense/proposal/view/${item.pro_id}`} className="text-primary flex items-center gap-0.5">
-                              기안서보기 <SquareArrowOutUpRight className="size-3" />
-                            </Link>
-                          ) : (
-                            <span>-</span>
-                          )}
-                        </dd>
-                      </dl>
-                    </div>
-                  );
-                })}
+                {items.map((item) => (
+                  <ExpenseMobileViewRow key={item.seq} item={item} onAddInfo={handleAddInfo} />
+                ))}
               </div>
 
               <div className="flex gap-2">
@@ -523,83 +459,39 @@ export default function NexpenseView() {
 
             <div className="mt-6">
               <h3 className="mb-2 text-lg font-bold text-gray-800">비용 항목</h3>
-              <Table variant="primary" align="center" className="table-fixed">
-                <TableHeader>
-                  <TableRow className="[&_th]:text-[13px] [&_th]:font-medium">
-                    <TableHead className="w-[10%]">비용 용도</TableHead>
-                    <TableHead className="w-[20%]">가맹점명</TableHead>
-                    <TableHead className="w-[10%] px-4">매입일자</TableHead>
-                    <TableHead className="w-[14%]">금액</TableHead>
-                    <TableHead className="w-[10%]">세금</TableHead>
-                    <TableHead className="w-[14%]">합계</TableHead>
-                    <TableHead className="w-[18%]">증빙자료</TableHead>
-                    <TableHead className="w-[8%]">기안서</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => {
-                    return (
-                      <TableRow key={item.seq} className="[&_td]:text-[13px]">
-                        <TableCell>
-                          {(header.el_type === '외주용역비' || header.el_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
-                            <span className="text-primary cursor-pointer underline" onClick={() => handleAddInfo(item.expense_add_info)}>
-                              {header.el_type}
-                            </span>
-                          ) : (
-                            header.el_type
-                          )}
-                        </TableCell>
-                        <TableCell>{item.ei_title}</TableCell>
-                        <TableCell className="px-4">{formatDate(item.ei_pdate)}</TableCell>
-                        <TableCell className="text-right">{formatAmount(item.ei_amount)}원</TableCell>
-                        <TableCell className="text-right">{item.ei_tax === 0 ? 0 : `${formatAmount(item.ei_tax)}원`}</TableCell>
-                        <TableCell className="text-right">{formatAmount(item.ei_total)}원</TableCell>
-                        {item.attachments && item.attachments.length > 0 ? (
-                          <TableCell>
-                            <ul>
-                              {item.attachments.map((att, idx) => (
-                                <li key={idx} className="overflow-hidden text-sm text-gray-800">
-                                  <a
-                                    href={normalizeAttachmentUrl(att.ea_url)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-1">
-                                    <File className="size-3.5 shrink-0" />
-                                    <span className="overflow-hidden text-left text-ellipsis whitespace-nowrap hover:underline">
-                                      {att.ea_fname}
-                                    </span>
-                                  </a>
-                                </li>
-                              ))}
-                            </ul>
-                          </TableCell>
-                        ) : (
-                          <TableCell>-</TableCell>
-                        )}
-                        <TableCell className="px-1 text-center [&_button]:rounded-xl [&_button]:border [&_button]:text-xs [&_button]:transition-none">
-                          {item.pro_id ? (
-                            <Button size="xs" variant="outline" onClick={() => setReportInfo(item.pro_id)}>
-                              기안서보기
-                            </Button>
-                          ) : (
-                            <span>-</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  <TableRow className="bg-primary-blue-50 hover:bg-primary-blue-50">
-                    <TableCell className="font-semibold" colSpan={3}>
-                      총 비용
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">{formatAmount(totals.amount)}원</TableCell>
-                    <TableCell className="text-right font-semibold">{formatAmount(totals.tax)}원</TableCell>
-                    <TableCell className="text-right font-semibold">{formatAmount(totals.total)}원</TableCell>
-                    <TableCell className="text-left"></TableCell>
-                    <TableCell className="text-left"></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+              <div className="space-y-4">
+                {items.map((item) => (
+                  <ExpenseViewRow
+                    key={item.seq}
+                    item={item}
+                    onAddInfo={handleAddInfo}
+                    actionCell={
+                      item.pro_id ? (
+                        <Button size="xs" variant="outline" onClick={() => setReportInfo(item.pro_id)}>
+                          기안서보기
+                        </Button>
+                      ) : (
+                        <span>-</span>
+                      )
+                    }
+                  />
+                ))}
+              </div>
+              <div className="bg-primary-blue-100/80 mt-4 flex items-center border-t-1 border-gray-300 px-4 py-2 text-base">
+                <div className="flex-1 font-medium text-gray-700">총 비용</div>
+                <div className="w-[14%] shrink-0 px-2 font-medium text-gray-900">
+                  <div className="text-sm text-gray-700">금액</div>
+                  <strong className="text-[15px] font-bold">{formatAmount(totals.amount)}원</strong>
+                </div>
+                <div className="w-[14%] shrink-0 px-2 font-medium text-gray-900">
+                  <div className="text-sm text-gray-700">세금</div>
+                  <strong className="text-[15px] font-bold">{formatAmount(totals.tax)}원</strong>
+                </div>
+                <div className="mr-[10%] w-[14%] shrink-0 px-2 font-medium text-gray-900">
+                  <div className="text-sm text-gray-700">합계</div>
+                  <strong className="text-primary-blue text-[15px] font-bold">{formatAmount(totals.total)}원</strong>
+                </div>
+              </div>
             </div>
             <div className="mt-8 flex w-full items-center justify-between">
               <div className="flex gap-2">
@@ -630,7 +522,7 @@ export default function NexpenseView() {
               <h2 className="mb-2 text-lg font-bold text-gray-800">기안서 정보</h2>
             </div>
 
-            <ReportMatched report={selectedProposal} />
+            <ReportMatched report={selectedProposal} linkPrefix="/expense/proposal/view" />
           </div>
         </div>
       )}

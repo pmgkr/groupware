@@ -76,6 +76,7 @@ const columns = [
   'Item Amount',
   'Item Tax',
   'Item Total',
+  'Item Remark',
 
   'File',
 ];
@@ -85,7 +86,7 @@ const HEADER_GROUPS = [
   { title: 'Account Information', start: 7, end: 10 },
   { title: 'Total Amount', start: 11, end: 13 },
   { title: 'Registration@', start: 14, end: 17 },
-  { title: 'Claimed Item', start: 18, end: 22 },
+  { title: 'Claimed Item', start: 18, end: 23 },
 ];
 
 // header만 병합 (item은 조건부)
@@ -197,6 +198,7 @@ function buildRows(data: AdminExpenseExcelResponse[]) {
           'Item Amount': { v: Number(item.ei_amount), t: 'n', s: amountCellStyle },
           'Item Tax': { v: Number(item.ei_tax), t: 'n', s: amountCellStyle },
           'Item Total': { v: Number(item.ei_total), t: 'n', s: amountCellStyle },
+          'Item Remark': item.remark ?? '',
 
           File: att
             ? {
@@ -214,7 +216,7 @@ function buildRows(data: AdminExpenseExcelResponse[]) {
 
       // 🔹 Case B: item 병합
       if (shouldMergeItem && itemEndRow > itemStartRow) {
-        [18, 19, 20, 21].forEach((c) => {
+        [18, 19, 20, 21, 22].forEach((c) => {
           merges.push({
             s: { r: itemStartRow, c },
             e: { r: itemEndRow, c },
@@ -319,6 +321,7 @@ export function downloadExpenseExcel(data: AdminExpenseExcelResponse[], params: 
     { wch: 14 }, // Item Amount
     { wch: 14 }, // Item Tax
     { wch: 14 }, // Item Total
+    { wch: 30 }, // Item Remark
     { wch: 36 }, // File
   ];
 

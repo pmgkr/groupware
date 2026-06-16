@@ -73,6 +73,7 @@ export interface ExpenseItemBase {
   ei_tax: number;
   ei_total: number;
   pro_id?: number | null;
+  remark?: string | null;
   attachments?: ExpenseAttachment[];
   expense_add_info?: addInfoDTO[];
 }

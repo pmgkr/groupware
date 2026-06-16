@@ -62,6 +62,7 @@ const expenseSchema = z.object({
           tax: z.string().optional(),
           total: z.string().optional(),
           pro_id: z.number().nullable().optional(),
+          item_remark: z.string().optional(),
 
           // 외주용역비 전용
           tax_type: z.string().optional(),
@@ -83,6 +84,15 @@ const expenseSchema = z.object({
               code: z.ZodIssueCode.custom,
               message: '비용 유형을 선택해주세요.',
               path: ['type'],
+            });
+          }
+
+          const hasAmount = !!(data.price || data.tax || data.total);
+          if (hasAmount && !data.title) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: '내용을 입력해주세요.',
+              path: ['title'],
             });
           }
 
@@ -171,6 +181,7 @@ export default function ExpenseRegister() {
         tax: '',
         total: '',
         pro_id: null,
+        item_remark: '',
 
         tax_type: '',
         work_day: '',
@@ -298,6 +309,7 @@ export default function ExpenseRegister() {
       tax: '',
       total: '',
       pro_id: null,
+      item_remark: '',
 
       tax_type: '',
       work_day: '',
@@ -626,6 +638,7 @@ export default function ExpenseRegister() {
               ei_tax: Number(i.tax || 0),
               ei_total: Number(i.total),
               pro_id: i.pro_id ?? null,
+              remark: i.item_remark || '',
               attachments: (i.attachments || []).map((att: any) => ({
                 filename: att.fname,
                 savename: att.sname,

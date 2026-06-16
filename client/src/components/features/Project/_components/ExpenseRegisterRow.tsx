@@ -1,5 +1,5 @@
 // src/components/features/Expense/_components/ExpenseRegisterRow.tsx
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo, startTransition } from 'react';
 import { type Control, useWatch, type UseFormGetValues, type UseFormSetValue } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 import { useToggleState } from '@/hooks/useToggleState';
@@ -11,6 +11,7 @@ import { getProposalList, type ProposalItem } from '@/api/expense/proposal';
 import { Input } from '@components/ui/input';
 import { Button } from '@components/ui/button';
 import { DayPicker } from '@components/daypicker';
+import { Textarea } from '@components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { SearchableSelect, type SingleSelectOption } from '@components/ui/SearchableSelect';
@@ -24,7 +25,6 @@ import { AttachmentField } from '../../Expense/_components/AttachmentField';
 import { OutsourceFields } from '../../Expense/_components/OutsourceFields';
 import { EntertainmentFields } from '../../Expense/_components/EntertainmentFields';
 
-import { FileText } from 'lucide-react';
 import { Calendar, Close } from '@/assets/images/icons';
 
 type ExpenseRowProps = {
@@ -108,49 +108,25 @@ function ExpenseRowComponent({
   const [selectedProposalId, setSelectedProposalId] = useState<number | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
 
-  const handleOpenMatchingDialog = async () => {
-    setDialogOpen(true);
+  const handleOpenMatchingDialog = () => {
+    startTransition(() => setDialogOpen(true));
 
     const flag = projectType === 'pro' ? 'P' : 'N';
 
-    try {
-      // 응답 구조: { success: boolean, items: ProposalItem[] }
-      const res = await getProposalList(flag);
-
-      const proposals = res.items ?? []; // 안전하게 items 사용
-
-      const filtered = proposals.filter((p) => ['프로젝트'].includes(p.rp_category) && !p.rp_expense_no);
-
-      setProposalList(filtered);
-    } catch (err) {
-      console.error('기안서 리스트 불러오기 실패:', err);
-    }
+    getProposalList(flag)
+      .then((res) => {
+        const proposals = res.items ?? [];
+        const filtered = proposals.filter((p) => ['프로젝트'].includes(p.rp_category) && !p.rp_expense_no);
+        startTransition(() => setProposalList(filtered));
+      })
+      .catch((err) => {
+        console.error('기안서 리스트 불러오기 실패:', err);
+      });
   };
 
   return (
-    <article className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0">
-      {/* 상단 영역 */}
-      <div className="absolute top-1 left-0 flex w-full items-center justify-between gap-2 pl-[68%] max-md:justify-end max-md:pl-[10%]">
-        {projectType === 'pro' && ( // 견적서 외 비용 선택 시에만 기안서 매칭 노출
-          <button
-            type="button"
-            className="text-primary-blue-500 flex cursor-pointer items-center gap-1 text-sm hover:underline max-md:w-[200px] max-md:justify-end max-md:truncate"
-            onClick={() => {
-              setActiveFile(String(index));
-              handleOpenMatchingDialog();
-            }}>
-            <FileText className="size-3.5 shrink-0" />
-            <span className="block truncate overflow-hidden whitespace-nowrap">
-              {selectedProposal ? `${selectedProposal.rp_title}` : '기안서 매칭'}
-            </span>
-          </button>
-        )}
-        <Button type="button" variant="svgIcon" size="icon" className="ml-auto max-md:ml-0" onClick={() => onRemove(index)}>
-          <Close className="size-4" />
-        </Button>
-      </div>
-
-      <div className="flex flex-col justify-between gap-2 md:flex-row md:gap-0">
+    <article className="relative border-b border-gray-300 px-2 pt-6 pb-4 last-of-type:border-b-0">
+      <div className="flex flex-col justify-between gap-2 md:flex-row md:flex-wrap md:gap-0">
         {/* 왼쪽 입력필드 그룹 */}
         <div className="grid w-full grid-cols-2 items-start gap-4 tracking-tight md:w-[66%] md:grid-cols-3">
           {/* 비용 유형 */}
@@ -159,7 +135,7 @@ function ExpenseRowComponent({
             name={`expense_items.${index}.type`}
             render={({ field, fieldState }) => (
               <FormItem>
-                <FormLabel className="font-bold text-gray-950">비용 유형</FormLabel>
+                <FormLabel className="font-bold text-gray-950 md:h-6">비용 유형</FormLabel>
                 <FormControl>
                   <SearchableSelect
                     placeholder="비용 유형 선택"
@@ -180,7 +156,7 @@ function ExpenseRowComponent({
             name={`expense_items.${index}.title`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-bold text-gray-950">가맹점명</FormLabel>
+                <FormLabel className="font-bold text-gray-950 md:h-6">가맹점명</FormLabel>
                 <FormControl>
                   <Input placeholder="가맹점명" {...field} />
                 </FormControl>
@@ -197,7 +173,7 @@ function ExpenseRowComponent({
               const { isOpen, setIsOpen, close } = useToggleState();
               return (
                 <FormItem>
-                  <FormLabel className="font-bold text-gray-950">매입 일자</FormLabel>
+                  <FormLabel className="font-bold text-gray-950 md:h-6">매입 일자</FormLabel>
                   <Popover open={isOpen} onOpenChange={setIsOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -315,7 +291,7 @@ function ExpenseRowComponent({
         </div>
 
         {/* 오른쪽 첨부 */}
-        <div className="w-full md:w-[32%] md:pl-2">
+        <div className="w-full max-md:order-3 md:w-[32%] md:pl-2">
           <AttachmentField
             name={`expense_attachment${index}`}
             rowIndex={index + 1}
@@ -326,6 +302,75 @@ function ExpenseRowComponent({
             files={files}
           />
         </div>
+
+        <div className={cn(projectType === 'pro' ? 'w-full md:w-[66%]' : 'w-full', 'max-md:order-2 md:mt-4')}>
+          {/* 비고 */}
+          <FormField
+            control={control}
+            name={`expense_items.${index}.item_remark`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-bold text-gray-950 md:h-5">비고</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="비용 항목별 추가 기입 정보가 있다면 입력해 주세요."
+                    className="h-12 min-h-12 overflow-hidden"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {projectType === 'pro' && ( // 견적서 외 비용 선택 시에만 기안서 매칭 노출
+          <div className="w-full max-md:order-4 md:mt-4 md:w-[32%] md:pl-2">
+            <FormItem>
+              <FormLabel className="justify-between font-bold text-gray-950 md:h-5">
+                기안서 매칭
+                {selectedProposal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveFile(String(index));
+                      handleOpenMatchingDialog();
+                    }}
+                    className="text-primary-blue-500 hover:text-primary-blue-700 cursor-pointer justify-between text-sm font-normal">
+                    다시 선택
+                  </button>
+                )}
+              </FormLabel>
+              <FormControl>
+                {selectedProposal ? (
+                  <div className="flex h-12 w-full items-center justify-between gap-2 rounded-md border border-gray-400 p-2 text-sm text-gray-700">
+                    <span className="flex-1 truncate text-left">{selectedProposal.rp_title}</span>
+                    <span className="shrink-0">{formatAmount(selectedProposal.rp_cost)}원</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="text-muted-foreground flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-gray-400 p-2 text-sm md:h-12"
+                    onClick={() => {
+                      setActiveFile(String(index));
+                      handleOpenMatchingDialog();
+                    }}>
+                    기안서 선택
+                  </button>
+                )}
+              </FormControl>
+            </FormItem>
+          </div>
+        )}
+
+        <Button
+          type="button"
+          variant="svgIcon"
+          size="icon"
+          className="absolute top-0 right-0 ml-auto max-md:ml-0"
+          onClick={() => onRemove(index)}>
+          <Close className="size-4" />
+        </Button>
       </div>
 
       {typeValue === '외주용역비' && <OutsourceFields control={control} index={index} setValue={setValue} />}
@@ -333,7 +378,7 @@ function ExpenseRowComponent({
 
       {/* 기안서 매칭 다이얼로그 */}
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-5xl rounded-lg max-md:w-[400px] max-md:max-w-[calc(100%-var(--spacing)*8)]">
+        <DialogContent className="max-w-5xl rounded-lg max-md:w-[400px] max-md:max-w-[92%]">
           <DialogHeader>
             <DialogTitle>기안서 매칭</DialogTitle>
           </DialogHeader>

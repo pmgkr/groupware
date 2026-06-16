@@ -8,10 +8,10 @@ import { SquareArrowOutUpRight } from 'lucide-react';
 
 interface ReportMatchedProps {
   report: ReportDTO | null;
+  linkPrefix?: string;
 }
 
-export default function ReportMatched({ report }: ReportMatchedProps) {
-  console.log(report);
+export default function ReportMatched({ report, linkPrefix = '/project/proposal/view' }: ReportMatchedProps) {
 
   return (
     <>
@@ -33,7 +33,7 @@ export default function ReportMatched({ report }: ReportMatchedProps) {
           ) : (
             <TableRow className="[&_td]:h-11 [&_td]:px-2 [&_td]:text-[12px]">
               <TableCell className="text-left">
-                <Link to={`/project/proposal/view/${report.rp_seq}`} target="_blank" className="block gap-0.5 hover:underline">
+                <Link to={`${linkPrefix}/${report.rp_seq}`} target="_blank" className="block gap-0.5 hover:underline">
                   {report.rp_title} <SquareArrowOutUpRight className="inline-block size-3 align-middle" />
                 </Link>
               </TableCell>
