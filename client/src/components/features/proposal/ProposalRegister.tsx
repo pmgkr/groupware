@@ -153,6 +153,7 @@ export default function ProposalRegister() {
         rp_content: sanitizeContent(data.content),
         rp_project_type: isProject ? 'project' : 'non_project',
         rp_expense_no: '',
+        rp_date: new Date().toISOString(),
         references: [],
         files: uploadedFiles,
       };

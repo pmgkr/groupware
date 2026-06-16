@@ -1,5 +1,5 @@
 // src/components/features/Expense/_components/ExpenseRegisterRow.tsx
-import { useEffect, useState, useCallback, memo } from 'react';
+import { useEffect, useState, memo, startTransition } from 'react';
 import { type Control, type UseFormGetValues, type UseFormSetValue, useWatch } from 'react-hook-form';
 import { useToggleState } from '@/hooks/useToggleState';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,7 @@ import type { PreviewFile } from './UploadArea';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@components/ui/form';
 import { Input } from '@components/ui/input';
 import { Button } from '@components/ui/button';
+import { Textarea } from '@components/ui/textarea';
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/popover';
 import { SearchableSelect, type SingleSelectOption } from '@components/ui/SearchableSelect';
 import { DayPicker } from '@components/daypicker';
@@ -20,7 +21,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar, Close } from '@/assets/images/icons';
-import { FileText } from 'lucide-react';
 import { useIsMobileViewport } from '@/hooks/useViewport';
 
 import ExpenseProposalCard from '../_responsive/ExpenseProposalCard';
@@ -101,55 +101,28 @@ function ExpenseRowComponent({
   };
 
   const isMobile = useIsMobileViewport();
-  useEffect(() => {
-    console.log('[프로젝트] isMobile:', isMobile, 'window.innerWidth:', window.innerWidth);
-  }, [isMobile]);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [proposalList, setProposalList] = useState<ProposalItem[]>([]);
   const [selectedProposalId, setSelectedProposalId] = useState<number | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
 
-  const handleOpenMatchingDialog = async () => {
-    setDialogOpen(true);
+  const handleOpenMatchingDialog = () => {
+    startTransition(() => setDialogOpen(true));
 
-    const flag = 'N';
-
-    try {
-      // 응답 구조: { success: boolean, items: ProposalItem[] }
-      const res = await getProposalList(flag);
-
-      const proposals = res.items ?? [];
-
-      const filtered = proposals.filter((p) => ['일반비용', '교육비'].includes(p.rp_category) && !p.rp_expense_no);
-
-      setProposalList(filtered);
-    } catch (err) {
-      console.error('기안서 리스트 불러오기 실패:', err);
-    }
+    getProposalList('N')
+      .then((res) => {
+        const proposals = res.items ?? [];
+        const filtered = proposals.filter((p) => ['일반비용', '교육비'].includes(p.rp_category) && !p.rp_expense_no);
+        startTransition(() => setProposalList(filtered));
+      })
+      .catch((err) => {
+        console.error('기안서 리스트 불러오기 실패:', err);
+      });
   };
 
-  const hasProposalList = proposalList.length === 0;
-
   return (
-    <article className="relative border-b border-gray-300 px-2 pt-10 pb-8 last-of-type:border-b-0">
-      {/* 상단 영역 */}
-      <div className="absolute top-1 left-0 flex w-full items-center justify-end gap-2 pl-[68%] max-md:pl-[10%]">
-        <button
-          type="button"
-          className="text-primary-blue-500 flex cursor-pointer items-center gap-1 text-sm hover:underline max-md:w-[200px] max-md:justify-end max-md:truncate"
-          onClick={() => {
-            setActiveFile(String(index));
-            handleOpenMatchingDialog();
-          }}>
-          <FileText className="size-3.5 shrink-0" />
-          {selectedProposal ? `${selectedProposal.rp_title}` : '기안서 매칭'}
-        </button>
-        <Button type="button" variant="svgIcon" size="icon" onClick={() => onRemove(index)}>
-          <Close className="size-4" />
-        </Button>
-      </div>
-
-      <div className="flex flex-col justify-between gap-2 md:flex-row md:gap-0">
+    <article className="relative border-b border-gray-300 px-2 pt-6 pb-4 last-of-type:border-b-0">
+      <div className="flex flex-col justify-between gap-2 md:flex-row md:flex-wrap md:gap-0">
         {/* 왼쪽 입력필드 그룹 */}
         <div className="grid w-full grid-cols-2 items-start gap-4 tracking-tight md:w-[66%] md:grid-cols-3">
           {/* 비용 유형 */}
@@ -314,7 +287,7 @@ function ExpenseRowComponent({
         </div>
 
         {/* 오른쪽 첨부 */}
-        <div className="w-full md:w-[32%] md:pl-2">
+        <div className="w-full max-md:order-3 md:w-[32%] md:pl-2">
           <AttachmentField
             name={`expense_attachment${index}`}
             rowIndex={index + 1}
@@ -325,6 +298,73 @@ function ExpenseRowComponent({
             files={files}
           />
         </div>
+
+        <div className="w-full md:w-[66%] max-md:order-2 md:mt-4">
+          {/* 비고 */}
+          <FormField
+            control={control}
+            name={`expense_items.${index}.item_remark`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-bold text-gray-950 md:h-5">비고</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="비용 항목별 추가 기입 정보가 있다면 입력해 주세요."
+                    className="h-12 min-h-12 overflow-hidden"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="w-full max-md:order-4 md:mt-4 md:w-[32%] md:pl-2">
+          <FormItem>
+            <FormLabel className="justify-between font-bold text-gray-950 md:h-5">
+              기안서 매칭
+              {selectedProposal && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveFile(String(index));
+                    handleOpenMatchingDialog();
+                  }}
+                  className="text-primary-blue-500 hover:text-primary-blue-700 cursor-pointer justify-between text-sm font-normal">
+                  다시 선택
+                </button>
+              )}
+            </FormLabel>
+            <FormControl>
+              {selectedProposal ? (
+                <div className="flex h-12 w-full items-center justify-between gap-2 rounded-md border border-gray-400 p-2 text-sm text-gray-700">
+                  <span className="flex-1 truncate text-left">{selectedProposal.rp_title}</span>
+                  <span className="shrink-0">{formatAmount(selectedProposal.rp_cost)}원</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="text-muted-foreground flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-gray-400 p-2 text-sm md:h-12"
+                  onClick={() => {
+                    setActiveFile(String(index));
+                    handleOpenMatchingDialog();
+                  }}>
+                  기안서 선택
+                </button>
+              )}
+            </FormControl>
+          </FormItem>
+        </div>
+
+        <Button
+          type="button"
+          variant="svgIcon"
+          size="icon"
+          className="absolute top-0 right-0 ml-auto max-md:ml-0"
+          onClick={() => onRemove(index)}>
+          <Close className="size-4" />
+        </Button>
       </div>
 
       {typeValue === '외주용역비' && <OutsourceFields control={control} index={index} setValue={setValue} />}
@@ -358,7 +398,7 @@ function ExpenseRowComponent({
               </TableHeader>
 
               <TableBody>
-                {hasProposalList ? (
+                {proposalList.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="py-10 text-center text-[13px] text-gray-500">
                       등록된 기안서가 없습니다.
@@ -403,7 +443,6 @@ function ExpenseRowComponent({
               size="sm"
               onClick={() => {
                 if (!selectedProposalId) return;
-                console.log('선택된 기안서:', selectedProposalId);
 
                 setValue(`expense_items.${index}.pro_id`, selectedProposalId, {
                   shouldDirty: true,

@@ -1,8 +1,8 @@
 import type { addInfoDTO } from '@/api/project';
+import type { ExpenseItemDTO } from '@/api/expense';
 import { formatAmount, normalizeAttachmentUrl } from '@/utils';
 import { format } from 'date-fns';
 import { Paperclip } from 'lucide-react';
-import type { pExpenseItemDTO } from '@/api';
 
 const formatDate = (d?: string | Date | null) => {
   if (!d) return '';
@@ -11,13 +11,12 @@ const formatDate = (d?: string | Date | null) => {
 };
 
 interface ExpenseViewRowProps {
-  item: pExpenseItemDTO;
+  item: ExpenseItemDTO;
   onAddInfo: (addInfos?: addInfoDTO[]) => void;
   actionCell: React.ReactNode;
-  isEstimate?: boolean;
 }
 
-export default function ExpenseViewRow({ item, onAddInfo, actionCell, isEstimate }: ExpenseViewRowProps) {
+export default function ExpenseViewRow({ item, onAddInfo, actionCell }: ExpenseViewRowProps) {
   return (
     <div className="overflow-hidden rounded-lg border-1 border-gray-300">
       <div className="flex border-b-1 border-gray-300 px-2 py-2.5">
@@ -67,7 +66,7 @@ export default function ExpenseViewRow({ item, onAddInfo, actionCell, isEstimate
         </ExpRow>
 
         <ExpRow className="w-[10%] [&_button]:rounded-xl [&_button]:border [&_button]:text-xs [&_button]:transition-none">
-          <ExpTitle label={isEstimate ? '견적서' : '기안서'} />
+          <ExpTitle label="기안서" />
           <ExpContent>{actionCell ?? '-'}</ExpContent>
         </ExpRow>
       </div>
