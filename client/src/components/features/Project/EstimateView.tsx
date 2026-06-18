@@ -30,7 +30,7 @@ export default function EstimateView() {
   const { addDialog } = useAppDialog();
 
   const [loading, setLoading] = useState(true);
-  const { data, members } = useOutletContext<ProjectLayoutContext>();
+  const { data, members, refetch } = useOutletContext<ProjectLayoutContext>();
   const [estData, setEstData] = useState<EstimateViewDTO | null>(null);
   const [seletedEstId, setSelectedEstId] = useState<number | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false); // 매칭된 비용 항목 Dialog State
@@ -102,7 +102,6 @@ export default function EstimateView() {
       </div>
     );
 
-  console.log('데이터 ', data);
   console.log('견적서 데이터 ', estData);
 
   const handleEstEdit = () => {
@@ -139,6 +138,7 @@ export default function EstimateView() {
           });
 
           fetchEstimateView();
+          refetch();
         }
       },
     });
