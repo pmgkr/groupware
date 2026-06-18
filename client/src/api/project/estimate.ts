@@ -1,4 +1,5 @@
 import { http } from '@/lib/http';
+import { httpFile } from '@/lib/httpFile';
 import { cleanParams } from '@/utils';
 
 // ------------------------------
@@ -336,6 +337,18 @@ export interface EstimateCancelResponse {
 }
 
 // 견적서 등록 취소
-export async function estimateCancel(est_id: string) {
+export async function estimateCancel(est_id: number) {
   return http<EstimateCancelResponse>(`/user/estimate/cancel/${est_id}`, { method: 'GET' });
+}
+
+// 견적서 다운로드
+export async function estimateDownload(est_id: number) {
+  const res = await httpFile(`/user/estimate/download/${est_id}`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/vnd.ms-excel',
+    },
+  });
+
+  return res;
 }

@@ -6,7 +6,7 @@ import { downloadReportExcel } from '@/components/features/Project/utils/reportD
 import { SapStatusDot } from '@/components/features/Project/utils/projectUtil';
 
 import { getClientList, getTeamList } from '@/api';
-import { getProjectList, getAdminReportExcel, updateExpcost, updateSapStatus } from '@/api/admin/project';
+import { getProjectList, getAdminReportExcel, updateExpcost, updateSapStatus, updateSapNo } from '@/api/admin/project';
 import type { ProjectListResponse, ProjectListItem } from '@/api/admin/project';
 
 import { ReportFilterPC } from '@/components/features/Project/_responsive/ReportFilterPC';
@@ -26,18 +26,20 @@ import { MultiSelect, type MultiSelectOption, type MultiSelectRef } from '@compo
 import { Dialog, DialogDescription, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 
 import { Edit } from '@/assets/images/icons';
-import { X, OctagonAlert, LockKeyhole } from 'lucide-react';
+import { X, OctagonAlert, LockKeyhole, Check } from 'lucide-react';
 
 type SortState = {
   key: string;
   order: 'asc' | 'desc';
 } | null;
 
-type ProjectSapStatus = 'ready' | 'registered' | 'completed';
+type ProjectSapStatus = 'ready' | 'registered' | 'completed' | 'applied' | 'check';
 const sapStatusOptions = [
   { id: 'ready', label: 'SAP 미등록', value: 'ready' },
   { id: 'registered', label: 'SAP 등록', value: 'registered' },
-  { id: 'completed', label: 'SAP 완료', value: 'completed' },
+  { id: 'check', label: 'SAP 수정 필요', value: 'check' },
+  { id: 'applied', label: 'SAP 반영 완료', value: 'applied' },
+  { id: 'completed', label: 'SAP 종료', value: 'completed' },
 ];
 
 const STATUS_META = {
@@ -57,13 +59,29 @@ const STATUS_META = {
     alertMessage: '프로젝트가 SAP 등록 상태로 변경 되었습니다.',
     notiMessage: (actor: string) => `${actor}님이 프로젝트를 SAP 등록 상태로 변경했습니다.`,
   },
-  completed: {
-    dialogTitle: 'SAP 완료',
-    dialogMessage: '프로젝트를 SAP 완료 상태로 변경 하시겠습니까?',
+  check: {
+    dialogTitle: 'SAP 수정 필요',
+    dialogMessage: '프로젝트를 SAP 수정 필요 상태로 변경 하시겠습니까?',
     confirmText: '변경',
     alertTitle: '프로젝트 SAP 상태 변경',
-    alertMessage: '프로젝트가 SAP 완료 상태로 변경 되었습니다.',
-    notiMessage: (actor: string) => `${actor}님이 프로젝트를 SAP 완료 상태로 변경했습니다.`,
+    alertMessage: '프로젝트가 SAP 수정 필요 상태로 변경 되었습니다.',
+    notiMessage: (actor: string) => `${actor}님이 프로젝트를 SAP 수정 필요 상태로 변경했습니다.`,
+  },
+  applied: {
+    dialogTitle: 'SAP 반영 완료',
+    dialogMessage: '프로젝트를 SAP 반영 완료 상태로 변경 하시겠습니까?',
+    confirmText: '변경',
+    alertTitle: '프로젝트 SAP 상태 변경',
+    alertMessage: '프로젝트가 SAP 반영 완료 상태로 변경 되었습니다.',
+    notiMessage: (actor: string) => `${actor}님이 프로젝트를 SAP 반영 완료 상태로 변경했습니다.`,
+  },
+  completed: {
+    dialogTitle: 'SAP 종료',
+    dialogMessage: '프로젝트를 SAP 종료 상태로 변경 하시겠습니까?',
+    confirmText: '변경',
+    alertTitle: '프로젝트 SAP 상태 변경',
+    alertMessage: '프로젝트가 SAP 종료 상태로 변경 되었습니다.',
+    notiMessage: (actor: string) => `${actor}님이 프로젝트를 SAP 종료 상태로 변경했습니다.`,
   },
 } as const;
 
@@ -95,7 +113,10 @@ export default function Report() {
 
   const [selectedProject, setSelectedProject] = useState<ProjectListItem | null>(null); // 프로젝트 상태 변경용 선택한 프로젝트 ID
   const [projectDialog, setProjectDialog] = useState(false); // 프로젝트 상태 변경 Dialog State
+  const pendingReloadRef = useRef(false);
   const [selectedSapStatus, setSelectedSapStatus] = useState<ProjectSapStatus | null>(null);
+  const [sapNoInput, setSapNoInput] = useState('');
+  const [isEditingSapNo, setIsEditingSapNo] = useState(false);
 
   const [page, setPage] = useState<number>(() => Number(searchParams.get('page') || 1));
   const [total, setTotal] = useState(0);
@@ -210,6 +231,16 @@ export default function Report() {
   useEffect(() => {
     loadList();
   }, [selectedYear, selectedStatus, selectedClient, selectedTeam, selectedSAP, searchQuery, sort, isLocked, page, pageSize]);
+
+  useEffect(() => {
+    if (!projectDialog && pendingReloadRef.current) {
+      const timer = setTimeout(() => {
+        pendingReloadRef.current = false;
+        loadList();
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [projectDialog]);
 
   // 필터 변경 시 page 초기화
   const handleFilterChange = (setter: any, value: any) => {
@@ -326,14 +357,17 @@ export default function Report() {
   };
 
   // 프로젝트 상태 변경 다이얼로그 핸들러
-  const handleSapStatusChange = async (status: 'ready' | 'registered' | 'completed') => {
+  const handleSapStatusChange = async (status: 'ready' | 'registered' | 'completed' | 'check' | 'applied') => {
     if (!selectedProject) return;
 
     try {
-      const payload = {
+      const payload: { project_id: string; status: string; sap_no?: string } = {
         project_id: selectedProject.project_id,
         status,
       };
+      if (!selectedProject.sap_no && sapNoInput.trim()) {
+        payload.sap_no = sapNoInput.trim();
+      }
       const res = await updateSapStatus(payload);
       console.log('프로젝트 상태 변경 성공:', res);
 
@@ -347,8 +381,8 @@ export default function Report() {
           duration: 1500,
         });
 
+        pendingReloadRef.current = true;
         setProjectDialog(false);
-        loadList();
       }
     } catch (err) {
       console.error('❌ 프로젝트 상태 변경 실패:', err);
@@ -360,6 +394,24 @@ export default function Report() {
       });
       return;
     }
+  };
+
+  // 프로젝트 SAP No 업데이트 핸들러
+  const handleUpdateSapNo = async (projectId: string, sap_no: string) => {
+    const payload = { project_id: projectId, sap_no };
+
+    await updateSapNo(payload);
+
+    setSelectedProject((prev) => (prev ? { ...prev, sap_no } : prev));
+
+    addAlert({
+      title: '프로젝트 SAP 넘버가 수정되었습니다.',
+      message: `<p>프로젝트# <span class="text-primary-blue-500">${projectId}</span>의 SAP 넘버가 수정되었습니다.</p>`,
+      icon: <OctagonAlert />,
+      duration: 2000,
+    });
+
+    loadList();
   };
 
   const filterProps = {
@@ -419,8 +471,8 @@ export default function Report() {
         <TableHeader>
           <TableRow className="[&_th]:px-2 [&_th]:text-[13px] [&_th]:font-medium">
             <TableHead className="w-24 px-0!">프로젝트#</TableHead>
-            <TableHead className="">프로젝트 이름</TableHead>
-            <TableHead className="w-[12%]">클라이언트</TableHead>
+            <TableHead>프로젝트 이름</TableHead>
+            <TableHead className="w-[10%]">클라이언트</TableHead>
             <TableHead className="w-[6.5%] max-md:w-[8%]">프로젝트 오너</TableHead>
             <TableHead className="w-[8%]">
               <Button
@@ -503,8 +555,11 @@ export default function Report() {
                       </Link>
                     </TableCell>
                     <TableCell className="text-left">
-                      {item.project_title}
-                      {item.is_locked === 'Y' && <LockKeyhole className="ml-1 inline-block size-3 text-gray-600" />}
+                      <div className="flex gap-1">
+                        <p className="flex-1 truncate">{item.project_title}</p>
+                        {item.is_locked === 'Y' && <LockKeyhole className="size-3 shrink-0 text-gray-600" />}
+                      </div>
+                      {item.sap_no && <div className="mt-.5 text-xs text-gray-600">SAP NO. {item.sap_no}</div>}
                     </TableCell>
                     <TableCell>{item.client_nm}</TableCell>
                     <TableCell>{item.owner_nm}</TableCell>
@@ -583,6 +638,8 @@ export default function Report() {
                         onClick={() => {
                           setSelectedProject(item);
                           setSelectedSapStatus(item.sap_status as ProjectSapStatus);
+                          setSapNoInput('');
+                          setIsEditingSapNo(false);
                           setProjectDialog(true);
                         }}>
                         {statusMap[item.project_status as keyof typeof statusMap]}
@@ -604,12 +661,12 @@ export default function Report() {
                     <TableCell className="text-right">{formatAmount(reportData.subtotal.sum_exp_amount)}</TableCell>
                     <TableCell className="text-right">{formatAmount(reportData.subtotal.sum_netprofit)}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        {reportData.subtotal.avg_gpm !== 0
+                      <div className="flex items-center justify-center gap-1">
+                        {reportData.subtotal.avg_gpm !== 0 && reportData.subtotal.avg_gpm !== null
                           ? `${((reportData.subtotal.sum_netprofit / reportData.subtotal.sum_inv_amount) * 100).toFixed(2)}%`
                           : '-'}
                         <Tooltip>
-                          <TooltipTrigger type="button" className="cursor-help">
+                          <TooltipTrigger type="button">
                             <TooltipIcon />
                           </TooltipTrigger>
                           <TooltipContent>
@@ -633,12 +690,12 @@ export default function Report() {
                     <TableCell className="text-right">{formatAmount(reportData.grandtotal.sum_exp_amount)}</TableCell>
                     <TableCell className="text-right">{formatAmount(reportData.grandtotal.sum_netprofit)}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        {reportData.grandtotal.avg_gpm !== 0
+                      <div className="flex items-center justify-center gap-1">
+                        {reportData.grandtotal.avg_gpm !== 0 && reportData.grandtotal.avg_gpm !== null
                           ? `${((reportData.grandtotal.sum_netprofit / reportData.grandtotal.sum_inv_amount) * 100).toFixed(2)}%`
                           : '-'}
                         <Tooltip>
-                          <TooltipTrigger type="button" className="cursor-help">
+                          <TooltipTrigger type="button">
                             <TooltipIcon />
                           </TooltipTrigger>
                           <TooltipContent>
@@ -677,26 +734,88 @@ export default function Report() {
       <Dialog open={projectDialog} onOpenChange={setProjectDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>프로젝트 SAP 상태 변경</DialogTitle>
-            <DialogDescription className="leading-[1.3] break-keep">프로젝트 SAP 상태를 변경할 수 있습니다.</DialogDescription>
+            <DialogTitle>프로젝트 SAP 설정</DialogTitle>
+            <DialogDescription className="leading-[1.3] break-keep">프로젝트 SAP 설정 상태를 확인할 수 있습니다.</DialogDescription>
           </DialogHeader>
-          <RadioGroup value={selectedSapStatus ?? undefined} onValueChange={(value) => setSelectedSapStatus(value as ProjectSapStatus)}>
-            <div className="grid grid-cols-2 items-start gap-2">
-              {sapStatusOptions
-                .filter((option) => option.value !== selectedProject?.sap_status)
-                .map((option) => (
-                  <RadioButton
-                    key={option.id}
-                    id={option.id}
-                    variant="dynamic"
-                    label={option.label}
-                    value={option.value}
-                    size="md"
-                    iconHide={true}
-                  />
-                ))}
+          <div>
+            <div className="mb-3">
+              {selectedProject?.sap_no && !isEditingSapNo ? (
+                <>
+                  <p className="text-base font-medium max-md:text-[13px]">SAP No.</p>
+                  <div className="flex h-8 items-center justify-between text-base text-gray-700">
+                    {selectedProject.sap_no}
+                    <Button
+                      type="button"
+                      variant="svgIcon"
+                      size="sm"
+                      className="size-5 px-1! align-middle text-gray-600 transition-none hover:text-gray-700"
+                      onClick={() => {
+                        setSapNoInput(selectedProject.sap_no ?? '');
+                        setIsEditingSapNo(true);
+                      }}>
+                      <Edit className="size-4" />
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <p className="text-base font-medium max-md:text-[13px]">SAP No.</p>
+                    <button
+                      type="button"
+                      className="cursor-pointer text-xs font-medium text-gray-600"
+                      onClick={() => {
+                        setIsEditingSapNo(false);
+                      }}>
+                      수정취소
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      maxLength={20}
+                      value={sapNoInput}
+                      autoFocus={isEditingSapNo}
+                      onChange={(e) => setSapNoInput(e.target.value)}
+                      placeholder="SAP No. 입력"
+                    />
+
+                    <Button
+                      type="button"
+                      variant="svgIcon"
+                      size="sm"
+                      className="absolute top-0 right-0 h-full w-8 px-1! text-gray-700 transition-none hover:text-gray-800"
+                      onClick={() => {
+                        if (sapNoInput.trim() && selectedProject) {
+                          handleUpdateSapNo(selectedProject.project_id, sapNoInput.trim());
+                          setIsEditingSapNo(false);
+                        }
+                      }}>
+                      <Check className="size-4" />
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
-          </RadioGroup>
+            <RadioGroup value={selectedSapStatus ?? undefined} onValueChange={(value) => setSelectedSapStatus(value as ProjectSapStatus)}>
+              <p className="text-base font-medium max-md:text-[13px]">SAP 상태 업데이트</p>
+              <div className="grid grid-cols-2 items-start gap-2">
+                {sapStatusOptions
+                  .filter((option) => option.value !== selectedProject?.sap_status)
+                  .map((option) => (
+                    <RadioButton
+                      key={option.id}
+                      id={option.id}
+                      variant="dynamic"
+                      label={option.label}
+                      value={option.value}
+                      size="md"
+                      iconHide={true}
+                    />
+                  ))}
+              </div>
+            </RadioGroup>
+          </div>
+
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline">취소</Button>

@@ -41,6 +41,12 @@ const summaryAmountCellStyle = {
   border: borderStyle,
 };
 
+const leftCellStyle = {
+  font: { sz: 9, name: '맑은 고딕' },
+  alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+  border: borderStyle,
+};
+
 const linkCellStyle = {
   font: {
     sz: 9,
@@ -69,8 +75,9 @@ const columns = [
   'Net Profit', // 수익금
   'GPM(%)',
   'Status',
-  'isLocked', // 프로젝트 잠금 여부
   'SAP Status',
+  'SAP No.',
+  'isLocked', // 프로젝트 잠금 여부
 ];
 
 /* =======================
@@ -113,7 +120,7 @@ function buildRows(items: ProjectListItem[]) {
       l: { Target: `https://portal.pmgasia.co.kr/project/${item.project_id}` },
       s: linkCellStyle,
     },
-    'Project Title': item.project_title,
+    'Project Title': { v: item.project_title, s: leftCellStyle },
     Client: item.client_nm,
     Owner: item.owner_nm,
     Team: item.team_name,
@@ -125,8 +132,9 @@ function buildRows(items: ProjectListItem[]) {
     'Net Profit': { v: item.netprofit ?? 0, t: 'n', s: amountCellStyle },
     'GPM(%)': item.GPM ? `${item.GPM}%` : '-',
     Status: item.project_status,
-    isLocked: item.is_locked,
     'SAP Status': item.sap_status || '-',
+    'SAP No.': item.sap_no || '-',
+    isLocked: item.is_locked,
   }));
 }
 
@@ -162,8 +170,9 @@ function buildSummaryRow(label: string, data: ProjectListResponse['subtotal']) {
       },
     },
     Status: '',
-    isLocked: '',
     'SAP Status': '',
+    'SAP No.': '',
+    isLocked: '',
   };
 }
 
@@ -210,7 +219,7 @@ export function downloadReportExcel(res: ProjectListResponse, params: { year?: s
     },
     {
       s: { r: subTotalRowIndex, c: 10 },
-      e: { r: subTotalRowIndex, c: 13 },
+      e: { r: subTotalRowIndex, c: 14 },
     },
 
     // Grand Total 병합 (A~E)
@@ -220,7 +229,7 @@ export function downloadReportExcel(res: ProjectListResponse, params: { year?: s
     },
     {
       s: { r: grandTotalRowIndex, c: 10 },
-      e: { r: grandTotalRowIndex, c: 13 },
+      e: { r: grandTotalRowIndex, c: 14 },
     },
   ];
 
@@ -254,15 +263,16 @@ export function downloadReportExcel(res: ProjectListResponse, params: { year?: s
     { wch: 20 }, // Client
     { wch: 12 }, // Owner
     { wch: 12 }, // Team
-    { wch: 20 }, // Estimated Amount
-    { wch: 20 }, // Estimated Expense
-    { wch: 20 }, // Expensed
-    { wch: 20 }, // Invoice Billed
-    { wch: 20 }, // Net Profit
+    { wch: 18 }, // Estimated Amount
+    { wch: 18 }, // Estimated Expense
+    { wch: 18 }, // Expensed
+    { wch: 18 }, // Invoice Billed
+    { wch: 18 }, // Net Profit
     { wch: 10 }, // GPM (%)
     { wch: 12 }, // Status
-    { wch: 10 }, // isLocked
     { wch: 14 }, // SAP Status
+    { wch: 20 }, // SAP No.
+    { wch: 10 }, // isLocked
   ];
 
   const wb = XLSX.utils.book_new();

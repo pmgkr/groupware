@@ -2,15 +2,25 @@ import { Badge } from '@/components/ui/badge';
 
 export function SapStatusDot({ sap_status, size = 'md' }: { sap_status?: string | null; size?: 'sm' | 'md' }) {
   if (!sap_status) return null;
-  const color =
-    sap_status === 'ready'
-      ? 'bg-primary-yellow-500'
-      : sap_status === 'registered'
-        ? 'bg-primary-blue-500'
-        : sap_status === 'completed'
-          ? 'bg-gray-400'
-          : 'bg-destructive';
+  const colorMap: Record<string, string> = {
+    ready: 'bg-yellow-400', // 미등록
+    registered: 'bg-primary-blue-500', // 등록
+    check: 'bg-orange-400', // 수정필요
+    applied: 'bg-emerald-500', // 반영완료
+    completed: 'bg-gray-400', // 종료
+  };
+  const color = colorMap[sap_status] ?? 'bg-destructive';
   const s = size === 'sm' ? 'size-2.5' : 'size-3';
+
+  if (sap_status === 'check') {
+    return (
+      <span className={`absolute -top-1 -right-1 flex ${s}`}>
+        <span className={`${color} ${s} absolute inline-flex h-full w-full animate-ping rounded-full opacity-75`} />
+        <span className={`${color} ${s} relative inline-flex rounded-full border border-white`} />
+      </span>
+    );
+  }
+
   return (
     <span className={`absolute -top-1 -right-1 flex ${s}`}>
       <span className={`${color} ${s} relative inline-flex rounded-full border border-white`}></span>
