@@ -761,14 +761,16 @@ export default function Report() {
                 <>
                   <div className="flex items-center justify-between">
                     <p className="text-base font-medium max-md:text-[13px]">SAP No.</p>
-                    <button
-                      type="button"
-                      className="cursor-pointer text-xs font-medium text-gray-600"
-                      onClick={() => {
-                        setIsEditingSapNo(false);
-                      }}>
-                      수정취소
-                    </button>
+                    {selectedProject?.sap_no && (
+                      <button
+                        type="button"
+                        className="cursor-pointer text-xs font-medium text-gray-600"
+                        onClick={() => {
+                          setIsEditingSapNo(false);
+                        }}>
+                        수정취소
+                      </button>
+                    )}
                   </div>
                   <div className="relative">
                     <Input
@@ -778,20 +780,21 @@ export default function Report() {
                       onChange={(e) => setSapNoInput(e.target.value)}
                       placeholder="SAP No. 입력"
                     />
-
-                    <Button
-                      type="button"
-                      variant="svgIcon"
-                      size="sm"
-                      className="absolute top-0 right-0 h-full w-8 px-1! text-gray-700 transition-none hover:text-gray-800"
-                      onClick={() => {
-                        if (sapNoInput.trim() && selectedProject) {
-                          handleUpdateSapNo(selectedProject.project_id, sapNoInput.trim());
-                          setIsEditingSapNo(false);
-                        }
-                      }}>
-                      <Check className="size-4" />
-                    </Button>
+                    {selectedProject?.sap_no && (
+                      <Button
+                        type="button"
+                        variant="svgIcon"
+                        size="sm"
+                        className="absolute top-0 right-0 h-full w-8 px-1! text-gray-700 transition-none hover:text-gray-800"
+                        onClick={() => {
+                          if (sapNoInput.trim() && selectedProject) {
+                            handleUpdateSapNo(selectedProject.project_id, sapNoInput.trim());
+                            setIsEditingSapNo(false);
+                          }
+                        }}>
+                        <Check className="size-4" />
+                      </Button>
+                    )}
                   </div>
                 </>
               )}
