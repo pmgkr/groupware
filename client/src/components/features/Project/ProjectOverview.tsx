@@ -230,6 +230,7 @@ export default function Overview() {
                     {status}
                   </div>
                   <ProjectInfoRow title="프로젝트 #" value={data.project_id} />
+                  {data.sap_no && <ProjectInfoRow title="SAP No." value={data.sap_no} />}
                   <ProjectInfoRow title="클라이언트" value={data.client_nm} />
                   <ProjectInfoRow title="프로젝트 오너" value={data.owner_nm} />
                   <ProjectInfoRow title="프로젝트 기간" value={`${formatDate(data.project_sdate)} ~ ${formatDate(data.project_edate)}`} />
@@ -260,7 +261,9 @@ export default function Overview() {
                     <TableColumnHeaderCell>프로젝트 견적</TableColumnHeaderCell>
                   </TableColumnHeader>
                   <TableColumnBody>
-                    <TableColumnCell>{data.project_id}</TableColumnCell>
+                    <TableColumnCell className="flex-wrap gap-x-1">
+                      {data.project_id} {data.sap_no && <span className="text-sm text-gray-500">(SAP NO. {data.sap_no})</span>}
+                    </TableColumnCell>
                     <TableColumnCell>{data.owner_nm}</TableColumnCell>
                     <TableColumnCell>{formatAmount(data.est_amount) ?? 0} 원</TableColumnCell>
                   </TableColumnBody>

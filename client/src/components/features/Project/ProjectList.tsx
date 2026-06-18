@@ -85,9 +85,11 @@ export default function ProjectList() {
   ];
 
   const sapStatusOptions = [
-    { label: 'SAP 미등록', value: 'ready' },
-    { label: 'SAP 등록', value: 'registered' },
-    { label: 'SAP 완료', value: 'completed' },
+    { id: 'ready', label: 'SAP 미등록', value: 'ready' },
+    { id: 'registered', label: 'SAP 등록', value: 'registered' },
+    { id: 'check', label: 'SAP 수정 필요', value: 'check' },
+    { id: 'applied', label: 'SAP 반영 완료', value: 'applied' },
+    { id: 'completed', label: 'SAP 종료', value: 'completed' },
   ];
 
   // MultiSelect Select 옵션 복구

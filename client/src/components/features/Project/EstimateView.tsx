@@ -2,9 +2,10 @@ import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } fr
 import { Link, useOutletContext, useNavigate, useParams } from 'react-router';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
-import { getEstimateView, estimateCancel, type EstimateViewDTO } from '@/api';
-import { formatKST, formatAmount, formatDate, displayUnitPrice, normalizeAttachmentUrl } from '@/utils';
+import { getEstimateView, estimateCancel, estimateDownload, type EstimateViewDTO } from '@/api';
+import { formatKST, formatAmount, formatDate, displayUnitPrice, normalizeAttachmentUrl, sanitizeFilename } from '@/utils';
 import { useIsMobileViewport } from '@/hooks/useViewport';
+import { triggerDownload } from './utils/download';
 
 import type { ProjectLayoutContext } from '@/pages/Project/ProjectLayout';
 import ExpenseItemDialog from './_components/ExpenseItemDialog';
@@ -17,7 +18,6 @@ import { Badge } from '@components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableColumn, TableColumnHeader, TableColumnHeaderCell, TableColumnBody, TableColumnCell } from '@/components/ui/tableColumn';
 
-import { format } from 'date-fns';
 import { OctagonAlert, Paperclip, MessageSquareMore, Link as LinkIcon } from 'lucide-react';
 
 export default function EstimateView() {
@@ -48,18 +48,20 @@ export default function EstimateView() {
     return () => window.removeEventListener('resize', sync);
   }, [estData]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await getEstimateView(estId);
-        setEstData(res);
-      } catch (err) {
-        console.error('❌ 견적 상세 조회 실패:', err);
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const fetchEstimateView = useCallback(async () => {
+    try {
+      const res = await getEstimateView(estId);
+      setEstData(res);
+    } catch (err) {
+      console.error('❌ 견적 상세 조회 실패:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [estId]);
+
+  useEffect(() => {
+    fetchEstimateView();
+  }, [fetchEstimateView]);
 
   const hasGrandTotal = useMemo(() => {
     return estData?.items.some((row) => row.ei_type === 'grandtotal') ?? true;
@@ -115,24 +117,55 @@ export default function EstimateView() {
     });
   };
 
-  const handleEstCancel = (estId: string | undefined) => {
+  const handleEstCancel = (estId: number | string | undefined) => {
     if (!estId) return;
+    const est_Id = Number(estId);
 
     addDialog({
       title: '견적서를 취소하시겠습니까?',
       message: `취소 시 해당 견적은 '과거 견적' 상태로 변경되며, 매칭된 비용 정보는 초기화됩니다.`,
-      confirmText: '수정',
+      confirmText: '확인',
       cancelText: '취소',
       onConfirm: async () => {
-        const res = await estimateCancel(estId);
+        const res = await estimateCancel(est_Id);
         console.log('견적서 취소', res);
-
-        const resetCount = `${res.reset_count}건의 견적서 비용이 매칭 초기화 되었습니다.`;
 
         if (res.ok) {
           addAlert({
             title: '견적서 취소',
             message: `견적서가 등록 취소 되었습니다.`,
+            icon: <OctagonAlert />,
+            duration: 2000,
+          });
+
+          fetchEstimateView();
+        }
+      },
+    });
+  };
+
+  const handleEstDownload = (estId: number | string | undefined) => {
+    if (!estId) return;
+    const est_Id = Number(estId);
+
+    addDialog({
+      title: '견적서를 다운로드 하시겠습니까?',
+      message: `Excel 파일로 다운로드 됩니다.`,
+      confirmText: '확인',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          const res = await estimateDownload(est_Id);
+
+          const blob = await res.blob();
+          const filename = sanitizeFilename(`[${estData?.header.project_id}] ${estData?.header.est_title}.xls`);
+          triggerDownload(blob, filename);
+        } catch (err) {
+          console.log('❌ 견적서 다운로드 실패:', err);
+
+          addAlert({
+            title: '견적서 다운로드 실패',
+            message: `잠시 후 다시 시도해주세요.\n오류가 지속되는 경우 담당자에게 문의바랍니다.`,
             icon: <OctagonAlert />,
             duration: 2000,
           });
@@ -279,7 +312,7 @@ export default function EstimateView() {
             </>
           ))}
         </div>
-        <Button type="button" variant="outline" size="full" asChild>
+        <Button type="button" variant="outline" size="full" className="flex-1" asChild>
           <Link to={`/project/${projectId}/estimate`}>목록</Link>
         </Button>
       </div>
@@ -559,6 +592,9 @@ export default function EstimateView() {
         <div className="mt-10 flex justify-between">
           <Button type="button" variant="outline" size="sm" asChild>
             <Link to={`/project/${projectId}/estimate`}>목록</Link>
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => handleEstDownload(estId)}>
+            견적서 다운로드
           </Button>
         </div>
       </div>

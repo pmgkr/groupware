@@ -55,6 +55,7 @@ export const ProjectHistory = ({ logs }: Props) => {
 
     // SAP
     'SAP status',
+    // 'sapno_changed',
   ];
   const filteredLogs = logs.filter((log) => ALLOWED_LOG_TYPES.includes(log.pl_type));
 
@@ -123,6 +124,8 @@ export const ProjectHistory = ({ logs }: Props) => {
     '(ready)': '미등록으',
     '(registered)': '등록으',
     '(completed)': '완료',
+    '(check)': '수정 필요',
+    '(applied)': '반영 완료',
     '하였습니다.': '했습니다.',
     // 'budget changed:': '[예산 변경]',  // 추후 추가
   };

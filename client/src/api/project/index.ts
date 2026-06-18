@@ -23,6 +23,7 @@ export type ProjectListItem = {
   manager_name: string;
   wdate: string;
   sap_status: string;
+  sap_no?: string;
 };
 
 // 프로젝트 리스트 조회용 파라미터 타입
@@ -86,6 +87,7 @@ export interface ProjectViewDTO {
   exp_cost?: string;
   is_locked: 'Y' | 'N';
   sap_status: string;
+  sap_no?: string;
 }
 
 // 프로젝트 멤버 타입
