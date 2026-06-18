@@ -276,7 +276,7 @@ export default function ExpenseView() {
               <h3 className="text-lg leading-[1.2] font-bold">비용 항목</h3>
               <div className="py-2">
                 {items.map((item) => (
-                  <ExpenseMobileViewRow key={item.seq} item={item} onAddInfo={handleAddInfo} />
+                  <ExpenseMobileViewRow key={item.seq} item={item} el_type={header.el_type} onAddInfo={handleAddInfo} />
                 ))}
               </div>
               <div className="flex justify-between gap-2">
@@ -438,6 +438,7 @@ export default function ExpenseView() {
                   <ExpenseViewRow
                     key={item.seq}
                     item={item}
+                    el_type={header.el_type}
                     onAddInfo={handleAddInfo}
                     actionCell={
                       item.pro_id ? (
@@ -508,7 +509,7 @@ function ExpRow({ title, value, bold }: { title: string; value: any; bold?: bool
   return (
     <dl className="flex justify-between gap-2 py-1">
       <dt className="w-[20%] shrink-0 text-[13px] text-gray-700">{title}</dt>
-      <dd className={cn('text-right text-[13px] font-medium break-keep whitespace-pre', bold && 'font-semibold')}>{value}</dd>
+      <dd className={cn('text-right text-[13px] font-medium break-keep whitespace-pre-wrap', bold && 'font-semibold')}>{value}</dd>
     </dl>
   );
 }

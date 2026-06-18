@@ -11,24 +11,25 @@ const formatDate = (d?: string | Date | null) => {
 };
 
 interface ExpenseViewRowProps {
+  el_type: string;
   item: ExpenseItemDTO;
   onAddInfo: (addInfos?: addInfoDTO[]) => void;
   actionCell: React.ReactNode;
 }
 
-export default function ExpenseViewRow({ item, onAddInfo, actionCell }: ExpenseViewRowProps) {
+export default function ExpenseViewRow({ el_type, item, onAddInfo, actionCell }: ExpenseViewRowProps) {
   return (
     <div className="overflow-hidden rounded-lg border-1 border-gray-300">
       <div className="flex border-b-1 border-gray-300 px-2 py-2.5">
         <ExpRow className="w-[10%]">
           <ExpTitle label="비용 용도" />
           <ExpContent>
-            {(item.ei_type === '외주용역비' || item.ei_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
+            {(el_type === '외주용역비' || el_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
               <span className="text-primary cursor-pointer underline" onClick={() => onAddInfo(item.expense_add_info)}>
-                {item.ei_type}
+                {el_type}
               </span>
             ) : (
-              item.ei_type
+              el_type
             )}
           </ExpContent>
         </ExpRow>

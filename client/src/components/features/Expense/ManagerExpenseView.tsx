@@ -306,7 +306,7 @@ export default function NexpenseView() {
               <h3 className="text-lg leading-[1.2] font-bold">비용 항목</h3>
               <div className="py-2">
                 {items.map((item) => (
-                  <ExpenseMobileViewRow key={item.seq} item={item} onAddInfo={handleAddInfo} />
+                  <ExpenseMobileViewRow key={item.seq} item={item} el_type={header.el_type} onAddInfo={handleAddInfo} />
                 ))}
               </div>
 
@@ -454,6 +454,7 @@ export default function NexpenseView() {
                     <ExpenseViewRow
                       key={item.seq}
                       item={item}
+                      el_type={header.el_type}
                       onAddInfo={handleAddInfo}
                       actionCell={
                         item.pro_id ? (

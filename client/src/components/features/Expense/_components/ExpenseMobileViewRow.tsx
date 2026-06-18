@@ -6,22 +6,23 @@ import type { ExpenseItemDTO } from '@/api/expense';
 import type { addInfoDTO } from '@/api/project';
 
 interface ExpenseMobileViewRowProps {
+  el_type: string;
   item: ExpenseItemDTO;
   onAddInfo: (addInfos?: addInfoDTO[]) => void;
 }
 
-export default function ExpenseMobileViewRow({ item, onAddInfo }: ExpenseMobileViewRowProps) {
+export default function ExpenseMobileViewRow({ el_type, item, onAddInfo }: ExpenseMobileViewRowProps) {
   return (
     <div className="mb-3 border-b-1 border-dashed pb-3 last:border-b-0">
       <dl className="flex justify-between gap-2 py-1">
         <dt className="w-[20%] shrink-0 text-[13px] text-gray-700">비용 용도</dt>
         <dd className="text-right text-[13px] font-medium break-keep whitespace-pre">
-          {(item.ei_type === '외주용역비' || item.ei_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
+          {(el_type === '외주용역비' || el_type === '접대비') && (item.expense_add_info ?? []).length > 0 ? (
             <span className="text-primary underline" onClick={() => onAddInfo(item.expense_add_info)}>
-              {item.ei_type}
+              {el_type}
             </span>
           ) : (
-            item.ei_type
+            el_type
           )}
         </dd>
       </dl>
@@ -88,7 +89,7 @@ function ExpRow({ title, value, bold }: { title: string; value: any; bold?: bool
   return (
     <dl className="flex justify-between gap-2 py-1">
       <dt className="w-[20%] shrink-0 text-[13px] text-gray-700">{title}</dt>
-      <dd className={cn('text-right text-[13px] font-medium break-keep md:whitespace-pre', bold && 'font-semibold')}>{value}</dd>
+      <dd className={cn('text-right text-[13px] font-medium break-keep whitespace-pre-wrap', bold && 'font-semibold')}>{value}</dd>
     </dl>
   );
 }
