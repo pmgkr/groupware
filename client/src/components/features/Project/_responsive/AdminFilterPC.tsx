@@ -22,16 +22,19 @@ export function AdminFilterPC(props: AdminFilterProps) {
     selectedProof,
     selectedProofStatus,
     selectedDdate,
+    selectedIsMatched,
 
     typeOptions,
     statusOptions,
     proofMethod,
     proofStatusOptions,
+    isMatchedOptions,
 
     typeRef,
     statusRef,
     proofRef,
     proofStatusRef,
+    isMatchedRef,
     checkedItems,
     searchInput,
     datePickerKey,
@@ -43,6 +46,7 @@ export function AdminFilterPC(props: AdminFilterProps) {
     onProofChange,
     onProofStatusChange,
     onDdateChange,
+    onIsMatchedChange,
     onSearchInputChange,
     onSearchSubmit,
     onClearSearch,
@@ -105,7 +109,7 @@ export function AdminFilterPC(props: AdminFilterProps) {
           />
 
           {/* 증빙상태 */}
-          <MultiSelect
+          {/* <MultiSelect
             size="sm"
             className="max-w-[88px] min-w-auto!"
             placeholder="증빙 상태"
@@ -113,6 +117,22 @@ export function AdminFilterPC(props: AdminFilterProps) {
             options={proofStatusOptions}
             defaultValue={selectedProofStatus}
             onValueChange={onProofStatusChange}
+            maxCount={0}
+            autoSize={true}
+            closeOnSelect={false}
+            searchable={false}
+            simpleSelect={true}
+          /> */}
+
+          {/* 견적 매칭 */}
+          <MultiSelect
+            size="sm"
+            className="max-w-[88px] min-w-auto!"
+            placeholder="견적 매칭"
+            ref={isMatchedRef}
+            options={isMatchedOptions}
+            defaultValue={selectedIsMatched}
+            onValueChange={onIsMatchedChange}
             maxCount={0}
             autoSize={true}
             closeOnSelect={false}

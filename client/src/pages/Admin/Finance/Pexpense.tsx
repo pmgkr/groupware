@@ -56,6 +56,7 @@ export default function Pexpense() {
   const [selectedProof, setSelectedProof] = useState<string[]>(() => searchParams.get('method')?.split(',') ?? []);
   const [selectedProofStatus, setSelectedProofStatus] = useState<string[]>(() => searchParams.get('attach')?.split(',') ?? []);
   const [selectedDdate, setSelectedDdate] = useState(() => searchParams.get('ddate') || '');
+  const [selectedIsMatched, setSelectedIsMatched] = useState<string[]>(() => searchParams.get('is_matched')?.split(',') ?? []);
   const [datePickerKey, setDatePickerKey] = useState(0); // DateRange 마운트용 State
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange | undefined>(undefined);
   const [searchInput, setSearchInput] = useState(() => searchParams.get('q') || ''); // 사용자가 입력중인 Input 저장값
@@ -70,6 +71,7 @@ export default function Pexpense() {
   const statusRef = useRef<MultiSelectRef>(null);
   const proofRef = useRef<MultiSelectRef>(null);
   const proofStatusRef = useRef<MultiSelectRef>(null);
+  const isMatchedRef = useRef<MultiSelectRef>(null);
 
   const [typeOptions, setTypeOptions] = useState<MultiSelectOption[]>([]);
   const [expenseList, setExpenseList] = useState<ExpenseListItems[]>([]);
@@ -125,6 +127,7 @@ export default function Pexpense() {
       if (selectedProof.length) params.method = selectedProof.join(',');
       if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
       if (selectedDdate !== '') params.ddate = selectedDdate;
+      if (selectedIsMatched.length) params.is_matched = selectedIsMatched.join(',');
       if (selectedDateRange?.from) {
         params.sdate = formatDate(selectedDateRange.from.toISOString());
       }
@@ -143,7 +146,18 @@ export default function Pexpense() {
     } finally {
       setLoading(false);
     }
-  }, [selectedYear, selectedType, selectedProof, selectedProofStatus, selectedStatus, selectedDdate, searchQuery, selectedDateRange, page]);
+  }, [
+    selectedYear,
+    selectedType,
+    selectedProof,
+    selectedProofStatus,
+    selectedStatus,
+    selectedDdate,
+    selectedIsMatched,
+    searchQuery,
+    selectedDateRange,
+    page,
+  ]);
 
   useEffect(() => {
     loadList();
@@ -200,6 +214,7 @@ export default function Pexpense() {
     setSelectedProof([]);
     setSelectedProofStatus([]);
     setSelectedDdate('');
+    setSelectedIsMatched([]);
     setCheckedItems([]);
     setSelectedDateRange(undefined);
     setDatePickerKey((prev) => prev + 1);
@@ -209,6 +224,7 @@ export default function Pexpense() {
     statusRef.current?.clear();
     proofRef.current?.clear();
     proofStatusRef.current?.clear();
+    isMatchedRef.current?.clear();
   };
 
   const handleConfirm = () => {
@@ -450,6 +466,7 @@ export default function Pexpense() {
       if (selectedProof.length) params.method = selectedProof.join(',');
       if (selectedProofStatus.length) params.attach = selectedProofStatus.join(',');
       if (selectedDdate !== '') params.ddate = selectedDdate;
+      if (selectedIsMatched.length) params.is_matched = selectedIsMatched.join(',');
       if (selectedDateRange?.from) {
         params.sdate = formatDate(selectedDateRange.from.toISOString());
       }
@@ -574,6 +591,11 @@ export default function Pexpense() {
     { label: '미제출', value: 'N' },
   ];
 
+  const isMatchedOptions: MultiSelectOption[] = [
+    { label: '매칭됨', value: 'Y' },
+    { label: '미매칭', value: 'N' },
+  ];
+
   const filterProps = {
     yearOptions,
 
@@ -583,16 +605,19 @@ export default function Pexpense() {
     selectedProof,
     selectedProofStatus,
     selectedDdate,
+    selectedIsMatched,
 
     typeOptions,
     statusOptions,
     proofMethod,
     proofStatusOptions,
+    isMatchedOptions,
 
     typeRef,
     statusRef,
     proofRef,
     proofStatusRef,
+    isMatchedRef,
     checkedItems,
     searchInput,
     datePickerKey,
@@ -604,6 +629,7 @@ export default function Pexpense() {
     onProofChange: setSelectedProof,
     onProofStatusChange: setSelectedProofStatus,
     onDdateChange: setSelectedDdate,
+    onIsMatchedChange: setSelectedIsMatched,
     onSearchInputChange: handleSearchInputChange,
     onSearchSubmit: handleSearchSubmit,
     onClearSearch: handleClearSearch,

@@ -15,6 +15,7 @@ export interface ExpenseListParams {
   attach?: string;
   status?: string; // default는 'Confirmed'
   ddate?: 'Y' | 'N'; // 'Y'면 지급예정일자 ddate에 값이 있는 row만, 'N'이면 ddate에 값이 없는 row만 default는 전체 row
+  is_matched?: string; // 'Y'(매칭됨) / 'N'(미매칭), 다중 선택 시 콤마로 구분
   sdate?: string; // 작성일 시작일
   edate?: string; // 작성일 종료일
   q?: string; // 검색 Input 키워드 비용 제목 (el_title) or 작성자 (user_nm) 입력

@@ -81,7 +81,7 @@ export default function InvoiceView() {
   // 상태 라벨/색상 매핑
   const statusMap = {
     Claimed: <Badge variant="secondary">승인대기</Badge>,
-    Confirmed: <Badge>승인완료</Badge>,
+    Confirmed: <Badge>발행완료</Badge>,
     Rejected: <Badge className="bg-destructive">반려됨</Badge>,
   } as const;
 
@@ -293,15 +293,15 @@ export default function InvoiceView() {
                   <Link to={`/admin/finance/invoice${search}`}>목록</Link>
                 </Button>
 
+                {header.invoice_status !== 'Rejected' && (
+                  <Button type="button" variant="destructive" className="flex-1" onClick={() => setDialogOpen(true)}>
+                    반려하기
+                  </Button>
+                )}
                 {header.invoice_status === 'Claimed' && (
-                  <>
-                    <Button type="button" variant="destructive" className="flex-1" onClick={() => setDialogOpen(true)}>
-                      반려하기
-                    </Button>
-                    <Button type="button" className="flex-1" onClick={handleConfirm}>
-                      승인하기
-                    </Button>
-                  </>
+                  <Button type="button" className="flex-1" onClick={handleConfirm}>
+                    승인하기
+                  </Button>
                 )}
               </div>
             </div>
@@ -479,15 +479,16 @@ export default function InvoiceView() {
                   <Button type="button" size="sm" variant="outline">
                     <Download /> 다운로드
                   </Button>
+
+                  {header.invoice_status !== 'Rejected' && (
+                    <Button type="button" size="sm" variant="destructive" onClick={() => setDialogOpen(true)}>
+                      반려하기
+                    </Button>
+                  )}
                   {header.invoice_status === 'Claimed' && (
-                    <>
-                      <Button type="button" size="sm" variant="destructive" onClick={() => setDialogOpen(true)}>
-                        반려하기
-                      </Button>
-                      <Button type="button" size="sm" onClick={handleConfirm}>
-                        승인하기
-                      </Button>
-                    </>
+                    <Button type="button" size="sm" onClick={handleConfirm}>
+                      승인하기
+                    </Button>
                   )}
                 </div>
               </div>
@@ -536,8 +537,8 @@ export default function InvoiceView() {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle>비용 반려</DialogTitle>
-              <DialogDescription>비용을 반려하기 전에, 필요 시 반려 사유를 입력해 주세요.</DialogDescription>
+              <DialogTitle>인보이스 반려</DialogTitle>
+              <DialogDescription>인보이스를 반려하기 전에, 반려 사유를 입력해 주세요.</DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-2">
               <Textarea ref={reasonRef} placeholder="반려 사유를 입력해 주세요" className="h-16 min-h-16" />

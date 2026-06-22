@@ -21,16 +21,19 @@ export function AdminFilterMo(props: AdminFilterProps) {
     selectedProof,
     selectedProofStatus,
     selectedDdate,
+    selectedIsMatched,
 
     typeOptions,
     statusOptions,
     proofMethod,
     proofStatusOptions,
+    isMatchedOptions,
 
     typeRef,
     statusRef,
     proofRef,
     proofStatusRef,
+    isMatchedRef,
     checkedItems,
     searchInput,
     datePickerKey,
@@ -42,6 +45,7 @@ export function AdminFilterMo(props: AdminFilterProps) {
     onProofChange,
     onProofStatusChange,
     onDdateChange,
+    onIsMatchedChange,
     onSearchInputChange,
     onSearchSubmit,
     onClearSearch,
@@ -63,6 +67,7 @@ export function AdminFilterMo(props: AdminFilterProps) {
   const [draftProofStatus, setDraftProofStatus] = useState(selectedProofStatus);
   const [draftStatus, setDraftStatus] = useState(selectedStatus);
   const [draftDdate, setDraftDdate] = useState(selectedDdate);
+  const [draftIsMatched, setDraftIsMatched] = useState(selectedIsMatched);
   const [draftDateRange, setDraftDateRange] = useState(selectedDateRange);
   const [draftSearch, setDraftSearch] = useState(searchInput);
   const activeMultiSelectRef = useRef<MultiSelectRef | null>(null); // Drawer 컴포넌트 내 MultiSelect 제어용
@@ -83,6 +88,7 @@ export function AdminFilterMo(props: AdminFilterProps) {
     setDraftProofStatus(selectedProofStatus);
     setDraftStatus(selectedStatus);
     setDraftDdate(selectedDdate);
+    setDraftIsMatched(selectedIsMatched);
     setDraftDateRange(selectedDateRange);
     setDraftSearch(searchInput);
   };
@@ -110,6 +116,7 @@ export function AdminFilterMo(props: AdminFilterProps) {
     setDraftProofStatus([]);
     setDraftStatus([]);
     setDraftDdate('');
+    setDraftIsMatched([]);
     setDraftDateRange(undefined);
     setDraftSearch('');
     onClearSearch();
@@ -119,6 +126,7 @@ export function AdminFilterMo(props: AdminFilterProps) {
     proofRef.current?.clear();
     proofStatusRef.current?.clear();
     statusRef.current?.clear();
+    isMatchedRef.current?.clear();
   };
 
   const applyFilters = () => {
@@ -128,6 +136,7 @@ export function AdminFilterMo(props: AdminFilterProps) {
     onProofStatusChange(draftProofStatus);
     onStatusChange(draftStatus);
     onDdateChange(draftDdate);
+    onIsMatchedChange(draftIsMatched);
     onDateRangeChange(draftDateRange);
 
     onSearchInputChange(draftSearch);
@@ -238,9 +247,10 @@ export function AdminFilterMo(props: AdminFilterProps) {
                   </div>
 
                   <div className="flex justify-between gap-2">
-                    <div className="flex-1">
+                    {/* 증빙상태 다중 선택 */}
+
+                    {/* <div className="flex-1">
                       <FilterTitle label="증빙 상태" />
-                      {/* 증빙상태 다중 선택 */}
                       <MultiSelect
                         className="w-full max-w-full min-w-auto!"
                         placeholder="증빙 상태"
@@ -255,6 +265,26 @@ export function AdminFilterMo(props: AdminFilterProps) {
                         simpleSelect={true}
                         modalPopover={true}
                         onOpen={() => multiOpen(proofStatusRef.current)}
+                      />
+                    </div> */}
+
+                    <div className="flex-1">
+                      <FilterTitle label="견적 매칭" />
+                      {/* 견적 매칭 다중 선택 */}
+                      <MultiSelect
+                        className="w-full max-w-full min-w-auto!"
+                        placeholder="견적 매칭"
+                        ref={isMatchedRef}
+                        options={isMatchedOptions}
+                        defaultValue={draftIsMatched}
+                        onValueChange={setDraftIsMatched}
+                        maxCount={0}
+                        hideSelectAll={true}
+                        closeOnSelect={true}
+                        searchable={false}
+                        simpleSelect={true}
+                        modalPopover={true}
+                        onOpen={() => multiOpen(isMatchedRef.current)}
                       />
                     </div>
 

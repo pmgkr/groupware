@@ -15,18 +15,41 @@ import { CalendarIcon, Download, UserRoundPen, TriangleAlert } from 'lucide-reac
 
 type Role = 'admin' | 'manager' | 'user';
 
-const parseCategories = (value?: string) =>
-  value ? Array.from(new Set(value.split('|').filter(Boolean))) : [];
+const parseCategories = (value?: string) => (value ? Array.from(new Set(value.split('|').filter(Boolean))) : []);
 
 // admin/manager: smaller badge (size="table")
 const statusMapSm = {
-  Saved: <Badge variant="grayish" size="table">임시저장</Badge>,
-  Claimed: <Badge variant="secondary" size="table">승인대기</Badge>,
+  Saved: (
+    <Badge variant="grayish" size="table">
+      임시저장
+    </Badge>
+  ),
+  Claimed: (
+    <Badge variant="secondary" size="table">
+      승인대기
+    </Badge>
+  ),
   Confirmed: <Badge size="table">승인완료</Badge>,
-  SAP: <Badge className="bg-primary-pink-500" size="table">SAP등록</Badge>,
-  Approved: <Badge className="bg-primary-blue/80" size="table">지급대기</Badge>,
-  Completed: <Badge className="bg-primary-blue" size="table">지급완료</Badge>,
-  Rejected: <Badge className="bg-destructive" size="table">반려됨</Badge>,
+  SAP: (
+    <Badge className="bg-primary-pink-500" size="table">
+      SAP등록
+    </Badge>
+  ),
+  Approved: (
+    <Badge className="bg-primary-blue/80" size="table">
+      지급대기
+    </Badge>
+  ),
+  Completed: (
+    <Badge className="bg-primary-blue" size="table">
+      지급완료
+    </Badge>
+  ),
+  Rejected: (
+    <Badge className="bg-destructive" size="table">
+      반려됨
+    </Badge>
+  ),
 } as const;
 
 // user: regular badge size
@@ -126,9 +149,7 @@ export const PExpenseRow = memo(({ role, item, activeTab, checked, onCheck, onAI
 
   const missingColor = role === 'user' ? 'bg-orange-500' : 'bg-destructive';
   const showMatchMissing =
-    item.alloc_status === 'empty' &&
-    item.is_estimate === 'Y' &&
-    (role === 'user' ? item.status !== 'Rejected' : true);
+    item.alloc_status === 'empty' && item.is_estimate === 'Y' && (role === 'user' ? item.status !== 'Rejected' : true);
 
   const matchMissing = showMatchMissing && (
     <span className="absolute -top-1 -right-1 flex size-3">
@@ -144,12 +165,11 @@ export const PExpenseRow = memo(({ role, item, activeTab, checked, onCheck, onAI
     role === 'admin'
       ? `/admin/finance/pexpense/${item.seq}${search}`
       : role === 'manager'
-      ? `/project/${item.project_id}/expense/${item.seq}`
-      : `/project/${item.project_id}/expense/${item.seq}${search}`;
+        ? `/project/${item.project_id}/expense/${item.seq}`
+        : `/project/${item.project_id}/expense/${item.seq}${search}`;
 
   // 제목 링크: manager=매니저경로, 나머지=expIdHref
-  const titleHref =
-    role === 'manager' ? `/manager/pexpense/${item.seq}${search}` : expIdHref;
+  const titleHref = role === 'manager' ? `/manager/pexpense/${item.seq}${search}` : expIdHref;
 
   // user 전용 레이아웃 (체크박스 첫 열, 프로젝트# 없음)
   if (role === 'user') {
@@ -197,9 +217,7 @@ export const PExpenseRow = memo(({ role, item, activeTab, checked, onCheck, onAI
         </TableCell>
         <TableCell className="text-right">
           {formatAmount(item.el_total)}원
-          {item.el_tax !== 0 && (
-            <div className="mt-0.5 text-[11px] leading-[1.2] text-gray-600">세금 {formatAmount(item.el_tax)}원</div>
-          )}
+          {item.el_tax !== 0 && <div className="mt-0.5 text-[11px] leading-[1.2] text-gray-600">세금 {formatAmount(item.el_tax)}원</div>}
         </TableCell>
         <TableCell>{item.user_nm}</TableCell>
         <TableCell>{statusMap[item.status as keyof typeof statusMap]}</TableCell>
@@ -264,13 +282,9 @@ export const PExpenseRow = memo(({ role, item, activeTab, checked, onCheck, onAI
       <TableCell className="text-right">
         {formatAmount(item.el_total)}원
         {role === 'admin' ? (
-          <div className="mt-0.5 text-[11px] leading-[1.2] text-gray-600">
-            세금 {item.el_tax === 0 ? '0' : formatAmount(item.el_tax)}원
-          </div>
+          <div className="mt-0.5 text-[11px] leading-[1.2] text-gray-600">세금 {item.el_tax === 0 ? '0' : formatAmount(item.el_tax)}원</div>
         ) : (
-          item.el_tax !== 0 && (
-            <div className="mt-0.5 text-[11px] leading-[1.2] text-gray-600">세금 {formatAmount(item.el_tax)}원</div>
-          )
+          item.el_tax !== 0 && <div className="mt-0.5 text-[11px] leading-[1.2] text-gray-600">세금 {formatAmount(item.el_tax)}원</div>
         )}
       </TableCell>
       <TableCell>{item.user_nm}</TableCell>
@@ -288,9 +302,7 @@ export const PExpenseRow = memo(({ role, item, activeTab, checked, onCheck, onAI
           className="mx-auto flex size-4 items-center justify-center bg-white leading-none"
           checked={checked}
           onCheckedChange={(v) => onCheck(item.seq, !!v)}
-          disabled={
-            role === 'admin' ? item.status === 'Saved' || item.status === 'Rejected' : item.status !== 'Claimed'
-          }
+          disabled={role === 'admin' ? item.status === 'Saved' || item.status === 'Rejected' : item.status !== 'Claimed'}
         />
       </TableCell>
     </TableRow>

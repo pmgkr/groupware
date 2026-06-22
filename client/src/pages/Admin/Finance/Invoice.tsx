@@ -469,8 +469,10 @@ export default function Invoice() {
                       {item.invoice_id}
                     </Link>
                   </TableCell>
-                  <TableCell className="cursor-pointer px-4! text-left hover:underline">
-                    <Link to={`/admin/finance/invoice/${item.seq}${search}`}>{item.invoice_title}</Link>
+                  <TableCell className="px-4! text-left">
+                    <Link to={`/admin/finance/invoice/${item.seq}${search}`} className="block hover:underline">
+                      {item.invoice_title}
+                    </Link>
                   </TableCell>
                   <TableCell className="break-all">{item.client_nm}</TableCell>
                   <TableCell className="text-right">{formatAmount(item.invoice_amount)}</TableCell>
