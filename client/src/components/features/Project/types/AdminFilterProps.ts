@@ -11,16 +11,19 @@ export interface AdminFilterProps {
   selectedProof: string[];
   selectedProofStatus: string[];
   selectedDdate: string;
+  selectedIsMatched: string[];
 
   typeOptions: MultiSelectOption[];
   statusOptions: MultiSelectOption[];
   proofMethod: MultiSelectOption[];
   proofStatusOptions: MultiSelectOption[];
+  isMatchedOptions: MultiSelectOption[];
 
   typeRef: React.RefObject<MultiSelectRef | null>;
   statusRef: React.RefObject<MultiSelectRef | null>;
   proofRef: React.RefObject<MultiSelectRef | null>;
   proofStatusRef: React.RefObject<MultiSelectRef | null>;
+  isMatchedRef: React.RefObject<MultiSelectRef | null>;
 
   checkedItems: number[];
   searchInput: string;
@@ -33,6 +36,7 @@ export interface AdminFilterProps {
   onProofChange: (v: string[]) => void;
   onProofStatusChange: (v: string[]) => void;
   onDdateChange: (v: string) => void;
+  onIsMatchedChange: (v: string[]) => void;
   onSearchInputChange: (v: string) => void;
   onSearchSubmit: (v?: string) => void;
   onClearSearch: () => void;

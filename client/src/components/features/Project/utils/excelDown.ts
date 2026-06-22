@@ -133,10 +133,15 @@ function buildTitleRow(title: string) {
   return row;
 }
 
-function buildTitleText(params: { year?: number; status?: string }) {
+function buildTitleText(params: { year?: number; status?: string; is_matched?: string }) {
   const parts: string[] = [];
 
   if (params.status) parts.push(`${params.status}`);
+  if (params.is_matched) {
+    const matched = params.is_matched.split(',');
+    if (matched.includes('Y')) parts.push('견적서 매칭');
+    if (matched.includes('N')) parts.push('견적서 미매칭');
+  }
 
   return `Project Expense – ${parts.join(', ')}`;
 }
@@ -245,13 +250,14 @@ function buildRows(data: AdminExpenseExcelResponse[]) {
  *  Excel Download
  * ======================= */
 
-export function downloadExpenseExcel(data: AdminExpenseExcelResponse[], params: { status?: string }) {
+export function downloadExpenseExcel(data: AdminExpenseExcelResponse[], params: { status?: string; is_matched?: string }) {
   if (!data || data.length === 0) return;
 
   const { rows, merges } = buildRows(data);
 
   const titleText = buildTitleText({
     status: params.status,
+    is_matched: params.is_matched,
   });
 
   const ws = XLSX.utils.json_to_sheet([buildTitleRow(titleText), {}, buildGroupHeaderRow(), buildHeaderRow(), ...rows], {

@@ -41,7 +41,7 @@ export function mapInvoiceDetail(raw: any): InvoiceDetailDTO {
 export default function ProjectInvoice() {
   const { projectId } = useParams();
   const isMobile = useIsMobileViewport();
-  const { data } = useOutletContext<ProjectLayoutContext>();
+  const { data, refetch } = useOutletContext<ProjectLayoutContext>();
 
   // 상단 필터용 state
   const [registerDialog, setRegisterDialog] = useState(false); // Dialog용 State
@@ -79,7 +79,6 @@ export default function ProjectInvoice() {
 
       const res = await getInvoiceList(projectId!, params);
 
-      console.log('📦 인보이스 요청 파라미터:', params);
       console.log('✅ 인보이스 리스트 응답:', res);
 
       setInvoiceList(res.list);
@@ -121,6 +120,7 @@ export default function ProjectInvoice() {
   /** 인보이스 생성 후 새로고침 */
   const handleCreateSuccess = () => {
     fetchInvoices();
+    refetch();
     setRegisterDialog(false);
   };
 

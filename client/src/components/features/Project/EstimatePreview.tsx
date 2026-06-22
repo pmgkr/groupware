@@ -34,7 +34,7 @@ export default function EstimatePreview() {
   const { projectId } = useParams();
 
   const { registerType, excelData, estName, excelFile } = location.state;
-  const { data } = useOutletContext<ProjectLayoutContext>();
+  const { data, refetch } = useOutletContext<ProjectLayoutContext>();
 
   // Alert & Dialog hooks
   const { addAlert } = useAppAlert();
@@ -212,6 +212,7 @@ export default function EstimatePreview() {
                 duration: 2000,
               });
 
+              await refetch();
               navigate(`/project/${projectId}/estimate`);
             }
           },

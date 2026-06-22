@@ -33,7 +33,7 @@ export default function EstimateEdit() {
   const navigate = useNavigate();
   const { user_id, user_name } = useUser();
   const { estId, projectId } = useParams();
-  const { data } = useOutletContext<ProjectLayoutContext>();
+  const { data, refetch } = useOutletContext<ProjectLayoutContext>();
   const { addAlert } = useAppAlert();
   const { addDialog } = useAppDialog();
 
@@ -371,6 +371,7 @@ export default function EstimateEdit() {
             });
           }
 
+          await refetch();
           navigate(`/project/${projectId}/estimate/${estId}`);
         } else {
           addAlert({
