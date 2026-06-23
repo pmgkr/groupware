@@ -99,6 +99,12 @@ export default function OvertimeToolbar({
         }));
 
         setTeams(teamItems);
+
+        // admin 페이지 기본값: 전체 팀 선택
+        const allTeamIds = teamItems.map((team) => String(team.team_id));
+        setSelectedTeams(allTeamIds);
+        onTeamSelect(teamItems.map((team) => team.team_id));
+
         teamsLoadedRef.current = true;
         return;
       }
