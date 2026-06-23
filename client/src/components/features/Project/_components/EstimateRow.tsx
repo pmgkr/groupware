@@ -54,8 +54,6 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
   const initialRow = (initialItems ?? []).find((r) => r.seq === row.seq);
   const matchCount = initialRow?.match_count ?? 0; // 견적서 항목과 비용이 매칭된 갯수
 
-  console.log('row 데이터', initialRow);
-
   const normalizeValue = (v: any) => {
     if (v === null || v === undefined) return '';
     return v.toString().trim();

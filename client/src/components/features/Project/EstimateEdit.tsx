@@ -348,9 +348,9 @@ export default function EstimateEdit() {
         console.log('최종 payload:', payload);
         const result = await estimateEdit(estId, payload);
 
-        if (result && typeof result.est_id === 'number') {
-          console.log('✅ 견적서 수정 완료 리턴값 :', result);
+        console.log('✅ 견적서 수정 완료 리턴값 :', result);
 
+        if (result && typeof result.est_id === 'number') {
           const insertData = result.inserted_items.length;
           const deleteData = result.deleted_items.length;
           const updateData = result.updated_items.length;
