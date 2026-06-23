@@ -366,10 +366,7 @@ export default function ProjectLayout() {
             </>
           )}
 
-          {user_id === 'sangmin.kang@pmgasia.com' ||
-          user_id === 'kangho.kim@pmgasia.com' ||
-          user_id === 'yeaji.kim@pmgasia.com' ||
-          user_id === 'jihyo.kim@pmgasia.com' ? (
+          {isAdminUser(user_id) ? (
             <Button
               type="button"
               variant="svgIcon"
@@ -392,16 +389,18 @@ export default function ProjectLayout() {
           <Button variant="svgIcon" onClick={() => navigate(fallbackListPath)} className="text-gray-500 max-md:hidden">
             <ArrowLeft className="size-5" />
           </Button>
-          {info.project_status === 'in-progress' && isProjectMember && !isLocked && (
-            <Button
-              variant="svgIcon"
-              className="text-gray-500 max-md:hidden"
-              onClick={() => {
-                setProjectDialog(true);
-              }}>
-              <Settings className="size-5" />
-            </Button>
-          )}
+          {info.project_status === 'in-progress' &&
+            (isProjectMember || user_id === 'sangmin.kang@pmgasia.com' || user_id === 'kangho.kim@pmgasia.com') &&
+            !isLocked && (
+              <Button
+                variant="svgIcon"
+                className="text-gray-500 max-md:hidden"
+                onClick={() => {
+                  setProjectDialog(true);
+                }}>
+                <Settings className="size-5" />
+              </Button>
+            )}
 
           {['Closed', 'Cancelled'].includes(info.project_status) && isAdminUser(user_id) && (
             <Button variant="svgIcon" className="text-gray-500 max-md:hidden" onClick={handleReopen}>
