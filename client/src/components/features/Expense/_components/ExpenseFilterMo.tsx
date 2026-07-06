@@ -65,6 +65,7 @@ export function ExpenseFilterMo({
   onConfirm,
   onSAPRegi,
   onCreate,
+  onDownload,
 }: ExpenseFilterProps) {
   const { user } = useAuth();
   const isSapManager = APP_CONFIG.SAP_MANAGERS.includes(user?.user_id ?? '');
@@ -364,6 +365,11 @@ export function ExpenseFilterMo({
           {role === 'manager' && (
             <Button size="sm" onClick={onConfirm} disabled={checkedItems.length === 0}>
               승인하기
+            </Button>
+          )}
+          {activeTab === 'saved' && (
+            <Button size="sm" variant="outline" onClick={onDownload} disabled={checkedItems.length === 0}>
+              다운로드
             </Button>
           )}
           {role === 'user' && (

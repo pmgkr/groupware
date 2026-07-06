@@ -53,4 +53,5 @@ export interface ExpenseFilterProps {
   onReject?: () => void;
   onSAPRegi?: () => void;
   onCreate?: () => void;
+  onDownload?: () => void;
 }

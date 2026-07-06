@@ -1,5 +1,7 @@
 // 📦 일반비용 (Non-Expense) API
 import { http } from '@/lib/http';
+import { httpFile } from '@/lib/httpFile';
+import { getToken } from '@/lib/tokenStore';
 import type { addInfoDTO } from '../project';
 import type { ExpenseType, BankList } from '@/api/common/types';
 
@@ -323,4 +325,26 @@ export interface expenseRestoreResponse {
 // 반려된 비용 복구
 export async function expenseRestore(seq: number) {
   return http<expenseRestoreResponse>(`/user/nexpense/restore/${seq}`, { method: 'POST' });
+}
+
+// 일반 비용 일괄 다운로드
+export async function getMultiExpenseDownload(expIds: string[]): Promise<Response> {
+  if (!expIds.length) throw new Error('비용이 선택되지 않았습니다.');
+
+  const token = getToken();
+  const res = await fetch('https://gbend.cafe24.com/user/nexpense/download', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, application/zip, */*',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ exp_ids: expIds }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`File request failed (${res.status})`);
+  }
+
+  return res;
 }

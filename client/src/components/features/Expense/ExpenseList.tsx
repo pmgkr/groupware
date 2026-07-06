@@ -3,11 +3,13 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import * as XLSX from 'xlsx';
 import { useUser } from '@/hooks/useUser';
 import { useIsMobileViewport } from '@/hooks/useViewport';
-import { findManager, getGrowingYears } from '@/utils';
+import { findManager, getGrowingYears, formatYYMMDD } from '@/utils';
+import { triggerDownload } from '@components/features/Project/utils/download';
 import { notificationApi } from '@/api/notification';
 
 import { useAppAlert } from '@/components/common/ui/AppAlert/AppAlert';
 import { useAppDialog } from '@/components/common/ui/AppDialog/AppDialog';
+import { useLoading } from '@/components/common/ui/Loading/Loading';
 
 import { Button } from '@components/ui/button';
 import { AppPagination } from '@/components/ui/AppPagination';
@@ -24,6 +26,7 @@ import {
   deleteTempExpense,
   claimTempExpense,
   pInfoDelete,
+  getMultiExpenseDownload,
 } from '@/api';
 import { ExpenseFilter } from './_components/ExpenseFilter';
 import { ExpenseFilterMo } from './_components/ExpenseFilterMo';
@@ -66,6 +69,7 @@ export default function ExpenseList() {
   // Alert & Dialog hooks
   const { addAlert } = useAppAlert();
   const { addDialog } = useAppDialog();
+  const { showLoading, hideLoading } = useLoading();
 
   const [pendingDelete, setPendingDelete] = useState<number[]>([]); // 삭제 대상 seq Array
 
@@ -362,6 +366,65 @@ export default function ExpenseList() {
     });
   };
 
+  // 선택 다운로드 이벤트 핸들러
+  const handleDownloadSelected = async () => {
+    if (checkedItems.length === 0) {
+      addAlert({
+        title: '선택된 비용 항목이 없습니다.',
+        message: '다운로드할 비용 항목을 선택해주세요.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+      return;
+    }
+
+    showLoading({ title: '선택한 파일의 다운로드용 파일을 생성하는 중입니다' });
+
+    try {
+      const selectedExpIds = expenseList
+        .filter((item) => checkedItems.includes(item.seq))
+        .map((item) => item.exp_id);
+
+      const response = await getMultiExpenseDownload(selectedExpIds);
+      
+      const disposition = response.headers.get('content-disposition');
+      let filename = '';
+      if (disposition && disposition.indexOf('attachment') !== -1) {
+        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+        const matches = filenameRegex.exec(disposition);
+        if (matches != null && matches[1]) {
+          filename = decodeURIComponent(matches[1].replace(/['"]/g, ''));
+        }
+      }
+
+      if (!filename) {
+        const contentType = response.headers.get('content-type') || '';
+        let ext = 'zip';
+        if (contentType.includes('spreadsheetml.sheet') || contentType.includes('xlsx')) {
+          ext = 'xlsx';
+        } else if (contentType.includes('ms-excel') || contentType.includes('xls')) {
+          ext = 'xls';
+        }
+        const date = formatYYMMDD();
+        filename = `일반비용_${date}.${ext}`;
+      }
+
+      const blob = await response.blob();
+      triggerDownload(blob, filename);
+    } catch (err) {
+      console.error('❌ 다운로드 실패:', err);
+
+      addAlert({
+        title: '다운로드 실패',
+        message: '파일 생성에 실패 했습니다.',
+        icon: <OctagonAlert />,
+        duration: 2000,
+      });
+    } finally {
+      hideLoading();
+    }
+  };
+
   // 외주용역비 or 접대비 버튼 클릭 시
   const handleAddInfo = async (item: ExpenseListItem) => {
     setSelectedAddInfos(item.add_info ?? []);
@@ -527,6 +590,8 @@ export default function ExpenseList() {
     onProofStatusChange: (v: string[]) => handleFilterChange('attach', v),
     onRefresh: resetAllFilters,
     onCreate: () => setRegisterDialog(true),
+    checkedItems,
+    onDownload: handleDownloadSelected,
   };
 
   return (
