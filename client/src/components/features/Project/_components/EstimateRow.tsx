@@ -552,7 +552,9 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
         {/* ava_amount */}
         <TableCell className={cn('text-right', isDirty('ava_amount') && dirtyClass)}>
           <div className="flex items-center justify-end gap-1">
-            {formatAmount(row?.ava_amount || 0)}{' '}
+            <span className={cn((Number(row?.ava_amount) || 0) < 0 && 'font-bold text-red-600')}>
+              {formatAmount(row?.ava_amount || 0)}
+            </span>{' '}
             <span
               className="flex cursor-pointer items-center gap-0.5 text-xs font-normal text-gray-500 hover:text-gray-700"
               title="매칭된 비용 갯수">
@@ -707,7 +709,9 @@ function RowComponent({ field, idx, control, watch, setValue, updateRowAll, onAd
         {/* ava_amount */}
         <TableCell className={cn('text-right', isDirty('ava_amount') && dirtyClass)}>
           <div className="flex items-center justify-end gap-1">
-            {formatAmount(row?.ava_amount || 0)}{' '}
+            <span className={cn((Number(row?.ava_amount) || 0) < 0 && 'font-bold text-red-600')}>
+              {formatAmount(row?.ava_amount || 0)}
+            </span>{' '}
             <span
               className="flex cursor-pointer items-center gap-0.5 text-xs font-normal text-gray-500 hover:text-gray-700"
               title="매칭된 비용 갯수">

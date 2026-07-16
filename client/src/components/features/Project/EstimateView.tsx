@@ -251,7 +251,9 @@ export default function EstimateView() {
                   </div>
                   <div className="text-right text-[13px] leading-[1.3] font-medium">
                     {formatAmount(row.amount) + '원'}{' '}
-                    <span className="block text-[.75em] font-normal text-gray-600">{`가용 금액 ${formatAmount(row.ava_amount)}원`}</span>
+                    <span className={cn("block text-[.75em] font-normal text-gray-600", (row.ava_amount ?? 0) < 0 && "font-bold text-red-600")}>
+                      {`가용 금액 ${formatAmount(row.ava_amount)}원`}
+                    </span>
                   </div>
                   {row.remark && <p className="mt-2 text-sm text-gray-700">{row.remark}</p>}
                 </div>
@@ -270,7 +272,9 @@ export default function EstimateView() {
                   <div className="text-sm text-gray-700">단가 {row.unit_price && displayUnitPrice(row.unit_price)}</div>
                   <div className="text-right text-[13px] leading-[1.3] font-medium">
                     {formatAmount(row.amount)}원
-                    <span className="block text-[.75em] font-normal text-gray-600">{`가용 금액 ${formatAmount(row.ava_amount)}원`}</span>
+                    <span className={cn("block text-[.75em] font-normal text-gray-600", (row.ava_amount ?? 0) < 0 && "font-bold text-red-600")}>
+                      {`가용 금액 ${formatAmount(row.ava_amount)}원`}
+                    </span>
                   </div>
                   {row.remark && <p className="mt-2 text-sm text-gray-700">{row.remark}</p>}
                 </div>
@@ -305,7 +309,9 @@ export default function EstimateView() {
                   <span className="flex-1 text-[13px] leading-[1.2] font-semibold">Grand Total</span>
                   <strong className="shrink-0 text-right leading-[1.4] tracking-tight">
                     {formatAmount(estData.header.est_amount)}원{' '}
-                    <span className="block text-[.75em] font-normal text-gray-700">{`가용 금액 ${formatAmount(estData.header.est_budget)}원`}</span>
+                    <span className={cn("block text-[.75em] font-normal text-gray-700", estData.header.est_budget < 0 && "font-bold text-red-600")}>
+                      {`가용 금액 ${formatAmount(estData.header.est_budget)}원`}
+                    </span>
                   </strong>
                 </div>
               )}
@@ -359,7 +365,10 @@ export default function EstimateView() {
             </TableColumnHeader>
             <TableColumnBody>
               <TableColumnCell>
-                {formatAmount(estData.header.est_budget)} / {formatAmount(estData.header.est_amount)}{' '}
+                <span className={cn(estData.header.est_budget < 0 && "font-bold text-red-600")}>
+                  {formatAmount(estData.header.est_budget)}
+                </span>{' '}
+                / {formatAmount(estData.header.est_amount)}{' '}
                 <span className="ml-1 font-bold">({getBudgetPercent}%)</span>
               </TableColumnCell>
             </TableColumnBody>
@@ -468,7 +477,9 @@ export default function EstimateView() {
                     <TableCell className="text-right">{formatAmount(row.amount)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {formatAmount(row.ava_amount)}{' '}
+                        <span className={cn((row.ava_amount ?? 0) < 0 && "font-bold text-red-600")}>
+                          {formatAmount(row.ava_amount)}
+                        </span>{' '}
                         <Button
                           type="button"
                           variant="svgIcon"
@@ -510,7 +521,9 @@ export default function EstimateView() {
                     <TableCell className="text-right font-semibold">{formatAmount(row.amount)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {formatAmount(row.ava_amount)}{' '}
+                        <span className={cn((row.ava_amount ?? 0) < 0 && "font-bold text-red-600")}>
+                          {formatAmount(row.ava_amount)}
+                        </span>{' '}
                         <Button
                           type="button"
                           variant="svgIcon"
@@ -581,7 +594,9 @@ export default function EstimateView() {
                     <TableCell className="bg-primary-blue-150 text-right font-bold text-gray-900">
                       {formatAmount(estData.header.est_amount)}
                     </TableCell>
-                    <TableCell className="bg-primary-blue-150 text-right font-bold">{formatAmount(estData.header.est_budget)}</TableCell>
+                    <TableCell className={cn("bg-primary-blue-150 text-right font-bold", estData.header.est_budget < 0 && "text-red-600")}>
+                      {formatAmount(estData.header.est_budget)}
+                    </TableCell>
                     <TableCell className="bg-primary-blue-150"></TableCell>
                   </>
                 )}
