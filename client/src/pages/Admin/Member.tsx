@@ -8,7 +8,8 @@ import { getManagerMemberList } from '@/api/manager/member';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { SearchGray } from '@/assets/images/icons';
-import { X } from 'lucide-react';
+import { X, UserPlus } from 'lucide-react';
+import RegisterMemberDialog from '@/components/features/Admin/RegisterMemberDialog';
 
 export default function Member() {
   const { user_level } = useUser();
@@ -21,6 +22,7 @@ export default function Member() {
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'Enable' | 'Disable'>('Enable');
+  const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
 
   // 어드민만 접근
   if (user_level !== 'admin') return null;
@@ -131,7 +133,15 @@ export default function Member() {
               </Select>
             </div>
           </div>
-          <div className="relative w-[175px] max-md:absolute max-md:right-0 max-md:bottom-0 max-md:w-[32%]">
+          <div className="flex items-center gap-2 max-md:absolute max-md:right-0 max-md:bottom-0">
+            <Button
+              size="sm"
+              className="shrink-0 gap-1"
+              onClick={() => setRegisterDialogOpen(true)}>
+              <UserPlus className="size-4" />
+              <span className="max-md:hidden">새 사용자 등록</span>
+            </Button>
+          <div className="relative w-[175px] max-md:w-[32%] max-md:max-w-[250px]">
             <Input
               size="sm"
               className="h-[32px]! px-4 [&]:bg-white"
@@ -157,6 +167,7 @@ export default function Member() {
                 <X className="size-3.5" />
               </Button>
             )}
+          </div>
           </div>
         </div>
 
@@ -186,6 +197,12 @@ export default function Member() {
           )}
         </TabsContent>
       </Tabs>
+
+      <RegisterMemberDialog
+        open={registerDialogOpen}
+        onOpenChange={setRegisterDialogOpen}
+        onSuccess={refreshMembers}
+      />
     </div>
   );
 }
