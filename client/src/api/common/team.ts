@@ -16,11 +16,23 @@ export async function getTeamList(): Promise<Team[]> {
   return res;
 }
 
-export async function getMemberList(team_id?: number) {
-  const params = new URLSearchParams();
-  if (team_id) {
-    params.append('team_id', team_id.toString());
+export interface MemberListParams {
+  team_id?: number;
+  status?: string;
+  role?: string;
+  q?: string;
+}
+
+export async function getMemberList(params?: number | MemberListParams) {
+  const searchParams = new URLSearchParams();
+  if (typeof params === 'number') {
+    searchParams.append('team_id', params.toString());
+  } else if (params) {
+    if (params.team_id) searchParams.append('team_id', params.team_id.toString());
+    if (params.status) searchParams.append('status', params.status);
+    if (params.role) searchParams.append('role', params.role);
+    if (params.q) searchParams.append('q', params.q);
   }
-  const url = `/user/common/memberlist${params.toString() ? `?${params.toString()}` : ''}`;
+  const url = `/user/common/memberlist${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
   return await http<any[]>(url, { method: 'GET' });
 }

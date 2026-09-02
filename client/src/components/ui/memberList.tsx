@@ -1,12 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
-import { Ellipsis, Mail, Phone } from 'lucide-react';
+import { Settings, Mail, Phone } from 'lucide-react';
 import { Button } from './button';
 import { Badge } from './badge';
 import { getAvatarFallback, getImageUrl } from '@/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 import { updateMemberStatus } from '@/api/manager/member';
+import { getTeamList, type Team } from '@/api';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/useUser';
 
@@ -46,10 +47,32 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
   const initialStatus = member.user_status;
   const [userLevel, setUserLevel] = useState(member.user_level);
   const initialUserLevel = member.user_level;
+  const [teamId, setTeamId] = useState<number | undefined>(member.team_id);
+  const initialTeamId = member.team_id;
+  const [teams, setTeams] = useState<Team[]>([]);
 
   const { user_id } = useUser();
   const { addAlert } = useAppAlert();
   const [saving, setSaving] = useState(false);
+
+  // 다이얼로그 열릴 때 팀 목록 조회
+  useEffect(() => {
+    if (open && teams.length === 0) {
+      getTeamList().then(setTeams);
+    }
+  }, [open, teams.length]);
+
+  // member 변경 시 state 동기화
+  useEffect(() => {
+    setStatus(member.user_status);
+    setUserLevel(member.user_level);
+    if (member.team_id) {
+      setTeamId(member.team_id);
+    } else if (member.team_name && teams.length > 0) {
+      const matched = teams.find((t) => t.team_name === member.team_name);
+      if (matched) setTeamId(matched.team_id);
+    }
+  }, [member, teams]);
 
   const profileImageUrl = member.profile_image
     ? member.profile_image.startsWith('http')
@@ -88,7 +111,7 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
   }, [member.user_level]);
 
   const handleSave = async () => {
-    if (status === initialStatus && userLevel === initialUserLevel) return;
+    if (status === initialStatus && userLevel === initialUserLevel && teamId === initialTeamId) return;
 
     try {
       setSaving(true);
@@ -97,6 +120,7 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
         user_id: member.user_id,
         status,
         user_level: userLevel,
+        team_id: teamId,
       });
 
       setOpen(false);
@@ -134,7 +158,7 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
       <div className="relative w-full rounded-xl border border-gray-300 px-5 pt-8.5 pb-7 max-lg:px-3 max-lg:pb-5">
         <div className="absolute top-2 right-4">
           <Button size="xs" variant="outline" className="border-0 shadow-none" onClick={() => setOpen(true)}>
-            <Ellipsis className="size-4" />
+            <Settings className="size-4" />
           </Button>
         </div>
 
@@ -218,7 +242,30 @@ export default function MemberList({ member, onRefresh }: { member: any; onRefre
               </li>
               <li>
                 <span>팀</span>
-                <span> {member.team_name}</span>
+                <span className="block w-full">
+                  {isAdmin ? (
+                    <Select
+                      value={teamId ? String(teamId) : undefined}
+                      onValueChange={(v) => setTeamId(Number(v))}>
+                      <SelectTrigger
+                        className={cn(
+                          'h-full! w-full border-0 bg-transparent p-0 text-[13px]! shadow-none [&]:hover:bg-transparent',
+                          teamId !== initialTeamId && 'text-primary-blue'
+                        )}>
+                        <SelectValue placeholder={member.team_name || '팀 선택'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teams.map((t) => (
+                          <SelectItem key={t.team_id} value={String(t.team_id)} size="sm">
+                            {t.team_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span>{member.team_name}</span>
+                  )}
+                </span>
               </li>
               <li>
                 <span>휴대폰</span>

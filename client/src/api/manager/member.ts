@@ -63,6 +63,7 @@ export async function updateMemberStatus(params: {
   user_id: string;
   status?: 'active' | 'inactive' | 'suspended';
   user_level?: 'admin' | 'manager' | 'cellmanager' | 'user';
+  team_id?: number;
 }) {
   console.log('[updateMemberStatus] payload:', params);
   return await http('/manager/member/status', {

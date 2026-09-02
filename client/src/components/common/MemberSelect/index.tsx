@@ -17,6 +17,7 @@ type Props = {
   currentUserId?: string; // 로그인한 사용자 아이디
   excludeUserIds?: string[]; // 제외하고 싶은 유저 아이디 배열
   mode?: 'single' | 'multiple'; // 단일 선택 or 다중 선택 모드
+  status?: string; // 사용자 상태 필터 (기본값: 'active')
 };
 
 export function MemberSelect({
@@ -26,6 +27,7 @@ export function MemberSelect({
   currentUserId,
   excludeUserIds = [],
   mode = 'multiple',
+  status = 'active',
 }: Props) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [members, setMembers] = useState<Member[]>([]); // 현재 선택된 팀의 멤버만
@@ -65,7 +67,7 @@ export function MemberSelect({
     const loadMembers = async () => {
       try {
         setLoadingMembers(true);
-        const res = await getMemberList(selectedTeam);
+        const res = await getMemberList({ team_id: selectedTeam, status });
 
         // 제외 대상 필터링
         const filtered = res.filter((m: any) => !isExcludedUser(String(m.user_id)));
@@ -89,7 +91,7 @@ export function MemberSelect({
     };
 
     loadMembers();
-  }, [selectedTeam]);
+  }, [selectedTeam, status]);
 
   // 현재 팀에 해당하는 선택된 멤버 ID만 표시
   useEffect(() => {
