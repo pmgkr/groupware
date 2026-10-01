@@ -12,7 +12,8 @@ import { Button } from '@components/ui/button';
 import { Notification } from '@components/features/Dashboard/notifications';
 import { getMyProfile } from '@/api/mypage';
 import { notificationApi } from '@/api/notification';
-import { X, Menu, Home } from 'lucide-react';
+import { X, Menu, Home, Search } from 'lucide-react';
+import { SearchDialog } from '@components/features/SearchDialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@components/ui/sheet';
 import getWelcomeMessage from '@components/features/Dashboard/welcome';
 import Weather from '@components/features/Dashboard/weather';
@@ -69,6 +70,7 @@ export default function HeaderMobile() {
     ],
   };
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
   // 메뉴 클릭 시 서브메뉴 토글
@@ -245,6 +247,17 @@ export default function HeaderMobile() {
           </h1>
         </div>
         <ul className="text-primary-blue-300 flex items-center gap-x-1">
+          <li>
+            <Button
+              variant="svgIcon"
+              size="icon"
+              className="hover:text-primary-blue-500"
+              aria-label="검색"
+              onClick={() => setIsSearchOpen(true)}
+            >
+              <Search className="size-5" />
+            </Button>
+          </li>
           <li className="relative">
             <Notification />
             {hasUnreadNoti && (
@@ -256,6 +269,7 @@ export default function HeaderMobile() {
           </li>
         </ul>
       </header>
+      <SearchDialog open={isSearchOpen} onOpenChange={setIsSearchOpen} />
 
       {/* 모바일 토글 사이드 메뉴 */}
       <Sheet

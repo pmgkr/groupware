@@ -339,6 +339,10 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                         <SelectItem value="28">04시 (28시)</SelectItem>
                         <SelectItem value="29">05시 (29시)</SelectItem>
                         <SelectItem value="30">06시 (30시)</SelectItem>
+                        <SelectItem value="31">07시 (31시)</SelectItem>
+                        <SelectItem value="32">08시 (32시)</SelectItem>
+                        <SelectItem value="33">08시 (33시)</SelectItem>
+                        <SelectItem value="34">10시 (34시)</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select
@@ -497,6 +501,10 @@ export default function OvertimeDialog({ isOpen, onClose, onSave, onCancel, sele
                         <SelectItem value="28">04시 (28시)</SelectItem>
                         <SelectItem value="29">05시 (29시)</SelectItem>
                         <SelectItem value="30">06시 (30시)</SelectItem>
+                        <SelectItem value="31">07시 (31시)</SelectItem>
+                        <SelectItem value="32">08시 (32시)</SelectItem>
+                        <SelectItem value="33">08시 (33시)</SelectItem>
+                        <SelectItem value="34">10시 (34시)</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select

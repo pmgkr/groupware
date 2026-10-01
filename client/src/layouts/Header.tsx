@@ -7,6 +7,8 @@ import { getAvatarFallback } from '@/utils';
 
 import Logo from '@/assets/images/common/logo.svg?react';
 import { Dashboard, Project, Expense, Calendar, Profile, Logout, Pto, Office, Manager, Admin } from '@/assets/images/icons';
+import { Search } from 'lucide-react';
+import { SearchDialog } from '@components/features/SearchDialog';
 
 import { Button } from '@components/ui/button';
 import { Notification } from '@components/features/Dashboard/notifications';
@@ -128,6 +130,9 @@ export default function Header() {
   const isCellManager = user?.user_level === 'manager' && user?.cmng_fg === 'Y';
   const managerSubMenu = isCellManager ? [{ label: '근태 관리', to: '/manager/working' }] : subMenus.manager;
 
+  /* 검색 다이얼로그 */
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
   /* 알림 도트 */
   const [hasUnreadNoti, setHasUnreadNoti] = useState(false);
 
@@ -214,6 +219,17 @@ export default function Header() {
           </Link>
         </h1>
         <ul className="text-primary-blue-300 flex items-center gap-x-4">
+          <li>
+            <Button
+              variant="svgIcon"
+              size="icon"
+              className="hover:text-primary-blue-500"
+              aria-label="검색"
+              onClick={() => setIsSearchOpen(true)}
+            >
+              <Search className="size-6" />
+            </Button>
+          </li>
           <li className="relative">
             <Notification />
             {hasUnreadNoti && (
@@ -237,6 +253,7 @@ export default function Header() {
           </li>
         </ul>
       </header>
+      <SearchDialog open={isSearchOpen} onOpenChange={setIsSearchOpen} />
       <div className="bg-primary-blue-100 fixed top-18 left-0 z-10 h-full w-50 2xl:w-60">
         <div className="my-8.5 px-8">
           <Link to="/mypage">
